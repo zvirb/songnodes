@@ -51,7 +51,7 @@ mypy==1.7.1
 
 # Security testing
 bandit==1.7.5
-safety==2.3.5
+safety==3.6.0
 
 # Container testing
 testcontainers==3.7.1
