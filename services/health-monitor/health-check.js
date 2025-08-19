@@ -8,8 +8,6 @@ const { Pool } = require('pg');
 const redis = require('redis');
 const promClient = require('prom-client');
 const os = require('os');
-const fs = require('fs').promises;
-const path = require('path');
 const WebSocket = require('ws');
 
 class HealthCheckService {
@@ -181,7 +179,6 @@ class HealthCheckService {
       const responseTime = Date.now() - start;
       
       // Get Redis info
-      const info = await this.redisClient.info();
       const memoryInfo = await this.redisClient.info('memory');
       const statsInfo = await this.redisClient.info('stats');
       
@@ -244,7 +241,7 @@ class HealthCheckService {
     this.metrics.systemMetrics.labels('heap_usage_percent').set(heapUsagePercent);
     
     const status = memoryUsagePercent > 90 ? 'unhealthy' : 
-                   memoryUsagePercent > 80 ? 'warning' : 'healthy';
+      memoryUsagePercent > 80 ? 'warning' : 'healthy';
     
     return {
       status,
@@ -271,14 +268,13 @@ class HealthCheckService {
 
   async checkDisk() {
     try {
-      const stats = await fs.stat('/');
       const diskUsage = await this.getDiskUsage('/');
       
       // Update metrics
       this.metrics.systemMetrics.labels('disk_usage_percent').set(diskUsage.usagePercent);
       
       const status = diskUsage.usagePercent > 90 ? 'unhealthy' : 
-                     diskUsage.usagePercent > 80 ? 'warning' : 'healthy';
+        diskUsage.usagePercent > 80 ? 'warning' : 'healthy';
       
       return {
         status,
@@ -308,7 +304,7 @@ class HealthCheckService {
     this.metrics.systemMetrics.labels('cpu_count').set(cpuCount);
     
     const status = loadPercent > 90 ? 'unhealthy' : 
-                   loadPercent > 70 ? 'warning' : 'healthy';
+      loadPercent > 70 ? 'warning' : 'healthy';
     
     return {
       status,
@@ -416,7 +412,7 @@ class HealthCheckService {
     // Simple disk usage check (Linux/Unix)
     return new Promise((resolve, reject) => {
       const { exec } = require('child_process');
-      exec(`df -h ${path}`, (error, stdout, stderr) => {
+      exec(`df -h ${path}`, (error, stdout, _stderr) => {
         if (error) {
           reject(error);
           return;
@@ -491,7 +487,7 @@ class HealthCheckService {
     this.app.get('/health', async (req, res) => {
       const health = await this.runAllChecks();
       const statusCode = health.status === 'healthy' ? 200 : 
-                         health.status === 'warning' ? 200 : 503;
+        health.status === 'warning' ? 200 : 503;
       res.status(statusCode).json(health);
     });
 
@@ -527,7 +523,7 @@ class HealthCheckService {
         const check = this.checks.get(component);
         const result = await check();
         const statusCode = result.status === 'healthy' ? 200 : 
-                           result.status === 'warning' ? 200 : 503;
+          result.status === 'warning' ? 200 : 503;
         res.status(statusCode).json({
           component,
           ...result,
@@ -568,13 +564,13 @@ class HealthCheckService {
       
       this.app.listen(this.port, () => {
         console.log(`Health check service running on port ${this.port}`);
-        console.log(`Endpoints available:`);
-        console.log(`  - GET /health - Comprehensive health check`);
-        console.log(`  - GET /health/ready - Readiness probe`);
-        console.log(`  - GET /health/live - Liveness probe`);
-        console.log(`  - GET /health/:component - Individual component check`);
-        console.log(`  - GET /health/summary - Health summary`);
-        console.log(`  - GET /metrics - Prometheus metrics`);
+        console.log('Endpoints available:');
+        console.log('  - GET /health - Comprehensive health check');
+        console.log('  - GET /health/ready - Readiness probe');
+        console.log('  - GET /health/live - Liveness probe');
+        console.log('  - GET /health/:component - Individual component check');
+        console.log('  - GET /health/summary - Health summary');
+        console.log('  - GET /metrics - Prometheus metrics');
       });
     } catch (error) {
       console.error('Failed to start health check service:', error);
