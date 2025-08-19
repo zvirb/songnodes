@@ -48,7 +48,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: musicdb_user
-      POSTGRES_PASSWORD: musicdb_dev_password_2024
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
       POSTGRES_DB: musicdb
       PGBOUNCER_ADMIN_USER: pgbouncer
       PGBOUNCER_ADMIN_PASSWORD: ${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer_secure}
@@ -358,7 +358,12 @@ services:
       - "8003:8003"
     environment:
       REDIS_HOST: redis
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb
       VALIDATION_BATCH_SIZE: 100
       VALIDATION_WORKERS: 4
     depends_on:
@@ -521,7 +526,7 @@ services:
     ports:
       - "8084:8084"
     environment:
-      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_TTL: 300
@@ -529,7 +534,6 @@ services:
     depends_on:
       - postgres
       - redis
-      - db-connection-pool
     networks:
       - musicdb-backend
     healthcheck:
