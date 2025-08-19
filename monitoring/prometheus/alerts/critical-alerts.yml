@@ -1,0 +1,284 @@
+# Critical Alerts for Song Nodes Infrastructure
+# Designed for <1 minute response time on critical issues
+
+groups:
+  - name: songnodes-critical-alerts
+    interval: 10s  # Evaluate every 10 seconds for critical alerts
+    rules:
+      # Service Availability - Immediate Response
+      - alert: ServiceDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+          team: infrastructure
+          page: true
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 30 seconds."
+          runbook_url: "https://docs.songnodes.com/runbooks/service-down"
+          action: "Immediate investigation required"
+
+      # High Error Rate - Critical for user experience
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[2m])) by (service) /
+            sum(rate(http_requests_total[2m])) by (service)
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+          page: true
+        annotations:
+          summary: "High error rate detected for {{ $labels.service }}"
+          description: "Error rate for {{ $labels.service }} is {{ $value | humanizePercentage }} over the last 2 minutes."
+          threshold: "5%"
+          current_value: "{{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.songnodes.com/runbooks/high-error-rate"
+
+      # Response Time Degradation - Performance Critical
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[2m])) by (service, le)
+          ) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          team: performance
+          page: true
+        annotations:
+          summary: "High response time for {{ $labels.service }}"
+          description: "95th percentile response time for {{ $labels.service }} is {{ $value }}s, exceeding 500ms threshold."
+          threshold: "500ms"
+          current_value: "{{ $value }}s"
+          runbook_url: "https://docs.songnodes.com/runbooks/high-response-time"
+
+      # Graph API Performance - Business Critical
+      - alert: GraphAPISlowProcessing
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(node_processing_duration_seconds_bucket[1m])) by (batch_size, le)
+          ) > 2.0
+        for: 30s
+        labels:
+          severity: critical
+          team: backend
+          component: graph-api
+          page: true
+        annotations:
+          summary: "Graph processing severely degraded"
+          description: "Graph processing 95th percentile is {{ $value }}s, exceeding 2s critical threshold."
+          impact: "User graph visualizations will be severely delayed"
+          threshold: "2s"
+          current_value: "{{ $value }}s"
+          runbook_url: "https://docs.songnodes.com/runbooks/graph-api-slow"
+
+      # Database Connection Crisis
+      - alert: DatabaseConnectionCrisis
+        expr: |
+          (postgres_connections_active / postgres_connections_max) > 0.9
+        for: 30s
+        labels:
+          severity: critical
+          team: database
+          page: true
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "Database connection usage is {{ $value | humanizePercentage }}, exceeding 90% threshold."
+          impact: "New connections will be rejected, causing service failures"
+          threshold: "90%"
+          current_value: "{{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.songnodes.com/runbooks/database-connections"
+
+      # Memory Exhaustion - System Critical
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 
+            node_memory_MemTotal_bytes
+          ) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+          page: true
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage on {{ $labels.instance }} is {{ $value | humanizePercentage }}, exceeding 90% threshold."
+          impact: "System may become unresponsive or services may crash"
+          threshold: "90%"
+          current_value: "{{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.songnodes.com/runbooks/high-memory"
+
+      # Disk Space Crisis
+      - alert: DiskSpaceCritical
+        expr: |
+          (
+            (node_filesystem_size_bytes - node_filesystem_free_bytes) /
+            node_filesystem_size_bytes
+          ) > 0.9
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+          page: true
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk usage on {{ $labels.instance }} {{ $labels.mountpoint }} is {{ $value | humanizePercentage }}, exceeding 90% threshold."
+          impact: "Services may crash due to inability to write logs or data"
+          threshold: "90%"
+          current_value: "{{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.songnodes.com/runbooks/disk-space"
+
+      # WebSocket Connection Storm
+      - alert: WebSocketConnectionStorm
+        expr: |
+          rate(websocket_active_connections[1m]) > 1000
+        for: 30s
+        labels:
+          severity: critical
+          team: backend
+          component: websocket
+          page: true
+        annotations:
+          summary: "WebSocket connection storm detected"
+          description: "WebSocket connections increasing at {{ $value }} connections/sec, indicating potential DDoS or system issue."
+          impact: "Service may become overwhelmed and unresponsive"
+          threshold: "1000 connections/sec"
+          current_value: "{{ $value }} connections/sec"
+          runbook_url: "https://docs.songnodes.com/runbooks/websocket-storm"
+
+      # Health Check Failures
+      - alert: HealthCheckFailure
+        expr: |
+          health_check_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+          page: true
+        annotations:
+          summary: "Health check failure for {{ $labels.check_name }}"
+          description: "Health check {{ $labels.check_name }} has been failing for more than 1 minute."
+          impact: "Component may be unhealthy and affecting user experience"
+          runbook_url: "https://docs.songnodes.com/runbooks/health-check-failure"
+
+  - name: songnodes-warning-alerts
+    interval: 30s
+    rules:
+      # Performance Degradation Warnings
+      - alert: ElevatedResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le)
+          ) > 0.2
+        for: 3m
+        labels:
+          severity: warning
+          team: performance
+        annotations:
+          summary: "Elevated response time for {{ $labels.service }}"
+          description: "95th percentile response time for {{ $labels.service }} is {{ $value }}s, exceeding 200ms warning threshold."
+          threshold: "200ms"
+          current_value: "{{ $value }}s"
+          runbook_url: "https://docs.songnodes.com/runbooks/elevated-response-time"
+
+      # Resource Usage Warnings
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage on {{ $labels.instance }} is {{ $value }}%, exceeding 80% threshold for 5 minutes."
+          threshold: "80%"
+          current_value: "{{ $value }}%"
+          runbook_url: "https://docs.songnodes.com/runbooks/high-cpu"
+
+      # Database Performance Warnings
+      - alert: SlowDatabaseQueries
+        expr: |
+          avg(rate(postgres_query_duration_seconds_sum[5m]) / rate(postgres_query_duration_seconds_count[5m])) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query time is {{ $value }}s, exceeding 100ms threshold."
+          threshold: "100ms"
+          current_value: "{{ $value }}s"
+          runbook_url: "https://docs.songnodes.com/runbooks/slow-queries"
+
+      # Redis Performance Warnings
+      - alert: HighRedisMemoryUsage
+        expr: |
+          (redis_memory_used_bytes / redis_memory_max_bytes) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          component: redis
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}, exceeding 80% threshold."
+          threshold: "80%"
+          current_value: "{{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.songnodes.com/runbooks/redis-memory"
+
+      # Graph Processing Warnings
+      - alert: GraphProcessingBacklog
+        expr: |
+          sum(graph_operations_pending) > 100
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+          component: graph-api
+        annotations:
+          summary: "Graph processing backlog detected"
+          description: "{{ $value }} graph operations are pending, indicating processing delays."
+          threshold: "100 operations"
+          current_value: "{{ $value }} operations"
+          runbook_url: "https://docs.songnodes.com/runbooks/graph-backlog"
+
+  - name: songnodes-business-alerts
+    interval: 60s
+    rules:
+      # User Experience Alerts
+      - alert: LowUserSatisfactionScore
+        expr: |
+          avg(user_satisfaction_score) < 3.5
+        for: 10m
+        labels:
+          severity: warning
+          team: product
+        annotations:
+          summary: "User satisfaction score declining"
+          description: "Average user satisfaction score is {{ $value }}, below 3.5 threshold."
+          impact: "User experience is degrading"
+          threshold: "3.5"
+          current_value: "{{ $value }}"
+          runbook_url: "https://docs.songnodes.com/runbooks/user-satisfaction"
+
+      # API Usage Patterns
+      - alert: UnusualAPIUsagePattern
+        expr: |
+          abs(increase(http_requests_total[1h]) - increase(http_requests_total[1h] offset 24h)) / 
+          increase(http_requests_total[1h] offset 24h) > 0.5
+        for: 15m
+        labels:
+          severity: info
+          team: product
+        annotations:
+          summary: "Unusual API usage pattern detected"
+          description: "API usage has changed by {{ $value | humanizePercentage }} compared to same time yesterday."
+          threshold: "50% change"
+          current_value: "{{ $value | humanizePercentage }} change"
+          runbook_url: "https://docs.songnodes.com/runbooks/unusual-usage"
