@@ -1,0 +1,51 @@
+SSL Certificate Information for MusicDB
+=====================================
+
+Generated: Tue 19 Aug 2025 10:14:08 AEST
+Domain: musicdb.local
+Certificate File: musicdb.crt
+Private Key File: musicdb.key
+Certificate Chain: musicdb-chain.crt
+DH Parameters: dhparam.pem
+
+Certificate Details:
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            5c:47:d3:6a:53:3f:58:ec:25:31:68:cb:37:78:8d:fd:fe:de:5d:94
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C = US, ST = CA, L = San Francisco, O = MusicDB CA, OU = Development, CN = MusicDB Root CA, emailAddress = admin@musicdb.local
+        Validity
+            Not Before: Aug 19 00:14:08 2025 GMT
+            Not After : Aug 19 00:14:08 2026 GMT
+        Subject: C = US, ST = CA, L = San Francisco, O = MusicDB, OU = Development, CN = musicdb.local, emailAddress = admin@musicdb.local
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:bd:f5:12:89:40:ed:aa:78:e0:47:ad:47:b0:eb:
+                    b8:5a:2b:ea:42:1a:b4:41:09:96:9b:f4:26:bd:41:
+                    4f:84:c2:2a:4c:a8:69:48:f8:21:f7:7d:45:e6:5f:
+                    5e:bc:0d:06:d8:27:65:67:4f:f6:28:19:2a:6f:27:
+                    88:64:c7:89:31:17:fd:79:22:71:92:55:61:cc:0d:
+
+Expiration Date:
+notAfter=Aug 19 00:14:08 2026 GMT
+
+To trust this certificate in development:
+1. Import ca.crt into your browser's trusted root certificates
+2. Add the following to your /etc/hosts file:
+   127.0.0.1 musicdb.local
+   127.0.0.1 api.musicdb.local
+
+For production deployment:
+1. Replace these certificates with ones signed by a trusted CA
+2. Ensure proper certificate chain is configured
+3. Test SSL configuration with: openssl s_client -connect domain:443
+
+Security Notes:
+- Private keys have 600 permissions (readable only by owner)
+- Certificates have 644 permissions (readable by all)
+- DH parameters use 2048-bit key for forward secrecy
+- Certificate includes Subject Alternative Names for flexibility

@@ -1,0 +1,117 @@
+# Prometheus Configuration for MusicDB Performance Monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'musicdb'
+    environment: 'production'
+
+# Load and evaluate rules
+rule_files:
+  - "postgres-alerts.yml"
+
+# Scrape configuration
+scrape_configs:
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    
+  # PgBouncer connection pool metrics
+  - job_name: 'pgbouncer'
+    static_configs:
+      - targets: ['db-connection-pool:8025']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Application services
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8080']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'rest-api'
+    static_configs:
+      - targets: ['rest-api:8082']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'graphql-api'
+    static_configs:
+      - targets: ['graphql-api:8081']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'data-transformer'
+    static_configs:
+      - targets: ['data-transformer:8020']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'data-validator'
+    static_configs:
+      - targets: ['data-validator:8022']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'nlp-processor'
+    static_configs:
+      - targets: ['nlp-processor:8021']
+    scrape_interval: 60s
+    metrics_path: /metrics
+
+  # Scraping services
+  - job_name: 'scraper-orchestrator'
+    static_configs:
+      - targets: ['scraper-orchestrator:8001']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  # RabbitMQ metrics
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+    scrape_interval: 30s
+
+  # Node exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 10GB
+    
+# Remote write for long-term storage (optional)
+# remote_write:
+#   - url: "https://your-remote-storage/api/v1/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500

@@ -1,0 +1,34 @@
+# SongNodes Automated Maintenance Cron Jobs
+# Copy this file to your crontab: crontab -e
+
+# Environment variables (adjust paths as needed)
+PATH=/usr/local/bin:/usr/bin:/bin
+PROJECT_ROOT=/home/marku/Documents/programming/songnodes
+
+# Daily health check at 8:00 AM
+0 8 * * * cd $PROJECT_ROOT && ./scripts/maintenance/health-check.sh >> /var/log/songnodes-health.log 2>&1
+
+# Weekly cleanup on Sundays at 2:00 AM
+0 2 * * 0 cd $PROJECT_ROOT && ./scripts/maintenance/cleanup.sh >> /var/log/songnodes-cleanup.log 2>&1
+
+# Bi-weekly dependency updates on the 1st and 15th at 3:00 AM
+0 3 1,15 * * cd $PROJECT_ROOT && ./scripts/maintenance/update-dependencies.sh >> /var/log/songnodes-updates.log 2>&1
+
+# Monthly full system check on the 1st at 4:00 AM
+0 4 1 * * cd $PROJECT_ROOT && ./scripts/maintenance/health-check.sh && ./scripts/maintenance/cleanup.sh >> /var/log/songnodes-monthly.log 2>&1
+
+# Log rotation - keep only last 30 days of maintenance logs
+0 5 * * * find $PROJECT_ROOT/logs -name "*.log" -mtime +30 -delete
+
+# Example: Send health reports via email (requires mailutils)
+# 0 9 * * 1 cd $PROJECT_ROOT && ./scripts/maintenance/health-check.sh | mail -s "SongNodes Weekly Health Report" admin@yourdomain.com
+
+# Example: Slack/Discord notifications (requires curl and webhook URL)
+# 0 9 * * 1 cd $PROJECT_ROOT && curl -X POST -H 'Content-type: application/json' --data '{"text":"SongNodes health check completed"}' YOUR_WEBHOOK_URL
+
+# Notes:
+# - Adjust paths according to your actual project location
+# - Ensure scripts have execute permissions: chmod +x scripts/maintenance/*.sh
+# - Test scripts manually before adding to crontab
+# - Monitor logs regularly for any issues
+# - Consider using systemd timers as an alternative to cron

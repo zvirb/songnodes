@@ -1,0 +1,82 @@
+# Coverage configuration for SongNodes project
+
+[run]
+source = services, musicdb_scrapy
+omit = 
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */migrations/*
+    */venv/*
+    */env/*
+    */.venv/*
+    */node_modules/*
+    */dist/*
+    */build/*
+    */docs/*
+    */.git/*
+    */conftest.py
+    */setup.py
+    */manage.py
+    */wsgi.py
+    */asgi.py
+    */settings.py
+    */local_settings.py
+    */docker-entrypoint.py
+
+branch = True
+parallel = True
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+    if self\.debug
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:
+
+    # Don't complain about abstract methods
+    @(abc\.)?abstractmethod
+
+    # Don't complain about type checking imports
+    if TYPE_CHECKING:
+
+    # Don't complain about ellipsis in protocols/stubs
+    \.\.\.
+
+ignore_errors = True
+
+[html]
+directory = tests/reports/coverage-html
+title = SongNodes Test Coverage Report
+
+[xml]
+output = tests/reports/coverage.xml
+
+[json]
+output = tests/reports/coverage.json
+
+# Minimum coverage thresholds
+fail_under = 80
+
+# Coverage percentage precision
+precision = 2
+
+# Show missing line numbers
+show_missing = True
+
+# Skip covered files in report
+skip_covered = False
+
+# Skip empty files
+skip_empty = True

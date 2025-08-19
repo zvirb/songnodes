@@ -1,0 +1,42 @@
+{
+  "name": "songnodes",
+  "version": "1.0.0",
+  "description": "Music Database and Tracklist Management System with AI Orchestration",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "start": "./start-dev.sh",
+    "dev": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "install:all": "npm install --workspaces",
+    "mcp:start": "cd mcp_servers && ./start_integrated_mcp.sh",
+    "mcp:stop": "cd mcp_servers && ./stop_integrated_mcp.sh",
+    "mcp:test": "cd mcp_servers && python3 test_integrated_mcp.py",
+    "maintenance:cleanup": "./scripts/maintenance/cleanup.sh",
+    "maintenance:update": "./scripts/maintenance/update-dependencies.sh",
+    "maintenance:health": "./scripts/maintenance/health-check.sh",
+    "maintenance:full": "./scripts/maintenance/health-check.sh && ./scripts/maintenance/cleanup.sh"
+  },
+  "keywords": [
+    "music",
+    "database",
+    "tracklist",
+    "scraping",
+    "api",
+    "microservices",
+    "ai-orchestration"
+  ],
+  "author": "SongNodes Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

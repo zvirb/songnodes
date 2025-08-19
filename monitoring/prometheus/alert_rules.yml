@@ -1,0 +1,156 @@
+groups:
+  - name: infrastructure_alerts
+    rules:
+      # High-level service availability
+      - alert: ServiceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "Service {{ $labels.instance }} has been down for more than 5 minutes."
+
+      # PostgreSQL alerts
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database is down on {{ $labels.instance }}"
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connection usage high"
+          description: "PostgreSQL connection usage is above 80% on {{ $labels.instance }}"
+
+      - alert: PostgreSQLHighQueryTime
+        expr: rate(pg_stat_database_tup_fetched[5m]) / rate(pg_stat_database_tup_returned[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL query performance degraded"
+          description: "PostgreSQL query performance has degraded on {{ $labels.instance }}"
+
+      # Redis alerts
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance is down on {{ $labels.instance }}"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis memory usage is above 90% on {{ $labels.instance }}"
+
+      - alert: RedisConnectedClientsHigh
+        expr: redis_connected_clients > 8000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis connected clients high"
+          description: "Redis has {{ $value }} connected clients on {{ $labels.instance }}"
+
+      # API Performance alerts
+      - alert: HighHTTPErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP error rate is above 5% for {{ $labels.job }}"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is above 2s for {{ $labels.job }}"
+
+      # Container resource alerts
+      - alert: HighCPUUsage
+        expr: sum(rate(container_cpu_usage_seconds_total[5m])) by (name) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "Container {{ $labels.name }} CPU usage is above 80%"
+
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Container {{ $labels.name }} memory usage is above 90%"
+
+      # Scraping performance alerts
+      - alert: LowScrapingThroughput
+        expr: rate(scraper_tracks_processed_total[5m]) < 5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low scraping throughput"
+          description: "Scraping throughput is below 5 tracks/minute for {{ $labels.scraper }}"
+
+      - alert: ScrapingErrors
+        expr: rate(scraper_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High scraping error rate"
+          description: "Scraping error rate is above 1/minute for {{ $labels.scraper }}"
+
+  - name: business_metrics_alerts
+    rules:
+      # Track processing performance
+      - alert: TrackProcessingBacklog
+        expr: queue_size{queue="track_processing"} > 10000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Track processing backlog high"
+          description: "Track processing queue has {{ $value }} items backlogged"
+
+      - alert: LowTrackIngestionRate
+        expr: rate(tracks_ingested_total[5m]) < 2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low track ingestion rate"
+          description: "Track ingestion rate is below 2/minute"
+
+      # Data quality alerts
+      - alert: HighDataValidationFailures
+        expr: rate(data_validation_failures_total[5m]) / rate(data_validation_attempts_total[5m]) * 100 > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High data validation failure rate"
+          description: "Data validation failure rate is above 10%"
