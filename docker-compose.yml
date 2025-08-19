@@ -404,6 +404,7 @@ services:
       - rest-api
       - graphql-api
       - websocket-api
+      - graph-visualization-api
     networks:
       - musicdb-backend
       - musicdb-frontend
@@ -510,6 +511,41 @@ services:
         reservations:
           cpus: '0.75'
           memory: 768M
+
+  graph-visualization-api:
+    build:
+      context: ./services/graph-visualization-api
+      dockerfile: Dockerfile
+    container_name: graph-visualization-api
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_TTL: 300
+      MAX_CONNECTIONS: 1000
+    depends_on:
+      - postgres
+      - redis
+      - db-connection-pool
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
 
   # ===========================================
   # MONITORING & LOGGING
