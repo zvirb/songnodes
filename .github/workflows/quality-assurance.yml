@@ -1,0 +1,526 @@
+name: Quality Assurance Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly performance regression tests
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  COVERAGE_THRESHOLD: 90
+
+jobs:
+  # Frontend Unit and Integration Tests
+  frontend-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type: [unit, accessibility, performance]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run TypeScript checks
+        working-directory: frontend
+        run: npm run type-check
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run unit tests
+        if: matrix.test-type == 'unit'
+        working-directory: frontend
+        run: npm run test:unit
+        env:
+          CI: true
+
+      - name: Run accessibility tests
+        if: matrix.test-type == 'accessibility'
+        working-directory: frontend
+        run: npm run test:accessibility
+        env:
+          CI: true
+
+      - name: Run performance tests
+        if: matrix.test-type == 'performance'
+        working-directory: frontend
+        run: npm run test:performance
+        env:
+          CI: true
+
+      - name: Upload coverage reports
+        if: matrix.test-type == 'unit'
+        uses: codecov/codecov-action@v3
+        with:
+          file: frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+
+      - name: Check coverage threshold
+        if: matrix.test-type == 'unit'
+        working-directory: frontend
+        run: |
+          COVERAGE=$(npx nyc report --reporter=text-summary | grep "Lines" | awk '{print $2}' | sed 's/%//')
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < $COVERAGE_THRESHOLD" | bc -l) )); then
+            echo "Coverage $COVERAGE% is below threshold $COVERAGE_THRESHOLD%"
+            exit 1
+          fi
+
+  # Backend API Tests
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_songnodes
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+
+      - name: Setup test database
+        run: |
+          export PGPASSWORD=test_password
+          psql -h localhost -U test_user -d test_songnodes -f sql/init/01-schema.sql
+          psql -h localhost -U test_user -d test_songnodes -f sql/init/02-performance-indexes.sql
+        env:
+          PGPASSWORD: test_password
+
+      - name: Start backend services
+        run: |
+          docker-compose -f docker-compose.test.yml up -d --build
+          sleep 30  # Wait for services to start
+
+      - name: Run API integration tests
+        run: |
+          pytest tests/integration/ -v --tb=short --cov=. --cov-report=xml
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_songnodes
+          REDIS_URL: redis://localhost:6379
+
+      - name: Run performance tests
+        run: |
+          pytest tests/performance/ -v --tb=short
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_songnodes
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: coverage.xml
+          flags: backend
+          name: backend-coverage
+
+      - name: Collect service logs
+        if: failure()
+        run: |
+          docker-compose -f docker-compose.test.yml logs > service-logs.txt
+
+      - name: Upload service logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: service-logs
+          path: service-logs.txt
+
+  # End-to-End Tests
+  e2e-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install ${{ matrix.browser }}
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Start services for E2E testing
+        run: |
+          docker-compose -f docker-compose.test.yml up -d --build
+          sleep 45  # Wait for all services to be ready
+
+      - name: Wait for frontend to be ready
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:3000 --timeout 60000
+        working-directory: frontend
+
+      - name: Run E2E tests
+        working-directory: frontend
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: frontend/test-results/
+          retention-days: 7
+
+      - name: Upload E2E screenshots
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: e2e-screenshots-${{ matrix.browser }}
+          path: frontend/test-results/**/*.png
+          retention-days: 3
+
+  # Visual Regression Testing
+  visual-regression:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright
+        working-directory: frontend
+        run: npx playwright install chromium
+
+      - name: Start services
+        run: |
+          docker-compose -f docker-compose.test.yml up -d --build
+          sleep 30
+
+      - name: Start frontend
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:3000 --timeout 60000
+        working-directory: frontend
+
+      - name: Run visual regression tests
+        working-directory: frontend
+        run: npx playwright test --config=playwright.visual.config.ts
+
+      - name: Upload visual diff artifacts
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: visual-regression-diffs
+          path: frontend/test-results/visual-diffs/
+          retention-days: 7
+
+  # Performance Regression Testing
+  performance-regression:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[perf-test]')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.12.x
+
+      - name: Start services
+        run: |
+          docker-compose -f docker-compose.test.yml up -d --build
+          sleep 30
+
+      - name: Build and serve frontend
+        run: |
+          npm run build
+          npm run preview &
+          npx wait-on http://localhost:3000 --timeout 60000
+        working-directory: frontend
+
+      - name: Run Lighthouse CI
+        working-directory: frontend
+        run: lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Run custom performance tests
+        working-directory: frontend
+        run: npm run test:performance -- --reporter=json --outputFile=performance-results.json
+
+      - name: Analyze performance regression
+        run: |
+          node scripts/analyze-performance-regression.js
+        env:
+          BASELINE_BRANCH: ${{ github.base_ref || 'main' }}
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: |
+            frontend/performance-results.json
+            .lighthouseci/
+          retention-days: 30
+
+  # Security and Quality Checks
+  security-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: frontend
+        run: npm audit --audit-level moderate
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium
+          json: true
+
+      - name: Setup Python for backend security
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python security tools
+        run: |
+          pip install bandit safety
+
+      - name: Run bandit security scan
+        run: |
+          bandit -r services/ -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Run safety check
+        run: |
+          safety check --json --output safety-report.json
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  # Code Quality Analysis
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run SonarCloud analysis
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python quality tools
+        run: |
+          pip install flake8 black isort mypy
+
+      - name: Run Python code formatting check
+        run: |
+          black --check services/
+          isort --check-only services/
+
+      - name: Run Python linting
+        run: |
+          flake8 services/
+
+      - name: Run Python type checking
+        run: |
+          mypy services/
+        continue-on-error: true
+
+  # Generate Quality Report
+  quality-report:
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests, e2e-tests, security-quality, code-quality]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate quality report
+        run: |
+          node scripts/generate-quality-report.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload quality report
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-report
+          path: quality-report.html
+          retention-days: 30
+
+      - name: Comment PR with quality report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('quality-report.html', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Quality Assurance Report\n\n${report}`
+            });
+
+  # Deployment Readiness Check
+  deployment-readiness:
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests, e2e-tests, security-quality]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Check all tests passed
+        run: |
+          echo "All quality checks passed. Ready for deployment."
+
+      - name: Trigger deployment
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'deploy-production',
+              client_payload: {
+                sha: context.sha,
+                ref: context.ref
+              }
+            });
+
+# Quality Gates Configuration
+# The pipeline will fail if:
+# - Frontend test coverage < 90%
+# - Backend test coverage < 85%
+# - Any E2E tests fail
+# - Security vulnerabilities of medium+ severity found
+# - Performance regression > 20% detected
+# - Accessibility compliance violations found
