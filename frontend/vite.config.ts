@@ -83,7 +83,7 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: 'esbuild',
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV === 'development',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -92,10 +92,22 @@ export default defineConfig({
           pixi: ['pixi.js', '@pixi/react'],
           redux: ['@reduxjs/toolkit', 'react-redux'],
           ui: ['framer-motion', 'react-window', 'react-virtualized-auto-sizer'],
+          utils: ['lodash-es'],
         },
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `assets/img/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
       },
     },
     chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false,
   },
   server: {
     port: 3006,
@@ -126,7 +138,21 @@ export default defineConfig({
   },
   preview: {
     port: 3000,
-    open: true,
+    host: '0.0.0.0',
+    open: false,
+    cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/health': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   test: {
     globals: true,

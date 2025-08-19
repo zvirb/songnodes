@@ -8,24 +8,21 @@ services:
   frontend-green:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
       args:
         - NODE_ENV=production
-        - VITE_API_URL=https://api.songnodes.com
-        - VITE_WS_URL=wss://ws.songnodes.com
+        - VITE_FILTER_PIXI_DEPRECATIONS=true
     container_name: songnodes-frontend-green
     restart: unless-stopped
     ports:
-      - "3000:3000"  # Green environment port
+      - "3000:80"  # Green environment port mapped to internal nginx
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=${API_URL:-http://backend-api-green:8000}
-      - VITE_WS_URL=${WS_URL:-ws://websocket-service-green:8001}
     networks:
       - songnodes-frontend-green
       - songnodes-backend-green
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost/health']
       interval: 30s
       timeout: 10s
       retries: 3
