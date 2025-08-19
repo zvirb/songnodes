@@ -49,13 +49,18 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
-# Database configuration
+# Database configuration - use DATABASE_URL for connection pooling
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:password@postgres:5432/musicdb")
+
+# Parse DATABASE_URL for asyncpg connection
+import urllib.parse
+parsed_url = urllib.parse.urlparse(DATABASE_URL)
 DATABASE_CONFIG = {
-    "host": os.getenv("POSTGRES_HOST", "postgres"),
-    "port": int(os.getenv("POSTGRES_PORT", 5432)),
-    "database": os.getenv("POSTGRES_DB", "musicdb"),
-    "user": os.getenv("POSTGRES_USER", "postgres"),
-    "password": os.getenv("POSTGRES_PASSWORD", "password")
+    "host": parsed_url.hostname,
+    "port": parsed_url.port or 5432,
+    "database": parsed_url.path[1:] if parsed_url.path else "musicdb",
+    "user": parsed_url.username,
+    "password": parsed_url.password
 }
 
 # Database connection pool
@@ -1071,7 +1076,8 @@ async def init_database():
     """Initialize database connection pool"""
     global db_pool
     try:
-        db_pool = await asyncpg.create_pool(**DATABASE_CONFIG, min_size=5, max_size=20)
+        # Set statement_cache_size=0 for PgBouncer compatibility
+        db_pool = await asyncpg.create_pool(**DATABASE_CONFIG, min_size=5, max_size=20, statement_cache_size=0)
         logger.info("Database connection pool initialized")
         
         # Create tables if they don't exist
@@ -1165,25 +1171,39 @@ async def shutdown_event():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    import time
+    start_time = time.time()
+    
     # Check database connection
     db_status = "healthy"
+    db_time = 0
     if db_pool:
         try:
+            db_start = time.time()
             async with db_pool.acquire() as conn:
                 await conn.fetchval("SELECT 1")
-        except Exception:
+            db_time = time.time() - db_start
+        except Exception as e:
             db_status = "unhealthy"
+            logger.error(f"Database health check failed: {str(e)}")
     else:
         db_status = "not_initialized"
     
     # Check Redis connection
     redis_status = "healthy"
+    redis_time = 0
     try:
+        redis_start = time.time()
         redis_client.ping()
-    except Exception:
+        redis_time = time.time() - redis_start
+    except Exception as e:
         redis_status = "unhealthy"
+        logger.error(f"Redis health check failed: {str(e)}")
     
     overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
+    total_time = time.time() - start_time
+    
+    logger.info(f"Health check completed in {total_time:.3f}s (db: {db_time:.3f}s, redis: {redis_time:.3f}s)")
     
     return {
         "status": overall_status,
@@ -1191,6 +1211,11 @@ async def health_check():
         "components": {
             "database": db_status,
             "redis": redis_status
+        },
+        "timing": {
+            "total": round(total_time, 3),
+            "database": round(db_time, 3),
+            "redis": round(redis_time, 3)
         }
     }
 
