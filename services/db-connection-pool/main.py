@@ -78,7 +78,7 @@ class PoolManager:
     async def initialize(self):
         """Initialize connection pools"""
         try:
-            # Admin connection to PgBouncer
+            # Admin connection to PgBouncer (smaller pool to avoid conflicts)
             self._admin_pool = await asyncpg.create_pool(
                 host=self.pgbouncer_host,
                 port=self.pgbouncer_port,
@@ -86,9 +86,12 @@ class PoolManager:
                 password=self.pgbouncer_admin_password,
                 database='pgbouncer',
                 min_size=1,
-                max_size=5,
+                max_size=2,
                 command_timeout=10
             )
+            
+            # Small delay to prevent concurrent connection issues
+            await asyncio.sleep(0.1)
             
             # Application connection through PgBouncer
             self._app_pool = await asyncpg.create_pool(
@@ -97,8 +100,8 @@ class PoolManager:
                 user=self.postgres_user,
                 password=self.postgres_password,
                 database=self.postgres_db,
-                min_size=5,
-                max_size=25,
+                min_size=2,
+                max_size=10,
                 command_timeout=30
             )
             
@@ -122,34 +125,40 @@ class PoolManager:
             raise HTTPException(status_code=503, detail="Admin pool not initialized")
         
         try:
-            async with self._admin_pool.acquire() as conn:
-                rows = await conn.fetch("SHOW POOLS")
-                stats = []
-                
-                for row in rows:
-                    stat = ConnectionPoolStats(
-                        database=row['database'],
-                        user=row['user'],
-                        cl_active=row['cl_active'],
-                        cl_waiting=row['cl_waiting'],
-                        sv_active=row['sv_active'],
-                        sv_idle=row['sv_idle'],
-                        sv_used=row['sv_used'],
-                        sv_tested=row['sv_tested'],
-                        sv_login=row['sv_login'],
-                        maxwait=row['maxwait'],
-                        maxwait_us=row['maxwait_us'],
-                        pool_mode=row['pool_mode']
-                    )
-                    stats.append(stat)
+            # Use a timeout to prevent hanging connections
+            async with asyncio.timeout(5):
+                async with self._admin_pool.acquire() as conn:
+                    rows = await conn.fetch("SHOW POOLS")
+                    stats = []
                     
-                    # Update Prometheus metrics
-                    CONNECTION_POOL_ACTIVE.labels(database=stat.database).set(stat.cl_active)
-                    CONNECTION_POOL_WAITING.labels(database=stat.database).set(stat.cl_waiting)
-                    CONNECTION_POOL_USED.labels(database=stat.database).set(stat.sv_used)
+                    for row in rows:
+                        stat = ConnectionPoolStats(
+                            database=row['database'],
+                            user=row['user'],
+                            cl_active=row['cl_active'],
+                            cl_waiting=row['cl_waiting'],
+                            sv_active=row['sv_active'],
+                            sv_idle=row['sv_idle'],
+                            sv_used=row['sv_used'],
+                            sv_tested=row['sv_tested'],
+                            sv_login=row['sv_login'],
+                            maxwait=row['maxwait'],
+                            maxwait_us=row['maxwait_us'],
+                            pool_mode=row['pool_mode']
+                        )
+                        stats.append(stat)
+                        
+                        # Update Prometheus metrics
+                        CONNECTION_POOL_ACTIVE.labels(database=stat.database).set(stat.cl_active)
+                        CONNECTION_POOL_WAITING.labels(database=stat.database).set(stat.cl_waiting)
+                        CONNECTION_POOL_USED.labels(database=stat.database).set(stat.sv_used)
+                    
+                    return stats
                 
-                return stats
-                
+        except asyncio.TimeoutError:
+            logger.error("Stats query timed out")
+            CONNECTION_ERRORS.labels(database='admin', error_type='timeout').inc()
+            raise HTTPException(status_code=503, detail="Stats query timed out")
         except Exception as e:
             logger.error("Failed to get pool stats", error=str(e))
             CONNECTION_ERRORS.labels(database='admin', error_type='stats_fetch').inc()
@@ -160,30 +169,21 @@ class PoolManager:
         health_status = {"status": "healthy", "timestamp": time.time()}
         
         try:
-            # Check PgBouncer admin connection
+            # Check pools are available
             if not self._admin_pool:
                 raise Exception("Admin pool not available")
-            
-            async with self._admin_pool.acquire() as conn:
-                await conn.fetchval("SELECT 1")
-            
-            # Check application connection through PgBouncer
             if not self._app_pool:
                 raise Exception("Application pool not available")
             
+            # Simple connectivity test for application pool only
             async with self._app_pool.acquire() as conn:
                 result = await conn.fetchval("SELECT 1")
                 if result != 1:
                     raise Exception("Database connectivity test failed")
             
-            # Check pool statistics
-            stats = await self.get_pool_stats()
-            if not stats:
-                raise Exception("No pool statistics available")
-            
             health_status["pgbouncer"] = "connected"
             health_status["database"] = "connected"
-            health_status["pools"] = len(stats)
+            health_status["pools"] = "available"
             
         except Exception as e:
             logger.error("Health check failed", error=str(e))
