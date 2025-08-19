@@ -12,6 +12,22 @@ import {
 import { GetGraphRequest, ApiResponse } from '@types/api';
 import { graphService } from '@services/graphService';
 
+// Utility function to ensure arrays for Redux serialization
+function ensureArray(value: any): string[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (value && typeof value === 'object' && 'has' in value) {
+    // Handle Set-like objects
+    return Array.from(value as any);
+  }
+  if (value && typeof value === 'object' && 'keys' in value) {
+    // Handle Map-like objects
+    return Array.from((value as any).keys());
+  }
+  return [];
+}
+
 interface GraphState {
   // Data
   nodes: NodeVisual[];
@@ -25,13 +41,13 @@ interface GraphState {
   bounds: GraphBounds | null;
   
   // Selection and interaction
-  selectedNodes: Set<string>;
+  selectedNodes: string[];
   hoveredNode: string | null;
   highlightedPath: string[];
   
   // Visibility and LOD
-  visibleNodes: Set<string>;
-  visibleEdges: Set<string>;
+  visibleNodes: string[];
+  visibleEdges: string[];
   lodLevel: number;
   
   // Loading states
@@ -39,10 +55,10 @@ interface GraphState {
   error: string | null;
   loadingProgress: number;
   
-  // Cache
-  nodeMap: Map<string, NodeVisual>;
-  edgeMap: Map<string, EdgeVisual>;
-  adjacencyList: Map<string, Set<string>>;
+  // Cache (stored as objects for Redux serialization)
+  nodeMap: Record<string, NodeVisual>;
+  edgeMap: Record<string, EdgeVisual>;
+  adjacencyList: Record<string, string[]>;
 }
 
 const initialState: GraphState = {
@@ -69,21 +85,21 @@ const initialState: GraphState = {
   layoutInProgress: false,
   bounds: null,
   
-  selectedNodes: new Set(),
+  selectedNodes: [],
   hoveredNode: null,
   highlightedPath: [],
   
-  visibleNodes: new Set(),
-  visibleEdges: new Set(),
+  visibleNodes: [],
+  visibleEdges: [],
   lodLevel: 0,
   
   loading: false,
   error: null,
   loadingProgress: 0,
   
-  nodeMap: new Map(),
-  edgeMap: new Map(),
-  adjacencyList: new Map(),
+  nodeMap: {},
+  edgeMap: {},
+  adjacencyList: {},
 };
 
 // Async thunks
@@ -146,7 +162,7 @@ const graphSlice = createSlice({
       action: PayloadAction<Array<{ id: string; x: number; y: number }>>
     ) => {
       action.payload.forEach(({ id, x, y }) => {
-        const node = state.nodeMap.get(id);
+        const node = state.nodeMap[id];
         if (node) {
           node.x = x;
           node.y = y;
@@ -159,7 +175,7 @@ const graphSlice = createSlice({
       action: PayloadAction<Array<{ id: string; updates: Partial<NodeVisual> }>>
     ) => {
       action.payload.forEach(({ id, updates }) => {
-        const node = state.nodeMap.get(id);
+        const node = state.nodeMap[id];
         if (node) {
           Object.assign(node, updates);
         }
@@ -167,66 +183,74 @@ const graphSlice = createSlice({
     },
     
     setSelectedNodes: (state, action: PayloadAction<string[]>) => {
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
       // Clear previous selection
       state.selectedNodes.forEach(nodeId => {
-        const node = state.nodeMap.get(nodeId);
+        const node = state.nodeMap[nodeId];
         if (node) node.selected = false;
       });
       
       // Set new selection
-      state.selectedNodes = new Set(action.payload);
+      state.selectedNodes = payload;
       state.selectedNodes.forEach(nodeId => {
-        const node = state.nodeMap.get(nodeId);
+        const node = state.nodeMap[nodeId];
         if (node) node.selected = true;
       });
     },
     
     addToSelection: (state, action: PayloadAction<string>) => {
-      state.selectedNodes.add(action.payload);
-      const node = state.nodeMap.get(action.payload);
+      if (!state.selectedNodes.includes(action.payload)) {
+        state.selectedNodes.push(action.payload);
+      }
+      const node = state.nodeMap[action.payload];
       if (node) node.selected = true;
     },
     
     removeFromSelection: (state, action: PayloadAction<string>) => {
-      state.selectedNodes.delete(action.payload);
-      const node = state.nodeMap.get(action.payload);
+      state.selectedNodes = state.selectedNodes.filter(id => id !== action.payload);
+      const node = state.nodeMap[action.payload];
       if (node) node.selected = false;
     },
     
     clearSelection: (state) => {
       state.selectedNodes.forEach(nodeId => {
-        const node = state.nodeMap.get(nodeId);
+        const node = state.nodeMap[nodeId];
         if (node) node.selected = false;
       });
-      state.selectedNodes.clear();
+      state.selectedNodes = [];
     },
     
     setHoveredNode: (state, action: PayloadAction<string | null>) => {
       // Clear previous hover
       if (state.hoveredNode) {
-        const prevNode = state.nodeMap.get(state.hoveredNode);
+        const prevNode = state.nodeMap[state.hoveredNode];
         if (prevNode) prevNode.highlighted = false;
       }
       
       // Set new hover
       state.hoveredNode = action.payload;
       if (action.payload) {
-        const node = state.nodeMap.get(action.payload);
+        const node = state.nodeMap[action.payload];
         if (node) node.highlighted = true;
       }
     },
     
     setHighlightedPath: (state, action: PayloadAction<string[]>) => {
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
       // Clear previous highlights
       state.highlightedPath.forEach(nodeId => {
-        const node = state.nodeMap.get(nodeId);
+        const node = state.nodeMap[nodeId];
         if (node) node.highlighted = false;
       });
       
       // Set new highlights
-      state.highlightedPath = action.payload;
+      state.highlightedPath = payload;
       state.highlightedPath.forEach(nodeId => {
-        const node = state.nodeMap.get(nodeId);
+        const node = state.nodeMap[nodeId];
         if (node) node.highlighted = true;
       });
     },
@@ -251,16 +275,26 @@ const graphSlice = createSlice({
     
     // Visibility and LOD
     setVisibleNodes: (state, action: PayloadAction<string[]>) => {
-      state.visibleNodes = new Set(action.payload);
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
+      state.visibleNodes = payload;
+      // Use array includes instead of Set for Redux serialization compatibility
+      const visibleIds = payload;
       state.nodes.forEach(node => {
-        node.visible = state.visibleNodes.has(node.id);
+        node.visible = visibleIds.includes(node.id);
       });
     },
     
     setVisibleEdges: (state, action: PayloadAction<string[]>) => {
-      state.visibleEdges = new Set(action.payload);
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
+      state.visibleEdges = payload;
+      // Use array includes instead of Set for Redux serialization compatibility
+      const visibleIds = payload;
       state.edges.forEach(edge => {
-        edge.visible = state.visibleEdges.has(edge.id);
+        edge.visible = visibleIds.includes(edge.id);
       });
     },
     
@@ -288,6 +322,14 @@ const graphSlice = createSlice({
       .addCase(fetchGraph.fulfilled, (state, action) => {
         const graph = action.payload;
         
+        // Guard against malformed or empty graph data
+        if (!graph || !graph.nodes || !Array.isArray(graph.nodes)) {
+          state.loading = false;
+          state.error = 'Invalid graph data received';
+          state.loadingProgress = 0;
+          return;
+        }
+        
         // Convert nodes to visual nodes
         const nodeVisuals: NodeVisual[] = graph.nodes.map(node => ({
           ...node,
@@ -302,8 +344,8 @@ const graphSlice = createSlice({
           level: 0,
         }));
         
-        // Convert edges to visual edges
-        const edgeVisuals: EdgeVisual[] = graph.edges.map(edge => {
+        // Convert edges to visual edges - guard against missing edges
+        const edgeVisuals: EdgeVisual[] = (graph.edges && Array.isArray(graph.edges) ? graph.edges : []).map(edge => {
           const sourceNode = nodeVisuals.find(n => n.id === edge.source);
           const targetNode = nodeVisuals.find(n => n.id === edge.target);
           
@@ -323,23 +365,34 @@ const graphSlice = createSlice({
         state.edges = edgeVisuals;
         state.originalGraph = graph;
         
-        // Rebuild maps
-        state.nodeMap = new Map(nodeVisuals.map(node => [node.id, node]));
-        state.edgeMap = new Map(edgeVisuals.map(edge => [edge.id, edge]));
-        
-        // Build adjacency list
-        state.adjacencyList = new Map();
+        // Rebuild maps (as objects for Redux serialization)
+        state.nodeMap = {};
         nodeVisuals.forEach(node => {
-          state.adjacencyList.set(node.id, new Set());
+          state.nodeMap[node.id] = node;
+        });
+        
+        state.edgeMap = {};
+        edgeVisuals.forEach(edge => {
+          state.edgeMap[edge.id] = edge;
+        });
+        
+        // Build adjacency list (as object with arrays)
+        state.adjacencyList = {};
+        nodeVisuals.forEach(node => {
+          state.adjacencyList[node.id] = [];
         });
         edgeVisuals.forEach(edge => {
-          state.adjacencyList.get(edge.source)?.add(edge.target);
-          state.adjacencyList.get(edge.target)?.add(edge.source);
+          if (!state.adjacencyList[edge.source].includes(edge.target)) {
+            state.adjacencyList[edge.source].push(edge.target);
+          }
+          if (!state.adjacencyList[edge.target].includes(edge.source)) {
+            state.adjacencyList[edge.target].push(edge.source);
+          }
         });
         
-        // Set all as visible initially
-        state.visibleNodes = new Set(nodeVisuals.map(n => n.id));
-        state.visibleEdges = new Set(edgeVisuals.map(e => e.id));
+        // Set all as visible initially (as arrays)
+        state.visibleNodes = nodeVisuals.map(n => n.id);
+        state.visibleEdges = edgeVisuals.map(e => e.id);
         
         state.loading = false;
         state.loadingProgress = 100;
@@ -353,7 +406,7 @@ const graphSlice = createSlice({
       // Fetch node details
       .addCase(fetchNodeDetails.fulfilled, (state, action) => {
         const updatedNode = action.payload;
-        const existingNode = state.nodeMap.get(updatedNode.id);
+        const existingNode = state.nodeMap[updatedNode.id];
         if (existingNode) {
           Object.assign(existingNode, updatedNode);
         }

@@ -1,10 +1,12 @@
 // Core graph data structures
 export interface SongNode {
   id: string;
-  title: string;
-  artist: string;
+  trackId?: string;
+  track_id?: string; // Backend compatibility
+  title?: string;
+  artist?: string;
   album?: string;
-  genres: string[];
+  genres?: string[];
   releaseDate?: string;
   duration?: number;
   bpm?: number;
@@ -29,10 +31,20 @@ export interface SongNode {
     timeSignature: number;
   };
   
-  // Visualization properties
-  position?: {
+  // Visualization properties (backend format)
+  position: {
     x: number;
     y: number;
+  };
+  
+  // Backend metadata format
+  metadata?: {
+    title?: string;
+    artist?: string;
+    album?: string;
+    genres?: string[];
+    status?: string;
+    [key: string]: any;
   };
   
   // Graph metrics
@@ -48,8 +60,11 @@ export interface GraphEdge {
   id: string;
   source: string;
   target: string;
+  source_id: string; // Backend format
+  target_id: string; // Backend format
   weight: number;
-  type: RelationshipType;
+  type?: RelationshipType;
+  edge_type?: string; // Backend format
   confidence?: number;
   context?: RelationshipContext[];
   metadata?: Record<string, unknown>;
@@ -58,7 +73,15 @@ export interface GraphEdge {
 export interface Graph {
   nodes: SongNode[];
   edges: GraphEdge[];
-  statistics: {
+  metadata: {
+    total_nodes: number;
+    total_edges: number;
+    center_node: string | null;
+    max_depth: number;
+    generated_at: string;
+  };
+  // Legacy format for compatibility
+  statistics?: {
     totalNodes: number;
     totalEdges: number;
     filteredNodes: number;

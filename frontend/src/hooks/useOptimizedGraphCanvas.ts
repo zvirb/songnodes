@@ -390,7 +390,7 @@ export const useOptimizedGraphCanvas = (
         websocketRef.current.close();
       }
     };
-  }, [initialize, stopSimulation, config.enablePerformanceMonitoring]);
+  }, [config.enablePerformanceMonitoring]); // Remove callbacks to prevent infinite loops
 
   /**
    * Auto-adjust performance mode based on metrics
@@ -405,14 +405,14 @@ export const useOptimizedGraphCanvas = (
         adjustPerformanceMode('balanced');
       }
     }
-  }, [metrics.fps, metrics.memoryUsage, config.performanceMode, adjustPerformanceMode]);
+  }, [metrics.fps, metrics.memoryUsage, config.performanceMode]); // Remove callback to prevent infinite loops
 
   /**
    * Update viewport when canvas size changes
    */
   useEffect(() => {
     updateViewport({ width: config.width, height: config.height });
-  }, [config.width, config.height, updateViewport]);
+  }, [config.width, config.height]); // Remove callback to prevent infinite loops
 
   return {
     // Core functions

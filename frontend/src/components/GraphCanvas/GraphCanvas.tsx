@@ -11,6 +11,7 @@ import { D3ForceSimulation } from './D3ForceSimulation';
 import { useD3ForceLayout } from '@hooks/useD3ForceLayout';
 import { usePerformanceMonitoring } from '@hooks/usePerformanceMonitoring';
 import { useDebouncedCallback } from '@hooks/useDebouncedCallback';
+import { useRAFThrottledCallback } from '@hooks/useThrottledCallback';
 import classNames from 'classnames';
 
 interface GraphCanvasProps {
@@ -111,6 +112,16 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     updateInterval: 1000,
   });
   
+  // Stable onTick callback to prevent infinite re-renders
+  const handleTick = useCallback((nodes: NodeVisual[]) => {
+    dispatch(updateNodePositions(
+      nodes.map(node => ({ id: node.id, x: node.x, y: node.y }))
+    ));
+  }, [dispatch]);
+
+  // Use RAF throttling for smoother visual updates
+  const rafThrottledOnTick = useRAFThrottledCallback(handleTick);
+
   // D3 force simulation
   const {
     simulation,
@@ -122,11 +133,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     edges,
     width,
     height,
-    onTick: useDebouncedCallback((nodes: NodeVisual[]) => {
-      dispatch(updateNodePositions(
-        nodes.map(node => ({ id: node.id, x: node.x, y: node.y }))
-      ));
-    }, 16), // ~60fps
+    onTick: rafThrottledOnTick,
   });
   
   // Initialize PIXI Application
@@ -162,13 +169,14 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   const handleNodeClick = useCallback((node: NodeVisual, event: React.MouseEvent) => {
     if (event.ctrlKey || event.metaKey) {
       // Multi-select
-      const newSelection = new Set(selectedNodes);
-      if (newSelection.has(node.id)) {
-        newSelection.delete(node.id);
+      const newSelection = [...selectedNodes];
+      const index = newSelection.indexOf(node.id);
+      if (index > -1) {
+        newSelection.splice(index, 1);
       } else {
-        newSelection.add(node.id);
+        newSelection.push(node.id);
       }
-      dispatch(setSelectedNodes([...newSelection]));
+      dispatch(setSelectedNodes(newSelection));
     } else {
       // Single select
       dispatch(setSelectedNodes([node.id]));
@@ -193,7 +201,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     
     // Filter nodes based on viewport and LOD settings
     const visibleNodesList = nodes.filter(node => {
-      if (!node.visible || !visibleNodes.has(node.id)) return false;
+      if (!node.visible || !visibleNodes.includes(node.id)) return false;
       
       // Frustum culling
       if (renderSettings.culling.frustum) {
@@ -219,7 +227,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     // Filter edges based on visible nodes and LOD
     const visibleNodeIds = new Set(visibleNodesList.map(n => n.id));
     const visibleEdgesList = edges.filter(edge => {
-      if (!edge.visible || !visibleEdges.has(edge.id)) return false;
+      if (!edge.visible || !visibleEdges.includes(edge.id)) return false;
       
       // Only show edges between visible nodes
       if (!visibleNodeIds.has(edge.source) || !visibleNodeIds.has(edge.target)) {
@@ -250,22 +258,55 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     renderSettings,
   ]);
   
-  // Animation loop
+  // Animation loop with performance monitoring
   useEffect(() => {
-    const animate = () => {
+    let lastFrameTime = 0;
+    const TARGET_FPS = 60;
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
+    
+    const animate = (timestamp: number) => {
+      // Throttle to target FPS to prevent performance violations
+      if (timestamp - lastFrameTime < FRAME_INTERVAL) {
+        animationFrameId.current = requestAnimationFrame(animate);
+        return;
+      }
+      
+      lastFrameTime = timestamp;
+      
       if (appRef.current && performanceMetrics) {
         const startTime = performance.now();
         
-        // Update simulation if running
+        // Check if we have enough time budget for simulation update
+        const timeBudget = FRAME_INTERVAL - 2; // Reserve 2ms for rendering
+        
+        // Update simulation if running and we have time budget
         if (simulation && layoutInProgress) {
-          simulation.tick();
+          const simulationStart = performance.now();
+          
+          // Only tick if we haven't exceeded time budget
+          if (simulationStart - startTime < timeBudget) {
+            simulation.tick();
+            
+            // Check if simulation tick took too long
+            const simulationTime = performance.now() - simulationStart;
+            if (simulationTime > 8) { // More than 8ms is too long
+              console.warn(`Simulation tick took ${simulationTime.toFixed(2)}ms - consider optimization`);
+            }
+          }
         }
         
         // Render frame
         appRef.current.render();
         
         const endTime = performance.now();
-        performanceMetrics.recordFrame(endTime - startTime);
+        const totalTime = endTime - startTime;
+        
+        // Only record frame if it completed within budget
+        if (totalTime < FRAME_INTERVAL) {
+          performanceMetrics.recordFrame(totalTime);
+        } else {
+          console.warn(`Frame took ${totalTime.toFixed(2)}ms - exceeding target of ${FRAME_INTERVAL.toFixed(2)}ms`);
+        }
       }
       
       animationFrameId.current = requestAnimationFrame(animate);

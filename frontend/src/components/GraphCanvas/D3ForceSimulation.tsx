@@ -53,10 +53,33 @@ export class D3ForceSimulation {
     // Add forces
     this.addForces(nodes, edges);
     
-    // Set up event handlers
+    // Set up event handlers with throttling
+    let lastTickTime = 0;
+    const TICK_THROTTLE = 16; // ~60fps limit
+    
     this.simulation.on('tick', () => {
-      this.updateQuadtree(nodes);
-      onTick(nodes);
+      const now = performance.now();
+      
+      // Throttle tick processing to prevent performance violations
+      if (now - lastTickTime < TICK_THROTTLE) {
+        return;
+      }
+      
+      lastTickTime = now;
+      
+      // Defer expensive operations using requestIdleCallback
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          this.updateQuadtree(nodes);
+          onTick(nodes);
+        }, { timeout: 8 });
+      } else {
+        // Fallback: use setTimeout to yield control
+        setTimeout(() => {
+          this.updateQuadtree(nodes);
+          onTick(nodes);
+        }, 0);
+      }
     });
     
     if (onEnd) {

@@ -1,6 +1,22 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { GraphFilters } from '@types/graph';
 
+// Utility function to ensure arrays for Redux serialization
+function ensureArray(value: any): string[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (value && typeof value === 'object' && 'has' in value) {
+    // Handle Set-like objects
+    return Array.from(value as any);
+  }
+  if (value && typeof value === 'object' && 'keys' in value) {
+    // Handle Map-like objects
+    return Array.from((value as any).keys());
+  }
+  return [];
+}
+
 interface FiltersState extends GraphFilters {
   // Additional UI state for filters
   isFiltersOpen: boolean;
@@ -45,7 +61,10 @@ const filtersSlice = createSlice({
     },
     
     setGenres: (state, action: PayloadAction<string[]>) => {
-      state.genres = action.payload;
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
+      state.genres = payload;
       state.activeFilterCount = calculateActiveFilterCount(state);
     },
     
@@ -62,7 +81,10 @@ const filtersSlice = createSlice({
     },
     
     setArtists: (state, action: PayloadAction<string[]>) => {
-      state.artists = action.payload;
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
+      state.artists = payload;
       state.activeFilterCount = calculateActiveFilterCount(state);
     },
     

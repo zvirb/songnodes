@@ -11,6 +11,7 @@ import time
 import gzip
 import hashlib
 import traceback
+import re
 from typing import List, Dict, Optional, Any
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -170,6 +171,30 @@ class NodePosition(BaseModel):
     x: float = Field(..., description="X coordinate")
     y: float = Field(..., description="Y coordinate")
 
+class SearchRequest(BaseModel):
+    q: str = Field(..., description="Search query")
+    type: str = Field(default="fuzzy", description="Search type")
+    fields: List[str] = Field(default=["title", "artist", "album", "genres"], description="Fields to search")
+    limit: int = Field(default=20, description="Maximum results to return")
+    offset: int = Field(default=0, description="Results offset for pagination")
+
+class SearchResult(BaseModel):
+    id: str = Field(..., description="Track ID")
+    title: str = Field(..., description="Track title")
+    artist: str = Field(..., description="Primary artist name")
+    score: float = Field(..., description="Relevance score")
+    highlights: Dict[str, str] = Field(default_factory=dict, description="Search highlights")
+
+class SearchResponse(BaseModel):
+    results: List[SearchResult] = Field(..., description="Search results")
+    total: int = Field(..., description="Total number of results")
+    limit: int = Field(..., description="Results limit")
+    offset: int = Field(..., description="Results offset")
+    query: str = Field(..., description="Original search query")
+    suggestions: List[str] = Field(default_factory=list, description="Search suggestions")
+    facets: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict, description="Search facets")
+    status: str = Field(default="ok", description="Search status")
+
 class GraphNode(BaseModel):
     id: str = Field(..., description="Unique node identifier")
     track_id: str = Field(..., description="Track identifier")
@@ -305,6 +330,113 @@ async def get_graph_nodes(
             except Exception as e:
                 logger.error(f"Database error in get_graph_nodes: {e}")
                 raise HTTPException(status_code=500, detail="Database query failed")
+
+@cache_result(ttl=180)  # Cache for 3 minutes (shorter for search results)
+async def search_tracks(
+    query: str,
+    search_type: str = "fuzzy",
+    fields: List[str] = None,
+    limit: int = 20,
+    offset: int = 0
+) -> Dict[str, Any]:
+    """Search tracks using full-text search with PostgreSQL."""
+    with DATABASE_QUERY_DURATION.labels(query_type='search_tracks').time():
+        async with async_session() as session:
+            try:
+                if fields is None:
+                    fields = ["title", "artist", "album", "genres"]
+                
+                # Simple search query with basic ILIKE matching
+                search_query = text("""
+                    SELECT 
+                        t.id,
+                        t.title,
+                        COALESCE(a.name, 'Unknown Artist') as artist,
+                        1.0 as relevance_score,
+                        COUNT(*) OVER() as total_count
+                    FROM musicdb.tracks t
+                    LEFT JOIN musicdb.track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                    LEFT JOIN musicdb.artists a ON ta.artist_id = a.id
+                    WHERE (t.title ILIKE :query OR t.normalized_title ILIKE :query 
+                           OR a.name ILIKE :query OR a.normalized_name ILIKE :query)
+                    ORDER BY t.title
+                    LIMIT :limit OFFSET :offset
+                """)
+                
+                # Execute search query
+                search_params = {
+                    "query": f"%{query}%",
+                    "limit": limit,
+                    "offset": offset
+                }
+                
+                result = await session.execute(search_query, search_params)
+                rows = result.fetchall()
+                
+                if not rows:
+                    return {
+                        "results": [],
+                        "total": 0,
+                        "suggestions": await get_search_suggestions(query, session)
+                    }
+                
+                # Process results
+                results = []
+                total_count = rows[0].total_count if rows else 0
+                
+                for row in rows:
+                    # Generate highlights for fuzzy search
+                    highlights = {}
+                    if search_type == "fuzzy" and query.lower() in row.title.lower():
+                        highlights["title"] = highlight_text(row.title, query)
+                    if row.artist and query.lower() in row.artist.lower():
+                        highlights["artist"] = highlight_text(row.artist, query)
+                    
+                    results.append({
+                        "id": str(row.id),
+                        "title": row.title,
+                        "artist": row.artist,
+                        "score": float(row.relevance_score),
+                        "highlights": highlights
+                    })
+                
+                # Get suggestions if low result count
+                suggestions = []
+                if len(results) < 3:
+                    suggestions = await get_search_suggestions(query, session)
+                
+                return {
+                    "results": results,
+                    "total": total_count,
+                    "suggestions": suggestions
+                }
+                
+            except Exception as e:
+                logger.error(f"Database error in search_tracks: {e}")
+                raise HTTPException(status_code=500, detail="Search query failed")
+
+def highlight_text(text: str, query: str) -> str:
+    """Simple text highlighting for search results."""
+    pattern = re.compile(re.escape(query), re.IGNORECASE)
+    return pattern.sub(f"<mark>{query}</mark>", text)
+
+async def get_search_suggestions(query: str, session) -> List[str]:
+    """Get search suggestions based on query."""
+    try:
+        suggestion_query = text("""
+            SELECT DISTINCT title
+            FROM tracks
+            WHERE similarity(title, :query) > 0.2
+            ORDER BY similarity(title, :query) DESC
+            LIMIT 5
+        """)
+        
+        result = await session.execute(suggestion_query, {"query": query})
+        suggestions = [row.title for row in result.fetchall()]
+        return suggestions
+    except Exception as e:
+        logger.error(f"Error getting search suggestions: {e}")
+        return []
 
 @cache_result(ttl=300)  # Cache for 5 minutes
 async def get_graph_edges(node_ids: List[str] = None) -> List[Dict[str, Any]]:
@@ -469,6 +601,51 @@ async def health_check():
 async def metrics():
     """Prometheus metrics endpoint."""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+@app.get("/api/v1/visualization/search")
+async def search_visualization_tracks(
+    q: str,
+    type: str = "fuzzy", 
+    fields: str = "title,artist,album,genres",
+    limit: int = 20,
+    offset: int = 0
+):
+    """Search tracks for visualization with database query."""
+    try:
+        # Execute search with circuit breaker
+        search_results = await db_circuit_breaker.call(
+            search_tracks,
+            q.strip(),
+            type,
+            fields.split(','),
+            limit,
+            offset
+        )
+        
+        return {
+            "results": search_results["results"],
+            "total": search_results["total"],
+            "limit": limit,
+            "offset": offset,
+            "query": q,
+            "suggestions": search_results.get("suggestions", []),
+            "facets": {},
+            "status": "ok"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in search_visualization_tracks: {e}")
+        # Return fallback response for graceful degradation
+        return {
+            "results": [],
+            "total": 0,
+            "limit": limit,
+            "offset": offset,
+            "query": q,
+            "suggestions": [],
+            "facets": {},
+            "status": "Search service temporarily offline"
+        }
 
 @app.post("/api/v1/visualization/graph")
 async def get_visualization_graph(query: GraphQuery):

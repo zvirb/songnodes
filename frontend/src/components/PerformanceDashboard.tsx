@@ -50,14 +50,30 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     if (!isOpen) return;
 
     const updateInterval = setInterval(() => {
-      try {
-        const report = generatePerformanceReport();
-        setPerformanceReport(report);
-        setActiveAlerts(report.alerts.filter(alert => !alert.resolved));
-      } catch (error) {
-        console.warn('Failed to generate performance report:', error);
+      // Use requestIdleCallback to prevent blocking main thread
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          try {
+            const report = generatePerformanceReport();
+            setPerformanceReport(report);
+            setActiveAlerts(report.alerts.filter(alert => !alert.resolved));
+          } catch (error) {
+            console.warn('Failed to generate performance report:', error);
+          }
+        }, { timeout: 500 }); // Allow up to 500ms delay for performance updates
+      } else {
+        // Fallback: use setTimeout to yield control
+        setTimeout(() => {
+          try {
+            const report = generatePerformanceReport();
+            setPerformanceReport(report);
+            setActiveAlerts(report.alerts.filter(alert => !alert.resolved));
+          } catch (error) {
+            console.warn('Failed to generate performance report:', error);
+          }
+        }, 0);
       }
-    }, 2000); // Update every 2 seconds
+    }, 3000); // Reduced frequency to 3 seconds
 
     return () => clearInterval(updateInterval);
   }, [isOpen]);

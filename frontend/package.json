@@ -28,8 +28,13 @@
     "build-storybook": "storybook build",
     "test:storybook": "test-storybook",
     "chromatic": "npx chromatic --project-token=<your-project-token>",
-    "test:all": "npm run test:unit && npm run test:accessibility && npm run e2e && npm run lighthouse",
-    "test:ci": "npm run test:coverage && npm run e2e:ci && npm run lighthouse:ci",
+    "validate:console": "node scripts/validate-console-errors.js",
+    "validate:console:extended": "node scripts/validate-console-errors.js http://localhost:3006 20000",
+    "validate:console:production": "node scripts/validate-console-errors.js https://production-url.com 15000",
+    "e2e:console": "playwright test console-validation.spec.ts",
+    "e2e:console:headed": "playwright test console-validation.spec.ts --headed",
+    "test:all": "npm run test:unit && npm run test:accessibility && npm run e2e && npm run lighthouse && npm run validate:console",
+    "test:ci": "npm run test:coverage && npm run e2e:ci && npm run lighthouse:ci && npm run validate:console",
     "e2e:ci": "playwright test --reporter=junit"
   },
   "dependencies": {

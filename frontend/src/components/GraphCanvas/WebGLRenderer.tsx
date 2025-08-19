@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Container, Graphics, ParticleContainer, Sprite, Text, TextStyle } from 'pixi.js';
 import { PixiComponent, useApp } from '@pixi/react';
-import { NodeVisual, EdgeVisual, RenderSettings } from '@types/graph';
+import { NodeVisual, EdgeVisual, RenderSettings } from '../../types/graph';
 import * as d3 from 'd3';
 
 interface WebGLRendererProps {
@@ -9,19 +9,29 @@ interface WebGLRendererProps {
   edges: EdgeVisual[];
   viewport: { x: number; y: number; scale: number };
   renderSettings: RenderSettings;
-  selectedNodes: Set<string>;
+  selectedNodes: string[];
   hoveredNode: string | null;
   highlightedPath: string[];
 }
 
+// Define the interface for NodeRenderer props
+interface NodeRendererProps {
+  nodes: NodeVisual[];
+  renderSettings: RenderSettings;
+  selectedNodes: string[];
+  hoveredNode: string | null;
+  highlightedPath: string[];
+  viewport: { x: number; y: number; scale: number };
+}
+
 // Custom PIXI component for efficient node rendering
-const NodeRenderer = PixiComponent('NodeRenderer', {
-  create: ({ nodes, renderSettings }: { nodes: NodeVisual[]; renderSettings: RenderSettings }) => {
+const NodeRenderer = PixiComponent<NodeRendererProps, Container>('NodeRenderer', {
+  create: (props: NodeRendererProps) => {
     const container = new Container();
     
     // Use ParticleContainer for better performance with large numbers of nodes
     const particleContainer = new ParticleContainer(
-      renderSettings.maxNodes,
+      props.renderSettings.maxNodes,
       {
         scale: true,
         position: true,
@@ -67,15 +77,39 @@ const NodeRenderer = PixiComponent('NodeRenderer', {
       return graphics;
     };
     
-    return { container, particleContainer, nodeSprites, nodeGraphics, createNodeTexture };
+    // Store additional data as properties on the container
+    (container as any).particleContainer = particleContainer;
+    (container as any).nodeSprites = nodeSprites;
+    (container as any).nodeGraphics = nodeGraphics;
+    (container as any).createNodeTexture = createNodeTexture;
+    
+    return container;
   },
   
-  applyProps: (instance, oldProps, newProps) => {
+  applyProps: (container, oldProps, newProps) => {
     const { nodes, renderSettings, selectedNodes, hoveredNode, highlightedPath, viewport } = newProps;
-    const { particleContainer, nodeSprites, nodeGraphics, createNodeTexture } = instance;
+    const particleContainer = (container as any).particleContainer;
+    const nodeSprites = (container as any).nodeSprites;
+    const nodeGraphics = (container as any).nodeGraphics;
+    const createNodeTexture = (container as any).createNodeTexture;
     
-    // Clear previous rendering
-    particleContainer.removeChildren();
+    // Safely clear previous rendering
+    if (particleContainer.children && particleContainer.children.length > 0) {
+      particleContainer.children.forEach(child => {
+        if (child && typeof child.destroy === 'function') {
+          child.destroy();
+        }
+      });
+      particleContainer.removeChildren();
+    }
+    
+    if (nodeGraphics.children && nodeGraphics.children.length > 0) {
+      nodeGraphics.children.forEach(child => {
+        if (child && typeof child.destroy === 'function') {
+          child.destroy();
+        }
+      });
+    }
     nodeGraphics.clear();
     
     // Color scale for node types
@@ -105,7 +139,7 @@ const NodeRenderer = PixiComponent('NodeRenderer', {
     nodes.forEach(node => {
       if (!node.visible) return;
       
-      const isSelected = selectedNodes.has(node.id);
+      const isSelected = selectedNodes.includes(node.id);
       const isHovered = hoveredNode === node.id;
       const isHighlighted = highlightedPath.includes(node.id);
       const shouldHighlight = isSelected || isHovered || isHighlighted;
@@ -148,8 +182,10 @@ const NodeRenderer = PixiComponent('NodeRenderer', {
         graphics.x = node.x;
         graphics.y = node.y;
         
-        // Add to main graphics
-        nodeGraphics.addChild(graphics);
+        // Add to main graphics safely
+        if (graphics && typeof graphics.destroy === 'function') {
+          nodeGraphics.addChild(graphics);
+        }
         
         // Add label for important nodes
         if (lodLevel === 0 && (isSelected || isHovered || screenRadius > 20)) {
@@ -170,19 +206,67 @@ const NodeRenderer = PixiComponent('NodeRenderer', {
           label.x = node.x;
           label.y = node.y + radius + 5;
           
-          nodeGraphics.addChild(label);
+          // Add label safely
+          if (label && typeof label.destroy === 'function') {
+            nodeGraphics.addChild(label);
+          }
         }
       }
     });
     
     // Update particle container if using sprites
-    instance.container.addChild(nodeGraphics);
+    container.addChild(nodeGraphics);
+  },
+  
+  willUnmount: (container) => {
+    const particleContainer = (container as any).particleContainer;
+    const nodeSprites = (container as any).nodeSprites;
+    const nodeGraphics = (container as any).nodeGraphics;
+    
+    // Properly destroy all PIXI objects
+    if (particleContainer && particleContainer.children && particleContainer.children.length > 0) {
+      particleContainer.children.forEach(child => {
+        if (child && typeof child.destroy === 'function') {
+          child.destroy();
+        }
+      });
+    }
+    
+    if (nodeGraphics && nodeGraphics.children && nodeGraphics.children.length > 0) {
+      nodeGraphics.children.forEach(child => {
+        if (child && typeof child.destroy === 'function') {
+          child.destroy();
+        }
+      });
+    }
+    
+    if (nodeSprites) {
+      nodeSprites.clear();
+    }
+    
+    if (nodeGraphics && typeof nodeGraphics.destroy === 'function') {
+      nodeGraphics.destroy();
+    }
+    if (particleContainer && typeof particleContainer.destroy === 'function') {
+      particleContainer.destroy();
+    }
+    if (container && typeof container.destroy === 'function') {
+      container.destroy();
+    }
   },
 });
 
+// Define the interface for EdgeRenderer props
+interface EdgeRendererProps {
+  edges: EdgeVisual[];
+  renderSettings: RenderSettings;
+  viewport: { x: number; y: number; scale: number };
+  highlightedPath: string[];
+}
+
 // Custom PIXI component for efficient edge rendering
-const EdgeRenderer = PixiComponent('EdgeRenderer', {
-  create: ({ edges }: { edges: EdgeVisual[] }) => {
+const EdgeRenderer = PixiComponent<EdgeRendererProps, Graphics>('EdgeRenderer', {
+  create: (props: EdgeRendererProps) => {
     const graphics = new Graphics();
     return graphics;
   },
@@ -252,6 +336,12 @@ const EdgeRenderer = PixiComponent('EdgeRenderer', {
       }
     });
   },
+  
+  willUnmount: (graphics) => {
+    if (graphics && typeof graphics.destroy === 'function') {
+      graphics.destroy();
+    }
+  },
 });
 
 export const WebGLRenderer: React.FC<WebGLRendererProps> = ({
@@ -270,7 +360,7 @@ export const WebGLRenderer: React.FC<WebGLRendererProps> = ({
   const memoizedEdges = useMemo(() => edges, [edges]);
   
   return (
-    <Container>
+    <>
       {/* Render edges first (below nodes) */}
       <EdgeRenderer
         edges={memoizedEdges}
@@ -288,7 +378,7 @@ export const WebGLRenderer: React.FC<WebGLRendererProps> = ({
         highlightedPath={highlightedPath}
         viewport={viewport}
       />
-    </Container>
+    </>
   );
 };
 

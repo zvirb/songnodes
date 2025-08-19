@@ -65,6 +65,8 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+    // Enable PIXI deprecation filtering in production builds
+    'import.meta.env.VITE_FILTER_PIXI_DEPRECATIONS': JSON.stringify(process.env.NODE_ENV === 'production' ? 'true' : 'false'),
   },
   optimizeDeps: {
     include: [
@@ -96,17 +98,27 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
   server: {
-    port: 3000,
-    open: true,
+    port: 3006,
+    open: false,
     cors: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8090',
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/health': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/metrics': {
+        target: 'http://localhost:8084',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:8091',
+        target: 'ws://localhost:8084',
         ws: true,
         changeOrigin: true,
       },

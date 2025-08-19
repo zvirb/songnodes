@@ -1,8 +1,8 @@
 import React, { useCallback, useRef, useMemo } from 'react';
-import { Container, Graphics, InteractionEvent } from 'pixi.js';
+import { Container, Graphics, FederatedPointerEvent } from 'pixi.js';
 import { PixiComponent } from '@pixi/react';
-import { NodeVisual, EdgeVisual } from '@types/graph';
-import { InteractionMode } from '@types/ui';
+import { NodeVisual, EdgeVisual } from '../../types/graph';
+import { InteractionMode } from '../../types/ui';
 import * as d3 from 'd3';
 
 interface InteractionLayerProps {
@@ -23,7 +23,7 @@ interface InteractionLayerProps {
 }
 
 // Custom interaction handler component
-const InteractionHandler = PixiComponent('InteractionHandler', {
+const InteractionHandler = PixiComponent<InteractionLayerProps, Container>('InteractionHandler', {
   create: (props: InteractionLayerProps) => {
     const container = new Container();
     
@@ -32,7 +32,7 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
     background.beginFill(0x000000, 0.001); // Almost transparent but interactive
     background.drawRect(0, 0, props.width, props.height);
     background.endFill();
-    background.interactive = true;
+    background.eventMode = 'static';
     background.interactiveChildren = false;
     
     container.addChild(background);
@@ -121,7 +121,7 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
     });
     
     // Mouse/touch event handlers
-    const handlePointerDown = (event: InteractionEvent) => {
+    const handlePointerDown = (event: FederatedPointerEvent) => {
       const worldPos = screenToWorld(event.data.global.x, event.data.global.y);
       const clickedNode = findNodeAtPosition(worldPos.x, worldPos.y);
       
@@ -142,7 +142,7 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
           viewX: props.viewport.x,
           viewY: props.viewport.y,
         };
-      } else if (props.interactionMode === InteractionMode.SELECT && event.data.originalEvent.shiftKey) {
+      } else if (props.interactionMode === InteractionMode.SELECT && (event.nativeEvent as PointerEvent).shiftKey) {
         // Start selection box
         selectionBox = {
           start: worldPos,
@@ -153,12 +153,12 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
       event.stopPropagation();
     };
     
-    const handlePointerMove = (event: InteractionEvent) => {
+    const handlePointerMove = (event: FederatedPointerEvent) => {
       const worldPos = screenToWorld(event.data.global.x, event.data.global.y);
       
       if (isDragging && dragStart) {
-        const dx = event.data.global.x - dragStart.x;
-        const dy = event.data.global.y - dragStart.y;
+        const dx = event.global.x - dragStart.x;
+        const dy = event.global.y - dragStart.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         if (distance > 5) { // Minimum drag distance to start dragging
@@ -189,12 +189,12 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
       }
     };
     
-    const handlePointerUp = (event: InteractionEvent) => {
+    const handlePointerUp = (event: FederatedPointerEvent) => {
       const worldPos = screenToWorld(event.data.global.x, event.data.global.y);
       
       if (isDragging && dragStart) {
-        const dx = event.data.global.x - dragStart.x;
-        const dy = event.data.global.y - dragStart.y;
+        const dx = event.global.x - dragStart.x;
+        const dy = event.global.y - dragStart.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         if (distance < 5) {
@@ -205,9 +205,9 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
           if (clickedNode) {
             // Simulate React mouse event for compatibility
             const syntheticEvent = {
-              ctrlKey: event.data.originalEvent.ctrlKey,
-              metaKey: event.data.originalEvent.metaKey,
-              shiftKey: event.data.originalEvent.shiftKey,
+              ctrlKey: (event.nativeEvent as PointerEvent).ctrlKey,
+              metaKey: (event.nativeEvent as PointerEvent).metaKey,
+              shiftKey: (event.nativeEvent as PointerEvent).shiftKey,
               stopPropagation: () => {},
               preventDefault: () => {},
             } as React.MouseEvent;
@@ -300,21 +300,21 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
     // Add wheel listener to the container's DOM element
     // This would need to be handled at a higher level
     
-    return {
-      container,
-      background,
-      handleWheel,
-      cleanup: () => {
-        background.off('pointerdown', handlePointerDown);
-        background.off('pointermove', handlePointerMove);
-        background.off('pointerup', handlePointerUp);
-        background.off('pointerupoutside', handlePointerUp);
-      }
+    // Store additional data as properties on the container
+    (container as any).background = background;
+    (container as any).handleWheel = handleWheel;
+    (container as any).cleanup = () => {
+      background.off('pointerdown', handlePointerDown);
+      background.off('pointermove', handlePointerMove);
+      background.off('pointerup', handlePointerUp);
+      background.off('pointerupoutside', handlePointerUp);
     };
+    
+    return container;
   },
   
-  applyProps: (instance, oldProps, newProps) => {
-    const { background } = instance;
+  applyProps: (container, oldProps, newProps) => {
+    const background = (container as any).background;
     
     // Update background size
     background.clear();
@@ -338,17 +338,16 @@ const InteractionHandler = PixiComponent('InteractionHandler', {
     }
   },
   
-  willUnmount: (instance) => {
-    instance.cleanup();
+  willUnmount: (container) => {
+    const cleanup = (container as any).cleanup;
+    if (cleanup) {
+      cleanup();
+    }
   },
 });
 
 export const InteractionLayer: React.FC<InteractionLayerProps> = (props) => {
-  return (
-    <Container>
-      <InteractionHandler {...props} />
-    </Container>
-  );
+  return <InteractionHandler {...props} />;
 };
 
 export default InteractionLayer;

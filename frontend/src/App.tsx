@@ -24,7 +24,7 @@ const AppContent: React.FC = () => {
     showPerformanceOverlay,
     showDebugInfo 
   } = useAppSelector(state => state.ui);
-  const { performanceUI } = useAppSelector(state => state.ui);
+  // const { performanceUI } = useAppSelector(state => state.ui); // Unused for now
   
   // Container dimensions
   const { width, height } = useResizeObserver(containerRef);
@@ -38,11 +38,25 @@ const AppContent: React.FC = () => {
   
   useEffect(() => {
     updateViewportSize();
-  }, [width, height, updateViewportSize]);
+  }, [width, height, updateViewportSize]); // Include updateViewportSize to prevent stale closure
   
-  // Initialize app
+  // Initialize app - separate device info from graph loading to prevent loops
   useEffect(() => {
-    // Detect device capabilities
+    // Load initial graph data
+    if (nodes.length === 0) {
+      dispatch(fetchGraph({
+        limit: 1000,
+        include: {
+          relationships: true,
+          audioFeatures: false,
+          metadata: false,
+        },
+      }));
+    }
+  }, [dispatch, nodes.length]);
+
+  // Handle device info updates separately to prevent infinite loops
+  useEffect(() => {
     const deviceInfo = {
       isMobile: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent),
       isTablet: /Tablet|iPad/.test(navigator.userAgent),
@@ -57,19 +71,7 @@ const AppContent: React.FC = () => {
     };
     
     dispatch(updateDeviceInfo(deviceInfo));
-    
-    // Load initial graph data
-    if (nodes.length === 0) {
-      dispatch(fetchGraph({
-        limit: 1000,
-        include: {
-          relationships: true,
-          audioFeatures: false,
-          metadata: false,
-        },
-      }));
-    }
-  }, [dispatch, nodes.length, width, height]);
+  }, [dispatch, width, height]);
   
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -262,14 +264,14 @@ const AppContent: React.FC = () => {
               onNodeDoubleClick={(node) => {
                 console.log('Node double-clicked:', node.title);
               }}
-              onNodeHover={(node) => {
-                // Handle node hover
+              onNodeHover={(_node) => {
+                // Handle node hover - node parameter prefixed with _ to indicate intentionally unused
               }}
               onBackgroundClick={() => {
                 // Clear selection
               }}
-              onViewportChange={(viewport) => {
-                // Handle viewport changes
+              onViewportChange={(_viewport) => {
+                // Handle viewport changes - viewport parameter prefixed with _ to indicate intentionally unused
               }}
             />
           )}

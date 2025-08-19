@@ -126,11 +126,23 @@ export const usePerformanceMonitoring = ({
     calculateFPS();
   }, [enabled, recordRenderTime, calculateFPS]);
   
-  // Update metrics periodically
+  // Update metrics periodically with performance throttling
   useEffect(() => {
     if (!enabled) return;
     
     const interval = setInterval(() => {
+      // Use requestIdleCallback to defer expensive metrics calculation
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          updateMetricsInternal();
+        }, { timeout: 100 }); // Allow up to 100ms delay
+      } else {
+        // Fallback: defer using setTimeout
+        setTimeout(updateMetricsInternal, 0);
+      }
+    }, Math.max(updateInterval, 1000)); // Minimum 1 second interval
+    
+    const updateMetricsInternal = () => {
       const now = performance.now();
       
       // Skip update if not enough time has passed
@@ -209,7 +221,7 @@ export const usePerformanceMonitoring = ({
       };
       
       dispatch(updateMetrics(reduxMetrics));
-    }, Math.min(updateInterval, 1000)); // Update at most once per second
+    };
     
     return () => clearInterval(interval);
   }, [

@@ -1,10 +1,12 @@
 // API types for backend integration
 export interface ApiResponse<T> {
   data: T;
-  meta: {
-    requestId: string;
-    timestamp: string;
-    processingTime: number;
+  success: boolean;
+  message?: string;
+  meta?: {
+    requestId?: string;
+    timestamp?: string;
+    processingTime?: number;
   };
 }
 
@@ -25,6 +27,8 @@ export interface ApiError {
 export interface GetGraphRequest {
   limit?: number;
   offset?: number;
+  centerNodeId?: string;
+  depth?: number;
   filters?: {
     genres?: string[];
     artists?: string[];
@@ -149,11 +153,16 @@ export interface SearchResponse {
     title: string;
     artist: string;
     score: number;
-    highlights: Record<string, string>;
+    highlights?: Record<string, string>;
   }>;
-  totalResults: number;
+  total: number;
+  totalResults?: number; // For backward compatibility
+  limit: number;
+  offset: number;
+  query: string;
   suggestions: string[];
   facets?: Record<string, Array<{ value: string; count: number }>>;
+  status?: string;
 }
 
 export interface SimilarSongsRequest {

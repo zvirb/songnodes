@@ -40,7 +40,7 @@ export const store = configureStore({
         },
       },
     }),
-  devTools: import.meta.env.DEV,
+  devTools: process.env.NODE_ENV !== 'production',
   preloadedState: undefined,
 });
 

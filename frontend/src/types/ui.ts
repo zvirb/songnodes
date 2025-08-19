@@ -161,7 +161,7 @@ export interface ToolbarState {
   visible: boolean;
   position: 'top' | 'bottom' | 'left' | 'right' | 'floating';
   tools: ToolbarItem[];
-  activeTools: Set<string>;
+  activeTools: string[];
 }
 
 export interface ToolbarItem {
@@ -180,8 +180,8 @@ export interface ToolbarItem {
 // Selection states
 export interface SelectionState {
   mode: 'single' | 'multiple' | 'box' | 'lasso';
-  nodes: Set<string>;
-  edges: Set<string>;
+  nodes: string[];
+  edges: string[];
   isMultiSelecting: boolean;
   selectionBox?: {
     start: { x: number; y: number };
@@ -216,7 +216,7 @@ export interface AnimationState {
     progress: number;
     duration: number;
   };
-  nodeAnimations: Map<string, {
+  nodeAnimations: Record<string, {
     type: 'position' | 'size' | 'color' | 'opacity';
     fromValue: any;
     toValue: any;
@@ -301,7 +301,7 @@ export interface ExportUIState {
 export interface HelpState {
   showTutorial: boolean;
   currentTutorialStep: number;
-  completedTutorials: Set<string>;
+  completedTutorials: string[];
   showTooltips: boolean;
   showKeyboardShortcuts: boolean;
   helpPanelOpen: boolean;

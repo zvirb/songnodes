@@ -197,7 +197,9 @@
       }
       
       // Service worker registration (if PWA is enabled)
-      if ('serviceWorker' in navigator && import.meta.env.PROD) {
+      // Check if in production by looking at the hostname
+      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+      if ('serviceWorker' in navigator && isProduction) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('/sw.js')
             .then(function(registration) {

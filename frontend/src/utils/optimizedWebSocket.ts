@@ -3,6 +3,8 @@
  * Reduces connection time from 75-135s to <5s with advanced optimization techniques
  */
 
+import { globalWorkerManager } from './workerManager';
+
 export interface WebSocketConfig {
   url: string;
   maxRetries: number;
@@ -590,21 +592,64 @@ export class OptimizedWebSocket {
 
   private handleMessage(event: MessageEvent): void {
     try {
-      let data = event.data;
+      // Use requestIdleCallback to defer heavy processing
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          this.processMessage(event.data);
+        }, { timeout: 8 }); // Max 8ms wait to prevent blocking
+      } else {
+        // Fallback: use setTimeout with 0ms to yield to browser
+        setTimeout(() => {
+          this.processMessage(event.data);
+        }, 0);
+      }
+    } catch (error) {
+      console.error('Error scheduling message processing:', error);
+      this.emit('error', error);
+    }
+  }
+
+  private async processMessage(rawData: any): Promise<void> {
+    try {
+      let data = rawData;
       
-      // Decompress if needed
+      // Decompress if needed using Web Worker for large payloads
       if (typeof data === 'string' && this.config.compression) {
         try {
           const parsed = JSON.parse(data);
           if (parsed.compressed) {
-            data = MessageCompressor.decompress(data);
+            // Use Web Worker for decompression if payload is large
+            if (data.length > 1024 && globalWorkerManager.hasAvailableWorkers) {
+              try {
+                data = await globalWorkerManager.decompress(data);
+              } catch (workerError) {
+                console.warn('Worker decompression failed, falling back to main thread:', workerError);
+                data = MessageCompressor.decompress(data);
+              }
+            } else {
+              // Small payloads or no workers available - use main thread
+              data = MessageCompressor.decompress(data);
+            }
           }
         } catch (e) {
           // Not JSON or not compressed, use as-is
         }
       }
 
-      const message = JSON.parse(data);
+      let message: any;
+      
+      // Use Web Worker for parsing very large JSON payloads
+      if (typeof data === 'string' && data.length > 10240 && globalWorkerManager.hasAvailableWorkers) {
+        try {
+          message = await globalWorkerManager.parseLargeData(data);
+        } catch (workerError) {
+          console.warn('Worker JSON parsing failed, falling back to main thread:', workerError);
+          message = JSON.parse(data);
+        }
+      } else {
+        message = JSON.parse(data);
+      }
+      
       this.metrics.messagesReceived++;
 
       // Handle special message types
@@ -614,10 +659,20 @@ export class OptimizedWebSocket {
       }
 
       if (message.type === 'batch') {
-        // Process batched messages
-        message.messages.forEach((msg: WebSocketMessage) => {
-          this.emit('message', msg);
-        });
+        // Process batched messages using Web Worker for large batches
+        if (message.messages.length > 20 && globalWorkerManager.hasAvailableWorkers) {
+          try {
+            const processedMessages = await globalWorkerManager.processBatch(message.messages, 5);
+            processedMessages.forEach((msg: any) => {
+              this.emit('message', msg);
+            });
+          } catch (workerError) {
+            console.warn('Worker batch processing failed, falling back to main thread:', workerError);
+            this.processBatchedMessages(message.messages);
+          }
+        } else {
+          this.processBatchedMessages(message.messages);
+        }
       } else {
         this.emit('message', message);
       }
@@ -625,9 +680,36 @@ export class OptimizedWebSocket {
       this.endLatencyMeasurement();
       
     } catch (error) {
-      console.error('Error handling WebSocket message:', error);
+      console.error('Error processing WebSocket message:', error);
       this.emit('error', error);
     }
+  }
+
+  private processBatchedMessages(messages: WebSocketMessage[]): void {
+    // Process batched messages in chunks to avoid blocking
+    const CHUNK_SIZE = 5; // Process 5 messages per frame
+    let index = 0;
+
+    const processChunk = () => {
+      const endIndex = Math.min(index + CHUNK_SIZE, messages.length);
+      
+      for (let i = index; i < endIndex; i++) {
+        this.emit('message', messages[i]);
+      }
+      
+      index = endIndex;
+      
+      if (index < messages.length) {
+        // More messages to process - schedule next chunk
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(processChunk, { timeout: 8 });
+        } else {
+          setTimeout(processChunk, 0);
+        }
+      }
+    };
+
+    processChunk();
   }
 
   private handleClose(event: CloseEvent): void {

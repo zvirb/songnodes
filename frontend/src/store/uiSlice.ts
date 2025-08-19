@@ -17,6 +17,22 @@ import {
   PerformanceUIState,
 } from '@types/ui';
 
+// Utility function to ensure arrays for Redux serialization
+function ensureArray(value: any): string[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (value && typeof value === 'object' && 'has' in value) {
+    // Handle Set-like objects
+    return Array.from(value as any);
+  }
+  if (value && typeof value === 'object' && 'keys' in value) {
+    // Handle Map-like objects
+    return Array.from((value as any).keys());
+  }
+  return [];
+}
+
 interface UIState {
   // Viewport and interaction
   viewport: Viewport;
@@ -119,8 +135,8 @@ const initialState: UIState = {
   
   selection: {
     mode: 'single',
-    nodes: new Set(),
-    edges: new Set(),
+    nodes: [],
+    edges: [],
     isMultiSelecting: false,
   },
   
@@ -161,7 +177,7 @@ const initialState: UIState = {
       progress: 0,
       duration: 500,
     },
-    nodeAnimations: new Map(),
+    nodeAnimations: {},
     globalAnimationsEnabled: true,
     reducedMotion: false,
   },
@@ -253,6 +269,21 @@ const uiSlice = createSlice({
     
     setSelectionBox: (state, action: PayloadAction<SelectionState['selectionBox']>) => {
       state.selection.selectionBox = action.payload;
+    },
+    
+    // Selection nodes and edges actions with runtime guards
+    setSelectedNodesUI: (state, action: PayloadAction<string[]>) => {
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
+      state.selection.nodes = payload;
+    },
+    
+    setSelectedEdgesUI: (state, action: PayloadAction<string[]>) => {
+      // Runtime guard: Ensure payload is an array, not a Set or other non-serializable type
+      const payload = ensureArray(action.payload);
+      
+      state.selection.edges = payload;
     },
     
     // Drag state
@@ -462,6 +493,8 @@ export const {
   setSelectionMode,
   setMultiSelecting,
   setSelectionBox,
+  setSelectedNodesUI,
+  setSelectedEdgesUI,
   setDragState,
   toggleSidebar,
   togglePanel,
