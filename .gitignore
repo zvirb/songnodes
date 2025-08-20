@@ -100,3 +100,11 @@ storage/knowledge_graph/
 .claude/
 UnifiedWorkflow/
 CLAUDE.md
+
+# Git submodules and nested repositories
+**/.git/
+*/.git/
+.gitmodules
+**/.gitmodules
+**/submodules/
+*/submodules/
