@@ -99,3 +99,4 @@ storage/knowledge_graph/
 # Claude AI configuration and workflow
 .claude/
 UnifiedWorkflow/
+CLAUDE.md
