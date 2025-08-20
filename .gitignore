@@ -95,3 +95,7 @@ frontend/public/mockServiceWorker.js
 # Storage directories (runtime data)
 storage/entities/
 storage/knowledge_graph/
+
+# Claude AI configuration and workflow
+.claude/
+UnifiedWorkflow/
