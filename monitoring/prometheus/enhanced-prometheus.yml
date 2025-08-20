@@ -1,0 +1,320 @@
+# Enhanced Prometheus Configuration for Song Nodes Infrastructure
+# Comprehensive monitoring with graph-specific metrics and performance tracking
+
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+  scrape_timeout: 8s
+  external_labels:
+    cluster: 'songnodes-production'
+    environment: 'production'
+    region: 'us-east-1'
+
+# Load and evaluate rules
+rule_files:
+  - "alerts/*.yml"
+  - "recording-rules/*.yml"
+
+# Scrape configuration
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Core Infrastructure Monitoring
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    params:
+      target: ['postgres:5432']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: postgres-exporter:9187
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: redis-exporter:9121
+
+  # Application Services with Enhanced Metrics
+  - job_name: 'backend-api'
+    static_configs:
+      - targets: 
+        - 'backend-api-1:8000'
+        - 'backend-api-2:8000'
+        - 'backend-api-3:8000'
+    scrape_interval: 10s
+    metrics_path: /metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'http_request_duration_seconds.*'
+        target_label: service
+        replacement: 'backend-api'
+      - source_labels: [__name__]
+        regex: 'nodejs_.*'
+        target_label: runtime
+        replacement: 'nodejs'
+
+  - job_name: 'websocket-service'
+    static_configs:
+      - targets:
+        - 'websocket-service-1:8001'
+        - 'websocket-service-2:8001'
+    scrape_interval: 10s
+    metrics_path: /metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'websocket_.*'
+        target_label: service
+        replacement: 'websocket-service'
+
+  # Graph Visualization API - High-frequency monitoring
+  - job_name: 'graph-visualization-api'
+    static_configs:
+      - targets:
+        - 'graph-visualization-api-1:8084'
+        - 'graph-visualization-api-2:8084'
+    scrape_interval: 5s  # High frequency for performance critical service
+    metrics_path: /metrics
+    scrape_timeout: 4s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'graph_.*'
+        target_label: service
+        replacement: 'graph-visualization-api'
+      - source_labels: [__name__]
+        regex: 'node_processing_.*'
+        target_label: operation_type
+        replacement: 'graph_processing'
+
+  # Frontend Monitoring
+  - job_name: 'frontend'
+    static_configs:
+      - targets:
+        - 'frontend-1:3000'
+        - 'frontend-2:3000'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'react_.*'
+        target_label: framework
+        replacement: 'react'
+
+  # Health Monitor Service
+  - job_name: 'health-monitor'
+    static_configs:
+      - targets: ['health-monitor:8085']
+    scrape_interval: 10s
+    metrics_path: /metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'health_check_.*'
+        target_label: monitoring_type
+        replacement: 'health_monitoring'
+
+  # Load Balancer Monitoring
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'nginx_.*'
+        target_label: service
+        replacement: 'load_balancer'
+
+  # System Metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+        - 'node-exporter-1:9100'
+        - 'node-exporter-2:9100'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'node_.*'
+        target_label: metric_type
+        replacement: 'system'
+
+  # Kubernetes Monitoring (if using K8s)
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+    - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+      action: keep
+      regex: default;kubernetes;https
+
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+    - role: pod
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+      action: keep
+      regex: true
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+      action: replace
+      target_label: __metrics_path__
+      regex: (.+)
+    - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+      action: replace
+      regex: ([^:]+)(?::\d+)?;(\d+)
+      replacement: $1:$2
+      target_label: __address__
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: kubernetes_namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: kubernetes_pod_name
+
+  # Custom Business Metrics
+  - job_name: 'business-metrics'
+    static_configs:
+      - targets: ['business-metrics-exporter:8086']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'business_.*'
+        target_label: metric_category
+        replacement: 'business'
+
+# Recording rules for performance optimization
+recording_rules:
+  - name: "songnodes_performance_rules"
+    rules:
+    - record: "songnodes:http_request_rate"
+      expr: |
+        sum(rate(http_requests_total[5m])) by (service, method, status)
+    
+    - record: "songnodes:http_request_latency_p99"
+      expr: |
+        histogram_quantile(0.99, 
+          sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le)
+        )
+    
+    - record: "songnodes:http_request_latency_p95"
+      expr: |
+        histogram_quantile(0.95, 
+          sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le)
+        )
+    
+    - record: "songnodes:http_request_latency_p50"
+      expr: |
+        histogram_quantile(0.50, 
+          sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le)
+        )
+    
+    - record: "songnodes:error_rate"
+      expr: |
+        sum(rate(http_requests_total{status=~"5.."}[5m])) by (service) /
+        sum(rate(http_requests_total[5m])) by (service)
+    
+    - record: "songnodes:graph_processing_rate"
+      expr: |
+        sum(rate(graph_operations_total[5m])) by (operation, status)
+    
+    - record: "songnodes:graph_processing_latency_p99"
+      expr: |
+        histogram_quantile(0.99,
+          sum(rate(node_processing_duration_seconds_bucket[5m])) by (batch_size, le)
+        )
+    
+    - record: "songnodes:active_websocket_connections"
+      expr: |
+        sum(websocket_active_connections) by (type)
+    
+    - record: "songnodes:database_connection_usage"
+      expr: |
+        (postgres_connections_active / postgres_connections_max) * 100
+    
+    - record: "songnodes:redis_memory_usage_percent"
+      expr: |
+        (redis_memory_used_bytes / redis_memory_max_bytes) * 100
+    
+    - record: "songnodes:system_resource_usage"
+      expr: |
+        (
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+        ) by (instance)
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      scheme: http
+      timeout: 10s
+      api_version: v2
+
+# Remote write for long-term storage
+remote_write:
+  - url: "http://thanos-receive:19291/api/v1/receive"
+    queue_config:
+      max_samples_per_send: 10000
+      max_shards: 200
+      capacity: 20000
+      batch_send_deadline: 5s
+      min_backoff: 30ms
+      max_backoff: 100ms
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: '(up|prometheus_.*|alertmanager_.*)'
+        action: drop
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 15d
+    retention.size: 50GB
+    min-block-duration: 2h
+    max-block-duration: 25h
+
+# Feature flags
+feature_flags:
+  - "promql-at-modifier"
+  - "promql-negative-offset"
+  - "remote-write-receiver"
+  - "exemplar-storage"
+
+# Web configuration
+web:
+  enable-lifecycle: true
+  enable-admin-api: true
+  cors:
+    origin: '.*'
+  external-url: 'https://prometheus.songnodes.com'
+  route-prefix: '/'
+  max-connections: 512
+  read-timeout: 30s
+  console:
+    libraries: '/usr/share/prometheus/console_libraries'
+    templates: '/usr/share/prometheus/consoles'

@@ -1,0 +1,346 @@
+# Horizontal Pod Autoscaler for Backend API
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-api-hpa
+  namespace: songnodes
+  labels:
+    app: backend-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "100"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# Horizontal Pod Autoscaler for WebSocket Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: websocket-service-hpa
+  namespace: songnodes
+  labels:
+    app: websocket-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: websocket-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Pods
+    pods:
+      metric:
+        name: websocket_active_connections
+      target:
+        type: AverageValue
+        averageValue: "500"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# Horizontal Pod Autoscaler for Graph Visualization API
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: graph-visualization-api-hpa
+  namespace: songnodes
+  labels:
+    app: graph-visualization-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: graph-visualization-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85
+  - type: Pods
+    pods:
+      metric:
+        name: graph_operations_per_second
+      target:
+        type: AverageValue
+        averageValue: "10"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 120
+      selectPolicy: Min
+
+---
+# Horizontal Pod Autoscaler for Frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: songnodes
+  labels:
+    app: frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# Vertical Pod Autoscaler for Database (if VPA is available)
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: postgres-vpa
+  namespace: songnodes
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: postgres
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: postgres
+      minAllowed:
+        cpu: 1000m
+        memory: 2Gi
+      maxAllowed:
+        cpu: 8000m
+        memory: 16Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+
+---
+# Pod Disruption Budget for Backend API
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-api-pdb
+  namespace: songnodes
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: backend-api
+
+---
+# Pod Disruption Budget for WebSocket Service
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: websocket-service-pdb
+  namespace: songnodes
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: websocket-service
+
+---
+# Pod Disruption Budget for Graph Visualization API
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: graph-visualization-api-pdb
+  namespace: songnodes
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: graph-visualization-api
+
+---
+# Pod Disruption Budget for Frontend
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: songnodes
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: frontend
+
+---
+# Custom Resource for Advanced Auto-scaling
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autoscaling-config
+  namespace: songnodes
+data:
+  config.yaml: |
+    autoscaling:
+      enabled: true
+      metrics:
+        - name: "response_time_p99"
+          threshold: 500  # milliseconds
+          action: "scale_up"
+          cooldown: 60   # seconds
+        - name: "error_rate"
+          threshold: 0.05 # 5%
+          action: "scale_up"
+          cooldown: 30
+        - name: "queue_depth"
+          threshold: 100
+          action: "scale_up"
+          cooldown: 30
+        - name: "cpu_utilization"
+          threshold: 80   # percentage
+          action: "scale_up"
+          cooldown: 60
+        - name: "memory_utilization"
+          threshold: 85   # percentage
+          action: "scale_up"
+          cooldown: 60
+      scaling_policies:
+        scale_up:
+          min_step: 1
+          max_step: 3
+          stabilization_window: 60
+        scale_down:
+          min_step: 1
+          max_step: 2
+          stabilization_window: 300
+      resource_limits:
+        backend_api:
+          min_replicas: 2
+          max_replicas: 10
+          max_cpu_per_pod: "2000m"
+          max_memory_per_pod: "2Gi"
+        websocket_service:
+          min_replicas: 2
+          max_replicas: 8
+          max_cpu_per_pod: "1000m"
+          max_memory_per_pod: "1Gi"
+        graph_visualization_api:
+          min_replicas: 2
+          max_replicas: 6
+          max_cpu_per_pod: "4000m"
+          max_memory_per_pod: "4Gi"
+        frontend:
+          min_replicas: 2
+          max_replicas: 5
+          max_cpu_per_pod: "1000m"
+          max_memory_per_pod: "1Gi"

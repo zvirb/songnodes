@@ -35,6 +35,12 @@ active_transformations = Gauge('active_transformations', 'Number of active trans
 transformation_duration = Histogram('transformation_duration_seconds', 'Transformation duration', ['operation'])
 processed_records = Counter('processed_records_total', 'Total records processed', ['source', 'status'])
 
+# Performance optimization metrics
+batch_operation_duration = Histogram('batch_operation_duration_seconds', 'Batch operation duration', ['operation_type'])
+batch_size_histogram = Histogram('batch_size', 'Batch operation sizes', ['operation_type'], buckets=[1, 10, 50, 100, 500, 1000, 2000, 5000])
+connection_pool_usage = Gauge('connection_pool_usage', 'Connection pool utilization')
+database_operation_duration = Histogram('database_operation_duration_seconds', 'Database operation duration', ['operation_type'])
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Data Transformer Service",
@@ -656,41 +662,89 @@ class TransformationEngine:
         redis_client.expire(task_key, 86400)  # Expire after 24 hours
     
     async def _store_results(self, result: TransformationResult):
-        """Store transformation results in database"""
+        """Store transformation results in database with optimized batch operations"""
         if not db_pool:
             return
         
+        # Performance measurement
+        store_start_time = datetime.now()
+        
         try:
+            # Monitor connection pool usage
+            if hasattr(db_pool, '_holders'):
+                pool_usage = len(db_pool._holders) / db_pool._maxsize if db_pool._maxsize > 0 else 0
+                connection_pool_usage.set(pool_usage)
+            
             async with db_pool.acquire() as conn:
-                # Store transformation result record
-                await conn.execute("""
-                    INSERT INTO transformation_results 
-                    (task_id, operation, status, input_count, output_count, processing_time, created_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                """, result.task_id, result.operation.value, result.status.value,
-                    result.input_count, result.output_count, result.processing_time,
-                    datetime.now())
-                
-                # Store normalized tracks
-                for track in result.results:
+                # Use a transaction for atomic batch operations
+                async with conn.transaction():
+                    # Store transformation result record
+                    db_start = datetime.now()
                     await conn.execute("""
-                        INSERT INTO normalized_tracks 
-                        (id, source, source_id, title, artist, album, genre, label,
-                         release_date, duration_seconds, bpm, key, url, fingerprint,
-                         confidence_score, metadata, normalized_at)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-                        ON CONFLICT (id) DO UPDATE SET
-                        confidence_score = EXCLUDED.confidence_score,
-                        metadata = EXCLUDED.metadata,
-                        normalized_at = EXCLUDED.normalized_at
-                    """, track.id, track.source.value, track.source_id, track.title,
-                        track.artist, track.album, track.genre, track.label,
-                        track.release_date, track.duration_seconds, track.bpm,
-                        track.key, track.url, track.fingerprint, track.confidence_score,
-                        json.dumps(track.metadata), track.normalized_at)
+                        INSERT INTO transformation_results 
+                        (task_id, operation, status, input_count, output_count, processing_time, created_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    """, result.task_id, result.operation.value, result.status.value,
+                        result.input_count, result.output_count, result.processing_time,
+                        datetime.now())
+                    
+                    db_duration = (datetime.now() - db_start).total_seconds()
+                    database_operation_duration.labels(operation_type="insert_result").observe(db_duration)
+                    
+                    # OPTIMIZED: Batch INSERT for normalized tracks
+                    if result.results:
+                        batch_start = datetime.now()
+                        batch_size = len(result.results)
+                        
+                        # Record batch size metrics
+                        batch_size_histogram.labels(operation_type="track_insert").observe(batch_size)
+                        
+                        # Prepare batch data for all tracks
+                        batch_data = []
+                        for track in result.results:
+                            batch_data.append((
+                                track.id, track.source.value, track.source_id, track.title,
+                                track.artist, track.album, track.genre, track.label,
+                                track.release_date, track.duration_seconds, track.bpm,
+                                track.key, track.url, track.fingerprint, track.confidence_score,
+                                json.dumps(track.metadata), track.normalized_at
+                            ))
+                        
+                        # Single batch operation instead of N individual INSERTs
+                        await conn.executemany("""
+                            INSERT INTO normalized_tracks 
+                            (id, source, source_id, title, artist, album, genre, label,
+                             release_date, duration_seconds, bpm, key, url, fingerprint,
+                             confidence_score, metadata, normalized_at)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                            ON CONFLICT (id) DO UPDATE SET
+                            confidence_score = EXCLUDED.confidence_score,
+                            metadata = EXCLUDED.metadata,
+                            normalized_at = EXCLUDED.normalized_at
+                        """, batch_data)
+                        
+                        # Record batch operation metrics
+                        batch_duration = (datetime.now() - batch_start).total_seconds()
+                        batch_operation_duration.labels(operation_type="track_batch_insert").observe(batch_duration)
+                        database_operation_duration.labels(operation_type="batch_insert").observe(batch_duration)
+                        
+                        # Log performance improvement with detailed metrics
+                        store_duration = (datetime.now() - store_start_time).total_seconds()
+                        avg_per_track = (store_duration / batch_size * 1000) if batch_size > 0 else 0
+                        throughput = batch_size / store_duration if store_duration > 0 else 0
+                        
+                        logger.info(f"PERFORMANCE: Batch stored {batch_size} tracks in {store_duration:.3f}s "
+                                  f"(avg {avg_per_track:.1f}ms per track, {throughput:.1f} tracks/sec)")
+                        
+                        # Performance threshold monitoring
+                        if store_duration > 1.0:
+                            logger.warning(f"SLOW_BATCH: Batch operation took {store_duration:.3f}s for {batch_size} tracks")
+                        elif store_duration < 0.1:
+                            logger.info(f"FAST_BATCH: High performance batch completed in {store_duration:.3f}s")
                 
         except Exception as e:
-            logger.error(f"Failed to store results: {str(e)}")
+            store_duration = (datetime.now() - store_start_time).total_seconds()
+            logger.error(f"Failed to store results after {store_duration:.3f}s: {str(e)}")
 
 # Initialize transformation engine
 transformation_engine = TransformationEngine()
@@ -700,11 +754,23 @@ transformation_engine = TransformationEngine()
 # =====================
 
 async def init_database():
-    """Initialize database connection pool"""
+    """Initialize database connection pool with optimized configuration for batch operations"""
     global db_pool
     try:
-        db_pool = await asyncpg.create_pool(**DATABASE_CONFIG, min_size=5, max_size=20)
-        logger.info("Database connection pool initialized")
+        # Optimized pool configuration for batch operations
+        pool_config = {
+            **DATABASE_CONFIG,
+            "min_size": 10,          # Increased minimum connections for consistent performance
+            "max_size": 50,          # Increased maximum for high throughput
+            "command_timeout": 60,   # Increased timeout for batch operations
+            "server_settings": {
+                "jit": "off"         # Disable JIT for consistent performance
+            }
+        }
+        
+        db_pool = await asyncpg.create_pool(**pool_config)
+        logger.info("Optimized database connection pool initialized with batch operation support")
+        logger.info(f"Pool configuration: min_size=10, max_size=50, command_timeout=60s")
         
         # Create tables if they don't exist
         async with db_pool.acquire() as conn:
@@ -804,33 +870,78 @@ async def shutdown_event():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Enhanced health check endpoint with performance metrics"""
     # Check database connection
     db_status = "healthy"
+    db_response_time = None
+    pool_stats = {}
+    
     if db_pool:
         try:
+            db_start = datetime.now()
             async with db_pool.acquire() as conn:
                 await conn.fetchval("SELECT 1")
-        except Exception:
+            db_response_time = (datetime.now() - db_start).total_seconds() * 1000  # ms
+            
+            # Get connection pool statistics
+            if hasattr(db_pool, '_holders') and hasattr(db_pool, '_maxsize'):
+                pool_stats = {
+                    "active_connections": len(db_pool._holders),
+                    "max_connections": db_pool._maxsize,
+                    "utilization_percent": round((len(db_pool._holders) / db_pool._maxsize) * 100, 1) if db_pool._maxsize > 0 else 0
+                }
+                
+        except Exception as e:
             db_status = "unhealthy"
+            logger.error(f"Database health check failed: {str(e)}")
     else:
         db_status = "not_initialized"
     
     # Check Redis connection
     redis_status = "healthy"
+    redis_response_time = None
     try:
+        redis_start = datetime.now()
         redis_client.ping()
-    except Exception:
+        redis_response_time = (datetime.now() - redis_start).total_seconds() * 1000  # ms
+    except Exception as e:
         redis_status = "unhealthy"
+        logger.error(f"Redis health check failed: {str(e)}")
+    
+    # Performance status assessment
+    performance_status = "optimal"
+    performance_issues = []
+    
+    if db_response_time and db_response_time > 100:  # > 100ms is concerning
+        performance_status = "degraded"
+        performance_issues.append(f"Database response time: {db_response_time:.1f}ms")
+    
+    if pool_stats.get("utilization_percent", 0) > 80:
+        performance_status = "degraded"
+        performance_issues.append(f"High connection pool utilization: {pool_stats['utilization_percent']}%")
     
     overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
     
     return {
         "status": overall_status,
+        "performance_status": performance_status,
         "timestamp": datetime.now().isoformat(),
         "components": {
-            "database": db_status,
-            "redis": redis_status
+            "database": {
+                "status": db_status,
+                "response_time_ms": db_response_time,
+                "connection_pool": pool_stats
+            },
+            "redis": {
+                "status": redis_status,
+                "response_time_ms": redis_response_time
+            }
+        },
+        "performance_issues": performance_issues if performance_issues else None,
+        "optimization_info": {
+            "batch_operations": "enabled",
+            "connection_pooling": "optimized",
+            "performance_monitoring": "active"
         }
     }
 

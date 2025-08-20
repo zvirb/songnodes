@@ -14,19 +14,22 @@ done
 
 echo "PostgreSQL is ready!"
 
-# Generate PgBouncer userlist if it doesn't exist
-if [ ! -f /etc/pgbouncer/userlist.txt ]; then
-    echo "Generating PgBouncer userlist..."
-    
-    # Create userlist with default credentials
-    cat > /etc/pgbouncer/userlist.txt << EOF
+# Always regenerate PgBouncer userlist with current environment variables
+echo "Generating PgBouncer userlist with environment variables..."
+
+# Remove existing userlist to force regeneration
+rm -f /etc/pgbouncer/userlist.txt
+
+# Create userlist with environment credentials
+cat > /etc/pgbouncer/userlist.txt << EOF
 "${POSTGRES_USER:-musicdb_user}" "${POSTGRES_PASSWORD:-musicdb_secure_pass}"
 "${PGBOUNCER_ADMIN_USER:-pgbouncer}" "${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer}"
 EOF
-    
-    chown pgbouncer:pgbouncer /etc/pgbouncer/userlist.txt
-    chmod 600 /etc/pgbouncer/userlist.txt
-fi
+
+chown pgbouncer:pgbouncer /etc/pgbouncer/userlist.txt
+chmod 600 /etc/pgbouncer/userlist.txt
+
+echo "Generated userlist.txt with passwords from environment"
 
 # Update PgBouncer configuration with environment variables
 echo "Configuring PgBouncer..."

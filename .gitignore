@@ -8,6 +8,8 @@
 node_modules/
 venv/
 .venv/
+*_venv/
+mcp_venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -35,14 +37,34 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# MCP Server PIDs and logs
-mcp_servers/mcp_server.pid
-mcp_servers/logs/
-mcp_servers/pids/
-mcp_servers/storage/entities/
-mcp_servers/storage/knowledge_graph/
-mcp_servers/venv/
-mcp_servers/mcp_venv/
+# Process ID files
+*.pid
+mcp_server.pid
+sequential_thinking.pid
+
+# MCP Servers and related directories
+mcp_servers/
+mcp_venv/
+
+# Backup files and directories
+backups/
+*.backup
+.last_dependency_backup
+
+# Test artifacts and reports
+.coverage
+.pytest_cache/
+htmlcov/
+frontend/playwright-report/
+frontend/test-results/
+test-results/
+playwright-report/
+
+# Scrapy projects (external)
+musicdb_scrapy/
+
+# Deployment artifacts
+deployment/
 
 # Temporary files
 *.tmp
@@ -61,10 +83,19 @@ dist/
 build/
 *.egg-info/
 
-# Test artifacts
-.coverage
-.pytest_cache/
-htmlcov/
+# Requirements backup files
+requirements.txt.new
 
 # Docker volumes
 docker-data/
+
+# Service worker files (generated)
+frontend/public/mockServiceWorker.js
+
+# Storage directories (runtime data)
+storage/entities/
+storage/knowledge_graph/
+
+# Claude AI configuration and workflow
+.claude/
+UnifiedWorkflow/

@@ -64,6 +64,14 @@ scrape_configs:
     scrape_interval: 60s
     metrics_path: /metrics
 
+  # Graph Visualization API - high-frequency monitoring for performance targets
+  - job_name: 'graph-visualization-api'
+    static_configs:
+      - targets: ['graph-visualization-api:8084']
+    scrape_interval: 10s  # More frequent for performance monitoring
+    metrics_path: /metrics
+    scrape_timeout: 5s
+
   # Scraping services
   - job_name: 'scraper-orchestrator'
     static_configs:
