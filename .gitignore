@@ -99,3 +99,12 @@ storage/knowledge_graph/
 # Claude AI configuration and workflow
 .claude/
 UnifiedWorkflow/
+CLAUDE.md
+
+# Git submodules and nested repositories
+**/.git/
+*/.git/
+.gitmodules
+**/.gitmodules
+**/submodules/
+*/submodules/
