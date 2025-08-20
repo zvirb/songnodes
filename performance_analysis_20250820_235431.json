@@ -1,0 +1,54 @@
+{
+  "analysis_timestamp": "$(date -Iseconds)",
+  "system_info": {
+    "cpu_model": "AMD Ryzen 7 7435HS",
+    "cpu_cores": 16,
+    "memory_total": "15Gi",
+    "load_average": "1.95, 3.12, 2.59"
+  },
+  "gpu_metrics": {
+    "name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+    "utilization_percent": 11,
+    "memory_used_mb": 725,
+    "memory_total_mb": 6141,
+    "memory_free_mb": 5416,
+    "memory_utilization_percent": 11.80,
+    "temperature_celsius": 49,
+    "power_draw_watts": 11.73
+  },
+  "system_metrics": {
+    "cpu_usage_percent": 7.1,
+    "memory_usage_percent": 82.0,
+    "disk_usage_percent": 82,
+    "uptime": "up 2 days, 2 hours, 34 minutes"
+  },
+  "performance_analysis": {
+    "ml_readiness_score": 20,
+    "ml_readiness_level": "LOW",
+    "bottlenecks": ["GPU_utilization_11%","GPU_memory_11.8%","Memory_pressure_82.0%"]
+  },
+  "optimization_opportunities": [
+    {
+      "category": "GPU_UNDERUTILIZATION",
+      "severity": "HIGH",
+      "description": "GPU utilization below target for ML readiness",
+      "recommendations": [
+        "Implement GPU-accelerated WebGL shaders",
+        "Move D3.js calculations to GPU compute shaders", 
+        "Enable hardware-accelerated canvas operations",
+        "Implement parallel processing on GPU"
+      ]
+    },
+    {
+      "category": "GPU_MEMORY_UNDERUTILIZATION",
+      "severity": "MEDIUM", 
+      "description": "GPU memory usage below optimal threshold",
+      "recommendations": [
+        "Increase texture cache size",
+        "Pre-load datasets into GPU memory",
+        "Implement GPU-based spatial indexing",
+        "Cache shader computations"
+      ]
+    }
+  ]
+}
