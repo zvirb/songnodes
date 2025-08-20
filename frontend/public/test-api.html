@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background: #ffe6e6; border: 1px solid #ffcccc; }
+        .success { background: #e6ffe6; border: 1px solid #ccffcc; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>SongNodes API Test</h1>
+    <p>Testing frontend service calls to backend API</p>
+    
+    <button onclick="testHealthCheck()">Test Health Check</button>
+    <button onclick="testGraphQuery()">Test Graph Query</button>
+    <button onclick="testNodeDetails()">Test Node Details</button>
+    <button onclick="testStatistics()">Test Statistics</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(title, data, isError = false) {
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            results.appendChild(div);
+        }
+        
+        // Proxy-based fetch tests (for development)
+        async function testHealthCheck() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                addResult('Health Check (via proxy)', data);
+            } catch (error) {
+                addResult('Health Check Error', { error: error.message }, true);
+            }
+        }
+        
+        async function testGraphQuery() {
+            try {
+                const response = await fetch('/api/v1/visualization/graph', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ max_nodes: 10, max_depth: 2 })
+                });
+                const data = await response.json();
+                addResult('Graph Query (via proxy)', data);
+            } catch (error) {
+                addResult('Graph Query Error', { error: error.message }, true);
+            }
+        }
+        
+        async function testNodeDetails() {
+            try {
+                const response = await fetch('/api/v1/visualization/node/test123');
+                if (response.status === 404) {
+                    const data = await response.json();
+                    addResult('Node Details (Expected 404)', { 
+                        status: response.status, 
+                        detail: data.detail,
+                        message: 'Endpoint not found (as expected - will use fallback in service)' 
+                    });
+                } else {
+                    const data = await response.json();
+                    addResult('Node Details', data);
+                }
+            } catch (error) {
+                addResult('Node Details Error', { error: error.message }, true);
+            }
+        }
+        
+        async function testStatistics() {
+            try {
+                const response = await fetch('/api/v1/visualization/analytics/statistics');
+                if (response.status === 404) {
+                    const data = await response.json();
+                    addResult('Statistics (Expected 404)', { 
+                        status: response.status, 
+                        detail: data.detail,
+                        message: 'Endpoint not found (as expected - will use fallback in service)' 
+                    });
+                } else {
+                    const data = await response.json();
+                    addResult('Statistics', data);
+                }
+            } catch (error) {
+                addResult('Statistics Error', { error: error.message }, true);
+            }
+        }
+        
+        // Auto-run basic tests
+        setTimeout(() => {
+            testHealthCheck();
+            setTimeout(() => testGraphQuery(), 1000);
+        }, 500);
+    </script>
+</body>
+</html>
