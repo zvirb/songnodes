@@ -1,0 +1,47 @@
+# Memory Service Dependencies
+# FastAPI and async framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database connections
+sqlalchemy[asyncio]==2.0.23
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+alembic==1.13.0
+
+# Vector database
+qdrant-client==1.7.0
+
+# HTTP client and async support
+aiohttp==3.9.1
+httpx==0.25.2
+
+# Authentication
+pyjwt==2.8.0
+cryptography==41.0.8
+
+# LLM integration
+langextract==0.1.4
+
+# Data processing
+numpy==1.24.4
+pandas==2.0.3
+
+# Utilities
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Logging and monitoring
+structlog==23.2.0
+python-json-logger==2.0.7
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Memory optimization
+objsize==0.6.1
