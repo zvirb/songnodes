@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Container, Graphics, ParticleContainer, Sprite, Text, TextStyle } from 'pixi.js';
 import { PixiComponent, useApp } from '@pixi/react';
 import { NodeVisual, EdgeVisual, RenderSettings } from '../../types/graph';
+import { GPUOptimizer } from '../../utils/gpuOptimizer';
 import * as d3 from 'd3';
 
 interface WebGLRendererProps {
@@ -29,9 +30,10 @@ const NodeRenderer = PixiComponent<NodeRendererProps, Container>('NodeRenderer',
   create: (props: NodeRendererProps) => {
     const container = new Container();
     
-    // Use ParticleContainer for better performance with large numbers of nodes
-    const particleContainer = new ParticleContainer(
-      props.renderSettings.maxNodes,
+    // Use GPU-optimized ParticleContainer for better performance
+    const gpuOptimizer = GPUOptimizer.getInstance();
+    const particleContainer = gpuOptimizer.createOptimizedParticleContainer(
+      Math.max(props.renderSettings.maxNodes, 10000),
       {
         scale: true,
         position: true,
@@ -47,7 +49,7 @@ const NodeRenderer = PixiComponent<NodeRendererProps, Container>('NodeRenderer',
     const nodeSprites = new Map<string, Sprite>();
     const nodeGraphics = new Graphics();
     
-    // Pre-generate node textures for different states
+    // Pre-generate GPU-optimized node textures for different states
     const createNodeTexture = (
       radius: number, 
       color: number, 
@@ -55,26 +57,102 @@ const NodeRenderer = PixiComponent<NodeRendererProps, Container>('NodeRenderer',
       isSelected: boolean = false,
       isHighlighted: boolean = false
     ) => {
-      const graphics = new Graphics();
+      // Try to get optimized texture from GPU optimizer first
+      const gpuOptimizer = GPUOptimizer.getInstance();
+      const baseTexture = gpuOptimizer.getOptimizedTexture('circle', Math.floor(radius * 2));
       
-      // Base circle
-      graphics.beginFill(color, opacity);
-      graphics.drawCircle(0, 0, radius);
-      graphics.endFill();
-      
-      // Selection ring
-      if (isSelected) {
-        graphics.lineStyle(3, 0xEC4899, 1);
-        graphics.drawCircle(0, 0, radius + 4);
+      if (baseTexture) {
+        // Use GPU-optimized texture with shader
+        const sprite = new Sprite(baseTexture);
+        sprite.tint = color;
+        sprite.alpha = opacity;
+        sprite.anchor.set(0.5);
+        
+        // Apply GPU-optimized shader for advanced effects
+        try {
+          const vertexShader = `
+            attribute vec2 aVertexPosition;
+            attribute vec2 aTextureCoord;
+            uniform mat3 projectionMatrix;
+            uniform mat3 translationMatrix;
+            varying vec2 vTextureCoord;
+            void main(void) {
+              gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);
+              vTextureCoord = aTextureCoord;
+            }
+          `;
+          
+          const fragmentShader = `
+            precision highp float;
+            varying vec2 vTextureCoord;
+            uniform sampler2D uSampler;
+            uniform float uAlpha;
+            uniform vec3 uTint;
+            uniform bool uIsSelected;
+            uniform bool uIsHighlighted;
+            void main(void) {
+              vec4 color = texture2D(uSampler, vTextureCoord);
+              vec3 finalColor = color.rgb * uTint;
+              
+              // Add selection glow
+              if (uIsSelected) {
+                float dist = distance(vTextureCoord, vec2(0.5));
+                float glow = 1.0 - smoothstep(0.4, 0.5, dist);
+                finalColor += vec3(0.925, 0.286, 0.600) * glow * 0.5;
+              }
+              
+              // Add highlight effect
+              if (uIsHighlighted) {
+                float dist = distance(vTextureCoord, vec2(0.5));
+                float highlight = 1.0 - smoothstep(0.35, 0.45, dist);
+                finalColor += vec3(0.965, 0.620, 0.043) * highlight * 0.3;
+              }
+              
+              gl_FragColor = vec4(finalColor, color.a * uAlpha);
+            }
+          `;
+          
+          const shader = gpuOptimizer.createComputeShader(vertexShader, fragmentShader);
+          sprite.shader = shader;
+          
+          // Set shader uniforms
+          shader.uniforms.uAlpha = opacity;
+          shader.uniforms.uTint = [
+            ((color >> 16) & 0xFF) / 255,
+            ((color >> 8) & 0xFF) / 255,
+            (color & 0xFF) / 255
+          ];
+          shader.uniforms.uIsSelected = isSelected;
+          shader.uniforms.uIsHighlighted = isHighlighted;
+          
+        } catch (error) {
+          console.warn('GPU shader creation failed, using fallback:', error);
+        }
+        
+        return sprite;
+      } else {
+        // Fallback to graphics-based rendering
+        const graphics = new Graphics();
+        
+        // Base circle
+        graphics.beginFill(color, opacity);
+        graphics.drawCircle(0, 0, radius);
+        graphics.endFill();
+        
+        // Selection ring
+        if (isSelected) {
+          graphics.lineStyle(3, 0xEC4899, 1);
+          graphics.drawCircle(0, 0, radius + 4);
+        }
+        
+        // Highlight glow
+        if (isHighlighted) {
+          graphics.lineStyle(2, 0xF59E0B, 0.8);
+          graphics.drawCircle(0, 0, radius + 2);
+        }
+        
+        return graphics;
       }
-      
-      // Highlight glow
-      if (isHighlighted) {
-        graphics.lineStyle(2, 0xF59E0B, 0.8);
-        graphics.drawCircle(0, 0, radius + 2);
-      }
-      
-      return graphics;
     };
     
     // Store additional data as properties on the container

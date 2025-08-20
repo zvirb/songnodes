@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Stage, useApp } from '@pixi/react';
-import { useAppSelector, useAppDispatch } from '@store/index';
-import { setHoveredNode, setSelectedNodes, updateNodePositions } from '@store/graphSlice';
-import { updateViewport, setInteractionMode } from '@store/uiSlice';
-import { NodeVisual, EdgeVisual, RenderSettings } from '@types/graph';
+import { useAppSelector, useAppDispatch } from '../../store/index';
+import { setHoveredNode, setSelectedNodes, updateNodePositions } from '../../store/graphSlice';
+import { updateViewport, setInteractionMode } from '../../store/uiSlice';
+import { NodeVisual, EdgeVisual, RenderSettings } from '../../types/graph';
 import { WebGLRenderer } from './WebGLRenderer';
 import { InteractionLayer } from './InteractionLayer';
 import { D3ForceSimulation } from './D3ForceSimulation';
-import { useD3ForceLayout } from '@hooks/useD3ForceLayout';
-import { usePerformanceMonitoring } from '@hooks/usePerformanceMonitoring';
-import { useDebouncedCallback } from '@hooks/useDebouncedCallback';
-import { useRAFThrottledCallback } from '@hooks/useThrottledCallback';
+import { useD3ForceLayout } from '../../hooks/useD3ForceLayout';
+import { usePerformanceMonitoring } from '../../hooks/usePerformanceMonitoring';
+import { useDebouncedCallback } from '../../hooks/useDebouncedCallback';
+import { useRAFThrottledCallback } from '../../hooks/useThrottledCallback';
+import { GPUOptimizer } from '../../utils/gpuOptimizer';
 import classNames from 'classnames';
 
 interface GraphCanvasProps {
@@ -76,7 +77,9 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   const dispatch = useAppDispatch();
   const appRef = useRef<Application | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameId = useRef<number>();
+  const gpuOptimizerRef = useRef<GPUOptimizer | null>(null);
   
   // Redux state
   const {
@@ -136,23 +139,67 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     onTick: rafThrottledOnTick,
   });
   
-  // Initialize PIXI Application
+  // Initialize PIXI Application with GPU Optimization
   useEffect(() => {
     if (!containerRef.current) return;
     
-    const app = new Application({
-      width,
-      height,
-      backgroundColor: 0x0F172A,
-      antialias: renderSettings.antialiasing,
-      resolution: Math.min(2, window.devicePixelRatio),
-      autoDensity: true,
-    });
+    const initializeGPUOptimizedApp = async () => {
+      try {
+        // Create canvas for GPU optimization
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvasRef.current = canvas;
+        
+        // Initialize GPU optimizer first
+        gpuOptimizerRef.current = GPUOptimizer.getInstance();
+        const optimizedApp = await gpuOptimizerRef.current.initializeOptimization(canvas, {
+          enableComputeShaders: true,
+          preferWebGL2: true,
+          powerPreference: 'high-performance',
+          antialias: renderSettings.antialiasing,
+          maxTextureSize: 4096,
+        });
+        
+        // Configure optimized settings
+        optimizedApp.renderer.backgroundColor = 0x0F172A;
+        
+        // Additional GPU optimizations for existing app
+        gpuOptimizerRef.current.optimizeExistingApp(optimizedApp);
+        
+        appRef.current = optimizedApp;
+        containerRef.current.appendChild(canvas);
+        
+        console.log('🚀 GPU-optimized PIXI application initialized:', {
+          webglVersion: gpuOptimizerRef.current.getPerformanceMetrics().capabilities?.contextType,
+          maxTextureSize: gpuOptimizerRef.current.getPerformanceMetrics().capabilities?.maxTextureSize,
+        });
+        
+      } catch (error) {
+        console.warn('GPU optimization failed, falling back to standard PIXI:', error);
+        
+        // Fallback to standard PIXI initialization
+        const app = new Application({
+          width,
+          height,
+          backgroundColor: 0x0F172A,
+          antialias: renderSettings.antialiasing,
+          resolution: Math.min(2, window.devicePixelRatio),
+          autoDensity: true,
+        });
+        
+        appRef.current = app;
+        containerRef.current.appendChild(app.view as HTMLCanvasElement);
+      }
+    };
     
-    appRef.current = app;
-    containerRef.current.appendChild(app.view as HTMLCanvasElement);
+    initializeGPUOptimizedApp();
     
     return () => {
+      if (gpuOptimizerRef.current) {
+        gpuOptimizerRef.current.destroy();
+        gpuOptimizerRef.current = null;
+      }
       if (appRef.current) {
         appRef.current.destroy(true);
       }
@@ -371,13 +418,24 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         </Stage>
       )}
       
-      {/* Performance overlay */}
+      {/* Enhanced Performance overlay with GPU metrics */}
       {showFPS && performanceMetrics && (
         <div className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded text-sm font-mono">
           <div>FPS: {performanceMetrics.fps.toFixed(1)}</div>
           <div>Nodes: {visibleNodesList.length} / {nodes.length}</div>
           <div>Edges: {visibleEdgesList.length} / {edges.length}</div>
           <div>Memory: {(performanceMetrics.memoryUsage.heap / 1024 / 1024).toFixed(1)}MB</div>
+          {gpuOptimizerRef.current && (
+            <>
+              <div className="border-t border-gray-600 my-1 pt-1">
+                <div className="text-yellow-400">GPU Metrics:</div>
+                <div>WebGL: {gpuOptimizerRef.current.getPerformanceMetrics().capabilities?.contextType || 'N/A'}</div>
+                <div>Draw Calls: {gpuOptimizerRef.current.getPerformanceMetrics().drawCalls || 0}</div>
+                <div>Textures: {gpuOptimizerRef.current.getPerformanceMetrics().resources?.texturePoolSize || 0}</div>
+                <div>Shaders: {gpuOptimizerRef.current.getPerformanceMetrics().resources?.shaderCacheSize || 0}</div>
+              </div>
+            </>
+          )}
         </div>
       )}
       
