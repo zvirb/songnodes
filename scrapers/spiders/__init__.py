@@ -1,0 +1,1 @@
+# This file makes the 'music_scraper' directory a Python package.

@@ -164,8 +164,8 @@ services:
 
   scraper-1001tracklists:
     build:
-      context: ./musicdb_scrapy
-      dockerfile: Dockerfile.1001tracklists
+      context: ./scrapers
+      dockerfile: Dockerfile
     # container_name removed to allow scaling with replicas
     restart: unless-stopped
     ports:
@@ -425,8 +425,7 @@ services:
       dockerfile: Dockerfile
     # container_name removed to allow scaling with replicas
     restart: unless-stopped
-    ports:
-      - "8082:8082"
+    # ports removed to avoid conflicts with replicas - accessed via API gateway
     environment:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
@@ -766,6 +765,7 @@ services:
       timeout: 10s
       retries: 3
 
+
 # ===========================================
 # NETWORKS
 # ===========================================
@@ -785,15 +785,6 @@ networks:
   
   musicdb-frontend:
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.29.0.0/16
-          gateway: 172.29.0.1
-    driver_opts:
-      com.docker.network.bridge.name: musicdb-frontend
-      com.docker.network.driver.mtu: 1500
-      com.docker.network.bridge.enable_ip_masquerade: 'true'
   
   musicdb-monitoring:
     driver: bridge
