@@ -1,5 +1,5 @@
 import scrapy
-from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
 import re
 
 class SetlistFmSpider(scrapy.Spider):
@@ -51,12 +51,12 @@ class SetlistFmSpider(scrapy.Spider):
                 notes_raw = track_el.css('span.songPart::text').getall()
                 notes = [n.strip().replace('(', '').replace(')', '') for n in notes_raw if n.strip()]
 
-                primary_artists = [performing_artist.strip()] if performing_artist else
-                featured_artists =
-                remixer_artists =
+                primary_artists = [performing_artist.strip()] if performing_artist else []
+                featured_artists = []
+                remixer_artists = []
                 is_remix = False
                 is_mashup = False
-                mashup_components =
+                mashup_components = []
 
                 # Simple parsing for common notes
                 for note in notes:
