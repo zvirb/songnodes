@@ -168,8 +168,6 @@ services:
       dockerfile: Dockerfile
     # container_name removed to allow scaling with replicas
     restart: unless-stopped
-    ports:
-      - "8011:8011"
     environment:
       SCRAPER_NAME: 1001tracklists
       REDIS_HOST: redis
@@ -184,18 +182,18 @@ services:
     networks:
       - musicdb-backend
     deploy:
-      replicas: 4
+      replicas: 2  # Reduced from 4 to prevent memory overload
       resources:
         limits:
-          cpus: '1.5'
-          memory: 1.5G
+          cpus: '0.5'
+          memory: 256M  # Reduced from 1.5G
         reservations:
-          cpus: '0.75'
-          memory: 768M
+          cpus: '0.25'
+          memory: 128M
 
   scraper-mixesdb:
     build:
-      context: ./musicdb_scrapy
+      context: ./scrapers
       dockerfile: Dockerfile.mixesdb
     container_name: scraper-mixesdb
     restart: unless-stopped
@@ -229,7 +227,7 @@ services:
 
   scraper-setlistfm:
     build:
-      context: ./musicdb_scrapy
+      context: ./scrapers
       dockerfile: Dockerfile.setlistfm
     container_name: scraper-setlistfm
     restart: unless-stopped
@@ -263,7 +261,7 @@ services:
 
   scraper-reddit:
     build:
-      context: ./musicdb_scrapy
+      context: ./scrapers
       dockerfile: Dockerfile.reddit
     container_name: scraper-reddit
     restart: unless-stopped

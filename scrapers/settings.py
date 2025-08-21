@@ -7,10 +7,10 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'project_musicdb'
+BOT_NAME = 'scrapers'
 
-SPIDER_MODULES = ['project_musicdb.spiders']
-NEWSPIDER_MODULE = 'project_musicdb.spiders'
+SPIDER_MODULES = ['spiders']
+NEWSPIDER_MODULE = 'spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # Be a good internet citizen. Identify your bot and provide a contact.
@@ -64,7 +64,7 @@ DOWNLOAD_DELAY = 2 # [1, 2] - Be polite, increase for slower sites
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'project_musicdb.pipelines.MusicDataPipeline': 300,
+   'pipelines.MusicDataPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

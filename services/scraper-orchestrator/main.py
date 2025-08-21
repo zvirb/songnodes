@@ -41,12 +41,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Redis connection
-redis_client = redis.Redis(
+# Redis connection with connection pooling
+redis_pool = redis.ConnectionPool(
     host=os.getenv("REDIS_HOST", "redis"),
     port=int(os.getenv("REDIS_PORT", 6379)),
+    max_connections=10,
     decode_responses=True
 )
+redis_client = redis.Redis(connection_pool=redis_pool)
 
 # Scheduler for periodic tasks
 scheduler = AsyncIOScheduler()
@@ -75,6 +77,8 @@ class TaskStatus(str, Enum):
     CANCELLED = "cancelled"
 
 class ScrapingTask(BaseModel):
+    model_config = {"use_enum_values": True}
+    
     id: Optional[str] = Field(default=None)
     scraper: str
     url: Optional[str] = None
@@ -169,31 +173,41 @@ class TaskQueue:
         
     def add_task(self, task: ScrapingTask) -> str:
         """Add task to queue based on priority"""
+        logger.info(f"Starting add_task for scraper: {task.scraper}")
         if not task.id:
             task.id = f"{task.scraper}_{datetime.now().timestamp()}"
         
         task.created_at = datetime.now()
-        queue_key = f"{self.queue_prefix}:{task.priority.value}"
+        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
+        queue_key = f"{self.queue_prefix}:{priority_value}"
+        logger.info(f"Generated queue_key: {queue_key}")
         
         # Store task details
         task_key = f"scraping:task:{task.id}"
-        self.redis.hset(task_key, mapping=task.dict())
+        # Convert task to JSON-serializable format for Redis
+        task_data = self._serialize_task_for_redis(task)
+        self.redis.hset(task_key, mapping=task_data)
         self.redis.expire(task_key, 86400)  # Expire after 24 hours
         
         # Add to priority queue
         score = self._get_priority_score(task.priority)
+        logger.info(f"Adding to queue: queue_key={queue_key}, task.id={task.id}, score={score}")
+        logger.info(f"task.id type: {type(task.id)}, score type: {type(score)}")
         self.redis.zadd(queue_key, {task.id: score})
         
         # Update metrics
-        queue_size.labels(priority=task.priority.value).inc()
+        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
+        queue_size.labels(priority=priority_value).inc()
         
-        logger.info(f"Added task {task.id} to {task.priority.value} priority queue")
+        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
+        logger.info(f"Added task {task.id} to {priority_value} priority queue")
         return task.id
     
     def get_next_task(self, scraper: Optional[str] = None) -> Optional[ScrapingTask]:
         """Get next task from highest priority queue"""
         for priority in [TaskPriority.CRITICAL, TaskPriority.HIGH, TaskPriority.MEDIUM, TaskPriority.LOW]:
-            queue_key = f"{self.queue_prefix}:{priority.value}"
+            priority_value = priority.value if hasattr(priority, 'value') else str(priority)
+            queue_key = f"{self.queue_prefix}:{priority_value}"
             
             # Get task with lowest score (oldest)
             task_ids = self.redis.zrange(queue_key, 0, 0)
@@ -209,7 +223,7 @@ class TaskQueue:
                     self.redis.zrem(queue_key, task_id)
                     continue
                 
-                task = ScrapingTask(**task_data)
+                task = self._deserialize_task_from_redis(task_data)
                 
                 # Check if scraper matches (if specified)
                 if scraper and task.scraper != scraper:
@@ -217,7 +231,8 @@ class TaskQueue:
                 
                 # Remove from queue
                 self.redis.zrem(queue_key, task_id)
-                queue_size.labels(priority=priority.value).dec()
+                priority_value = priority.value if hasattr(priority, 'value') else str(priority)
+                queue_size.labels(priority=priority_value).dec()
                 
                 return task
         
@@ -233,6 +248,89 @@ class TaskQueue:
         }
         # Add timestamp to maintain FIFO within priority
         return scores[priority] + datetime.now().timestamp() / 1000000
+    
+    def _serialize_task_for_redis(self, task: ScrapingTask) -> Dict[str, str]:
+        """Convert task to Redis-compatible format"""
+        try:
+            # Use model_dump with mode='json' to get values properly serialized
+            task_dict = task.model_dump(mode='json')
+            logger.info(f"Task dict after model_dump: {task_dict}")
+            
+            # Convert datetime objects to ISO strings
+            for field in ['created_at', 'started_at', 'completed_at']:
+                if task_dict.get(field):
+                    if isinstance(task_dict[field], datetime):
+                        task_dict[field] = task_dict[field].isoformat()
+                    elif isinstance(task_dict[field], str):
+                        # Already serialized by Pydantic
+                        pass
+            
+            # Convert any dict/list fields to JSON strings
+            for field in ['params']:
+                if task_dict.get(field) and isinstance(task_dict[field], (dict, list)):
+                    task_dict[field] = json.dumps(task_dict[field])
+            
+            # Convert all values to strings for Redis
+            redis_data = {}
+            for k, v in task_dict.items():
+                if v is None:
+                    redis_data[k] = ''
+                elif isinstance(v, (dict, list)):
+                    redis_data[k] = json.dumps(v)
+                else:
+                    redis_data[k] = str(v)
+            
+            logger.info(f"Redis data after serialization: {redis_data}")
+            return redis_data
+        except Exception as e:
+            logger.error(f"Error in _serialize_task_for_redis: {e}")
+            raise
+    
+    def _deserialize_task_from_redis(self, task_data: Dict[str, str]) -> ScrapingTask:
+        """Convert Redis data back to ScrapingTask object"""
+        if not task_data:
+            return None
+        
+        # Convert string values back to appropriate types
+        for field in ['created_at', 'started_at', 'completed_at']:
+            if task_data.get(field) and task_data[field]:
+                try:
+                    task_data[field] = datetime.fromisoformat(task_data[field])
+                except ValueError:
+                    task_data[field] = None
+        
+        # Convert params back from JSON string
+        if task_data.get('params') and task_data['params']:
+            try:
+                task_data['params'] = json.loads(task_data['params'])
+            except json.JSONDecodeError:
+                task_data['params'] = {}
+        
+        # Convert numeric fields
+        if task_data.get('retry_count'):
+            task_data['retry_count'] = int(task_data['retry_count'])
+        if task_data.get('max_retries'):
+            task_data['max_retries'] = int(task_data['max_retries'])
+        
+        # Handle enum fields - they should already be values, but handle legacy format
+        if task_data.get('priority'):
+            if 'TaskPriority.' in task_data['priority']:
+                task_data['priority'] = task_data['priority'].split('.')[-1].lower()
+            # Ensure it's a valid priority value
+            if task_data['priority'] not in ['low', 'medium', 'high', 'critical']:
+                task_data['priority'] = 'medium'  # Default fallback
+        
+        if task_data.get('status'):
+            if 'TaskStatus.' in task_data['status']:
+                task_data['status'] = task_data['status'].split('.')[-1].lower()
+            # Ensure it's a valid status value
+            if task_data['status'] not in ['pending', 'running', 'completed', 'failed', 'cancelled']:
+                task_data['status'] = 'pending'  # Default fallback
+        
+        # Remove empty string values
+        task_data = {k: v for k, v in task_data.items() if v != ''}
+        
+        return ScrapingTask(**task_data)
 
 task_queue = TaskQueue(redis_client)
 
@@ -378,7 +476,8 @@ async def execute_scraping_task(task: ScrapingTask):
     
     # Store in Redis
     task_key = f"scraping:task:{task.id}"
-    redis_client.hset(task_key, mapping=task.dict())
+    task_data = task_queue._serialize_task_for_redis(task)
+    redis_client.hset(task_key, mapping=task_data)
     
     # Mark scraper as active
     active_key = f"scraper:active:{task.scraper}"
@@ -422,7 +521,8 @@ async def execute_scraping_task(task: ScrapingTask):
     
     finally:
         # Update task in Redis
-        redis_client.hset(task_key, mapping=task.dict())
+        task_data = task_queue._serialize_task_for_redis(task)
+        redis_client.hset(task_key, mapping=task_data)
         
         # Remove active marker
         redis_client.delete(active_key)
@@ -581,14 +681,22 @@ async def disable_scraper(scraper: str):
 @app.post("/tasks/submit")
 async def submit_task(task: ScrapingTask, background_tasks: BackgroundTasks):
     """Submit a new scraping task"""
-    if task.scraper not in SCRAPER_CONFIGS:
-        raise HTTPException(status_code=400, detail="Invalid scraper")
+    logger.info(f"Received task submission request: {task}")
     
-    if not SCRAPER_CONFIGS[task.scraper].enabled:
-        raise HTTPException(status_code=400, detail="Scraper is disabled")
-    
-    task_id = task_queue.add_task(task)
-    return {"task_id": task_id, "status": "queued"}
+    try:
+        if task.scraper not in SCRAPER_CONFIGS:
+            raise HTTPException(status_code=400, detail="Invalid scraper")
+        
+        if not SCRAPER_CONFIGS[task.scraper].enabled:
+            raise HTTPException(status_code=400, detail="Scraper is disabled")
+        
+        logger.info(f"About to call task_queue.add_task")
+        task_id = task_queue.add_task(task)
+        logger.info(f"Successfully added task: {task_id}")
+        return {"task_id": task_id, "status": "queued"}
+    except Exception as e:
+        logger.error(f"Error in submit_task: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/tasks/{task_id}")
 async def get_task_status(task_id: str):
@@ -599,7 +707,9 @@ async def get_task_status(task_id: str):
     if not task_data:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    return task_data
+    # Return deserialized task data
+    task = task_queue._deserialize_task_from_redis(task_data)
+    return task.model_dump() if task else task_data
 
 @app.get("/tasks")
 async def get_tasks(
@@ -615,13 +725,17 @@ async def get_tasks(
     for key in task_keys[:limit]:
         task_data = redis_client.hgetall(key)
         if task_data:
+            task = task_queue._deserialize_task_from_redis(task_data)
+            if not task:
+                continue
+            
             # Filter by status
-            if status and task_data.get("status") != status.value:
+            if status and task.status != status:
                 continue
             # Filter by scraper
-            if scraper and task_data.get("scraper") != scraper:
+            if scraper and task.scraper != scraper:
                 continue
-            tasks.append(task_data)
+            tasks.append(task.model_dump())
     
     return {"tasks": tasks, "count": len(tasks)}
 
@@ -630,9 +744,10 @@ async def get_queue_status():
     """Get queue status"""
     queue_stats = {}
     for priority in TaskPriority:
-        queue_key = f"scraping:queue:{priority.value}"
+        priority_value = priority.value if hasattr(priority, 'value') else str(priority)
+        queue_key = f"scraping:queue:{priority_value}"
         size = redis_client.zcard(queue_key)
-        queue_stats[priority.value] = size
+        queue_stats[priority_value] = size
     
     return {"queue": queue_stats, "total": sum(queue_stats.values())}
 
@@ -640,14 +755,16 @@ async def get_queue_status():
 async def clear_queue(priority: Optional[TaskPriority] = None):
     """Clear task queue"""
     if priority:
-        queue_key = f"scraping:queue:{priority.value}"
+        priority_value = priority.value if hasattr(priority, 'value') else str(priority)
+        queue_key = f"scraping:queue:{priority_value}"
         count = redis_client.zcard(queue_key)
         redis_client.delete(queue_key)
-        return {"message": f"Cleared {count} tasks from {priority.value} queue"}
+        return {"message": f"Cleared {count} tasks from {priority_value} queue"}
     else:
         total = 0
         for p in TaskPriority:
-            queue_key = f"scraping:queue:{p.value}"
+            priority_value = p.value if hasattr(p, 'value') else str(p)
+            queue_key = f"scraping:queue:{priority_value}"
             total += redis_client.zcard(queue_key)
             redis_client.delete(queue_key)
         return {"message": f"Cleared {total} tasks from all queues"}

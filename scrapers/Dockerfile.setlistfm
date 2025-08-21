@@ -1,0 +1,81 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install FastAPI and uvicorn for API
+RUN pip install fastapi uvicorn
+
+# Copy scrapy project
+COPY . .
+
+# Create output directory
+RUN mkdir -p /app/output
+
+# Expose port for API
+EXPOSE 8013
+
+# Create a simple API server
+RUN cat > /app/scraper_api.py << 'EOF'
+from fastapi import FastAPI, HTTPException
+import subprocess
+import json
+import os
+import tempfile
+from typing import Dict, Any
+
+app = FastAPI(title="SetlistFM Scraper", version="1.0.0")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "scraper": "setlistfm"}
+
+@app.post("/scrape")
+async def scrape_url(request: Dict[str, Any]):
+    url = request.get("url")
+    params = request.get("params", {})
+    task_id = request.get("task_id")
+    
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    
+    try:
+        # Run scrapy with the setlistfm spider from the integrated structure
+        cmd = [
+            "scrapy", "crawl", "setlistfm",
+            "-L", "INFO",
+            "-a", f"url={url}",
+            "-o", f"/app/output/{task_id}_setlistfm.json"
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")
+        
+        if result.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"Scrapy failed: {result.stderr}")
+        
+        return {
+            "status": "success",
+            "task_id": task_id,
+            "url": url,
+            "output_file": f"/app/output/{task_id}_setlistfm.json"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8013)
+EOF
+
+# Start the API server
+CMD ["python", "/app/scraper_api.py"]
