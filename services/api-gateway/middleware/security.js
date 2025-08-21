@@ -81,13 +81,31 @@ const requestSizeLimit = (req, res, next) => {
 
 // Detect and prevent common attacks
 const attackDetection = (req, res, next) => {
+  // Skip security checks for health endpoints and API docs
+  if (req.path === '/health' || 
+      req.path.includes('/health') || 
+      req.path === '/api' || 
+      req.path.includes('/metrics') ||
+      req.path.includes('/ready') ||
+      req.path.includes('/live')) {
+    return next();
+  }
+  
   const suspicious = [];
   
-  // SQL Injection patterns
+  // More targeted SQL Injection patterns (avoiding false positives with JSON)
   const sqlPatterns = [
-    /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute)\b)/gi,
-    /(\'|\"|;|--|\/\*|\*\/)/g,
-    /(\bor\b|\band\b)\s*(\d+\s*=\s*\d+)/gi
+    /(\bunion\s+all\s+select\b)/gi,
+    /(\bselect\s+\*\s+from\b)/gi,
+    /(\binsert\s+into\s+\w+)/gi,
+    /(\bupdate\s+\w+\s+set\b)/gi,
+    /(\bdelete\s+from\s+\w+)/gi,
+    /(\bdrop\s+table\s+\w+)/gi,
+    /(--[^\r\n]*)/g,
+    /(\bor\s+\d+\s*=\s*\d+)/gi,
+    /(\band\s+\d+\s*=\s*\d+)/gi,
+    /(\bexec\s*\()/gi,
+    /(xp_cmdshell)/gi
   ];
 
   // XSS patterns
@@ -101,17 +119,23 @@ const attackDetection = (req, res, next) => {
   // Path traversal patterns
   const pathTraversalPatterns = [
     /\.\.\//g,
-    /\.\.\\\/g,
+    /\.\.\\/g,
     /%2e%2e%2f/gi,
     /%252e%252e%252f/gi
   ];
 
-  // Check URL, query parameters, and body
-  const checkString = JSON.stringify({ url: req.url, query: req.query, body: req.body });
+  // Check URL, query parameters, and body (avoid JSON serialization issues)
+  const checkParts = [
+    req.url || '',
+    JSON.stringify(req.query || {}),
+    req.body ? JSON.stringify(req.body) : ''
+  ];
+  const checkString = checkParts.join(' ');
 
   // Check for SQL injection
   sqlPatterns.forEach((pattern, index) => {
     if (pattern.test(checkString)) {
+      logger.info(`SQL pattern ${index} (${pattern}) triggered by: "${checkString}"`);
       suspicious.push(`SQL_INJECTION_${index}`);
     }
   });

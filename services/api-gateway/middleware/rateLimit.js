@@ -14,6 +14,15 @@ class RedisStore {
     const redisKey = `${this.prefix}${key}`;
     
     try {
+      // Handle case where Redis client is not available
+      if (!this.client) {
+        logger.warn('Redis client not available for rate limiting');
+        return {
+          totalHits: 1,
+          resetTime: new Date(Date.now() + this.expiry * 1000)
+        };
+      }
+      
       const current = await this.client.incr(redisKey);
       
       if (current === 1) {
@@ -28,7 +37,11 @@ class RedisStore {
       };
     } catch (error) {
       logger.error('Redis rate limit error:', error);
-      throw error;
+      // Return default values if Redis is unavailable instead of throwing
+      return {
+        totalHits: 1,
+        resetTime: new Date(Date.now() + this.expiry * 1000)
+      };
     }
   }
 
@@ -207,14 +220,24 @@ const burstProtection = rateLimit({
 
 // Security: Block suspicious IPs
 const blockSuspiciousIPs = async (req, res, next) => {
-  const blocked = await redisClient.get(`block:auth:${req.ip}`);
-  
-  if (blocked) {
-    return res.status(429).json({
-      error: 'IP Temporarily Blocked',
-      message: 'This IP has been temporarily blocked due to suspicious activity.',
-      retryAfter: 15 * 60
-    });
+  try {
+    // Skip if Redis is not available or for health endpoints
+    if (!redisClient || req.path.includes('/health')) {
+      return next();
+    }
+    
+    const blocked = await redisClient.get(`block:auth:${req.ip}`);
+    
+    if (blocked) {
+      return res.status(429).json({
+        error: 'IP Temporarily Blocked',
+        message: 'This IP has been temporarily blocked due to suspicious activity.',
+        retryAfter: 15 * 60
+      });
+    }
+  } catch (error) {
+    logger.warn('Redis not available for IP blocking check:', error.message);
+    // Continue without blocking if Redis is unavailable
   }
   
   next();
