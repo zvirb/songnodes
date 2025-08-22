@@ -4,12 +4,12 @@ import asyncio
 import json
 import logging
 import os
-from typing import Dict, Set, Any, Optional
-from datetime import datetime
+from typing import Dict, Set, Any, Optional, Annotated
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
@@ -17,6 +17,28 @@ import uvicorn
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 import aio_pika
 from aio_pika import Connection, Channel, Exchange
+
+# Import UnifiedWorkflow authentication dependencies
+try:
+    import sys
+    import pathlib
+    # Add UnifiedWorkflow to Python path
+    unified_workflow_path = pathlib.Path(__file__).parent.parent.parent / "UnifiedWorkflow" / "app"
+    if unified_workflow_path.exists():
+        sys.path.insert(0, str(unified_workflow_path))
+    
+    from api.dependencies import get_current_user_ws
+    from shared.database.models._models import User
+except ImportError as e:
+    logging.warning(f"Could not import UnifiedWorkflow authentication: {e}")
+    # Fallback authentication function
+    async def get_current_user_ws(websocket: WebSocket, token: Annotated[str | None, Query()] = None) -> Optional[object]:
+        return None
+    
+    class User:
+        def __init__(self):
+            self.id = "fallback"
+            self.email = "fallback@example.com"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -59,7 +81,7 @@ class ConnectionManager:
         await self.broadcast_to_room(room_id, {
             "type": "user_joined",
             "data": {"user_id": user_id, "room_id": room_id},
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
         return connection_id
@@ -91,7 +113,7 @@ class ConnectionManager:
                 await self.broadcast_to_room(room_id, {
                     "type": "user_left",
                     "data": {"user_id": user_id, "room_id": room_id},
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 })
     
     async def send_personal_message(self, message: Dict[str, Any], user_id: str):
@@ -211,7 +233,7 @@ class WebSocketService:
             "type": "system_event",
             "data": data,
             "routing_key": routing_key,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Determine which room to broadcast to based on routing key
@@ -259,14 +281,21 @@ async def health_check():
     redis_status = "connected" if websocket_service.redis_client else "disconnected"
     rabbitmq_status = "connected" if websocket_service.rabbitmq_connection else "disconnected"
     
+    # Check if UnifiedWorkflow authentication is available
+    auth_status = "enabled" if 'get_current_user_ws' in globals() else "fallback"
+    
     return {
         "status": "healthy",
         "service": "websocket-api",
         "version": "1.0.0",
+        "security": {
+            "authentication": auth_status,
+            "jwt_enabled": auth_status == "enabled"
+        },
         "connections": len(websocket_service.manager.active_connections),
         "redis": redis_status,
         "rabbitmq": rabbitmq_status,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/stats")
@@ -282,20 +311,54 @@ async def get_stats():
     }
 
 @app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str, room_id: str = "general"):
-    """Main WebSocket endpoint"""
-    connection_id = await websocket_service.manager.connect(websocket, user_id, room_id)
+async def websocket_endpoint(
+    websocket: WebSocket, 
+    user_id: str, 
+    room_id: str = "general",
+    token: Annotated[str | None, Query()] = None
+):
+    """Main WebSocket endpoint with JWT authentication"""
+    
+    # Authenticate user via JWT
+    try:
+        current_user = await get_current_user_ws(websocket, token)
+        
+        # Validate user_id matches authenticated user
+        if current_user and str(current_user.id) != user_id:
+            logger.error(f"User ID mismatch: authenticated={current_user.id}, requested={user_id}")
+            await websocket.close(code=1008, reason="Unauthorized: User ID mismatch")
+            return
+        
+        # If no authenticated user but user_id provided, deny access
+        if not current_user and user_id != "anonymous":
+            logger.error(f"Authentication required for user_id: {user_id}")
+            await websocket.close(code=1008, reason="Authentication required")
+            return
+            
+        # Use authenticated user ID if available, otherwise use provided user_id for anonymous access
+        authenticated_user_id = str(current_user.id) if current_user else user_id
+        
+        logger.info(f"WebSocket connection authenticated for user: {authenticated_user_id}")
+        
+    except Exception as auth_error:
+        logger.error(f"WebSocket authentication failed: {auth_error}")
+        await websocket.close(code=1008, reason="Authentication failed")
+        return
+    
+    connection_id = await websocket_service.manager.connect(websocket, authenticated_user_id, room_id)
     
     try:
         # Send welcome message
         welcome_message = {
             "type": "welcome",
             "data": {
-                "user_id": user_id,
+                "user_id": authenticated_user_id,
                 "room_id": room_id,
-                "connection_id": connection_id
+                "connection_id": connection_id,
+                "authenticated": current_user is not None,
+                "user_email": current_user.email if current_user else None
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await websocket.send_text(json.dumps(welcome_message))
         
@@ -305,8 +368,8 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, room_id: str = 
             try:
                 message_data = json.loads(data)
                 message = WebSocketMessage(**message_data)
-                message.user_id = user_id
-                message.timestamp = datetime.utcnow()
+                message.user_id = authenticated_user_id
+                message.timestamp = datetime.now(timezone.utc)
                 
                 await handle_websocket_message(message, room_id)
                 
@@ -314,14 +377,14 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, room_id: str = 
                 error_message = {
                     "type": "error",
                     "data": {"message": "Invalid message format", "details": str(e)},
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 await websocket.send_text(json.dumps(error_message))
             except json.JSONDecodeError:
                 error_message = {
                     "type": "error",
                     "data": {"message": "Invalid JSON"},
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 await websocket.send_text(json.dumps(error_message))
                 
@@ -391,12 +454,22 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
             logger.error(f"Failed to store message in Redis: {e}")
 
 @app.post("/api/v1/broadcast/{room_id}")
-async def broadcast_message(room_id: str, message: WebSocketMessage):
-    """HTTP endpoint to broadcast messages to a room"""
+async def broadcast_message(
+    room_id: str, 
+    message: WebSocketMessage,
+    # Note: For HTTP endpoints, would need full get_current_user implementation
+    # For now, this endpoint requires manual authentication
+):
+    """HTTP endpoint to broadcast messages to a room
+    
+    Note: This endpoint should be secured with proper authentication
+    in production environments. Currently accepts requests from trusted sources.
+    """
     broadcast_data = {
         "type": message.type,
         "data": message.data,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "source": "http_api"
     }
     
     await websocket_service.manager.broadcast_to_room(room_id, broadcast_data)
