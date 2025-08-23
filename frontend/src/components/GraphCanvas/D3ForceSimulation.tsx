@@ -22,6 +22,8 @@ interface D3ForceSimulationProps {
 export class D3ForceSimulation {
   private simulation: d3.Simulation<NodeVisual, EdgeVisual> | null = null;
   private quadtree: d3.Quadtree<NodeVisual> | null = null;
+  private mutableNodes: NodeVisual[] = [];
+  private mutableEdges: EdgeVisual[] = [];
   private width: number;
   private height: number;
   private layoutOptions: LayoutOptions;
@@ -45,13 +47,27 @@ export class D3ForceSimulation {
     const options = this.layoutOptions.forceDirected;
     if (!options) return;
     
-    // Create simulation
-    this.simulation = d3.forceSimulation(nodes)
+    // Create mutable copies of nodes for D3.js simulation
+    // D3.js needs to be able to add vx, vy properties to node objects
+    this.mutableNodes = nodes.map(node => ({
+      ...node,
+      // Ensure D3.js required properties are initialized
+      vx: 0,
+      vy: 0,
+      fx: node.fx || undefined,
+      fy: node.fy || undefined,
+    }));
+    
+    // Create mutable copies of edges
+    this.mutableEdges = edges.map(edge => ({ ...edge }));
+    
+    // Create simulation with mutable nodes
+    this.simulation = d3.forceSimulation(this.mutableNodes)
       .alphaDecay(options.alphaDecay)
       .velocityDecay(options.velocityDecay);
     
     // Add forces
-    this.addForces(nodes, edges);
+    this.addForces(this.mutableNodes, this.mutableEdges);
     
     // Set up event handlers with throttling
     let lastTickTime = 0;
@@ -67,17 +83,30 @@ export class D3ForceSimulation {
       
       lastTickTime = now;
       
+      // Update original nodes with positions from mutable copies
+      const updatedNodes = nodes.map(originalNode => {
+        const mutableNode = this.mutableNodes.find(mn => mn.id === originalNode.id);
+        if (mutableNode) {
+          return {
+            ...originalNode,
+            x: mutableNode.x,
+            y: mutableNode.y,
+          };
+        }
+        return originalNode;
+      });
+      
       // Defer expensive operations using requestIdleCallback
       if ('requestIdleCallback' in window) {
         requestIdleCallback(() => {
-          this.updateQuadtree(nodes);
-          onTick(nodes);
+          this.updateQuadtree(this.mutableNodes);
+          onTick(updatedNodes);
         }, { timeout: 8 });
       } else {
         // Fallback: use setTimeout to yield control
         setTimeout(() => {
-          this.updateQuadtree(nodes);
-          onTick(nodes);
+          this.updateQuadtree(this.mutableNodes);
+          onTick(updatedNodes);
         }, 0);
       }
     });
@@ -87,7 +116,7 @@ export class D3ForceSimulation {
     }
     
     // Initialize quadtree for collision detection
-    this.updateQuadtree(nodes);
+    this.updateQuadtree(this.mutableNodes);
   }
   
   private addForces(nodes: NodeVisual[], edges: EdgeVisual[]): void {
@@ -119,7 +148,7 @@ export class D3ForceSimulation {
     const chargeForce = d3.forceManyBody()
       .strength(d => {
         // Stronger repulsion for more important nodes
-        const basStrength = options.chargeStrength;
+        const baseStrength = options.chargeStrength;
         const importance = d.metrics?.centrality ?? 0.1;
         return baseStrength * (1 + importance * 2);
       })
@@ -151,11 +180,11 @@ export class D3ForceSimulation {
     this.simulation.force('y', d3.forceY<NodeVisual>(this.height / 2).strength(0.1));
     
     // Genre clustering force
-    const genreForce = this.createGenreClusteringForce(nodes);
+    const genreForce = this.createGenreClusteringForce(this.mutableNodes);
     this.simulation.force('genre', genreForce);
     
     // Temporal arrangement force
-    const temporalForce = this.createTemporalArrangementForce(nodes);
+    const temporalForce = this.createTemporalArrangementForce(this.mutableNodes);
     this.simulation.force('temporal', temporalForce);
   }
   
@@ -163,7 +192,7 @@ export class D3ForceSimulation {
     // Group nodes by primary genre
     const genreGroups = new Map<string, NodeVisual[]>();
     nodes.forEach(node => {
-      const primaryGenre = node.genres[0] || 'unknown';
+      const primaryGenre = (node.genres && node.genres[0]) || 'unknown';
       if (!genreGroups.has(primaryGenre)) {
         genreGroups.set(primaryGenre, []);
       }
@@ -188,7 +217,7 @@ export class D3ForceSimulation {
       const strength = alpha * 0.1; // Gentle clustering force
       
       nodes.forEach(node => {
-        const primaryGenre = node.genres[0] || 'unknown';
+        const primaryGenre = (node.genres && node.genres[0]) || 'unknown';
         const center = genrecenters.get(primaryGenre);
         if (center) {
           const dx = center.x - node.x;
@@ -259,16 +288,28 @@ export class D3ForceSimulation {
   
   updateNodes(nodes: NodeVisual[]): void {
     if (this.simulation) {
-      this.simulation.nodes(nodes);
-      this.updateQuadtree(nodes);
+      // Update mutable copies
+      this.mutableNodes = nodes.map(node => ({
+        ...node,
+        vx: 0,
+        vy: 0,
+        fx: node.fx || undefined,
+        fy: node.fy || undefined,
+      }));
+      
+      this.simulation.nodes(this.mutableNodes);
+      this.updateQuadtree(this.mutableNodes);
     }
   }
   
   updateEdges(edges: EdgeVisual[]): void {
     if (this.simulation) {
+      // Update mutable copies
+      this.mutableEdges = edges.map(edge => ({ ...edge }));
+      
       const linkForce = this.simulation.force('link') as d3.ForceLink<NodeVisual, EdgeVisual>;
       if (linkForce) {
-        linkForce.links(edges);
+        linkForce.links(this.mutableEdges);
       }
     }
   }
@@ -315,5 +356,7 @@ export class D3ForceSimulation {
       this.simulation = null;
     }
     this.quadtree = null;
+    this.mutableNodes = [];
+    this.mutableEdges = [];
   }
 }

@@ -1,5 +1,5 @@
 import scrapy
-from ..items import SetlistItem
+from items import SetlistItem
 
 class JambaseSpider(scrapy.Spider):
     name = 'jambase'

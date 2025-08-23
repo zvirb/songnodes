@@ -107,9 +107,14 @@ export const fetchGraph = createAsyncThunk(
   'graph/fetchGraph',
   async (request: GetGraphRequest, { rejectWithValue }) => {
     try {
+      console.log('🚀 Fetching graph with request:', request);
       const response = await graphService.getGraph(request);
+      console.log('📊 Graph API response:', response);
+      console.log('🎵 Number of nodes received:', response.data?.nodes?.length || 0);
+      console.log('🔗 Number of edges received:', response.data?.edges?.length || 0);
       return response.data;
     } catch (error) {
+      console.error('❌ Graph fetch error:', error);
       return rejectWithValue(
         error instanceof Error ? error.message : 'Failed to fetch graph'
       );
@@ -321,9 +326,11 @@ const graphSlice = createSlice({
       })
       .addCase(fetchGraph.fulfilled, (state, action) => {
         const graph = action.payload;
+        console.log('✅ fetchGraph.fulfilled - Processing graph data:', graph);
         
         // Guard against malformed or empty graph data
         if (!graph || !graph.nodes || !Array.isArray(graph.nodes)) {
+          console.error('🚫 Invalid graph data structure:', { graph, hasNodes: !!graph?.nodes, isArray: Array.isArray(graph?.nodes) });
           state.loading = false;
           state.error = 'Invalid graph data received';
           state.loadingProgress = 0;
@@ -333,6 +340,10 @@ const graphSlice = createSlice({
         // Convert nodes to visual nodes
         const nodeVisuals: NodeVisual[] = graph.nodes.map(node => ({
           ...node,
+          title: node.title || node.metadata?.title || 'Unknown Track',
+          artist: node.artist || node.metadata?.artist || 'Unknown Artist',
+          trackId: node.trackId || node.track_id,
+          genres: node.genres || node.metadata?.genres || ['unknown'], // Ensure genres array exists
           x: node.position?.x ?? Math.random() * 1000,
           y: node.position?.y ?? Math.random() * 1000,
           radius: 8,
@@ -346,11 +357,13 @@ const graphSlice = createSlice({
         
         // Convert edges to visual edges - guard against missing edges
         const edgeVisuals: EdgeVisual[] = (graph.edges && Array.isArray(graph.edges) ? graph.edges : []).map(edge => {
-          const sourceNode = nodeVisuals.find(n => n.id === edge.source);
-          const targetNode = nodeVisuals.find(n => n.id === edge.target);
+          const sourceNode = nodeVisuals.find(n => n.id === (edge.source || edge.source_id));
+          const targetNode = nodeVisuals.find(n => n.id === (edge.target || edge.target_id));
           
           return {
             ...edge,
+            source: edge.source || edge.source_id,
+            target: edge.target || edge.target_id,
             sourceNode: sourceNode!,
             targetNode: targetNode!,
             visible: true,
@@ -361,6 +374,8 @@ const graphSlice = createSlice({
         });
         
         // Update state
+        console.log('🎨 Created visual nodes:', nodeVisuals.length, 'edges:', edgeVisuals.length);
+        console.log('🎵 Sample visual node:', nodeVisuals[0]);
         state.nodes = nodeVisuals;
         state.edges = edgeVisuals;
         state.originalGraph = graph;
@@ -382,11 +397,15 @@ const graphSlice = createSlice({
           state.adjacencyList[node.id] = [];
         });
         edgeVisuals.forEach(edge => {
-          if (!state.adjacencyList[edge.source].includes(edge.target)) {
-            state.adjacencyList[edge.source].push(edge.target);
-          }
-          if (!state.adjacencyList[edge.target].includes(edge.source)) {
-            state.adjacencyList[edge.target].push(edge.source);
+          const sourceId = edge.source || edge.source_id;
+          const targetId = edge.target || edge.target_id;
+          if (sourceId && targetId) {
+            if (!state.adjacencyList[sourceId].includes(targetId)) {
+              state.adjacencyList[sourceId].push(targetId);
+            }
+            if (!state.adjacencyList[targetId].includes(sourceId)) {
+              state.adjacencyList[targetId].push(sourceId);
+            }
           }
         });
         

@@ -1,0 +1,85 @@
+{
+  "name": "enhanced-visualization-service",
+  "version": "1.0.0",
+  "description": "Enhanced Visualization Service for SongNodes Music Graph Platform",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:minimal": "node minimal-server.js",
+    "build": "tsc && tsx src/build.ts",
+    "start": "node dist/index.js",
+    "start:minimal": "node minimal-server.js",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "docker:build": "docker build -t enhanced-visualization-service .",
+    "docker:build:prod": "docker build --target production -t enhanced-visualization-service:prod .",
+    "docker:run": "docker run -p 8085:8085 enhanced-visualization-service",
+    "clean": "rimraf dist",
+    "security:audit": "node scripts/security-audit.js",
+    "security:check": "npm audit && npm run security:audit",
+    "perf:test": "node performance-test.js",
+    "perf:database": "node database-performance-test.js",
+    "perf:websocket": "node websocket-stress-test.js",
+    "perf:monitor": "node performance-monitor.js",
+    "perf:all": "node run-all-performance-tests.js",
+    "perf:report": "echo 'Performance reports available in ./performance-reports/' && ls -la ./performance-reports/ 2>/dev/null || echo 'No reports found - run npm run perf:all first'"
+  },
+  "dependencies": {
+    "@fastify/cors": "^8.4.2",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/rate-limit": "^8.1.1",
+    "@fastify/redis": "^6.1.1",
+    "@fastify/websocket": "^8.3.1",
+    "fastify": "^4.24.3",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "pino": "^8.16.2",
+    "pino-pretty": "^10.2.3",
+    "prom-client": "^15.1.0",
+    "winston": "^3.11.0",
+    "winston-elasticsearch": "^0.17.4",
+    "ws": "^8.18.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.10.4",
+    "@types/pg": "^8.10.9",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitest/coverage-v8": "^1.0.4",
+    "eslint": "^8.55.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "music",
+    "visualization",
+    "graph",
+    "d3",
+    "typescript",
+    "fastify",
+    "websocket",
+    "real-time"
+  ],
+  "author": "SongNodes Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/songnodes/enhanced-visualization.git"
+  },
+  "bugs": {
+    "url": "https://github.com/songnodes/enhanced-visualization/issues"
+  },
+  "homepage": "https://songnodes.com"
+}

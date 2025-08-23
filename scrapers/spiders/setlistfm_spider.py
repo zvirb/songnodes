@@ -81,7 +81,7 @@ class SetlistFmSpider(scrapy.Spider):
                     track_name=track_name,
                     is_remix=is_remix,
                     is_mashup=is_mashup,
-                    mashup_components=mashup_components if is_mashup else,
+                    mashup_components=mashup_components if is_mashup else None,
                     track_type='Concert'
                 )
                 yield track_item

@@ -1,22 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@store/index';
+import { ThemeProvider } from '@theme/ThemeProvider';
 import { GraphCanvas } from '@components/GraphCanvas/GraphCanvas';
 import { SearchPanel } from '@components/SearchPanel/SearchPanel';
+import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
 import { useAppSelector, useAppDispatch } from '@store/index';
 import { fetchGraph } from '@store/graphSlice';
 import { updateDeviceInfo, setViewportSize } from '@store/uiSlice';
 import { useResizeObserver } from '@hooks/useResizeObserver';
 import { useDebouncedCallback } from '@hooks/useDebouncedCallback';
+import { Box, Fab, Tooltip } from '@mui/material';
+import { Palette as PaletteIcon } from '@mui/icons-material';
 import classNames from 'classnames';
 import './index.css';
 
 const AppContent: React.FC = () => {
   const dispatch = useAppDispatch();
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
+  const [useMuiSearch, setUseMuiSearch] = useState(true); // Toggle between original and MUI search
   
   // Redux state
   const { nodes, edges, loading } = useAppSelector(state => state.graph);
+  
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log('📊 Redux State Update - nodes:', nodes.length, 'edges:', edges.length, 'loading:', loading);
+  }, [nodes.length, edges.length, loading]);
   const { 
     viewport, 
     layout, 
@@ -43,7 +53,9 @@ const AppContent: React.FC = () => {
   // Initialize app - separate device info from graph loading to prevent loops
   useEffect(() => {
     // Load initial graph data
+    console.log('🚀 App useEffect: nodes.length =', nodes.length, 'loading =', loading);
     if (nodes.length === 0) {
+      console.log('📥 Dispatching fetchGraph request...');
       dispatch(fetchGraph({
         limit: 1000,
         include: {
@@ -139,10 +151,21 @@ const AppContent: React.FC = () => {
             <div className="h-full flex flex-col">
               {/* Search Panel */}
               {layout.showSearchPanel && (
-                <SearchPanel 
-                  className="flex-shrink-0"
-                  isCompact={layout.compactMode}
-                />
+                <Box sx={{ height: '50%', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+                  {useMuiSearch ? (
+                    <EnhancedMuiSearchPanel 
+                      isCompact={layout.compactMode}
+                      onResultSelect={(result) => {
+                        console.log('MUI Search result selected:', result.node.title);
+                      }}
+                    />
+                  ) : (
+                    <SearchPanel 
+                      className="flex-shrink-0"
+                      isCompact={layout.compactMode}
+                    />
+                  )}
+                </Box>
               )}
               
               {/* Additional sidebar content would go here */}
@@ -156,11 +179,11 @@ const AppContent: React.FC = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Nodes:</span>
-                        <span className="font-medium">{nodes.length.toLocaleString()}</span>
+                        <span className="font-medium" data-testid="node-count">{nodes.length.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Edges:</span>
-                        <span className="font-medium">{edges.length.toLocaleString()}</span>
+                        <span className="font-medium" data-testid="edge-count">{edges.length.toLocaleString()}</span>
                       </div>
                       {showPerformanceOverlay && (
                         <div className="flex justify-between">
@@ -252,6 +275,7 @@ const AppContent: React.FC = () => {
         <div 
           ref={setContainerRef}
           className={canvasWrapperClasses}
+          data-testid="graph-container"
         >
           {width && height && (
             <GraphCanvas
@@ -314,6 +338,23 @@ const AppContent: React.FC = () => {
           <div>Nodes: {nodes.length} | Edges: {edges.length}</div>
         </div>
       )}
+      
+      {/* MUI Search Panel Toggle */}
+      <Tooltip title={`Switch to ${useMuiSearch ? 'Original' : 'Material-UI'} Search Panel`}>
+        <Fab
+          color="primary"
+          size="small"
+          onClick={() => setUseMuiSearch(!useMuiSearch)}
+          sx={{
+            position: 'fixed',
+            bottom: 16,
+            right: 16,
+            zIndex: 1400,
+          }}
+        >
+          <PaletteIcon />
+        </Fab>
+      </Tooltip>
     </div>
   );
 };
@@ -321,7 +362,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Provider store={store}>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </Provider>
   );
 };

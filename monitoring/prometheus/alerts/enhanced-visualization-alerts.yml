@@ -1,0 +1,292 @@
+# Enhanced Visualization Service Alert Rules
+# Comprehensive monitoring for WebSocket connections, visualization performance, and service health
+
+groups:
+  - name: enhanced_visualization_service
+    rules:
+      # Service Health Alerts
+      - alert: EnhancedVisualizationServiceDown
+        expr: up{job="enhanced-visualization-service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: availability
+        annotations:
+          summary: "Enhanced Visualization Service is down"
+          description: "Enhanced Visualization Service has been down for more than 30 seconds. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-service-down"
+
+      - alert: EnhancedVisualizationServiceUnhealthy
+        expr: service_health_status{service="enhanced-visualization-service"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: health
+        annotations:
+          summary: "Enhanced Visualization Service health check failing"
+          description: "Health check {{ $labels.check_type }} for Enhanced Visualization Service is failing. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-health"
+
+      # Memory and Performance Alerts
+      - alert: EnhancedVisualizationHighMemoryUsage
+        expr: memory_usage_bytes{type="heapUsed"} / memory_usage_bytes{type="heapTotal"} > 0.85
+        for: 2m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: performance
+        annotations:
+          summary: "Enhanced Visualization Service high memory usage"
+          description: "Enhanced Visualization Service memory usage is above 85% ({{ $value | humanizePercentage }}). Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-memory"
+
+      - alert: EnhancedVisualizationCriticalMemoryUsage
+        expr: memory_usage_bytes{type="heapUsed"} / memory_usage_bytes{type="heapTotal"} > 0.95
+        for: 30s
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: performance
+        annotations:
+          summary: "Enhanced Visualization Service critical memory usage"
+          description: "Enhanced Visualization Service memory usage is critically high ({{ $value | humanizePercentage }}). Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-memory"
+
+      - alert: EnhancedVisualizationHighEventLoopLag
+        expr: histogram_quantile(0.95, rate(event_loop_lag_seconds_bucket[5m])) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: performance
+        annotations:
+          summary: "Enhanced Visualization Service high event loop lag"
+          description: "Enhanced Visualization Service 95th percentile event loop lag is {{ $value }}s, indicating performance issues. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-performance"
+
+      # WebSocket Connection Alerts
+      - alert: EnhancedVisualizationHighWebSocketConnections
+        expr: websocket_connections_active > 8000
+        for: 1m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: capacity
+        annotations:
+          summary: "Enhanced Visualization Service high WebSocket connections"
+          description: "Enhanced Visualization Service has {{ $value }} active WebSocket connections, approaching capacity limit. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-websocket"
+
+      - alert: EnhancedVisualizationWebSocketConnectionsAtCapacity
+        expr: websocket_connections_active > 9500
+        for: 30s
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: capacity
+        annotations:
+          summary: "Enhanced Visualization Service WebSocket connections at capacity"
+          description: "Enhanced Visualization Service has {{ $value }} active WebSocket connections, near maximum capacity of 10,000. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-websocket"
+
+      - alert: EnhancedVisualizationHighWebSocketDisconnectionRate
+        expr: rate(websocket_disconnections_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: stability
+        annotations:
+          summary: "Enhanced Visualization Service high WebSocket disconnection rate"
+          description: "Enhanced Visualization Service has a high WebSocket disconnection rate of {{ $value | humanize }} disconnections/sec. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-websocket"
+
+      - alert: EnhancedVisualizationWebSocketErrorSpike
+        expr: increase(websocket_disconnections_total{reason="error"}[5m]) > 50
+        for: 1m
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: errors
+        annotations:
+          summary: "Enhanced Visualization Service WebSocket error spike"
+          description: "Enhanced Visualization Service has {{ $value }} WebSocket errors in the last 5 minutes. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-websocket-errors"
+
+      # Visualization Performance Alerts
+      - alert: EnhancedVisualizationSlowGraphRendering
+        expr: histogram_quantile(0.95, rate(graph_render_duration_seconds_bucket[5m])) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: performance
+        annotations:
+          summary: "Enhanced Visualization Service slow graph rendering"
+          description: "Enhanced Visualization Service 95th percentile graph rendering time is {{ $value }}s, exceeding 1s target. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-rendering"
+
+      - alert: EnhancedVisualizationCriticalGraphRendering
+        expr: histogram_quantile(0.95, rate(graph_render_duration_seconds_bucket[5m])) > 5.0
+        for: 1m
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: performance
+        annotations:
+          summary: "Enhanced Visualization Service critical graph rendering performance"
+          description: "Enhanced Visualization Service 95th percentile graph rendering time is {{ $value }}s, critically slow. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-rendering"
+
+      - alert: EnhancedVisualizationHighActiveVisualizationSessions
+        expr: visualization_sessions_active > 500
+        for: 5m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: capacity
+        annotations:
+          summary: "Enhanced Visualization Service high active visualization sessions"
+          description: "Enhanced Visualization Service has {{ $value }} active visualization sessions, which may impact performance. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-sessions"
+
+      # HTTP Request Alerts
+      - alert: EnhancedVisualizationHighHTTPErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="enhanced-visualization-service",status_code=~"5.."}[5m])) /
+            sum(rate(http_requests_total{job="enhanced-visualization-service"}[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: errors
+        annotations:
+          summary: "Enhanced Visualization Service high HTTP error rate"
+          description: "Enhanced Visualization Service HTTP error rate is {{ $value | humanizePercentage }} (>5%). Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-http-errors"
+
+      - alert: EnhancedVisualizationCriticalHTTPErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="enhanced-visualization-service",status_code=~"5.."}[5m])) /
+            sum(rate(http_requests_total{job="enhanced-visualization-service"}[5m]))
+          ) > 0.20
+        for: 1m
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: errors
+        annotations:
+          summary: "Enhanced Visualization Service critical HTTP error rate"
+          description: "Enhanced Visualization Service HTTP error rate is {{ $value | humanizePercentage }} (>20%). Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-http-errors"
+
+      - alert: EnhancedVisualizationSlowHTTPRequests
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="enhanced-visualization-service"}[5m])) > 2.0
+        for: 3m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: performance
+        annotations:
+          summary: "Enhanced Visualization Service slow HTTP requests"
+          description: "Enhanced Visualization Service 95th percentile HTTP request duration is {{ $value }}s. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-http-performance"
+
+      # Database and Redis Alerts
+      - alert: EnhancedVisualizationDatabaseConnectionIssues
+        expr: database_connections_active == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: database
+        annotations:
+          summary: "Enhanced Visualization Service has no active database connections"
+          description: "Enhanced Visualization Service has no active database connections. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-database"
+
+      - alert: EnhancedVisualizationSlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m])) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: database
+        annotations:
+          summary: "Enhanced Visualization Service slow database queries"
+          description: "Enhanced Visualization Service 95th percentile database query duration is {{ $value }}s. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-database"
+
+      - alert: EnhancedVisualizationRedisConnectionIssues
+        expr: redis_connections_active == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: enhanced-visualization-service
+          category: redis
+        annotations:
+          summary: "Enhanced Visualization Service has no active Redis connections"
+          description: "Enhanced Visualization Service has no active Redis connections. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-redis"
+
+      # Cache Performance Alerts
+      - alert: EnhancedVisualizationLowCacheHitRate
+        expr: |
+          (
+            sum(rate(cache_operations_total{type="get",result="hit"}[5m])) /
+            sum(rate(cache_operations_total{type="get"}[5m]))
+          ) < 0.7
+        for: 5m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: performance
+        annotations:
+          summary: "Enhanced Visualization Service low cache hit rate"
+          description: "Enhanced Visualization Service cache hit rate is {{ $value | humanizePercentage }} (<70%). Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-cache"
+
+      # Error Rate Alerts
+      - alert: EnhancedVisualizationHighErrorRate
+        expr: rate(errors_total{service="enhanced-visualization-service"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: enhanced-visualization-service
+          category: errors
+        annotations:
+          summary: "Enhanced Visualization Service high error rate"
+          description: "Enhanced Visualization Service is experiencing {{ $value | humanize }} errors/sec. Error type: {{ $labels.type }}. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-errors"
+
+  - name: enhanced_visualization_capacity_planning
+    rules:
+      # Capacity Planning Alerts
+      - alert: EnhancedVisualizationApproachingWebSocketLimit
+        expr: websocket_connections_active > 7000
+        for: 10m
+        labels:
+          severity: info
+          service: enhanced-visualization-service
+          category: capacity_planning
+        annotations:
+          summary: "Enhanced Visualization Service approaching WebSocket connection limit"
+          description: "Enhanced Visualization Service has {{ $value }} active WebSocket connections (70% of capacity). Consider scaling. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-scaling"
+
+      - alert: EnhancedVisualizationHighVisualizationLoad
+        expr: rate(graph_nodes_rendered_total[5m]) > 1000
+        for: 5m
+        labels:
+          severity: info
+          service: enhanced-visualization-service
+          category: capacity_planning
+        annotations:
+          summary: "Enhanced Visualization Service high visualization rendering load"
+          description: "Enhanced Visualization Service is rendering {{ $value | humanize }} nodes/sec, indicating high load. Service: {{ $labels.instance }}"
+          runbook_url: "https://songnodes.com/runbooks/enhanced-visualization-scaling"

@@ -57,7 +57,19 @@ class GraphService {
         throw new Error(errorMessage);
       }
 
-      return await response.json();
+      const jsonData = await response.json();
+      
+      // Check if the response is already in ApiResponse format
+      if (jsonData && typeof jsonData === 'object' && 'data' in jsonData && 'success' in jsonData) {
+        return jsonData;
+      }
+      
+      // Wrap raw data in ApiResponse format
+      return {
+        data: jsonData,
+        success: true,
+        message: 'Success'
+      };
     } catch (error) {
       if (error instanceof Error) {
         // If it's a network error and we have a fallback, use it
