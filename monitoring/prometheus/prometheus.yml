@@ -10,6 +10,8 @@ global:
 # Load and evaluate rules
 rule_files:
   - "postgres-alerts.yml"
+  - "alert_rules.yml"
+  - "alerts/enhanced-visualization-alerts.yml"
 
 # Scrape configuration
 scrape_configs:
@@ -72,6 +74,23 @@ scrape_configs:
     metrics_path: /metrics
     scrape_timeout: 5s
 
+  # Enhanced Visualization Service - real-time monitoring for WebSocket and visualization metrics
+  - job_name: 'enhanced-visualization-service'
+    static_configs:
+      - targets: ['enhanced-visualization-service:8085']
+    scrape_interval: 10s  # High frequency for real-time metrics
+    metrics_path: /metrics
+    scrape_timeout: 5s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'enhanced_viz_.*'
+        target_label: service
+        replacement: 'enhanced-visualization-service'
+      - source_labels: [__name__]
+        regex: '(websocket_.*|visualization_.*|graph_.*|memory_.*|event_loop_.*)'
+        target_label: category
+        replacement: 'realtime_metrics'
+
   # Scraping services
   - job_name: 'scraper-orchestrator'
     static_configs:
@@ -110,11 +129,7 @@ alerting:
         - targets:
           - alertmanager:9093
 
-# Storage configuration
-storage:
-  tsdb:
-    retention.time: 30d
-    retention.size: 10GB
+# Storage configuration is handled via command line arguments
     
 # Remote write for long-term storage (optional)
 # remote_write:

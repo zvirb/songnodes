@@ -1,5 +1,5 @@
 import scrapy
-from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
 from .utils import parse_track_string
 import re
 

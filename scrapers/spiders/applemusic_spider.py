@@ -1,5 +1,5 @@
 import scrapy
-from ..items import PlaylistTrackItem
+from items import PlaylistTrackItem
 
 class AppleMusicSpider(scrapy.Spider):
     name = 'applemusic'

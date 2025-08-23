@@ -6,7 +6,7 @@ This manual checklist should be performed before marking any application as prod
 
 - [ ] **Environment Check**: Ensure the application server is running on the correct port
   - [ ] Development: `npm run dev` should serve on `http://localhost:3006`
-  - [ ] Production build: `npm run build && npm run preview` should serve on `http://localhost:3000`
+  - [ ] Production build: `npm run build && npm run preview` should serve on `http://localhost:3006`
 - [ ] **Backend Services**: Verify all required backend services are running and accessible
   - [ ] API endpoints responding correctly
   - [ ] WebSocket connections available

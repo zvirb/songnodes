@@ -61,6 +61,7 @@ export default defineConfig({
       '@constants': resolve(__dirname, 'src/constants'),
       '@services': resolve(__dirname, 'src/services'),
       '@assets': resolve(__dirname, 'src/assets'),
+      '@theme': resolve(__dirname, 'src/theme'),
     },
   },
   define: {
@@ -78,6 +79,10 @@ export default defineConfig({
       'react-redux',
       'framer-motion',
       'lodash-es',
+      '@mui/material',
+      '@mui/icons-material',
+      '@emotion/react',
+      '@emotion/styled',
     ],
   },
   build: {
@@ -91,6 +96,7 @@ export default defineConfig({
           d3: ['d3', 'd3-force', 'd3-selection', 'd3-zoom', 'd3-drag'],
           pixi: ['pixi.js', '@pixi/react'],
           redux: ['@reduxjs/toolkit', 'react-redux'],
+          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
           ui: ['framer-motion', 'react-window', 'react-virtualized-auto-sizer'],
           utils: ['lodash-es'],
         },
@@ -114,41 +120,46 @@ export default defineConfig({
     open: false,
     cors: true,
     proxy: {
-      '/api': {
+      '/api/v1/visualization': {
         target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api': {
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
       '/health': {
-        target: 'http://localhost:8084',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
       '/metrics': {
-        target: 'http://localhost:8084',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:8084',
+        target: 'ws://localhost:8090',
         ws: true,
         changeOrigin: true,
       },
     },
   },
   preview: {
-    port: 3000,
+    port: 3006,
     host: '0.0.0.0',
     open: false,
     cors: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8084',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
       '/health': {
-        target: 'http://localhost:8084',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },

@@ -1,0 +1,69 @@
+# Test Dockerfile for Enhanced Visualization Service (Node.js Backend)
+# This corrects the main Dockerfile which incorrectly tries to serve the backend as static files
+
+FROM node:18-alpine AS deps-cache
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    python3 \
+    make \
+    g++ \
+    dumb-init \
+    && rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install && npm cache clean --force
+
+# Build stage
+FROM deps-cache AS builder
+
+# Copy build configuration
+COPY tsconfig.json ./
+
+# Copy source code
+COPY src/ ./src/
+
+# Build the application
+RUN npm run build
+
+# Production stage for Node.js service (not nginx!)
+FROM node:18-alpine AS production
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    curl \
+    ca-certificates \
+    dumb-init \
+    && rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+
+# Create non-root user
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S -u 1001 -G appgroup -h /app -s /sbin/nologin appuser
+
+WORKDIR /app
+
+# Copy package.json and install only production dependencies
+COPY package*.json ./
+RUN npm install --only=production && npm cache clean --force
+
+# Copy built application
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8085/health || exit 1
+
+# Expose port
+EXPOSE 8085
+
+# Start the Node.js service
+CMD ["node", "dist/index.js"]

@@ -11,7 +11,7 @@ async function globalSetup(config: FullConfig) {
     let retries = 30; // 30 seconds timeout
     while (retries > 0) {
       try {
-        const response = await page.goto('http://localhost:3000', { 
+        const response = await page.goto('http://localhost:3006', { 
           waitUntil: 'networkidle',
           timeout: 2000 
         });
@@ -108,7 +108,7 @@ async function warmupApplication(page: any) {
     const routes = ['/', '/graph'];
     
     for (const route of routes) {
-      await page.goto(`http://localhost:3000${route}`, { 
+      await page.goto(`http://localhost:3006${route}`, { 
         waitUntil: 'networkidle',
         timeout: 10000 
       });

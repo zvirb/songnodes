@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { injectAxe, checkA11y } from '@axe-core/playwright';
+import { AxeBuilder } from '@axe-core/playwright';
 
 test.describe('Graph Visualization E2E Tests', () => {
   let page: Page;
@@ -13,8 +13,7 @@ test.describe('Graph Visualization E2E Tests', () => {
     // Wait for the application to load
     await page.waitForLoadState('networkidle');
     
-    // Inject axe for accessibility testing
-    await injectAxe(page);
+    // Setup for accessibility testing - AxeBuilder will handle injection
   });
 
   test.describe('Basic Functionality', () => {
@@ -340,10 +339,8 @@ test.describe('Graph Visualization E2E Tests', () => {
 
   test.describe('Accessibility', () => {
     test('meets WCAG 2.1 AA standards', async () => {
-      await checkA11y(page, null, {
-        detailedReport: true,
-        detailedReportOptions: { html: true },
-      });
+      const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
+      expect(accessibilityScanResults.violations).toEqual([]);
     });
 
     test('provides screen reader support', async () => {

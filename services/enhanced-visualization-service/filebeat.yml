@@ -1,0 +1,241 @@
+# Filebeat configuration for Enhanced Visualization Service
+# Collects and ships logs to Elasticsearch for centralized logging
+
+filebeat.inputs:
+  # Enhanced Visualization Service application logs
+  - type: container
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+    fields:
+      service: enhanced-visualization-service
+      environment: "${ENV:production}"
+    fields_under_root: true
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+    multiline.negate: true
+    multiline.match: after
+    condition:
+      contains:
+        container.name: "enhanced-visualization-service"
+
+  # Service-specific log files (if using file logging)
+  - type: log
+    enabled: true
+    paths:
+      - "/app/logs/*.log"
+      - "/var/log/enhanced-visualization-service/*.log"
+    fields:
+      service: enhanced-visualization-service
+      environment: "${ENV:production}"
+      log_type: application
+    fields_under_root: true
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+    multiline.negate: true
+    multiline.match: after
+    json.keys_under_root: true
+    json.add_error_key: true
+
+  # Error logs specifically
+  - type: log
+    enabled: true
+    paths:
+      - "/app/logs/error*.log"
+      - "/var/log/enhanced-visualization-service/error*.log"
+    fields:
+      service: enhanced-visualization-service
+      environment: "${ENV:production}"
+      log_type: error
+      severity: error
+    fields_under_root: true
+    json.keys_under_root: true
+    json.add_error_key: true
+
+# Processors for log enhancement
+processors:
+  # Add timestamp
+  - timestamp:
+      field: "@timestamp"
+      layouts:
+        - '2006-01-02T15:04:05.000Z'
+        - '2006-01-02T15:04:05Z'
+      test:
+        - '2023-01-01T12:00:00.000Z'
+
+  # Add host information
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+
+  # Add service metadata
+  - add_fields:
+      target: service
+      fields:
+        name: enhanced-visualization-service
+        version: "${SERVICE_VERSION:1.0.0}"
+        component: backend
+
+  # Parse structured logs
+  - decode_json_fields:
+      fields: ["message"]
+      target: "json"
+      overwrite_keys: true
+
+  # Add Kubernetes metadata if running in K8s
+  - add_kubernetes_metadata:
+      host: "${NODE_NAME}"
+      matchers:
+        - logs_path:
+            logs_path: "/var/log/containers/"
+
+  # Fingerprint for deduplication
+  - fingerprint:
+      fields: ["message", "level", "service.name"]
+      target_field: "fingerprint"
+
+  # Drop empty lines and debug logs in production
+  - drop_event:
+      when:
+        or:
+          - equals:
+              message: ""
+          - and:
+              - equals:
+                  environment: "production"
+              - equals:
+                  level: "debug"
+
+# Output configuration
+output.elasticsearch:
+  hosts: ["${ELASTICSEARCH_HOSTS:localhost:9200}"]
+  username: "${ELASTICSEARCH_USERNAME:}"
+  password: "${ELASTICSEARCH_PASSWORD:}"
+  
+  # Index configuration
+  index: "enhanced-visualization-service-%{+yyyy.MM.dd}"
+  
+  # Index lifecycle management
+  ilm.enabled: true
+  ilm.rollover_alias: "enhanced-visualization-service"
+  ilm.pattern: "{now/d}-000001"
+  ilm.policy: "enhanced-visualization-service-policy"
+
+  # Index template
+  template.name: "enhanced-visualization-service"
+  template.pattern: "enhanced-visualization-service-*"
+  template.settings:
+    index:
+      number_of_shards: 1
+      number_of_replicas: 1
+      refresh_interval: "5s"
+      mapping:
+        total_fields:
+          limit: 2000
+  
+  template.mappings:
+    properties:
+      "@timestamp":
+        type: date
+      level:
+        type: keyword
+      message:
+        type: text
+        analyzer: standard
+      service:
+        properties:
+          name:
+            type: keyword
+          version:
+            type: keyword
+          component:
+            type: keyword
+      environment:
+        type: keyword
+      hostname:
+        type: keyword
+      pid:
+        type: long
+      requestId:
+        type: keyword
+      userId:
+        type: keyword
+      duration:
+        type: float
+      statusCode:
+        type: long
+      method:
+        type: keyword
+      url:
+        type: keyword
+      ip:
+        type: ip
+      userAgent:
+        type: text
+        fields:
+          keyword:
+            type: keyword
+      connectionId:
+        type: keyword
+      event:
+        type: keyword
+      operation:
+        type: keyword
+      table:
+        type: keyword
+      success:
+        type: boolean
+      metric:
+        type: keyword
+      value:
+        type: float
+      unit:
+        type: keyword
+      securityEvent:
+        type: keyword
+      severity:
+        type: keyword
+      fingerprint:
+        type: keyword
+
+  # Pipeline for additional processing
+  pipeline: "enhanced-visualization-service-pipeline"
+
+# Alternative output for development/testing
+# output.console:
+#   pretty: true
+
+# Monitoring
+monitoring:
+  enabled: true
+  elasticsearch:
+    hosts: ["${ELASTICSEARCH_HOSTS:localhost:9200}"]
+    username: "${ELASTICSEARCH_USERNAME:}"
+    password: "${ELASTICSEARCH_PASSWORD:}"
+
+# Logging
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0600
+
+# HTTP endpoint for health checks
+http.enabled: true
+http.host: 0.0.0.0
+http.port: 5066
+
+# Queue settings for reliability
+queue.mem:
+  events: 4096
+  flush.min_events: 512
+  flush.timeout: 5s
+
+# General settings
+name: "enhanced-visualization-service-filebeat"
+tags: ["enhanced-visualization-service", "webapp", "nodejs"]
+
+# Reload configuration
+reload.enabled: true
+reload.period: 10s

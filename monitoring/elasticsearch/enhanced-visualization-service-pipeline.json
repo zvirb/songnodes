@@ -1,0 +1,237 @@
+{
+  "description": "Enhanced Visualization Service log processing pipeline",
+  "processors": [
+    {
+      "set": {
+        "field": "pipeline.name",
+        "value": "enhanced-visualization-service-pipeline"
+      }
+    },
+    {
+      "date": {
+        "field": "timestamp",
+        "target_field": "@timestamp",
+        "formats": [
+          "ISO8601",
+          "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+          "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+          "yyyy-MM-dd'T'HH:mm:ssZ",
+          "yyyy-MM-dd'T'HH:mm:ss'Z'"
+        ],
+        "ignore_failure": true
+      }
+    },
+    {
+      "script": {
+        "description": "Parse log level and normalize",
+        "source": """
+          if (ctx.level != null) {
+            ctx.level = ctx.level.toLowerCase();
+            if (ctx.level.equals('warn')) {
+              ctx.level = 'warning';
+            }
+          }
+        """
+      }
+    },
+    {
+      "grok": {
+        "field": "message",
+        "patterns": [
+          "\\[%{TIMESTAMP_ISO8601:timestamp}\\] %{WORD:level}: %{GREEDYDATA:log_message}",
+          "%{TIMESTAMP_ISO8601:timestamp} %{WORD:level} %{GREEDYDATA:log_message}",
+          "HTTP %{NUMBER:statusCode} - %{WORD:method} %{URIPATH:path}",
+          "WebSocket %{WORD:websocket_event}",
+          "Database %{WORD:db_operation} on %{WORD:table_name}",
+          "Cache %{WORD:cache_operation}",
+          "Security: %{GREEDYDATA:security_message}",
+          "Performance: %{WORD:performance_metric}"
+        ],
+        "ignore_failure": true
+      }
+    },
+    {
+      "convert": {
+        "field": "statusCode",
+        "type": "integer",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "convert": {
+        "field": "duration",
+        "type": "float",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "convert": {
+        "field": "pid",
+        "type": "integer",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "script": {
+        "description": "Categorize HTTP status codes",
+        "source": """
+          if (ctx.statusCode != null) {
+            int status = (int) ctx.statusCode;
+            if (status >= 200 && status < 300) {
+              ctx.status_category = 'success';
+            } else if (status >= 300 && status < 400) {
+              ctx.status_category = 'redirect';
+            } else if (status >= 400 && status < 500) {
+              ctx.status_category = 'client_error';
+            } else if (status >= 500) {
+              ctx.status_category = 'server_error';
+            }
+          }
+        """
+      }
+    },
+    {
+      "script": {
+        "description": "Categorize response times",
+        "source": """
+          if (ctx.duration != null) {
+            double dur = (double) ctx.duration;
+            if (dur < 0.1) {
+              ctx.performance_category = 'fast';
+            } else if (dur < 0.5) {
+              ctx.performance_category = 'normal';
+            } else if (dur < 2.0) {
+              ctx.performance_category = 'slow';
+            } else {
+              ctx.performance_category = 'very_slow';
+            }
+          }
+        """
+      }
+    },
+    {
+      "geoip": {
+        "field": "ip",
+        "target_field": "geoip",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "user_agent": {
+        "field": "userAgent",
+        "target_field": "user_agent",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "script": {
+        "description": "Extract WebSocket event type",
+        "source": """
+          if (ctx.websocket_event != null) {
+            ctx.event_type = 'websocket';
+            ctx.event_action = ctx.websocket_event.toLowerCase();
+          }
+        """
+      }
+    },
+    {
+      "script": {
+        "description": "Extract database operation type",
+        "source": """
+          if (ctx.db_operation != null) {
+            ctx.event_type = 'database';
+            ctx.event_action = ctx.db_operation.toLowerCase();
+          }
+        """
+      }
+    },
+    {
+      "script": {
+        "description": "Extract cache operation type",
+        "source": """
+          if (ctx.cache_operation != null) {
+            ctx.event_type = 'cache';
+            ctx.event_action = ctx.cache_operation.toLowerCase();
+          }
+        """
+      }
+    },
+    {
+      "script": {
+        "description": "Determine log severity based on content",
+        "source": """
+          String msg = ctx.message != null ? ctx.message.toLowerCase() : '';
+          String lvl = ctx.level != null ? ctx.level.toLowerCase() : '';
+          
+          if (lvl.equals('error') || lvl.equals('fatal') || msg.contains('error') || msg.contains('exception') || msg.contains('failed')) {
+            ctx.severity = 'high';
+          } else if (lvl.equals('warning') || lvl.equals('warn') || msg.contains('warning') || msg.contains('timeout')) {
+            ctx.severity = 'medium';
+          } else if (lvl.equals('info') || lvl.equals('debug')) {
+            ctx.severity = 'low';
+          } else {
+            ctx.severity = 'unknown';
+          }
+        """
+      }
+    },
+    {
+      "script": {
+        "description": "Add business metrics flags",
+        "source": """
+          String msg = ctx.message != null ? ctx.message.toLowerCase() : '';
+          
+          if (msg.contains('websocket') && msg.contains('connection')) {
+            ctx.business_metric = 'websocket_activity';
+          } else if (msg.contains('graph') && msg.contains('render')) {
+            ctx.business_metric = 'visualization_performance';
+          } else if (msg.contains('database') || msg.contains('query')) {
+            ctx.business_metric = 'database_performance';
+          } else if (msg.contains('cache')) {
+            ctx.business_metric = 'cache_performance';
+          } else if (msg.contains('security')) {
+            ctx.business_metric = 'security_event';
+          }
+        """
+      }
+    },
+    {
+      "remove": {
+        "field": [
+          "log_message",
+          "websocket_event",
+          "db_operation",
+          "cache_operation",
+          "performance_metric",
+          "security_message"
+        ],
+        "ignore_missing": true
+      }
+    },
+    {
+      "set": {
+        "field": "processed_at",
+        "value": "{{_ingest.timestamp}}"
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "pipeline.error",
+        "value": "{{_ingest.on_failure_message}}"
+      }
+    },
+    {
+      "set": {
+        "field": "pipeline.failed_processor",
+        "value": "{{_ingest.on_failure_processor_type}}"
+      }
+    }
+  ]
+}
