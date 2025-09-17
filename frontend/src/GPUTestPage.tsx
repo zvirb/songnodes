@@ -124,6 +124,7 @@ export const GPUTestPage: React.FC = () => {
             <SimpleGPUCanvas
               width={dimensions.width}
               height={dimensions.height}
+              nodeCount={nodeCount}
             />
           </div>
         </div>

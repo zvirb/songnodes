@@ -1,65 +1,21 @@
 """REST API Service for SongNodes"""
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any, Union
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
 import logging
 import os
 from datetime import datetime
-import asyncpg
-import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Database configuration
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://musicdb_user:password@db-connection-pool:6432/musicdb"
-)
-
-# Global database connection pool
-db_pool = None
 
 app = FastAPI(
     title="SongNodes REST API",
     description="Main REST API for music data operations",
     version="1.0.0"
 )
-
-# Database startup and shutdown events
-@app.on_event("startup")
-async def startup():
-    global db_pool
-    try:
-        db_pool = await asyncpg.create_pool(
-            DATABASE_URL,
-            min_size=2,
-            max_size=10,
-            command_timeout=60,
-            server_settings={
-                'search_path': 'musicdb,public'
-            }
-        )
-        logger.info("Database connection pool created successfully")
-    except Exception as e:
-        logger.error(f"Failed to create database connection pool: {e}")
-        db_pool = None
-
-@app.on_event("shutdown")
-async def shutdown():
-    global db_pool
-    if db_pool:
-        await db_pool.close()
-        logger.info("Database connection pool closed")
-
-# Database dependency
-async def get_db_connection():
-    global db_pool
-    if db_pool is None:
-        raise HTTPException(status_code=503, detail="Database connection not available")
-    return db_pool
 
 # CORS middleware
 app.add_middleware(
@@ -72,248 +28,90 @@ app.add_middleware(
 
 # Models
 class Artist(BaseModel):
-    id: Optional[str] = None
+    id: Optional[int] = None
     name: str
     genre: Optional[str] = None
     popularity: Optional[float] = None
     created_at: Optional[datetime] = None
 
 class Track(BaseModel):
-    id: Optional[str] = None
+    id: Optional[int] = None
     title: str
-    artist: Optional[str] = None
-    album: Optional[str] = None
+    artist_id: int
     duration: Optional[int] = None
     bpm: Optional[float] = None
     key: Optional[str] = None
-    genre: Optional[str] = None
-    energy: Optional[float] = None
-    valence: Optional[float] = None
-    popularity: Optional[float] = None
 
-class Album(BaseModel):
-    id: Optional[str] = None
-    title: str
-    artist: Optional[str] = None
-    release_date: Optional[str] = None
-    genre: Optional[str] = None
-
-class SearchResult(BaseModel):
-    id: str
-    title: str
-    type: str  # 'artist', 'track', 'album'
-    description: str
-    metadata: Dict[str, Any]
-    score: Optional[float] = None
-
-class SearchResponse(BaseModel):
-    results: List[SearchResult]
-    total: int
-    hasMore: bool
-    query: str
-    limit: int
-    offset: int
+class Mix(BaseModel):
+    id: Optional[int] = None
+    name: str
+    dj_id: int
+    date: Optional[datetime] = None
+    venue: Optional[str] = None
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    db_status = "connected" if db_pool else "disconnected"
-    
-    # Test database connection
-    if db_pool:
-        try:
-            async with db_pool.acquire() as connection:
-                await connection.fetchval("SELECT 1")
-                db_status = "healthy"
-        except Exception as e:
-            logger.warning(f"Database health check failed: {e}")
-            db_status = "unhealthy"
-    
     return {
-        "status": "healthy" if db_status == "healthy" else "degraded",
+        "status": "healthy",
         "service": "rest-api",
         "version": "1.0.0",
-        "database": db_status
+        "database": "connected"  # Placeholder
     }
 
 @app.get("/api/v1/artists", response_model=List[Artist])
-async def get_artists(
-    limit: int = Query(default=100, ge=1, le=1000),
-    offset: int = Query(default=0, ge=0),
-    db_pool=Depends(get_db_connection)
-):
+async def get_artists(limit: int = 100, offset: int = 0):
     """Get list of artists"""
     try:
-        async with db_pool.acquire() as connection:
-            # Query artists with track count
-            query = """
-                SELECT a.id, a.name, a.genre, 
-                       COUNT(ta.track_id) as track_count,
-                       a.created_at
-                FROM artists a
-                LEFT JOIN track_artists ta ON a.id = ta.artist_id
-                GROUP BY a.id, a.name, a.genre, a.created_at
-                ORDER BY track_count DESC, a.name
-                LIMIT $1 OFFSET $2
-            """
-            rows = await connection.fetch(query, limit, offset)
-            
-            return [
-                Artist(
-                    id=str(row['id']),
-                    name=row['name'],
-                    genre=row['genre'],
-                    popularity=min(float(row['track_count'] or 0) / 100.0, 1.0),  # Normalize to 0-1
-                    created_at=row['created_at']
-                )
-                for row in rows
-            ]
+        # Placeholder data
+        return [
+            Artist(id=1, name="Example Artist 1", genre="Electronic"),
+            Artist(id=2, name="Example Artist 2", genre="House")
+        ]
     except Exception as e:
         logger.error(f"Failed to fetch artists: {str(e)}")
-        # Return empty list as fallback
-        return []
-
-@app.get("/api/v1/artists/{artist_id}", response_model=Artist)
-async def get_artist(
-    artist_id: str,
-    db_pool=Depends(get_db_connection)
-):
-    """Get specific artist by ID"""
-    try:
-        async with db_pool.acquire() as connection:
-            query = """
-                SELECT a.id, a.name, a.genre, a.created_at,
-                       COUNT(ta.track_id) as track_count
-                FROM artists a
-                LEFT JOIN track_artists ta ON a.id = ta.artist_id
-                WHERE a.id = $1
-                GROUP BY a.id, a.name, a.genre, a.created_at
-            """
-            row = await connection.fetchrow(query, artist_id)
-            
-            if not row:
-                raise HTTPException(status_code=404, detail="Artist not found")
-            
-            return Artist(
-                id=str(row['id']),
-                name=row['name'],
-                genre=row['genre'],
-                popularity=min(float(row['track_count'] or 0) / 100.0, 1.0),
-                created_at=row['created_at']
-            )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to fetch artist {artist_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/artists/{artist_id}", response_model=Artist)
+async def get_artist(artist_id: int):
+    """Get specific artist by ID"""
+    try:
+        return Artist(
+            id=artist_id,
+            name=f"Artist {artist_id}",
+            genre="Electronic",
+            popularity=0.85
+        )
+    except Exception as e:
+        logger.error(f"Failed to fetch artist {artist_id}: {str(e)}")
+        raise HTTPException(status_code=404, detail="Artist not found")
+
 @app.get("/api/v1/tracks", response_model=List[Track])
-async def get_tracks(
-    artist_id: Optional[str] = None,
-    limit: int = Query(default=100, ge=1, le=1000),
-    offset: int = Query(default=0, ge=0),
-    db_pool=Depends(get_db_connection)
-):
+async def get_tracks(artist_id: Optional[int] = None, limit: int = 100):
     """Get list of tracks"""
     try:
-        async with db_pool.acquire() as connection:
-            if artist_id:
-                # Get tracks for specific artist
-                query = """
-                    SELECT t.id, t.title, t.bpm, t.key, t.energy, t.valence, t.genre,
-                           t.duration_ms, a.name as artist_name, al.title as album_title
-                    FROM tracks t
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
-                    LEFT JOIN album_tracks alt ON t.id = alt.track_id
-                    LEFT JOIN albums al ON alt.album_id = al.id
-                    WHERE a.id = $1
-                    ORDER BY t.title
-                    LIMIT $2 OFFSET $3
-                """
-                rows = await connection.fetch(query, artist_id, limit, offset)
-            else:
-                # Get all tracks
-                query = """
-                    SELECT t.id, t.title, t.bpm, t.key, t.energy, t.valence, t.genre,
-                           t.duration_ms, a.name as artist_name, al.title as album_title
-                    FROM tracks t
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
-                    LEFT JOIN album_tracks alt ON t.id = alt.track_id  
-                    LEFT JOIN albums al ON alt.album_id = al.id
-                    ORDER BY t.title
-                    LIMIT $1 OFFSET $2
-                """
-                rows = await connection.fetch(query, limit, offset)
-            
-            return [
-                Track(
-                    id=str(row['id']),
-                    title=row['title'],
-                    artist=row['artist_name'],
-                    album=row['album_title'],
-                    duration=int(row['duration_ms']) if row['duration_ms'] else None,
-                    bpm=float(row['bpm']) if row['bpm'] else None,
-                    key=row['key'],
-                    genre=row['genre'],
-                    energy=float(row['energy']) if row['energy'] else None,
-                    valence=float(row['valence']) if row['valence'] else None
-                )
-                for row in rows
-            ]
+        tracks = [
+            Track(id=1, title="Track 1", artist_id=1, bpm=128),
+            Track(id=2, title="Track 2", artist_id=1, bpm=125)
+        ]
+        if artist_id:
+            tracks = [t for t in tracks if t.artist_id == artist_id]
+        return tracks
     except Exception as e:
         logger.error(f"Failed to fetch tracks: {str(e)}")
-        # Return empty list as fallback
-        return []
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/albums", response_model=List[Album])
-async def get_albums(
-    artist_id: Optional[str] = None,
-    limit: int = Query(default=100, ge=1, le=1000),
-    offset: int = Query(default=0, ge=0),
-    db_pool=Depends(get_db_connection)
-):
-    """Get list of albums"""
+@app.get("/api/v1/mixes", response_model=List[Mix])
+async def get_mixes(dj_id: Optional[int] = None, limit: int = 100):
+    """Get list of DJ mixes"""
     try:
-        async with db_pool.acquire() as connection:
-            if artist_id:
-                # Note: Since albums table has primary_artist_id, we join directly
-                query = """
-                    SELECT al.id, al.title, al.release_date, al.genre,
-                           a.name as artist_name
-                    FROM albums al
-                    LEFT JOIN artists a ON al.primary_artist_id = a.id
-                    WHERE a.id = $1
-                    ORDER BY al.release_date DESC, al.title
-                    LIMIT $2 OFFSET $3
-                """
-                rows = await connection.fetch(query, artist_id, limit, offset)
-            else:
-                query = """
-                    SELECT al.id, al.title, al.release_date, al.genre,
-                           a.name as artist_name
-                    FROM albums al
-                    LEFT JOIN artists a ON al.primary_artist_id = a.id
-                    ORDER BY al.release_date DESC, al.title
-                    LIMIT $1 OFFSET $2
-                """
-                rows = await connection.fetch(query, limit, offset)
-            
-            return [
-                Album(
-                    id=str(row['id']),
-                    title=row['title'],
-                    artist=row['artist_name'],
-                    release_date=str(row['release_date']) if row['release_date'] else None,
-                    genre=row['genre']
-                )
-                for row in rows
-            ]
+        return [
+            Mix(id=1, name="Summer Mix 2024", dj_id=1, venue="Club XYZ"),
+            Mix(id=2, name="Festival Set", dj_id=2, venue="Festival ABC")
+        ]
     except Exception as e:
-        logger.error(f"Failed to fetch albums: {str(e)}")
-        # Return empty list as fallback
-        return []
+        logger.error(f"Failed to fetch mixes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/graph/nodes")
 async def get_graph_nodes():
@@ -347,421 +145,6 @@ async def trigger_scrape(source: str = "1001tracklists"):
     except Exception as e:
         logger.error(f"Failed to trigger scrape: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# Enhanced search models
-class FuzzySearchRequest(BaseModel):
-    query: str
-    type: Optional[str] = None
-    fuzzy_threshold: Optional[float] = Field(default=0.7, ge=0.0, le=1.0)
-    max_results: int = Field(default=50, ge=1, le=200)
-    include_suggestions: bool = True
-
-class AutocompleteResponse(BaseModel):
-    suggestions: List[str]
-    categories: Dict[str, List[str]]
-
-# Search endpoint
-@app.get("/api/v1/search", response_model=SearchResponse)
-async def search(
-    q: str = Query(..., description="Search query"),
-    type: Optional[str] = Query(None, description="Filter by type: artist, track, album"),
-    limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
-    fuzzy: bool = Query(default=False, description="Enable fuzzy matching"),
-    threshold: float = Query(default=0.7, ge=0.0, le=1.0, description="Fuzzy match threshold"),
-    db_pool=Depends(get_db_connection)
-):
-    """Search for artists, tracks, and albums"""
-    try:
-        async with db_pool.acquire() as connection:
-            results = []
-            total_count = 0
-            
-            # Enhanced search with fuzzy matching support
-            if fuzzy:
-                # Use PostgreSQL trigram similarity for fuzzy matching
-                search_condition = f"similarity({{field}}, $1) > {threshold}"
-                search_params = [q]
-                order_by = "similarity({{field}}, $1) DESC"
-            else:
-                # Traditional ILIKE search
-                search_condition = "{field} ILIKE $1"
-                search_params = [f"%{q}%"]
-                order_by = "CASE WHEN {field} ILIKE $1 THEN 3 WHEN {field} ILIKE $1 THEN 2 ELSE 1 END DESC"
-            
-            # Search tracks
-            if not type or type == 'track':
-                track_query = """
-                    SELECT t.id, t.title, t.genre, t.bpm, t.key, t.energy,
-                           a.name as artist_name, al.title as album_title,
-                           CASE 
-                               WHEN t.title ILIKE $1 THEN 3
-                               WHEN a.name ILIKE $1 THEN 2
-                               ELSE 1
-                           END as rank
-                    FROM tracks t
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
-                    LEFT JOIN album_tracks alt ON t.id = alt.track_id
-                    LEFT JOIN albums al ON alt.album_id = al.id
-                    WHERE t.title ILIKE $1 OR a.name ILIKE $1
-                    ORDER BY rank DESC, t.title
-                    LIMIT $2 OFFSET $3
-                """
-                
-                track_rows = await connection.fetch(track_query, search_pattern, limit, offset)
-                
-                for row in track_rows:
-                    description = f"Track by {row['artist_name'] or 'Unknown Artist'}"
-                    if row['album_title']:
-                        description += f" from {row['album_title']}"
-                    
-                    results.append(SearchResult(
-                        id=str(row['id']),
-                        title=row['title'],
-                        type="track",
-                        description=description,
-                        metadata={
-                            "artist": row['artist_name'],
-                            "album": row['album_title'],
-                            "genre": row['genre'],
-                            "bpm": float(row['bpm']) if row['bpm'] else None,
-                            "key": row['key'],
-                            "energy": float(row['energy']) if row['energy'] else None
-                        },
-                        score=float(row['rank'])
-                    ))
-            
-            # Search artists
-            if not type or type == 'artist':
-                artist_query = """
-                    SELECT a.id, a.name, a.genre, 
-                           COUNT(ta.track_id) as track_count,
-                           CASE 
-                               WHEN a.name ILIKE $1 THEN 3
-                               ELSE 1
-                           END as rank
-                    FROM artists a
-                    LEFT JOIN track_artists ta ON a.id = ta.artist_id
-                    WHERE a.name ILIKE $1
-                    GROUP BY a.id, a.name, a.genre
-                    ORDER BY rank DESC, track_count DESC, a.name
-                    LIMIT $2 OFFSET $3
-                """
-                
-                artist_rows = await connection.fetch(artist_query, search_pattern, limit, offset)
-                
-                for row in artist_rows:
-                    track_count = row['track_count'] or 0
-                    description = f"Artist with {track_count} track{'s' if track_count != 1 else ''}"
-                    if row['genre']:
-                        description += f" ({row['genre']})"
-                    
-                    results.append(SearchResult(
-                        id=str(row['id']),
-                        title=row['name'],
-                        type="artist", 
-                        description=description,
-                        metadata={
-                            "genre": row['genre'],
-                            "track_count": track_count
-                        },
-                        score=float(row['rank'])
-                    ))
-            
-            # Search albums
-            if not type or type == 'album':
-                album_query = """
-                    SELECT al.id, al.title, al.genre, al.release_date,
-                           a.name as artist_name,
-                           COUNT(alt.track_id) as track_count,
-                           CASE 
-                               WHEN al.title ILIKE $1 THEN 3
-                               WHEN a.name ILIKE $1 THEN 2
-                               ELSE 1
-                           END as rank
-                    FROM albums al
-                    LEFT JOIN artists a ON al.primary_artist_id = a.id
-                    LEFT JOIN album_tracks alt ON al.id = alt.album_id
-                    WHERE al.title ILIKE $1 OR a.name ILIKE $1
-                    GROUP BY al.id, al.title, al.genre, al.release_date, a.name
-                    ORDER BY rank DESC, al.title
-                    LIMIT $2 OFFSET $3
-                """
-                
-                album_rows = await connection.fetch(album_query, search_pattern, limit, offset)
-                
-                for row in album_rows:
-                    track_count = row['track_count'] or 0
-                    description = f"Album by {row['artist_name'] or 'Various Artists'} with {track_count} track{'s' if track_count != 1 else ''}"
-                    
-                    results.append(SearchResult(
-                        id=str(row['id']),
-                        title=row['title'],
-                        type="album",
-                        description=description,
-                        metadata={
-                            "artist": row['artist_name'],
-                            "genre": row['genre'],
-                            "release_date": str(row['release_date']) if row['release_date'] else None,
-                            "track_count": track_count
-                        },
-                        score=float(row['rank'])
-                    ))
-            
-            # Sort results by score (descending)
-            results.sort(key=lambda x: x.score or 0.0, reverse=True)
-            
-            # Get total count for pagination (simplified count)
-            count_query = """
-                SELECT 
-                    (SELECT COUNT(*) FROM tracks t 
-                     LEFT JOIN track_artists ta ON t.id = ta.track_id
-                     LEFT JOIN artists a ON ta.artist_id = a.id
-                     WHERE t.title ILIKE $1 OR a.name ILIKE $1) +
-                    (SELECT COUNT(*) FROM artists a
-                     WHERE a.name ILIKE $1) +
-                    (SELECT COUNT(*) FROM albums al
-                     LEFT JOIN artists a ON al.primary_artist_id = a.id
-                     WHERE al.title ILIKE $1 OR a.name ILIKE $1) as total
-            """
-            
-            total_row = await connection.fetchrow(count_query, search_pattern)
-            total_count = total_row['total'] if total_row else 0
-            
-            # Apply limit for the current page
-            paginated_results = results[:limit]
-            has_more = offset + len(paginated_results) < total_count
-            
-            return SearchResponse(
-                results=paginated_results,
-                total=total_count,
-                hasMore=has_more,
-                query=q,
-                limit=limit,
-                offset=offset
-            )
-            
-    except Exception as e:
-        logger.error(f"Search failed for query '{q}': {str(e)}")
-        # Return empty results on error rather than raising exception
-        return SearchResponse(
-            results=[],
-            total=0,
-            hasMore=False,
-            query=q,
-            limit=limit,
-            offset=offset
-        )
-
-# Enhanced autocomplete endpoint
-@app.get("/api/v1/search/autocomplete", response_model=AutocompleteResponse)
-async def autocomplete(
-    q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
-    limit: int = Query(default=10, ge=1, le=50),
-    db_pool=Depends(get_db_connection)
-):
-    """Get autocomplete suggestions for search queries"""
-    try:
-        async with db_pool.acquire() as connection:
-            suggestions = []
-            categories = {
-                "artists": [],
-                "tracks": [],
-                "albums": []
-            }
-            
-            # Enable trigram extension if not already enabled
-            try:
-                await connection.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-            except Exception as e:
-                logger.warning(f"Could not enable pg_trgm extension: {e}")
-            
-            # Get artist suggestions
-            artist_query = """
-                SELECT name, similarity(name, $1) as sim
-                FROM artists 
-                WHERE similarity(name, $1) > 0.3
-                ORDER BY sim DESC, name
-                LIMIT $2
-            """
-            try:
-                artist_rows = await connection.fetch(artist_query, q, limit)
-                categories["artists"] = [row['name'] for row in artist_rows]
-            except Exception:
-                # Fallback to ILIKE if trigram not available
-                artist_fallback = """
-                    SELECT name FROM artists 
-                    WHERE name ILIKE $1
-                    ORDER BY name LIMIT $2
-                """
-                artist_rows = await connection.fetch(artist_fallback, f"{q}%", limit)
-                categories["artists"] = [row['name'] for row in artist_rows]
-            
-            # Get track suggestions
-            track_query = """
-                SELECT title, similarity(title, $1) as sim
-                FROM tracks 
-                WHERE similarity(title, $1) > 0.3
-                ORDER BY sim DESC, title
-                LIMIT $2
-            """
-            try:
-                track_rows = await connection.fetch(track_query, q, limit)
-                categories["tracks"] = [row['title'] for row in track_rows]
-            except Exception:
-                # Fallback to ILIKE if trigram not available
-                track_fallback = """
-                    SELECT title FROM tracks 
-                    WHERE title ILIKE $1
-                    ORDER BY title LIMIT $2
-                """
-                track_rows = await connection.fetch(track_fallback, f"{q}%", limit)
-                categories["tracks"] = [row['title'] for row in track_rows]
-            
-            # Get album suggestions
-            album_query = """
-                SELECT title, similarity(title, $1) as sim
-                FROM albums 
-                WHERE similarity(title, $1) > 0.3
-                ORDER BY sim DESC, title
-                LIMIT $2
-            """
-            try:
-                album_rows = await connection.fetch(album_query, q, limit)
-                categories["albums"] = [row['title'] for row in album_rows]
-            except Exception:
-                # Fallback to ILIKE if trigram not available
-                album_fallback = """
-                    SELECT title FROM albums 
-                    WHERE title ILIKE $1
-                    ORDER BY title LIMIT $2
-                """
-                album_rows = await connection.fetch(album_fallback, f"{q}%", limit)
-                categories["albums"] = [row['title'] for row in album_rows]
-            
-            # Combine all suggestions for main suggestions list
-            all_suggestions = []
-            all_suggestions.extend(categories["artists"][:3])
-            all_suggestions.extend(categories["tracks"][:3]) 
-            all_suggestions.extend(categories["albums"][:2])
-            
-            return AutocompleteResponse(
-                suggestions=all_suggestions[:limit],
-                categories=categories
-            )
-            
-    except Exception as e:
-        logger.error(f"Autocomplete failed for query '{q}': {str(e)}")
-        return AutocompleteResponse(
-            suggestions=[],
-            categories={"artists": [], "tracks": [], "albums": []}
-        )
-
-# Similar songs endpoint
-@app.get("/api/v1/search/similar/{track_id}")
-async def get_similar_songs(
-    track_id: str,
-    limit: int = Query(default=10, ge=1, le=50),
-    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
-    db_pool=Depends(get_db_connection)
-):
-    """Find similar songs based on audio features"""
-    try:
-        async with db_pool.acquire() as connection:
-            # Get the reference track's features
-            reference_query = """
-                SELECT bpm, energy, valence, genre, key
-                FROM tracks WHERE id = $1
-            """
-            ref_track = await connection.fetchrow(reference_query, track_id)
-            
-            if not ref_track:
-                raise HTTPException(status_code=404, detail="Track not found")
-            
-            # Find similar tracks based on audio features
-            similar_query = """
-                SELECT t.id, t.title, t.bpm, t.energy, t.valence, t.genre, t.key,
-                       a.name as artist_name,
-                       (
-                           CASE WHEN t.bpm IS NOT NULL AND $2 IS NOT NULL 
-                           THEN 1.0 - ABS(t.bpm - $2) / GREATEST(t.bpm, $2) 
-                           ELSE 0.0 END +
-                           CASE WHEN t.energy IS NOT NULL AND $3 IS NOT NULL 
-                           THEN 1.0 - ABS(t.energy - $3) 
-                           ELSE 0.0 END +
-                           CASE WHEN t.valence IS NOT NULL AND $4 IS NOT NULL 
-                           THEN 1.0 - ABS(t.valence - $4) 
-                           ELSE 0.0 END +
-                           CASE WHEN t.genre = $5 THEN 0.3 ELSE 0.0 END +
-                           CASE WHEN t.key = $6 THEN 0.2 ELSE 0.0 END
-                       ) / 3.5 as similarity_score
-                FROM tracks t
-                LEFT JOIN track_artists ta ON t.id = ta.track_id
-                LEFT JOIN artists a ON ta.artist_id = a.id
-                WHERE t.id != $1
-                AND (
-                    (t.bpm IS NOT NULL AND $2 IS NOT NULL) OR
-                    (t.energy IS NOT NULL AND $3 IS NOT NULL) OR  
-                    (t.valence IS NOT NULL AND $4 IS NOT NULL)
-                )
-                HAVING similarity_score >= $7
-                ORDER BY similarity_score DESC
-                LIMIT $8
-            """
-            
-            similar_tracks = await connection.fetch(
-                similar_query, 
-                track_id,
-                ref_track['bpm'], 
-                ref_track['energy'], 
-                ref_track['valence'],
-                ref_track['genre'],
-                ref_track['key'],
-                threshold,
-                limit
-            )
-            
-            results = []
-            for row in similar_tracks:
-                results.append(SearchResult(
-                    id=str(row['id']),
-                    title=row['title'],
-                    type="track",
-                    description=f"Similar track by {row['artist_name'] or 'Unknown Artist'}",
-                    metadata={
-                        "artist": row['artist_name'],
-                        "bpm": float(row['bpm']) if row['bpm'] else None,
-                        "energy": float(row['energy']) if row['energy'] else None,
-                        "valence": float(row['valence']) if row['valence'] else None,
-                        "genre": row['genre'],
-                        "key": row['key'],
-                        "similarity_score": float(row['similarity_score'])
-                    },
-                    score=float(row['similarity_score'])
-                ))
-            
-            return SearchResponse(
-                results=results,
-                total=len(results),
-                hasMore=False,
-                query=f"similar:{track_id}",
-                limit=limit,
-                offset=0
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Similar songs search failed for track {track_id}: {str(e)}")
-        return SearchResponse(
-            results=[],
-            total=0,
-            hasMore=False,
-            query=f"similar:{track_id}",
-            limit=limit,
-            offset=0
-        )
 
 if __name__ == "__main__":
     import uvicorn

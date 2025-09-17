@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install FastAPI, uvicorn, and requests for API
-RUN pip install fastapi uvicorn requests
+# Install FastAPI and uvicorn for API
+RUN pip install fastapi uvicorn
 
 # Copy scrapy project
 COPY . .
@@ -31,7 +31,7 @@ import subprocess
 import json
 import os
 import tempfile
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 app = FastAPI(title="SetlistFM Scraper", version="1.0.0")
 
@@ -41,55 +41,34 @@ async def health_check():
 
 @app.post("/scrape")
 async def scrape_url(request: Dict[str, Any]):
+    url = request.get("url")
     params = request.get("params", {})
-    task_id = request.get("task_id", "default")
-    url = request.get("url")  # Optional for API-based scraping
-
-    # API Key validation
-    api_key = os.getenv('SETLISTFM_API_KEY')
-    if not api_key:
-        raise HTTPException(status_code=500, detail="SETLISTFM_API_KEY not configured")
-
+    task_id = request.get("task_id")
+    
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    
     try:
-        # Build scrapy command with API parameters
+        # Run scrapy with the setlistfm spider from the integrated structure
         cmd = [
             "scrapy", "crawl", "setlistfm",
             "-L", "INFO",
+            "-a", f"url={url}",
             "-o", f"/app/output/{task_id}_setlistfm.json"
         ]
-
-        # Add search parameters as spider arguments
-        if params.get("artistName"):
-            cmd.extend(["-a", f"artistName={params['artistName']}"])
-
-        if params.get("setlist_id"):
-            cmd.extend(["-a", f"setlist_id={params['setlist_id']}"])
-
-        if params.get("venue"):
-            cmd.extend(["-a", f"venue={params['venue']}"])
-
-        if params.get("city"):
-            cmd.extend(["-a", f"city={params['city']}"])
-
-        if params.get("date"):
-            cmd.extend(["-a", f"date={params['date']}"])
-
-        # Add environment variable for API key
-        env = os.environ.copy()
-        env['SETLISTFM_API_KEY'] = api_key
-
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app", env=env)
-
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")
+        
         if result.returncode != 0:
             raise HTTPException(status_code=500, detail=f"Scrapy failed: {result.stderr}")
-
+        
         return {
             "status": "success",
             "task_id": task_id,
-            "params": params,
+            "url": url,
             "output_file": f"/app/output/{task_id}_setlistfm.json"
         }
-
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
