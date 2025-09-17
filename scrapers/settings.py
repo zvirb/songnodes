@@ -14,18 +14,19 @@ NEWSPIDER_MODULE = 'spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # Be a good internet citizen. Identify your bot and provide a contact.
-USER_AGENT = 'MusicDBScraper/1.0 (+http://your-project-website-or-contact-page.com; mailto:your-email@example.com)' # Replace with your actual domain/email
+USER_AGENT = 'SongNodes MixesDB Scraper/1.0 (+https://github.com/your-project/songnodes; contact@songnodes.com)'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True # [1, 2]
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 4 # [1, 2] - Adjust based on server load and ethical considerations
+CONCURRENT_REQUESTS = 1 # Single request at a time for MixesDB politeness
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 2 # [1, 2] - Be polite, increase for slower sites
+DOWNLOAD_DELAY = 1.5 # 1.5 seconds between requests for 1001tracklists
+RANDOMIZE_DOWNLOAD_DELAY = 0.5 # Randomize delay by 0.5 * to 1.5 * delay
 
 # The download delay setting will honor only one of:
 # CONCURRENT_REQUESTS_PER_DOMAIN = 1
@@ -51,9 +52,12 @@ DOWNLOAD_DELAY = 2 # [1, 2] - Be polite, increase for slower sites
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
-#    'music_scraper.middlewares.MusicScraperDownloaderMiddleware': 543,
-# }
+DOWNLOADER_MIDDLEWARES = {
+    'middlewares.PoliteDownloaderMiddleware': 100,
+    'middlewares.RobotsTxtComplianceMiddleware': 200,
+    'middlewares.EnhancedRetryMiddleware': 550,
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,  # Disable default retry
+}
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html

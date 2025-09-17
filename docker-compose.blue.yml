@@ -216,7 +216,7 @@ services:
     container_name: monitoring-grafana-blue
     restart: unless-stopped
     ports:
-      - "3006:3000"  # Blue environment port
+      - "3008:3000"  # Blue environment port (avoiding conflict)
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin_prod_2024}

@@ -30,6 +30,9 @@ CREATE INDEX IF NOT EXISTS idx_nodes_track_id ON nodes(track_id);
 CREATE INDEX IF NOT EXISTS idx_nodes_position ON nodes(x_position, y_position);
 CREATE INDEX IF NOT EXISTS idx_nodes_metadata ON nodes USING gin(metadata);
 
+-- Add unique constraint for track_id to enable ON CONFLICT
+CREATE UNIQUE INDEX IF NOT EXISTS idx_nodes_track_id_unique ON nodes(track_id);
+
 -- Graph edges table for relationships
 CREATE TABLE IF NOT EXISTS edges (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -1,0 +1,60 @@
+# Docker Compose Override for Development
+# This file provides development-specific overrides
+
+services:
+  # Disable resource limits in development
+  postgres:
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 8G
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+
+  # Expose additional ports for debugging
+  api-gateway:
+    ports:
+      - "8080:8080"
+
+  rest-api:
+    ports:
+      - "8082:8000"  # Add port for direct access in development
+
+  # Enable Grafana playground
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: development_admin
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+
+  # Reduce replicas for development
+  data-transformer:
+    deploy:
+      replicas: 1
+
+  scraper-1001tracklists:
+    deploy:
+      replicas: 1
+
+  # Enable more verbose logging in development
+  enhanced-visualization-service:
+    environment:
+      LOG_LEVEL: debug
+      NODE_ENV: development
+
+  # Frontend with hot reload
+  frontend:
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/dist
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_WS_URL: ws://localhost:8090
+      NODE_ENV: development
+      VITE_LOG_LEVEL: debug

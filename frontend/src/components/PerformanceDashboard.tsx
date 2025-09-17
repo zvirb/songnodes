@@ -180,7 +180,13 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <h3 style={{ margin: 0, fontSize: '14px' }}>Performance</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>×</button>
+          <button 
+            onClick={onClose} 
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
+            aria-label="Close performance dashboard"
+          >
+            ×
+          </button>
         </div>
         
         <div style={{ marginBottom: '8px' }}>
@@ -234,16 +240,22 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               type="checkbox" 
               checked={autoOptimize}
               onChange={(e) => setAutoOptimize(e.target.checked)}
+              aria-label="Enable automatic performance optimization"
+              id="auto-optimize-checkbox"
             />
             Auto-optimize
           </label>
-          <button onClick={onClose} style={{
-            background: 'none',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
-            padding: '4px 8px',
-            cursor: 'pointer'
-          }}>
+          <button 
+            onClick={onClose} 
+            style={{
+              background: 'none',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              cursor: 'pointer'
+            }}
+            aria-label="Close performance dashboard"
+          >
             Close
           </button>
         </div>
