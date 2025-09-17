@@ -310,6 +310,55 @@ async def get_stats():
         }
     }
 
+@app.websocket("/ws/public")
+async def public_websocket_endpoint(websocket: WebSocket):
+    """Public WebSocket endpoint for anonymous access"""
+    user_id = "anonymous"
+    room_id = "general"
+    
+    connection_id = await websocket_service.manager.connect(websocket, user_id, room_id)
+    
+    try:
+        # Send welcome message
+        welcome_message = {
+            "type": "welcome",
+            "data": {
+                "user_id": user_id,
+                "room_id": room_id,
+                "connection_id": connection_id,
+                "authenticated": False,
+                "public_access": True
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        await websocket.send_text(json.dumps(welcome_message))
+        
+        # Listen for messages
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message_data = json.loads(data)
+                message = WebSocketMessage(**message_data)
+                message.user_id = user_id
+                message.timestamp = datetime.now(timezone.utc)
+                
+                # Handle different message types
+                await websocket_service.handle_message(message, connection_id)
+                
+            except ValidationError as e:
+                error_message = {
+                    "type": "error",
+                    "data": {"error": "Invalid message format", "details": str(e)},
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                await websocket.send_text(json.dumps(error_message))
+            except Exception as e:
+                logger.error(f"Error handling message: {e}")
+                
+    except WebSocketDisconnect:
+        await websocket_service.manager.disconnect(connection_id)
+        logger.info(f"Public WebSocket disconnected: {connection_id}")
+
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(
     websocket: WebSocket, 
