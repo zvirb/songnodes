@@ -10,13 +10,10 @@ class MusicDataPipeline:
             'ArtistItem': ['artist_name'],
             'AlbumItem': ['album_name', 'artist_name'],
             'TrackItem': ['track_name', 'album_name', 'isrc', 'tidal_id', 'track_type', 'is_remix', 'is_mashup', 'mashup_components'],
-            'SetlistItem': ['setlist_name', 'dj_artist_name', 'event_name', 'venue_name', 'set_date', 'last_updated_date', 'genre', 'label', 'duration', 'mix_type', 'description', 'source_url'],
+            'SetlistItem': ['setlist_name', 'dj_artist_name', 'event_name', 'venue_name', 'set_date', 'last_updated_date'],
             'TrackArtistItem': ['track_name', 'artist_name', 'artist_role'],
             'PlaylistTrackItem': ['playlist_name', 'track_name', 'track_order'],
             'SetlistTrackItem': ['setlist_name', 'track_name', 'track_order', 'start_time'],
-            'VenueItem': ['venue_name', 'city', 'state', 'country', 'venue_type', 'capacity', 'coordinates'],
-            'EventItem': ['event_name', 'event_date', 'venue_name', 'event_type', 'tour_name'],
-            'ArtistEventItem': ['artist_name', 'event_name', 'performance_role'],
         }
         self.data_storage = defaultdict(list) # To hold data before writing to CSV
 
