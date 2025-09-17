@@ -98,7 +98,6 @@ storage/knowledge_graph/
 
 # Claude AI configuration and workflow
 .claude/
-# UnifiedWorkflow/ - Now managed as git submodule
 CLAUDE.md
 
 # Git submodules and nested repositories
@@ -108,3 +107,62 @@ CLAUDE.md
 **/.gitmodules
 **/submodules/
 */submodules/
+
+# Claude Flow generated files
+.claude/settings.local.json
+.mcp.json
+claude-flow.config.json
+.swarm/
+.hive-mind/
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+claude-flow
+claude-flow.bat
+claude-flow.ps1
+hive-mind-prompt-*.txt
+.claude-flow/
+
+# Generated reports and documentation (from orchestration)
+COMPREHENSIVE_*.md
+ORCHESTRATION_*.md
+SONGNODES_*_REPORT.md
+SECURITY_VALIDATION_REPORT_*.md
+*_SUMMARY.md
+*_DOCUMENTATION.md
+*_ENHANCEMENT_SUMMARY.md
+
+# Test and validation scripts (generated)
+*-test.js
+*-validation.js
+test_*.py
+comprehensive-*.js
+meta-*.js
+production-*.js
+qa-*.js
+user-experience-*.js
+
+# Runtime data directories
+data/blue/
+data/green/
+data/production/
+data/elasticsearch/
+data/grafana/
+data/minio/
+data/nlp_models/
+data/postgres/
+
+# Shell scripts (generated)
+*.sh
+!scripts/*.sh
