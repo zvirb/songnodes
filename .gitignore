@@ -154,6 +154,7 @@ qa-*.js
 user-experience-*.js
 
 # Runtime data directories
+data/
 data/blue/
 data/green/
 data/production/
@@ -162,6 +163,7 @@ data/grafana/
 data/minio/
 data/nlp_models/
 data/postgres/
+data/rabbitmq/
 
 # Shell scripts (generated)
 *.sh
