@@ -5,46 +5,28 @@ import { ThemeProvider } from '@theme/ThemeProvider';
 import { GraphCanvas } from '@components/GraphCanvas/GraphCanvas';
 import { SearchPanel } from '@components/SearchPanel/SearchPanel';
 import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
-import { AuthPage } from '@components/Auth/AuthPage';
 import { useAppSelector, useAppDispatch } from '@store/index';
 import { fetchGraph } from '@store/graphSlice';
 import { updateDeviceInfo, setViewportSize } from '@store/uiSlice';
-import { fetchCurrentUser, logout } from '@store/authSlice';
 import { useResizeObserver } from '@hooks/useResizeObserver';
 import { useDebouncedCallback } from '@hooks/useDebouncedCallback';
-import { Box, Fab, Tooltip, Button, Avatar, Menu, MenuItem } from '@mui/material';
-import { 
-  Palette as PaletteIcon, 
-  Logout as LogoutIcon,
-  Person as PersonIcon 
-} from '@mui/icons-material';
+import { Box, Fab, Tooltip } from '@mui/material';
+import { Palette as PaletteIcon } from '@mui/icons-material';
 import classNames from 'classnames';
 import './index.css';
 
 const AppContent: React.FC = () => {
   const dispatch = useAppDispatch();
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
-  const [useMuiSearch, setUseMuiSearch] = useState(true);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  
-  // Auth state
-  const { isAuthenticated, user, accessToken, loading: authLoading } = useAppSelector(state => state.auth);
+  const [useMuiSearch, setUseMuiSearch] = useState(true); // Toggle between original and MUI search
   
   // Redux state
   const { nodes, edges, loading } = useAppSelector(state => state.graph);
-  
-  // Check authentication on mount
-  useEffect(() => {
-    if (accessToken && !user && !authLoading) {
-      dispatch(fetchCurrentUser());
-    }
-  }, [dispatch, accessToken, user, authLoading]);
   
   // Debug logging for state changes
   useEffect(() => {
     console.log('📊 Redux State Update - nodes:', nodes.length, 'edges:', edges.length, 'loading:', loading);
   }, [nodes.length, edges.length, loading]);
-  
   const { 
     viewport, 
     layout, 
@@ -52,6 +34,7 @@ const AppContent: React.FC = () => {
     showPerformanceOverlay,
     showDebugInfo 
   } = useAppSelector(state => state.ui);
+  // const { performanceUI } = useAppSelector(state => state.ui); // Unused for now
   
   // Container dimensions
   const { width, height } = useResizeObserver(containerRef);
@@ -65,11 +48,13 @@ const AppContent: React.FC = () => {
   
   useEffect(() => {
     updateViewportSize();
-  }, [width, height, updateViewportSize]);
+  }, [width, height, updateViewportSize]); // Include updateViewportSize to prevent stale closure
   
-  // Load graph data only when authenticated
+  // Initialize app - separate device info from graph loading to prevent loops
   useEffect(() => {
-    if (isAuthenticated && nodes.length === 0) {
+    // Load initial graph data
+    console.log('🚀 App useEffect: nodes.length =', nodes.length, 'loading =', loading);
+    if (nodes.length === 0) {
       console.log('📥 Dispatching fetchGraph request...');
       dispatch(fetchGraph({
         limit: 1000,
@@ -80,9 +65,9 @@ const AppContent: React.FC = () => {
         },
       }));
     }
-  }, [dispatch, isAuthenticated, nodes.length]);
+  }, [dispatch, nodes.length]);
 
-  // Handle device info updates
+  // Handle device info updates separately to prevent infinite loops
   useEffect(() => {
     const deviceInfo = {
       isMobile: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent),
@@ -103,22 +88,27 @@ const AppContent: React.FC = () => {
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Global shortcuts
       if (event.ctrlKey || event.metaKey) {
         switch (event.key) {
           case 'f':
             event.preventDefault();
+            // Focus search input
             const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
             searchInput?.focus();
             break;
           case '=':
           case '+':
             event.preventDefault();
+            // Zoom in
             break;
           case '-':
             event.preventDefault();
+            // Zoom out
             break;
           case '0':
             event.preventDefault();
+            // Reset zoom
             break;
         }
       }
@@ -127,24 +117,6 @@ const AppContent: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-  
-  const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  
-  const handleUserMenuClose = () => {
-    setAnchorEl(null);
-  };
-  
-  const handleLogout = () => {
-    dispatch(logout());
-    handleUserMenuClose();
-  };
-  
-  // Show auth page if not authenticated
-  if (!isAuthenticated) {
-    return <AuthPage />;
-  }
   
   const mainContentClasses = classNames(
     'flex-1 flex flex-col overflow-hidden',
@@ -196,7 +168,7 @@ const AppContent: React.FC = () => {
                 </Box>
               )}
               
-              {/* Additional sidebar content */}
+              {/* Additional sidebar content would go here */}
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="space-y-4">
                   {/* Quick stats */}
@@ -281,42 +253,19 @@ const AppContent: React.FC = () => {
                   </button>
                 </div>
                 
-                {/* User menu */}
-                <Button
-                  onClick={handleUserMenuClick}
-                  startIcon={
-                    <Avatar sx={{ width: 32, height: 32 }}>
-                      {user?.username?.[0]?.toUpperCase() || <PersonIcon />}
-                    </Avatar>
-                  }
-                  sx={{
-                    textTransform: 'none',
-                    color: theme.isDark ? 'white' : 'inherit',
-                  }}
-                  aria-label="Open user menu"
-                  aria-controls={Boolean(anchorEl) ? 'user-menu' : undefined}
-                  aria-haspopup="true"
-                  aria-expanded={Boolean(anchorEl)}
-                >
-                  {user?.username}
-                </Button>
-                <Menu
-                  id="user-menu"
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleUserMenuClose}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                >
-                  <MenuItem disabled>
-                    <PersonIcon sx={{ mr: 1 }} />
-                    {user?.email}
-                  </MenuItem>
-                  <MenuItem onClick={handleLogout}>
-                    <LogoutIcon sx={{ mr: 1 }} />
-                    Logout
-                  </MenuItem>
-                </Menu>
+                {/* View controls */}
+                <div className="flex items-center space-x-1">
+                  <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                  <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -340,13 +289,13 @@ const AppContent: React.FC = () => {
                 console.log('Node double-clicked:', node.title);
               }}
               onNodeHover={(_node) => {
-                // Handle node hover
+                // Handle node hover - node parameter prefixed with _ to indicate intentionally unused
               }}
               onBackgroundClick={() => {
                 // Clear selection
               }}
               onViewportChange={(_viewport) => {
-                // Handle viewport changes
+                // Handle viewport changes - viewport parameter prefixed with _ to indicate intentionally unused
               }}
             />
           )}
@@ -387,7 +336,6 @@ const AppContent: React.FC = () => {
           <div>Viewport: {viewport.x.toFixed(0)}, {viewport.y.toFixed(0)} @ {viewport.scale.toFixed(2)}x</div>
           <div>Container: {width} × {height}</div>
           <div>Nodes: {nodes.length} | Edges: {edges.length}</div>
-          <div>User: {user?.username} ({user?.role})</div>
         </div>
       )}
       
@@ -403,7 +351,6 @@ const AppContent: React.FC = () => {
             right: 16,
             zIndex: 1400,
           }}
-          aria-label={`Switch to ${useMuiSearch ? 'Original' : 'Material-UI'} Search Panel`}
         >
           <PaletteIcon />
         </Fab>
