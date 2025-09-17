@@ -129,7 +129,7 @@ class SearchService {
       searchParams.set('offset', request.offset.toString());
     }
     
-    const endpoint = `/visualization/search?${searchParams.toString()}`;
+    const endpoint = `/search?${searchParams.toString()}`;
     return this.request<SearchResponse>(endpoint, {}, fallbackResponse);
   }
 
@@ -145,7 +145,7 @@ class SearchService {
       status: 'Advanced search service offline'
     };
     
-    const endpoint = '/visualization/search/advanced';
+    const endpoint = '/search/advanced';
     return this.request<SearchResponse>(endpoint, {
       method: 'POST',
       body: JSON.stringify(request),
@@ -180,7 +180,7 @@ class SearchService {
       searchParams.set('includeReasons', params.includeReasons.toString());
     }
     
-    const endpoint = `/visualization/similar/${nodeId}?${searchParams.toString()}`;
+    const endpoint = `/search/similar/${nodeId}?${searchParams.toString()}`;
     return this.request<SearchResponse>(endpoint, {}, fallbackResponse);
   }
 
