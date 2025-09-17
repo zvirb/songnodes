@@ -1,7 +1,7 @@
 """REST API Service for SongNodes"""
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Any, Union
 import logging
 import os
@@ -37,10 +37,7 @@ async def startup():
             DATABASE_URL,
             min_size=2,
             max_size=10,
-            command_timeout=60,
-            server_settings={
-                'search_path': 'musicdb,public'
-            }
+            command_timeout=60
         )
         logger.info("Database connection pool created successfully")
     except Exception as e:
@@ -150,8 +147,8 @@ async def get_artists(
                 SELECT a.id, a.name, a.genre, 
                        COUNT(ta.track_id) as track_count,
                        a.created_at
-                FROM artists a
-                LEFT JOIN track_artists ta ON a.id = ta.artist_id
+                FROM musicdb.artists a
+                LEFT JOIN musicdb.track_artists ta ON a.id = ta.artist_id
                 GROUP BY a.id, a.name, a.genre, a.created_at
                 ORDER BY track_count DESC, a.name
                 LIMIT $1 OFFSET $2
@@ -163,7 +160,7 @@ async def get_artists(
                     id=str(row['id']),
                     name=row['name'],
                     genre=row['genre'],
-                    popularity=min(float(row['track_count'] or 0) / 100.0, 1.0),  # Normalize to 0-1
+                    popularity=min(float(row['track_count']) / 100.0, 1.0),  # Normalize to 0-1
                     created_at=row['created_at']
                 )
                 for row in rows
@@ -183,9 +180,9 @@ async def get_artist(
         async with db_pool.acquire() as connection:
             query = """
                 SELECT a.id, a.name, a.genre, a.created_at,
-                       COUNT(ta.track_id) as track_count
+                       COUNT(at.track_id) as track_count
                 FROM artists a
-                LEFT JOIN track_artists ta ON a.id = ta.artist_id
+                LEFT JOIN artist_tracks at ON a.id = at.artist_id
                 WHERE a.id = $1
                 GROUP BY a.id, a.name, a.genre, a.created_at
             """
@@ -198,7 +195,7 @@ async def get_artist(
                 id=str(row['id']),
                 name=row['name'],
                 genre=row['genre'],
-                popularity=min(float(row['track_count'] or 0) / 100.0, 1.0),
+                popularity=min(float(row['track_count']) / 100.0, 1.0),
                 created_at=row['created_at']
             )
     except HTTPException:
@@ -223,8 +220,8 @@ async def get_tracks(
                     SELECT t.id, t.title, t.bpm, t.key, t.energy, t.valence, t.genre,
                            t.duration_ms, a.name as artist_name, al.title as album_title
                     FROM tracks t
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    LEFT JOIN artist_tracks at ON t.id = at.track_id
+                    LEFT JOIN artists a ON at.artist_id = a.id
                     LEFT JOIN album_tracks alt ON t.id = alt.track_id
                     LEFT JOIN albums al ON alt.album_id = al.id
                     WHERE a.id = $1
@@ -238,8 +235,8 @@ async def get_tracks(
                     SELECT t.id, t.title, t.bpm, t.key, t.energy, t.valence, t.genre,
                            t.duration_ms, a.name as artist_name, al.title as album_title
                     FROM tracks t
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    LEFT JOIN artist_tracks at ON t.id = at.track_id
+                    LEFT JOIN artists a ON at.artist_id = a.id
                     LEFT JOIN album_tracks alt ON t.id = alt.track_id  
                     LEFT JOIN albums al ON alt.album_id = al.id
                     ORDER BY t.title
@@ -278,12 +275,12 @@ async def get_albums(
     try:
         async with db_pool.acquire() as connection:
             if artist_id:
-                # Note: Since albums table has primary_artist_id, we join directly
                 query = """
                     SELECT al.id, al.title, al.release_date, al.genre,
                            a.name as artist_name
                     FROM albums al
-                    LEFT JOIN artists a ON al.primary_artist_id = a.id
+                    LEFT JOIN artist_albums aa ON al.id = aa.album_id
+                    LEFT JOIN artists a ON aa.artist_id = a.id
                     WHERE a.id = $1
                     ORDER BY al.release_date DESC, al.title
                     LIMIT $2 OFFSET $3
@@ -294,7 +291,8 @@ async def get_albums(
                     SELECT al.id, al.title, al.release_date, al.genre,
                            a.name as artist_name
                     FROM albums al
-                    LEFT JOIN artists a ON al.primary_artist_id = a.id
+                    LEFT JOIN artist_albums aa ON al.id = aa.album_id
+                    LEFT JOIN artists a ON aa.artist_id = a.id
                     ORDER BY al.release_date DESC, al.title
                     LIMIT $1 OFFSET $2
                 """
@@ -348,18 +346,6 @@ async def trigger_scrape(source: str = "1001tracklists"):
         logger.error(f"Failed to trigger scrape: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Enhanced search models
-class FuzzySearchRequest(BaseModel):
-    query: str
-    type: Optional[str] = None
-    fuzzy_threshold: Optional[float] = Field(default=0.7, ge=0.0, le=1.0)
-    max_results: int = Field(default=50, ge=1, le=200)
-    include_suggestions: bool = True
-
-class AutocompleteResponse(BaseModel):
-    suggestions: List[str]
-    categories: Dict[str, List[str]]
-
 # Search endpoint
 @app.get("/api/v1/search", response_model=SearchResponse)
 async def search(
@@ -367,8 +353,6 @@ async def search(
     type: Optional[str] = Query(None, description="Filter by type: artist, track, album"),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    fuzzy: bool = Query(default=False, description="Enable fuzzy matching"),
-    threshold: float = Query(default=0.7, ge=0.0, le=1.0, description="Fuzzy match threshold"),
     db_pool=Depends(get_db_connection)
 ):
     """Search for artists, tracks, and albums"""
@@ -376,18 +360,7 @@ async def search(
         async with db_pool.acquire() as connection:
             results = []
             total_count = 0
-            
-            # Enhanced search with fuzzy matching support
-            if fuzzy:
-                # Use PostgreSQL trigram similarity for fuzzy matching
-                search_condition = f"similarity({{field}}, $1) > {threshold}"
-                search_params = [q]
-                order_by = "similarity({{field}}, $1) DESC"
-            else:
-                # Traditional ILIKE search
-                search_condition = "{field} ILIKE $1"
-                search_params = [f"%{q}%"]
-                order_by = "CASE WHEN {field} ILIKE $1 THEN 3 WHEN {field} ILIKE $1 THEN 2 ELSE 1 END DESC"
+            search_pattern = f"%{q}%"
             
             # Search tracks
             if not type or type == 'track':
@@ -400,8 +373,8 @@ async def search(
                                ELSE 1
                            END as rank
                     FROM tracks t
-                    LEFT JOIN track_artists ta ON t.id = ta.track_id
-                    LEFT JOIN artists a ON ta.artist_id = a.id
+                    LEFT JOIN artist_tracks at ON t.id = at.track_id
+                    LEFT JOIN artists a ON at.artist_id = a.id
                     LEFT JOIN album_tracks alt ON t.id = alt.track_id
                     LEFT JOIN albums al ON alt.album_id = al.id
                     WHERE t.title ILIKE $1 OR a.name ILIKE $1
@@ -436,13 +409,13 @@ async def search(
             if not type or type == 'artist':
                 artist_query = """
                     SELECT a.id, a.name, a.genre, 
-                           COUNT(ta.track_id) as track_count,
+                           COUNT(at.track_id) as track_count,
                            CASE 
                                WHEN a.name ILIKE $1 THEN 3
                                ELSE 1
                            END as rank
                     FROM artists a
-                    LEFT JOIN track_artists ta ON a.id = ta.artist_id
+                    LEFT JOIN artist_tracks at ON a.id = at.artist_id
                     WHERE a.name ILIKE $1
                     GROUP BY a.id, a.name, a.genre
                     ORDER BY rank DESC, track_count DESC, a.name
@@ -481,7 +454,8 @@ async def search(
                                ELSE 1
                            END as rank
                     FROM albums al
-                    LEFT JOIN artists a ON al.primary_artist_id = a.id
+                    LEFT JOIN artist_albums aa ON al.id = aa.album_id
+                    LEFT JOIN artists a ON aa.artist_id = a.id
                     LEFT JOIN album_tracks alt ON al.id = alt.album_id
                     WHERE al.title ILIKE $1 OR a.name ILIKE $1
                     GROUP BY al.id, al.title, al.genre, al.release_date, a.name
@@ -516,13 +490,14 @@ async def search(
             count_query = """
                 SELECT 
                     (SELECT COUNT(*) FROM tracks t 
-                     LEFT JOIN track_artists ta ON t.id = ta.track_id
-                     LEFT JOIN artists a ON ta.artist_id = a.id
+                     LEFT JOIN artist_tracks at ON t.id = at.track_id
+                     LEFT JOIN artists a ON at.artist_id = a.id
                      WHERE t.title ILIKE $1 OR a.name ILIKE $1) +
                     (SELECT COUNT(*) FROM artists a
                      WHERE a.name ILIKE $1) +
                     (SELECT COUNT(*) FROM albums al
-                     LEFT JOIN artists a ON al.primary_artist_id = a.id
+                     LEFT JOIN artist_albums aa ON al.id = aa.album_id
+                     LEFT JOIN artists a ON aa.artist_id = a.id
                      WHERE al.title ILIKE $1 OR a.name ILIKE $1) as total
             """
             
@@ -552,215 +527,6 @@ async def search(
             query=q,
             limit=limit,
             offset=offset
-        )
-
-# Enhanced autocomplete endpoint
-@app.get("/api/v1/search/autocomplete", response_model=AutocompleteResponse)
-async def autocomplete(
-    q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
-    limit: int = Query(default=10, ge=1, le=50),
-    db_pool=Depends(get_db_connection)
-):
-    """Get autocomplete suggestions for search queries"""
-    try:
-        async with db_pool.acquire() as connection:
-            suggestions = []
-            categories = {
-                "artists": [],
-                "tracks": [],
-                "albums": []
-            }
-            
-            # Enable trigram extension if not already enabled
-            try:
-                await connection.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-            except Exception as e:
-                logger.warning(f"Could not enable pg_trgm extension: {e}")
-            
-            # Get artist suggestions
-            artist_query = """
-                SELECT name, similarity(name, $1) as sim
-                FROM artists 
-                WHERE similarity(name, $1) > 0.3
-                ORDER BY sim DESC, name
-                LIMIT $2
-            """
-            try:
-                artist_rows = await connection.fetch(artist_query, q, limit)
-                categories["artists"] = [row['name'] for row in artist_rows]
-            except Exception:
-                # Fallback to ILIKE if trigram not available
-                artist_fallback = """
-                    SELECT name FROM artists 
-                    WHERE name ILIKE $1
-                    ORDER BY name LIMIT $2
-                """
-                artist_rows = await connection.fetch(artist_fallback, f"{q}%", limit)
-                categories["artists"] = [row['name'] for row in artist_rows]
-            
-            # Get track suggestions
-            track_query = """
-                SELECT title, similarity(title, $1) as sim
-                FROM tracks 
-                WHERE similarity(title, $1) > 0.3
-                ORDER BY sim DESC, title
-                LIMIT $2
-            """
-            try:
-                track_rows = await connection.fetch(track_query, q, limit)
-                categories["tracks"] = [row['title'] for row in track_rows]
-            except Exception:
-                # Fallback to ILIKE if trigram not available
-                track_fallback = """
-                    SELECT title FROM tracks 
-                    WHERE title ILIKE $1
-                    ORDER BY title LIMIT $2
-                """
-                track_rows = await connection.fetch(track_fallback, f"{q}%", limit)
-                categories["tracks"] = [row['title'] for row in track_rows]
-            
-            # Get album suggestions
-            album_query = """
-                SELECT title, similarity(title, $1) as sim
-                FROM albums 
-                WHERE similarity(title, $1) > 0.3
-                ORDER BY sim DESC, title
-                LIMIT $2
-            """
-            try:
-                album_rows = await connection.fetch(album_query, q, limit)
-                categories["albums"] = [row['title'] for row in album_rows]
-            except Exception:
-                # Fallback to ILIKE if trigram not available
-                album_fallback = """
-                    SELECT title FROM albums 
-                    WHERE title ILIKE $1
-                    ORDER BY title LIMIT $2
-                """
-                album_rows = await connection.fetch(album_fallback, f"{q}%", limit)
-                categories["albums"] = [row['title'] for row in album_rows]
-            
-            # Combine all suggestions for main suggestions list
-            all_suggestions = []
-            all_suggestions.extend(categories["artists"][:3])
-            all_suggestions.extend(categories["tracks"][:3]) 
-            all_suggestions.extend(categories["albums"][:2])
-            
-            return AutocompleteResponse(
-                suggestions=all_suggestions[:limit],
-                categories=categories
-            )
-            
-    except Exception as e:
-        logger.error(f"Autocomplete failed for query '{q}': {str(e)}")
-        return AutocompleteResponse(
-            suggestions=[],
-            categories={"artists": [], "tracks": [], "albums": []}
-        )
-
-# Similar songs endpoint
-@app.get("/api/v1/search/similar/{track_id}")
-async def get_similar_songs(
-    track_id: str,
-    limit: int = Query(default=10, ge=1, le=50),
-    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
-    db_pool=Depends(get_db_connection)
-):
-    """Find similar songs based on audio features"""
-    try:
-        async with db_pool.acquire() as connection:
-            # Get the reference track's features
-            reference_query = """
-                SELECT bpm, energy, valence, genre, key
-                FROM tracks WHERE id = $1
-            """
-            ref_track = await connection.fetchrow(reference_query, track_id)
-            
-            if not ref_track:
-                raise HTTPException(status_code=404, detail="Track not found")
-            
-            # Find similar tracks based on audio features
-            similar_query = """
-                SELECT t.id, t.title, t.bpm, t.energy, t.valence, t.genre, t.key,
-                       a.name as artist_name,
-                       (
-                           CASE WHEN t.bpm IS NOT NULL AND $2 IS NOT NULL 
-                           THEN 1.0 - ABS(t.bpm - $2) / GREATEST(t.bpm, $2) 
-                           ELSE 0.0 END +
-                           CASE WHEN t.energy IS NOT NULL AND $3 IS NOT NULL 
-                           THEN 1.0 - ABS(t.energy - $3) 
-                           ELSE 0.0 END +
-                           CASE WHEN t.valence IS NOT NULL AND $4 IS NOT NULL 
-                           THEN 1.0 - ABS(t.valence - $4) 
-                           ELSE 0.0 END +
-                           CASE WHEN t.genre = $5 THEN 0.3 ELSE 0.0 END +
-                           CASE WHEN t.key = $6 THEN 0.2 ELSE 0.0 END
-                       ) / 3.5 as similarity_score
-                FROM tracks t
-                LEFT JOIN track_artists ta ON t.id = ta.track_id
-                LEFT JOIN artists a ON ta.artist_id = a.id
-                WHERE t.id != $1
-                AND (
-                    (t.bpm IS NOT NULL AND $2 IS NOT NULL) OR
-                    (t.energy IS NOT NULL AND $3 IS NOT NULL) OR  
-                    (t.valence IS NOT NULL AND $4 IS NOT NULL)
-                )
-                HAVING similarity_score >= $7
-                ORDER BY similarity_score DESC
-                LIMIT $8
-            """
-            
-            similar_tracks = await connection.fetch(
-                similar_query, 
-                track_id,
-                ref_track['bpm'], 
-                ref_track['energy'], 
-                ref_track['valence'],
-                ref_track['genre'],
-                ref_track['key'],
-                threshold,
-                limit
-            )
-            
-            results = []
-            for row in similar_tracks:
-                results.append(SearchResult(
-                    id=str(row['id']),
-                    title=row['title'],
-                    type="track",
-                    description=f"Similar track by {row['artist_name'] or 'Unknown Artist'}",
-                    metadata={
-                        "artist": row['artist_name'],
-                        "bpm": float(row['bpm']) if row['bpm'] else None,
-                        "energy": float(row['energy']) if row['energy'] else None,
-                        "valence": float(row['valence']) if row['valence'] else None,
-                        "genre": row['genre'],
-                        "key": row['key'],
-                        "similarity_score": float(row['similarity_score'])
-                    },
-                    score=float(row['similarity_score'])
-                ))
-            
-            return SearchResponse(
-                results=results,
-                total=len(results),
-                hasMore=False,
-                query=f"similar:{track_id}",
-                limit=limit,
-                offset=0
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Similar songs search failed for track {track_id}: {str(e)}")
-        return SearchResponse(
-            results=[],
-            total=0,
-            hasMore=False,
-            query=f"similar:{track_id}",
-            limit=limit,
-            offset=0
         )
 
 if __name__ == "__main__":

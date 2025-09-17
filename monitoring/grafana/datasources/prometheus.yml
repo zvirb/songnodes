@@ -1,37 +1,16 @@
 apiVersion: 1
 
+# This file is deprecated - using datasource.yml as the primary configuration
+# Keeping this file minimal to avoid conflicts
+
 datasources:
-  - name: Prometheus
+  - name: Prometheus-Legacy
     type: prometheus
     access: proxy
     url: http://prometheus:9090
-    isDefault: true
-    editable: true
+    isDefault: false
+    editable: false
     jsonData:
       httpMethod: POST
       queryTimeout: 60s
       timeInterval: 5s
-
-  - name: PostgreSQL
-    type: postgres
-    access: proxy
-    url: postgres:5432
-    database: musicdb
-    user: musicdb_user
-    secureJsonData:
-      password: musicdb_dev_password_2024
-    jsonData:
-      sslmode: disable
-      connMaxLifetime: 14400
-      maxOpenConns: 10
-      maxIdleConns: 2
-
-  - name: Redis
-    type: redis-datasource
-    access: proxy
-    url: redis://redis:6379
-    jsonData:
-      client: 'standalone'
-      poolSize: 5
-      timeout: 10
-      pingInterval: 0

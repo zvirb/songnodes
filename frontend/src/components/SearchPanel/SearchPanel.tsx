@@ -234,6 +234,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
           value={localQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Search songs, artists, albums, or genres..."
+          aria-label="Search music database"
+          aria-describedby="search-help-text"
           className={classNames(
             'block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600',
             'rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white',
@@ -252,6 +254,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               onClick={clearSearch}
               className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               title="Clear search"
+              aria-label="Clear search input"
             >
               <XMarkIcon className="h-4 w-4" />
             </button>
@@ -266,6 +269,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
             )}
             title="Advanced search"
+            aria-label="Toggle advanced search options"
+            aria-expanded={showAdvanced}
           >
             <AdjustmentsHorizontalIcon className="h-4 w-4" />
           </button>
