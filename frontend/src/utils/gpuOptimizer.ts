@@ -314,7 +314,22 @@ export class GPUOptimizer {
    */
   public getOptimizedTexture(type: string, size: number): PIXI.Texture | null {
     const key = `${type}_${size}`;
-    return this.texturePool.get(key) || null;
+    
+    // Try exact match first
+    let texture = this.texturePool.get(key);
+    if (texture) return texture;
+    
+    // For circle type, find closest size match
+    if (type === 'circle') {
+      const availableSizes = [32, 64, 128, 256, 512];
+      const closestSize = availableSizes.reduce((prev, curr) => 
+        Math.abs(curr - size) < Math.abs(prev - size) ? curr : prev
+      );
+      texture = this.texturePool.get(`circle_${closestSize}`);
+      if (texture) return texture;
+    }
+    
+    return null;
   }
 
   /**
@@ -339,9 +354,58 @@ export class GPUOptimizer {
     // Pre-allocate buffer if WebGL2 is available
     if (this.performanceMetrics?.contextType === 'webgl2') {
       console.log('✅ Using WebGL2 optimized particle container');
+      // Enable instanced rendering optimizations
+      (container as any).interactiveChildren = false;
+      (container as any).sortableChildren = false;
+    }
+    
+    // Optimize blending for better GPU performance
+    container.blendMode = PIXI.BLEND_MODES.NORMAL;
+    
+    // Enable GPU texture batching
+    if (this.app?.renderer.batch) {
+      (container as any).batchSize = 4000; // Increase batch size for better GPU utilization
     }
 
     return container;
+  }
+
+  /**
+   * Diagnose and fix GPU performance degradation
+   */
+  public optimizeGPUPerformance(): void {
+    if (!this.app || !this.gl) return;
+    
+    console.log('🔧 Running GPU performance optimization...');
+    
+    // Force garbage collection of unused textures
+    this.app.renderer.textureGC.run();
+    
+    // Optimize WebGL state
+    const renderer = this.app.renderer;
+    if (renderer.type === PIXI.RENDERER_TYPE.WEBGL) {
+      // Enable depth testing for better occlusion culling
+      this.gl.enable(this.gl.DEPTH_TEST);
+      this.gl.depthFunc(this.gl.LEQUAL);
+      
+      // Optimize texture parameters
+      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_LINEAR);
+      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+      
+      // Enable anisotropic filtering if available
+      const ext = this.gl.getExtension('EXT_texture_filter_anisotropic');
+      if (ext) {
+        const maxAnisotropy = this.gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+        this.gl.texParameterf(this.gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, maxAnisotropy));
+        console.log('✅ Anisotropic filtering enabled');
+      }
+    }
+    
+    // Force WebGL context optimization
+    this.gl.flush();
+    this.gl.finish();
+    
+    console.log('✅ GPU performance optimization complete');
   }
 
   /**

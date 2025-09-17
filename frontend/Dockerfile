@@ -1,4 +1,34 @@
-# Multi-stage Dockerfile for SongNodes Frontend Production Build
+# Multi-stage Dockerfile for SongNodes Frontend
+# Development and Production Build Support
+
+# Development stage
+FROM node:20-alpine AS development
+
+# Set working directory
+WORKDIR /app
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies for development
+RUN npm ci --no-audit --no-fund
+
+# Copy source code
+COPY . .
+
+# Expose development port
+EXPOSE 3006
+
+# Health check for development
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3006 || exit 1
+
+# Development command
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3006"]
+
 # Stage 1: Build environment
 FROM node:20-alpine AS builder
 
