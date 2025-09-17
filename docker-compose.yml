@@ -51,7 +51,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
       POSTGRES_DB: musicdb
       PGBOUNCER_ADMIN_USER: pgbouncer
-      PGBOUNCER_ADMIN_PASSWORD: ${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer_secure}
+      PGBOUNCER_ADMIN_PASSWORD: ${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer_admin_pass_2024}
     depends_on:
       - postgres
     networks:
@@ -168,6 +168,12 @@ services:
       dockerfile: Dockerfile
     # container_name removed to allow scaling with replicas
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
     environment:
       SCRAPER_NAME: 1001tracklists
       REDIS_HOST: redis
@@ -278,6 +284,20 @@ services:
       - nlp-processor
     networks:
       - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8014/health"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   # ===========================================
   # DATA PROCESSING SERVICES
@@ -340,6 +360,12 @@ services:
       - redis
     networks:
       - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8021/health"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 180s
     deploy:
       resources:
         limits:
@@ -437,6 +463,12 @@ services:
       - redis
     networks:
       - musicdb-backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     deploy:
       replicas: 3
       resources:
@@ -642,6 +674,12 @@ services:
     networks:
       - musicdb-monitoring
       - musicdb-backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -676,6 +714,12 @@ services:
       - elasticsearch
     networks:
       - musicdb-monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 180s
 
   # ===========================================
   # ADDITIONAL MONITORING SERVICES
@@ -734,7 +778,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: "postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_dev_password_2024}@postgres:5432/musicdb?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb?sslmode=disable"
     depends_on:
       - postgres
     networks:
@@ -766,9 +810,49 @@ services:
           memory: 256M
 
   # ===========================================
+  # FRONTEND
+  # ===========================================
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: songnodes-frontend
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_WS_URL: ws://localhost:8090
+      NODE_ENV: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+      - enhanced-visualization-service
+    networks:
+      - musicdb-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ===========================================
   # SUPPORT SERVICES
   # ===========================================
-  
+
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
@@ -842,17 +926,55 @@ networks:
 volumes:
   postgres_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
   redis_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/redis
   rabbitmq_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/rabbitmq
   elasticsearch_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/elasticsearch
   prometheus_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/prometheus
   grafana_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/grafana
   minio_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/minio
   nlp_models:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/nlp_models
+  nginx_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/nginx
