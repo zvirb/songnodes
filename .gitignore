@@ -136,7 +136,7 @@ hive-mind-prompt-*.txt
 
 # Generated reports and documentation (from orchestration)
 COMPREHENSIVE_*.md
-ORCHESTRATION_*.md
+# ORCHESTRATION_*.md  # Temporarily allowing for integration
 SONGNODES_*_REPORT.md
 SECURITY_VALIDATION_REPORT_*.md
 *_SUMMARY.md
@@ -144,14 +144,14 @@ SECURITY_VALIDATION_REPORT_*.md
 *_ENHANCEMENT_SUMMARY.md
 
 # Test and validation scripts (generated)
-*-test.js
-*-validation.js
+# *-test.js  # Temporarily allowing for integration
+# *-validation.js  # Temporarily allowing for integration
 test_*.py
-comprehensive-*.js
-meta-*.js
-production-*.js
-qa-*.js
-user-experience-*.js
+# comprehensive-*.js  # Temporarily allowing for integration
+# meta-*.js  # Temporarily allowing for integration
+# production-*.js  # Temporarily allowing for integration
+# qa-*.js  # Temporarily allowing for integration
+# user-experience-*.js  # Temporarily allowing for integration
 
 # Runtime data directories
 data/
@@ -166,5 +166,5 @@ data/postgres/
 data/rabbitmq/
 
 # Shell scripts (generated)
-*.sh
+# *.sh  # Temporarily allowing for integration
 !scripts/*.sh
