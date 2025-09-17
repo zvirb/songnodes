@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+import authReducer from './authSlice';
 import graphReducer from './graphSlice';
 import uiReducer from './uiSlice';
 import performanceReducer from './performanceSlice';
@@ -11,6 +12,7 @@ import settingsReducer from './settingsSlice';
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
     graph: graphReducer,
     ui: uiReducer,
     performance: performanceReducer,
