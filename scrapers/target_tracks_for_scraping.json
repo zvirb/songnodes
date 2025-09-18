@@ -1,0 +1,455 @@
+{
+  "metadata": {
+    "description": "Comprehensive target track list for SongNodes scrapers",
+    "source": "populate_sample_data.py electronic music collection",
+    "total_tracks": 87,
+    "total_artists": 14,
+    "genres": ["Progressive House", "Electro House", "Dubstep", "Trance", "Tech House"],
+    "created": "2025-09-18",
+    "purpose": "Find playlists/setlists containing these tracks for graph visualization"
+  },
+  "scraper_targets": {
+    "priority_tracks": [
+      {
+        "title": "Don't You Worry Child",
+        "artists": ["Swedish House Mafia"],
+        "primary_artist": "Swedish House Mafia",
+        "remix_variations": [
+          "Don't You Worry Child (Original Mix)",
+          "Don't You Worry Child (Radio Edit)",
+          "Don't You Worry Child (Extended Mix)",
+          "Don't You Worry Child (Acoustic Version)"
+        ],
+        "genre": "Progressive House",
+        "year": 2012,
+        "priority": "high",
+        "search_terms": ["Swedish House Mafia", "Don't You Worry Child", "SHM"]
+      },
+      {
+        "title": "Titanium",
+        "artists": ["David Guetta", "Sia"],
+        "primary_artist": "David Guetta",
+        "featured_artists": ["Sia"],
+        "remix_variations": [
+          "Titanium (Original Mix)",
+          "Titanium (Extended Mix)",
+          "Titanium (Radio Edit)",
+          "Titanium (Alesso Remix)",
+          "Titanium (David Guetta & Afrojack Remix)"
+        ],
+        "genre": "Electro House",
+        "year": 2011,
+        "priority": "high",
+        "search_terms": ["David Guetta", "Titanium", "Sia"]
+      },
+      {
+        "title": "Animals",
+        "artists": ["Martin Garrix"],
+        "primary_artist": "Martin Garrix",
+        "remix_variations": [
+          "Animals (Original Mix)",
+          "Animals (Radio Edit)",
+          "Animals (Extended Mix)",
+          "Animals (Botnek Remix)",
+          "Animals (R3hab Remix)"
+        ],
+        "genre": "Big Room House",
+        "year": 2013,
+        "priority": "high",
+        "search_terms": ["Martin Garrix", "Animals"]
+      },
+      {
+        "title": "Bangarang",
+        "artists": ["Skrillex"],
+        "primary_artist": "Skrillex",
+        "remix_variations": [
+          "Bangarang (Original Mix)",
+          "Bangarang (Extended Mix)",
+          "Bangarang (VIP Mix)"
+        ],
+        "genre": "Dubstep",
+        "year": 2011,
+        "priority": "high",
+        "search_terms": ["Skrillex", "Bangarang"]
+      }
+    ],
+    "all_tracks": [
+      {
+        "title": "Don't You Worry Child",
+        "artists": ["Swedish House Mafia"],
+        "primary_artist": "Swedish House Mafia",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Save The World",
+        "artists": ["Swedish House Mafia"],
+        "primary_artist": "Swedish House Mafia",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "One",
+        "artists": ["Swedish House Mafia"],
+        "primary_artist": "Swedish House Mafia",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Greyhound",
+        "artists": ["Swedish House Mafia"],
+        "primary_artist": "Swedish House Mafia",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Miami 2 Ibiza",
+        "artists": ["Swedish House Mafia", "Tinie Tempah"],
+        "primary_artist": "Swedish House Mafia",
+        "featured_artists": ["Tinie Tempah"],
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Titanium",
+        "artists": ["David Guetta", "Sia"],
+        "primary_artist": "David Guetta",
+        "featured_artists": ["Sia"],
+        "genre": "Electro House"
+      },
+      {
+        "title": "When Love Takes Over",
+        "artists": ["David Guetta", "Kelly Rowland"],
+        "primary_artist": "David Guetta",
+        "featured_artists": ["Kelly Rowland"],
+        "genre": "Electro House"
+      },
+      {
+        "title": "Memories",
+        "artists": ["David Guetta", "Kid Cudi"],
+        "primary_artist": "David Guetta",
+        "featured_artists": ["Kid Cudi"],
+        "genre": "Electro House"
+      },
+      {
+        "title": "Without You",
+        "artists": ["David Guetta", "Usher"],
+        "primary_artist": "David Guetta",
+        "featured_artists": ["Usher"],
+        "genre": "Electro House"
+      },
+      {
+        "title": "Turn Me On",
+        "artists": ["David Guetta", "Nicki Minaj"],
+        "primary_artist": "David Guetta",
+        "featured_artists": ["Nicki Minaj"],
+        "genre": "Electro House"
+      },
+      {
+        "title": "Feel So Close",
+        "artists": ["Calvin Harris"],
+        "primary_artist": "Calvin Harris",
+        "genre": "Electro House"
+      },
+      {
+        "title": "Summer",
+        "artists": ["Calvin Harris"],
+        "primary_artist": "Calvin Harris",
+        "genre": "Dance Pop"
+      },
+      {
+        "title": "This Is What You Came For",
+        "artists": ["Calvin Harris", "Rihanna"],
+        "primary_artist": "Calvin Harris",
+        "featured_artists": ["Rihanna"],
+        "genre": "Dance Pop"
+      },
+      {
+        "title": "How Deep Is Your Love",
+        "artists": ["Calvin Harris", "Disciples"],
+        "primary_artist": "Calvin Harris",
+        "featured_artists": ["Disciples"],
+        "genre": "Deep House"
+      },
+      {
+        "title": "Outside",
+        "artists": ["Calvin Harris", "Ellie Goulding"],
+        "primary_artist": "Calvin Harris",
+        "featured_artists": ["Ellie Goulding"],
+        "genre": "Electro House"
+      },
+      {
+        "title": "Ghosts 'n' Stuff",
+        "artists": ["Deadmau5"],
+        "primary_artist": "Deadmau5",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Strobe",
+        "artists": ["Deadmau5"],
+        "primary_artist": "Deadmau5",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "I Remember",
+        "artists": ["Deadmau5", "Kaskade"],
+        "primary_artist": "Deadmau5",
+        "featured_artists": ["Kaskade"],
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Raise Your Weapon",
+        "artists": ["Deadmau5"],
+        "primary_artist": "Deadmau5",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Some Chords",
+        "artists": ["Deadmau5"],
+        "primary_artist": "Deadmau5",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Bangarang",
+        "artists": ["Skrillex"],
+        "primary_artist": "Skrillex",
+        "genre": "Dubstep"
+      },
+      {
+        "title": "Scary Monsters and Nice Sprites",
+        "artists": ["Skrillex"],
+        "primary_artist": "Skrillex",
+        "genre": "Dubstep"
+      },
+      {
+        "title": "First of the Year",
+        "artists": ["Skrillex"],
+        "primary_artist": "Skrillex",
+        "genre": "Dubstep"
+      },
+      {
+        "title": "Cinema",
+        "artists": ["Skrillex"],
+        "primary_artist": "Skrillex",
+        "genre": "Dubstep"
+      },
+      {
+        "title": "Make It Bun Dem",
+        "artists": ["Skrillex", "Damian Marley"],
+        "primary_artist": "Skrillex",
+        "featured_artists": ["Damian Marley"],
+        "genre": "Dubstep"
+      },
+      {
+        "title": "Animals",
+        "artists": ["Martin Garrix"],
+        "primary_artist": "Martin Garrix",
+        "genre": "Big Room House"
+      },
+      {
+        "title": "Scared to Be Lonely",
+        "artists": ["Martin Garrix", "Dua Lipa"],
+        "primary_artist": "Martin Garrix",
+        "featured_artists": ["Dua Lipa"],
+        "genre": "Future Bass"
+      },
+      {
+        "title": "In the Name of Love",
+        "artists": ["Martin Garrix", "Bebe Rexha"],
+        "primary_artist": "Martin Garrix",
+        "featured_artists": ["Bebe Rexha"],
+        "genre": "Future Bass"
+      },
+      {
+        "title": "Tremor",
+        "artists": ["Martin Garrix", "Dimitri Vegas & Like Mike"],
+        "primary_artist": "Martin Garrix",
+        "featured_artists": ["Dimitri Vegas & Like Mike"],
+        "genre": "Big Room House"
+      },
+      {
+        "title": "Wizard",
+        "artists": ["Martin Garrix", "Jay Hardway"],
+        "primary_artist": "Martin Garrix",
+        "featured_artists": ["Jay Hardway"],
+        "genre": "Big Room House"
+      },
+      {
+        "title": "Adagio for Strings",
+        "artists": ["Tiësto"],
+        "primary_artist": "Tiësto",
+        "genre": "Trance"
+      },
+      {
+        "title": "Traffic",
+        "artists": ["Tiësto"],
+        "primary_artist": "Tiësto",
+        "genre": "Trance"
+      },
+      {
+        "title": "Red Lights",
+        "artists": ["Tiësto"],
+        "primary_artist": "Tiësto",
+        "genre": "Electro House"
+      },
+      {
+        "title": "Wasted",
+        "artists": ["Tiësto", "Matthew Koma"],
+        "primary_artist": "Tiësto",
+        "featured_artists": ["Matthew Koma"],
+        "genre": "Electro House"
+      },
+      {
+        "title": "The Business",
+        "artists": ["Tiësto"],
+        "primary_artist": "Tiësto",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Heroes",
+        "artists": ["Alesso", "Tove Lo"],
+        "primary_artist": "Alesso",
+        "featured_artists": ["Tove Lo"],
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Calling",
+        "artists": ["Alesso", "Ryan Tedder"],
+        "primary_artist": "Alesso",
+        "featured_artists": ["Ryan Tedder"],
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Under Control",
+        "artists": ["Alesso", "Calvin Harris", "Hurts"],
+        "primary_artist": "Alesso",
+        "featured_artists": ["Calvin Harris", "Hurts"],
+        "genre": "Progressive House"
+      },
+      {
+        "title": "If I Lose Myself",
+        "artists": ["Alesso vs OneRepublic"],
+        "primary_artist": "Alesso",
+        "featured_artists": ["OneRepublic"],
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Years",
+        "artists": ["Alesso", "Matthew Koma"],
+        "primary_artist": "Alesso",
+        "featured_artists": ["Matthew Koma"],
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Call on Me",
+        "artists": ["Eric Prydz"],
+        "primary_artist": "Eric Prydz",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Pjanoo",
+        "artists": ["Eric Prydz"],
+        "primary_artist": "Eric Prydz",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Liberate",
+        "artists": ["Eric Prydz"],
+        "primary_artist": "Eric Prydz",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Every Day",
+        "artists": ["Eric Prydz"],
+        "primary_artist": "Eric Prydz",
+        "genre": "Progressive House"
+      },
+      {
+        "title": "Generate",
+        "artists": ["Eric Prydz"],
+        "primary_artist": "Eric Prydz",
+        "genre": "Progressive House"
+      }
+    ]
+  },
+  "scraper_instructions": {
+    "search_strategy": "Use both exact track titles and artist names to find setlists/playlists",
+    "remix_handling": "Include remix variations and alternative versions in searches",
+    "relationship_mapping": "Track which tracks appear together in playlists for adjacency graph",
+    "data_collection": [
+      "Track title and artist information",
+      "Playlist/setlist context (venue, date, event)",
+      "Track position in playlist/setlist",
+      "Other tracks in same playlist/setlist",
+      "Genre and BPM information if available",
+      "Remix/version information"
+    ],
+    "priority_sources": [
+      "1001tracklists.com - DJ mix tracklists",
+      "mixesdb.com - Underground mix database",
+      "setlist.fm - Live performance data",
+      "Spotify playlists containing these tracks",
+      "SoundCloud playlists and DJ sets"
+    ]
+  },
+  "artist_mapping": {
+    "Swedish House Mafia": {
+      "aliases": ["SHM", "Swedish House Mafia"],
+      "members": ["Steve Angello", "Axwell", "Sebastian Ingrosso"],
+      "genre": "Progressive House",
+      "country": "Sweden"
+    },
+    "David Guetta": {
+      "aliases": ["David Guetta", "Guetta"],
+      "genre": "Electro House",
+      "country": "France"
+    },
+    "Calvin Harris": {
+      "aliases": ["Calvin Harris", "Adam Richard Wiles"],
+      "genre": "Electro House",
+      "country": "United Kingdom"
+    },
+    "Deadmau5": {
+      "aliases": ["deadmau5", "Deadmau5", "Joel Zimmerman"],
+      "genre": "Progressive House",
+      "country": "Canada"
+    },
+    "Skrillex": {
+      "aliases": ["Skrillex", "Sonny Moore"],
+      "genre": "Dubstep",
+      "country": "United States"
+    },
+    "Martin Garrix": {
+      "aliases": ["Martin Garrix", "Martijn Gerard Garritsen"],
+      "genre": "Big Room House",
+      "country": "Netherlands"
+    },
+    "Tiësto": {
+      "aliases": ["Tiësto", "Tiesto", "Tijs Michiel Verwest"],
+      "genre": "Trance",
+      "country": "Netherlands"
+    },
+    "Alesso": {
+      "aliases": ["Alesso", "Alessandro Lindblad"],
+      "genre": "Progressive House",
+      "country": "Sweden"
+    },
+    "Eric Prydz": {
+      "aliases": ["Eric Prydz", "Pryda", "Cirez D"],
+      "genre": "Progressive House",
+      "country": "Sweden"
+    }
+  },
+  "expected_relationships": {
+    "description": "Expected track adjacencies based on genre and artist similarities",
+    "high_probability_pairs": [
+      ["Don't You Worry Child", "Save The World"],
+      ["Titanium", "When Love Takes Over"],
+      ["Animals", "Tremor"],
+      ["Bangarang", "Scary Monsters and Nice Sprites"],
+      ["Strobe", "Ghosts 'n' Stuff"],
+      ["Heroes", "Calling"],
+      ["Call on Me", "Pjanoo"]
+    ],
+    "cross_genre_connections": [
+      ["Don't You Worry Child", "Titanium"],
+      ["Animals", "Bangarang"],
+      ["Feel So Close", "Summer"]
+    ]
+  }
+}

@@ -5,6 +5,7 @@ Manages and coordinates scraping tasks across multiple scrapers
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -39,6 +40,15 @@ app = FastAPI(
     title="Scraper Orchestrator",
     description="Orchestrates and manages web scraping tasks",
     version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for non-security-conscious app
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Redis connection with connection pooling
@@ -502,6 +512,13 @@ async def execute_scraping_task(task: ScrapingTask):
                 task.completed_at = datetime.now()
                 scraping_tasks_total.labels(scraper=task.scraper, status="success").inc()
                 logger.info(f"Task {task.id} completed successfully")
+                # Record processed URL to prevent re-processing; maintain a long-lived set
+                try:
+                    if task.url:
+                        dedupe_key = f"dedupe:{task.scraper}:{task.url}"
+                        redis_client.sadd("scraping:processed_urls", dedupe_key)
+                except Exception as dedupe_err:
+                    logger.warning(f"Failed to record processed URL for task {task.id}: {dedupe_err}")
             else:
                 raise Exception(f"Scraper returned status {response.status_code}")
                 
@@ -690,6 +707,15 @@ async def submit_task(task: ScrapingTask, background_tasks: BackgroundTasks):
         if not SCRAPER_CONFIGS[task.scraper].enabled:
             raise HTTPException(status_code=400, detail="Scraper is disabled")
         
+        # Simple dedupe: avoid re-submitting the same (scraper,url)
+        if task.url:
+            dedupe_key = f"dedupe:{task.scraper}:{task.url}"
+            if redis_client.sismember("scraping:submitted_urls", dedupe_key) or \
+               redis_client.sismember("scraping:processed_urls", dedupe_key):
+                logger.info(f"Skipping duplicate submission for {dedupe_key}")
+                return {"status": "skipped", "reason": "already_submitted", "dedupe_key": dedupe_key}
+            redis_client.sadd("scraping:submitted_urls", dedupe_key)
+
         logger.info(f"About to call task_queue.add_task")
         task_id = task_queue.add_task(task)
         logger.info(f"Successfully added task: {task_id}")

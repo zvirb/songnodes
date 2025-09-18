@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useAppDispatch } from '@store/index';
-import { updateMetrics } from '@store/performanceSlice';
-import { PerformanceMetrics } from '@types/graph';
+import { useAppDispatch } from '../store';
+import { updateMetrics } from '../store/performanceSlice';
+import { PerformanceMetrics } from '../types/graph';
 
 interface UsePerformanceMonitoringOptions {
   enabled: boolean;
@@ -129,7 +129,109 @@ export const usePerformanceMonitoring = ({
   // Update metrics periodically with performance throttling
   useEffect(() => {
     if (!enabled) return;
-    
+
+    const updateMetricsInternal = () => {
+      try {
+        const now = performance.now();
+
+        // Skip update if not enough time has passed
+        if (now - lastUpdateTimeRef.current < updateInterval) {
+          return;
+        }
+
+        lastUpdateTimeRef.current = now;
+
+        const { fps, frameTime } = calculateFPS();
+        const memoryUsage = getMemoryUsage();
+
+        // Calculate average render and update times
+        const renderTimes = renderTimesRef.current;
+        const updateTimes = updateTimesRef.current;
+
+        const avgRenderTime = renderTimes.length > 0
+          ? renderTimes.reduce((a, b) => a + b, 0) / renderTimes.length
+          : 0;
+
+        const avgUpdateTime = updateTimes.length > 0
+          ? updateTimes.reduce((a, b) => a + b, 0) / updateTimes.length
+          : 0;
+
+        // Check for performance warnings
+        const warnings: string[] = [];
+        let isWarning = false;
+
+        if (fps < fpsThreshold && fps > 0) {
+          warnings.push(`Low FPS: ${fps.toFixed(1)}`);
+          isWarning = true;
+        }
+
+        const memoryMB = memoryUsage.heap / (1024 * 1024);
+        if (memoryMB > memoryThreshold) {
+          warnings.push(`High memory usage: ${memoryMB.toFixed(1)}MB`);
+          isWarning = true;
+        }
+
+        if (avgRenderTime > 16) { // More than 16ms per frame
+          warnings.push(`Slow rendering: ${avgRenderTime.toFixed(1)}ms`);
+          isWarning = true;
+        }
+
+        const newMetrics: PerformanceState = {
+          fps: Math.max(0, fps || 0),
+          frameTime: Math.max(0, frameTime || 0),
+          renderTime: Math.max(0, avgRenderTime || 0),
+          updateTime: Math.max(0, avgUpdateTime || 0),
+          memoryUsage: {
+            heap: memoryUsage.heap || 0,
+            total: memoryUsage.total || 0,
+            external: memoryUsage.external || 0,
+          },
+          nodeCount: {
+            total: 0, // These would be updated from the graph state
+            visible: 0,
+            rendered: 0,
+          },
+          edgeCount: {
+            total: 0,
+            visible: 0,
+            rendered: 0,
+          },
+          isWarning,
+          warnings,
+        };
+
+        setMetrics(newMetrics);
+
+        // Dispatch to Redux store with safe values
+        const reduxMetrics: PerformanceMetrics = {
+          fps: newMetrics.fps,
+          frameTime: newMetrics.frameTime,
+          renderTime: newMetrics.renderTime,
+          updateTime: newMetrics.updateTime,
+          memoryUsage: newMetrics.memoryUsage,
+          nodeCount: newMetrics.nodeCount,
+          edgeCount: newMetrics.edgeCount,
+        };
+
+        dispatch(updateMetrics(reduxMetrics));
+      } catch (error) {
+        console.warn('Error updating performance metrics:', error);
+        // Set safe fallback metrics
+        const fallbackMetrics: PerformanceState = {
+          fps: 60,
+          frameTime: 16.67,
+          renderTime: 10,
+          updateTime: 2,
+          memoryUsage: { heap: 0, total: 0, external: 0 },
+          nodeCount: { total: 0, visible: 0, rendered: 0 },
+          edgeCount: { total: 0, visible: 0, rendered: 0 },
+          isWarning: false,
+          warnings: [],
+        };
+        setMetrics(fallbackMetrics);
+      }
+    };
+
     const interval = setInterval(() => {
       // Use requestIdleCallback to defer expensive metrics calculation
       if ('requestIdleCallback' in window) {
@@ -141,88 +243,7 @@ export const usePerformanceMonitoring = ({
         setTimeout(updateMetricsInternal, 0);
       }
     }, Math.max(updateInterval, 1000)); // Minimum 1 second interval
-    
-    const updateMetricsInternal = () => {
-      const now = performance.now();
-      
-      // Skip update if not enough time has passed
-      if (now - lastUpdateTimeRef.current < updateInterval) {
-        return;
-      }
-      
-      lastUpdateTimeRef.current = now;
-      
-      const { fps, frameTime } = calculateFPS();
-      const memoryUsage = getMemoryUsage();
-      
-      // Calculate average render and update times
-      const renderTimes = renderTimesRef.current;
-      const updateTimes = updateTimesRef.current;
-      
-      const avgRenderTime = renderTimes.length > 0 
-        ? renderTimes.reduce((a, b) => a + b, 0) / renderTimes.length 
-        : 0;
-      
-      const avgUpdateTime = updateTimes.length > 0
-        ? updateTimes.reduce((a, b) => a + b, 0) / updateTimes.length
-        : 0;
-      
-      // Check for performance warnings
-      const warnings: string[] = [];
-      let isWarning = false;
-      
-      if (fps < fpsThreshold && fps > 0) {
-        warnings.push(`Low FPS: ${fps.toFixed(1)}`);
-        isWarning = true;
-      }
-      
-      const memoryMB = memoryUsage.heap / (1024 * 1024);
-      if (memoryMB > memoryThreshold) {
-        warnings.push(`High memory usage: ${memoryMB.toFixed(1)}MB`);
-        isWarning = true;
-      }
-      
-      if (avgRenderTime > 16) { // More than 16ms per frame
-        warnings.push(`Slow rendering: ${avgRenderTime.toFixed(1)}ms`);
-        isWarning = true;
-      }
-      
-      const newMetrics: PerformanceState = {
-        fps: Math.max(0, fps),
-        frameTime: Math.max(0, frameTime),
-        renderTime: Math.max(0, avgRenderTime),
-        updateTime: Math.max(0, avgUpdateTime),
-        memoryUsage,
-        nodeCount: {
-          total: 0, // These would be updated from the graph state
-          visible: 0,
-          rendered: 0,
-        },
-        edgeCount: {
-          total: 0,
-          visible: 0,
-          rendered: 0,
-        },
-        isWarning,
-        warnings,
-      };
-      
-      setMetrics(newMetrics);
-      
-      // Dispatch to Redux store
-      const reduxMetrics: PerformanceMetrics = {
-        fps: newMetrics.fps,
-        frameTime: newMetrics.frameTime,
-        renderTime: newMetrics.renderTime,
-        updateTime: newMetrics.updateTime,
-        memoryUsage: newMetrics.memoryUsage,
-        nodeCount: newMetrics.nodeCount,
-        edgeCount: newMetrics.edgeCount,
-      };
-      
-      dispatch(updateMetrics(reduxMetrics));
-    };
-    
+
     return () => clearInterval(interval);
   }, [
     enabled,

@@ -40,6 +40,8 @@
     "concurrently": "^8.2.0"
   },
   "dependencies": {
-    "playwright": "^1.55.0"
+    "@playwright/test": "^1.55.0",
+    "playwright": "^1.55.0",
+    "puppeteer": "^24.22.0"
   }
 }

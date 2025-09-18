@@ -68,92 +68,162 @@ export class GPUOptimizer {
     canvas: HTMLCanvasElement,
     config: Partial<GPUOptimizationConfig> = {}
   ): Promise<PIXI.Application> {
-    const defaultConfig: GPUOptimizationConfig = {
-      enableComputeShaders: true,
-      preferWebGL2: true,
-      maxTextureSize: 4096,
-      antialias: false, // Disable for better performance
-      powerPreference: 'high-performance',
-      preserveDrawingBuffer: false,
-      backgroundAlpha: 0,
-      clearBeforeRender: true,
-      useContextAlpha: false,
-      sharedTicker: true,
-      sharedLoader: true
-    };
+    try {
+      const defaultConfig: GPUOptimizationConfig = {
+        enableComputeShaders: false, // Disable by default for compatibility
+        preferWebGL2: true,
+        maxTextureSize: 2048, // Reduced for better compatibility
+        antialias: false, // Disable for better performance
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: false,
+        backgroundAlpha: 0,
+        clearBeforeRender: true,
+        useContextAlpha: false,
+        sharedTicker: true,
+        sharedLoader: true
+      };
 
-    const optimizedConfig = { ...defaultConfig, ...config };
+      const optimizedConfig = { ...defaultConfig, ...config };
 
-    // Force WebGL2 context for advanced features
-    const contextAttributes: WebGLContextAttributes = {
-      alpha: optimizedConfig.useContextAlpha,
-      antialias: optimizedConfig.antialias,
-      depth: false,
-      stencil: false,
-      preserveDrawingBuffer: optimizedConfig.preserveDrawingBuffer,
-      powerPreference: optimizedConfig.powerPreference,
-      failIfMajorPerformanceCaveat: false,
-      desynchronized: true // Enable for better performance
-    };
+      // Try WebGL2 first, fallback to WebGL1
+      let context: WebGLRenderingContext | WebGL2RenderingContext | null = null;
 
-    // Create PIXI application with optimized settings
-    this.app = new PIXI.Application({
-      view: canvas,
-      width: canvas.width,
-      height: canvas.height,
-      backgroundColor: optimizedConfig.backgroundAlpha,
-      clearBeforeRender: optimizedConfig.clearBeforeRender,
-      preserveDrawingBuffer: optimizedConfig.preserveDrawingBuffer,
-      powerPreference: optimizedConfig.powerPreference,
-      sharedTicker: optimizedConfig.sharedTicker,
-      sharedLoader: optimizedConfig.sharedLoader,
-      // Force WebGL2 context
-      context: optimizedConfig.preferWebGL2 ? canvas.getContext('webgl2', contextAttributes) || 
-                canvas.getContext('webgl', contextAttributes) : 
-                canvas.getContext('webgl', contextAttributes)
-    });
+      const contextAttributes: WebGLContextAttributes = {
+        alpha: optimizedConfig.useContextAlpha,
+        antialias: optimizedConfig.antialias,
+        depth: false,
+        stencil: false,
+        preserveDrawingBuffer: optimizedConfig.preserveDrawingBuffer,
+        powerPreference: optimizedConfig.powerPreference,
+        failIfMajorPerformanceCaveat: false,
+        desynchronized: true // Enable for better performance
+      };
 
-    this.gl = this.app.renderer.gl;
-    
-    // Analyze GPU capabilities
-    this.performanceMetrics = await this.analyzeGPUCapabilities();
-    
-    // Configure advanced WebGL settings
-    this.configureAdvancedWebGL();
-    
-    // Initialize texture and shader pools
-    this.initializeResourcePools();
-    
-    // Start performance monitoring
-    this.startPerformanceMonitoring();
+      if (optimizedConfig.preferWebGL2) {
+        context = canvas.getContext('webgl2', contextAttributes) ||
+                 canvas.getContext('webgl', contextAttributes);
+      } else {
+        context = canvas.getContext('webgl', contextAttributes);
+      }
 
-    console.log('🚀 GPU Optimization initialized:', {
-      contextType: this.performanceMetrics.contextType,
-      maxTextureSize: this.performanceMetrics.maxTextureSize,
-      extensions: this.performanceMetrics.extensions.length,
-      vendor: this.performanceMetrics.vendorInfo.vendor
-    });
+      if (!context) {
+        throw new Error('WebGL not supported in this browser');
+      }
 
-    return this.app;
+      // Create PIXI application with safe settings
+      const appOptions: any = {
+        view: canvas,
+        width: canvas.width,
+        height: canvas.height,
+        backgroundColor: optimizedConfig.backgroundAlpha,
+        antialias: optimizedConfig.antialias,
+        powerPreference: optimizedConfig.powerPreference,
+        sharedTicker: optimizedConfig.sharedTicker,
+        sharedLoader: optimizedConfig.sharedLoader,
+      };
+
+      // Only add context if successfully created
+      if (context) {
+        appOptions.context = context;
+      }
+
+      this.app = new PIXI.Application(appOptions);
+
+      // Verify renderer is properly initialized
+      if (!this.app.renderer) {
+        throw new Error('PIXI renderer failed to initialize');
+      }
+
+      this.gl = this.app.renderer.gl || context;
+
+      if (!this.gl) {
+        throw new Error('Failed to get WebGL context from PIXI renderer');
+      }
+
+      // Analyze GPU capabilities with error handling
+      try {
+        this.performanceMetrics = await this.analyzeGPUCapabilities();
+      } catch (error) {
+        console.warn('Failed to analyze GPU capabilities:', error);
+        this.performanceMetrics = this.getFallbackMetrics();
+      }
+
+      // Configure advanced WebGL settings with error handling
+      try {
+        this.configureAdvancedWebGL();
+      } catch (error) {
+        console.warn('Failed to configure advanced WebGL settings:', error);
+      }
+
+      // Initialize texture and shader pools with error handling
+      try {
+        this.initializeResourcePools();
+      } catch (error) {
+        console.warn('Failed to initialize resource pools:', error);
+      }
+
+      // Start performance monitoring
+      this.startPerformanceMonitoring();
+
+      console.log('🚀 GPU Optimization initialized:', {
+        contextType: this.performanceMetrics?.contextType || 'unknown',
+        maxTextureSize: this.performanceMetrics?.maxTextureSize || 0,
+        extensions: this.performanceMetrics?.extensions?.length || 0,
+        vendor: this.performanceMetrics?.vendorInfo?.vendor || 'unknown'
+      });
+
+      return this.app;
+    } catch (error) {
+      console.error('GPU optimization initialization failed:', error);
+
+      // Create a fallback PIXI application with minimal configuration
+      const fallbackApp = new PIXI.Application({
+        view: canvas,
+        width: canvas.width,
+        height: canvas.height,
+        backgroundColor: 0x000000,
+        antialias: false,
+        powerPreference: 'default'
+      });
+
+      this.app = fallbackApp;
+      this.gl = null; // No WebGL context in fallback
+      this.performanceMetrics = this.getFallbackMetrics();
+
+      console.warn('Using fallback PIXI application without GPU optimization');
+      return fallbackApp;
+    }
   }
 
   /**
    * Analyze GPU capabilities and limitations
    */
   private async analyzeGPUCapabilities(): Promise<GPUPerformanceMetrics> {
-    if (!this.gl) throw new Error('WebGL context not available');
+    if (!this.gl) {
+      throw new Error('WebGL context not available');
+    }
 
-    const extensions = this.gl.getSupportedExtensions() || [];
-    
-    // Get vendor information
-    const debugInfo = this.gl.getExtension('WEBGL_debug_renderer_info');
-    const vendor = debugInfo ? this.gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown';
-    const renderer = debugInfo ? this.gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown';
-    
-    // Get memory information if available
-    let memoryInfo;
-    const memoryExt = this.gl.getExtension('WEBGL_debug_renderer_info');
-    if (memoryExt) {
+    try {
+      const extensions = this.gl.getSupportedExtensions() || [];
+
+      // Get vendor information safely
+      let vendor = 'Unknown';
+      let renderer = 'Unknown';
+      let version = 'Unknown';
+
+      try {
+        const debugInfo = this.gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          vendor = this.gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || 'Unknown';
+          renderer = this.gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Unknown';
+        }
+        version = this.gl.getParameter(this.gl.VERSION) || 'Unknown';
+      } catch (e) {
+        console.warn('Failed to get vendor info:', e);
+      }
+
+      // Get memory information if available
+      let memoryInfo;
       try {
         // Try to get memory info from WebGL extension
         const info = (navigator as any).gpu?.requestAdapter?.();
@@ -166,23 +236,58 @@ export class GPUOptimizer {
       } catch (e) {
         // Memory info not available
       }
-    }
 
+      // Get parameters safely with fallbacks
+      const getParameter = (param: number, fallback: number = 0): number => {
+        try {
+          return this.gl!.getParameter(param) || fallback;
+        } catch (e) {
+          console.warn(`Failed to get GL parameter ${param}:`, e);
+          return fallback;
+        }
+      };
+
+      return {
+        contextType: this.gl instanceof WebGL2RenderingContext ? 'webgl2' : 'webgl',
+        maxTextureSize: getParameter(this.gl.MAX_TEXTURE_SIZE, 2048),
+        maxTextureUnits: getParameter(this.gl.MAX_TEXTURE_IMAGE_UNITS, 8),
+        maxVertexAttribs: getParameter(this.gl.MAX_VERTEX_ATTRIBS, 8),
+        maxVertexUniforms: getParameter(this.gl.MAX_VERTEX_UNIFORM_VECTORS, 256),
+        maxFragmentUniforms: getParameter(this.gl.MAX_FRAGMENT_UNIFORM_VECTORS, 256),
+        maxRenderBufferSize: getParameter(this.gl.MAX_RENDERBUFFER_SIZE, 2048),
+        extensions,
+        vendorInfo: {
+          vendor,
+          renderer,
+          version
+        },
+        memoryInfo
+      };
+    } catch (error) {
+      console.error('Failed to analyze GPU capabilities:', error);
+      return this.getFallbackMetrics();
+    }
+  }
+
+  /**
+   * Get fallback metrics when GPU analysis fails
+   */
+  private getFallbackMetrics(): GPUPerformanceMetrics {
     return {
-      contextType: this.gl instanceof WebGL2RenderingContext ? 'webgl2' : 'webgl',
-      maxTextureSize: this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE),
-      maxTextureUnits: this.gl.getParameter(this.gl.MAX_TEXTURE_IMAGE_UNITS),
-      maxVertexAttribs: this.gl.getParameter(this.gl.MAX_VERTEX_ATTRIBS),
-      maxVertexUniforms: this.gl.getParameter(this.gl.MAX_VERTEX_UNIFORM_VECTORS),
-      maxFragmentUniforms: this.gl.getParameter(this.gl.MAX_FRAGMENT_UNIFORM_VECTORS),
-      maxRenderBufferSize: this.gl.getParameter(this.gl.MAX_RENDERBUFFER_SIZE),
-      extensions,
+      contextType: 'webgl',
+      maxTextureSize: 2048,
+      maxTextureUnits: 8,
+      maxVertexAttribs: 8,
+      maxVertexUniforms: 256,
+      maxFragmentUniforms: 256,
+      maxRenderBufferSize: 2048,
+      extensions: [],
       vendorInfo: {
-        vendor,
-        renderer,
-        version: this.gl.getParameter(this.gl.VERSION)
+        vendor: 'Unknown',
+        renderer: 'Unknown',
+        version: 'Unknown'
       },
-      memoryInfo
+      memoryInfo: undefined
     };
   }
 
@@ -313,23 +418,58 @@ export class GPUOptimizer {
    * Get optimized texture from pool
    */
   public getOptimizedTexture(type: string, size: number): PIXI.Texture | null {
-    const key = `${type}_${size}`;
-    
-    // Try exact match first
-    let texture = this.texturePool.get(key);
-    if (texture) return texture;
-    
-    // For circle type, find closest size match
-    if (type === 'circle') {
-      const availableSizes = [32, 64, 128, 256, 512];
-      const closestSize = availableSizes.reduce((prev, curr) => 
-        Math.abs(curr - size) < Math.abs(prev - size) ? curr : prev
-      );
-      texture = this.texturePool.get(`circle_${closestSize}`);
-      if (texture) return texture;
+    try {
+      const key = `${type}_${size}`;
+
+      // Try exact match first
+      let texture = this.texturePool.get(key);
+      if (texture && texture.valid) return texture;
+
+      // For circle type, find closest size match
+      if (type === 'circle') {
+        const availableSizes = [32, 64, 128, 256, 512];
+        const closestSize = availableSizes.reduce((prev, curr) =>
+          Math.abs(curr - size) < Math.abs(prev - size) ? curr : prev
+        );
+        texture = this.texturePool.get(`circle_${closestSize}`);
+        if (texture && texture.valid) return texture;
+      }
+
+      // Create a simple fallback texture if none available
+      if (!texture) {
+        return this.createFallbackTexture(size);
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('Failed to get optimized texture:', error);
+      return this.createFallbackTexture(size);
     }
-    
-    return null;
+  }
+
+  /**
+   * Create a simple fallback texture
+   */
+  private createFallbackTexture(size: number): PIXI.Texture {
+    try {
+      const canvas = document.createElement('canvas');
+      const safeSize = Math.max(8, Math.min(512, size)); // Clamp size to safe range
+      canvas.width = canvas.height = safeSize;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(safeSize/2, safeSize/2, safeSize/2 - 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      return PIXI.Texture.from(canvas);
+    } catch (error) {
+      console.warn('Failed to create fallback texture:', error);
+      // Return PIXI's white texture as ultimate fallback
+      return PIXI.Texture.WHITE;
+    }
   }
 
   /**

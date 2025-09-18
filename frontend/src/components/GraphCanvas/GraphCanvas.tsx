@@ -109,11 +109,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     ...customRenderSettings,
   }), [customRenderSettings]);
   
-  // Performance monitoring
-  const performanceMetrics = usePerformanceMonitoring({
-    enabled: enablePerformanceMonitoring,
-    updateInterval: 1000,
-  });
+  // Performance monitoring - Temporarily disabled for debugging
+  const performanceMetrics = null; // usePerformanceMonitoring({
+  //   enabled: enablePerformanceMonitoring,
+  //   updateInterval: 1000,
+  // });
   
   // Stable onTick callback to prevent infinite re-renders
   const handleTick = useCallback((nodes: NodeVisual[]) => {
@@ -170,9 +170,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         appRef.current = optimizedApp;
         containerRef.current.appendChild(canvas);
         
+        const metrics = gpuOptimizerRef.current.getPerformanceMetrics();
         console.log('🚀 GPU-optimized PIXI application initialized:', {
-          webglVersion: gpuOptimizerRef.current.getPerformanceMetrics().capabilities?.contextType,
-          maxTextureSize: gpuOptimizerRef.current.getPerformanceMetrics().capabilities?.maxTextureSize,
+          webglVersion: metrics?.capabilities?.contextType || 'unknown',
+          maxTextureSize: metrics?.capabilities?.maxTextureSize || 0,
         });
         
       } catch (error) {
@@ -418,24 +419,25 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         </Stage>
       )}
       
-      {/* Enhanced Performance overlay with GPU metrics */}
-      {showFPS && performanceMetrics && (
+      {/* Enhanced Performance overlay with GPU metrics - Temporarily disabled for debugging */}
+      {false && showFPS && performanceMetrics && (
         <div className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded text-sm font-mono">
-          <div>FPS: {performanceMetrics.fps.toFixed(1)}</div>
+          <div>FPS: {performanceMetrics.fps?.toFixed(1) || 'N/A'}</div>
           <div>Nodes: {visibleNodesList.length} / {nodes.length}</div>
           <div>Edges: {visibleEdgesList.length} / {edges.length}</div>
-          <div>Memory: {(performanceMetrics.memoryUsage.heap / 1024 / 1024).toFixed(1)}MB</div>
-          {gpuOptimizerRef.current && (
-            <>
+          <div>Memory: {performanceMetrics.memoryUsage?.heap ? (performanceMetrics.memoryUsage.heap / 1024 / 1024).toFixed(1) : 'N/A'}MB</div>
+          {gpuOptimizerRef.current && (() => {
+            const gpuMetrics = gpuOptimizerRef.current?.getPerformanceMetrics();
+            return gpuMetrics ? (
               <div className="border-t border-gray-600 my-1 pt-1">
                 <div className="text-yellow-400">GPU Metrics:</div>
-                <div>WebGL: {gpuOptimizerRef.current.getPerformanceMetrics().capabilities?.contextType || 'N/A'}</div>
-                <div>Draw Calls: {gpuOptimizerRef.current.getPerformanceMetrics().drawCalls || 0}</div>
-                <div>Textures: {gpuOptimizerRef.current.getPerformanceMetrics().resources?.texturePoolSize || 0}</div>
-                <div>Shaders: {gpuOptimizerRef.current.getPerformanceMetrics().resources?.shaderCacheSize || 0}</div>
+                <div>WebGL: {gpuMetrics.capabilities?.contextType || 'N/A'}</div>
+                <div>Draw Calls: {gpuMetrics.drawCalls || 0}</div>
+                <div>Textures: {gpuMetrics.resources?.texturePoolSize || 0}</div>
+                <div>Shaders: {gpuMetrics.resources?.shaderCacheSize || 0}</div>
               </div>
-            </>
-          )}
+            ) : null;
+          })()}
         </div>
       )}
       

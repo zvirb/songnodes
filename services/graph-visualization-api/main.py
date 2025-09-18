@@ -603,13 +603,7 @@ app = FastAPI(
 # Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "https://songnodes.app",
-        "https://*.songnodes.app"
-    ],
+    allow_origins=["*"],  # Allow all origins for non-security-conscious app
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -753,6 +747,49 @@ async def health_check():
 async def metrics():
     """Prometheus metrics endpoint."""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# ----- User Setlists API -----
+class UserSetlist(BaseModel):
+    name: str
+    track_ids: List[str]
+    notes: Optional[str] = None
+
+@app.post("/api/user-setlists")
+async def create_user_setlist(payload: UserSetlist):
+    try:
+        async with async_session() as session:
+            await session.execute(text("""
+                CREATE TABLE IF NOT EXISTS musicdb.user_setlists (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name TEXT NOT NULL,
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """))
+            await session.execute(text("""
+                CREATE TABLE IF NOT EXISTS musicdb.user_setlist_tracks (
+                    setlist_id UUID REFERENCES musicdb.user_setlists(id) ON DELETE CASCADE,
+                    position INT NOT NULL,
+                    track_id UUID NOT NULL,
+                    PRIMARY KEY (setlist_id, position)
+                );
+            """))
+
+            res = await session.execute(text(
+                "INSERT INTO musicdb.user_setlists (name, notes) VALUES (:name, :notes) RETURNING id"
+            ), {"name": payload.name, "notes": payload.notes})
+            setlist_id = res.scalar()
+
+            for i, tid in enumerate(payload.track_ids, start=1):
+                await session.execute(text(
+                    "INSERT INTO musicdb.user_setlist_tracks (setlist_id, position, track_id) VALUES (:sid, :pos, :tid)"
+                ), {"sid": setlist_id, "pos": i, "tid": tid})
+
+            await session.commit()
+            return {"status": "ok", "id": str(setlist_id), "tracks": len(payload.track_ids)}
+    except Exception as e:
+        logger.error(f"Error creating user setlist: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save setlist")
 
 @app.get("/api/v1/visualization/search")
 async def search_visualization_tracks(

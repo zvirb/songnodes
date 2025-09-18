@@ -9,6 +9,7 @@ import filtersReducer from './filtersSlice';
 import pathfindingReducer from './pathfindingSlice';
 import collaborationReducer from './collaborationSlice';
 import settingsReducer from './settingsSlice';
+import websocketReducer from './websocketSlice';
 
 export const store = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ export const store = configureStore({
     pathfinding: pathfindingReducer,
     collaboration: collaborationReducer,
     settings: settingsReducer,
+    websocket: websocketReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
