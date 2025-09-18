@@ -682,8 +682,8 @@ export class PerformanceRegressionTester {
         improvementCount: allImprovements.length,
         overallGrade
       },
-      baseline: baselineResult,
-      current: currentResult,
+      baseline: baselineResult || currentResult || {} as PerformanceBenchmarkResult,
+      current: currentResult || baselineResult || {} as PerformanceBenchmarkResult,
       comparison
     };
   }

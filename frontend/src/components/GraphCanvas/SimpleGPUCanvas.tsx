@@ -864,14 +864,21 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
       {/* Performance Metrics - Responsive positioning */}
       <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/80 text-white p-2 sm:p-3 rounded text-xs font-mono space-y-1 max-w-[160px] sm:max-w-none">
         <div className="text-green-400 font-bold mb-1 sm:mb-2">Graph Visualization</div>
-        <div>FPS: {metrics.fps}</div>
-        <div className="hidden sm:block">Nodes: {metrics.visibleNodes}/{metrics.nodeCount}</div>
-        <div className="sm:hidden">N: {metrics.visibleNodes}/{metrics.nodeCount}</div>
-        <div className="hidden sm:block">Edges: {metrics.visibleEdges}/{metrics.edgeCount}</div>
-        <div className="sm:hidden">E: {metrics.visibleEdges}/{metrics.edgeCount}</div>
-        <div className="hidden md:block">WebGL: {metrics.contextType}</div>
-        <div className="hidden md:block">Memory: {metrics.memoryUsage}MB</div>
-        <div className="hidden sm:block">Simulation: {(metrics.simulationAlpha * 100).toFixed(1)}%</div>
+        <div>FPS: {metrics.fps || 0}</div>
+        <div className="hidden sm:block">Nodes: {metrics.visibleNodes || 0}/{metrics.nodeCount || 0}</div>
+        <div className="sm:hidden">N: {metrics.visibleNodes || 0}/{metrics.nodeCount || 0}</div>
+        <div className="hidden sm:block">Edges: {metrics.visibleEdges || 0}/{metrics.edgeCount || 0}</div>
+        <div className="sm:hidden">E: {metrics.visibleEdges || 0}/{metrics.edgeCount || 0}</div>
+        <div className="hidden md:block">WebGL: {metrics.contextType || 'unknown'}</div>
+        <div className="hidden md:block">Memory: {metrics.memoryUsage || 0}MB</div>
+        <div className="hidden sm:block">Simulation: {((metrics.simulationAlpha || 0) * 100).toFixed(1)}%</div>
+        {performanceMetrics && (
+          <div className="text-xs">
+            Status: <span className={getPerformanceStatus() === 'excellent' ? 'text-green-400' : getPerformanceStatus() === 'good' ? 'text-yellow-400' : 'text-red-400'}>
+              {getPerformanceStatus()}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Controls - Responsive layout */}
@@ -896,11 +903,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
           </button>
         </div>
         <div className="text-xs opacity-75">
-          <span className="hidden sm:inline">Zoom: </span>{(viewport.scale * 100).toFixed(0)}%
+          <span className="hidden sm:inline">Zoom: </span>{((viewport.scale || 1) * 100).toFixed(0)}%
         </div>
-        {selectedNodes.length > 0 && (
+        {(selectedNodes?.length || 0) > 0 && (
           <div className="text-xs text-yellow-400">
-            <span className="hidden sm:inline">Selected: </span>{selectedNodes.length}
+            <span className="hidden sm:inline">Selected: </span>{selectedNodes?.length || 0}
           </div>
         )}
       </div>

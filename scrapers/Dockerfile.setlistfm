@@ -54,6 +54,11 @@ async def scrape_url(request: Dict[str, Any]):
             "scrapy", "crawl", "setlistfm",
             "-L", "INFO",
             "-a", f"url={url}",
+        ]
+        q = params.get("query") if isinstance(params, dict) else None
+        if q:
+            cmd += ["-a", f"search_query={q}"]
+        cmd += [
             "-o", f"/app/output/{task_id}_setlistfm.json"
         ]
         

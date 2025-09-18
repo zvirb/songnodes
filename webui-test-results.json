@@ -1,0 +1,62 @@
+[
+  {
+    "test": "Frontend Accessibility",
+    "status": "PASS",
+    "details": "Status: 200, React app detected",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "Live Performance Data File",
+    "status": "PASS",
+    "details": "30 nodes, 50 edges",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "Live Performance Data Content Analysis",
+    "status": "PASS",
+    "details": "Node types: artist: 2, venue: 4, location: 4",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "Sample Data File",
+    "status": "PASS",
+    "details": "4 nodes, 3 edges",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "Sample Data Content Analysis",
+    "status": "PASS",
+    "details": "Node types: artist: 2, track: 1, venue: 1",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "Asset /manifest.json",
+    "status": "PASS",
+    "details": "Size: 1375 bytes",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "Asset /favicon.ico",
+    "status": "WARN",
+    "details": "HTTP 404",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "HTML Error Analysis",
+    "status": "WARN",
+    "details": "Found 9 instances of 'error' in HTML",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "JavaScript Assets",
+    "status": "PASS",
+    "details": "Found 2 script files",
+    "timestamp": "2025-09-18 10:45:36"
+  },
+  {
+    "test": "React Root Element",
+    "status": "PASS",
+    "details": "Found div#root",
+    "timestamp": "2025-09-18 10:45:36"
+  }
+]

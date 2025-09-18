@@ -14,7 +14,7 @@ RUN apk add --no-cache curl
 COPY package*.json ./
 
 # Install all dependencies for development
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -53,7 +53,7 @@ COPY vite.config.ts ./
 COPY tailwind.config.js ./
 
 # Install all dependencies including devDependencies for build
-RUN npm ci --silent --no-audit
+RUN npm ci --silent --no-audit --legacy-peer-deps
 
 # Copy source code
 COPY src/ ./src/

@@ -10,6 +10,8 @@ venv/
 .venv/
 *_venv/
 mcp_venv/
+ux_test_env/
+**/ux_test_env/
 __pycache__/
 *.pyc
 *.pyo

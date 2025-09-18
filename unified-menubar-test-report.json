@@ -1,0 +1,114 @@
+{
+  "timestamp": "2025-09-18T04:57:55.653Z",
+  "testResults": {
+    "Page Load": {
+      "status": "FAILED",
+      "error": "page.screenshot: options.quality is unsupported for the png screenshots",
+      "timestamp": "2025-09-18T04:57:57.507Z"
+    },
+    "Menubar Structure": {
+      "status": "FAILED",
+      "error": "page.screenshot: options.quality is unsupported for the png screenshots",
+      "timestamp": "2025-09-18T04:57:57.527Z"
+    },
+    "Menubar Positioning": {
+      "status": "FAILED",
+      "error": "page.screenshot: options.quality is unsupported for the png screenshots",
+      "timestamp": "2025-09-18T04:57:57.533Z"
+    },
+    "Dropdown Behavior": {
+      "status": "FAILED",
+      "error": "page.screenshot: options.quality is unsupported for the png screenshots",
+      "timestamp": "2025-09-18T04:57:57.993Z"
+    },
+    "Dropdown Exclusivity": {
+      "status": "FAILED",
+      "error": "Expected 1 dropdown after opening Overview, found 0",
+      "timestamp": "2025-09-18T04:57:58.325Z"
+    },
+    "Visual Feedback": {
+      "status": "FAILED",
+      "error": "page.screenshot: options.quality is unsupported for the png screenshots",
+      "timestamp": "2025-09-18T04:57:58.661Z"
+    },
+    "Professional Appearance": {
+      "status": "FAILED",
+      "error": "page.screenshot: options.quality is unsupported for the png screenshots",
+      "timestamp": "2025-09-18T04:57:58.668Z"
+    },
+    "Responsiveness": {
+      "status": "FAILED",
+      "error": "page.screenshot: options.quality is unsupported for the png screenshots",
+      "timestamp": "2025-09-18T04:57:59.173Z"
+    },
+    "Data Integration": {
+      "status": "FAILED",
+      "error": "locator.textContent: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"node-count\"]')\u001b[22m\n",
+      "timestamp": "2025-09-18T04:58:29.808Z"
+    }
+  },
+  "screenshots": [],
+  "errors": [
+    "Console Error: ❌ WebSocket error: Event",
+    "Console Error: Auto-connect failed: Event",
+    "Console Error: WebSocket connection to 'ws://localhost:8083/ws/public' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "Console Error: ❌ WebSocket error: Event",
+    "Console Error: Auto-connect failed: Event"
+  ],
+  "summary": {
+    "totalTests": 9,
+    "passed": 0,
+    "failed": 9,
+    "warnings": 3
+  },
+  "testSummary": {
+    "overallStatus": "FAILED",
+    "successRate": "0.0%",
+    "totalTests": 9,
+    "passed": 0,
+    "failed": 9,
+    "warnings": 3
+  },
+  "recommendations": [
+    "✅ No visual or functional warnings detected"
+  ],
+  "criticalIssues": [
+    {
+      "test": "Page Load",
+      "issue": "page.screenshot: options.quality is unsupported for the png screenshots"
+    },
+    {
+      "test": "Menubar Structure",
+      "issue": "page.screenshot: options.quality is unsupported for the png screenshots"
+    },
+    {
+      "test": "Menubar Positioning",
+      "issue": "page.screenshot: options.quality is unsupported for the png screenshots"
+    },
+    {
+      "test": "Dropdown Behavior",
+      "issue": "page.screenshot: options.quality is unsupported for the png screenshots"
+    },
+    {
+      "test": "Dropdown Exclusivity",
+      "issue": "Expected 1 dropdown after opening Overview, found 0"
+    },
+    {
+      "test": "Visual Feedback",
+      "issue": "page.screenshot: options.quality is unsupported for the png screenshots"
+    },
+    {
+      "test": "Professional Appearance",
+      "issue": "page.screenshot: options.quality is unsupported for the png screenshots"
+    },
+    {
+      "test": "Responsiveness",
+      "issue": "page.screenshot: options.quality is unsupported for the png screenshots"
+    },
+    {
+      "test": "Data Integration",
+      "issue": "locator.textContent: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"node-count\"]')\u001b[22m\n"
+    }
+  ],
+  "warnings": []
+}

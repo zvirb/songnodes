@@ -1,0 +1,171 @@
+{
+  "testSuite": "SongNodes Node Hover Issue Investigation",
+  "executionTime": "2025-09-18T05:37:27.410Z",
+  "summary": {
+    "appLoaded": true,
+    "totalHoverTests": 5,
+    "resetDetected": false,
+    "resetCount": 0,
+    "consoleErrors": 6,
+    "screenshotsTaken": 20,
+    "graphFunctionalityWorking": true
+  },
+  "detailedResults": {
+    "appLoading": {
+      "success": true,
+      "loadTime": 1562,
+      "menubarExists": false,
+      "graphCanvasExists": true,
+      "loadingIndicatorsVisible": true,
+      "url": "http://localhost:3006/"
+    },
+    "nodeHoverBehavior": [
+      {
+        "nodeIndex": 1,
+        "test": "hover_behavior_analysis",
+        "success": true,
+        "resetDetected": false,
+        "stateChanges": {},
+        "timestamps": {
+          "initial": 1758173782545,
+          "hover": 1758173791462,
+          "final": 1758173793064
+        },
+        "timings": {
+          "hoverResponseTime": 8917,
+          "totalTestTime": 10519
+        }
+      },
+      {
+        "nodeIndex": 2,
+        "test": "hover_behavior_analysis",
+        "success": true,
+        "resetDetected": false,
+        "stateChanges": {},
+        "timestamps": {
+          "initial": 1758173793147,
+          "hover": 1758173803122,
+          "final": 1758173804727
+        },
+        "timings": {
+          "hoverResponseTime": 9975,
+          "totalTestTime": 11580
+        }
+      },
+      {
+        "nodeIndex": 3,
+        "test": "hover_behavior_analysis",
+        "success": true,
+        "resetDetected": false,
+        "stateChanges": {},
+        "timestamps": {
+          "initial": 1758173804824,
+          "hover": 1758173814816,
+          "final": 1758173816418
+        },
+        "timings": {
+          "hoverResponseTime": 9992,
+          "totalTestTime": 11594
+        }
+      },
+      {
+        "nodeIndex": 4,
+        "test": "hover_behavior_analysis",
+        "success": true,
+        "resetDetected": false,
+        "stateChanges": {},
+        "timestamps": {
+          "initial": 1758173816522,
+          "hover": 1758173826510,
+          "final": 1758173828112
+        },
+        "timings": {
+          "hoverResponseTime": 9988,
+          "totalTestTime": 11590
+        }
+      },
+      {
+        "nodeIndex": 5,
+        "test": "hover_behavior_analysis",
+        "success": true,
+        "resetDetected": false,
+        "stateChanges": {},
+        "timestamps": {
+          "initial": 1758173828210,
+          "hover": 1758173838210,
+          "final": 1758173839818
+        },
+        "timings": {
+          "hoverResponseTime": 10000,
+          "totalTestTime": 11608
+        }
+      }
+    ],
+    "consoleErrors": [
+      {
+        "level": "warning",
+        "message": "WebSocket connection to 'ws://localhost:8083/ws/public' failed: WebSocket is closed before the connection is established.",
+        "timestamp": "2025-09-18T05:36:18.167Z"
+      },
+      {
+        "level": "error",
+        "message": "❌ WebSocket error: Event",
+        "timestamp": "2025-09-18T05:36:18.187Z"
+      },
+      {
+        "level": "error",
+        "message": "Auto-connect failed: Event",
+        "timestamp": "2025-09-18T05:36:18.190Z"
+      },
+      {
+        "level": "error",
+        "message": "WebSocket connection to 'ws://localhost:8083/ws/public' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+        "timestamp": "2025-09-18T05:36:18.195Z"
+      },
+      {
+        "level": "error",
+        "message": "❌ WebSocket error: Event",
+        "timestamp": "2025-09-18T05:36:18.210Z"
+      },
+      {
+        "level": "error",
+        "message": "Auto-connect failed: Event",
+        "timestamp": "2025-09-18T05:36:18.210Z"
+      }
+    ],
+    "graphFunctionality": {
+      "success": true,
+      "features": [
+        "zoom",
+        "pan",
+        "resize"
+      ]
+    },
+    "screenshots": [
+      "test-screenshots/node-hover-test/01-app-loaded.png",
+      "test-screenshots/node-hover-test/02-before-hover-node-1.png",
+      "test-screenshots/node-hover-test/03-during-hover-node-1.png",
+      "test-screenshots/node-hover-test/04-after-hover-node-1.png",
+      "test-screenshots/node-hover-test/02-before-hover-node-2.png",
+      "test-screenshots/node-hover-test/03-during-hover-node-2.png",
+      "test-screenshots/node-hover-test/04-after-hover-node-2.png",
+      "test-screenshots/node-hover-test/02-before-hover-node-3.png",
+      "test-screenshots/node-hover-test/03-during-hover-node-3.png",
+      "test-screenshots/node-hover-test/04-after-hover-node-3.png",
+      "test-screenshots/node-hover-test/02-before-hover-node-4.png",
+      "test-screenshots/node-hover-test/03-during-hover-node-4.png",
+      "test-screenshots/node-hover-test/04-after-hover-node-4.png",
+      "test-screenshots/node-hover-test/02-before-hover-node-5.png",
+      "test-screenshots/node-hover-test/03-during-hover-node-5.png",
+      "test-screenshots/node-hover-test/04-after-hover-node-5.png",
+      "test-screenshots/node-hover-test/08-zoom-in-test.png",
+      "test-screenshots/node-hover-test/09-zoom-out-test.png",
+      "test-screenshots/node-hover-test/10-pan-test.png",
+      "test-screenshots/node-hover-test/11-resize-test.png"
+    ],
+    "timestamp": "2025-09-18T05:36:17.372Z"
+  },
+  "recommendations": [
+    "Found 6 console errors/warnings. Review these for potential causes of the hover issue."
+  ]
+}

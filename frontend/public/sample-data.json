@@ -1,0 +1,49 @@
+{
+  "nodes": [
+    {
+      "id": "artist1",
+      "label": "Calvin Harris",
+      "type": "artist",
+      "x": 100,
+      "y": 100
+    },
+    {
+      "id": "artist2",
+      "label": "Ti\u00ebsto",
+      "type": "artist",
+      "x": 200,
+      "y": 100
+    },
+    {
+      "id": "track1",
+      "label": "Feel So Close",
+      "type": "track",
+      "x": 150,
+      "y": 200
+    },
+    {
+      "id": "venue1",
+      "label": "Ultra Music Festival",
+      "type": "venue",
+      "x": 150,
+      "y": 50
+    }
+  ],
+  "edges": [
+    {
+      "source": "artist1",
+      "target": "track1",
+      "type": "performed"
+    },
+    {
+      "source": "artist1",
+      "target": "venue1",
+      "type": "played_at"
+    },
+    {
+      "source": "artist2",
+      "target": "venue1",
+      "type": "played_at"
+    }
+  ]
+}

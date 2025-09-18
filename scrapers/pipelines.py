@@ -86,8 +86,7 @@ class MusicDataPipeline:
     def normalize_track_name(self, name):
         if name is None:
             return None
+        # Preserve variant/remix qualifiers in normalized title so different remixes remain distinct
+        # Only normalize whitespace and case, do not strip parentheses content
         name = self.normalize_text(name)
-        # Example: Remove common parenthetical notes if not relevant to uniqueness
-        # This is a simplified example; more complex logic is in parse_track_string
-        name = re.sub(r'\s*\((Original Mix|Radio Edit|Extended Mix)\)\s*', '', name, flags=re.IGNORECASE)
         return name

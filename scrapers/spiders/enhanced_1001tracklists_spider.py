@@ -1,0 +1,684 @@
+"""
+Enhanced 1001tracklists Spider for Comprehensive Music Data Collection
+Targets specific tracks from our curated list and collects complete metadata
+"""
+import scrapy
+import time
+import random
+import logging
+import json
+import re
+import os
+from urllib.parse import quote
+from scrapy.exceptions import DropItem
+from scrapy.http import Request
+from datetime import datetime
+
+from ..enhanced_items import (
+    EnhancedArtistItem,
+    EnhancedTrackItem,
+    EnhancedSetlistItem,
+    EnhancedTrackArtistItem,
+    EnhancedSetlistTrackItem,
+    TargetTrackSearchItem
+)
+from .utils import parse_track_string
+
+
+class Enhanced1001TracklistsSpider(scrapy.Spider):
+    name = 'enhanced_1001tracklists'
+    allowed_domains = ['1001tracklists.com']
+
+    # Rate limiting settings for respectful scraping
+    download_delay = 2.0
+    randomize_download_delay = 0.5
+
+    custom_settings = {
+        'DOWNLOAD_DELAY': 2.0,
+        'RANDOMIZE_DOWNLOAD_DELAY': 0.5,
+        'CONCURRENT_REQUESTS': 1,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+        'AUTOTHROTTLE_ENABLED': True,
+        'AUTOTHROTTLE_START_DELAY': 3,
+        'AUTOTHROTTLE_MAX_DELAY': 15,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.3,
+        'RETRY_TIMES': 5,
+        'RETRY_HTTP_CODES': [500, 502, 503, 504, 522, 524, 408, 429, 403],
+        'ITEM_PIPELINES': {
+            'scrapers.enhanced_database_pipeline.EnhancedMusicDatabasePipeline': 300,
+        }
+    }
+
+    def __init__(self, search_mode='targeted', *args, **kwargs):
+        super(Enhanced1001TracklistsSpider, self).__init__(*args, **kwargs)
+        self.logger = logging.getLogger(__name__)
+        self.search_mode = search_mode  # 'targeted' or 'discovery'
+        self.target_tracks = {}
+        self.found_target_tracks = set()
+        self.processed_setlists = set()
+
+        # Load target tracks
+        self.load_target_tracks()
+
+        # Generate search URLs based on target tracks
+        if self.search_mode == 'targeted':
+            self.start_urls = self.generate_target_search_urls()
+        else:
+            self.start_urls = self.get_discovery_urls()
+
+    def load_target_tracks(self):
+        """Load target tracks from JSON file"""
+        try:
+            target_file = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                'target_tracks_for_scraping.json'
+            )
+
+            if os.path.exists(target_file):
+                with open(target_file, 'r') as f:
+                    target_data = json.load(f)
+
+                # Load priority tracks for focused searching
+                priority_tracks = target_data.get('scraper_targets', {}).get('priority_tracks', [])
+                for track in priority_tracks:
+                    key = self.normalize_track_key(track['title'], track['primary_artist'])
+                    self.target_tracks[key] = track
+
+                # Load all tracks for broader matching
+                all_tracks = target_data.get('scraper_targets', {}).get('all_tracks', [])
+                for track in all_tracks:
+                    key = self.normalize_track_key(track['title'], track['primary_artist'])
+                    if key not in self.target_tracks:
+                        self.target_tracks[key] = track
+
+                self.logger.info(f"Loaded {len(self.target_tracks)} target tracks for searching")
+            else:
+                self.logger.warning("Target tracks file not found, using discovery mode")
+                self.search_mode = 'discovery'
+
+        except Exception as e:
+            self.logger.error(f"Error loading target tracks: {e}")
+            self.search_mode = 'discovery'
+
+    def normalize_track_key(self, title: str, artist: str) -> str:
+        """Create normalized key for track matching"""
+        normalized_title = re.sub(r'[^\w\s]', '', title.lower()).strip()
+        normalized_artist = re.sub(r'[^\w\s]', '', artist.lower()).strip()
+        return f"{normalized_artist}::{normalized_title}"
+
+    def generate_target_search_urls(self) -> list:
+        """Generate search URLs for target tracks"""
+        search_urls = []
+        base_search_url = "https://www.1001tracklists.com/search/result/"
+
+        # Search for each target track
+        for track_key, track_info in self.target_tracks.items():
+            # Primary search by track title
+            track_query = quote(track_info['title'])
+            search_urls.append(f"{base_search_url}?searchstring={track_query}")
+
+            # Search by artist name
+            artist_query = quote(track_info['primary_artist'])
+            search_urls.append(f"{base_search_url}?searchstring={artist_query}")
+
+            # Combined search
+            combined_query = quote(f"{track_info['primary_artist']} {track_info['title']}")
+            search_urls.append(f"{base_search_url}?searchstring={combined_query}")
+
+            # Search variations for remixes
+            if 'remix_variations' in track_info:
+                for remix_title in track_info['remix_variations'][:3]:  # Limit to 3 variations
+                    remix_query = quote(remix_title)
+                    search_urls.append(f"{base_search_url}?searchstring={remix_query}")
+
+        # Remove duplicates and shuffle
+        search_urls = list(set(search_urls))
+        random.shuffle(search_urls)
+
+        self.logger.info(f"Generated {len(search_urls)} search URLs for target tracks")
+        return search_urls[:50]  # Limit to 50 searches for this session
+
+    def get_discovery_urls(self) -> list:
+        """Get URLs for discovery mode (popular/recent tracklists)"""
+        return [
+            'https://www.1001tracklists.com/search/result/?searchstring=Swedish+House+Mafia',
+            'https://www.1001tracklists.com/search/result/?searchstring=David+Guetta',
+            'https://www.1001tracklists.com/search/result/?searchstring=Calvin+Harris',
+            'https://www.1001tracklists.com/search/result/?searchstring=Martin+Garrix',
+            'https://www.1001tracklists.com/search/result/?searchstring=Deadmau5',
+            'https://www.1001tracklists.com/search/result/?searchstring=Skrillex',
+            'https://www.1001tracklists.com/search/result/?searchstring=Tiësto',
+            'https://www.1001tracklists.com/search/result/?searchstring=Alesso',
+            'https://www.1001tracklists.com/latest',
+            'https://www.1001tracklists.com/most-popular',
+        ]
+
+    def start_requests(self):
+        """Generate initial requests with enhanced headers"""
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none'
+        }
+
+        for i, url in enumerate(self.start_urls):
+            # Add progressive delay for large search lists
+            delay = i * 0.5 if i < 20 else 10
+
+            yield Request(
+                url=url,
+                headers=headers,
+                callback=self.parse_search_results,
+                errback=self.handle_error,
+                meta={
+                    'download_timeout': 30,
+                    'download_delay': delay
+                }
+            )
+
+    def parse_search_results(self, response):
+        """Parse search results and extract tracklist links"""
+        self.logger.info(f"Parsing search results: {response.url}")
+
+        # Extract tracklist links from search results
+        tracklist_links = response.css('a[href*="/tracklist/"]::attr(href)').getall()
+
+        if not tracklist_links:
+            self.logger.warning(f"No tracklist links found in search results: {response.url}")
+            return
+
+        # Process up to 20 tracklists per search to manage load
+        seen_links = set()
+        for link in tracklist_links[:20]:
+            full_url = response.urljoin(link)
+            if full_url in seen_links or full_url in self.processed_setlists:
+                continue
+
+            seen_links.add(full_url)
+            self.processed_setlists.add(full_url)
+
+            yield Request(
+                url=full_url,
+                callback=self.parse_tracklist,
+                errback=self.handle_error,
+                meta={'search_query': response.meta.get('search_query')}
+            )
+
+    def parse_tracklist(self, response):
+        """Parse individual tracklist page with comprehensive data extraction"""
+        self.logger.info(f"Parsing tracklist: {response.url}")
+
+        try:
+            # Extract comprehensive setlist metadata
+            setlist_data = self.extract_setlist_metadata(response)
+            if setlist_data:
+                yield EnhancedSetlistItem(**setlist_data)
+
+            # Extract artist information
+            artists = self.extract_artist_information(response)
+            for artist_data in artists:
+                yield EnhancedArtistItem(**artist_data)
+
+            # Extract tracks and relationships
+            tracks_data = self.extract_tracks_with_metadata(response, setlist_data)
+
+            for track_info in tracks_data:
+                # Check if this matches a target track
+                track_key = self.normalize_track_key(
+                    track_info['track']['track_name'],
+                    track_info['primary_artist']
+                )
+
+                if track_key in self.target_tracks:
+                    self.found_target_tracks.add(track_key)
+                    self.logger.info(f"✓ FOUND TARGET TRACK: {track_info['track']['track_name']} by {track_info['primary_artist']}")
+
+                    # Enhance with target track information
+                    target_info = self.target_tracks[track_key]
+                    track_info['track'].update({
+                        'genre': target_info.get('genre'),
+                        'is_priority_track': True,
+                        'target_track_metadata': json.dumps(target_info)
+                    })
+
+                # Yield track item
+                yield EnhancedTrackItem(**track_info['track'])
+
+                # Yield artist relationships
+                for relationship in track_info['relationships']:
+                    yield EnhancedTrackArtistItem(**relationship)
+
+                # Yield setlist-track relationship
+                if setlist_data:
+                    yield EnhancedSetlistTrackItem(
+                        setlist_name=setlist_data['setlist_name'],
+                        track_name=track_info['track']['track_name'],
+                        track_order=track_info['track_order'],
+                        start_time=track_info['track'].get('start_time'),
+                        data_source=self.name,
+                        scrape_timestamp=datetime.utcnow()
+                    )
+
+        except Exception as e:
+            self.logger.error(f"Error parsing tracklist {response.url}: {e}")
+
+    def extract_setlist_metadata(self, response) -> dict:
+        """Extract comprehensive setlist metadata"""
+        try:
+            # Basic setlist information
+            setlist_name = self.extract_text_with_selectors(response, [
+                'h1.spotlightTitle::text',
+                'h1.tracklist-header-title::text',
+                '#pageTitle::text',
+                'h1::text'
+            ])
+
+            # Artist information
+            artist_names = response.css('div.spotlight-artists a::text, h1.tracklist-header-title a::text').getall()
+            primary_artist = artist_names[0].strip() if artist_names else None
+
+            # Event details
+            event_name = self.extract_text_with_selectors(response, [
+                'div.spotlight-event a::text',
+                'a[href*="/event/"]::text'
+            ])
+
+            venue_name = self.extract_text_with_selectors(response, [
+                'div.spotlight-venue a::text',
+                'a[href*="/venue/"]::text'
+            ])
+
+            # Date extraction
+            set_date = self.extract_text_with_selectors(response, [
+                'div.spotlight-date::text',
+                'time::text',
+                '[datetime]::attr(datetime)'
+            ])
+
+            # Enhanced metadata extraction
+            genre_tags = response.css('.genre-tag::text, .tag::text').getall()
+            bpm_info = self.extract_bpm_from_page(response)
+
+            # Additional context
+            description = response.css('.description::text, .event-description::text').get()
+            total_tracks = len(response.css('div.tlpItem, .tracklist-item, .bItm'))
+
+            return {
+                'setlist_name': setlist_name,
+                'normalized_name': setlist_name.lower().strip() if setlist_name else None,
+                'dj_artist_name': primary_artist,
+                'supporting_artists': [name.strip() for name in artist_names[1:]] if len(artist_names) > 1 else None,
+                'event_name': event_name,
+                'venue_name': venue_name,
+                'set_date': self.parse_date(set_date),
+                'description': description,
+                'genre_tags': genre_tags if genre_tags else None,
+                'bpm_range': bpm_info,
+                'total_tracks': total_tracks,
+                'external_urls': json.dumps({'1001tracklists': response.url}),
+                'metadata': json.dumps({
+                    'source': '1001tracklists',
+                    'page_title': response.css('title::text').get(),
+                    'scraped_at': datetime.utcnow().isoformat()
+                }),
+                'data_source': self.name,
+                'scrape_timestamp': datetime.utcnow(),
+                'created_at': datetime.utcnow()
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error extracting setlist metadata: {e}")
+            return None
+
+    def extract_artist_information(self, response) -> list:
+        """Extract comprehensive artist information"""
+        artists = []
+        artist_links = response.css('div.spotlight-artists a, h1.tracklist-header-title a')
+
+        for link in artist_links:
+            artist_name = link.css('::text').get()
+            artist_url = link.css('::attr(href)').get()
+
+            if artist_name:
+                artist_data = {
+                    'artist_name': artist_name.strip(),
+                    'normalized_name': artist_name.lower().strip(),
+                    'external_urls': json.dumps({
+                        '1001tracklists': response.urljoin(artist_url) if artist_url else None
+                    }),
+                    'metadata': json.dumps({
+                        'discovered_in_setlist': response.url,
+                        'scraped_at': datetime.utcnow().isoformat()
+                    }),
+                    'data_source': self.name,
+                    'scrape_timestamp': datetime.utcnow(),
+                    'created_at': datetime.utcnow()
+                }
+                artists.append(artist_data)
+
+        return artists
+
+    def extract_tracks_with_metadata(self, response, setlist_data) -> list:
+        """Extract tracks with comprehensive metadata and relationships"""
+        tracks_data = []
+
+        # Get track elements using multiple selectors
+        track_elements = self.extract_track_elements(response)
+
+        for i, track_el in enumerate(track_elements):
+            try:
+                track_info = self.parse_track_element_enhanced(track_el, i + 1)
+                if track_info:
+                    tracks_data.append(track_info)
+            except Exception as e:
+                self.logger.error(f"Error parsing track {i+1}: {e}")
+                continue
+
+        return tracks_data
+
+    def extract_track_elements(self, response):
+        """Extract track elements using multiple selectors"""
+        selectors = [
+            'div.tlpItem',
+            'li.tracklist-item',
+            '.bItm',
+            'div.bItm',
+            '.mediaRow',
+            '[data-track]'
+        ]
+
+        for selector in selectors:
+            elements = response.css(selector)
+            if elements:
+                return elements
+
+        return []
+
+    def parse_track_element_enhanced(self, track_el, track_order) -> dict:
+        """Parse track element with enhanced metadata extraction"""
+        # Extract basic track string
+        track_string = self.extract_track_string(track_el)
+        if not track_string:
+            return None
+
+        # Parse track string for artist and title
+        parsed_track = parse_track_string(track_string)
+        if not parsed_track.get('track_name'):
+            return None
+
+        # Extract timing information
+        start_time = self.extract_start_time(track_el, track_string)
+
+        # Extract BPM if available
+        bpm = self.extract_bpm_from_element(track_el)
+
+        # Extract genre information
+        genre = self.extract_genre_from_element(track_el)
+
+        # Extract additional metadata
+        metadata = {
+            'original_string': track_string,
+            'track_order': track_order,
+            'extraction_confidence': self.calculate_extraction_confidence(parsed_track),
+            'source_element_html': str(track_el.get())[:500]  # First 500 chars for debugging
+        }
+
+        # Build enhanced track item
+        track_item = {
+            'track_name': parsed_track['track_name'],
+            'normalized_title': parsed_track['track_name'].lower().strip(),
+            'is_remix': parsed_track.get('is_remix', False),
+            'is_mashup': parsed_track.get('is_mashup', False),
+            'mashup_components': parsed_track.get('mashup_components'),
+            'remix_type': self.extract_remix_type(parsed_track['track_name']),
+            'bpm': bpm,
+            'genre': genre,
+            'start_time': start_time,
+            'track_type': 'Setlist',
+            'source_context': track_string,
+            'position_in_source': track_order,
+            'metadata': json.dumps(metadata),
+            'external_urls': json.dumps({'1001tracklists_context': track_string}),
+            'data_source': self.name,
+            'scrape_timestamp': datetime.utcnow(),
+            'created_at': datetime.utcnow()
+        }
+
+        # Build artist relationships
+        relationships = []
+        primary_artist = parsed_track.get('primary_artists', [None])[0]
+
+        # Primary artists
+        for artist in parsed_track.get('primary_artists', []):
+            relationships.append({
+                'track_name': parsed_track['track_name'],
+                'artist_name': artist,
+                'artist_role': 'primary',
+                'position': 0,
+                'data_source': self.name,
+                'scrape_timestamp': datetime.utcnow(),
+                'created_at': datetime.utcnow()
+            })
+
+        # Featured artists
+        for i, artist in enumerate(parsed_track.get('featured_artists', [])):
+            relationships.append({
+                'track_name': parsed_track['track_name'],
+                'artist_name': artist,
+                'artist_role': 'featured',
+                'position': i + 1,
+                'data_source': self.name,
+                'scrape_timestamp': datetime.utcnow(),
+                'created_at': datetime.utcnow()
+            })
+
+        # Remixer artists
+        for i, artist in enumerate(parsed_track.get('remixer_artists', [])):
+            relationships.append({
+                'track_name': parsed_track['track_name'],
+                'artist_name': artist,
+                'artist_role': 'remixer',
+                'position': i + 1,
+                'contribution_type': 'remix',
+                'data_source': self.name,
+                'scrape_timestamp': datetime.utcnow(),
+                'created_at': datetime.utcnow()
+            })
+
+        return {
+            'track': track_item,
+            'relationships': relationships,
+            'track_order': track_order,
+            'primary_artist': primary_artist
+        }
+
+    def extract_track_string(self, track_el):
+        """Extract track string using multiple selectors"""
+        selectors = [
+            'span.trackValue::text',
+            'div.track-name::text',
+            '.bTitle::text',
+            '.bCont .bTitle::text',
+            'a::text'
+        ]
+
+        for selector in selectors:
+            track_string = track_el.css(selector).get()
+            if track_string and track_string.strip():
+                return track_string.strip()
+
+        # Fallback to all text
+        all_text = ' '.join(track_el.css('::text').getall())
+        return all_text.strip() if all_text.strip() else None
+
+    def extract_start_time(self, track_el, track_string):
+        """Extract start time from element or track string"""
+        selectors = [
+            'span.tracklist-time::text',
+            '.bRank::text',
+            '[data-time]::attr(data-time)',
+            '.time::text'
+        ]
+
+        for selector in selectors:
+            start_time = track_el.css(selector).get()
+            if start_time:
+                return start_time.strip()
+
+        # Look for time in track string
+        time_match = re.search(r'\[(\d{1,2}:\d{2}(?::\d{2})?)\]', track_string)
+        return time_match.group(1) if time_match else None
+
+    def extract_bpm_from_element(self, track_el):
+        """Extract BPM information from track element"""
+        bpm_text = track_el.css('.bpm::text, [data-bpm]::attr(data-bpm)').get()
+        if bpm_text:
+            bpm_match = re.search(r'(\d{2,3})', bpm_text)
+            if bpm_match:
+                try:
+                    return float(bpm_match.group(1))
+                except ValueError:
+                    pass
+        return None
+
+    def extract_bpm_from_page(self, response):
+        """Extract BPM range information from entire page"""
+        bpm_values = []
+        bpm_elements = response.css('.bpm::text, [data-bpm]::attr(data-bpm)').getall()
+
+        for bpm_text in bpm_elements:
+            bpm_match = re.search(r'(\d{2,3})', bpm_text)
+            if bpm_match:
+                try:
+                    bpm_values.append(float(bpm_match.group(1)))
+                except ValueError:
+                    continue
+
+        if bpm_values:
+            return {
+                'min_bpm': min(bpm_values),
+                'max_bpm': max(bpm_values),
+                'avg_bpm': sum(bpm_values) / len(bpm_values)
+            }
+        return None
+
+    def extract_genre_from_element(self, track_el):
+        """Extract genre information from track element"""
+        genre_text = track_el.css('.genre::text, [data-genre]::attr(data-genre)').get()
+        if genre_text:
+            return genre_text.strip()
+        return None
+
+    def extract_remix_type(self, track_name):
+        """Extract remix type from track name"""
+        remix_patterns = {
+            r'\(Original Mix\)': 'Original Mix',
+            r'\(Radio Edit\)': 'Radio Edit',
+            r'\(Extended Mix\)': 'Extended Mix',
+            r'\(Club Mix\)': 'Club Mix',
+            r'\(VIP Mix\)': 'VIP Mix',
+            r'\(Remix\)': 'Remix',
+            r'\(Edit\)': 'Edit'
+        }
+
+        for pattern, remix_type in remix_patterns.items():
+            if re.search(pattern, track_name, re.IGNORECASE):
+                return remix_type
+        return None
+
+    def calculate_extraction_confidence(self, parsed_track):
+        """Calculate confidence score for track extraction"""
+        confidence = 0.5  # Base confidence
+
+        if parsed_track.get('track_name'):
+            confidence += 0.3
+
+        if parsed_track.get('primary_artists'):
+            confidence += 0.2
+
+        if len(parsed_track.get('primary_artists', [])) > 0:
+            confidence += 0.1
+
+        return min(confidence, 1.0)
+
+    def extract_text_with_selectors(self, response, selectors):
+        """Extract text using multiple fallback selectors"""
+        for selector in selectors:
+            text = response.css(selector).get()
+            if text and text.strip():
+                return text.strip()
+        return None
+
+    def parse_date(self, date_string):
+        """Parse date string to date object"""
+        if not date_string:
+            return None
+
+        # Try different date formats
+        date_formats = [
+            '%Y-%m-%d',
+            '%m/%d/%Y',
+            '%d.%m.%Y',
+            '%B %d, %Y'
+        ]
+
+        for fmt in date_formats:
+            try:
+                return datetime.strptime(date_string[:10], fmt).date()
+            except ValueError:
+                continue
+
+        return None
+
+    def handle_error(self, failure):
+        """Enhanced error handling with retry logic"""
+        self.logger.error(f"Request failed: {failure.request.url} - {failure.value}")
+
+        # Don't retry search pages, focus on tracklists
+        if '/search/' in failure.request.url:
+            return
+
+        # Retry tracklist pages
+        retry_count = failure.request.meta.get('retry_count', 0)
+        if retry_count < 2:
+            delay = (retry_count + 1) * 5 + random.uniform(0, 3)
+            self.logger.info(f"Retrying {failure.request.url} in {delay:.1f} seconds")
+
+            yield Request(
+                url=failure.request.url,
+                callback=self.parse_tracklist,
+                errback=self.handle_error,
+                dont_filter=True,
+                meta={
+                    **failure.request.meta,
+                    'retry_count': retry_count + 1,
+                    'download_delay': delay
+                }
+            )
+
+    def closed(self, reason):
+        """Log comprehensive spider statistics"""
+        self.logger.info(f"\n{'='*60}")
+        self.logger.info(f"ENHANCED 1001TRACKLISTS SPIDER COMPLETED")
+        self.logger.info(f"{'='*60}")
+        self.logger.info(f"Spider closed: {reason}")
+        self.logger.info(f"Search mode: {self.search_mode}")
+        self.logger.info(f"Target tracks loaded: {len(self.target_tracks)}")
+        self.logger.info(f"Target tracks found: {len(self.found_target_tracks)}")
+        self.logger.info(f"Setlists processed: {len(self.processed_setlists)}")
+
+        if self.found_target_tracks:
+            self.logger.info(f"\n✓ FOUND TARGET TRACKS:")
+            for track_key in self.found_target_tracks:
+                track_info = self.target_tracks.get(track_key, {})
+                self.logger.info(f"  • {track_info.get('title', 'Unknown')} - {track_info.get('primary_artist', 'Unknown')}")
+
+        completion_rate = (len(self.found_target_tracks) / len(self.target_tracks)) * 100 if self.target_tracks else 0
+        self.logger.info(f"\nTarget track completion rate: {completion_rate:.1f}%")
+        self.logger.info(f"{'='*60}")

@@ -132,6 +132,17 @@ const pathfindingSlice = createSlice({
     clearWaypoints: (state) => {
       state.waypoints = [];
     },
+    setWaypoints: (state, action: PayloadAction<string[]>) => {
+      state.waypoints = action.payload || [];
+    },
+    moveWaypoint: (state, action: PayloadAction<{ index: number; direction: 'up' | 'down' }>) => {
+      const { index, direction } = action.payload;
+      const wp = state.waypoints.slice();
+      const j = direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || index >= wp.length || j < 0 || j >= wp.length) return;
+      const tmp = wp[index]; wp[index] = wp[j]; wp[j] = tmp;
+      state.waypoints = wp;
+    },
     
     // Multiple paths
     setAlternativePaths: (state, action: PayloadAction<PathResult[]>) => {
@@ -178,6 +189,8 @@ export const {
   addWaypoint,
   removeWaypoint,
   clearWaypoints,
+  setWaypoints,
+  moveWaypoint,
   setAlternativePaths,
   selectPath,
   setPathMetrics,

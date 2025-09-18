@@ -1,0 +1,30 @@
+{
+  "upgrade_timestamp": "2025-09-18T09:20:41.785413",
+  "duration_seconds": 1.05922,
+  "statistics": {
+    "total_tracks": 0,
+    "total_artists": 0,
+    "total_setlists": 0,
+    "tracks_with_bpm": 0,
+    "tracks_with_genre": 0,
+    "tracks_remixes": 0,
+    "tracks_mashups": 0,
+    "artists_with_spotify": 0,
+    "track_artist_relationships": 0
+  },
+  "genre_distribution": [],
+  "top_artists": [],
+  "system_status": {
+    "schema_upgrade": true,
+    "data_cleared": true,
+    "scrapers_deployed": [
+      "enhanced_1001tracklists",
+      "enhanced_mixesdb"
+    ],
+    "tracks_collected": 0,
+    "artists_collected": 0,
+    "target_tracks_found": 0,
+    "errors": []
+  },
+  "success": true
+}

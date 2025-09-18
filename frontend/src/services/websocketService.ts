@@ -63,9 +63,9 @@ export class WebSocketService {
 
     // Development vs production URL handling
     if (import.meta.env.DEV) {
-      return `${protocol}//${host}:8085/ws`; // Development WebSocket server
+      return `${protocol}//${host}:8083/ws/public`; // Development WebSocket server (port 8083)
     } else {
-      return `${protocol}//${host}/ws`; // Production WebSocket endpoint
+      return `${protocol}//${host}/ws/public`; // Production WebSocket endpoint
     }
   }
 
