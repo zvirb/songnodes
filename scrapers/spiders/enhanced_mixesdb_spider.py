@@ -7,8 +7,10 @@ import re
 import json
 import logging
 import os
+import hashlib
 from datetime import datetime
 from urllib.parse import quote
+import redis
 
 try:
     from ..enhanced_items import (
@@ -62,7 +64,12 @@ class EnhancedMixesdbSpider(scrapy.Spider):
 
         # Target artists for contemporary electronic music (2023-2025)
         self.target_artists = search_artists or self.load_target_artists()
+        self.redis_client = None
+        self.redis_prefix = os.getenv('SCRAPER_STATE_PREFIX_MIXESDB', 'scraped:setlists:mixesdb')
+        self.source_ttl_seconds = int(os.getenv('SCRAPER_SOURCE_TTL_DAYS', '30')) * 86400
+        self.processed_mix_urls = set()
 
+        self.initialize_state_store()
         self.start_urls = self.generate_search_urls()
 
     def load_target_artists(self):
@@ -106,6 +113,25 @@ class EnhancedMixesdbSpider(scrapy.Spider):
                 'Alok', 'Vintage Culture', 'Meduza', 'Tiësto', 'David Guetta',
                 'Swedish House Mafia', 'Calvin Harris', 'Martin Garrix', 'Skrillex'
             ]
+
+    def initialize_state_store(self):
+        host = os.getenv('SCRAPER_STATE_REDIS_HOST', os.getenv('REDIS_HOST', 'localhost'))
+        port = int(os.getenv('SCRAPER_STATE_REDIS_PORT', os.getenv('REDIS_PORT', 6379)))
+        db = int(os.getenv('SCRAPER_STATE_REDIS_DB', os.getenv('REDIS_DB', 0)))
+
+        try:
+            client = redis.Redis(host=host, port=port, db=db, decode_responses=True, socket_timeout=2)
+            client.ping()
+            self.redis_client = client
+            self.logger.info(
+                "Using Redis state store at %s:%s db %s for MixesDB dedupe",
+                host,
+                port,
+                db
+            )
+        except Exception as exc:
+            self.redis_client = None
+            self.logger.warning("Redis state store unavailable for MixesDB (%s)", exc)
 
     def generate_search_urls(self):
         """Generate search URLs using improved strategies"""
@@ -236,6 +262,8 @@ class EnhancedMixesdbSpider(scrapy.Spider):
         for link in mix_links[:15]:  # Limit per search
             full_url = response.urljoin(link)
             if self.is_mix_url(full_url):
+                if self.is_source_processed(full_url):
+                    continue
                 yield scrapy.Request(
                     url=full_url,
                     callback=self.parse_mix_page,
@@ -249,6 +277,8 @@ class EnhancedMixesdbSpider(scrapy.Spider):
         for link in mix_links[:20]:
             full_url = response.urljoin(link)
             if self.is_mix_url(full_url):
+                if self.is_source_processed(full_url):
+                    continue
                 yield scrapy.Request(
                     url=full_url,
                     callback=self.parse_mix_page,
@@ -262,6 +292,8 @@ class EnhancedMixesdbSpider(scrapy.Spider):
         for link in recent_links[:10]:
             full_url = response.urljoin(link)
             if self.is_mix_url(full_url):
+                if self.is_source_processed(full_url):
+                    continue
                 yield scrapy.Request(
                     url=full_url,
                     callback=self.parse_mix_page,
@@ -316,6 +348,36 @@ class EnhancedMixesdbSpider(scrapy.Spider):
 
         except Exception as e:
             self.logger.error(f"Error parsing mix page {response.url}: {e}")
+        finally:
+            self.mark_source_processed(response.url)
+
+    def is_source_processed(self, url: str) -> bool:
+        if not url:
+            return False
+        if url in self.processed_mix_urls:
+            return True
+        if not self.redis_client:
+            return False
+        digest = hashlib.sha1(url.encode('utf-8')).hexdigest()
+        key = f"{self.redis_prefix}:{digest}"
+        try:
+            return bool(self.redis_client.exists(key))
+        except Exception as exc:
+            self.logger.debug("Redis exists check failed for MixesDB: %s", exc)
+            return False
+
+    def mark_source_processed(self, url: str) -> None:
+        if not url:
+            return
+        self.processed_mix_urls.add(url)
+        if not self.redis_client:
+            return
+        digest = hashlib.sha1(url.encode('utf-8')).hexdigest()
+        key = f"{self.redis_prefix}:{digest}"
+        try:
+            self.redis_client.setex(key, self.source_ttl_seconds, datetime.utcnow().isoformat())
+        except Exception as exc:
+            self.logger.debug("Redis setex failed for MixesDB: %s", exc)
 
     def extract_enhanced_setlist_data(self, response):
         """Extract comprehensive setlist metadata"""

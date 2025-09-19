@@ -4,15 +4,16 @@ Targets specific tracks from our curated list and collects complete metadata
 """
 import scrapy
 import time
-import random
 import logging
 import json
 import re
 import os
+import hashlib
 from urllib.parse import quote
 from scrapy.exceptions import DropItem
 from scrapy.http import Request
 from datetime import datetime
+import redis
 
 try:
     from ..enhanced_items import (
@@ -70,9 +71,15 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
         self.target_tracks = {}
         self.found_target_tracks = set()
         self.processed_setlists = set()
+        self.redis_client = None
+        self.redis_prefix = os.getenv('SCRAPER_STATE_PREFIX', 'scraped:setlists:1001tracklists')
+        self.source_ttl_seconds = int(os.getenv('SCRAPER_SOURCE_TTL_DAYS', '30')) * 86400
 
         # Load target tracks
         self.load_target_tracks()
+
+        # Initialize Redis-backed state for cross-run dedupe
+        self.initialize_state_store()
 
         # Generate search URLs based on target tracks
         if self.search_mode == 'targeted':
@@ -113,6 +120,27 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
         except Exception as e:
             self.logger.error(f"Error loading target tracks: {e}")
             self.search_mode = 'discovery'
+
+    def initialize_state_store(self):
+        """Set up Redis connection for persistent source tracking."""
+        host = os.getenv('SCRAPER_STATE_REDIS_HOST', os.getenv('REDIS_HOST', 'localhost'))
+        port = int(os.getenv('SCRAPER_STATE_REDIS_PORT', os.getenv('REDIS_PORT', 6379)))
+        db = int(os.getenv('SCRAPER_STATE_REDIS_DB', os.getenv('REDIS_DB', 0)))
+
+        try:
+            client = redis.Redis(host=host, port=port, db=db, decode_responses=True, socket_timeout=2)
+            # Sanity check connection
+            client.ping()
+            self.redis_client = client
+            self.logger.info(
+                "Using Redis state store at %s:%s db %s for setlist dedupe",
+                host,
+                port,
+                db
+            )
+        except Exception as exc:
+            self.redis_client = None
+            self.logger.warning("Redis state store unavailable (%s); continuing without cross-run dedupe", exc)
 
     def normalize_track_key(self, title: str, artist: str) -> str:
         """Create normalized key for track matching"""
@@ -287,6 +315,9 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
             if full_url in seen_links or full_url in self.processed_setlists:
                 continue
 
+            if self.is_source_processed(full_url):
+                continue
+
             seen_links.add(full_url)
             self.processed_setlists.add(full_url)
 
@@ -354,6 +385,36 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
 
         except Exception as e:
             self.logger.error(f"Error parsing tracklist {response.url}: {e}")
+        finally:
+            self.mark_source_processed(response.url)
+
+    def is_source_processed(self, url: str) -> bool:
+        """Check Redis (if available) to see if a tracklist was already scraped."""
+        if url in self.processed_setlists:
+            return True
+        if not self.redis_client:
+            return False
+        digest = hashlib.sha1(url.encode('utf-8')).hexdigest()
+        key = f"{self.redis_prefix}:{digest}"
+        try:
+            return bool(self.redis_client.exists(key))
+        except Exception as exc:
+            self.logger.debug("Redis exists check failed: %s", exc)
+            return False
+
+    def mark_source_processed(self, url: str) -> None:
+        """Persistently mark a tracklist as processed."""
+        if not url:
+            return
+        self.processed_setlists.add(url)
+        if not self.redis_client:
+            return
+        digest = hashlib.sha1(url.encode('utf-8')).hexdigest()
+        key = f"{self.redis_prefix}:{digest}"
+        try:
+            self.redis_client.setex(key, self.source_ttl_seconds, datetime.utcnow().isoformat())
+        except Exception as exc:
+            self.logger.debug("Redis setex failed: %s", exc)
 
     def extract_setlist_metadata(self, response) -> dict:
         """Extract comprehensive setlist metadata"""
