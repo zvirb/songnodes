@@ -6,6 +6,7 @@ Uses the official Setlist.fm API v1.0 to collect live performance data
 import scrapy
 import json
 import os
+import re
 import hashlib
 from datetime import datetime
 from urllib.parse import quote
@@ -162,7 +163,7 @@ class SetlistFmApiSpider(scrapy.Spider):
 
     def apply_robots_policy(self):
         robots_url = os.getenv('SETLISTFM_ROBOTS_URL', 'https://api.setlist.fm/robots.txt')
-        user_agent = self.settings.get('USER_AGENT', 'Mozilla/5.0')
+        user_agent = self.custom_settings.get('USER_AGENT', 'Mozilla/5.0')
         parser = robotparser.RobotFileParser()
 
         try:
