@@ -69,26 +69,41 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   // Enable automatic path calculation when start and end nodes are selected
   useAutoPathCalculation();
 
-  // Color mapping for different node types
+  // Color mapping for different node types with distinctive colors for pathfinding
   const getNodeColor = useCallback((node: any) => {
-    // Played songs get a special purple color
-    if (playedSongs.has(node.id)) return '#A855F7'; // Purple for played songs
+    // Priority 1: First track (start node) - Bright Green
+    if (pathState.startNode === node.id) return '#22C55E'; // Bright green for start
 
+    // Priority 2: Last track (end node) - Bright Red
+    if (pathState.endNode === node.id) return '#EF4444'; // Bright red for end
+
+    // Priority 3: Played songs - Deep Purple
+    if (playedSongs.has(node.id)) return '#7C3AED'; // Deep purple for played songs
+
+    // Priority 4: Waypoint tracks - Bright Orange
+    if (pathState.waypoints?.includes(node.id)) return '#F97316'; // Bright orange for waypoints
+
+    // Priority 5: Centered node
     if (centeredNodeId === node.id) return '#F59E0B'; // Amber for centered node
+
+    // Priority 6: Selected nodes
     if (node.selected || selectedNodes.includes(node.id)) return '#FCD34D'; // Light amber for selected
+
+    // Priority 7: Highlighted nodes
     if (node.highlighted) return '#EF4444'; // Red
 
-    // Check if this node is part of the current path
+    // Priority 8: Check if this node is part of the current path (but not start/end/waypoint)
     const routeNodes = pathState.currentPath?.nodes || [];
     if (routeNodes.includes(node.id)) {
-      // Path nodes that aren't played yet are orange
-      return '#FB923C'; // Orange for path nodes
+      // Path nodes that aren't played yet are light orange
+      return '#FB923C'; // Light orange for path nodes
     }
 
-    // Grey out if not in collection (owned === false)
+    // Priority 9: Grey out if not in collection (owned === false)
     const owned = node?.metadata?.owned;
     if (owned === false) return '#475569'; // Slate grey
 
+    // Default colors by type
     switch (node.type) {
       case 'artist': return '#3B82F6'; // Blue
       case 'venue': return '#10B981'; // Green
@@ -763,27 +778,85 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       .force('link', d3.forceLink<SimpleNode, SimpleEdge>(simpleEdges)
         .id(d => d.id)
         .distance((d: any) => {
-          // Enhanced distance calculation for more obvious clustering
+          // Enhanced distance calculation with bridge connection detection
           const metadata = d.metadata || {};
           const frequency = metadata.adjacency_frequency || 1;
           const strengthCategory = metadata.strength_category || 'weak';
 
-          // Create more dramatic base distance differences
-          let baseDistance;
-          switch (strengthCategory) {
-            case 'very_strong': baseDistance = 30; break;   // Very close
-            case 'strong': baseDistance = 60; break;        // Close
-            case 'moderate': baseDistance = 120; break;     // Medium
-            default: baseDistance = 200; break;             // Far apart
+          // Identify bridge connections: strong links between nodes with different cluster memberships
+          const sourceNode = typeof d.source === 'object' ? d.source : simpleNodes.find(n => n.id === d.source);
+          const targetNode = typeof d.target === 'object' ? d.target : simpleNodes.find(n => n.id === d.target);
+
+          // Check if this is a bridge connection (strong connection between different clusters)
+          let isBridgeConnection = false;
+          if (sourceNode && targetNode && (strengthCategory === 'strong' || strengthCategory === 'very_strong')) {
+            // Count how many neighbors each node shares
+            const sourceNeighbors = simpleEdges.filter(e =>
+              e.source === sourceNode.id || e.target === sourceNode.id ||
+              (typeof e.source === 'object' && e.source.id === sourceNode.id) ||
+              (typeof e.target === 'object' && e.target.id === sourceNode.id)
+            ).map(e => typeof e.source === 'object' ?
+              (e.source.id === sourceNode.id ? e.target.id : e.source.id) :
+              (e.source === sourceNode.id ? e.target : e.source));
+
+            const targetNeighbors = simpleEdges.filter(e =>
+              e.source === targetNode.id || e.target === targetNode.id ||
+              (typeof e.source === 'object' && e.source.id === targetNode.id) ||
+              (typeof e.target === 'object' && e.target.id === targetNode.id)
+            ).map(e => typeof e.source === 'object' ?
+              (e.source.id === targetNode.id ? e.target.id : e.source.id) :
+              (e.source === targetNode.id ? e.target : e.source));
+
+            // Calculate shared neighbors (indicates same cluster)
+            const sharedNeighbors = sourceNeighbors.filter(n => targetNeighbors.includes(n));
+            const totalUniqueNeighbors = new Set([...sourceNeighbors, ...targetNeighbors]).size;
+
+            // If they share few neighbors relative to their total, it's likely a bridge
+            const sharedRatio = sharedNeighbors.length / Math.max(1, totalUniqueNeighbors);
+            isBridgeConnection = sharedRatio < 0.3; // Less than 30% shared neighbors indicates bridge
           }
 
-          // Further reduce distance for high frequency connections
-          const frequencyAdjustment = Math.max(0.3, 1 - (frequency * 0.1));
-          const finalDistance = baseDistance * frequencyAdjustment;
+          // Base distances with special handling for bridge connections
+          let minDistance;
+          if (isBridgeConnection) {
+            // Bridge connections get elastic distances to stretch between clusters
+            minDistance = 150; // Allows stretching but maintains connection visibility
+          } else {
+            switch (strengthCategory) {
+              case 'very_strong': minDistance = 25; break;    // Minimum for tight clusters
+              case 'strong': minDistance = 45; break;         // Minimum for visible clusters
+              case 'moderate': minDistance = 120; break;      // Minimum for moderate separation
+              default: minDistance = 600; break;              // High minimum for unrelated tracks
+            }
+          }
 
-          // Apply power scaling
+          // Variable distance calculation
+          let variableDistance;
+          if (isBridgeConnection) {
+            // Bridge connections: Allow elastic stretching based on cluster separation
+            // Higher frequency bridges are slightly less elastic
+            const elasticity = 3.0 - (frequency * 0.1); // Range: 2.0 to 3.0
+            variableDistance = minDistance * elasticity;
+          } else if (strengthCategory !== 'weak') {
+            // For related tracks within same cluster
+            const frequencyVariation = 1 + (frequency * 0.1);
+            const baseVariableDistance = minDistance * (2 - (frequency * 0.15));
+            variableDistance = Math.max(minDistance, baseVariableDistance / frequencyVariation);
+          } else {
+            // For unrelated tracks, use aggressive separation
+            const separationMultiplier = Math.max(2.0, 4.0 - (frequency * 0.3));
+            variableDistance = minDistance * separationMultiplier;
+
+            if (frequency <= 2) {
+              variableDistance *= 1.8;
+            }
+          }
+
+          let finalDistance = variableDistance;
+
+          // Apply power scaling with expanded range, ensuring minimum distance is always respected
           const adjustedDistance = finalDistance * Math.pow(10, distancePower);
-          return Math.max(10, Math.min(1e10, adjustedDistance));
+          return Math.max(minDistance, Math.min(2e10, adjustedDistance));
         })
         .strength((d: any) => {
           // Enhanced strength calculation for better clustering
@@ -791,13 +864,40 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
           const frequency = metadata.adjacency_frequency || 1;
           const strengthCategory = metadata.strength_category || 'weak';
 
-          // More dramatic strength differences
+          // Check if this is a bridge connection (simplified check)
+          const sourceNode = typeof d.source === 'object' ? d.source : simpleNodes.find(n => n.id === d.source);
+          const targetNode = typeof d.target === 'object' ? d.target : simpleNodes.find(n => n.id === d.target);
+
+          let isBridgeConnection = false;
+          if (sourceNode && targetNode && (strengthCategory === 'strong' || strengthCategory === 'very_strong')) {
+            // Simple bridge detection: count shared neighbors
+            const sourceEdges = simpleEdges.filter(e =>
+              e.source === sourceNode.id || e.target === sourceNode.id ||
+              (typeof e.source === 'object' && e.source.id === sourceNode.id) ||
+              (typeof e.target === 'object' && e.target.id === sourceNode.id)
+            );
+            const targetEdges = simpleEdges.filter(e =>
+              e.source === targetNode.id || e.target === targetNode.id ||
+              (typeof e.source === 'object' && e.source.id === targetNode.id) ||
+              (typeof e.target === 'object' && e.target.id === targetNode.id)
+            );
+
+            // If nodes have many edges but few shared neighbors, it's likely a bridge
+            isBridgeConnection = sourceEdges.length > 3 && targetEdges.length > 3;
+          }
+
+          // Adjusted strength for bridge connections vs intra-cluster connections
           let baseStrength;
-          switch (strengthCategory) {
-            case 'very_strong': baseStrength = 0.8; break;
-            case 'strong': baseStrength = 0.6; break;
-            case 'moderate': baseStrength = 0.4; break;
-            default: baseStrength = 0.1; break;
+          if (isBridgeConnection) {
+            // Bridge connections get lower strength to allow stretching between clusters
+            baseStrength = 0.25; // Much more elastic for bridges
+          } else {
+            switch (strengthCategory) {
+              case 'very_strong': baseStrength = 0.8; break;
+              case 'strong': baseStrength = 0.6; break;
+              case 'moderate': baseStrength = 0.4; break;
+              default: baseStrength = 0.1; break;
+            }
           }
 
           // Apply relationship power scaling (10^relationshipPower)
@@ -809,24 +909,128 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         })
       )
       .force('charge', d3.forceManyBody()
-        .strength(-300)
-        .distanceMin(nodeRadius * 2)
-        .distanceMax(Math.min(width, height) * 0.5)
+        .strength((d: any) => {
+          // Variable repulsion based on node connectivity
+          const nodeId = d.id;
+          const connectedEdges = simpleEdges.filter(edge =>
+            edge.source === nodeId || edge.target === nodeId ||
+            (typeof edge.source === 'object' && edge.source.id === nodeId) ||
+            (typeof edge.target === 'object' && edge.target.id === nodeId)
+          );
+
+          // Highly connected nodes (hubs) have stronger repulsion to spread the graph
+          const connectionCount = connectedEdges.length;
+          const baseRepulsion = -900; // Much stronger repulsion for maximum separation
+          const hubMultiplier = connectionCount > 5 ? 2.0 : 1.2; // Stronger hub effect
+
+          return baseRepulsion * hubMultiplier;
+        })
+        .distanceMin(nodeRadius * 5) // Much increased minimum distance for better separation
+        .distanceMax(Math.min(width, height) * 0.8) // Expanded maximum influence
       )
       .force('collision', d3.forceCollide()
-        .radius(d => getNodeRadius(d) + 8)
-        .strength(0.8)
+        .radius(d => {
+          // Enhanced collision radius for better spacing
+          const baseRadius = getNodeRadius(d);
+          const nodeId = d.id;
+          const connectedEdges = simpleEdges.filter(edge =>
+            edge.source === nodeId || edge.target === nodeId ||
+            (typeof edge.source === 'object' && edge.source.id === nodeId) ||
+            (typeof edge.target === 'object' && edge.target.id === nodeId)
+          );
+
+          // Hub nodes get much larger collision radius to create maximum space
+          const hubMultiplier = connectedEdges.length > 5 ? 2.0 : 1.3;
+          return baseRadius * hubMultiplier + 20; // Much increased padding for greater separation
+        })
+        .strength(0.9) // Stronger collision detection
       )
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.1))
-      .alpha(1)
-      .alphaDecay(0.01)
-      .velocityDecay(0.4);
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.02)) // Much weaker center to maximize spreading
+      .force('separation', () => {
+        // Custom force to push unrelated node types apart
+        simpleNodes.forEach((nodeA, i) => {
+          simpleNodes.forEach((nodeB, j) => {
+            if (i >= j) return; // Avoid duplicate calculations
+
+            const nodeAData = nodes.find(n => n.id === nodeA.id);
+            const nodeBData = nodes.find(n => n.id === nodeB.id);
+
+            if (!nodeAData || !nodeBData) return;
+
+            // Check if nodes are connected
+            const isConnected = simpleEdges.some(edge =>
+              (edge.source === nodeA.id && edge.target === nodeB.id) ||
+              (edge.target === nodeA.id && edge.source === nodeB.id) ||
+              (typeof edge.source === 'object' && typeof edge.target === 'object' &&
+               ((edge.source.id === nodeA.id && edge.target.id === nodeB.id) ||
+                (edge.target.id === nodeA.id && edge.source.id === nodeB.id)))
+            );
+
+            // If not connected, apply much stronger repulsion for maximum separation
+            if (!isConnected) {
+              const dx = (nodeB.x || 0) - (nodeA.x || 0);
+              const dy = (nodeB.y || 0) - (nodeA.y || 0);
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              if (distance > 0 && distance < 400) { // Affect unconnected nodes at greater distances
+                const force = 80 / (distance * distance); // Much stronger inverse square repulsion
+                const fx = (dx / distance) * force;
+                const fy = (dy / distance) * force;
+
+                // Apply stronger force to push unrelated tracks much further apart
+                nodeA.vx = (nodeA.vx || 0) - fx;
+                nodeA.vy = (nodeA.vy || 0) - fy;
+                nodeB.vx = (nodeB.vx || 0) + fx;
+                nodeB.vy = (nodeB.vy || 0) + fy;
+              }
+            }
+          });
+        });
+      })
+      .alpha(1.5) // Much higher initial energy for maximum spreading
+      .alphaDecay(0.006) // Even slower decay to allow much more time for separation
+      .velocityDecay(0.25); // Lower velocity decay for more energetic movement
 
     simulationRef.current = simulation;
 
     // Create links with frequency-based visualization
     const routeSet = new Set<string>((pathState.currentPath?.nodes || []));
     const routeNodes = pathState.currentPath?.nodes || [];
+
+    // Helper function to detect if an edge is a bridge connection
+    const isBridgeEdge = (edge: any): boolean => {
+      const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+      const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+      // Find source and target nodes
+      const sourceNode = simpleNodes.find(n => n.id === sourceId);
+      const targetNode = simpleNodes.find(n => n.id === targetId);
+
+      if (!sourceNode || !targetNode) return false;
+
+      // Get neighbors for both nodes
+      const sourceNeighbors = new Set<string>();
+      const targetNeighbors = new Set<string>();
+
+      simpleEdges.forEach(e => {
+        const edgeSourceId = typeof e.source === 'object' ? e.source.id : e.source;
+        const edgeTargetId = typeof e.target === 'object' ? e.target.id : e.target;
+
+        if (edgeSourceId === sourceId) sourceNeighbors.add(edgeTargetId);
+        if (edgeTargetId === sourceId) sourceNeighbors.add(edgeSourceId);
+        if (edgeSourceId === targetId) targetNeighbors.add(edgeTargetId);
+        if (edgeTargetId === targetId) targetNeighbors.add(edgeSourceId);
+      });
+
+      // Calculate shared neighbors (indicates same cluster)
+      const sharedNeighbors = Array.from(sourceNeighbors).filter(n => targetNeighbors.has(n));
+      const totalUniqueNeighbors = new Set([...sourceNeighbors, ...targetNeighbors]).size;
+      const sharedRatio = sharedNeighbors.length / Math.max(1, totalUniqueNeighbors);
+
+      // Bridge if they have strong connection but belong to different clusters
+      const similarity = edge.similarity || edge.metadata?.similarity || 0;
+      return similarity > 0.6 && sharedRatio < 0.3;
+    };
 
     const link = linkGroup
       .selectAll('line')
@@ -844,6 +1048,11 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
               (routeNodes[i] === targetId && routeNodes[i+1] === sourceId)) {
             return '#EF4444'; // Red for path edges
           }
+        }
+
+        // Check if this is a bridge connection - use purple
+        if (isBridgeEdge(d)) {
+          return '#9333EA'; // Purple for bridge connections
         }
 
         // Check if this edge is connected to the centered or selected node
@@ -884,7 +1093,14 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         const distanceOpacity = getEdgeOpacity(d);
         return baseOpacity * distanceOpacity;
       })
-      .attr('stroke-dasharray', 'none'); // All edges are solid lines
+      .attr('stroke-dasharray', (d: any) => {
+        // Bridge connections get a dashed pattern for visual distinction
+        return isBridgeEdge(d) ? '8,4' : 'none';
+      })
+      .attr('class', (d: any) => {
+        // Add class for bridge edges for additional styling if needed
+        return isBridgeEdge(d) ? 'bridge-edge' : 'normal-edge';
+      });
 
     // Create nodes
     const node = nodeGroup

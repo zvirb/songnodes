@@ -1,0 +1,12 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name>SongNodes Music Visualization</name>
+  <service>
+    <type>_http._tcp</type>
+    <port>8088</port>
+    <txt-record>path=/</txt-record>
+    <txt-record>description=SongNodes - Interactive Music Graph Visualization</txt-record>
+    <host-name>songnodes.local</host-name>
+  </service>
+</service-group>
