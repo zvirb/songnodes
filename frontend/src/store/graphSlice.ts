@@ -205,7 +205,7 @@ function isSequentialSongEdge(
 
 // Helper: hide pure location nodes from visualization
 function shouldIncludeNode(node: any): boolean {
-  const t = (node?.type || '').toString().toLowerCase();
+  const t = (node?.type || node?.metadata?.type || '').toString().toLowerCase();
   // Only include songs/tracks; hide artists, venues, locations, events, etc.
   return t === 'track' || t === 'song';
 }
@@ -660,13 +660,20 @@ const graphSlice = createSlice({
         }
         
         // Convert nodes to visual nodes, then filter out location-only nodes
-        const nodeVisuals: NodeVisual[] = graph.nodes.map(node => ({
-          ...node,
-          title: node.title || node.metadata?.title || 'Unknown Track',
-          artist: node.artist || node.metadata?.artist || 'Unknown Artist',
-          trackId: node.trackId || node.track_id,
-          genres: node.genres || node.metadata?.genres || ['unknown'], // Ensure genres array exists
-          x: node.position?.x ?? Math.random() * 1000,
+        const nodeVisuals: NodeVisual[] = graph.nodes
+          .filter(node => {
+            // Only filter out nodes with explicit "Unknown Artist" or "Unknown Track" placeholders
+            const artist = node.artist || node.metadata?.artist;
+            const title = node.title || node.metadata?.title;
+            return !(artist === 'Unknown Artist' || title === 'Unknown Track' || title === 'Unknown Title');
+          })
+          .map(node => ({
+            ...node,
+            title: node.title || node.metadata?.title || 'Untitled',
+            artist: node.artist || node.metadata?.artist || 'Various Artists',
+            trackId: node.trackId || node.track_id,
+            genres: node.genres || node.metadata?.genres || [],
+            x: node.position?.x ?? Math.random() * 1000,
           y: node.position?.y ?? Math.random() * 1000,
           radius: 8,
           color: '#4F46E5',

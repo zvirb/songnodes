@@ -60,20 +60,61 @@ const filterToSongsOnly = (data: GraphData): GraphData => {
 
 export const loadGraphData = async (): Promise<GraphData | null> => {
   try {
-    // Try to load live performance data first
-    console.log('🎵 Attempting to load live performance data...');
+    // Load real scraped data from our visualization API instead of static JSON
+    console.log('🎵 Loading real scraped data from API...');
+
+    try {
+      // Call the enhanced visualization service through environment-aware URL
+      const apiUrl = import.meta.env.VITE_VISUALIZATION_API_URL
+        ? `${import.meta.env.VITE_VISUALIZATION_API_URL}/api/v1/graph`
+        : '/api/v1/graph';
+
+      const apiResponse = await fetch(apiUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (apiResponse.ok) {
+        const apiData = await apiResponse.json();
+        console.log('✅ Loaded real scraped data:', {
+          nodes: apiData.nodes?.length || 0,
+          edges: apiData.edges?.length || 0
+        });
+
+        if (apiData.nodes && apiData.nodes.length > 0) {
+          // Convert API format to expected GraphData format
+          const graphData: GraphData = {
+            nodes: apiData.nodes.map((node: any) => ({
+              ...node,
+              label: `${node.title} - ${node.artist}`, // Show both title and artist
+              size: 12,
+              x: node.position?.x || Math.random() * 1000,
+              y: node.position?.y || Math.random() * 600
+            })),
+            edges: apiData.edges || []
+          };
+
+          return graphData;
+        }
+      }
+    } catch (apiError) {
+      console.warn('❌ Failed to load from API, falling back:', apiError);
+    }
+
+    // Fallback: Try to load static data only if API fails
+    console.log('🎵 Falling back to static data...');
     const liveResponse = await fetch('/live-performance-data.json');
 
     if (liveResponse.ok) {
       const liveData: GraphData = await liveResponse.json();
-      console.log('✅ Loaded live performance data:', {
+      console.log('✅ Loaded fallback data:', {
         nodes: liveData.nodes.length,
         edges: liveData.edges.length
       });
 
       // Filter to songs-only dataset; if empty, fall back to sample
       const songsOnly = filterToSongsOnly(liveData);
-      console.log('🎚️ Songs-only (live):', { nodes: songsOnly.nodes.length, edges: songsOnly.edges.length });
+      console.log('🎚️ Songs-only (fallback):', { nodes: songsOnly.nodes.length, edges: songsOnly.edges.length });
 
       if (songsOnly.nodes.length > 0 && songsOnly.edges.length > 0) {
         // Add visual properties and annotate ownership if available
