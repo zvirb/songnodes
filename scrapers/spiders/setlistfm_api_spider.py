@@ -175,8 +175,9 @@ class SetlistFmApiSpider(scrapy.Spider):
             delay = parser.crawl_delay(user_agent) or parser.crawl_delay('*')
             if delay:
                 delay = float(delay)
-                current_delay = self.custom_settings.get('DOWNLOAD_DELAY', 0.1)
+                current_delay = self.custom_settings.get('DOWNLOAD_DELAY', self.download_delay)
                 if delay > current_delay:
+                    self.download_delay = delay
                     self.custom_settings['DOWNLOAD_DELAY'] = delay
                     self.logger.info("Applied Setlist.fm robots.txt crawl-delay of %s seconds", delay)
         except Exception as exc:
