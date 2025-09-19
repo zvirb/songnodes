@@ -8,6 +8,7 @@ import json
 import os
 from datetime import datetime
 from urllib.parse import quote
+import redis
 try:
     from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
 except ImportError:
@@ -36,6 +37,11 @@ class SetlistFmApiSpider(scrapy.Spider):
         # Build search URL based on parameters
         base_url = 'https://api.setlist.fm/rest/1.0/search/setlists'
         params = []
+
+        self.redis_client = None
+        self.redis_prefix = os.getenv('SCRAPER_STATE_PREFIX_SETLISTFM', 'scraped:setlists:setlistfm')
+        self.source_ttl_seconds = int(os.getenv('SCRAPER_SOURCE_TTL_DAYS', '30')) * 86400
+        self.initialize_state_store()
 
         if artist_name:
             params.append(f'artistName={quote(artist_name)}')
@@ -140,6 +146,25 @@ class SetlistFmApiSpider(scrapy.Spider):
         span = int(os.getenv('SETLISTFM_YEAR_SPAN', 3))
         return [str(current_year - offset) for offset in range(span)]
 
+    def initialize_state_store(self):
+        host = os.getenv('SCRAPER_STATE_REDIS_HOST', os.getenv('REDIS_HOST', 'localhost'))
+        port = int(os.getenv('SCRAPER_STATE_REDIS_PORT', os.getenv('REDIS_PORT', 6379)))
+        db = int(os.getenv('SCRAPER_STATE_REDIS_DB', os.getenv('REDIS_DB', 0)))
+
+        try:
+            client = redis.Redis(host=host, port=port, db=db, decode_responses=True, socket_timeout=2)
+            client.ping()
+            self.redis_client = client
+            self.logger.info(
+                "Using Redis state store at %s:%s db %s for Setlist.fm dedupe",
+                host,
+                port,
+                db
+            )
+        except Exception as exc:
+            self.redis_client = None
+            self.logger.warning("Redis state store unavailable for Setlist.fm (%s)", exc)
+
     def parse(self, response):
         """Parse search results"""
         try:
@@ -147,6 +172,10 @@ class SetlistFmApiSpider(scrapy.Spider):
 
             # Process each setlist
             for setlist in data.get('setlist', []):
+                setlist_id = setlist.get('id')
+                if self.is_source_processed(setlist_id):
+                    continue
+
                 # Create venue item
                 venue_data = setlist.get('venue', {})
                 city_data = venue_data.get('city', {})
@@ -223,6 +252,7 @@ class SetlistFmApiSpider(scrapy.Spider):
                         track_position += 1
 
                 self.logger.info(f"Processed setlist: {setlist_item['setlist_name']}")
+                self.mark_source_processed(setlist_id)
 
             # Handle pagination
             total_setlists = data.get('total', 0)
@@ -242,3 +272,24 @@ class SetlistFmApiSpider(scrapy.Spider):
     def parse_artist_setlists(self, response):
         """Parse setlists for a specific artist"""
         return self.parse(response)
+
+    def is_source_processed(self, identifier: str) -> bool:
+        if not identifier:
+            return False
+        if not self.redis_client:
+            return False
+        key = f"{self.redis_prefix}:{identifier}"
+        try:
+            return bool(self.redis_client.exists(key))
+        except Exception as exc:
+            self.logger.debug("Redis exists check failed for Setlist.fm: %s", exc)
+            return False
+
+    def mark_source_processed(self, identifier: str) -> None:
+        if not identifier or not self.redis_client:
+            return
+        key = f"{self.redis_prefix}:{identifier}"
+        try:
+            self.redis_client.setex(key, self.source_ttl_seconds, datetime.utcnow().isoformat())
+        except Exception as exc:
+            self.logger.debug("Redis setex failed for Setlist.fm: %s", exc)
