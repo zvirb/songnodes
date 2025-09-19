@@ -20,8 +20,6 @@
     "clean": "rimraf dist",
     "security:audit": "node scripts/security-audit.js",
     "security:check": "npm audit && npm run security:audit",
-    "perf:test": "node performance-test.js",
-    "perf:database": "node database-performance-test.js",
     "perf:websocket": "node websocket-stress-test.js",
     "perf:monitor": "node performance-monitor.js",
     "perf:all": "node run-all-performance-tests.js",

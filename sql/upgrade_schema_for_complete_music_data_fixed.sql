@@ -201,13 +201,6 @@ BEGIN
     END IF;
 END $$;
 
--- Insert sample data to verify schema (with correct column names)
-INSERT INTO artists (name, normalized_name, genre_preferences, country) VALUES
-('Swedish House Mafia', 'swedish house mafia', ARRAY['Progressive House', 'Electro House'], 'SWE'),
-('David Guetta', 'david guetta', ARRAY['Electro House', 'Progressive House'], 'FRA'),
-('Calvin Harris', 'calvin harris', ARRAY['Electro House', 'Dance Pop'], 'GBR')
-ON CONFLICT (name) DO NOTHING;
-
 -- Verify the upgrade
 SELECT 'Schema upgrade completed successfully' as status;
 SELECT COUNT(*) as test_artists_count FROM artists;

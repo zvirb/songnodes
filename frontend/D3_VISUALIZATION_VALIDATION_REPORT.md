@@ -44,7 +44,7 @@ The requested D3.js force-directed graph visualization component has been succes
 
 ### ✅ Data Integration
 - **Redux Store**: Seamlessly integrated with existing Redux state
-- **Data Sources**: Loads from `/live-performance-data.json` or `/sample-data.json`
+- **Data Sources**: Loads from `/live-performance-data.json`
 - **Type Conversion**: Handles conversion from basic data to visual format
 - **Real-time Updates**: Responds to Redux state changes instantly
 
@@ -141,8 +141,7 @@ frontend/src/components/GraphCanvas/
 └── DataDebugCanvas.tsx          # Debug component
 
 frontend/public/
-├── live-performance-data.json   # Real Setlist.fm API data (30 nodes, 50 edges)
-└── sample-data.json            # Sample test data (4 nodes, 3 edges)
+└── live-performance-data.json   # Real Setlist.fm API data (30 nodes, 50 edges)
 
 frontend/src/
 └── App.tsx                     # Updated to use WorkingD3Canvas

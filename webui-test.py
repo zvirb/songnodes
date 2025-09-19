@@ -59,8 +59,7 @@ class WebUITester:
     def test_data_files(self):
         """Test if data files are accessible"""
         data_files = {
-            "Live Performance Data": "/live-performance-data.json",
-            "Sample Data": "/sample-data.json"
+            "Live Performance Data": "/live-performance-data.json"
         }
 
         all_passed = True
@@ -163,8 +162,7 @@ class WebUITester:
         # Check what a browser would try to load
         expected_requests = [
             f"{self.base_url}/",
-            f"{self.base_url}/live-performance-data.json",
-            f"{self.base_url}/sample-data.json"
+            f"{self.base_url}/live-performance-data.json"
         ]
 
         print("\n📡 Expected Network Requests:")
@@ -188,7 +186,6 @@ class WebUITester:
                 print(f"  ✅ Setting nodes and edges: {{ nodes: {len(data.get('nodes', []))}, edges: {len(data.get('edges', []))} }}")
             else:
                 print("  ❌ Failed to load live performance data")
-                print("  🔄 Loading sample data as fallback...")
         except Exception as e:
             print(f"  ❌ Data loading error: {e}")
 

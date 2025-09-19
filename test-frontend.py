@@ -4,8 +4,6 @@ Test script to verify frontend is working with data
 """
 
 import requests
-import json
-import time
 
 def test_frontend():
     """Test if frontend is accessible and loading data"""
@@ -26,13 +24,13 @@ def test_frontend():
                 data = data_response.json()
                 print(f"  ✅ Live performance data accessible: {len(data.get('nodes', []))} nodes, {len(data.get('edges', []))} edges")
 
-                # Show sample data
-                print("\n🎵 Sample Artists in Data:")
+                # Show example slice of data
+                print("\n🎵 Example Artists in Data:")
                 for node in data.get('nodes', [])[:5]:
                     if node.get('type') == 'artist':
                         print(f"    • {node.get('label')} (ID: {node.get('id')})")
 
-                print("\n🏢 Sample Venues in Data:")
+                print("\n🏢 Example Venues in Data:")
                 for node in data.get('nodes', [])[:5]:
                     if node.get('type') == 'venue':
                         city = node.get('metadata', {}).get('city', 'Unknown')
@@ -40,14 +38,6 @@ def test_frontend():
 
             else:
                 print(f"  ❌ Live data not accessible: {data_response.status_code}")
-
-            # Test sample data fallback
-            sample_response = requests.get("http://localhost:3006/sample-data.json", timeout=5)
-            if sample_response.status_code == 200:
-                sample_data = sample_response.json()
-                print(f"  ✅ Sample data accessible: {len(sample_data.get('nodes', []))} nodes")
-            else:
-                print(f"  ❌ Sample data not accessible: {sample_response.status_code}")
 
         else:
             print(f"  ❌ Frontend not accessible: {response.status_code}")

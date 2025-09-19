@@ -4,7 +4,10 @@
   "description": "Music Database and Tracklist Management System with AI Orchestration",
   "private": true,
   "workspaces": [
-    "services/*"
+    "frontend",
+    "services/api-gateway",
+    "services/enhanced-visualization-service",
+    "services/health-monitor"
   ],
   "scripts": {
     "start": "./start-dev.sh",
