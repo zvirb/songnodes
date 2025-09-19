@@ -6,17 +6,32 @@ import scrapy
 import re
 import json
 import logging
+import os
 from datetime import datetime
 from urllib.parse import quote
 
-from ..enhanced_items import (
-    EnhancedArtistItem,
-    EnhancedTrackItem,
-    EnhancedSetlistItem,
-    EnhancedTrackArtistItem,
-    EnhancedSetlistTrackItem
-)
-from .utils import parse_track_string
+try:
+    from ..enhanced_items import (
+        EnhancedArtistItem,
+        EnhancedTrackItem,
+        EnhancedSetlistItem,
+        EnhancedTrackArtistItem,
+        EnhancedSetlistTrackItem
+    )
+    from .utils import parse_track_string
+except ImportError:
+    # Fallback for standalone execution
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from enhanced_items import (
+        EnhancedArtistItem,
+        EnhancedTrackItem,
+        EnhancedSetlistItem,
+        EnhancedTrackArtistItem,
+        EnhancedSetlistTrackItem
+    )
+    from spiders.utils import parse_track_string
 
 
 class EnhancedMixesdbSpider(scrapy.Spider):
@@ -45,35 +60,153 @@ class EnhancedMixesdbSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-        # Target artists for underground electronic music
-        self.target_artists = search_artists or [
-            'Swedish House Mafia', 'David Guetta', 'Calvin Harris', 'Deadmau5',
-            'Skrillex', 'Martin Garrix', 'Tiësto', 'Alesso', 'Eric Prydz',
-            'Carl Cox', 'Adam Beyer', 'Charlotte de Witte', 'Amelie Lens',
-            'Ben Böhmer', 'Lane 8', 'Above & Beyond', 'Armin van Buuren'
-        ]
+        # Target artists for contemporary electronic music (2023-2025)
+        self.target_artists = search_artists or self.load_target_artists()
 
         self.start_urls = self.generate_search_urls()
 
+    def load_target_artists(self):
+        """Load prioritized artists from the shared target track list."""
+        target_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'target_tracks_for_scraping.json'
+        )
+
+        artist_set = set()
+
+        try:
+            if os.path.exists(target_file):
+                with open(target_file, 'r') as f:
+                    target_data = json.load(f)
+
+                for section in ('priority_tracks', 'all_tracks'):
+                    for track in target_data.get('scraper_targets', {}).get(section, []):
+                        primary = track.get('primary_artist')
+                        if primary:
+                            artist_set.add(primary)
+                        for artist in track.get('artists', []) or []:
+                            artist_set.add(artist)
+
+            if not artist_set:
+                raise ValueError("No artists loaded from target list")
+
+            return sorted(artist_set)
+
+        except Exception as exc:
+            self.logger.warning(
+                "Falling back to default MixesDB artist list: %s",
+                exc
+            )
+            return [
+                'FISHER', 'Chris Lake', 'Dom Dolla', 'John Summit', 'James Hype',
+                'Patrick Topping', 'Michael Bibi', 'Cloonee', 'Wade',
+                'Anyma', 'Artbat', 'Tale of Us', 'Adriatique', 'Kevin de Vries',
+                'Massano', 'Mathame', 'Innellea', 'Stephan Bodzin',
+                'Fred again..', 'Four Tet', 'Bicep', 'Overmono', 'Ross From Friends',
+                'Alok', 'Vintage Culture', 'Meduza', 'Tiësto', 'David Guetta',
+                'Swedish House Mafia', 'Calvin Harris', 'Martin Garrix', 'Skrillex'
+            ]
+
     def generate_search_urls(self):
-        """Generate search URLs for target artists"""
+        """Generate search URLs using improved strategies"""
+        from .improved_search_strategies import search_strategies
+
         search_urls = []
         base_url = "https://www.mixesdb.com/db/index.php"
 
-        for artist in self.target_artists:
+        # Get improved searches from strategy module
+        search_items = search_strategies.get_mixesdb_searches()
+
+        for item in search_items:
+            search_urls.append(item['url'])
+
+        # Also search for our specific target artists
+        rotation_batch = self._select_artist_batch()
+
+        for artist in rotation_batch:
             # Search for artist mixes
             search_query = quote(artist)
             search_urls.append(f"{base_url}?title=Special%3ASearch&search={search_query}")
 
-        # Add recent mixes and popular pages
+        # Add year-specific categories for contemporary content
         search_urls.extend([
+            'https://www.mixesdb.com/db/index.php/Category:2023',
+            'https://www.mixesdb.com/db/index.php/Category:2024',
+            'https://www.mixesdb.com/db/index.php/Category:2025',
+            'https://www.mixesdb.com/db/index.php/Category:Tech_House',
+            'https://www.mixesdb.com/db/index.php/Category:Melodic_Techno',
             'https://www.mixesdb.com/db/index.php/Special:RecentChanges',
-            'https://www.mixesdb.com/db/index.php/Category:Mixes',
-            'https://www.mixesdb.com/db/index.php/Category:Essential_Mix',
-            'https://www.mixesdb.com/db/index.php/Category:Radio_1',
         ])
 
-        return search_urls[:30]  # Limit to manage load
+        # Remove duplicates
+        search_urls = list(dict.fromkeys(search_urls))
+
+        total_urls = len(search_urls)
+        if total_urls == 0:
+            return []
+
+        batch_size = int(os.getenv('MIXESDB_URL_BATCH_SIZE', 50))
+        rotation_seed_raw = os.getenv('MIXESDB_URL_ROTATION')
+
+        if rotation_seed_raw is not None:
+            try:
+                rotation_seed = int(rotation_seed_raw)
+            except ValueError:
+                self.logger.warning(
+                    "Invalid MIXESDB_URL_ROTATION value '%s'; defaulting to date-based rotation",
+                    rotation_seed_raw
+                )
+                rotation_seed = datetime.utcnow().toordinal()
+        else:
+            rotation_seed = datetime.utcnow().toordinal()
+
+        start_index = (rotation_seed * batch_size) % total_urls
+        window = min(batch_size, total_urls)
+        selected_urls = []
+
+        for i in range(window):
+            idx = (start_index + i) % total_urls
+            selected_urls.append(search_urls[idx])
+
+        self.logger.info(
+            "Selected %s MixesDB search URLs (offset %s of %s total)",
+            len(selected_urls),
+            start_index,
+            total_urls
+        )
+
+        return selected_urls
+
+    def _select_artist_batch(self):
+        """Return a rotating subset of target artists for focused searches."""
+        total_artists = len(self.target_artists)
+        if total_artists == 0:
+            return []
+
+        batch_size = int(os.getenv('MIXESDB_ARTIST_BATCH_SIZE', 20))
+        rotation_seed_raw = os.getenv('MIXESDB_ARTIST_ROTATION')
+
+        if rotation_seed_raw is not None:
+            try:
+                rotation_seed = int(rotation_seed_raw)
+            except ValueError:
+                self.logger.warning(
+                    "Invalid MIXESDB_ARTIST_ROTATION value '%s'; defaulting to date-based rotation",
+                    rotation_seed_raw
+                )
+                rotation_seed = datetime.utcnow().toordinal()
+        else:
+            rotation_seed = datetime.utcnow().toordinal()
+
+        start_index = (rotation_seed * batch_size) % total_artists
+        window = min(batch_size, total_artists)
+        selected = []
+
+        for i in range(window):
+            idx = (start_index + i) % total_artists
+            selected.append(self.target_artists[idx])
+
+        return selected
 
     def parse(self, response):
         """Parse MixesDB pages with enhanced data extraction"""

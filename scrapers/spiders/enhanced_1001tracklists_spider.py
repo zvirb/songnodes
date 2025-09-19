@@ -14,15 +14,30 @@ from scrapy.exceptions import DropItem
 from scrapy.http import Request
 from datetime import datetime
 
-from ..enhanced_items import (
-    EnhancedArtistItem,
-    EnhancedTrackItem,
-    EnhancedSetlistItem,
-    EnhancedTrackArtistItem,
-    EnhancedSetlistTrackItem,
-    TargetTrackSearchItem
-)
-from .utils import parse_track_string
+try:
+    from ..enhanced_items import (
+        EnhancedArtistItem,
+        EnhancedTrackItem,
+        EnhancedSetlistItem,
+        EnhancedTrackArtistItem,
+        EnhancedSetlistTrackItem,
+        TargetTrackSearchItem
+    )
+    from .utils import parse_track_string
+except ImportError:
+    # Fallback for standalone execution
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from enhanced_items import (
+        EnhancedArtistItem,
+        EnhancedTrackItem,
+        EnhancedSetlistItem,
+        EnhancedTrackArtistItem,
+        EnhancedSetlistTrackItem,
+        TargetTrackSearchItem
+    )
+    from spiders.utils import parse_track_string
 
 
 class Enhanced1001TracklistsSpider(scrapy.Spider):
@@ -51,7 +66,6 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
 
     def __init__(self, search_mode='targeted', *args, **kwargs):
         super(Enhanced1001TracklistsSpider, self).__init__(*args, **kwargs)
-        self.logger = logging.getLogger(__name__)
         self.search_mode = search_mode  # 'targeted' or 'discovery'
         self.target_tracks = {}
         self.found_target_tracks = set()
@@ -107,36 +121,91 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
         return f"{normalized_artist}::{normalized_title}"
 
     def generate_target_search_urls(self) -> list:
-        """Generate search URLs for target tracks"""
+        """Generate search URLs for target tracks using improved strategies"""
+        from .improved_search_strategies import search_strategies
+
+        # Get improved search URLs
+        search_items = search_strategies.get_1001tracklists_searches()
+
+        # Convert to URL list with metadata
+        self.search_metadata = {}
         search_urls = []
+
+        for item in search_items:
+            url = item['url']
+            search_urls.append(url)
+            self.search_metadata[url] = item
+
+        # Also add artist-focused searches for our collection
         base_search_url = "https://www.1001tracklists.com/search/result/"
 
-        # Search for each target track
+        # Group tracks by artist and search for artists with multiple tracks
+        artist_tracks = {}
         for track_key, track_info in self.target_tracks.items():
-            # Primary search by track title
-            track_query = quote(track_info['title'])
-            search_urls.append(f"{base_search_url}?searchstring={track_query}")
+            artist = track_info['primary_artist']
+            if artist not in artist_tracks:
+                artist_tracks[artist] = []
+            artist_tracks[artist].append(track_info['title'])
 
-            # Search by artist name
-            artist_query = quote(track_info['primary_artist'])
-            search_urls.append(f"{base_search_url}?searchstring={artist_query}")
+        # Prioritize artists with multiple tracks (more likely to appear in DJ sets)
+        for artist, tracks in sorted(artist_tracks.items(), key=lambda x: len(x[1]), reverse=True):
+            if len(tracks) >= 2:  # Artists with 2+ tracks
+                # Search by artist name (more effective for DJ tracklists)
+                artist_query = quote(artist)
+                url = f"{base_search_url}?searchstring={artist_query}"
+                search_urls.append(url)
+                self.search_metadata[url] = {'type': 'artist', 'target': artist}
 
-            # Combined search
-            combined_query = quote(f"{track_info['primary_artist']} {track_info['title']}")
-            search_urls.append(f"{base_search_url}?searchstring={combined_query}")
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_urls = []
+        for url in search_urls:
+            if url not in seen:
+                seen.add(url)
+                unique_urls.append(url)
 
-            # Search variations for remixes
-            if 'remix_variations' in track_info:
-                for remix_title in track_info['remix_variations'][:3]:  # Limit to 3 variations
-                    remix_query = quote(remix_title)
-                    search_urls.append(f"{base_search_url}?searchstring={remix_query}")
+        total_urls = len(unique_urls)
+        if total_urls == 0:
+            self.logger.warning("No search URLs generated from target tracks")
+            return []
 
-        # Remove duplicates and shuffle
-        search_urls = list(set(search_urls))
-        random.shuffle(search_urls)
+        batch_size = int(os.getenv('TRACKLISTS_SEARCH_BATCH_SIZE', 50))
+        rotation_seed_raw = os.getenv('TRACKLISTS_SEARCH_ROTATION')
+        rotation_seed: int
 
-        self.logger.info(f"Generated {len(search_urls)} search URLs for target tracks")
-        return search_urls[:50]  # Limit to 50 searches for this session
+        if rotation_seed_raw is not None:
+            try:
+                rotation_seed = int(rotation_seed_raw)
+            except ValueError:
+                self.logger.warning(
+                    "Invalid TRACKLISTS_SEARCH_ROTATION value '%s'; defaulting to date-based rotation",
+                    rotation_seed_raw
+                )
+                rotation_seed = datetime.utcnow().toordinal()
+        else:
+            rotation_seed = datetime.utcnow().toordinal()
+
+        start_index = (rotation_seed * batch_size) % total_urls
+        window = min(batch_size, total_urls)
+        selected_urls = []
+
+        for i in range(window):
+            idx = (start_index + i) % total_urls
+            selected_urls.append(unique_urls[idx])
+
+        # Keep metadata only for the selected URLs
+        self.search_metadata = {
+            url: self.search_metadata.get(url, {})
+            for url in selected_urls
+        }
+
+        self.logger.info(
+            "Selected %s search URLs (offset %s of %s total) for this run",
+            len(selected_urls),
+            start_index,
+            total_urls
+        )
+        return selected_urls
 
     def get_discovery_urls(self) -> list:
         """Get URLs for discovery mode (popular/recent tracklists)"""
@@ -186,8 +255,26 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
         """Parse search results and extract tracklist links"""
         self.logger.info(f"Parsing search results: {response.url}")
 
-        # Extract tracklist links from search results
-        tracklist_links = response.css('a[href*="/tracklist/"]::attr(href)').getall()
+        # Extract tracklist links using multiple selectors for better coverage
+        from .improved_search_strategies import search_strategies
+
+        selectors = search_strategies.get_improved_selectors()['1001tracklists']['tracklist_links']
+        tracklist_links = []
+
+        for selector in selectors:
+            links = response.css(selector).getall()
+            if links:
+                tracklist_links.extend(links)
+                self.logger.debug(f"Found {len(links)} links with selector: {selector}")
+
+        # Also try XPath selectors for better coverage
+        xpath_links = response.xpath('//a[contains(@href, "/tracklist/")]/@href').getall()
+        if xpath_links:
+            tracklist_links.extend(xpath_links)
+            self.logger.debug(f"Found {len(xpath_links)} links with XPath")
+
+        # Deduplicate
+        tracklist_links = list(set(tracklist_links))
 
         if not tracklist_links:
             self.logger.warning(f"No tracklist links found in search results: {response.url}")

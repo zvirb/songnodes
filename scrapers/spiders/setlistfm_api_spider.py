@@ -8,7 +8,14 @@ import json
 import os
 from datetime import datetime
 from urllib.parse import quote
-from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+try:
+    from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+except ImportError:
+    # Fallback for standalone execution
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
 
 class SetlistFmApiSpider(scrapy.Spider):
     name = 'setlistfm_api'
@@ -37,20 +44,101 @@ class SetlistFmApiSpider(scrapy.Spider):
         if city:
             params.append(f'cityName={quote(city)}')
 
-        # Default to popular artists if no params provided
+        # Default to contemporary electronic artists (rotation-aware)
         if not params:
-            # Search for recent popular electronic music artists
-            self.start_urls = [
-                'https://api.setlist.fm/rest/1.0/search/setlists?artistName=Calvin%20Harris',
-                'https://api.setlist.fm/rest/1.0/search/setlists?artistName=David%20Guetta',
-                'https://api.setlist.fm/rest/1.0/search/setlists?artistName=Marshmello',
-                'https://api.setlist.fm/rest/1.0/search/setlists?artistName=Swedish%20House%20Mafia',
-                'https://api.setlist.fm/rest/1.0/search/setlists?artistName=Skrillex'
-            ]
+            target_artists = self.load_target_artists()
+            artist_batch = self.select_artist_batch(target_artists)
+            year_batch = self.select_year_batch()
+
+            self.start_urls = []
+            for artist in artist_batch:
+                encoded_artist = quote(artist)
+                for year in year_batch:
+                    self.start_urls.append(
+                        f'{base_url}?artistName={encoded_artist}&year={year}'
+                    )
         else:
             self.start_urls = [f"{base_url}?{'&'.join(params)}"]
 
         self.logger.info(f"Initialized with URLs: {self.start_urls}")
+
+    def load_target_artists(self):
+        """Load popular and emerging artists from the shared target list."""
+        target_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'target_tracks_for_scraping.json'
+        )
+
+        artist_set = set()
+
+        try:
+            if os.path.exists(target_file):
+                with open(target_file, 'r') as f:
+                    target_data = json.load(f)
+
+                for section in ('priority_tracks', 'all_tracks'):
+                    for track in target_data.get('scraper_targets', {}).get(section, []):
+                        primary = track.get('primary_artist')
+                        if primary:
+                            artist_set.add(primary)
+                        for artist in track.get('artists', []) or []:
+                            artist_set.add(artist)
+
+            if not artist_set:
+                raise ValueError("No artists loaded from target list")
+
+            return sorted(artist_set)
+
+        except Exception as exc:
+            self.logger.warning(
+                "Falling back to default Setlist.fm artist list: %s",
+                exc
+            )
+            return [
+                'FISHER', 'Fred again..', 'Anyma', 'Swedish House Mafia',
+                'Calvin Harris', 'David Guetta', 'Martin Garrix', 'Alok',
+                'Chris Lake', 'John Summit', 'Dom Dolla', 'Skrillex',
+                'Marshmello', 'Tiësto', 'Eric Prydz', 'Deadmau5'
+            ]
+
+    def select_artist_batch(self, artists):
+        """Rotate through artists without exceeding API quotas."""
+        total = len(artists)
+        if total == 0:
+            return []
+
+        batch_size = int(os.getenv('SETLISTFM_ARTIST_BATCH_SIZE', 12))
+        rotation_seed_raw = os.getenv('SETLISTFM_ARTIST_ROTATION')
+
+        if rotation_seed_raw is not None:
+            try:
+                rotation_seed = int(rotation_seed_raw)
+            except ValueError:
+                self.logger.warning(
+                    "Invalid SETLISTFM_ARTIST_ROTATION value '%s'; defaulting to date-based rotation",
+                    rotation_seed_raw
+                )
+                rotation_seed = datetime.utcnow().toordinal()
+        else:
+            rotation_seed = datetime.utcnow().toordinal()
+
+        start_index = (rotation_seed * batch_size) % total
+        window = min(batch_size, total)
+        return [artists[(start_index + i) % total] for i in range(window)]
+
+    def select_year_batch(self):
+        """Return a bounded list of years to query per artist."""
+        configured = os.getenv('SETLISTFM_YEAR_RANGE')
+        if configured:
+            try:
+                years = [year.strip() for year in configured.split(',') if year.strip()]
+                return years or [str(datetime.utcnow().year)]
+            except Exception:
+                self.logger.warning("Invalid SETLISTFM_YEAR_RANGE, defaulting to recent years")
+
+        current_year = datetime.utcnow().year
+        span = int(os.getenv('SETLISTFM_YEAR_SPAN', 3))
+        return [str(current_year - offset) for offset in range(span)]
 
     def parse(self, response):
         """Parse search results"""
