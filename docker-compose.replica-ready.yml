@@ -265,7 +265,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: development
+      target: production
     restart: unless-stopped
     # NO EXTERNAL PORTS - accessed through nginx
     environment:
@@ -273,10 +273,8 @@ services:
       VITE_API_URL: ${VITE_API_URL:-http://api-gateway:8080}
       VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://enhanced-visualization-service:8085}
       VITE_WS_URL: ${VITE_WS_URL:-ws://enhanced-visualization-service:8085}
-      NODE_ENV: development
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      NODE_ENV: production
+    # No volumes in production - uses built static files
     depends_on:
       - api-gateway
       - enhanced-visualization-service
@@ -304,7 +302,7 @@ services:
       - "${HTTP_PORT:-8088}:80"   # Configurable HTTP port
       - "${HTTPS_PORT:-8443}:443" # Configurable HTTPS port
     volumes:
-      - ./nginx/nginx-simple.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx-replica-ready.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - api-gateway
