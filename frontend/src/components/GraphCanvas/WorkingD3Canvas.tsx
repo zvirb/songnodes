@@ -48,6 +48,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const dispatch = useAppDispatch();
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string; clickableNodes?: Array<{id: string, title: string}> } | null>(null);
+  const [persistentTooltip, setPersistentTooltip] = useState<{ x: number; y: number; content: string; clickableNodes: Array<{id: string, title: string}>; nodeId: string } | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [centeredNodeId, setCenteredNodeId] = useState<string | null>(null);
   const [edgeInfo, setEdgeInfo] = useState<{ nodeId: string; edges: any[] } | null>(null);
@@ -310,25 +311,88 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Select the node in Redux
     dispatch(setSelectedNodes([node.id]));
 
-    // Show edge information for clicked node
-    const nodeEdges = edges.filter(edge =>
+    // Create persistent tooltip with track information and connections
+    const metadata = node.metadata || {};
+    const lines = [];
+
+    // Main track info
+    const title = node.title || node.label;
+    const artist = node.artist;
+    if (title && title !== 'Unknown Track' && title !== 'Unknown Title') {
+      lines.push(`🎵 ${title}`);
+    }
+    if (artist && artist !== 'Unknown Artist') {
+      lines.push(`🎤 ${artist}`);
+    }
+
+    // Additional metadata
+    if (metadata.is_remix) {
+      lines.push('🔄 Remix');
+    }
+    if (metadata.is_mashup) {
+      lines.push('🎭 Mashup');
+    }
+    if (metadata.position_in_setlist) {
+      lines.push(`📍 Position: #${metadata.position_in_setlist}`);
+    }
+
+    // Collection status
+    if (metadata.owned === false) {
+      lines.push('❌ Not in collection');
+    } else if (metadata.owned === true) {
+      lines.push('✅ In your collection');
+    }
+
+    // Get connected tracks for navigation
+    const connectedTracks = edges.filter(edge =>
       edge.source === node.id || edge.target === node.id
-    ).map(edge => {
+    ).slice(0, 5) // Show top 5 connections
+    .map(edge => {
       const connectedNodeId = edge.source === node.id ? edge.target : edge.source;
       const connectedNode = nodes.find(n => n.id === connectedNodeId);
-      return {
-        ...edge,
-        connectedNode,
-        connectedNodeId
-      };
-    }).sort((a, b) => {
-      // Sort by adjacency frequency (strongest connections first)
-      const freqA = a.metadata?.adjacency_frequency || 1;
-      const freqB = b.metadata?.adjacency_frequency || 1;
-      return freqB - freqA;
-    });
+      if (connectedNode) {
+        return {
+          id: connectedNode.id,
+          title: connectedNode.title || connectedNode.label || 'Unknown',
+          frequency: edge.metadata?.adjacency_frequency || 1,
+          strength: edge.metadata?.strength_category || 'weak'
+        };
+      }
+      return null;
+    }).filter(Boolean)
+    .sort((a, b) => (b?.frequency || 0) - (a?.frequency || 0)); // Sort by frequency
 
-    setEdgeInfo({ nodeId: node.id, edges: nodeEdges });
+    const clickableNodes = connectedTracks.map(track => ({
+      id: track!.id,
+      title: track!.title,
+      frequency: track!.frequency,
+      strength: track!.strength
+    }));
+
+    // Create persistent tooltip positioned near the clicked node
+    const svgElement = svgRef.current;
+    const rect = svgElement?.getBoundingClientRect();
+    const svgX = node.x || 0;
+    const svgY = node.y || 0;
+
+    // Convert SVG coordinates to screen coordinates
+    const currentTransform = svgElement ? d3.zoomTransform(svgElement) : { x: 0, y: 0, k: 1 };
+    const screenX = (rect?.left || 0) + svgX * currentTransform.k + currentTransform.x;
+    const screenY = (rect?.top || 0) + svgY * currentTransform.k + currentTransform.y;
+
+    // Ensure tooltip stays within viewport bounds
+    const tooltipWidth = 350;
+    const tooltipHeight = 400;
+    const finalX = Math.min(Math.max(10, screenX), window.innerWidth - tooltipWidth - 10);
+    const finalY = Math.min(Math.max(10, screenY), window.innerHeight - tooltipHeight - 10);
+
+    setPersistentTooltip({
+      x: finalX,
+      y: finalY,
+      content: lines.join('\n'),
+      clickableNodes,
+      nodeId: node.id
+    });
 
     // Close any open menus/tooltips
     setMenu(null);
@@ -432,6 +496,36 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     target.setAttribute('r', String(Number(target.getAttribute('r')) / 1.2));
     setTooltip(null);
   }, []);
+
+  // Handle clicking outside to close persistent tooltip
+  const handleBackgroundClick = useCallback(() => {
+    setPersistentTooltip(null);
+    dispatch(setSelectedNodes([]));
+  }, [dispatch]);
+
+  // Navigate to connected node from persistent tooltip
+  const handleNavigateToNode = useCallback((nodeId: string) => {
+    // Close current persistent tooltip first
+    setPersistentTooltip(null);
+
+    // Center and select the new node
+    centerNode(nodeId);
+    dispatch(setSelectedNodes([nodeId]));
+
+    // After a brief delay, create new persistent tooltip for the new node
+    setTimeout(() => {
+      const newNode = nodes.find(n => n.id === nodeId);
+      if (newNode) {
+        // Simulate a click event to generate the persistent tooltip
+        const fakeEvent = {
+          stopPropagation: () => {},
+          clientX: window.innerWidth / 2,
+          clientY: window.innerHeight / 2
+        } as any;
+        handleNodeClick(fakeEvent, newNode);
+      }
+    }, 300); // Small delay to allow animation to center the node
+  }, [centerNode, dispatch, nodes, handleNodeClick]);
 
   // Main D3 visualization effect
   useEffect(() => {
@@ -826,7 +920,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
           width={width}
           height={height}
           fill="transparent"
-          onClick={() => dispatch(setSelectedNodes([]))}
+          onClick={handleBackgroundClick}
         />
       </svg>
 
@@ -884,6 +978,95 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Persistent Tooltip - Click to Explore */}
+      {persistentTooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            top: persistentTooltip.y,
+            left: persistentTooltip.x,
+            maxWidth: '350px',
+            zIndex: 1500
+          }}
+          className="bg-gray-900 bg-opacity-98 text-white border border-amber-500 rounded-lg shadow-2xl animate-in fade-in duration-200"
+        >
+          {/* Header with close button */}
+          <div className="flex items-center justify-between p-3 border-b border-gray-700">
+            <h3 className="text-amber-400 font-semibold text-sm">🎵 Track Details</h3>
+            <button
+              onClick={() => setPersistentTooltip(null)}
+              className="text-gray-400 hover:text-white text-lg font-bold w-6 h-6 flex items-center justify-center"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Main content */}
+          <div className="p-3">
+            <div className="whitespace-pre-line text-sm mb-3">
+              {persistentTooltip.content}
+            </div>
+
+            {/* Connected tracks for navigation */}
+            {persistentTooltip.clickableNodes.length > 0 && (
+              <div className="border-t border-gray-700 pt-3">
+                <div className="text-amber-400 text-xs font-semibold mb-2">
+                  🔗 Navigate to Connected Tracks:
+                </div>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {persistentTooltip.clickableNodes.map((track, index) => {
+                    const strengthEmoji = {
+                      'very_strong': '🔥',
+                      'strong': '⚡',
+                      'moderate': '🌟',
+                      'weak': '💫'
+                    }[track.strength as string] || '💫';
+
+                    const strengthColor = {
+                      'very_strong': 'border-red-500 hover:bg-red-900',
+                      'strong': 'border-orange-500 hover:bg-orange-900',
+                      'moderate': 'border-yellow-500 hover:bg-yellow-900',
+                      'weak': 'border-blue-500 hover:bg-blue-900'
+                    }[track.strength as string] || 'border-gray-500 hover:bg-gray-800';
+
+                    return (
+                      <button
+                        key={track.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNavigateToNode(track.id);
+                        }}
+                        className={`w-full text-left p-2 rounded border ${strengthColor} bg-gray-800 hover:bg-opacity-80 transition-all text-xs group`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-sm">{strengthEmoji}</span>
+                            <span className="text-white font-medium truncate group-hover:text-amber-300 transition-colors">
+                              {track.title}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-400 group-hover:text-amber-400 transition-colors">
+                            <span className="text-xs">({track.frequency}x)</span>
+                            <span className="text-xs">→</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Navigation hint */}
+            <div className="border-t border-gray-700 pt-2 mt-3">
+              <div className="text-gray-500 text-xs">
+                💡 Click track names above to navigate and explore connections
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

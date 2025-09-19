@@ -14,7 +14,7 @@ RUN apk add --no-cache curl
 COPY package*.json ./
 
 # Install all dependencies for development
-RUN npm ci --no-audit --no-fund --legacy-peer-deps
+RUN npm install --no-audit --no-fund --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -55,7 +55,7 @@ COPY tailwind.config.js ./
 
 # Install all dependencies including devDependencies for build
 # Must explicitly set NODE_ENV or use --include=dev to install devDependencies
-RUN NODE_ENV=development npm ci --no-audit --legacy-peer-deps
+RUN NODE_ENV=development npm install --no-audit --legacy-peer-deps
 
 # Copy source code
 COPY src/ ./src/
