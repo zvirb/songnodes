@@ -63,9 +63,9 @@ DOWNLOAD_DELAY = 2 # [1, 2] - Be polite, increase for slower sites
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-   'scrapers.database_pipeline.EnhancedMusicDatabasePipeline': 300,
-}
+# ITEM_PIPELINES = {
+#    'database_pipeline.EnhancedMusicDatabasePipeline': 300,
+# }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
