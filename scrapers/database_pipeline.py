@@ -11,7 +11,7 @@ from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from scrapy.exceptions import DropItem
 
-from .enhanced_items import (
+from .items import (
     EnhancedArtistItem,
     EnhancedTrackItem,
     EnhancedSetlistItem,

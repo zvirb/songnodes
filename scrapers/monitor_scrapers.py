@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced Scrapers Monitoring Tool
+Scraper Stack Monitoring Tool
 Provides real-time monitoring and statistics for scraping operations
 """
 
@@ -30,7 +30,7 @@ POSTGRES_CONFIG = {
     'password': os.getenv('POSTGRES_PASSWORD', 'musicpass')
 }
 
-SPIDERS = ['enhanced_1001tracklists', 'enhanced_mixesdb', 'setlistfm_api', 'enhanced_reddit']
+SPIDERS = ['1001tracklists', 'mixesdb', 'setlistfm', 'reddit']
 
 
 class ScraperMonitor:
@@ -72,8 +72,7 @@ class ScraperMonitor:
 
             # Count keys by spider
             for spider in SPIDERS:
-                spider_base = spider.replace('enhanced_', '').replace('_api', '')
-                pattern = f"scraped:*:{spider_base}*"
+                pattern = f"scraped:*:{spider}*"
                 keys = self.redis_client.keys(pattern)
                 stats['by_spider'][spider] = len(keys)
                 stats['total_keys'] += len(keys)
@@ -356,7 +355,7 @@ class ScraperMonitor:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Monitor Enhanced Scrapers')
+    parser = argparse.ArgumentParser(description='Monitor Scraper Stack')
     parser.add_argument('command', choices=['live', 'report', 'health', 'stats'],
                       help='Monitoring command to run')
     parser.add_argument('--interval', type=int, default=5,

@@ -1,8 +1,8 @@
-# 🚀 Enhanced Scrapers Setup & Usage Guide
+# 🚀 Scraper Stack Setup & Usage Guide
 
 **Last Updated:** September 19, 2025
 
-This guide provides complete instructions for running the enhanced music scrapers either in a virtual environment or using Docker containers.
+This guide provides complete instructions for running the SongNodes scraper stack either in a virtual environment or using Docker containers.
 
 ---
 
@@ -19,21 +19,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # 3. Run a spider
-scrapy crawl enhanced_1001tracklists -s CLOSESPIDER_PAGECOUNT=5
+scrapy crawl 1001tracklists -s CLOSESPIDER_PAGECOUNT=5
 ```
 
 ### Option 2: Docker (Recommended for Production)
 
 ```bash
 # 1. Build and start services
-./run_enhanced_scrapers.sh build
-./run_enhanced_scrapers.sh start
+./run_scrapers.sh build
+./run_scrapers.sh start
 
 # 2. Run a spider
-./run_enhanced_scrapers.sh run-spider enhanced_1001tracklists
+./run_scrapers.sh run-spider 1001tracklists
 
 # 3. Run all spiders
-./run_enhanced_scrapers.sh run-all
+./run_scrapers.sh run-all
 ```
 
 ---
@@ -42,10 +42,10 @@ scrapy crawl enhanced_1001tracklists -s CLOSESPIDER_PAGECOUNT=5
 
 | Spider Name | Target Site | Focus | Status |
 |------------|-------------|-------|--------|
-| `enhanced_1001tracklists` | 1001tracklists.com | DJ sets, tracklists | ✅ Ready |
-| `enhanced_mixesdb` | mixesdb.com | Underground mixes | ✅ Ready |
+| `1001tracklists` | 1001tracklists.com | DJ sets, tracklists | ✅ Ready |
+| `mixesdb` | mixesdb.com | Underground mixes | ✅ Ready |
 | `setlistfm_api` | setlist.fm | Live performances | ✅ Ready |
-| `enhanced_reddit` | reddit.com | Track discussions | ✅ Ready |
+| `reddit` | reddit.com | Track discussions | ✅ Ready |
 
 ---
 
@@ -61,14 +61,14 @@ scrapy crawl enhanced_1001tracklists -s CLOSESPIDER_PAGECOUNT=5
 
 ```
 scrapers/
-├── Dockerfile.enhanced          # Docker image definition
-├── docker-compose.enhanced.yml  # Service orchestration
-├── run_enhanced_scrapers.sh     # Runner script
+├── Dockerfile          # Docker image definition
+├── docker-compose.yml  # Service orchestration
+├── run_scrapers.sh     # Runner script
 ├── requirements.txt             # Python dependencies
 ├── spiders/                     # Spider implementations
-│   ├── enhanced_1001tracklists_spider.py
-│   ├── enhanced_mixesdb_spider.py
-│   ├── enhanced_reddit_spider.py
+│   ├── 1001tracklists_spider.py
+│   ├── mixesdb_spider.py
+│   ├── reddit_spider.py
 │   └── setlistfm_api_spider.py
 └── target_tracks_for_scraping.json  # Target tracks
 ```
@@ -77,49 +77,49 @@ scrapers/
 
 ```bash
 # Build the Docker image with all enhancements
-./run_enhanced_scrapers.sh build
+./run_scrapers.sh build
 
 # Or manually:
-docker compose -f docker-compose.enhanced.yml build
+docker compose -f docker-compose.yml build
 ```
 
 ### Starting Services
 
 ```bash
 # Start all services (Redis, PostgreSQL, scrapers)
-./run_enhanced_scrapers.sh start
+./run_scrapers.sh start
 
 # Check status
-./run_enhanced_scrapers.sh status
+./run_scrapers.sh status
 
 # View logs
-./run_enhanced_scrapers.sh logs
+./run_scrapers.sh logs
 ```
 
 ### Running Spiders
 
 ```bash
 # Run a specific spider
-./run_enhanced_scrapers.sh run-spider enhanced_1001tracklists
+./run_scrapers.sh run-spider 1001tracklists
 
 # With custom settings
-./run_enhanced_scrapers.sh run-spider enhanced_mixesdb \
+./run_scrapers.sh run-spider mixesdb \
   -s CLOSESPIDER_PAGECOUNT=10 \
   -s DOWNLOAD_DELAY=2
 
-# Run all enhanced spiders
-./run_enhanced_scrapers.sh run-all
+# Run all scraper spiders
+./run_scrapers.sh run-all
 ```
 
 ### Container Shell Access
 
 ```bash
 # Open shell in scrapers container
-./run_enhanced_scrapers.sh shell
+./run_scrapers.sh shell
 
 # Then inside the container:
 scrapy list  # List available spiders
-scrapy crawl enhanced_1001tracklists  # Run a spider
+scrapy crawl 1001tracklists  # Run a spider
 ```
 
 ---
@@ -155,10 +155,10 @@ export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5433
 
 # Run spider
-scrapy crawl enhanced_1001tracklists
+scrapy crawl 1001tracklists
 
 # With settings
-scrapy crawl enhanced_mixesdb \
+scrapy crawl mixesdb \
   -s CLOSESPIDER_PAGECOUNT=10 \
   -s LOG_LEVEL=DEBUG
 ```
@@ -252,19 +252,19 @@ The scrapers write to a PostgreSQL database with the following main tables:
 
 ```bash
 # Basic monitoring dashboard
-./run_enhanced_scrapers.sh monitor
+./run_scrapers.sh monitor
 
 # Detailed monitoring with recent activity
-./run_enhanced_scrapers.sh monitor detailed
+./run_scrapers.sh monitor detailed
 
 # Live monitoring with auto-refresh (5-second intervals)
-./run_enhanced_scrapers.sh monitor-live
+./run_scrapers.sh monitor-live
 
 # Scraping statistics and metrics
-./run_enhanced_scrapers.sh stats
+./run_scrapers.sh stats
 
 # System health check
-./run_enhanced_scrapers.sh health
+./run_scrapers.sh health
 ```
 
 ### Python Monitoring Tool
@@ -349,7 +349,7 @@ System assessment:
 
 ```bash
 # View real-time logs
-./run_enhanced_scrapers.sh logs
+./run_scrapers.sh logs
 
 # Access database via Adminer
 # Open browser: http://localhost:8080
@@ -384,7 +384,7 @@ KEYS scraped:*:mixesdb*
 
 ```bash
 # Using Docker
-./run_enhanced_scrapers.sh test
+./run_scrapers.sh test
 
 # Using venv
 source venv/bin/activate
@@ -395,7 +395,7 @@ python test_multi_spider.py
 
 ```bash
 # Quick test with limited pages
-scrapy crawl enhanced_1001tracklists \
+scrapy crawl 1001tracklists \
   -s CLOSESPIDER_PAGECOUNT=2 \
   -s LOG_LEVEL=DEBUG
 ```
@@ -438,10 +438,10 @@ scrapy crawl enhanced_1001tracklists \
 
 ```bash
 # Run with debug logging
-scrapy crawl enhanced_1001tracklists -L DEBUG
+scrapy crawl 1001tracklists -L DEBUG
 
 # Test with minimal pages
-scrapy crawl enhanced_mixesdb \
+scrapy crawl mixesdb \
   -s CLOSESPIDER_PAGECOUNT=1 \
   -s LOG_LEVEL=DEBUG
 ```
@@ -454,20 +454,20 @@ scrapy crawl enhanced_mixesdb \
 
 ```bash
 # Production build
-docker compose -f docker-compose.enhanced.yml build --no-cache
+docker compose -f docker-compose.yml build --no-cache
 
 # Start in detached mode
-docker compose -f docker-compose.enhanced.yml up -d
+docker compose -f docker-compose.yml up -d
 
 # Scale if needed
-docker compose -f docker-compose.enhanced.yml scale enhanced-scrapers=3
+docker compose -f docker-compose.yml scale scrapers=3
 ```
 
 ### Scheduled Runs
 
 ```bash
 # Add to crontab for daily runs
-0 2 * * * /path/to/run_enhanced_scrapers.sh run-all >> /var/log/scrapers.log 2>&1
+0 2 * * * /path/to/run_scrapers.sh run-all >> /var/log/scrapers.log 2>&1
 ```
 
 ---
@@ -504,9 +504,9 @@ The scrapers look for tracks defined in `target_tracks_for_scraping.json`. This 
 ## 📞 Support
 
 For issues or questions:
-1. Check the logs: `./run_enhanced_scrapers.sh logs`
+1. Check the logs: `./run_scrapers.sh logs`
 2. Review test report: `ORCHESTRATOR_TEST_REPORT.md`
-3. Verify service health: `./run_enhanced_scrapers.sh status`
+3. Verify service health: `./run_scrapers.sh status`
 
 ---
 

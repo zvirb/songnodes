@@ -1,10 +1,10 @@
-# Enhanced Scrapers Deployment Success Report
+# Scraper Stack Deployment Success Report
 **Date:** September 19, 2025
 **Environment:** Docker containers with full stack deployment
 
 ## 🎉 Deployment Status: SUCCESS
 
-All identified issues have been resolved and the enhanced scrapers are now fully functional.
+All identified issues have been resolved and the scraper stack are now fully functional.
 
 ## ✅ Issues Fixed
 
@@ -12,8 +12,8 @@ All identified issues have been resolved and the enhanced scrapers are now fully
 - **Issue:** `AttributeError: 'Spider' object has no attribute 'settings'`
 - **Fix:** Changed `self.settings.get()` to `self.custom_settings.get()` in all affected spiders
 - **Files Fixed:**
-  - `spiders/enhanced_1001tracklists_spider.py`
-  - `spiders/enhanced_mixesdb_spider.py`
+  - `spiders/1001tracklists_spider.py`
+  - `spiders/mixesdb_spider.py`
   - `spiders/setlistfm_api_spider.py`
 
 ### 2. Missing re Import (RESOLVED)
@@ -23,7 +23,7 @@ All identified issues have been resolved and the enhanced scrapers are now fully
 
 ### 3. Network Configuration (RESOLVED)
 - **Issue:** Redis hostname resolution failure in containers
-- **Fix:** Updated docker-compose.enhanced.yml to use container hostnames
+- **Fix:** Updated docker-compose.yml to use container hostnames
 - **Change:** `REDIS_HOST=scrapers-redis` and `POSTGRES_HOST=scrapers-postgres`
 
 ### 4. Docker Image Rebuild (COMPLETED)
@@ -33,9 +33,9 @@ All identified issues have been resolved and the enhanced scrapers are now fully
 ## 🧪 Testing Results
 
 ### Spider Execution Tests
-All enhanced spiders now execute successfully:
+All scraper spiders now execute successfully:
 
-1. **enhanced_1001tracklists**: ✅ WORKING
+1. **1001tracklists**: ✅ WORKING
    - Loads 145 target tracks
    - Processes search URLs correctly
    - No fatal errors
@@ -45,8 +45,8 @@ All enhanced spiders now execute successfully:
    - API calls functioning (404 responses normal for missing data)
    - No fatal errors
 
-3. **enhanced_mixesdb**: ✅ EXPECTED WORKING (same codebase pattern)
-4. **enhanced_reddit**: ✅ EXPECTED WORKING (no robots policy method)
+3. **mixesdb**: ✅ EXPECTED WORKING (same codebase pattern)
+4. **reddit**: ✅ EXPECTED WORKING (no robots policy method)
 
 ### Infrastructure Tests
 
@@ -62,7 +62,7 @@ Database connection successful!
 - ⚠️ Minor hostname resolution warning (non-blocking)
 
 #### Container Health
-- ✅ All enhanced scraper services running
+- ✅ All scraper services running
 - ✅ Health monitoring tools functional
 
 ## 📊 Performance Metrics
@@ -100,30 +100,30 @@ Database connection successful!
 
 ### 3. Orchestrator Integration
 - **Status:** Architecture mismatch identified
-- **Current:** Enhanced scrapers work standalone
+- **Current:** Scraper stack work standalone
 - **Future:** Create API wrapper or split into microservices for orchestrator compatibility
 
 ## 🚀 Deployment Commands
 
-### Start Enhanced Scrapers
+### Start Scraper Stack
 ```bash
-./run_enhanced_scrapers.sh start
+./run_scrapers.sh start
 ```
 
 ### Run Individual Spider
 ```bash
-./run_enhanced_scrapers.sh run-spider enhanced_1001tracklists
+./run_scrapers.sh run-spider 1001tracklists
 ```
 
 ### Health Check
 ```bash
-./run_enhanced_scrapers.sh health
+./run_scrapers.sh health
 ```
 
 ### Monitoring
 ```bash
-./run_enhanced_scrapers.sh monitor
-./run_enhanced_scrapers.sh monitor-live
+./run_scrapers.sh monitor
+./run_scrapers.sh monitor-live
 ```
 
 ## 📈 Success Metrics
@@ -136,7 +136,7 @@ Database connection successful!
 
 ## 🎯 Conclusion
 
-The enhanced scrapers deployment is **SUCCESSFUL**. All critical issues have been resolved:
+The scraper stack deployment is **SUCCESSFUL**. All critical issues have been resolved:
 
 1. ✅ Code errors fixed (settings access, missing imports)
 2. ✅ Network configuration updated
@@ -145,7 +145,7 @@ The enhanced scrapers deployment is **SUCCESSFUL**. All critical issues have bee
 5. ✅ Monitoring tools operational
 6. ✅ Spiders executing without fatal errors
 
-The system is ready for production use with the enhanced scraping capabilities, including:
+The system is ready for production use with the scraper stack capabilities, including:
 - Redis-based state management
 - Intelligent target track rotation
 - Contemporary music focus (2023-2025)

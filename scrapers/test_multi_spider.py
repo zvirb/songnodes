@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Multi-Spider Test Script
-Tests all improved spiders with contemporary track searches
+Tests all scraper spiders with contemporary track searches
 """
 import subprocess
 import time
@@ -70,7 +70,7 @@ def test_spider(spider_name, limit_requests=5):
 
 
 def main():
-    """Test all improved spiders"""
+    """Test all scraper spiders"""
     print("="*60)
     print("MULTI-SPIDER TEST SUITE")
     print(f"Testing contemporary track discovery - {datetime.now()}")
@@ -78,10 +78,10 @@ def main():
 
     # List of spiders to test
     spiders = [
-        'enhanced_1001tracklists',
-        'enhanced_mixesdb',
-        'setlistfm_api',
-        'enhanced_reddit'
+        '1001tracklists',
+        'mixesdb',
+        'setlistfm',
+        'reddit'
     ]
 
     results = {}
