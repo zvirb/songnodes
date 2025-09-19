@@ -1,0 +1,154 @@
+version: '3.8'
+
+# Minimal scraping-focused docker-compose for production testing
+# This includes only the essential services needed for scraping operations
+
+services:
+  # Core Infrastructure
+  postgres:
+    image: postgres:15
+    container_name: scraping-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: musicdb_secure_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U musicdb_user -d musicdb"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - scraping-backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: scraping-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - scraping-backend
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: scraping-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: musicdb_user
+      RABBITMQ_DEFAULT_PASS: musicdb_secure_pass
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - scraping-backend
+
+  # Scraping Services
+  scraper-orchestrator:
+    build:
+      context: ./services/scraper-orchestrator
+      dockerfile: Dockerfile
+    container_name: scraping-orchestrator
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      REDIS_URL: redis://scraping-redis:6379/0
+      RABBITMQ_URL: amqp://musicdb_user:musicdb_secure_pass@scraping-rabbitmq:5672/
+      DATABASE_URL: postgresql://musicdb_user:musicdb_secure_pass@scraping-postgres:5432/musicdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - scraping-backend
+
+  scraper-1001tracklists:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.1001tracklists
+    container_name: scraping-1001tracklists
+    restart: unless-stopped
+    ports:
+      - "8011:8011"
+    environment:
+      REDIS_URL: redis://scraping-redis:6379/0
+      DATABASE_URL: postgresql://musicdb_user:musicdb_secure_pass@scraping-postgres:5432/musicdb
+      SCRAPER_NAME: 1001tracklists
+      DOWNLOAD_DELAY: 15.0
+    depends_on:
+      scraper-orchestrator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - scraping-backend
+
+  scraper-mixesdb:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.mixesdb
+    container_name: scraping-mixesdb
+    restart: unless-stopped
+    ports:
+      - "8012:8012"
+    environment:
+      REDIS_URL: redis://scraping-redis:6379/0
+      DATABASE_URL: postgresql://musicdb_user:musicdb_secure_pass@scraping-postgres:5432/musicdb
+      SCRAPER_NAME: mixesdb
+      DOWNLOAD_DELAY: 2.5
+    depends_on:
+      scraper-orchestrator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - scraping-backend
+
+volumes:
+  postgres_data:
+    name: scraping_postgres_data
+  redis_data:
+    name: scraping_redis_data
+  rabbitmq_data:
+    name: scraping_rabbitmq_data
+
+networks:
+  scraping-backend:
+    name: scraping-network
+    driver: bridge
