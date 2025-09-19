@@ -186,6 +186,45 @@ export class D3ForceSimulation {
     // Temporal arrangement force
     const temporalForce = this.createTemporalArrangementForce(this.mutableNodes);
     this.simulation.force('temporal', temporalForce);
+
+    // Unconnected node repulsion force
+    const unconnectedNodeRepulsionForce = this.createUnconnectedNodeRepulsionForce(this.mutableNodes, this.mutableEdges);
+    this.simulation.force('unconnected', unconnectedNodeRepulsionForce);
+  }
+
+  private createUnconnectedNodeRepulsionForce(nodes: NodeVisual[], edges: EdgeVisual[]): d3.Force<NodeVisual, undefined> {
+    const connectedNodeIds = new Set<string>();
+    edges.forEach(edge => {
+        connectedNodeIds.add(edge.source.toString());
+        connectedNodeIds.add(edge.target.toString());
+    });
+
+    return (alpha: number) => {
+        const strength = alpha * 0.01; // Gentle force
+        const unconnectedNodes = nodes.filter(node => !connectedNodeIds.has(node.id));
+
+        for (let i = 0; i < unconnectedNodes.length; i++) {
+            for (let j = i + 1; j < unconnectedNodes.length; j++) {
+                const node1 = unconnectedNodes[i];
+                const node2 = unconnectedNodes[j];
+
+                const dx = node2.x - node1.x;
+                const dy = node2.y - node1.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < 1) distance = 1;
+
+                const force = strength / (distance * distance);
+
+                const forceX = dx * force;
+                const forceY = dy * force;
+
+                node1.vx -= forceX;
+                node1.vy -= forceY;
+                node2.vx += forceX;
+                node2.vy += forceY;
+            }
+        }
+    };
   }
   
   private createGenreClusteringForce(nodes: NodeVisual[]): d3.Force<NodeVisual, undefined> {

@@ -336,9 +336,11 @@ const NodeRenderer = PixiComponent<NodeRendererProps, Container>('NodeRenderer',
 
 // Define the interface for EdgeRenderer props
 interface EdgeRendererProps {
+  nodes: NodeVisual[];
   edges: EdgeVisual[];
   renderSettings: RenderSettings;
   viewport: { x: number; y: number; scale: number };
+  selectedNodes: string[];
   highlightedPath: string[];
 }
 
@@ -350,9 +352,17 @@ const EdgeRenderer = PixiComponent<EdgeRendererProps, Graphics>('EdgeRenderer', 
   },
   
   applyProps: (graphics, oldProps, newProps) => {
-    const { edges, renderSettings, viewport, highlightedPath } = newProps;
+    const { nodes, edges, renderSettings, viewport, selectedNodes, highlightedPath } = newProps;
     
     graphics.clear();
+
+    const nodesById = useMemo(() => new Map(nodes.map(node => [node.id, node])), [nodes]);
+
+    const selectedNodeObjects = useMemo(() => 
+        new Set(selectedNodes.map(id => nodesById.get(id)).filter(Boolean) as NodeVisual[])
+    , [selectedNodes, nodesById]);
+
+    const opacityScale = d3.scaleLinear().domain([0, 500]).range([1, 0.1]).clamp(true);
     
     // Width scale based on edge weight
     const widthScale = d3.scaleLinear()
@@ -370,9 +380,26 @@ const EdgeRenderer = PixiComponent<EdgeRendererProps, Graphics>('EdgeRenderer', 
       
       const isHighlighted = highlightedPath.includes(edge.source) && 
                            highlightedPath.includes(edge.target);
+
+      let alpha = edge.opacity;
+
+      if (selectedNodeObjects.size > 0) {
+        let minDistance = Infinity;
+        for (const selectedNode of selectedNodeObjects) {
+            const distToSource = Math.hypot(edge.sourceNode.x - selectedNode.x, edge.sourceNode.y - selectedNode.y);
+            const distToTarget = Math.hypot(edge.targetNode.x - selectedNode.x, edge.targetNode.y - selectedNode.y);
+            minDistance = Math.min(minDistance, distToSource, distToTarget);
+        }
+        alpha = opacityScale(minDistance);
+      } else {
+        alpha = 0.2;
+      }
+
+      if (isHighlighted) {
+        alpha = 1;
+      }
       
       const color = isHighlighted ? 0xF59E0B : parseInt(edge.color.slice(1), 16);
-      const alpha = isHighlighted ? 1 : edge.opacity;
       const width = isHighlighted ? Math.max(2, screenWidth) : screenWidth;
       
       // LOD-based edge rendering
@@ -441,9 +468,11 @@ export const WebGLRenderer: React.FC<WebGLRendererProps> = ({
     <>
       {/* Render edges first (below nodes) */}
       <EdgeRenderer
+        nodes={memoizedNodes}
         edges={memoizedEdges}
         renderSettings={renderSettings}
         viewport={viewport}
+        selectedNodes={selectedNodes}
         highlightedPath={highlightedPath}
       />
       

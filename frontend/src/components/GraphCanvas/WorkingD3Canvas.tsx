@@ -2,7 +2,15 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import * as d3 from 'd3';
 import { useAppSelector, useAppDispatch } from '../../store/index';
 import { setSelectedNodes } from '../../store/graphSlice';
-import { setStartNode, setEndNode, addWaypoint } from '../../store/pathfindingSlice';
+import {
+  setStartNode,
+  setEndNode,
+  addWaypoint,
+  undoLastAction,
+  setPlayedTracks,
+  startPathCalculation,
+} from '../../store/pathfindingSlice';
+import { useAutoPathCalculation } from '../../hooks/useAutoPathCalculation';
 
 interface WorkingD3CanvasProps {
   width: number;
@@ -52,16 +60,30 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   const [menu, setMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [centeredNodeId, setCenteredNodeId] = useState<string | null>(null);
   const [edgeInfo, setEdgeInfo] = useState<{ nodeId: string; edges: any[] } | null>(null);
+  const [playedSongs, setPlayedSongs] = useState<Set<string>>(new Set());
 
   // Get data from Redux store (with basic type handling)
   const { nodes, edges, selectedNodes } = useAppSelector(state => state.graph);
   const pathState = useAppSelector(state => state.pathfinding);
 
+  // Enable automatic path calculation when start and end nodes are selected
+  useAutoPathCalculation();
+
   // Color mapping for different node types
   const getNodeColor = useCallback((node: any) => {
+    // Played songs get a special purple color
+    if (playedSongs.has(node.id)) return '#A855F7'; // Purple for played songs
+
     if (centeredNodeId === node.id) return '#F59E0B'; // Amber for centered node
     if (node.selected || selectedNodes.includes(node.id)) return '#FCD34D'; // Light amber for selected
     if (node.highlighted) return '#EF4444'; // Red
+
+    // Check if this node is part of the current path
+    const routeNodes = pathState.currentPath?.nodes || [];
+    if (routeNodes.includes(node.id)) {
+      // Path nodes that aren't played yet are orange
+      return '#FB923C'; // Orange for path nodes
+    }
 
     // Grey out if not in collection (owned === false)
     const owned = node?.metadata?.owned;
@@ -75,7 +97,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       case 'album': return '#EC4899'; // Pink
       default: return '#6B7280'; // Gray
     }
-  }, [selectedNodes, centeredNodeId]);
+  }, [selectedNodes, centeredNodeId, playedSongs, pathState]);
 
   // Calculate distance from centered node using BFS
   const calculateDistance = useCallback((fromNodeId: string, toNodeId: string) => {
@@ -122,21 +144,42 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     return Math.max(0.1, 1 - normalizedDistance * 0.8);
   }, [centeredNodeId, calculateDistance]);
 
-  // Get edge opacity based on distance from centered node
+  // Get edge opacity based on distance from centered node and pathfinding state
   const getEdgeOpacity = useCallback((edge: any) => {
-    if (!centeredNodeId) return 0.6;
+    // Get the actual node IDs from edge (might be objects or strings)
+    const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+    const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
 
-    const sourceDistance = calculateDistance(centeredNodeId, edge.source);
-    const targetDistance = calculateDistance(centeredNodeId, edge.target);
+    // Check if this edge is part of the current path - make it fully opaque and red
+    const routeNodes = pathState.currentPath?.nodes || [];
+    for (let i = 0; i < routeNodes.length - 1; i++) {
+      if ((routeNodes[i] === sourceId && routeNodes[i+1] === targetId) ||
+          (routeNodes[i] === targetId && routeNodes[i+1] === sourceId)) {
+        return 1.0; // Full opacity for path edges
+      }
+    }
+
+    if (!centeredNodeId) return 0.3; // Default lower opacity when no node selected
+
+    const sourceDistance = calculateDistance(centeredNodeId, sourceId);
+    const targetDistance = calculateDistance(centeredNodeId, targetId);
     const minDistance = Math.min(sourceDistance, targetDistance);
 
-    if (minDistance === Infinity) return 0.05;
+    // Direct connections (distance 0) to selected node are fully opaque
+    if (minDistance === 0) return 1.0;
 
-    // Edges closer to centered node are more opaque
-    const maxDistance = 4;
-    const normalizedDistance = Math.min(minDistance / maxDistance, 1);
-    return Math.max(0.05, 0.8 - normalizedDistance * 0.7);
-  }, [centeredNodeId, calculateDistance]);
+    // Calculate transparency based on distance - further = more transparent
+    const maxDistance = 4; // Consider edges up to 4 hops away
+    if (minDistance > maxDistance) return 0.05; // Very faint but still visible if too far
+
+    // Use exponential decay for smoother opacity falloff
+    // Distance 1: ~0.7, Distance 2: ~0.4, Distance 3: ~0.2, Distance 4: ~0.1
+    const normalizedDistance = minDistance / maxDistance;
+    const opacity = Math.exp(-2 * normalizedDistance) * 0.9;
+
+    // Ensure minimum visibility of 0.05 and maximum of 0.8 for non-direct edges
+    return Math.max(0.05, Math.min(0.8, opacity));
+  }, [centeredNodeId, calculateDistance, pathState]);
 
   // Get node radius
   const getNodeRadius = useCallback((node: any) => {
@@ -268,6 +311,25 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
 
   // Get edge color based on distance with gradient
   const getEdgeColor = useCallback((edge: any, isHighlighted: boolean = false) => {
+    // Get the actual node IDs from edge (might be objects or strings)
+    const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+    const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+    // Check if this edge is part of the current path - make it red
+    const routeNodes = pathState.currentPath?.nodes || [];
+    for (let i = 0; i < routeNodes.length - 1; i++) {
+      if ((routeNodes[i] === sourceId && routeNodes[i+1] === targetId) ||
+          (routeNodes[i] === targetId && routeNodes[i+1] === sourceId)) {
+        return '#EF4444'; // Red for path edges
+      }
+    }
+
+    // Direct connections to selected node are orange
+    if (centeredNodeId &&
+        (sourceId === centeredNodeId || targetId === centeredNodeId)) {
+      return '#F59E0B'; // Orange for direct connections
+    }
+
     // Highlight connected edges to selected/centered node
     if (isHighlighted) return '#F59E0B'; // Bright amber for highlighted connections
 
@@ -299,11 +361,14 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       const t = (normalized - 0.75) / 0.25;
       return `rgb(${Math.floor(116 - t * 57)}, ${Math.floor(255 - t * 153)}, ${Math.floor(116 + t * 139)})`;
     }
-  }, [edges, getDistanceRange]);
+  }, [edges, getDistanceRange, pathState, centeredNodeId]);
 
   // Handle interactions
   const handleNodeClick = useCallback((event: MouseEvent, node: any) => {
     event.stopPropagation();
+
+    // Close any existing persistent tooltip first
+    setPersistentTooltip(null);
 
     // Center the clicked node
     centerNode(node.id);
@@ -346,7 +411,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Get connected tracks for navigation
     const connectedTracks = edges.filter(edge =>
       edge.source === node.id || edge.target === node.id
-    ).slice(0, 5) // Show top 5 connections
+    ) // Show all connections
     .map(edge => {
       const connectedNodeId = edge.source === node.id ? edge.target : edge.source;
       const connectedNode = nodes.find(n => n.id === connectedNodeId);
@@ -386,13 +451,16 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     const finalX = Math.min(Math.max(10, screenX), window.innerWidth - tooltipWidth - 10);
     const finalY = Math.min(Math.max(10, screenY), window.innerHeight - tooltipHeight - 10);
 
-    setPersistentTooltip({
-      x: finalX,
-      y: finalY,
-      content: lines.join('\n'),
-      clickableNodes,
-      nodeId: node.id
-    });
+    // Delay tooltip creation to prevent it from being cleared by re-render
+    setTimeout(() => {
+      setPersistentTooltip({
+        x: finalX,
+        y: finalY,
+        content: lines.join('\n'),
+        clickableNodes,
+        nodeId: node.id
+      });
+    }, 150);
 
     // Close any open menus/tooltips
     setMenu(null);
@@ -497,11 +565,109 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     setTooltip(null);
   }, []);
 
-  // Handle clicking outside to close persistent tooltip
+  // Handle clicking outside to close persistent tooltip and deselect nodes
   const handleBackgroundClick = useCallback(() => {
     setPersistentTooltip(null);
     dispatch(setSelectedNodes([]));
+    setCenteredNodeId(null); // Clear the centered node to deselect
+    setMenu(null); // Clear any open menus
   }, [dispatch]);
+
+  // Toggle collection status for a track
+  const handleToggleCollection = useCallback((nodeId: string) => {
+    // Find the node and toggle its collection status
+    const node = nodes.find(n => n.id === nodeId);
+    if (node?.metadata) {
+      const newStatus = !node.metadata.owned;
+      // Update the node's metadata (this would normally be persisted to backend)
+      node.metadata.owned = newStatus;
+
+      // Force re-render by updating the persistent tooltip
+      if (persistentTooltip?.nodeId === nodeId) {
+        const fakeEvent = {
+          stopPropagation: () => {},
+          clientX: window.innerWidth / 2,
+          clientY: window.innerHeight / 2
+        } as any;
+        setTimeout(() => handleNodeClick(fakeEvent, node), 100);
+      }
+    }
+  }, [nodes, persistentTooltip, handleNodeClick]);
+
+  // Pathfinding control functions
+  const handleSetStartNode = useCallback((nodeId: string) => {
+    // Check if there are played songs
+    if (playedSongs.size > 0 && pathState.startNode !== nodeId) {
+      alert('Cannot change start track after tracks have been played');
+      return;
+    }
+    dispatch(setStartNode(nodeId));
+
+    // Trigger automatic path calculation if end node is also set
+    if (pathState.endNode) {
+      dispatch(startPathCalculation());
+    }
+  }, [dispatch, pathState, playedSongs]);
+
+  const handleSetEndNode = useCallback((nodeId: string) => {
+    dispatch(setEndNode(nodeId));
+
+    // Trigger automatic path calculation if start node is also set
+    if (pathState.startNode) {
+      dispatch(startPathCalculation());
+    }
+  }, [dispatch, pathState]);
+
+  const handleAddWaypoint = useCallback((nodeId: string) => {
+    dispatch(addWaypoint(nodeId));
+
+    // Trigger automatic path recalculation if start and end are set
+    if (pathState.startNode && pathState.endNode) {
+      dispatch(startPathCalculation());
+    }
+  }, [dispatch, pathState]);
+
+  const handleUndo = useCallback(() => {
+    dispatch(undoLastAction());
+
+    // Trigger path recalculation if needed
+    if (pathState.startNode && pathState.endNode) {
+      dispatch(startPathCalculation());
+    }
+  }, [dispatch, pathState]);
+
+  // Mark song and all previous songs in path as played
+  const handleMarkAsPlayed = useCallback((nodeId: string) => {
+    const routeNodes = pathState.currentPath?.nodes || [];
+    const currentIndex = routeNodes.indexOf(nodeId);
+
+    if (currentIndex >= 0) {
+      // Mark this song and all previous songs as played
+      const newPlayedSongs = new Set(playedSongs);
+      const playedArray: string[] = [];
+      for (let i = 0; i <= currentIndex; i++) {
+        newPlayedSongs.add(routeNodes[i]);
+        playedArray.push(routeNodes[i]);
+      }
+      setPlayedSongs(newPlayedSongs);
+
+      // Update Redux state with played tracks
+      dispatch(setPlayedTracks(playedArray));
+
+      // Update the persistent tooltip to show the new status
+      if (persistentTooltip?.nodeId === nodeId) {
+        const node = nodes.find(n => n.id === nodeId);
+        if (node) {
+          const fakeEvent = {
+            stopPropagation: () => {},
+            clientX: window.innerWidth / 2,
+            clientY: window.innerHeight / 2
+          } as any;
+          setTimeout(() => handleNodeClick(fakeEvent, node), 100);
+        }
+      }
+    }
+  }, [pathState, playedSongs, persistentTooltip, nodes, handleNodeClick, dispatch]);
 
   // Navigate to connected node from persistent tooltip
   const handleNavigateToNode = useCallback((nodeId: string) => {
@@ -525,7 +691,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         handleNodeClick(fakeEvent, newNode);
       }
     }, 300); // Small delay to allow animation to center the node
-  }, [centerNode, dispatch, nodes, handleNodeClick]);
+  }, [centerNode, dispatch, nodes]);
 
   // Main D3 visualization effect
   useEffect(() => {
@@ -660,12 +826,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
 
     // Create links with frequency-based visualization
     const routeSet = new Set<string>((pathState.currentPath?.nodes || []));
-    const edgeRouteSet = new Set<string>();
     const routeNodes = pathState.currentPath?.nodes || [];
-    for (let i = 0; i < routeNodes.length - 1; i++) {
-      edgeRouteSet.add(`${routeNodes[i]}->${routeNodes[i+1]}`);
-      edgeRouteSet.add(`${routeNodes[i+1]}->${routeNodes[i]}`);
-    }
 
     const link = linkGroup
       .selectAll('line')
@@ -673,28 +834,47 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       .enter()
       .append('line')
       .attr('stroke', (d: any) => {
+        // Get the actual node IDs from edge
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+
+        // Check if this edge is part of the path - make it red and thick
+        for (let i = 0; i < routeNodes.length - 1; i++) {
+          if ((routeNodes[i] === sourceId && routeNodes[i+1] === targetId) ||
+              (routeNodes[i] === targetId && routeNodes[i+1] === sourceId)) {
+            return '#EF4444'; // Red for path edges
+          }
+        }
+
         // Check if this edge is connected to the centered or selected node
         const centeredOrSelected = centeredNodeId || selectedNodes[0];
         const isHighlighted = centeredOrSelected && (
-          d.source === centeredOrSelected ||
-          d.target === centeredOrSelected ||
-          (typeof d.source === 'object' && d.source.id === centeredOrSelected) ||
-          (typeof d.target === 'object' && d.target.id === centeredOrSelected)
+          sourceId === centeredOrSelected ||
+          targetId === centeredOrSelected
         );
-
-        // Highlight route edges
-        const isRoute = edgeRouteSet.has(`${d.source}-${d.target}`) || edgeRouteSet.has(`${d.target}-${d.source}`);
-        if (isRoute) return '#F59E0B';
 
         // Use distance-based gradient coloring with highlighting
         return getEdgeColor(d, isHighlighted);
       })
       .attr('stroke-width', (d: any) => {
+        // Get the actual node IDs from edge
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+
+        // Check if this edge is part of the path
+        let isRoute = false;
+        for (let i = 0; i < routeNodes.length - 1; i++) {
+          if ((routeNodes[i] === sourceId && routeNodes[i+1] === targetId) ||
+              (routeNodes[i] === targetId && routeNodes[i+1] === sourceId)) {
+            isRoute = true;
+            break;
+          }
+        }
+
         // Thinner width based on adjacency frequency
         const metadata = d.metadata || {};
         const frequency = metadata.adjacency_frequency || 1;
-        const isRoute = edgeRouteSet.has(`${d.source}-${d.target}`) || edgeRouteSet.has(`${d.target}-${d.source}`);
-        return isRoute ? 3 : Math.max(0.5, Math.min(3, frequency * 0.8));
+        return isRoute ? 4 : Math.max(0.5, Math.min(3, frequency * 0.8));
       })
       .attr('stroke-opacity', (d: any) => {
         // Combine base opacity with distance-based transparency
@@ -719,8 +899,14 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       .attr('stroke-width', 2)
       .attr('stroke-opacity', d => getNodeOpacity(d))
       .style('cursor', 'pointer')
-      .on('click', handleNodeClick)
-      .on('contextmenu', (event: any, d: any) => { event.preventDefault(); handleNodeClick(event as any, d as any); })
+      .on('click', (event: any, d: any) => {
+        // Inline click handler to prevent D3 re-rendering
+        handleNodeClick(event, d);
+      })
+      .on('contextmenu', (event: any, d: any) => {
+        event.preventDefault();
+        handleNodeClick(event as any, d as any);
+      })
       .on('mouseenter', handleNodeMouseEnter)
       .on('mouseleave', handleNodeMouseLeave);
 
@@ -843,7 +1029,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     return () => {
       simulation.stop();
     };
-  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, handleNodeClick, getNodeDisplayText, distancePower, relationshipPower]);
+  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, getNodeDisplayText, distancePower, relationshipPower]);
 
   // Update colors and opacity when selection changes
   useEffect(() => {
@@ -862,19 +1048,50 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       .attr('fill-opacity', (d: any) => getNodeOpacity(d));
 
     // Update edge colors and opacity with highlighting
+    const routeNodes = pathState.currentPath?.nodes || [];
     svg.selectAll('.links line')
       .attr('stroke', (d: any) => {
+        // Get the actual node IDs from edge
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+
+        // Check if this edge is part of the path - make it red
+        for (let i = 0; i < routeNodes.length - 1; i++) {
+          if ((routeNodes[i] === sourceId && routeNodes[i+1] === targetId) ||
+              (routeNodes[i] === targetId && routeNodes[i+1] === sourceId)) {
+            return '#EF4444'; // Red for path edges
+          }
+        }
+
         // Check if this edge is connected to the centered or selected node
         const centeredOrSelected = centeredNodeId || selectedNodes[0];
         const isHighlighted = centeredOrSelected && (
-          d.source === centeredOrSelected ||
-          d.target === centeredOrSelected ||
-          (typeof d.source === 'object' && d.source.id === centeredOrSelected) ||
-          (typeof d.target === 'object' && d.target.id === centeredOrSelected)
+          sourceId === centeredOrSelected ||
+          targetId === centeredOrSelected
         );
 
         // Use distance-based gradient coloring with highlighting
         return getEdgeColor(d, isHighlighted);
+      })
+      .attr('stroke-width', (d: any) => {
+        // Get the actual node IDs from edge
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+
+        // Check if this edge is part of the path
+        let isRoute = false;
+        for (let i = 0; i < routeNodes.length - 1; i++) {
+          if ((routeNodes[i] === sourceId && routeNodes[i+1] === targetId) ||
+              (routeNodes[i] === targetId && routeNodes[i+1] === sourceId)) {
+            isRoute = true;
+            break;
+          }
+        }
+
+        // Width based on path status and frequency
+        const metadata = d.metadata || {};
+        const frequency = metadata.adjacency_frequency || 1;
+        return isRoute ? 4 : Math.max(0.5, Math.min(3, frequency * 0.8));
       })
       .attr('stroke-opacity', (d: any) => {
         // Combine base opacity with distance-based transparency
@@ -884,7 +1101,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         const distanceOpacity = getEdgeOpacity(d);
         return baseOpacity * distanceOpacity;
       });
-  }, [selectedNodes, centeredNodeId, getNodeColor, getEdgeColor, getNodeOpacity, getEdgeOpacity]);
+  }, [selectedNodes, centeredNodeId, pathState, getNodeColor, getEdgeColor, getNodeOpacity, getEdgeOpacity]);
 
   if (!nodes.length) {
     return (
@@ -1010,13 +1227,197 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
               {persistentTooltip.content}
             </div>
 
+            {/* Collection toggle and pathfinding controls */}
+            <div className="border-t border-gray-700 pt-3 mb-3">
+              <div className="text-amber-400 text-xs font-semibold mb-2">
+                🎯 Actions:
+              </div>
+              <div className="space-y-2">
+                {/* Collection toggle */}
+                {(() => {
+                  const node = nodes.find(n => n.id === persistentTooltip.nodeId);
+                  const isInCollection = node?.metadata?.owned;
+                  const routeNodes = pathState.currentPath?.nodes || [];
+                  const currentIndex = routeNodes.indexOf(persistentTooltip.nodeId);
+                  const nextNode = currentIndex >= 0 && currentIndex < routeNodes.length - 1 ?
+                    nodes.find(n => n.id === routeNodes[currentIndex + 1]) : null;
+                  const prevNode = currentIndex > 0 ?
+                    nodes.find(n => n.id === routeNodes[currentIndex - 1]) : null;
+
+                  return (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleCollection(persistentTooltip.nodeId);
+                        }}
+                        className={`w-full text-left p-2 rounded border transition-all text-xs ${
+                          isInCollection
+                            ? 'border-green-500 bg-green-900 hover:bg-green-800 text-green-200'
+                            : 'border-red-500 bg-red-900 hover:bg-red-800 text-red-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{isInCollection ? '✅' : '❌'}</span>
+                          <span className="font-medium">
+                            {isInCollection ? 'In your collection' : 'Not in collection'}
+                          </span>
+                          <span className="ml-auto text-xs opacity-75">Click to toggle</span>
+                        </div>
+                      </button>
+
+                      {/* Pathfinding controls */}
+                      <div className="grid grid-cols-3 gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetStartNode(persistentTooltip.nodeId);
+                          }}
+                          className={`p-2 rounded border text-xs transition-all ${
+                            pathState.startNode === persistentTooltip.nodeId
+                              ? 'border-green-500 bg-green-900 text-green-200'
+                              : 'border-gray-500 bg-gray-800 hover:bg-gray-700 text-gray-200'
+                          }`}
+                        >
+                          🎬 Start
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddWaypoint(persistentTooltip.nodeId);
+                          }}
+                          className={`p-2 rounded border text-xs transition-all ${
+                            pathState.waypoints?.includes(persistentTooltip.nodeId)
+                              ? 'border-yellow-500 bg-yellow-900 text-yellow-200'
+                              : 'border-gray-500 bg-gray-800 hover:bg-gray-700 text-gray-200'
+                          }`}
+                        >
+                          📍 Waypoint
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetEndNode(persistentTooltip.nodeId);
+                          }}
+                          className={`p-2 rounded border text-xs transition-all ${
+                            pathState.endNode === persistentTooltip.nodeId
+                              ? 'border-red-500 bg-red-900 text-red-200'
+                              : 'border-gray-500 bg-gray-800 hover:bg-gray-700 text-gray-200'
+                          }`}
+                        >
+                          🏁 End
+                        </button>
+                      </div>
+
+                      {/* Undo button */}
+                      {pathState.lastAction && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUndo();
+                          }}
+                          className="w-full p-2 rounded border text-xs transition-all mt-2 border-gray-500 bg-gray-800 hover:bg-gray-700 text-gray-200"
+                        >
+                          ↩️ Undo Last Action
+                        </button>
+                      )}
+
+                      {/* Show path position and played status */}
+                      {currentIndex >= 0 && (
+                        <div className="border-t border-gray-600 pt-2 mt-2">
+                          <div className="text-amber-400 text-xs font-semibold mb-1">
+                            🛣️ Path Position: {currentIndex + 1} of {routeNodes.length}
+                          </div>
+
+                          {/* Current song status and play controls */}
+                          <div className="mb-2">
+                            <div className={`p-2 rounded border text-xs ${
+                              playedSongs.has(persistentTooltip.nodeId)
+                                ? 'border-purple-500 bg-purple-900 text-purple-200'
+                                : 'border-orange-500 bg-orange-900 text-orange-200'
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span>{playedSongs.has(persistentTooltip.nodeId) ? '🎵' : '▶️'}</span>
+                                  <span className="font-medium">
+                                    {playedSongs.has(persistentTooltip.nodeId) ? 'Already Played' : 'Current Track'}
+                                  </span>
+                                </div>
+                                {!playedSongs.has(persistentTooltip.nodeId) && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMarkAsPlayed(persistentTooltip.nodeId);
+                                    }}
+                                    className="bg-green-800 hover:bg-green-700 text-green-200 px-2 py-1 rounded text-xs transition-all"
+                                  >
+                                    Mark Played
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Navigation buttons */}
+                          <div className="space-y-1">
+                            {prevNode && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNavigateToNode(prevNode.id);
+                                }}
+                                className={`w-full text-left p-2 rounded border text-xs transition-all ${
+                                  playedSongs.has(prevNode.id)
+                                    ? 'border-purple-500 bg-purple-900 hover:bg-purple-800 text-purple-200'
+                                    : 'border-blue-500 bg-blue-900 hover:bg-blue-800 text-blue-200'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span>⬅️</span>
+                                  <span className="font-medium">
+                                    Previous: {prevNode.title || prevNode.label}
+                                  </span>
+                                  {playedSongs.has(prevNode.id) && <span className="ml-auto">🎵</span>}
+                                </div>
+                              </button>
+                            )}
+                            {nextNode && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNavigateToNode(nextNode.id);
+                                }}
+                                className={`w-full text-left p-2 rounded border text-xs transition-all ${
+                                  playedSongs.has(nextNode.id)
+                                    ? 'border-purple-500 bg-purple-900 hover:bg-purple-800 text-purple-200'
+                                    : 'border-red-500 bg-red-900 hover:bg-red-800 text-red-200'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span>➡️</span>
+                                  <span className="font-medium">
+                                    Next: {nextNode.title || nextNode.label}
+                                  </span>
+                                  {playedSongs.has(nextNode.id) && <span className="ml-auto">🎵</span>}
+                                </div>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
             {/* Connected tracks for navigation */}
             {persistentTooltip.clickableNodes.length > 0 && (
               <div className="border-t border-gray-700 pt-3">
                 <div className="text-amber-400 text-xs font-semibold mb-2">
-                  🔗 Navigate to Connected Tracks:
+                  🔗 Navigate to Connected Tracks ({persistentTooltip.clickableNodes.length}):
                 </div>
-                <div className="space-y-1 max-h-48 overflow-y-auto">
+                <div className="space-y-1 max-h-64 overflow-y-auto">
                   {persistentTooltip.clickableNodes.map((track, index) => {
                     const strengthEmoji = {
                       'very_strong': '🔥',
