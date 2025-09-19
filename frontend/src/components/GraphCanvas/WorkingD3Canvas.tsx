@@ -50,6 +50,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string; clickableNodes?: Array<{id: string, title: string}> } | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [centeredNodeId, setCenteredNodeId] = useState<string | null>(null);
+  const [edgeInfo, setEdgeInfo] = useState<{ nodeId: string; edges: any[] } | null>(null);
 
   // Get data from Redux store (with basic type handling)
   const { nodes, edges, selectedNodes } = useAppSelector(state => state.graph);
@@ -75,6 +76,67 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     }
   }, [selectedNodes, centeredNodeId]);
 
+  // Calculate distance from centered node using BFS
+  const calculateDistance = useCallback((fromNodeId: string, toNodeId: string) => {
+    if (fromNodeId === toNodeId) return 0;
+
+    const visited = new Set<string>();
+    const queue = [{ nodeId: fromNodeId, distance: 0 }];
+
+    while (queue.length > 0) {
+      const { nodeId, distance } = queue.shift()!;
+
+      if (visited.has(nodeId)) continue;
+      visited.add(nodeId);
+
+      if (nodeId === toNodeId) return distance;
+
+      // Add connected nodes to queue
+      const connectedNodes = edges.filter(edge =>
+        edge.source === nodeId || edge.target === nodeId
+      );
+
+      for (const edge of connectedNodes) {
+        const nextNodeId = edge.source === nodeId ? edge.target : edge.source;
+        if (!visited.has(nextNodeId)) {
+          queue.push({ nodeId: nextNodeId, distance: distance + 1 });
+        }
+      }
+    }
+
+    return Infinity; // No path found
+  }, [edges]);
+
+  // Get transparency based on distance from centered node
+  const getNodeOpacity = useCallback((node: any) => {
+    if (!centeredNodeId) return 1;
+    if (node.id === centeredNodeId) return 1;
+
+    const distance = calculateDistance(centeredNodeId, node.id);
+    if (distance === Infinity) return 0.1;
+
+    // Exponential falloff: closer nodes are more opaque
+    const maxDistance = 4; // Consider up to 4 hops
+    const normalizedDistance = Math.min(distance / maxDistance, 1);
+    return Math.max(0.1, 1 - normalizedDistance * 0.8);
+  }, [centeredNodeId, calculateDistance]);
+
+  // Get edge opacity based on distance from centered node
+  const getEdgeOpacity = useCallback((edge: any) => {
+    if (!centeredNodeId) return 0.6;
+
+    const sourceDistance = calculateDistance(centeredNodeId, edge.source);
+    const targetDistance = calculateDistance(centeredNodeId, edge.target);
+    const minDistance = Math.min(sourceDistance, targetDistance);
+
+    if (minDistance === Infinity) return 0.05;
+
+    // Edges closer to centered node are more opaque
+    const maxDistance = 4;
+    const normalizedDistance = Math.min(minDistance / maxDistance, 1);
+    return Math.max(0.05, 0.8 - normalizedDistance * 0.7);
+  }, [centeredNodeId, calculateDistance]);
+
   // Get node radius
   const getNodeRadius = useCallback((node: any) => {
     const baseRadius = 8;
@@ -82,6 +144,63 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     const isCentered = centeredNodeId === node.id;
     return Math.min(20, baseRadius + Math.sqrt(degree) + (isCentered ? 4 : 0));
   }, [centeredNodeId]);
+
+  // Helper function to wrap text into lines with max 15 characters per line
+  const wrapText = useCallback((text: string, maxLength: number = 15): string[] => {
+    if (!text) return [''];
+
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+      if (testLine.length <= maxLength) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          // Word is longer than maxLength, truncate it
+          lines.push(word.substring(0, maxLength - 3) + '...');
+          currentLine = '';
+        }
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines.length > 0 ? lines : [''];
+  }, []);
+
+  // Get formatted node text with title and artist
+  const getNodeDisplayText = useCallback((node: any): { lines: string[], totalHeight: number } => {
+    const title = node.title || node.label || 'Unknown';
+    const artist = node.artist || '';
+
+    const titleLines = wrapText(title, 15);
+    const artistLines = artist ? wrapText(artist, 15) : [];
+
+    // Combine title and artist with separator if both exist
+    const allLines = artist ? [...titleLines, '---', ...artistLines] : titleLines;
+
+    // Limit to maximum 4 lines total to keep nodes readable
+    const maxLines = 4;
+    const finalLines = allLines.slice(0, maxLines);
+
+    if (allLines.length > maxLines) {
+      finalLines[maxLines - 1] = finalLines[maxLines - 1].substring(0, 12) + '...';
+    }
+
+    return {
+      lines: finalLines,
+      totalHeight: finalLines.length * 12 // 12px line height
+    };
+  }, [wrapText]);
 
   // Center a node in the viewport
   const centerNode = useCallback((nodeId: string) => {
@@ -191,10 +310,30 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Select the node in Redux
     dispatch(setSelectedNodes([node.id]));
 
+    // Show edge information for clicked node
+    const nodeEdges = edges.filter(edge =>
+      edge.source === node.id || edge.target === node.id
+    ).map(edge => {
+      const connectedNodeId = edge.source === node.id ? edge.target : edge.source;
+      const connectedNode = nodes.find(n => n.id === connectedNodeId);
+      return {
+        ...edge,
+        connectedNode,
+        connectedNodeId
+      };
+    }).sort((a, b) => {
+      // Sort by adjacency frequency (strongest connections first)
+      const freqA = a.metadata?.adjacency_frequency || 1;
+      const freqB = b.metadata?.adjacency_frequency || 1;
+      return freqB - freqA;
+    });
+
+    setEdgeInfo({ nodeId: node.id, edges: nodeEdges });
+
     // Close any open menus/tooltips
     setMenu(null);
     setTooltip(null);
-  }, [dispatch, centerNode]);
+  }, [dispatch, centerNode, edges, nodes]);
 
   // Enhanced DOM hover effects with detailed track information
   const handleNodeMouseEnter = useCallback((event: MouseEvent, node: any) => {
@@ -211,11 +350,15 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Build detailed tooltip content
     const lines = [];
 
-    // Main track info
-    const title = node.title || node.label || 'Unknown Track';
-    const artist = node.artist || 'Unknown Artist';
-    lines.push(`🎵 ${title}`);
-    lines.push(`🎤 ${artist}`);
+    // Main track info (show available data, skip only if explicitly unknown)
+    const title = node.title || node.label;
+    const artist = node.artist;
+    if (title && title !== 'Unknown Track' && title !== 'Unknown Title') {
+      lines.push(`🎵 ${title}`);
+    }
+    if (artist && artist !== 'Unknown Artist') {
+      lines.push(`🎤 ${artist}`);
+    }
 
     // Remix/mashup info
     if (metadata.is_remix) {
@@ -453,17 +596,19 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         return getEdgeColor(d, isHighlighted);
       })
       .attr('stroke-width', (d: any) => {
-        // Width based on adjacency frequency
+        // Thinner width based on adjacency frequency
         const metadata = d.metadata || {};
         const frequency = metadata.adjacency_frequency || 1;
         const isRoute = edgeRouteSet.has(`${d.source}-${d.target}`) || edgeRouteSet.has(`${d.target}-${d.source}`);
-        return isRoute ? 5 : Math.max(1, Math.min(8, frequency * 1.5));
+        return isRoute ? 3 : Math.max(0.5, Math.min(3, frequency * 0.8));
       })
       .attr('stroke-opacity', (d: any) => {
-        // Higher opacity for better visibility of colors
+        // Combine base opacity with distance-based transparency
         const metadata = d.metadata || {};
         const frequency = metadata.adjacency_frequency || 1;
-        return Math.max(0.6, Math.min(1.0, 0.6 + (frequency * 0.1)));
+        const baseOpacity = Math.max(0.6, Math.min(1.0, 0.6 + (frequency * 0.1)));
+        const distanceOpacity = getEdgeOpacity(d);
+        return baseOpacity * distanceOpacity;
       })
       .attr('stroke-dasharray', 'none'); // All edges are solid lines
 
@@ -475,32 +620,42 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       .append('circle')
       .attr('r', getNodeRadius)
       .attr('fill', d => d.color || getNodeColor(d))
+      .attr('fill-opacity', d => getNodeOpacity(d))
       .attr('stroke', '#FFFFFF')
       .attr('stroke-width', 2)
+      .attr('stroke-opacity', d => getNodeOpacity(d))
       .style('cursor', 'pointer')
       .on('click', handleNodeClick)
       .on('contextmenu', (event: any, d: any) => { event.preventDefault(); handleNodeClick(event as any, d as any); })
       .on('mouseenter', handleNodeMouseEnter)
       .on('mouseleave', handleNodeMouseLeave);
 
-    // Create labels
-    const label = nodeGroup
-      .selectAll('text')
+    // Create labels with multi-line support
+    const labelGroups = nodeGroup
+      .selectAll('g.label-group')
       .data(simpleNodes)
       .enter()
-      .append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dy', '0.35em')
-      .attr('font-size', '10px')
-      .attr('font-weight', 'bold')
-      .attr('fill', '#FFFFFF')
-      .attr('stroke', '#000000')
-      .attr('stroke-width', 0.5)
-      .attr('pointer-events', 'none')
-      .text(d => {
-        const text = d.label.length > 12 ? d.label.substring(0, 9) + '...' : d.label;
-        return text;
+      .append('g')
+      .attr('class', 'label-group')
+      .attr('pointer-events', 'none');
+
+    // Add multi-line text for each node
+    labelGroups.each(function(d: any) {
+      const group = d3.select(this);
+      const nodeData = nodes.find(n => n.id === d.id) || d;
+      const textData = getNodeDisplayText(nodeData);
+
+      textData.lines.forEach((line, index) => {
+        group.append('text')
+          .attr('text-anchor', 'middle')
+          .attr('dy', `${(index - (textData.lines.length - 1) / 2) * 12}px`)
+          .attr('font-size', '10px')
+          .attr('font-weight', index === 0 ? 'bold' : 'normal') // Title bold, artist normal
+          .attr('fill', '#FFFFFF')
+          .attr('fill-opacity', getNodeOpacity(d))
+          .text(line);
       });
+    });
 
     // Route step labels
     if (routeNodes.length) {
@@ -551,9 +706,8 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         .attr('cx', d => d.x!)
         .attr('cy', d => d.y!);
 
-      label
-        .attr('x', d => d.x!)
-        .attr('y', d => d.y!);
+      labelGroups
+        .attr('transform', d => `translate(${d.x!}, ${d.y!})`);
 
       // Continuously follow centered node
       if (centeredNodeId && zoomRef.current) {
@@ -595,19 +749,25 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     return () => {
       simulation.stop();
     };
-  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, handleNodeClick, distancePower, relationshipPower]);
+  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, handleNodeClick, getNodeDisplayText, distancePower, relationshipPower]);
 
-  // Update colors when selection changes (removed hoveredNode dependency)
+  // Update colors and opacity when selection changes
   useEffect(() => {
     if (!svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
 
-    // Update node colors
+    // Update node colors and opacity
     svg.selectAll('.nodes circle')
-      .attr('fill', (d: any) => getNodeColor(d));
+      .attr('fill', (d: any) => getNodeColor(d))
+      .attr('fill-opacity', (d: any) => getNodeOpacity(d))
+      .attr('stroke-opacity', (d: any) => getNodeOpacity(d));
 
-    // Update edge colors with highlighting
+    // Update node label opacity
+    svg.selectAll('.nodes .label-group text')
+      .attr('fill-opacity', (d: any) => getNodeOpacity(d));
+
+    // Update edge colors and opacity with highlighting
     svg.selectAll('.links line')
       .attr('stroke', (d: any) => {
         // Check if this edge is connected to the centered or selected node
@@ -621,8 +781,16 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
 
         // Use distance-based gradient coloring with highlighting
         return getEdgeColor(d, isHighlighted);
+      })
+      .attr('stroke-opacity', (d: any) => {
+        // Combine base opacity with distance-based transparency
+        const metadata = d.metadata || {};
+        const frequency = metadata.adjacency_frequency || 1;
+        const baseOpacity = Math.max(0.6, Math.min(1.0, 0.6 + (frequency * 0.1)));
+        const distanceOpacity = getEdgeOpacity(d);
+        return baseOpacity * distanceOpacity;
       });
-  }, [selectedNodes, centeredNodeId, getNodeColor, getEdgeColor]);
+  }, [selectedNodes, centeredNodeId, getNodeColor, getEdgeColor, getNodeOpacity, getEdgeOpacity]);
 
   if (!nodes.length) {
     return (
@@ -714,6 +882,92 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                   </button>
                 );
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Edge Information Panel */}
+      {edgeInfo && (
+        <div
+          className="fixed top-20 left-4 bg-gray-900 bg-opacity-95 border border-gray-700 rounded-lg shadow-xl p-4 max-w-md max-h-96 overflow-y-auto z-50"
+          style={{ minWidth: '320px' }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white font-semibold text-lg">Track Connections</h3>
+            <button
+              onClick={() => setEdgeInfo(null)}
+              className="text-gray-400 hover:text-white text-xl font-bold"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="text-gray-300 text-sm mb-3">
+            Showing {edgeInfo.edges.length} connections for selected track
+          </div>
+
+          <div className="space-y-2">
+            {edgeInfo.edges.map((edge, index) => {
+              const connectedNode = edge.connectedNode;
+              if (!connectedNode) return null;
+
+              const freq = edge.metadata?.adjacency_frequency || 1;
+              const strength = edge.metadata?.strength_category || 'weak';
+              const strengthEmoji = {
+                'very_strong': '🔥',
+                'strong': '⚡',
+                'moderate': '🌟',
+                'weak': '💫'
+              }[strength] || '💫';
+
+              const strengthColor = {
+                'very_strong': 'text-red-400',
+                'strong': 'text-orange-400',
+                'moderate': 'text-yellow-400',
+                'weak': 'text-blue-400'
+              }[strength] || 'text-gray-400';
+
+              return (
+                <button
+                  key={edge.id}
+                  onClick={() => {
+                    centerNode(connectedNode.id);
+                    dispatch(setSelectedNodes([connectedNode.id]));
+                    setEdgeInfo(null);
+                  }}
+                  className="w-full text-left p-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gray-600"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{strengthEmoji}</span>
+                        <span className={`text-xs font-medium ${strengthColor}`}>
+                          {strength.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <span className="text-xs text-gray-500">({freq}x)</span>
+                      </div>
+                      <div className="text-white font-medium truncate">
+                        {connectedNode.title || connectedNode.label}
+                      </div>
+                      {connectedNode.artist && (
+                        <div className="text-gray-400 text-sm truncate">
+                          {connectedNode.artist}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-gray-500 text-xs ml-2">
+                      →
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {edgeInfo.edges.length === 0 && (
+            <div className="text-gray-500 text-center py-4">
+              No connections found for this track
             </div>
           )}
         </div>

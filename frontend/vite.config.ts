@@ -120,28 +120,33 @@ export default defineConfig({
     open: false,
     cors: true,
     proxy: {
+      '/api/v1/graph': {
+        target: process.env.VITE_VISUALIZATION_API_URL,
+        changeOrigin: true,
+        secure: false,
+      },
       '/api/v1/visualization': {
-        target: 'http://localhost:8084',
+        target: process.env.VITE_VISUALIZATION_API_URL,
         changeOrigin: true,
         secure: false,
       },
       '/api': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_API_URL || 'http://api-gateway',
         changeOrigin: true,
         secure: false,
       },
       '/health': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_API_URL || 'http://api-gateway',
         changeOrigin: true,
         secure: false,
       },
       '/metrics': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_API_URL || 'http://api-gateway',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:8090',
+        target: process.env.VITE_WS_URL || 'ws://enhanced-visualization-service',
         ws: true,
         changeOrigin: true,
       },
@@ -153,13 +158,23 @@ export default defineConfig({
     open: false,
     cors: true,
     proxy: {
+      '/api/v1/graph': {
+        target: process.env.VITE_VISUALIZATION_API_URL,
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/visualization': {
+        target: process.env.VITE_VISUALIZATION_API_URL,
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_API_URL || 'http://api-gateway',
         changeOrigin: true,
         secure: false,
       },
       '/health': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_API_URL || 'http://api-gateway',
         changeOrigin: true,
         secure: false,
       },

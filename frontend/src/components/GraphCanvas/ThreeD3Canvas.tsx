@@ -62,7 +62,8 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     const owned = node?.metadata?.owned;
     if (owned === false) return 0x475569; // Slate grey
 
-    switch (node.type) {
+    const nodeType = node.type || node.metadata?.type || 'unknown';
+    switch (nodeType) {
       case 'artist': return 0x3B82F6; // Blue
       case 'venue': return 0x10B981; // Green
       case 'location': return 0xF59E0B; // Yellow
@@ -260,21 +261,31 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
   // Create 3D nodes and edges
   useEffect(() => {
-    if (!sceneRef.current || !nodes.length) return;
+    console.log('🌐 3D useEffect triggered:', {
+      sceneExists: !!sceneRef.current,
+      nodesLength: nodes.length,
+      edgesLength: edges.length,
+      firstNode: nodes[0]
+    });
+
+    if (!sceneRef.current || !nodes.length) {
+      console.log('🌐 Skipping 3D creation:', {
+        sceneExists: !!sceneRef.current,
+        nodesLength: nodes.length
+      });
+      return;
+    }
 
     console.log('🌐 Creating 3D visualization with', nodes.length, 'nodes and', edges.length, 'edges');
 
     const scene = sceneRef.current;
 
-    // Clear previous objects
-    while(scene.children.length > 0) {
-      const child = scene.children[0];
-      if (child.type === 'Mesh' || child.type === 'Line') {
-        scene.remove(child);
-      } else {
-        break;
-      }
-    }
+    // Clear previous objects (but keep lights)
+    const objectsToRemove = scene.children.filter(child =>
+      child.type === 'Mesh' || child.type === 'Line'
+    );
+    console.log('🧹 Removing', objectsToRemove.length, 'previous 3D objects');
+    objectsToRemove.forEach(child => scene.remove(child));
 
     // Create 3D nodes
     const nodes3D: Node3D[] = nodes.map((node, index) => {
@@ -308,7 +319,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       return {
         id: node.id,
         label: node.label || node.title || 'Unknown',
-        type: node.type || 'unknown',
+        type: node.type || node.metadata?.type || 'unknown',
         position: new THREE.Vector3(x, y, z),
         velocity: new THREE.Vector3(0, 0, 0),
         mesh,
@@ -381,6 +392,15 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       rendererRef.current.setSize(width, height);
     }
   }, [width, height]);
+
+  // Debug logging
+  console.log('🌌 ThreeD3Canvas render:', {
+    nodesLength: nodes.length,
+    edgesLength: edges.length,
+    width,
+    height,
+    sceneExists: !!sceneRef.current
+  });
 
   if (!nodes.length) {
     return (

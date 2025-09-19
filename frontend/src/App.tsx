@@ -4,9 +4,9 @@ import { store } from '@store/index';
 import { ThemeProvider } from '@theme/ThemeProvider';
 import { WorkingD3Canvas } from '@components/GraphCanvas/WorkingD3Canvas';
 import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3Canvas';
-import { SearchPanel } from '@components/SearchPanel/SearchPanel';
-import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
-import { ConnectionStatus } from '@components/ConnectionStatus';
+// import { SearchPanel } from '@components/SearchPanel/SearchPanel';
+// import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
+// import { ConnectionStatus } from '@components/ConnectionStatus';
 import { useAppSelector, useAppDispatch } from '@store/index';
 import { setNodes, setEdges } from '@store/graphSlice';
 import { updateDeviceInfo, setViewportSize } from '@store/uiSlice';
@@ -17,16 +17,17 @@ import { useWebSocketIntegration } from '@hooks/useWebSocketIntegration';
 import { computeRoute } from '@utils/path';
 import { setPathResult } from '@store/pathfindingSlice';
 import { useAppSelector as useSelector } from '@store/index';
-import { Box, Fab, Tooltip } from '@mui/material';
-import { Palette as PaletteIcon } from '@mui/icons-material';
+// import { Box, Fab, Tooltip } from '@mui/material';
+// import { Palette as PaletteIcon } from '@mui/icons-material';
 import classNames from 'classnames';
 import './index.css';
 
 const AppContent: React.FC = () => {
   const dispatch = useAppDispatch();
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
-  const [useMuiSearch, setUseMuiSearch] = useState(true); // Toggle between original and MUI search
-  
+  // const [useMuiSearch, setUseMuiSearch] = useState(true); // Toggle between original and MUI search
+  const [is3DMode, setIs3DMode] = useState(false); // Toggle between 2D and 3D visualization
+
   // Redux state
   const { nodes, edges, loading, selectedNodes } = useAppSelector(state => state.graph);
   
@@ -34,17 +35,43 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     console.log('📊 Redux State Update - nodes:', nodes.length, 'edges:', edges.length, 'loading:', loading);
   }, [nodes.length, edges.length, loading]);
-  const { 
-    viewport, 
-    layout, 
+  const {
+    // viewport,
+    layout,
     theme,
-    showPerformanceOverlay,
-    showDebugInfo 
+    // showPerformanceOverlay,
+    // showDebugInfo
   } = useAppSelector(state => state.ui);
   // const { performanceUI } = useAppSelector(state => state.ui); // Unused for now
   
   // Container dimensions
   const { width, height } = useResizeObserver(containerRef);
+
+  // Debug container dimensions
+  console.log('📐 Container dimensions:', {
+    width,
+    height,
+    containerRef: !!containerRef,
+    nodesLength: nodes.length,
+    edgesLength: edges.length,
+    willRenderCanvas: !!(width && height),
+    fallbackRender: !!((width && height) || !containerRef),
+    is3DMode,
+    loading
+  });
+
+  // Report rendering success
+  useEffect(() => {
+    if ((width && height) || !containerRef) {
+      console.log('✅ Canvas should be rendering with dimensions:', {
+        width: width || window.innerWidth,
+        height: height || window.innerHeight,
+        mode: is3DMode ? '3D' : '2D',
+        nodes: nodes.length,
+        edges: edges.length
+      });
+    }
+  }, [width, height, containerRef, is3DMode, nodes.length, edges.length]);
 
   // WebSocket integration for real-time updates
   const {
@@ -164,7 +191,6 @@ const AppContent: React.FC = () => {
   const [seeds, setSeeds] = useState<Array<{ title: string; artists: string }>>([]);
   const [distancePower, setDistancePower] = useState(0); // Slider value -5 to 5, used as 10^power
   const [relationshipPower, setRelationshipPower] = useState(0); // Relationship strength scaling -5 to 5
-  const [is3DMode, setIs3DMode] = useState(false); // Toggle between 2D and 3D visualization
   const [tasks, setTasks] = useState<any[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
@@ -275,7 +301,7 @@ const AppContent: React.FC = () => {
   };
 
   const calculateRoute = () => {
-    const state = (store.getState ? (store as any).getState() : null) || (window as any).__appState;
+    const state = ((store as any).getState ? (store as any).getState() : null) || (window as any).__appState;
     const s = state || ({} as any);
     const g = s.graph || { nodes, edges };
     const pf = s.pathfinding || {};
@@ -397,23 +423,31 @@ const AppContent: React.FC = () => {
         data-testid="graph-container"
         style={{ width: '100vw', height: '100vh' }}
       >
-        {width && height && (
+        {/* Canvas rendering with fallback dimensions */}
+        {((width && height) || !containerRef) && (
           is3DMode ? (
             <ThreeD3Canvas
-              width={width}
-              height={height}
+              width={width || window.innerWidth}
+              height={height || window.innerHeight}
               className="absolute inset-0"
               distancePower={distancePower}
             />
           ) : (
             <WorkingD3Canvas
-              width={width}
-              height={height}
+              width={width || window.innerWidth}
+              height={height || window.innerHeight}
               className="absolute inset-0"
               distancePower={distancePower}
               relationshipPower={relationshipPower}
             />
           )
+        )}
+
+        {/* Debug info overlay - only show if there's an issue */}
+        {(!width || !height) && containerRef && (
+          <div className="absolute top-20 left-4 bg-red-900 bg-opacity-80 text-white text-sm px-3 py-2 rounded">
+            🔍 Canvas dimension issue - width: {width}, height: {height}
+          </div>
         )}
 
         {/* Loading overlay */}
@@ -679,7 +713,7 @@ const AppContent: React.FC = () => {
                                 type="text"
                                 value={s.title}
                                 onChange={(e) => {
-                                  const copy = [...seeds]; copy[idx] = { ...copy[idx], title: e.target.value }; setSeeds(copy);
+                                  const copy = [...seeds]; copy[idx] = { title: e.target.value, artists: copy[idx]?.artists || '' }; setSeeds(copy);
                                 }}
                                 placeholder="Song title"
                                 className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"
@@ -688,7 +722,7 @@ const AppContent: React.FC = () => {
                                 type="text"
                                 value={s.artists}
                                 onChange={(e) => {
-                                  const copy = [...seeds]; copy[idx] = { ...copy[idx], artists: e.target.value }; setSeeds(copy);
+                                  const copy = [...seeds]; copy[idx] = { title: copy[idx]?.title || '', artists: e.target.value }; setSeeds(copy);
                                 }}
                                 placeholder="Artists (comma-separated)"
                                 className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"

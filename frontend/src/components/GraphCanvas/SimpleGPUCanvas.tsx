@@ -553,19 +553,22 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     if (!tooltipRef.current) return;
 
     if (node) {
-      const title = node.title || 'Unknown Track';
-      const artist = node.artist || 'Unknown Artist';
+      const title = node.title || 'Untitled';
+      const artist = node.artist || 'Various Artists';
       const degree = node.metrics?.degree || 0;
 
-      tooltipRef.current.innerHTML = `
-        <div style="font-weight: bold; margin-bottom: 4px;">${title}</div>
-        <div style="margin-bottom: 2px;">by ${artist}</div>
-        <div style="font-size: 11px; opacity: 0.8;">Connections: ${degree}</div>
-      `;
+      // Only show if not explicitly unknown
+      if (title !== 'Unknown Track' && title !== 'Unknown Title' && artist !== 'Unknown Artist') {
+        tooltipRef.current.innerHTML = `
+          <div style="font-weight: bold; margin-bottom: 4px;">${title}</div>
+          <div style="margin-bottom: 2px;">by ${artist}</div>
+          <div style="font-size: 11px; opacity: 0.8;">Connections: ${degree}</div>
+        `;
 
-      tooltipRef.current.style.left = `${event.clientX + 10}px`;
-      tooltipRef.current.style.top = `${event.clientY - 10}px`;
-      tooltipRef.current.style.opacity = '1';
+        tooltipRef.current.style.left = `${event.clientX + 10}px`;
+        tooltipRef.current.style.top = `${event.clientY - 10}px`;
+        tooltipRef.current.style.opacity = '1';
+      }
     } else {
       tooltipRef.current.style.opacity = '0';
     }
