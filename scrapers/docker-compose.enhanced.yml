@@ -47,9 +47,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=scrapers-redis
       - REDIS_PORT=6379
-      - POSTGRES_HOST=postgres
+      - POSTGRES_HOST=scrapers-postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=musicdb
       - POSTGRES_USER=musicuser

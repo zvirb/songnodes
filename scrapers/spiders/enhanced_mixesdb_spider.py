@@ -159,7 +159,7 @@ class EnhancedMixesdbSpider(scrapy.Spider):
 
     def apply_robots_policy(self):
         robots_url = os.getenv('MIXESDB_ROBOTS_URL', 'https://www.mixesdb.com/robots.txt')
-        user_agent = self.settings.get('USER_AGENT', 'Mozilla/5.0')
+        user_agent = self.custom_settings.get('USER_AGENT', 'Mozilla/5.0')
         parser = robotparser.RobotFileParser()
 
         try:
