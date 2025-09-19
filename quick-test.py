@@ -4,9 +4,7 @@ Quick test script to verify all components are working
 """
 
 import subprocess
-import time
 import requests
-import json
 from pathlib import Path
 
 def test_docker_services():
@@ -80,31 +78,6 @@ def test_database():
         print(f"  ❌ Database connection failed: {e}")
         return False
 
-def create_sample_data():
-    """Create sample data for visualization"""
-    print("\n📊 Creating Sample Data...")
-
-    sample_data = {
-        "nodes": [
-            {"id": "artist1", "label": "Calvin Harris", "type": "artist", "x": 100, "y": 100},
-            {"id": "artist2", "label": "Tiësto", "type": "artist", "x": 200, "y": 100},
-            {"id": "track1", "label": "Feel So Close", "type": "track", "x": 150, "y": 200},
-            {"id": "venue1", "label": "Ultra Music Festival", "type": "venue", "x": 150, "y": 50}
-        ],
-        "edges": [
-            {"source": "artist1", "target": "track1", "type": "performed"},
-            {"source": "artist1", "target": "venue1", "type": "played_at"},
-            {"source": "artist2", "target": "venue1", "type": "played_at"}
-        ]
-    }
-
-    # Save to file for frontend
-    with open("frontend/public/sample-data.json", "w") as f:
-        json.dump(sample_data, f, indent=2)
-
-    print("  ✅ Sample data created at frontend/public/sample-data.json")
-    return True
-
 def main():
     print("=" * 50)
     print("🎵 SongNodes System Test")
@@ -114,8 +87,7 @@ def main():
         "Docker": test_docker_services(),
         "Database": test_database(),
         "Frontend": test_frontend(),
-        "Scrapers": test_scrapers(),
-        "Sample Data": create_sample_data()
+        "Scrapers": test_scrapers()
     }
 
     print("\n" + "=" * 50)
@@ -130,7 +102,7 @@ def main():
         print("\n🎉 All tests passed! System is ready.")
         print("\n📋 Next Steps:")
         print("  1. Open http://localhost:3006 to see the visualization")
-        print("  2. The sample data is already loaded")
+        print("  2. Trigger your ingestion pipeline to populate real data")
         print("  3. Run scrapers with: cd scrapers && scrapy crawl [spider_name]")
     else:
         print("\n⚠️ Some tests failed. Please check the errors above.")

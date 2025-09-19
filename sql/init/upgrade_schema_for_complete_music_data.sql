@@ -140,12 +140,6 @@ ADD CONSTRAINT chk_artist_popularity_range CHECK (popularity_score IS NULL OR (p
 
 COMMIT;
 
--- Insert sample data to verify schema
-INSERT INTO artists (name, normalized_name, genre_preferences, country) VALUES
-('Swedish House Mafia', 'swedish house mafia', ARRAY['Progressive House', 'Electro House'], 'SWE'),
-('David Guetta', 'david guetta', ARRAY['Electro House', 'Progressive House'], 'FRA'),
-('Calvin Harris', 'calvin harris', ARRAY['Electro House', 'Dance Pop'], 'GBR');
-
 -- Verify the upgrade
 SELECT 'Schema upgrade completed successfully' as status;
 SELECT COUNT(*) as test_artists_count FROM artists;

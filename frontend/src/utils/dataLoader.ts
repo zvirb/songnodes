@@ -98,42 +98,6 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
     console.warn('⚠️ Failed to load live performance data:', error);
   }
 
-  try {
-    // Fall back to sample data
-    console.log('🔄 Loading sample data as fallback...');
-    const sampleResponse = await fetch('/sample-data.json');
-
-    if (sampleResponse.ok) {
-      const sampleData: GraphData = await sampleResponse.json();
-      console.log('✅ Loaded sample data:', {
-        nodes: sampleData.nodes.length,
-        edges: sampleData.edges.length
-      });
-
-      const songsOnly = filterToSongsOnly(sampleData);
-      console.log('🎚️ Songs-only (sample):', { nodes: songsOnly.nodes.length, edges: songsOnly.edges.length });
-
-      // Add visual properties
-      const processedData = {
-        nodes: songsOnly.nodes.map((node, i) => ({
-          ...node,
-          x: node.x ?? (Math.random() - 0.5) * 400,
-          y: node.y ?? (Math.random() - 0.5) * 300,
-          size: node.size ?? 12,
-          color: node.color ?? getNodeColor(node.type || 'default')
-        })),
-        edges: songsOnly.edges.map(edge => ({
-          ...edge,
-          weight: edge.weight ?? 1.0
-        }))
-      };
-      await annotateOwnership(processedData);
-      return processedData;
-    }
-  } catch (error) {
-    console.warn('⚠️ Failed to load sample data:', error);
-  }
-
   console.error('❌ No data could be loaded');
   return null;
 };

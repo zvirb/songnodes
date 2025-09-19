@@ -67,12 +67,7 @@ fi
 
 cd ..
 
-# Step 4: Test with sample data
-echo -e "${YELLOW}Loading sample data...${NC}"
-curl -X POST http://localhost:8084/api/graph/load-sample-data 2>/dev/null
-echo -e "${GREEN}✅ Sample data loaded${NC}"
-
-# Step 5: Open browser
+# Step 4: Open browser
 echo ""
 echo -e "${GREEN}🎉 Test environment ready!${NC}"
 echo ""
