@@ -244,10 +244,15 @@ export interface GraphFilters {
 }
 
 export interface SearchResult {
-  node: SongNode;
-  score: number;
-  highlights: Record<string, string>;
-  reason: string;
+  id: string;
+  title: string;
+  type: string;
+  description: string;
+  metadata: Record<string, any>;
+  score?: number;
+  highlights?: Record<string, string>;
+  node?: SongNode; // Optional for backward compatibility
+  reason?: string; // Optional for backward compatibility
 }
 
 // Path finding

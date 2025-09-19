@@ -1,24 +1,45 @@
+# SongNodes scraper stack Docker image
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
+RUN apt-get update && apt-get install -y gcc libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy scrapy project
 COPY . .
-
-# Create scrapy configuration
 RUN mkdir -p /app/output
 
-# Expose port for health checks
-EXPOSE 8090
+ENV PYTHONUNBUFFERED=1 \
+    REDIS_HOST=redis \
+    REDIS_PORT=6379 \
+    POSTGRES_HOST=postgres \
+    POSTGRES_PORT=5432 \
+    POSTGRES_DB=musicdb \
+    POSTGRES_USER=musicuser \
+    POSTGRES_PASSWORD=musicpass
 
-# Default command (can be overridden)
-CMD ["scrapy", "crawl", "1001tracklists", "-L", "INFO"]
+RUN cat <<'ENTRY' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+#!/bin/bash
+set -e
+
+echo "SongNodes Scraper container ready"
+echo "Available spiders:" && scrapy list && echo
+
+echo "Usage examples:"
+echo "  docker run songnodes-scrapers scrapy crawl 1001tracklists"
+echo "  docker run songnodes-scrapers scrapy crawl mixesdb"
+echo "  docker run songnodes-scrapers scrapy crawl reddit"
+echo "  docker run songnodes-scrapers scrapy crawl setlistfm"
+echo
+
+if [ $# -eq 0 ]; then
+  exec /bin/bash
+else
+  exec "$@"
+fi
+ENTRY
+
+ENTRYPOINT ["/app/entrypoint.sh"]

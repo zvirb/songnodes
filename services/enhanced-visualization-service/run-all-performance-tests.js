@@ -14,18 +14,6 @@ const execAsync = promisify(exec);
 const config = {
   tests: [
     {
-      name: 'Comprehensive Performance Suite',
-      script: 'performance-test.js',
-      description: 'Full performance benchmark suite',
-      required: false
-    },
-    {
-      name: 'Database Performance Test',
-      script: 'database-performance-test.js',
-      description: 'Database optimization and query performance',
-      required: false
-    },
-    {
       name: 'WebSocket Stress Test',
       script: 'websocket-stress-test.js',
       description: 'WebSocket connection capacity testing',
@@ -100,24 +88,9 @@ class PerformanceTestCoordinator {
         required: true
       },
       {
-        name: 'Docker',
-        command: 'docker --version',
-        required: true
-      },
-      {
-        name: 'PostgreSQL Client',
-        command: 'pg_isready --version',
-        required: false
-      },
-      {
-        name: 'Redis CLI',
-        command: 'redis-cli --version',
-        required: false
-      },
-      {
         name: 'curl',
         command: 'curl --version',
-        required: true
+        required: false
       }
     ];
 

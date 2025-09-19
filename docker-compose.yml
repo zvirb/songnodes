@@ -51,7 +51,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
       POSTGRES_DB: musicdb
       PGBOUNCER_ADMIN_USER: pgbouncer
-      PGBOUNCER_ADMIN_PASSWORD: ${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer_secure}
+      PGBOUNCER_ADMIN_PASSWORD: ${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer_admin_pass_2024}
     depends_on:
       - postgres
     networks:
@@ -165,40 +165,33 @@ services:
   scraper-1001tracklists:
     build:
       context: ./scrapers
-      dockerfile: Dockerfile
-    # container_name removed to allow scaling with replicas
+      dockerfile: Dockerfile.1001tracklists
     restart: unless-stopped
+    expose:
+      - "8011"  # Internal health port exposed for inter-service checks
     environment:
       SCRAPER_NAME: 1001tracklists
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
-      CONCURRENT_REQUESTS: 12
-      DOWNLOAD_DELAY: 0.8
-      USER_AGENT: "MusicDB-Scraper/1.0"
     depends_on:
       - scraper-orchestrator
     networks:
       - musicdb-backend
-    deploy:
-      replicas: 2  # Reduced from 4 to prevent memory overload
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M  # Reduced from 1.5G
-        reservations:
-          cpus: '0.25'
-          memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   scraper-mixesdb:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.mixesdb
-    container_name: scraper-mixesdb
     restart: unless-stopped
-    ports:
-      - "8012:8012"
+    expose:
+      - "8012"
     environment:
       SCRAPER_NAME: mixesdb
       REDIS_HOST: redis
@@ -229,10 +222,9 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.setlistfm
-    container_name: scraper-setlistfm
     restart: unless-stopped
-    ports:
-      - "8013:8013"
+    expose:
+      - "8013"
     environment:
       SCRAPER_NAME: setlistfm
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
@@ -263,10 +255,9 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.reddit
-    container_name: scraper-reddit
     restart: unless-stopped
-    ports:
-      - "8014:8014"
+    expose:
+      - "8014"
     environment:
       SCRAPER_NAME: reddit
       REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
@@ -278,6 +269,20 @@ services:
       - nlp-processor
     networks:
       - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8014/health"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   # ===========================================
   # DATA PROCESSING SERVICES
@@ -289,8 +294,8 @@ services:
       dockerfile: Dockerfile
     # container_name removed to allow scaling with replicas
     restart: unless-stopped
-    ports:
-      - "8002:8002"
+    expose:
+      - "8002"
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -340,6 +345,12 @@ services:
       - redis
     networks:
       - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8021/health"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 180s
     deploy:
       resources:
         limits:
@@ -437,6 +448,12 @@ services:
       - redis
     networks:
       - musicdb-backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     deploy:
       replicas: 3
       resources:
@@ -642,6 +659,12 @@ services:
     networks:
       - musicdb-monitoring
       - musicdb-backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -676,6 +699,12 @@ services:
       - elasticsearch
     networks:
       - musicdb-monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 180s
 
   # ===========================================
   # ADDITIONAL MONITORING SERVICES
@@ -734,7 +763,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: "postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_dev_password_2024}@postgres:5432/musicdb?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb?sslmode=disable"
     depends_on:
       - postgres
     networks:
@@ -766,9 +795,50 @@ services:
           memory: 256M
 
   # ===========================================
+  # FRONTEND
+  # ===========================================
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: songnodes-frontend
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://api-gateway}
+      VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://enhanced-visualization-service:8085}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://enhanced-visualization-service:8085}
+      NODE_ENV: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+      - enhanced-visualization-service
+    networks:
+      - musicdb-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ===========================================
   # SUPPORT SERVICES
   # ===========================================
-  
+
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
@@ -777,7 +847,7 @@ services:
       - "8443:443"  # Non-standard HTTPS port
       - "8088:80"   # Non-standard HTTP port
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx-simple.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./static:/usr/share/nginx/html:ro
     depends_on:
@@ -842,17 +912,55 @@ networks:
 volumes:
   postgres_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
   redis_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/redis
   rabbitmq_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/rabbitmq
   elasticsearch_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/elasticsearch
   prometheus_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/prometheus
   grafana_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/grafana
   minio_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/minio
   nlp_models:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/nlp_models
+  nginx_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/nginx

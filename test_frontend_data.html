@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Data Loading</title>
+</head>
+<body>
+    <h1>Testing SongNodes Data Loading</h1>
+    <div id="status">Loading...</div>
+    <div id="stats"></div>
+    <script>
+        fetch('http://localhost:3006/live-performance-data.json')
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('status').textContent = 'Data loaded successfully!';
+                document.getElementById('stats').innerHTML = `
+                    <p>Nodes: ${data.nodes.length}</p>
+                    <p>Edges: ${data.edges.length}</p>
+                    <p>Sample tracks:</p>
+                    <ul>
+                        ${data.nodes.slice(0, 5).map(node => 
+                            `<li>${node.title} by ${node.artist}</li>`
+                        ).join('')}
+                    </ul>
+                `;
+                console.log('Data loaded:', data);
+            })
+            .catch(error => {
+                document.getElementById('status').textContent = 'Error loading data: ' + error.message;
+                console.error('Error:', error);
+            });
+    </script>
+</body>
+</html>

@@ -271,8 +271,10 @@ async def get_graph_nodes(
     center_node_id: Optional[str] = None,
     max_depth: int = 3,
     max_nodes: int = 100,
-    filters: Dict[str, Any] = None
-) -> List[Dict[str, Any]]:
+    filters: Dict[str, Any] = None,
+    limit: int = 100,
+    offset: int = 0
+) -> Dict[str, Any]:
     """Get graph nodes with optional filtering and traversal."""
     with DATABASE_QUERY_DURATION.labels(query_type='get_nodes').time():
         async with async_session() as session:
@@ -303,16 +305,21 @@ async def get_graph_nodes(
                         }
                     )
                 else:
-                    # Get all nodes with limit
+                    # Get all nodes with limit and pagination
                     query = text("""
-                        SELECT id, track_id, x_position, y_position, metadata 
-                        FROM musicdb.nodes 
-                        ORDER BY created_at DESC 
-                        LIMIT :max_nodes
+                        SELECT id, track_id, x_position, y_position, metadata,
+                               COUNT(*) OVER() as total_count
+                        FROM musicdb.nodes
+                        ORDER BY created_at DESC
+                        LIMIT :limit OFFSET :offset
                     """)
-                    result = await session.execute(query, {"max_nodes": max_nodes})
+                    result = await session.execute(query, {
+                        "limit": limit,
+                        "offset": offset
+                    })
                 
                 nodes = []
+                total_count = 0
                 for row in result:
                     node_data = {
                         'id': str(row.id),
@@ -324,8 +331,15 @@ async def get_graph_nodes(
                         'metadata': row.metadata or {}
                     }
                     nodes.append(node_data)
-                
-                return nodes
+                    if hasattr(row, 'total_count'):
+                        total_count = row.total_count
+
+                return {
+                    'nodes': nodes,
+                    'total': total_count or len(nodes),
+                    'limit': limit,
+                    'offset': offset
+                }
                 
             except Exception as e:
                 logger.error(f"Database error in get_graph_nodes: {e}")
@@ -346,19 +360,20 @@ async def search_tracks(
                 if fields is None:
                     fields = ["title", "artist", "album", "genres"]
                 
-                # Simple search query with basic ILIKE matching
+                # Simple search query with basic ILIKE matching (exclude tracks without artists)
                 search_query = text("""
-                    SELECT 
+                    SELECT
                         t.id,
                         t.title,
-                        COALESCE(a.name, 'Unknown Artist') as artist,
+                        a.name as artist,
                         1.0 as relevance_score,
                         COUNT(*) OVER() as total_count
                     FROM musicdb.tracks t
-                    LEFT JOIN musicdb.track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                    LEFT JOIN musicdb.artists a ON ta.artist_id = a.id
-                    WHERE (t.title ILIKE :query OR t.normalized_title ILIKE :query 
+                    JOIN musicdb.track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                    JOIN musicdb.artists a ON ta.artist_id = a.id
+                    WHERE (t.title ILIKE :query OR t.normalized_title ILIKE :query
                            OR a.name ILIKE :query OR a.normalized_name ILIKE :query)
+                        AND a.name IS NOT NULL AND a.name != ''
                     ORDER BY t.title
                     LIMIT :limit OFFSET :offset
                 """)
@@ -423,15 +438,16 @@ def highlight_text(text: str, query: str) -> str:
 async def get_search_suggestions(query: str, session) -> List[str]:
     """Get search suggestions based on query."""
     try:
+        # Use simpler approach without pg_trgm extension
         suggestion_query = text("""
-            SELECT DISTINCT title
-            FROM tracks
-            WHERE similarity(title, :query) > 0.2
-            ORDER BY similarity(title, :query) DESC
+            SELECT DISTINCT t.title
+            FROM musicdb.tracks t
+            WHERE t.title ILIKE :query
+            ORDER BY t.title
             LIMIT 5
         """)
-        
-        result = await session.execute(suggestion_query, {"query": query})
+
+        result = await session.execute(suggestion_query, {"query": f"%{query}%"})
         suggestions = [row.title for row in result.fetchall()]
         return suggestions
     except Exception as e:
@@ -439,27 +455,44 @@ async def get_search_suggestions(query: str, session) -> List[str]:
         return []
 
 @cache_result(ttl=300)  # Cache for 5 minutes
-async def get_graph_edges(node_ids: List[str] = None) -> List[Dict[str, Any]]:
+async def get_graph_edges(
+    node_ids: List[str] = None,
+    limit: int = 1000,
+    offset: int = 0
+) -> Dict[str, Any]:
     """Get graph edges, optionally filtered by node IDs."""
     with DATABASE_QUERY_DURATION.labels(query_type='get_edges').time():
         async with async_session() as session:
             try:
                 if node_ids:
                     query = text("""
-                        SELECT id, source_id, target_id, weight, edge_type
+                        SELECT id, source_id, target_id, weight, edge_type,
+                               COUNT(*) OVER() as total_count
                         FROM musicdb.edges
                         WHERE source_id = ANY(:node_ids) OR target_id = ANY(:node_ids)
+                        ORDER BY weight DESC
+                        LIMIT :limit OFFSET :offset
                     """)
-                    result = await session.execute(query, {"node_ids": node_ids})
+                    result = await session.execute(query, {
+                        "node_ids": node_ids,
+                        "limit": limit,
+                        "offset": offset
+                    })
                 else:
                     query = text("""
-                        SELECT id, source_id, target_id, weight, edge_type
+                        SELECT id, source_id, target_id, weight, edge_type,
+                               COUNT(*) OVER() as total_count
                         FROM musicdb.edges
-                        LIMIT 1000
+                        ORDER BY created_at DESC
+                        LIMIT :limit OFFSET :offset
                     """)
-                    result = await session.execute(query)
+                    result = await session.execute(query, {
+                        "limit": limit,
+                        "offset": offset
+                    })
                 
                 edges = []
+                total_count = 0
                 for row in result:
                     edge_data = {
                         'id': str(row.id),
@@ -469,8 +502,15 @@ async def get_graph_edges(node_ids: List[str] = None) -> List[Dict[str, Any]]:
                         'edge_type': row.edge_type
                     }
                     edges.append(edge_data)
-                
-                return edges
+                    if hasattr(row, 'total_count'):
+                        total_count = row.total_count
+
+                return {
+                    'edges': edges,
+                    'total': total_count or len(edges),
+                    'limit': limit,
+                    'offset': offset
+                }
                 
             except Exception as e:
                 logger.error(f"Database error in get_graph_edges: {e}")
@@ -481,16 +521,29 @@ async def bulk_insert_nodes(nodes_data: List[Dict[str, Any]]) -> int:
     with DATABASE_QUERY_DURATION.labels(query_type='bulk_insert').time():
         async with async_session() as session:
             try:
-                query = text("""
-                    SELECT musicdb.bulk_insert_nodes(:node_data)
-                """)
-                result = await session.execute(
-                    query, 
-                    {"node_data": json.dumps(nodes_data)}
-                )
+                # Use direct SQL for better compatibility
+                inserted_count = 0
+                for node in nodes_data:
+                    query = text("""
+                        INSERT INTO musicdb.nodes (track_id, x_position, y_position, metadata)
+                        VALUES (:track_id, :x_position, :y_position, :metadata)
+                        ON CONFLICT (track_id) DO UPDATE SET
+                            x_position = EXCLUDED.x_position,
+                            y_position = EXCLUDED.y_position,
+                            metadata = EXCLUDED.metadata,
+                            updated_at = NOW()
+                    """)
+                    await session.execute(query, {
+                        "track_id": node.get('track_id'),
+                        "x_position": node.get('x', 0),
+                        "y_position": node.get('y', 0),
+                        "metadata": json.dumps(node.get('metadata', {}))
+                    })
+                    inserted_count += 1
+
                 await session.commit()
-                return result.scalar()
-                
+                return inserted_count
+
             except Exception as e:
                 await session.rollback()
                 logger.error(f"Database error in bulk_insert_nodes: {e}")
@@ -551,7 +604,7 @@ app = FastAPI(
 # Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],  # Allow all origins for non-security-conscious app
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -577,6 +630,100 @@ async def metrics_middleware(request: Request, call_next):
     return response
 
 # API Routes
+@app.get("/api/graph/nodes")
+async def get_nodes(
+    limit: int = 100,
+    offset: int = 0,
+    center_node_id: Optional[str] = None,
+    max_depth: int = 3
+):
+    """Get all graph nodes with pagination."""
+    try:
+        result = await db_circuit_breaker.call(
+            get_graph_nodes,
+            center_node_id,
+            max_depth,
+            limit,  # max_nodes parameter
+            {},     # filters
+            limit,  # limit parameter
+            offset  # offset parameter
+        )
+        return result
+
+    except Exception as e:
+        logger.error(f"Error in get_nodes: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve nodes")
+
+@app.get("/api/graph/edges")
+async def get_edges(
+    limit: int = 1000,
+    offset: int = 0,
+    node_ids: Optional[str] = None
+):
+    """Get all graph edges with pagination."""
+    try:
+        # Parse node_ids if provided as comma-separated string
+        parsed_node_ids = None
+        if node_ids:
+            parsed_node_ids = [id.strip() for id in node_ids.split(',')]
+
+        result = await db_circuit_breaker.call(
+            get_graph_edges,
+            parsed_node_ids,
+            limit,
+            offset
+        )
+        return result
+
+    except Exception as e:
+        logger.error(f"Error in get_edges: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve edges")
+
+@app.get("/api/graph/search")
+async def search_graph(
+    q: str,
+    type: str = "fuzzy",
+    fields: str = "title,artist,album,genres",
+    limit: int = 20,
+    offset: int = 0
+):
+    """Search graph nodes and tracks."""
+    try:
+        # Execute search with circuit breaker
+        search_results = await db_circuit_breaker.call(
+            search_tracks,
+            q.strip(),
+            type,
+            fields.split(','),
+            limit,
+            offset
+        )
+
+        return {
+            "results": search_results["results"],
+            "total": search_results["total"],
+            "limit": limit,
+            "offset": offset,
+            "query": q,
+            "suggestions": search_results.get("suggestions", []),
+            "facets": {},
+            "status": "ok"
+        }
+
+    except Exception as e:
+        logger.error(f"Error in search_graph: {e}")
+        # Return fallback response for graceful degradation
+        return {
+            "results": [],
+            "total": 0,
+            "limit": limit,
+            "offset": offset,
+            "query": q,
+            "suggestions": [],
+            "facets": {},
+            "status": "Search service temporarily offline"
+        }
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -601,6 +748,49 @@ async def health_check():
 async def metrics():
     """Prometheus metrics endpoint."""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# ----- User Setlists API -----
+class UserSetlist(BaseModel):
+    name: str
+    track_ids: List[str]
+    notes: Optional[str] = None
+
+@app.post("/api/user-setlists")
+async def create_user_setlist(payload: UserSetlist):
+    try:
+        async with async_session() as session:
+            await session.execute(text("""
+                CREATE TABLE IF NOT EXISTS musicdb.user_setlists (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name TEXT NOT NULL,
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """))
+            await session.execute(text("""
+                CREATE TABLE IF NOT EXISTS musicdb.user_setlist_tracks (
+                    setlist_id UUID REFERENCES musicdb.user_setlists(id) ON DELETE CASCADE,
+                    position INT NOT NULL,
+                    track_id UUID NOT NULL,
+                    PRIMARY KEY (setlist_id, position)
+                );
+            """))
+
+            res = await session.execute(text(
+                "INSERT INTO musicdb.user_setlists (name, notes) VALUES (:name, :notes) RETURNING id"
+            ), {"name": payload.name, "notes": payload.notes})
+            setlist_id = res.scalar()
+
+            for i, tid in enumerate(payload.track_ids, start=1):
+                await session.execute(text(
+                    "INSERT INTO musicdb.user_setlist_tracks (setlist_id, position, track_id) VALUES (:sid, :pos, :tid)"
+                ), {"sid": setlist_id, "pos": i, "tid": tid})
+
+            await session.commit()
+            return {"status": "ok", "id": str(setlist_id), "tracks": len(payload.track_ids)}
+    except Exception as e:
+        logger.error(f"Error creating user setlist: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save setlist")
 
 @app.get("/api/v1/visualization/search")
 async def search_visualization_tracks(
@@ -652,17 +842,27 @@ async def get_visualization_graph(query: GraphQuery):
     """Get graph data for visualization."""
     try:
         # Get nodes
-        nodes = await db_circuit_breaker.call(
+        nodes_result = await db_circuit_breaker.call(
             get_graph_nodes,
             query.center_node_id,
             query.max_depth,
             query.max_nodes,
-            query.filters
+            query.filters,
+            query.max_nodes,  # limit
+            0  # offset
         )
-        
+
+        nodes = nodes_result['nodes']
+
         # Get edges for the nodes
         node_ids = [node['id'] for node in nodes]
-        edges = await db_circuit_breaker.call(get_graph_edges, node_ids)
+        edges_result = await db_circuit_breaker.call(
+            get_graph_edges,
+            node_ids,
+            1000,  # limit
+            0      # offset
+        )
+        edges = edges_result['edges']
         
         graph_data = {
             'nodes': nodes,
@@ -706,8 +906,8 @@ async def get_batch_status(batch_id: str):
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Invalid batch status data")
 
-# WebSocket endpoint for real-time collaboration
-@app.websocket("/api/v1/visualization/ws/{room_id}")
+# WebSocket endpoint for real-time updates
+@app.websocket("/api/graph/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     """WebSocket endpoint for real-time graph collaboration."""
     await manager.connect(websocket, room_id)

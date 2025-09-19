@@ -310,6 +310,55 @@ async def get_stats():
         }
     }
 
+@app.websocket("/ws/public")
+async def public_websocket_endpoint(websocket: WebSocket):
+    """Public WebSocket endpoint for anonymous access"""
+    user_id = "anonymous"
+    room_id = "general"
+    
+    connection_id = await websocket_service.manager.connect(websocket, user_id, room_id)
+    
+    try:
+        # Send welcome message
+        welcome_message = {
+            "type": "welcome",
+            "data": {
+                "user_id": user_id,
+                "room_id": room_id,
+                "connection_id": connection_id,
+                "authenticated": False,
+                "public_access": True
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        await websocket.send_text(json.dumps(welcome_message))
+        
+        # Listen for messages
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message_data = json.loads(data)
+                message = WebSocketMessage(**message_data)
+                message.user_id = user_id
+                message.timestamp = datetime.now(timezone.utc)
+                
+                # Handle different message types
+                await websocket_service.handle_message(message, connection_id)
+                
+            except ValidationError as e:
+                error_message = {
+                    "type": "error",
+                    "data": {"error": "Invalid message format", "details": str(e)},
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                await websocket.send_text(json.dumps(error_message))
+            except Exception as e:
+                logger.error(f"Error handling message: {e}")
+                
+    except WebSocketDisconnect:
+        await websocket_service.manager.disconnect(connection_id)
+        logger.info(f"Public WebSocket disconnected: {connection_id}")
+
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(
     websocket: WebSocket, 
@@ -405,7 +454,7 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
             "timestamp": message.timestamp.isoformat()
         }
         await websocket_service.manager.broadcast_to_room(room_id, broadcast_message)
-        
+
     elif message.type == "graph_interaction":
         # Handle graph visualization interactions
         broadcast_message = {
@@ -419,7 +468,39 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
             "timestamp": message.timestamp.isoformat()
         }
         await websocket_service.manager.broadcast_to_room("graph_updates", broadcast_message)
-        
+
+    elif message.type == "subscribe":
+        # Handle subscription requests
+        channel = message.data.get("channel", "general")
+        await handle_subscription_request(message, room_id, channel)
+
+    elif message.type == "graph_node_update":
+        # Handle node position/property updates
+        broadcast_message = {
+            "type": "graph_node_update",
+            "data": {
+                "user_id": message.user_id,
+                "node_id": message.data.get("node_id"),
+                "updates": message.data.get("updates", {}),
+                "position": message.data.get("position")
+            },
+            "timestamp": message.timestamp.isoformat()
+        }
+        await websocket_service.manager.broadcast_to_room("graph_updates", broadcast_message)
+
+    elif message.type == "graph_edge_update":
+        # Handle edge updates
+        broadcast_message = {
+            "type": "graph_edge_update",
+            "data": {
+                "user_id": message.user_id,
+                "edge_id": message.data.get("edge_id"),
+                "updates": message.data.get("updates", {})
+            },
+            "timestamp": message.timestamp.isoformat()
+        }
+        await websocket_service.manager.broadcast_to_room("graph_updates", broadcast_message)
+
     elif message.type == "scraper_control":
         # Handle scraper control messages
         if websocket_service.rabbitmq_channel and websocket_service.exchange:
@@ -429,12 +510,12 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
                 "scraper_name": message.data.get("scraper_name"),
                 "timestamp": message.timestamp.isoformat()
             }
-            
+
             await websocket_service.exchange.publish(
                 aio_pika.Message(json.dumps(control_message).encode()),
                 routing_key="scraper.control"
             )
-    
+
     # Store message in Redis for message history
     if websocket_service.redis_client:
         try:
@@ -452,6 +533,118 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
             await websocket_service.redis_client.ltrim(message_key, 0, 999)
         except Exception as e:
             logger.error(f"Failed to store message in Redis: {e}")
+
+async def handle_subscription_request(message: WebSocketMessage, room_id: str, channel: str):
+    """Handle subscription requests for real-time data"""
+    user_id = message.user_id
+
+    if channel == "graph_updates":
+        # Subscribe user to graph updates room
+        await websocket_service.manager.broadcast_to_room("graph_updates", {
+            "type": "subscription_confirmed",
+            "data": {
+                "channel": "graph_updates",
+                "user_id": user_id,
+                "status": "subscribed"
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+        # Send initial graph data if requested
+        node_ids = message.data.get("nodeIds", [])
+        if node_ids:
+            await send_graph_snapshot(user_id, node_ids)
+
+    elif channel == "live_data":
+        # Subscribe to live scraper data
+        await websocket_service.manager.broadcast_to_room("data_updates", {
+            "type": "subscription_confirmed",
+            "data": {
+                "channel": "live_data",
+                "user_id": user_id,
+                "status": "subscribed"
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+async def send_graph_snapshot(user_id: str, node_ids: list = None):
+    """Send current graph state to a specific user"""
+    try:
+        # This would typically fetch from your graph database
+        # For now, send a simulated response
+        snapshot = {
+            "type": "graph_snapshot",
+            "data": {
+                "nodes": [],  # Fetch from database
+                "edges": [],  # Fetch from database
+                "metadata": {
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "node_count": 0,
+                    "edge_count": 0
+                }
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+        await websocket_service.manager.send_personal_message(snapshot, user_id)
+    except Exception as e:
+        logger.error(f"Failed to send graph snapshot to {user_id}: {e}")
+
+@app.post("/api/v1/graph/broadcast")
+async def broadcast_graph_update(
+    update_type: str,
+    data: dict,
+    room_id: str = "graph_updates"
+):
+    """HTTP endpoint to broadcast graph updates to WebSocket clients"""
+    broadcast_message = {
+        "type": f"graph_{update_type}",
+        "data": data,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "source": "api"
+    }
+
+    await websocket_service.manager.broadcast_to_room(room_id, broadcast_message)
+    return {"status": "broadcasted", "type": update_type, "room": room_id}
+
+@app.post("/api/v1/graph/nodes/added")
+async def broadcast_nodes_added(nodes: list):
+    """Broadcast new nodes to WebSocket clients"""
+    await websocket_service.manager.broadcast_to_room("graph_updates", {
+        "type": "nodes_added",
+        "data": {
+            "nodes": nodes,
+            "count": len(nodes)
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    return {"status": "broadcasted", "nodes_added": len(nodes)}
+
+@app.post("/api/v1/graph/nodes/updated")
+async def broadcast_nodes_updated(updates: list):
+    """Broadcast node updates to WebSocket clients"""
+    await websocket_service.manager.broadcast_to_room("graph_updates", {
+        "type": "nodes_updated",
+        "data": {
+            "updates": updates,
+            "count": len(updates)
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    return {"status": "broadcasted", "nodes_updated": len(updates)}
+
+@app.post("/api/v1/graph/nodes/removed")
+async def broadcast_nodes_removed(node_ids: list):
+    """Broadcast node removals to WebSocket clients"""
+    await websocket_service.manager.broadcast_to_room("graph_updates", {
+        "type": "nodes_removed",
+        "data": {
+            "node_ids": node_ids,
+            "count": len(node_ids)
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    return {"status": "broadcasted", "nodes_removed": len(node_ids)}
 
 @app.post("/api/v1/broadcast/{room_id}")
 async def broadcast_message(

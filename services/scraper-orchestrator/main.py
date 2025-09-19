@@ -5,6 +5,7 @@ Manages and coordinates scraping tasks across multiple scrapers
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -39,6 +40,15 @@ app = FastAPI(
     title="Scraper Orchestrator",
     description="Orchestrates and manages web scraping tasks",
     version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for non-security-conscious app
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Redis connection with connection pooling
@@ -178,8 +188,8 @@ class TaskQueue:
             task.id = f"{task.scraper}_{datetime.now().timestamp()}"
         
         task.created_at = datetime.now()
-        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
-        queue_key = f"{self.queue_prefix}:{priority_value}"
+        priority_enum = self._normalize_priority(task.priority)
+        queue_key = f"{self.queue_prefix}:{priority_enum.value}"
         logger.info(f"Generated queue_key: {queue_key}")
         
         # Store task details
@@ -190,24 +200,20 @@ class TaskQueue:
         self.redis.expire(task_key, 86400)  # Expire after 24 hours
         
         # Add to priority queue
-        score = self._get_priority_score(task.priority)
+        score = self._get_priority_score(priority_enum)
         logger.info(f"Adding to queue: queue_key={queue_key}, task.id={task.id}, score={score}")
         logger.info(f"task.id type: {type(task.id)}, score type: {type(score)}")
         self.redis.zadd(queue_key, {task.id: score})
         
         # Update metrics
-        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
-        queue_size.labels(priority=priority_value).inc()
-        
-        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
-        logger.info(f"Added task {task.id} to {priority_value} priority queue")
+        queue_size.labels(priority=priority_enum.value).inc()
+        logger.info(f"Added task {task.id} to {priority_enum.value} priority queue")
         return task.id
     
     def get_next_task(self, scraper: Optional[str] = None) -> Optional[ScrapingTask]:
         """Get next task from highest priority queue"""
         for priority in [TaskPriority.CRITICAL, TaskPriority.HIGH, TaskPriority.MEDIUM, TaskPriority.LOW]:
-            priority_value = priority.value if hasattr(priority, 'value') else str(priority)
-            queue_key = f"{self.queue_prefix}:{priority_value}"
+            queue_key = f"{self.queue_prefix}:{priority.value}"
             
             # Get task with lowest score (oldest)
             task_ids = self.redis.zrange(queue_key, 0, 0)
@@ -231,8 +237,7 @@ class TaskQueue:
                 
                 # Remove from queue
                 self.redis.zrem(queue_key, task_id)
-                priority_value = priority.value if hasattr(priority, 'value') else str(priority)
-                queue_size.labels(priority=priority_value).dec()
+                queue_size.labels(priority=priority.value).dec()
                 
                 return task
         
@@ -240,6 +245,7 @@ class TaskQueue:
     
     def _get_priority_score(self, priority: TaskPriority) -> float:
         """Convert priority to score (lower = higher priority)"""
+        priority_enum = self._normalize_priority(priority)
         scores = {
             TaskPriority.CRITICAL: 0,
             TaskPriority.HIGH: 1000,
@@ -247,7 +253,17 @@ class TaskQueue:
             TaskPriority.LOW: 3000
         }
         # Add timestamp to maintain FIFO within priority
-        return scores[priority] + datetime.now().timestamp() / 1000000
+        return scores[priority_enum] + datetime.now().timestamp() / 1000000
+
+    def _normalize_priority(self, priority: Any) -> TaskPriority:
+        """Ensure priority is a TaskPriority enum"""
+        if isinstance(priority, TaskPriority):
+            return priority
+        try:
+            return TaskPriority(priority)
+        except (ValueError, TypeError):
+            logger.warning(f"Unknown priority '{priority}', defaulting to MEDIUM")
+            return TaskPriority.MEDIUM
     
     def _serialize_task_for_redis(self, task: ScrapingTask) -> Dict[str, str]:
         """Convert task to Redis-compatible format"""
@@ -502,6 +518,13 @@ async def execute_scraping_task(task: ScrapingTask):
                 task.completed_at = datetime.now()
                 scraping_tasks_total.labels(scraper=task.scraper, status="success").inc()
                 logger.info(f"Task {task.id} completed successfully")
+                # Record processed URL to prevent re-processing; maintain a long-lived set
+                try:
+                    if task.url:
+                        dedupe_key = f"dedupe:{task.scraper}:{task.url}"
+                        redis_client.sadd("scraping:processed_urls", dedupe_key)
+                except Exception as dedupe_err:
+                    logger.warning(f"Failed to record processed URL for task {task.id}: {dedupe_err}")
             else:
                 raise Exception(f"Scraper returned status {response.status_code}")
                 
@@ -690,6 +713,15 @@ async def submit_task(task: ScrapingTask, background_tasks: BackgroundTasks):
         if not SCRAPER_CONFIGS[task.scraper].enabled:
             raise HTTPException(status_code=400, detail="Scraper is disabled")
         
+        # Simple dedupe: avoid re-submitting the same (scraper,url)
+        if task.url:
+            dedupe_key = f"dedupe:{task.scraper}:{task.url}"
+            if redis_client.sismember("scraping:submitted_urls", dedupe_key) or \
+               redis_client.sismember("scraping:processed_urls", dedupe_key):
+                logger.info(f"Skipping duplicate submission for {dedupe_key}")
+                return {"status": "skipped", "reason": "already_submitted", "dedupe_key": dedupe_key}
+            redis_client.sadd("scraping:submitted_urls", dedupe_key)
+
         logger.info(f"About to call task_queue.add_task")
         task_id = task_queue.add_task(task)
         logger.info(f"Successfully added task: {task_id}")

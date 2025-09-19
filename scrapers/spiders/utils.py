@@ -87,8 +87,8 @@ def parse_track_string(track_string):
     # Handle "ID - ID" or "ID Remix" for final track_name/artist_name [3]
     if track_name.lower() == "id" and (not primary_artists or not any(primary_artists)):
         is_identified = False
-        track_name = "Unknown Track"
-        primary_artists = ["Unknown Artist"]
+        # Skip unidentified tracks instead of creating "Unknown Artist" entries
+        return None
     elif "id remix" in track_name.lower() and (not remixer_artists or not any(remixer_artists)):
         is_identified = False
         # remixer_artists remains an empty list if no specific remixer identified

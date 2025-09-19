@@ -11,7 +11,7 @@ class GraphService {
   private baseUrl: string;
   private apiKey?: string;
 
-  constructor(baseUrl: string = '/api/v1', apiKey?: string) {
+  constructor(baseUrl: string = 'http://localhost:8090/api/v1', apiKey?: string) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
   }
@@ -122,18 +122,7 @@ class GraphService {
 
   async getNodeDetails(nodeId: string, options: Omit<GetNodeRequest, 'nodeId'> = {}): Promise<ApiResponse<{ node: SongNode }>> {
     // This endpoint doesn't exist in the backend, so we'll try to get the node from the graph
-    const fallbackNode: { node: SongNode } = {
-      node: {
-        id: nodeId,
-        trackId: nodeId,
-        position: { x: 0, y: 0 },
-        metadata: {
-          title: 'Unknown Track',
-          artist: 'Unknown Artist',
-          status: 'Service offline - Node details not available'
-        }
-      }
-    };
+    // No fallback data - return error if node is not found
     
     try {
       // Try to get the node by requesting a graph centered on this node
@@ -142,7 +131,7 @@ class GraphService {
         limit: 1,
         depth: 1
       });
-      
+
       if (graphResponse.data.nodes.length > 0) {
         const node = graphResponse.data.nodes.find(n => n.id === nodeId) || graphResponse.data.nodes[0];
         return {
@@ -154,13 +143,9 @@ class GraphService {
     } catch (error) {
       console.warn('Failed to get node via graph query:', error);
     }
-    
-    // Return fallback
-    return {
-      data: fallbackNode,
-      success: false,
-      message: 'Node details service unavailable'
-    };
+
+    // Return error instead of fallback
+    throw new Error('Node not found and no fallback data available');
   }
 
   async getRelationships(request: GetRelationshipsRequest): Promise<ApiResponse<any>> {

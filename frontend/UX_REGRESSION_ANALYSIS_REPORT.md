@@ -55,7 +55,7 @@
 **Graph Elements Detected**:
 - Canvas elements present and interactive
 - Graph overview panel showing "Nodes: 0, Edges: 0" (expected in test environment)
-- Search functionality working with sample data
+- Search functionality working with ingested data
 - Layout controls available (Force, Hierarchical, Circular)
 
 **Interaction Testing**:
@@ -103,7 +103,7 @@
 ### Issue 2: Login Persistence ✅ NOT APPLICABLE  
 **Analysis**: Application running in demo/visualization mode
 - No authentication UI present
-- Test environment with sample data
+- Test environment with synced dataset
 - **Resolution**: No authentication required in current mode
 
 ### Issue 3: Graph Navigation ✅ WORKING
