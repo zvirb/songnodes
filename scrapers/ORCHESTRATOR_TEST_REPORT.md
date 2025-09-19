@@ -37,7 +37,7 @@ The orchestrator service and scraping infrastructure are **partially functional*
   - scraper-setlistfm (port 8013)
   - scraper-reddit (port 8014)
 
-### 4. **Enhanced Spiders** ✅
+### 4. **Scraper Spiders** ✅
 - **Code Quality:** All scraper spiders properly written
 - **Features Added:**
   - Redis state management for deduplication
@@ -80,7 +80,7 @@ ImportError: attempted relative import beyond top-level package
 
 ### Issue #1: **Spider Name Mismatch**
 - **Problem:** Orchestrator expects base names (e.g., "1001tracklists")
-- **Our Code:** Uses enhanced names (e.g., "1001tracklists")
+- **Our Code:** Uses the updated spider names (e.g., "1001tracklists")
 - **Impact:** Cannot directly trigger scraper spiders through orchestrator
 
 ### Issue #2: **Container Code Outdated**
@@ -90,7 +90,7 @@ ImportError: attempted relative import beyond top-level package
 
 ### Issue #3: **Missing Dependencies**
 - **Problem:** Redis module not installed in scraper containers
-- **Evidence:** Enhanced spiders require redis but module missing
+- **Evidence:** Scraper spiders require redis but module missing
 - **Impact:** Even if imports were fixed, Redis state management would fail
 
 ---
@@ -137,7 +137,7 @@ ImportError: attempted relative import beyond top-level package
 
 ### Alternative Quick Fix:
 
-Create a bridge script that maps enhanced spider names to base names and runs them locally with proper imports.
+Create a bridge script that maps the spider names in this repository to base names and runs them locally with proper imports.
 
 ---
 
@@ -169,7 +169,7 @@ Create a bridge script that maps enhanced spider names to base names and runs th
 
 ## 🎯 Conclusion
 
-The orchestration infrastructure is **architecturally sound** but suffers from a **deployment gap** between enhanced local code and containerized execution environment. The core issue is that our improvements haven't been deployed to the Docker containers.
+The orchestration infrastructure is **architecturally sound** but suffers from a **deployment gap** between the current codebase and containerized execution environment. The core issue is that our improvements haven't been deployed to the Docker containers.
 
 **Success Path:**
 1. Update container code with scraper spiders
@@ -185,11 +185,11 @@ The orchestration infrastructure is **architecturally sound** but suffers from a
 
 1. **Option A:** Fix containers (recommended for production)
 2. **Option B:** Run scraper spiders locally with direct database connection
-3. **Option C:** Create new Docker images with enhanced code baked in
+3. **Option C:** Create new Docker images with the updated code baked in
 
 The scraping pipeline is **one deployment step away** from being fully operational with all the contemporary music discovery enhancements.
 
 ---
 
 *Test completed: September 19, 2025*
-*Enhanced spiders ready but not deployed to containers*
+*Scraper spiders ready but not deployed to containers*
