@@ -6,9 +6,13 @@ Uses the official Setlist.fm API v1.0 to collect live performance data
 import scrapy
 import json
 import os
+import hashlib
 from datetime import datetime
 from urllib.parse import quote
 import redis
+import requests
+from urllib import robotparser
+from scrapy.exceptions import CloseSpider
 try:
     from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
 except ImportError:
@@ -32,6 +36,7 @@ class SetlistFmApiSpider(scrapy.Spider):
     }
 
     def __init__(self, artist_name=None, venue=None, city=None, *args, **kwargs):
+        force_run_arg = kwargs.pop('force_run', None)
         super().__init__(*args, **kwargs)
 
         # Build search URL based on parameters
@@ -41,6 +46,13 @@ class SetlistFmApiSpider(scrapy.Spider):
         self.redis_client = None
         self.redis_prefix = os.getenv('SCRAPER_STATE_PREFIX_SETLISTFM', 'scraped:setlists:setlistfm')
         self.source_ttl_seconds = int(os.getenv('SCRAPER_SOURCE_TTL_DAYS', '30')) * 86400
+        self.run_ttl_seconds = int(os.getenv('SCRAPER_RUN_TTL_HOURS', '24')) * 3600
+        self.last_run_key = None
+        self.force_run = (
+            force_run_arg
+            if force_run_arg is not None
+            else os.getenv('SCRAPER_FORCE_RUN', '0').lower() in ('1', 'true', 'yes')
+        )
         self.initialize_state_store()
 
         if artist_name:
@@ -49,6 +61,8 @@ class SetlistFmApiSpider(scrapy.Spider):
             params.append(f'venueName={quote(venue)}')
         if city:
             params.append(f'cityName={quote(city)}')
+
+        self.apply_robots_policy()
 
         # Default to contemporary electronic artists (rotation-aware)
         if not params:
@@ -146,6 +160,27 @@ class SetlistFmApiSpider(scrapy.Spider):
         span = int(os.getenv('SETLISTFM_YEAR_SPAN', 3))
         return [str(current_year - offset) for offset in range(span)]
 
+    def apply_robots_policy(self):
+        robots_url = os.getenv('SETLISTFM_ROBOTS_URL', 'https://api.setlist.fm/robots.txt')
+        user_agent = self.settings.get('USER_AGENT', 'Mozilla/5.0')
+        parser = robotparser.RobotFileParser()
+
+        try:
+            response = requests.get(robots_url, timeout=5)
+            if response.status_code != 200:
+                self.logger.debug("Setlist.fm robots.txt returned status %s", response.status_code)
+                return
+            parser.parse(response.text.splitlines())
+            delay = parser.crawl_delay(user_agent) or parser.crawl_delay('*')
+            if delay:
+                delay = float(delay)
+                current_delay = self.custom_settings.get('DOWNLOAD_DELAY', 0.1)
+                if delay > current_delay:
+                    self.custom_settings['DOWNLOAD_DELAY'] = delay
+                    self.logger.info("Applied Setlist.fm robots.txt crawl-delay of %s seconds", delay)
+        except Exception as exc:
+            self.logger.debug("Failed to apply Setlist.fm robots policy: %s", exc)
+
     def initialize_state_store(self):
         host = os.getenv('SCRAPER_STATE_REDIS_HOST', os.getenv('REDIS_HOST', 'localhost'))
         port = int(os.getenv('SCRAPER_STATE_REDIS_PORT', os.getenv('REDIS_PORT', 6379)))
@@ -161,9 +196,21 @@ class SetlistFmApiSpider(scrapy.Spider):
                 port,
                 db
             )
+            self.enforce_run_quota()
         except Exception as exc:
             self.redis_client = None
             self.logger.warning("Redis state store unavailable for Setlist.fm (%s)", exc)
+
+    def enforce_run_quota(self):
+        if not self.redis_client:
+            return
+        self.last_run_key = f"{self.redis_prefix}:last_run"
+        if self.force_run:
+            return
+        last_run = self.redis_client.get(self.last_run_key)
+        if last_run:
+            self.logger.warning("Daily quota already used for Setlist.fm (last run at %s)", last_run)
+            raise CloseSpider('daily_quota_reached')
 
     def parse(self, response):
         """Parse search results"""
@@ -293,3 +340,14 @@ class SetlistFmApiSpider(scrapy.Spider):
             self.redis_client.setex(key, self.source_ttl_seconds, datetime.utcnow().isoformat())
         except Exception as exc:
             self.logger.debug("Redis setex failed for Setlist.fm: %s", exc)
+
+    def closed(self, reason):
+        self.record_run_timestamp()
+
+    def record_run_timestamp(self):
+        if not self.redis_client or not self.last_run_key:
+            return
+        try:
+            self.redis_client.setex(self.last_run_key, self.run_ttl_seconds, datetime.utcnow().isoformat())
+        except Exception as exc:
+            self.logger.debug("Redis setex failed for Setlist.fm last run tracking: %s", exc)

@@ -10,10 +10,12 @@ import re
 import os
 import hashlib
 from urllib.parse import quote
-from scrapy.exceptions import DropItem
+from scrapy.exceptions import DropItem, CloseSpider
 from scrapy.http import Request
 from datetime import datetime
 import redis
+import requests
+from urllib import robotparser
 
 try:
     from ..enhanced_items import (
@@ -66,7 +68,13 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
     }
 
     def __init__(self, search_mode='targeted', *args, **kwargs):
+        force_run_arg = kwargs.pop('force_run', None)
         super(Enhanced1001TracklistsSpider, self).__init__(*args, **kwargs)
+        self.force_run = (
+            force_run_arg
+            if force_run_arg is not None
+            else os.getenv('SCRAPER_FORCE_RUN', '0').lower() in ('1', 'true', 'yes')
+        )
         self.search_mode = search_mode  # 'targeted' or 'discovery'
         self.target_tracks = {}
         self.found_target_tracks = set()
@@ -74,12 +82,15 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
         self.redis_client = None
         self.redis_prefix = os.getenv('SCRAPER_STATE_PREFIX', 'scraped:setlists:1001tracklists')
         self.source_ttl_seconds = int(os.getenv('SCRAPER_SOURCE_TTL_DAYS', '30')) * 86400
+        self.run_ttl_seconds = int(os.getenv('SCRAPER_RUN_TTL_HOURS', '24')) * 3600
+        self.last_run_key = None
 
         # Load target tracks
         self.load_target_tracks()
 
         # Initialize Redis-backed state for cross-run dedupe
         self.initialize_state_store()
+        self.apply_robots_policy()
 
         # Generate search URLs based on target tracks
         if self.search_mode == 'targeted':
@@ -138,15 +149,49 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
                 port,
                 db
             )
+            self.enforce_run_quota()
         except Exception as exc:
             self.redis_client = None
             self.logger.warning("Redis state store unavailable (%s); continuing without cross-run dedupe", exc)
+
+    def enforce_run_quota(self):
+        if not self.redis_client:
+            return
+        self.last_run_key = f"{self.redis_prefix}:last_run"
+        if self.force_run:
+            return
+        last_run = self.redis_client.get(self.last_run_key)
+        if last_run:
+            self.logger.warning("Daily quota already used (last run at %s)", last_run)
+            raise CloseSpider('daily_quota_reached')
 
     def normalize_track_key(self, title: str, artist: str) -> str:
         """Create normalized key for track matching"""
         normalized_title = re.sub(r'[^\w\s]', '', title.lower()).strip()
         normalized_artist = re.sub(r'[^\w\s]', '', artist.lower()).strip()
         return f"{normalized_artist}::{normalized_title}"
+
+    def apply_robots_policy(self):
+        robots_url = os.getenv('TRACKLISTS_ROBOTS_URL', 'https://www.1001tracklists.com/robots.txt')
+        user_agent = self.settings.get('USER_AGENT', 'Mozilla/5.0')
+        parser = robotparser.RobotFileParser()
+
+        try:
+            response = requests.get(robots_url, timeout=5)
+            if response.status_code != 200:
+                self.logger.debug("Robots.txt fetch returned status %s", response.status_code)
+                return
+            parser.parse(response.text.splitlines())
+            delay = parser.crawl_delay(user_agent) or parser.crawl_delay('*')
+            if delay:
+                delay = float(delay)
+                current_delay = self.custom_settings.get('DOWNLOAD_DELAY', self.download_delay)
+                if delay > current_delay:
+                    self.download_delay = delay
+                    self.custom_settings['DOWNLOAD_DELAY'] = delay
+                    self.logger.info("Applied robots.txt crawl-delay of %s seconds", delay)
+        except Exception as exc:
+            self.logger.debug("Failed to apply robots policy: %s", exc)
 
     def generate_target_search_urls(self) -> list:
         """Generate search URLs for target tracks using improved strategies"""
@@ -415,6 +460,17 @@ class Enhanced1001TracklistsSpider(scrapy.Spider):
             self.redis_client.setex(key, self.source_ttl_seconds, datetime.utcnow().isoformat())
         except Exception as exc:
             self.logger.debug("Redis setex failed: %s", exc)
+
+    def closed(self, reason):
+        self.record_run_timestamp()
+
+    def record_run_timestamp(self):
+        if not self.redis_client or not self.last_run_key:
+            return
+        try:
+            self.redis_client.setex(self.last_run_key, self.run_ttl_seconds, datetime.utcnow().isoformat())
+        except Exception as exc:
+            self.logger.debug("Redis setex failed for last run tracking: %s", exc)
 
     def extract_setlist_metadata(self, response) -> dict:
         """Extract comprehensive setlist metadata"""
