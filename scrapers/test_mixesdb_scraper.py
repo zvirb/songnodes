@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for the enhanced MixesDB scraper
+Test script for the MixesDB scraper
 """
 
 import subprocess

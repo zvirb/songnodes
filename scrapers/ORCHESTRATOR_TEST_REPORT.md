@@ -1,7 +1,7 @@
 # 🔍 Orchestrator & Scraping Pipeline Test Report
 
 **Date:** September 19, 2025
-**Test Objective:** Verify complete end-to-end scraping pipeline functionality with enhanced spiders
+**Test Objective:** Verify complete end-to-end scraping pipeline functionality with scraper spiders
 
 ---
 
@@ -38,7 +38,7 @@ The orchestrator service and scraping infrastructure are **partially functional*
   - scraper-reddit (port 8014)
 
 ### 4. **Enhanced Spiders** ✅
-- **Code Quality:** All enhanced spiders properly written
+- **Code Quality:** All scraper spiders properly written
 - **Features Added:**
   - Redis state management for deduplication
   - Intelligent rotation strategies
@@ -80,8 +80,8 @@ ImportError: attempted relative import beyond top-level package
 
 ### Issue #1: **Spider Name Mismatch**
 - **Problem:** Orchestrator expects base names (e.g., "1001tracklists")
-- **Our Code:** Uses enhanced names (e.g., "enhanced_1001tracklists")
-- **Impact:** Cannot directly trigger enhanced spiders through orchestrator
+- **Our Code:** Uses enhanced names (e.g., "1001tracklists")
+- **Impact:** Cannot directly trigger scraper spiders through orchestrator
 
 ### Issue #2: **Container Code Outdated**
 - **Problem:** Containers use old spider code without recent enhancements
@@ -114,9 +114,9 @@ ImportError: attempted relative import beyond top-level package
 
 1. **Update Container Spiders**
    ```bash
-   # Copy enhanced spiders to containers
-   docker cp enhanced_1001tracklists_spider.py scraper-1001tracklists:/app/spiders/1001tracklists_spider.py
-   docker cp enhanced_mixesdb_spider.py scraper-mixesdb:/app/spiders/mixesdb_spider.py
+   # Copy scraper spiders to containers
+   docker cp 1001tracklists_spider.py scraper-1001tracklists:/app/spiders/1001tracklists_spider.py
+   docker cp mixesdb_spider.py scraper-mixesdb:/app/spiders/mixesdb_spider.py
    ```
 
 2. **Fix Import Statements**
@@ -172,7 +172,7 @@ Create a bridge script that maps enhanced spider names to base names and runs th
 The orchestration infrastructure is **architecturally sound** but suffers from a **deployment gap** between enhanced local code and containerized execution environment. The core issue is that our improvements haven't been deployed to the Docker containers.
 
 **Success Path:**
-1. Update container code with enhanced spiders
+1. Update container code with scraper spiders
 2. Ensure all dependencies installed
 3. Fix import paths for container context
 4. Restart services and retry scraping
@@ -184,7 +184,7 @@ The orchestration infrastructure is **architecturally sound** but suffers from a
 ## 🚀 Next Steps
 
 1. **Option A:** Fix containers (recommended for production)
-2. **Option B:** Run enhanced spiders locally with direct database connection
+2. **Option B:** Run scraper spiders locally with direct database connection
 3. **Option C:** Create new Docker images with enhanced code baked in
 
 The scraping pipeline is **one deployment step away** from being fully operational with all the contemporary music discovery enhancements.

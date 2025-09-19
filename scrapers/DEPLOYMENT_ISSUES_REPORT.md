@@ -1,15 +1,15 @@
-# Enhanced Scrapers Deployment Issues Report
+# Scraper Stack Deployment Issues Report
 **Date:** September 19, 2025
 **Testing Environment:** Docker deployment with orchestrator integration
 
 ## Executive Summary
-Deployment testing revealed multiple critical issues preventing the enhanced scrapers from functioning properly. While Docker containers start successfully, there are architectural mismatches and code errors that need resolution.
+Deployment testing revealed multiple critical issues preventing the scraper stack from functioning properly. While Docker containers start successfully, there are architectural mismatches and code errors that need resolution.
 
 ## Critical Issues Found
 
 ### 1. Spider Settings Attribute Error ❌
 **Severity:** CRITICAL
-**Affected Spiders:** All enhanced spiders
+**Affected Spiders:** All spiders
 **Error:** `AttributeError: 'Spider' object has no attribute 'settings'`
 
 **Details:**
@@ -18,10 +18,10 @@ Deployment testing revealed multiple critical issues preventing the enhanced scr
 - This causes immediate spider crash on startup
 
 **Files Affected:**
-- `spiders/enhanced_1001tracklists_spider.py` (line 176)
+- `spiders/1001tracklists_spider.py` (line 176)
 - `spiders/setlistfm_api_spider.py` (line 165)
-- `spiders/enhanced_mixesdb_spider.py` (similar issue expected)
-- `spiders/enhanced_reddit_spider.py` (similar issue expected)
+- `spiders/mixesdb_spider.py` (similar issue expected)
+- `spiders/reddit_spider.py` (similar issue expected)
 
 **Fix Required:**
 ```python
@@ -42,12 +42,12 @@ user_agent = self.custom_settings.get('USER_AGENT', 'Mozilla/5.0')
 - Redis is accessible but using wrong hostname
 
 **Current Setup:**
-- Enhanced scrapers Redis: `localhost:6379` (new)
+- Scraper stack Redis: `localhost:6379` (new)
 - Existing infrastructure Redis: `localhost:6380` (existing)
 - Container expects hostname: `redis`
 
 **Fix Required:**
-- Add network configuration to docker-compose.enhanced.yml
+- Add network configuration to docker-compose.yml
 - Or use environment variable REDIS_HOST=scrapers-redis
 
 ### 3. Orchestrator Architecture Mismatch 🔄
@@ -60,12 +60,12 @@ user_agent = self.custom_settings.get('USER_AGENT', 'Mozilla/5.0')
   - `scraper-mixesdb:8012`
   - `scraper-setlistfm:8013`
   - `scraper-reddit:8014`
-- Enhanced scrapers run in single container
+- Scraper stack run in single container
 - Task queued but never executed
 
 **Required Solution:**
-- Either split enhanced scrapers into microservices
-- Or create API endpoint in enhanced-scrapers container
+- Either split scraper stack into microservices
+- Or create API endpoint in scrapers container
 - Or run spiders directly without orchestrator
 
 ### 4. Missing 're' Module Import ⚠️
@@ -106,14 +106,14 @@ import re  # Add at top of file
 3. Test spider execution after fixes
 
 ### Priority 2 - Fix Network Configuration
-1. Update docker-compose.enhanced.yml with proper network setup
+1. Update docker-compose.yml with proper network setup
 2. Ensure Redis hostname resolution works in containers
-3. Test Redis connectivity from enhanced-scrapers container
+3. Test Redis connectivity from scrapers container
 
 ### Priority 3 - Resolve Architecture Mismatch
 Options:
-1. **Option A:** Run enhanced scrapers standalone (bypass orchestrator)
-2. **Option B:** Create API wrapper for enhanced scrapers
+1. **Option A:** Run scraper stack standalone (bypass orchestrator)
+2. **Option B:** Create API wrapper for scraper stack
 3. **Option C:** Split into microservices (matches existing architecture)
 
 ## Recommended Next Steps
@@ -132,13 +132,13 @@ Options:
 
 ```bash
 # After fixing code errors, test with:
-docker exec enhanced-scrapers scrapy crawl enhanced_1001tracklists -s CLOSESPIDER_PAGECOUNT=1
+docker exec scrapers scrapy crawl 1001tracklists -s CLOSESPIDER_PAGECOUNT=1
 
 # Check Redis connectivity:
-docker exec enhanced-scrapers redis-cli -h scrapers-redis ping
+docker exec scrapers redis-cli -h scrapers-redis ping
 
 # Monitor logs:
-docker logs enhanced-scrapers -f
+docker logs scrapers -f
 
 # Check database for scraped data:
 docker exec scrapers-postgres psql -U musicuser -d musicdb -c "SELECT COUNT(*) FROM tracks;"
@@ -147,14 +147,14 @@ docker exec scrapers-postgres psql -U musicuser -d musicdb -c "SELECT COUNT(*) F
 ## Environment Variables Needed
 
 ```bash
-# Add to docker-compose.enhanced.yml:
+# Add to docker-compose.yml:
 REDIS_HOST=scrapers-redis  # Use container name
 POSTGRES_HOST=scrapers-postgres  # Use container name
 ```
 
 ## Conclusion
 
-While the enhanced scrapers infrastructure is mostly in place, critical code errors prevent execution. The main issues are:
+While the scraper stack infrastructure is mostly in place, critical code errors prevent execution. The main issues are:
 1. Incorrect settings access pattern (easy fix)
 2. Network/hostname resolution (configuration fix)
 3. Architectural mismatch with orchestrator (needs design decision)
