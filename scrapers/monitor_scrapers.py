@@ -72,7 +72,7 @@ class ScraperMonitor:
 
             # Count keys by spider
             for spider in SPIDERS:
-                pattern = f"scraped:*:{spider}*"
+                pattern = f"scraped:setlists:{spider}:*"
                 keys = self.redis_client.keys(pattern)
                 stats['by_spider'][spider] = len(keys)
                 stats['total_keys'] += len(keys)
@@ -154,14 +154,14 @@ class ScraperMonitor:
             metrics = {}
 
             for spider in SPIDERS:
-                spider_base = spider.replace('enhanced_', '').replace('_api', '')
+                prefix = f"scraped:setlists:{spider}"
 
                 # Get last run time
-                last_run_key = f"scraped:setlists:{spider_base}:last_run"
+                last_run_key = f"{prefix}:last_run"
                 last_run = self.redis_client.get(last_run_key)
 
                 # Count processed sources
-                pattern = f"scraped:*:{spider_base}*"
+                pattern = f"{prefix}:*"
                 processed = len(self.redis_client.keys(pattern))
 
                 metrics[spider] = {
