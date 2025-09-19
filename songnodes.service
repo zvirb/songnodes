@@ -4,7 +4,7 @@
   <name>SongNodes Music Visualization</name>
   <service>
     <type>_http._tcp</type>
-    <port>8088</port>
+    <port>80</port>
     <txt-record>path=/</txt-record>
     <txt-record>description=SongNodes - Interactive Music Graph Visualization</txt-record>
     <host-name>songnodes.local</host-name>
