@@ -188,8 +188,8 @@ class TaskQueue:
             task.id = f"{task.scraper}_{datetime.now().timestamp()}"
         
         task.created_at = datetime.now()
-        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
-        queue_key = f"{self.queue_prefix}:{priority_value}"
+        priority_enum = self._normalize_priority(task.priority)
+        queue_key = f"{self.queue_prefix}:{priority_enum.value}"
         logger.info(f"Generated queue_key: {queue_key}")
         
         # Store task details
@@ -200,24 +200,20 @@ class TaskQueue:
         self.redis.expire(task_key, 86400)  # Expire after 24 hours
         
         # Add to priority queue
-        score = self._get_priority_score(task.priority)
+        score = self._get_priority_score(priority_enum)
         logger.info(f"Adding to queue: queue_key={queue_key}, task.id={task.id}, score={score}")
         logger.info(f"task.id type: {type(task.id)}, score type: {type(score)}")
         self.redis.zadd(queue_key, {task.id: score})
         
         # Update metrics
-        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
-        queue_size.labels(priority=priority_value).inc()
-        
-        priority_value = task.priority if isinstance(task.priority, str) else task.priority.value
-        logger.info(f"Added task {task.id} to {priority_value} priority queue")
+        queue_size.labels(priority=priority_enum.value).inc()
+        logger.info(f"Added task {task.id} to {priority_enum.value} priority queue")
         return task.id
     
     def get_next_task(self, scraper: Optional[str] = None) -> Optional[ScrapingTask]:
         """Get next task from highest priority queue"""
         for priority in [TaskPriority.CRITICAL, TaskPriority.HIGH, TaskPriority.MEDIUM, TaskPriority.LOW]:
-            priority_value = priority.value if hasattr(priority, 'value') else str(priority)
-            queue_key = f"{self.queue_prefix}:{priority_value}"
+            queue_key = f"{self.queue_prefix}:{priority.value}"
             
             # Get task with lowest score (oldest)
             task_ids = self.redis.zrange(queue_key, 0, 0)
@@ -241,8 +237,7 @@ class TaskQueue:
                 
                 # Remove from queue
                 self.redis.zrem(queue_key, task_id)
-                priority_value = priority.value if hasattr(priority, 'value') else str(priority)
-                queue_size.labels(priority=priority_value).dec()
+                queue_size.labels(priority=priority.value).dec()
                 
                 return task
         
@@ -250,6 +245,7 @@ class TaskQueue:
     
     def _get_priority_score(self, priority: TaskPriority) -> float:
         """Convert priority to score (lower = higher priority)"""
+        priority_enum = self._normalize_priority(priority)
         scores = {
             TaskPriority.CRITICAL: 0,
             TaskPriority.HIGH: 1000,
@@ -257,7 +253,17 @@ class TaskQueue:
             TaskPriority.LOW: 3000
         }
         # Add timestamp to maintain FIFO within priority
-        return scores[priority] + datetime.now().timestamp() / 1000000
+        return scores[priority_enum] + datetime.now().timestamp() / 1000000
+
+    def _normalize_priority(self, priority: Any) -> TaskPriority:
+        """Ensure priority is a TaskPriority enum"""
+        if isinstance(priority, TaskPriority):
+            return priority
+        try:
+            return TaskPriority(priority)
+        except (ValueError, TypeError):
+            logger.warning(f"Unknown priority '{priority}', defaulting to MEDIUM")
+            return TaskPriority.MEDIUM
     
     def _serialize_task_for_redis(self, task: ScrapingTask) -> Dict[str, str]:
         """Convert task to Redis-compatible format"""
