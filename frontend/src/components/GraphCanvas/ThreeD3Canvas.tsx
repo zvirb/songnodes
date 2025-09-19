@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useAppSelector, useAppDispatch } from '../../store/index';
 import { setSelectedNodes } from '../../store/graphSlice';
 import { setStartNode, setEndNode, addWaypoint } from '../../store/pathfindingSlice';
+import { detectWebGL, isThreeJSCompatible, logWebGLDiagnostics, getWebGLStatusMessage } from '../../utils/webglDetection';
 
 interface ThreeD3CanvasProps {
   width: number;
@@ -88,7 +89,38 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
   // Initialize 3D scene
   const initScene = useCallback(() => {
-    if (!mountRef.current) return;
+    if (!mountRef.current) {
+      console.warn('🌌 Mount ref not available for 3D scene initialization');
+      return;
+    }
+
+    console.log('🌌 Initializing 3D scene...', { width, height });
+
+    // Check WebGL compatibility first
+    if (!isThreeJSCompatible()) {
+      console.error('🌌 WebGL not compatible with Three.js');
+      logWebGLDiagnostics();
+
+      if (mountRef.current) {
+        mountRef.current.innerHTML = `
+          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0F172A; color: white;">
+            <div style="text-align: center; max-width: 400px; padding: 20px;">
+              <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">⚠️ WebGL Not Compatible</div>
+              <div style="font-size: 14px; color: #9CA3AF; margin-bottom: 8px;">${getWebGLStatusMessage()}</div>
+              <div style="font-size: 12px; color: #6B7280; line-height: 1.4;">
+                Please ensure your browser supports WebGL and hardware acceleration is enabled.
+                <br><br>
+                Try updating your browser or graphics drivers.
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // Log WebGL diagnostics for debugging
+    logWebGLDiagnostics();
 
     // Scene
     const scene = new THREE.Scene();
@@ -100,13 +132,44 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     camera.position.set(0, 0, 500);
     cameraRef.current = camera;
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    mountRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+    // Renderer with error handling
+    try {
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        preserveDrawingBuffer: true
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+      // Clear any existing canvas elements
+      while (mountRef.current.firstChild) {
+        mountRef.current.removeChild(mountRef.current.firstChild);
+      }
+
+      mountRef.current.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
+
+      console.log('🌌 WebGL renderer initialized successfully');
+    } catch (error) {
+      console.error('🌌 Failed to create WebGL renderer:', error);
+      // Fallback: show error message
+      if (mountRef.current) {
+        mountRef.current.innerHTML = `
+          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0F172A; color: white;">
+            <div style="text-align: center;">
+              <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">⚠️ WebGL Not Available</div>
+              <div style="font-size: 14px; color: #9CA3AF;">Your browser or system doesn't support WebGL</div>
+              <div style="font-size: 12px; color: #6B7280; margin-top: 8px;">Please use a modern browser with hardware acceleration enabled</div>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
@@ -135,8 +198,13 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
 
-    // Animation loop
+    // Animation loop with error handling
     const animate = () => {
+      if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
+        console.warn('🌌 Animation stopped: missing renderer, scene, or camera');
+        return;
+      }
+
       animationIdRef.current = requestAnimationFrame(animate);
 
       // Gentle camera rotation when not interacting
@@ -152,7 +220,15 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       // Update physics simulation
       updatePhysics();
 
-      renderer.render(scene, camera);
+      try {
+        renderer.render(scene, camera);
+      } catch (error) {
+        console.error('🌌 Render error:', error);
+        // Stop animation on render error
+        if (animationIdRef.current) {
+          cancelAnimationFrame(animationIdRef.current);
+        }
+      }
     };
 
     animate();
@@ -261,16 +337,18 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
   // Create 3D nodes and edges
   useEffect(() => {
-    console.log('🌐 3D useEffect triggered:', {
+    console.log('🌐 3D nodes/edges effect triggered:', {
       sceneExists: !!sceneRef.current,
+      rendererExists: !!rendererRef.current,
       nodesLength: nodes.length,
       edgesLength: edges.length,
       firstNode: nodes[0]
     });
 
-    if (!sceneRef.current || !nodes.length) {
+    if (!sceneRef.current || !rendererRef.current || !nodes.length) {
       console.log('🌐 Skipping 3D creation:', {
         sceneExists: !!sceneRef.current,
+        rendererExists: !!rendererRef.current,
         nodesLength: nodes.length
       });
       return;
@@ -372,17 +450,37 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
   // Initialize scene
   useEffect(() => {
+    console.log('🌌 Scene initialization effect triggered');
     const cleanup = initScene();
+
     return () => {
+      console.log('🌌 Cleaning up 3D scene');
       if (cleanup) cleanup();
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
+        animationIdRef.current = 0;
       }
-      if (rendererRef.current && mountRef.current) {
-        mountRef.current.removeChild(rendererRef.current.domElement);
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        if (mountRef.current && rendererRef.current.domElement.parentNode === mountRef.current) {
+          mountRef.current.removeChild(rendererRef.current.domElement);
+        }
+        rendererRef.current = null;
+      }
+      if (sceneRef.current) {
+        // Clean up scene objects
+        sceneRef.current.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.geometry.dispose();
+            if (object.material instanceof THREE.Material) {
+              object.material.dispose();
+            }
+          }
+        });
+        sceneRef.current = null;
       }
     };
-  }, [initScene]);
+  }, [width, height]); // Only re-initialize when dimensions change
 
   // Update camera aspect ratio
   useEffect(() => {
@@ -414,6 +512,9 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
             <div className="text-sm text-gray-400">Waiting for graph data...</div>
             <div className="text-xs text-gray-500 mt-2">
               Nodes: {nodes.length} | Edges: {edges.length}
+            </div>
+            <div className="text-xs text-blue-400 mt-2">
+              WebGL Status: {typeof WebGLRenderingContext !== 'undefined' ? '✅ Available' : '❌ Not Available'}
             </div>
           </div>
         </div>
