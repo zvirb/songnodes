@@ -425,22 +425,31 @@ const AppContent: React.FC = () => {
       >
         {/* Canvas rendering with fallback dimensions */}
         {((width && height) || !containerRef) && (
-          is3DMode ? (
-            <ThreeD3Canvas
-              width={width || window.innerWidth}
-              height={height || window.innerHeight}
-              className="absolute inset-0"
-              distancePower={distancePower}
-            />
-          ) : (
-            <WorkingD3Canvas
-              width={width || window.innerWidth}
-              height={height || window.innerHeight}
-              className="absolute inset-0"
-              distancePower={distancePower}
-              relationshipPower={relationshipPower}
-            />
-          )
+          <>
+            {/* Debug info overlay */}
+            <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-50">
+              {is3DMode ? '🌌 3D Mode' : '📊 2D Mode'} | {width}×{height} | Nodes: {nodes.length}
+            </div>
+
+            {is3DMode ? (
+              <ThreeD3Canvas
+                key="3d-canvas" // Force re-mount when switching modes
+                width={width || window.innerWidth}
+                height={height || window.innerHeight}
+                className="absolute inset-0"
+                distancePower={distancePower}
+              />
+            ) : (
+              <WorkingD3Canvas
+                key="2d-canvas" // Force re-mount when switching modes
+                width={width || window.innerWidth}
+                height={height || window.innerHeight}
+                className="absolute inset-0"
+                distancePower={distancePower}
+                relationshipPower={relationshipPower}
+              />
+            )}
+          </>
         )}
 
         {/* Debug info overlay - only show if there's an issue */}
