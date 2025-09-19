@@ -15,7 +15,7 @@ import { useResizeObserver } from '@hooks/useResizeObserver';
 import { useDebouncedCallback } from '@hooks/useDebouncedCallback';
 import { useWebSocketIntegration } from '@hooks/useWebSocketIntegration';
 import { computeRoute } from '@utils/path';
-import { setPathResult } from '@store/pathfindingSlice';
+import { setPathResult, clearPath } from '@store/pathfindingSlice';
 import { useAppSelector as useSelector } from '@store/index';
 // import { Box, Fab, Tooltip } from '@mui/material';
 // import { Palette as PaletteIcon } from '@mui/icons-material';
@@ -187,6 +187,8 @@ const AppContent: React.FC = () => {
   const [showLegendDropdown, setShowLegendDropdown] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [showFunctionsDropdown, setShowFunctionsDropdown] = useState(false);
+  const [showScrapingDropdown, setShowScrapingDropdown] = useState(false);
+  const [showRouteDropdown, setShowRouteDropdown] = useState(false);
   const [scrapeQuery, setScrapeQuery] = useState('');
   const [seeds, setSeeds] = useState<Array<{ title: string; artists: string }>>([]);
   const [distancePower, setDistancePower] = useState(0); // Slider value -5 to 5, used as 10^power
@@ -198,6 +200,8 @@ const AppContent: React.FC = () => {
   const [variantSelections, setVariantSelections] = useState<Record<string, boolean>>({});
   const [importStatus, setImportStatus] = useState<string>('');
   const [routeName, setRouteName] = useState('My New Setlist');
+  const [orchestratorScraping, setOrchestratorScraping] = useState(false);
+  const [orchestratorStatus, setOrchestratorStatus] = useState<string>('');
   const pathfinding = useSelector(s => s.pathfinding);
 
   const importCollection = async (file: File) => {
@@ -300,6 +304,81 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const triggerOrchestratorScraping = async () => {
+    try {
+      setOrchestratorScraping(true);
+      setOrchestratorStatus('Starting orchestrator-led scraping...');
+
+      // Define all available scrapers and their direct URLs for comprehensive scraping
+      const scrapingTasks = [
+        {
+          scraper: '1001tracklists',
+          url: 'https://www.1001tracklists.com/tracklist/2dgqc1y1/tale-of-us-afterlife-presents-tale-of-us-iii-live-from-printworks-london-2024-12-28.html',
+          priority: 'high',
+          max_pages: 5
+        },
+        {
+          scraper: 'mixesdb',
+          url: 'https://www.mixesdb.com/db/index.php/Category:Tech_House',
+          priority: 'high',
+          max_pages: 3
+        }
+      ];
+
+      setOrchestratorStatus(`Submitting ${scrapingTasks.length} comprehensive scraping tasks...`);
+
+      // Submit all tasks to the orchestrator
+      const endpoints = [
+        '/api/v1/scrapers/tasks/submit',
+        'http://localhost:8001/tasks/submit'
+      ];
+
+      const taskPromises = scrapingTasks.map(async (task) => {
+        let lastErr: any = null;
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(task)
+            });
+            if (res.ok) {
+              const result = await res.json();
+              console.log(`✅ ${task.scraper} task submitted:`, result);
+              return { scraper: task.scraper, success: true, result };
+            }
+          } catch (err) {
+            lastErr = err;
+          }
+        }
+        console.error(`❌ ${task.scraper} task failed:`, lastErr);
+        return { scraper: task.scraper, success: false, error: lastErr };
+      });
+
+      const results = await Promise.allSettled(taskPromises);
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+
+      setOrchestratorStatus(`Orchestrator scraping completed: ${successful}/${scrapingTasks.length} tasks started successfully`);
+
+      // Refresh task list to show new tasks
+      setTimeout(() => {
+        fetchScraperTasks();
+      }, 1000);
+
+      console.log('🔄 Orchestrator scraping results:', results);
+
+    } catch (err) {
+      console.error('Orchestrator scraping error:', err);
+      setOrchestratorStatus('❌ Orchestrator scraping failed. Check console for details.');
+    } finally {
+      setOrchestratorScraping(false);
+      // Clear status after 10 seconds
+      setTimeout(() => {
+        setOrchestratorStatus('');
+      }, 10000);
+    }
+  };
+
   const calculateRoute = () => {
     const state = ((store as any).getState ? (store as any).getState() : null) || (window as any).__appState;
     const s = state || ({} as any);
@@ -330,8 +409,95 @@ const AppContent: React.FC = () => {
   const saveRoute = async () => {
     const path = (window as any).computedRoute as string[] | undefined;
     if (!path || !path.length) { alert('Compute a route first.'); return; }
-    const payload = { name: routeName || 'New Setlist', track_ids: path };
-    // Try API first
+
+    // Extract comprehensive track information
+    const enrichedTracks = path.map((trackId, index) => {
+      const node = nodes.find(n => n.id === trackId);
+      if (!node) {
+        return {
+          id: trackId,
+          position: index + 1,
+          title: 'Unknown Track',
+          artist: 'Unknown Artist',
+          error: 'Node data not found'
+        };
+      }
+
+      // Extract all available metadata
+      const trackInfo: any = {
+        id: trackId,
+        position: index + 1,
+        title: node.title || node.metadata?.title || 'Unknown Track',
+        artist: node.artist || node.metadata?.artist || 'Unknown Artist',
+      };
+
+      // Add optional fields if they exist
+      if (node.album || node.metadata?.album) trackInfo.album = node.album || node.metadata?.album;
+      if (node.bpm) trackInfo.bpm = node.bpm;
+      if (node.key) trackInfo.key = node.key;
+      if (node.duration) trackInfo.duration_seconds = node.duration;
+      if (node.genres || node.metadata?.genres) {
+        trackInfo.genres = node.genres || node.metadata?.genres;
+      }
+      if (node.releaseDate) trackInfo.release_date = node.releaseDate;
+      if (node.popularity) trackInfo.popularity = node.popularity;
+      if (node.energy) trackInfo.energy = node.energy;
+      if (node.valence) trackInfo.valence = node.valence;
+
+      // Add audio features if available
+      if (node.audioFeatures) {
+        trackInfo.audio_features = {
+          danceability: node.audioFeatures.danceability,
+          energy: node.audioFeatures.energy,
+          acousticness: node.audioFeatures.acousticness,
+          instrumentalness: node.audioFeatures.instrumentalness,
+          liveness: node.audioFeatures.liveness,
+          loudness: node.audioFeatures.loudness,
+          speechiness: node.audioFeatures.speechiness,
+          tempo: node.audioFeatures.tempo,
+          valence: node.audioFeatures.valence,
+          time_signature: node.audioFeatures.timeSignature
+        };
+      }
+
+      // Add metadata status and any additional fields
+      if (node.metadata?.status) trackInfo.status = node.metadata.status;
+      if (node.metadata) {
+        // Include any additional metadata fields
+        Object.keys(node.metadata).forEach(key => {
+          if (!['title', 'artist', 'album', 'genres', 'status'].includes(key)) {
+            trackInfo[`metadata_${key}`] = node.metadata![key];
+          }
+        });
+      }
+
+      return trackInfo;
+    });
+
+    // Create comprehensive payload with human-readable information
+    const comprehensivePayload = {
+      name: routeName || 'New Setlist',
+      track_ids: path, // Keep original format for API compatibility
+      tracks: enrichedTracks,
+      setlist_info: {
+        total_tracks: path.length,
+        created_at: new Date().toISOString(),
+        total_duration_seconds: enrichedTracks.reduce((sum, track) => sum + (track.duration_seconds || 0), 0),
+        average_bpm: enrichedTracks.filter(t => t.bpm).length > 0
+          ? Math.round(enrichedTracks.filter(t => t.bpm).reduce((sum, t) => sum + (t.bpm || 0), 0) / enrichedTracks.filter(t => t.bpm).length)
+          : null,
+        genres_summary: [...new Set(enrichedTracks.flatMap(t => t.genres || []))].slice(0, 10)
+      },
+      human_readable_tracklist: enrichedTracks.map(track => {
+        let displayText = `${track.position}. ${track.artist} - ${track.title}`;
+        if (track.album) displayText += ` (${track.album})`;
+        if (track.bpm) displayText += ` [${track.bpm} BPM]`;
+        if (track.key) displayText += ` [${track.key}]`;
+        return displayText;
+      })
+    };
+
+    // Try API first with comprehensive data
     try {
       const endpoints = [
         '/api/user-setlists',
@@ -340,21 +506,28 @@ const AppContent: React.FC = () => {
       let ok = false; let resp: any = null;
       for (const ep of endpoints) {
         try {
-          const r = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const r = await fetch(ep, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(comprehensivePayload)
+          });
           if (r.ok) { resp = await r.json(); ok = true; break; }
         } catch (_) {}
       }
       if (ok) {
-        alert(`Setlist saved (id: ${resp.id || 'n/a'})`);
+        alert(`Enhanced setlist saved with full track metadata (id: ${resp.id || 'n/a'})`);
         return;
       }
     } catch (_) { /* fall back to download */ }
-    // Fallback: download JSON
-    const blob = new Blob([JSON.stringify({ ...payload, created_at: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+
+    // Fallback: download comprehensive JSON
+    const blob = new Blob([JSON.stringify(comprehensivePayload, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${(routeName || 'setlist').replace(/[^a-z0-9_-]+/gi,'_')}.json`;
+    a.download = `${(routeName || 'setlist').replace(/[^a-z0-9_-]+/gi,'_')}_comprehensive.json`;
     a.click();
+
+    alert(`Comprehensive setlist downloaded with ${enrichedTracks.length} tracks and full metadata`);
   };
 
   useEffect(() => {
@@ -415,6 +588,7 @@ const AppContent: React.FC = () => {
         'h-screen w-screen relative overflow-hidden',
         theme.isDark ? 'dark bg-gray-900' : 'bg-white'
       )}
+      style={{ paddingTop: '64px' }}
     >
       {/* Full-screen Graph Visualization Container */}
       <div
@@ -474,24 +648,25 @@ const AppContent: React.FC = () => {
         )}
       </div>
 
-      {/* Horizontal Floating Menu Bar - Top Center */}
+      {/* Fixed Horizontal Menu Bar - Top Center */}
       <nav
-        className="fixed top-6 left-1/2 z-[9999] dropdown-container"
+        className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 border-b border-gray-600 shadow-2xl backdrop-blur-sm"
         style={{
-          transform: 'translateX(-50%)',
           position: 'fixed',
-          top: '24px',
-          left: '50%',
-          zIndex: 9999
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          height: '64px'
         }}
       >
         <div
-          className="bg-gray-900 border border-gray-600 rounded-full shadow-2xl backdrop-blur-sm"
+          className="flex items-center justify-center h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
           style={{
             display: 'flex',
-            flexDirection: 'row',
             alignItems: 'center',
-            padding: '16px 32px',
+            justifyContent: 'center',
+            height: '100%',
             gap: '24px',
             minWidth: 'fit-content',
             whiteSpace: 'nowrap'
@@ -530,7 +705,7 @@ const AppContent: React.FC = () => {
                   Overview
                 </button>
                 {showOverviewDropdown && (
-                  <div className="absolute top-12 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-64 p-4 z-[10000]">
+                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-64 p-4 z-[10000] max-h-[80vh] overflow-auto">
                     <h3 className="text-white font-semibold mb-3">Graph Overview</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between text-gray-300">
@@ -651,7 +826,7 @@ const AppContent: React.FC = () => {
                   Legend
                 </button>
                 {showLegendDropdown && (
-                  <div className="absolute top-12 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-48 p-4 z-[10000]">
+                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-48 sm:w-64 p-4 z-[10000] max-h-[80vh] overflow-auto">
                     <h3 className="text-white font-semibold mb-3">Node Types</h3>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
@@ -676,7 +851,7 @@ const AppContent: React.FC = () => {
                   Search
                 </button>
                 {showSearchDropdown && (
-                  <div className="absolute top-12 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-80 p-4 z-[10000]">
+                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-80 sm:w-96 p-4 z-[10000] max-h-[80vh] overflow-auto">
                     <h3 className="text-white font-semibold mb-3">Search Graph</h3>
                     <input
                       type="text"
@@ -696,7 +871,7 @@ const AppContent: React.FC = () => {
                   Functions
                 </button>
                 {showFunctionsDropdown && (
-                  <div className="absolute top-12 right-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-[28rem] p-4 z-[10000]">
+                  <div className="absolute top-16 right-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-[28rem] sm:w-[32rem] p-4 z-[10000] max-h-[80vh] overflow-auto">
                     <h3 className="text-white font-semibold mb-3">Build Graph From Song</h3>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -864,6 +1039,201 @@ const AppContent: React.FC = () => {
                           ))}
                           {(!tasks || tasks.length === 0) && !tasksLoading && <div className="px-2 py-2 text-xs text-gray-500">No tasks</div>}
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Route Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowRouteDropdown(!showRouteDropdown)}
+                  className="text-white hover:text-purple-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Current Route
+                </button>
+                {showRouteDropdown && (
+                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-80 sm:w-96 p-4 z-[10000] max-h-[80vh] overflow-auto">
+                    <h3 className="text-white font-semibold mb-3">Route Navigation</h3>
+                    {pathfinding.currentPath?.nodes?.length ? (
+                      <>
+                        <div className="text-gray-400 text-xs mb-3">
+                          {pathfinding.currentPath.nodes.length} tracks in current route
+                        </div>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {pathfinding.currentPath.nodes.map((nodeId, index) => {
+                            const node = nodes.find(n => n.id === nodeId);
+                            const isFirst = pathfinding.startNode === nodeId;
+                            const isLast = pathfinding.endNode === nodeId;
+                            const isWaypoint = pathfinding.waypoints?.includes(nodeId);
+                            const isPlayed = pathfinding.playedTracks?.includes(nodeId);
+
+                            let bgColor = 'bg-gray-800 hover:bg-gray-700';
+                            let textColor = 'text-gray-300';
+                            let indicator = '';
+
+                            if (isFirst) {
+                              bgColor = 'bg-green-900/30 hover:bg-green-800/30 border border-green-700';
+                              textColor = 'text-green-300';
+                              indicator = '🟢 ';
+                            } else if (isLast) {
+                              bgColor = 'bg-red-900/30 hover:bg-red-800/30 border border-red-700';
+                              textColor = 'text-red-300';
+                              indicator = '🔴 ';
+                            } else if (isPlayed) {
+                              bgColor = 'bg-purple-900/30 hover:bg-purple-800/30 border border-purple-700';
+                              textColor = 'text-purple-300';
+                              indicator = '🟣 ';
+                            } else if (isWaypoint) {
+                              bgColor = 'bg-orange-900/30 hover:bg-orange-800/30 border border-orange-700';
+                              textColor = 'text-orange-300';
+                              indicator = '🟠 ';
+                            } else {
+                              bgColor = 'bg-orange-900/20 hover:bg-orange-800/20 border border-orange-800';
+                              textColor = 'text-orange-300';
+                              indicator = '🟡 ';
+                            }
+
+                            return (
+                              <button
+                                key={nodeId}
+                                onClick={() => {
+                                  // Center the node in the visualization
+                                  const centerEvent = new CustomEvent('centerNode', { detail: nodeId });
+                                  window.dispatchEvent(centerEvent);
+                                  setShowRouteDropdown(false);
+                                }}
+                                className={`w-full text-left p-3 rounded-lg transition-colors ${bgColor} ${textColor}`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm truncate">
+                                      {indicator}{index + 1}. {node?.metadata?.artist || node?.artist || 'Unknown Artist'}
+                                    </div>
+                                    <div className="text-xs opacity-80 truncate">
+                                      {node?.metadata?.title || node?.title || nodeId}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs opacity-60 ml-2">
+                                    {isFirst && 'START'}
+                                    {isLast && 'END'}
+                                    {isWaypoint && !isFirst && !isLast && 'WAYPOINT'}
+                                    {isPlayed && 'PLAYED'}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-gray-700 space-y-2">
+                          <div className="text-xs text-gray-400">
+                            🟢 Start Track | 🔴 End Track | 🟠 Waypoint | 🟣 Played | 🟡 Route Track
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowRouteDropdown(false);
+                              // Clear the route
+                              dispatch(clearPath());
+                            }}
+                            className="w-full px-3 py-2 bg-red-800 hover:bg-red-700 text-red-200 text-sm rounded transition-colors"
+                          >
+                            Clear Current Route
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-gray-400 text-sm text-center py-4">
+                        No route calculated yet. Select start and end tracks to create a route.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Data Scraping */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowScrapingDropdown(!showScrapingDropdown)}
+                  className="text-white hover:text-orange-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Data Scraping
+                </button>
+                {showScrapingDropdown && (
+                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-80 sm:w-96 p-4 z-[10000] max-h-[80vh] overflow-auto">
+                    <h3 className="text-white font-semibold mb-3">Orchestrator-Led Scraping</h3>
+                    <p className="text-gray-400 text-xs mb-4">
+                      Triggers comprehensive data collection from all configured scrapers (1001tracklists, MixesDB).
+                      This runs automatically but can be paused to avoid robots.txt restrictions.
+                    </p>
+
+                    <div className="space-y-3">
+                      <button
+                        onClick={triggerOrchestratorScraping}
+                        disabled={orchestratorScraping}
+                        className={`w-full px-4 py-3 rounded-lg font-medium text-sm transition-colors ${
+                          orchestratorScraping
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            : 'bg-orange-600 hover:bg-orange-700 text-white'
+                        }`}
+                      >
+                        {orchestratorScraping ? '🔄 Scraping in Progress...' : '🚀 Start Comprehensive Scraping'}
+                      </button>
+
+                      {orchestratorStatus && (
+                        <div className={`text-xs p-2 rounded ${
+                          orchestratorStatus.includes('❌')
+                            ? 'bg-red-900/30 text-red-300 border border-red-800'
+                            : 'bg-blue-900/30 text-blue-300 border border-blue-800'
+                        }`}>
+                          {orchestratorStatus}
+                        </div>
+                      )}
+
+                      <div className="mt-4 p-3 border border-gray-800 rounded">
+                        <div className="mb-2 text-white font-semibold text-sm">Live Task Monitor</div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <button
+                            onClick={fetchScraperTasks}
+                            className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-300"
+                          >
+                            Refresh Tasks
+                          </button>
+                          <span className="text-xs text-gray-500">
+                            ({tasks?.length || 0} tasks tracked)
+                          </span>
+                        </div>
+
+                        {tasksLoading && <div className="text-gray-400 text-xs">Loading tasks...</div>}
+                        {tasksError && <div className="text-red-400 text-xs">{tasksError}</div>}
+
+                        <div className="max-h-32 overflow-auto border border-gray-800 rounded text-xs">
+                          {(tasks || []).slice(0, 10).map((t: any) => (
+                            <div key={t.id} className="px-2 py-1 text-gray-300 border-b border-gray-800 last:border-b-0">
+                              <div className="flex justify-between items-center">
+                                <span className="text-orange-400 font-medium">{t.scraper}</span>
+                                <span className={`px-1 rounded text-[10px] ${
+                                  t.status === 'completed' ? 'bg-green-800 text-green-200' :
+                                  t.status === 'running' ? 'bg-blue-800 text-blue-200' :
+                                  t.status === 'failed' ? 'bg-red-800 text-red-200' :
+                                  'bg-gray-700 text-gray-300'
+                                }`}>
+                                  {t.status}
+                                </span>
+                              </div>
+                              <div className="truncate text-gray-500 text-[10px]">{t.url}</div>
+                            </div>
+                          ))}
+                          {(!tasks || tasks.length === 0) && !tasksLoading && (
+                            <div className="px-2 py-2 text-gray-500 text-center">No tasks yet</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-gray-500 leading-relaxed">
+                        <strong>Note:</strong> Orchestrator-led scraping intelligently coordinates all scrapers,
+                        respects rate limits, and automatically handles retries. Tasks are queued and processed
+                        systematically to minimize detection risk.
                       </div>
                     </div>
                   </div>
