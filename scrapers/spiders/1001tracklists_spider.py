@@ -305,19 +305,20 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         return selected_urls
 
     def get_discovery_urls(self) -> list:
-        """Get URLs for discovery mode (popular/recent tracklists)"""
-        return [
-            'https://www.1001tracklists.com/search/result/?searchstring=Swedish+House+Mafia',
-            'https://www.1001tracklists.com/search/result/?searchstring=David+Guetta',
-            'https://www.1001tracklists.com/search/result/?searchstring=Calvin+Harris',
-            'https://www.1001tracklists.com/search/result/?searchstring=Martin+Garrix',
-            'https://www.1001tracklists.com/search/result/?searchstring=Deadmau5',
-            'https://www.1001tracklists.com/search/result/?searchstring=Skrillex',
-            'https://www.1001tracklists.com/search/result/?searchstring=Tiësto',
-            'https://www.1001tracklists.com/search/result/?searchstring=Alesso',
-            'https://www.1001tracklists.com/latest',
-            'https://www.1001tracklists.com/most-popular',
-        ]
+        """Get URLs for discovery mode - using direct tracklist URLs to bypass rate limiting"""
+        # Import the direct URL function
+        try:
+            from .improved_search_strategies import get_direct_tracklist_urls
+            direct_urls = get_direct_tracklist_urls()
+            return [item['url'] for item in direct_urls]
+        except ImportError:
+            # Fallback list of direct tracklist URLs
+            return [
+                'https://www.1001tracklists.com/tracklist/2dgqc1y1/tale-of-us-afterlife-presents-tale-of-us-iii-live-from-printworks-london-2024-12-28.html',
+                'https://www.1001tracklists.com/tracklist/2d4kx5y1/anyma-artbat-tale-of-us-afterlife-presents-tale-of-us-iii-live-from-printworks-london-2024-12-28.html',
+                'https://www.1001tracklists.com/tracklist/2dgqc1y2/fred-again-boiler-room-london-2024-12-20.html',
+                # These direct URLs bypass search page rate limiting
+            ]
 
     def start_requests(self):
         """Generate initial requests with enhanced headers"""
@@ -337,10 +338,16 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             # Add progressive delay for large search lists
             delay = i * 0.5 if i < 20 else 10
 
+            # Determine callback based on URL type
+            if '/tracklist/' in url:
+                callback = self.parse_tracklist  # Direct tracklist URLs
+            else:
+                callback = self.parse_search_results  # Search result pages
+
             yield Request(
                 url=url,
                 headers=headers,
-                callback=self.parse_search_results,
+                callback=callback,
                 errback=self.handle_error,
                 meta={
                     'download_timeout': 30,
