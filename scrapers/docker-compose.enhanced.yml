@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Redis for state management and deduplication
+  redis:
+    image: redis:7-alpine
+    container_name: scrapers-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # PostgreSQL for storing scraped data
+  postgres:
+    image: postgres:15-alpine
+    container_name: scrapers-postgres
+    environment:
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicuser
+      POSTGRES_PASSWORD: musicpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U musicuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Enhanced scrapers container
+  enhanced-scrapers:
+    build:
+      context: .
+      dockerfile: Dockerfile.enhanced
+    container_name: enhanced-scrapers
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=musicdb
+      - POSTGRES_USER=musicuser
+      - POSTGRES_PASSWORD=musicpass
+      - SCRAPY_LOG_LEVEL=INFO
+      # Spider-specific settings
+      - SCRAPER_STATE_PREFIX=scraped:setlists
+      - SCRAPER_SOURCE_TTL_DAYS=30
+      - SCRAPER_RUN_TTL_HOURS=24
+      - SCRAPER_FORCE_RUN=0
+      # Batch settings
+      - TRACKLISTS_URL_BATCH_SIZE=20
+      - MIXESDB_ARTIST_BATCH_SIZE=10
+      - SETLISTFM_ARTIST_BATCH_SIZE=12
+      - REDDIT_SUBREDDIT_BATCH_SIZE=10
+    volumes:
+      - ./spiders:/app/spiders
+      - ./output:/app/output
+      - ./target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json
+    networks:
+      - scraper-net
+    stdin_open: true
+    tty: true
+
+  # Optional: Adminer for database management
+  adminer:
+    image: adminer
+    container_name: scrapers-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - scraper-net
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+networks:
+  scraper-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
