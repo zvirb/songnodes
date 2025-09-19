@@ -305,30 +305,188 @@ async function createServer() {
     });
   });
 
-  // Basic graph data endpoint
+  // Basic graph data endpoint - return prepared visualization data
   app.get('/api/v1/graph', async (request, reply) => {
     try {
-      const query = `
-        SELECT 
-          id,
-          title,
-          artist,
-          genre
-        FROM nodes 
-        WHERE active = true 
+      // Query nodes from viz_nodes table - prioritize nodes that have edges
+      const nodesQuery = `
+        SELECT DISTINCT
+          vn.id,
+          vn.track_id,
+          vn.x_position,
+          vn.y_position,
+          vn.metadata,
+          vn.created_at
+        FROM musicdb.viz_nodes vn
+        INNER JOIN musicdb.viz_edges ve ON (vn.id = ve.source_id OR vn.id = ve.target_id)
+        ORDER BY vn.created_at DESC
         LIMIT 100
       `;
-      
-      const result = await dbPool.query(query);
+
+      // Query edges from viz_edges table
+      const edgesQuery = `
+        SELECT
+          ve.id,
+          ve.source_id,
+          ve.target_id,
+          ve.weight,
+          ve.edge_type,
+          ve.metadata
+        FROM musicdb.viz_edges ve
+        ORDER BY ve.created_at DESC
+        LIMIT 500
+      `;
+
+      const [nodesResult, edgesResult] = await Promise.all([
+        dbPool.query(nodesQuery),
+        dbPool.query(edgesQuery)
+      ]);
+
+      // Transform nodes to expected format
+      const nodes = nodesResult.rows.map(row => ({
+        id: row.id,
+        trackId: row.track_id,
+        title: row.metadata?.title || 'Unknown Track',
+        artist: row.metadata?.artist || 'Unknown Artist',
+        position: {
+          x: row.x_position || Math.random() * 800,
+          y: row.y_position || Math.random() * 600
+        },
+        metadata: row.metadata || {}
+      }));
+
+      // Transform edges to expected format
+      const edges = edgesResult.rows.map(row => ({
+        id: row.id,
+        source_id: row.source_id,
+        target_id: row.target_id,
+        source: row.source_id,
+        target: row.target_id,
+        weight: row.weight || 1.0,
+        type: row.edge_type,
+        metadata: row.metadata || {}
+      }));
+
       reply.send({
-        nodes: result.rows,
-        edges: [], // Simplified for testing
-        count: result.rows.length
+        nodes: nodes,
+        edges: edges,
+        metadata: {
+          total_nodes: nodes.length,
+          total_edges: edges.length,
+          generated_at: new Date().toISOString()
+        }
       });
     } catch (error) {
       console.error('Graph data query failed:', error);
       reply.code(500).send({
         error: 'Failed to fetch graph data',
+        message: error.message
+      });
+    }
+  });
+
+  // Visualization graph endpoint (used by frontend)
+  app.post('/api/v1/visualization/graph', async (request, reply) => {
+    try {
+      const { max_nodes = 100, max_depth = 3, center_node_id, filters = {} } = request.body || {};
+
+      // Build nodes query - prioritize nodes that have edges
+      let nodesQuery = `
+        SELECT DISTINCT
+          vn.id,
+          vn.track_id,
+          vn.x_position,
+          vn.y_position,
+          vn.metadata,
+          vn.created_at
+        FROM musicdb.viz_nodes vn
+        INNER JOIN musicdb.viz_edges ve ON (vn.id = ve.source_id OR vn.id = ve.target_id)
+      `;
+
+      let nodesParams = [];
+
+      // Add center node filter if specified
+      if (center_node_id) {
+        nodesQuery += ` WHERE vn.id = $1`;
+        nodesParams.push(center_node_id);
+      }
+
+      nodesQuery += ` ORDER BY vn.created_at DESC LIMIT $${nodesParams.length + 1}`;
+      nodesParams.push(max_nodes);
+
+      // Build edges query - get edges related to the selected nodes
+      let edgesQuery = `
+        SELECT
+          ve.id,
+          ve.source_id,
+          ve.target_id,
+          ve.weight,
+          ve.edge_type,
+          ve.metadata
+        FROM musicdb.viz_edges ve
+      `;
+
+      let edgesParams = [];
+
+      // If we have a center node, focus on edges connected to those nodes
+      if (center_node_id) {
+        edgesQuery += ` WHERE ve.source_id = $1 OR ve.target_id = $1`;
+        edgesParams.push(center_node_id);
+      }
+
+      edgesQuery += ` ORDER BY ve.weight DESC LIMIT 500`;
+
+      // Execute both queries in parallel
+      const [nodesResult, edgesResult] = await Promise.all([
+        dbPool.query(nodesQuery, nodesParams),
+        dbPool.query(edgesQuery, edgesParams)
+      ]);
+
+      // Transform nodes to expected format
+      const nodes = nodesResult.rows.map(row => ({
+        id: row.id,
+        trackId: row.track_id,
+        title: row.metadata?.title || 'Unknown Track',
+        artist: row.metadata?.artist || 'Unknown Artist',
+        position: {
+          x: row.x_position || Math.random() * 800,
+          y: row.y_position || Math.random() * 600
+        },
+        metadata: row.metadata || {}
+      }));
+
+      // Create a set of node IDs for edge filtering
+      const nodeIds = new Set(nodes.map(n => n.id));
+
+      // Transform and filter edges to only include those between our nodes
+      const edges = edgesResult.rows
+        .filter(row => nodeIds.has(row.source_id) && nodeIds.has(row.target_id))
+        .map(row => ({
+          id: row.id,
+          source_id: row.source_id,
+          target_id: row.target_id,
+          source: row.source_id,
+          target: row.target_id,
+          weight: row.weight || 1.0,
+          type: row.edge_type,
+          metadata: row.metadata || {}
+        }));
+
+      reply.send({
+        nodes: nodes,
+        edges: edges,
+        metadata: {
+          total_nodes: nodes.length,
+          total_edges: edges.length,
+          center_node: center_node_id,
+          max_depth: max_depth,
+          generated_at: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Visualization graph query failed:', error);
+      reply.code(500).send({
+        error: 'Failed to fetch visualization graph data',
         message: error.message
       });
     }

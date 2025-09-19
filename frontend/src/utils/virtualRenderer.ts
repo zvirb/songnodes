@@ -3,8 +3,8 @@
  * Optimizes rendering performance for large graphs through viewport culling and LOD
  */
 
-import { NodeVisual, EdgeVisual } from '@types/graph';
-import { PooledNode, PooledEdge, globalMemoryManager } from './memoryManagement';
+import type { NodeVisual, EdgeVisual } from '../types/graph';
+import { globalMemoryManager } from './memoryManagement';
 
 export interface ViewportBounds {
   x: number;

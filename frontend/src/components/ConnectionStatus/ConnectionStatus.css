@@ -1,0 +1,282 @@
+/**
+ * Connection Status Component Styles
+ */
+
+.connection-status {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 120px;
+  transition: all 0.3s ease;
+}
+
+/* Position variants */
+.connection-status-top-left {
+  top: 16px;
+  left: 16px;
+}
+
+.connection-status-top-right {
+  top: 16px;
+  right: 16px;
+}
+
+.connection-status-bottom-left {
+  bottom: 16px;
+  left: 16px;
+}
+
+.connection-status-bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+/* Status header */
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.status-icon {
+  font-size: 14px;
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+}
+
+.status-text {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Status colors */
+.status-excellent {
+  border-color: #10b981;
+}
+
+.status-excellent .status-icon {
+  color: #10b981;
+  animation: pulse-green 2s infinite;
+}
+
+.status-good {
+  border-color: #f59e0b;
+}
+
+.status-good .status-icon {
+  color: #f59e0b;
+}
+
+.status-poor {
+  border-color: #ef4444;
+}
+
+.status-poor .status-icon {
+  color: #ef4444;
+  animation: pulse-red 1s infinite;
+}
+
+.status-connecting {
+  border-color: #3b82f6;
+}
+
+.status-connecting .status-icon {
+  color: #3b82f6;
+  animation: spin 1s linear infinite;
+}
+
+.status-disconnected {
+  border-color: #6b7280;
+}
+
+.status-disconnected .status-icon {
+  color: #6b7280;
+}
+
+.status-unknown {
+  border-color: #9ca3af;
+}
+
+.status-unknown .status-icon {
+  color: #9ca3af;
+}
+
+/* Details section */
+.status-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  gap: 8px;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  color: #9ca3af;
+  min-width: 60px;
+}
+
+.detail-value {
+  color: #e5e7eb;
+  font-weight: 500;
+  text-align: right;
+}
+
+.detail-row.error .detail-value {
+  color: #fca5a5;
+}
+
+/* Compact variant */
+.connection-status-compact {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.connection-status-compact .status-icon {
+  font-size: 10px;
+  width: auto;
+}
+
+/* Animations */
+@keyframes pulse-green {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hover effects */
+.connection-status:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.connection-status-compact:hover {
+  transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .connection-status {
+    font-size: 11px;
+    padding: 6px 10px;
+    min-width: 100px;
+  }
+
+  .connection-status-top-left,
+  .connection-status-top-right {
+    top: 12px;
+  }
+
+  .connection-status-top-left,
+  .connection-status-bottom-left {
+    left: 12px;
+  }
+
+  .connection-status-top-right,
+  .connection-status-bottom-right {
+    right: 12px;
+  }
+
+  .connection-status-bottom-left,
+  .connection-status-bottom-right {
+    bottom: 12px;
+  }
+
+  .status-details {
+    font-size: 9px;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: light) {
+  .connection-status {
+    background: rgba(255, 255, 255, 0.95);
+    color: #374151;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .detail-label {
+    color: #6b7280;
+  }
+
+  .detail-value {
+    color: #374151;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .connection-status {
+    background: black;
+    border-width: 2px;
+  }
+
+  .status-excellent {
+    border-color: lime;
+  }
+
+  .status-good {
+    border-color: yellow;
+  }
+
+  .status-poor,
+  .detail-row.error .detail-value {
+    border-color: red;
+    color: red;
+  }
+
+  .status-connecting {
+    border-color: cyan;
+  }
+}

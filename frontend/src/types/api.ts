@@ -151,16 +151,18 @@ export interface SearchResponse {
   results: Array<{
     id: string;
     title: string;
-    artist: string;
-    score: number;
+    type: string;
+    description: string;
+    metadata: Record<string, any>;
+    score?: number;
     highlights?: Record<string, string>;
   }>;
   total: number;
-  totalResults?: number; // For backward compatibility
+  hasMore: boolean;
   limit: number;
   offset: number;
   query: string;
-  suggestions: string[];
+  suggestions?: string[];
   facets?: Record<string, Array<{ value: string; count: number }>>;
   status?: string;
 }

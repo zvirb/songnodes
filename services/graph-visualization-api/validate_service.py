@@ -63,7 +63,7 @@ class ServiceValidator:
             }
 
     async def validate_graph_query_endpoint(self) -> Dict[str, Any]:
-        """Validate graph query endpoint with sample data."""
+        """Validate graph query endpoint against existing data."""
         query_data = {
             "center_node_id": None,  # Query all nodes
             "max_depth": 3,

@@ -1,2 +1,35 @@
-Scrapy>=2.5.0
-requests>=2.25.0
+# Core Scrapy framework
+scrapy>=2.11.0
+
+# Database
+psycopg2-binary>=2.9.9
+SQLAlchemy>=2.0.23
+
+# Redis for state management
+redis>=5.0.1
+
+# HTTP and networking
+requests>=2.31.0
+urllib3>=2.1.0
+
+# Data processing
+beautifulsoup4>=4.12.2
+lxml>=4.9.3
+
+# JSON and data validation
+jsonschema>=4.20.0
+pydantic>=2.5.2
+
+# Utilities
+python-dotenv>=1.0.0
+python-dateutil>=2.8.2
+
+# Logging and monitoring
+loguru>=0.7.2
+
+# Reddit API
+praw>=7.7.1
+
+# Testing (optional)
+pytest>=7.4.3
+pytest-asyncio>=0.21.1

@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+import authReducer from './authSlice';
 import graphReducer from './graphSlice';
 import uiReducer from './uiSlice';
 import performanceReducer from './performanceSlice';
@@ -8,9 +9,11 @@ import filtersReducer from './filtersSlice';
 import pathfindingReducer from './pathfindingSlice';
 import collaborationReducer from './collaborationSlice';
 import settingsReducer from './settingsSlice';
+import websocketReducer from './websocketSlice';
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
     graph: graphReducer,
     ui: uiReducer,
     performance: performanceReducer,
@@ -19,6 +22,7 @@ export const store = configureStore({
     pathfinding: pathfindingReducer,
     collaboration: collaborationReducer,
     settings: settingsReducer,
+    websocket: websocketReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

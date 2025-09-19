@@ -5,6 +5,7 @@ Handles data normalization, cleaning, and format conversion for music track data
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timedelta
@@ -46,6 +47,15 @@ app = FastAPI(
     title="Data Transformer Service",
     description="Transforms and normalizes music track data",
     version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for non-security-conscious app
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Redis connection
@@ -210,7 +220,11 @@ class DataNormalizer:
             
             # Clean and normalize fields
             title = self._clean_title(track_data.title or "Unknown Title")
-            artist = self._clean_artist(track_data.artist or "Unknown Artist")
+            artist = self._clean_artist(track_data.artist)
+
+            # Skip tracks without valid artists
+            if not artist:
+                continue
             album = self._clean_text(track_data.album) if track_data.album else None
             genre = self._normalize_genre(track_data.genre) if track_data.genre else None
             label = self._clean_text(track_data.label) if track_data.label else None
@@ -270,10 +284,13 @@ class DataNormalizer:
     
     def _clean_artist(self, artist: str) -> str:
         """Clean artist name"""
+        if not artist:
+            return None
         cleaned = artist
         for pattern, replacement in self.artist_cleaners:
             cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
-        return cleaned.strip() or "Unknown Artist"
+        cleaned = cleaned.strip()
+        return cleaned if cleaned else None
     
     def _clean_text(self, text: str) -> str:
         """Generic text cleaning"""

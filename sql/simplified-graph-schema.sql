@@ -84,33 +84,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Insert some sample data
-INSERT INTO nodes (track_id, x_position, y_position, metadata) 
-SELECT 
-    t.id,
-    RANDOM() * 1000 - 500,  -- X position between -500 and 500
-    RANDOM() * 1000 - 500,  -- Y position between -500 and 500
-    jsonb_build_object(
-        'genre', t.genre,
-        'title', t.title,
-        'sample_node', true
-    )
-FROM tracks t 
-LIMIT 100
-ON CONFLICT (track_id) DO NOTHING;
-
--- Insert sample edges (connecting random nodes)
-INSERT INTO edges (source_id, target_id, weight, edge_type)
-SELECT 
-    n1.id as source_id,
-    n2.id as target_id,
-    RANDOM() as weight,
-    'similarity' as edge_type
-FROM nodes n1
-CROSS JOIN nodes n2
-WHERE n1.id != n2.id
-AND RANDOM() < 0.05  -- 5% chance of connection
-LIMIT 200
-ON CONFLICT (source_id, target_id, edge_type) DO NOTHING;
-
 COMMIT;

@@ -5,6 +5,7 @@ Handles data quality validation, schema validation, and duplicate detection
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator, ValidationError
 from typing import List, Optional, Dict, Any, Union, Set
 from datetime import datetime, timedelta
@@ -40,6 +41,15 @@ app = FastAPI(
     title="Data Validator Service",
     description="Validates data quality and schema compliance for music track data",
     version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for non-security-conscious app
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Redis connection
