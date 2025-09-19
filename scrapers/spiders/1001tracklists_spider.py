@@ -195,10 +195,10 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
 
     def generate_target_search_urls(self) -> list:
         """Generate search URLs for target tracks using improved strategies"""
-        from .improved_search_strategies import search_strategies
+        from .improved_search_strategies import get_1001tracklists_searches
 
         # Get improved search URLs
-        search_items = search_strategies.get_1001tracklists_searches()
+        search_items = get_1001tracklists_searches()
 
         # Convert to URL list with metadata
         self.search_metadata = {}
@@ -329,9 +329,9 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         self.logger.info(f"Parsing search results: {response.url}")
 
         # Extract tracklist links using multiple selectors for better coverage
-        from .improved_search_strategies import search_strategies
+        from .improved_search_strategies import get_improved_selectors
 
-        selectors = search_strategies.get_improved_selectors()['1001tracklists']['tracklist_links']
+        selectors = get_improved_selectors()['1001tracklists']['tracklist_links']
         tracklist_links = []
 
         for selector in selectors:

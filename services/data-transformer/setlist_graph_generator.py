@@ -233,6 +233,11 @@ class SetlistGraphGenerator:
         nodes = []
 
         for track in track_sequences:
+            # Skip tracks without valid artists
+            primary_artist = track.get('primary_artist')
+            if not primary_artist or primary_artist.strip() == '':
+                continue
+
             # Generate unique node ID based on track
             node_id = str(track['track_id'])
 
@@ -249,7 +254,7 @@ class SetlistGraphGenerator:
                 'label': track['track_title'][:30] + ('...' if len(track['track_title']) > 30 else ''),
                 'type': node_type,
                 'title': track['track_title'],  # Full title
-                'artist': track.get('primary_artist', 'Unknown Artist'),
+                'artist': primary_artist,
                 'metadata': {
                     'track_id': str(track['track_id']),
                     'normalized_title': track['normalized_title'],

@@ -34,12 +34,28 @@ services:
 
   # Reduce replicas for development
   data-transformer:
+    ports:
+      - "8002:8002"
     deploy:
       replicas: 1
 
   scraper-1001tracklists:
+    ports:
+      - "8011:8011"
     deploy:
       replicas: 1
+
+  scraper-mixesdb:
+    ports:
+      - "8012:8012"
+
+  scraper-setlistfm:
+    ports:
+      - "8013:8013"
+
+  scraper-reddit:
+    ports:
+      - "8014:8014"
 
   # Enable more verbose logging in development
   enhanced-visualization-service:

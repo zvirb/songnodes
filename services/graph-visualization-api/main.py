@@ -360,19 +360,20 @@ async def search_tracks(
                 if fields is None:
                     fields = ["title", "artist", "album", "genres"]
                 
-                # Simple search query with basic ILIKE matching
+                # Simple search query with basic ILIKE matching (exclude tracks without artists)
                 search_query = text("""
-                    SELECT 
+                    SELECT
                         t.id,
                         t.title,
-                        COALESCE(a.name, 'Unknown Artist') as artist,
+                        a.name as artist,
                         1.0 as relevance_score,
                         COUNT(*) OVER() as total_count
                     FROM musicdb.tracks t
-                    LEFT JOIN musicdb.track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                    LEFT JOIN musicdb.artists a ON ta.artist_id = a.id
-                    WHERE (t.title ILIKE :query OR t.normalized_title ILIKE :query 
+                    JOIN musicdb.track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                    JOIN musicdb.artists a ON ta.artist_id = a.id
+                    WHERE (t.title ILIKE :query OR t.normalized_title ILIKE :query
                            OR a.name ILIKE :query OR a.normalized_name ILIKE :query)
+                        AND a.name IS NOT NULL AND a.name != ''
                     ORDER BY t.title
                     LIMIT :limit OFFSET :offset
                 """)

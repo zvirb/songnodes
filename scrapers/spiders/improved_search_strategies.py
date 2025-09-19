@@ -52,3 +52,29 @@ def get_reddit_searches() -> List[Dict[str, str]]:
         {"url": "https://www.reddit.com/r/electronicmusic/new/.json", "type": "subreddit", "target": "electronicmusic"},
         {"url": "https://www.reddit.com/r/Techno/new/.json", "type": "subreddit", "target": "Techno"},
     ]
+
+
+def get_improved_selectors() -> Dict:
+    """Return improved CSS selectors for different platforms."""
+    return {
+        "1001tracklists": {
+            "tracklist_links": [
+                "table.table-borderless.table-striped.table-sm a[href*='/tracklist/']",
+                "div.row a[href*='/tracklist/']",
+                ".list-group a[href*='/tracklist/']",
+                "a[href*='/tracklist/']"
+            ],
+            "track_info": [
+                ".track-row",
+                ".tracklist-track",
+                "tr.track"
+            ]
+        },
+        "mixesdb": {
+            "tracklist_links": [
+                "a[href*='Category:']",
+                ".mw-category-group a",
+                "#mw-content-text a"
+            ]
+        }
+    }

@@ -187,7 +187,8 @@ class MixesdbSpider(scrapy.Spider):
         base_url = "https://www.mixesdb.com/db/index.php"
 
         # Get improved searches from strategy module
-        search_items = search_strategies.get_mixesdb_searches()
+        from .improved_search_strategies import get_mixesdb_searches
+        search_items = get_mixesdb_searches()
 
         for item in search_items:
             search_urls.append(item['url'])
@@ -548,11 +549,9 @@ class MixesdbSpider(scrapy.Spider):
                 # Parse track information
                 parsed_track = parse_track_string(track_string)
 
-                # Handle unknown tracks
-                if parsed_track['track_name'].lower() in ['id', '?', 'unknown']:
-                    parsed_track['track_name'] = "Unknown Track"
-                    if not parsed_track['primary_artists']:
-                        parsed_track['primary_artists'] = ["Unknown Artist"]
+                # Skip unknown tracks instead of creating "Unknown Artist" entries
+                if parsed_track['track_name'].lower() in ['id', '?', 'unknown'] or not parsed_track['primary_artists']:
+                    continue
 
                 # Extract timing information
                 start_time = self.extract_start_time_from_string(track_string)

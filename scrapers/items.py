@@ -291,3 +291,33 @@ class TargetTrackSearchItem(scrapy.Item):
     # System fields
     created_at = scrapy.Field()
     data_source = scrapy.Field()
+
+
+# Legacy item classes for backward compatibility with old spiders
+class SetlistItem(scrapy.Item):
+    event_id = scrapy.Field()
+    artist_name = scrapy.Field()
+    venue_name = scrapy.Field()
+    event_date = scrapy.Field()
+    source_url = scrapy.Field()
+
+class TrackItem(scrapy.Item):
+    track_id = scrapy.Field()
+    track_name = scrapy.Field()
+    track_url = scrapy.Field()
+    source_platform = scrapy.Field()
+
+class TrackArtistItem(scrapy.Item):
+    track_id = scrapy.Field()
+    artist_id = scrapy.Field()
+    role = scrapy.Field()
+
+class SetlistTrackItem(scrapy.Item):
+    setlist_id = scrapy.Field()
+    track_id = scrapy.Field()
+    position = scrapy.Field()
+
+class PlaylistTrackItem(scrapy.Item):
+    playlist_id = scrapy.Field()
+    track_id = scrapy.Field()
+    position = scrapy.Field()

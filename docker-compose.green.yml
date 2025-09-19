@@ -12,10 +12,9 @@ services:
       args:
         - NODE_ENV=production
         - VITE_FILTER_PIXI_DEPRECATIONS=true
-    container_name: songnodes-frontend-green
     restart: unless-stopped
-    ports:
-      - "3000:80"  # Green environment port mapped to internal nginx
+    expose:
+      - "80"
     environment:
       - NODE_ENV=production
     networks:
@@ -42,10 +41,9 @@ services:
     build:
       context: ./services/api-gateway
       dockerfile: Dockerfile
-    container_name: songnodes-backend-api-green
     restart: unless-stopped
-    ports:
-      - "8000:8000"  # Green environment port
+    expose:
+      - "8000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_prod_secure_2024_v1}@postgres-green:5432/musicdb
@@ -87,10 +85,9 @@ services:
     build:
       context: ./services/websocket
       dockerfile: Dockerfile
-    container_name: songnodes-websocket-green
     restart: unless-stopped
-    ports:
-      - "8001:8001"  # Green environment port
+    expose:
+      - "8001"
     environment:
       - NODE_ENV=production
       - REDIS_URL=redis://redis-green:6379
@@ -120,10 +117,9 @@ services:
     build:
       context: ./services/graph-visualization-api
       dockerfile: Dockerfile
-    container_name: songnodes-graph-api-green
     restart: unless-stopped
-    ports:
-      - "8084:8084"  # Green environment port
+    expose:
+      - "8084"
     environment:
       - DATABASE_URL=postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_prod_secure_2024_v1}@postgres-green:5432/musicdb
       - REDIS_URL=redis://redis-green:6379
