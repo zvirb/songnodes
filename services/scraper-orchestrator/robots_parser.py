@@ -162,9 +162,9 @@ class RobotsChecker:
 
     def _parse_robots_txt(self, content: str) -> RobotRules:
         """Parse robots.txt content"""
-        rules = RobotRules()
-        applies_to_us = False
-        current_user_agent = None
+        # Parse all user agent blocks and find the most specific match
+        user_agent_blocks = []
+        current_block = None
 
         for line in content.split('\n'):
             line = line.strip()
@@ -182,26 +182,37 @@ class RobotsChecker:
                 directive = directive.strip().lower()
                 value = value.strip()
 
-                # User-agent directive
+                # User-agent directive starts a new block
                 if directive == 'user-agent':
-                    current_user_agent = value.lower()
-                    # Check if rules apply to our bot
-                    if current_user_agent == '*' or self.user_agent.lower() in current_user_agent:
-                        applies_to_us = True
-                    else:
-                        applies_to_us = False
+                    if current_block is not None:
+                        user_agent_blocks.append(current_block)
 
-                # Only process rules that apply to us
-                if applies_to_us:
-                    if directive == 'disallow':
-                        if value:
-                            rules.disallowed_paths.add(value)
-                    elif directive == 'allow':
-                        if value:
-                            rules.allowed_paths.add(value)
+                    current_block = {
+                        'user_agent': value.lower(),
+                        'disallowed_paths': set(),
+                        'allowed_paths': set(),
+                        'crawl_delay': None,
+                        'request_rate': None,
+                        'specificity': 0
+                    }
+
+                    # Calculate specificity: exact match > specific bot > wildcard
+                    if value.lower() == self.user_agent.lower():
+                        current_block['specificity'] = 100
+                    elif "songnode" in value.lower() and value.lower() != '*':
+                        current_block['specificity'] = 50
+                    elif value.lower() == '*':
+                        current_block['specificity'] = 1
+
+                elif current_block is not None:
+                    # Add directive to current block
+                    if directive == 'disallow' and value:
+                        current_block['disallowed_paths'].add(value)
+                    elif directive == 'allow' and value:
+                        current_block['allowed_paths'].add(value)
                     elif directive == 'crawl-delay':
                         try:
-                            rules.crawl_delay = float(value)
+                            current_block['crawl_delay'] = float(value)
                         except ValueError:
                             pass
                     elif directive == 'request-rate':
@@ -209,11 +220,40 @@ class RobotsChecker:
                         if '/' in value:
                             try:
                                 requests, seconds = value.split('/')
-                                rules.request_rate = (int(requests), int(seconds))
+                                current_block['request_rate'] = (int(requests), int(seconds))
                             except ValueError:
                                 pass
 
-                # Global directives (apply to all user agents)
+        # Add final block
+        if current_block is not None:
+            user_agent_blocks.append(current_block)
+
+        # Find the most specific applicable block
+        applicable_blocks = [block for block in user_agent_blocks if block['specificity'] > 0]
+
+        if not applicable_blocks:
+            # No applicable rules, everything allowed
+            return RobotRules()
+
+        # Use the most specific block
+        best_block = max(applicable_blocks, key=lambda x: x['specificity'])
+
+        # Build rules from the best block
+        rules = RobotRules()
+        rules.disallowed_paths = best_block['disallowed_paths']
+        rules.allowed_paths = best_block['allowed_paths']
+        rules.crawl_delay = best_block['crawl_delay']
+        rules.request_rate = best_block['request_rate']
+
+        # Add global sitemaps from all blocks
+        for line in content.split('\n'):
+            line = line.strip()
+            if '#' in line:
+                line = line[:line.index('#')].strip()
+            if ':' in line:
+                directive, value = line.split(':', 1)
+                directive = directive.strip().lower()
+                value = value.strip()
                 if directive == 'sitemap':
                     rules.sitemap_urls.append(value)
 
