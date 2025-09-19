@@ -50,18 +50,20 @@ RUN apk add --no-cache \
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY vite.config.ts ./
+COPY vite.config.production.ts ./
 COPY tailwind.config.js ./
 
 # Install all dependencies including devDependencies for build
-RUN npm ci --silent --no-audit --legacy-peer-deps
+# Must explicitly set NODE_ENV or use --include=dev to install devDependencies
+RUN NODE_ENV=development npm ci --no-audit --legacy-peer-deps
 
 # Copy source code
 COPY src/ ./src/
 COPY public/ ./public/
 COPY index.html ./
 
-# Build the application
-RUN npx vite build --mode production
+# Build the application using production config without PWA
+RUN npx vite build --config vite.config.production.ts --mode production
 
 # Stage 2: Production server
 FROM nginx:alpine AS production
@@ -86,7 +88,7 @@ server {
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate auth;
+    gzip_proxied any;
     gzip_types
         text/plain
         text/css
@@ -102,51 +104,16 @@ server {
         root /usr/share/nginx/html;
         index index.html index.htm;
         try_files \$uri \$uri/ /index.html;
-        
+
         # Cache static assets
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
         }
     }
-    
-    # API proxy configuration
-    location /api/ {
-        proxy_pass http://graph-visualization-api:8084/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-        proxy_connect_timeout 30s;
-        proxy_read_timeout 30s;
-        proxy_send_timeout 30s;
-    }
-    
-    # Health check endpoint
-    location /health {
-        proxy_pass http://graph-visualization-api:8084/health;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_connect_timeout 5s;
-        proxy_read_timeout 5s;
-        proxy_send_timeout 5s;
-    }
-    
-    # WebSocket proxy
-    location /ws {
-        proxy_pass http://graph-visualization-api:8084/ws;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "Upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
+
+    # Production frontend serves only static files
+    # All API and WebSocket traffic is handled by the nginx load balancer
     
     # Error pages
     error_page 404 /index.html;
@@ -160,11 +127,7 @@ EOF
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
-
-# Set permissions
+# nginx user already exists in nginx:alpine, just set permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /etc/nginx/conf.d
@@ -176,8 +139,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 80
 
-# Use non-root user
-USER nginx
+# Run as root (nginx manages its own privileges)
+# USER nginx - commented out to avoid permission issues
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
