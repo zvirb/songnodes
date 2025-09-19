@@ -8,17 +8,27 @@ interface PathfindingState {
   pathOptions: PathFindingOptions;
   progress: number;
   error: string | null;
-  
+
   // UI state
   isPathModeActive: boolean;
   startNode: string | null;
   endNode: string | null;
   waypoints: string[];
-  
+
+  // Track played songs
+  playedTracks: string[];
+
+  // Undo history for last action
+  lastAction: {
+    type: 'setStart' | 'setEnd' | 'addWaypoint' | null;
+    previousValue: string | null;
+    nodeId: string | null;
+  } | null;
+
   // Multiple paths
   alternativePaths: PathResult[];
   selectedPathIndex: number;
-  
+
   // Path analysis
   pathMetrics: {
     totalDistance: number;
@@ -44,15 +54,18 @@ const initialState: PathfindingState = {
   },
   progress: 0,
   error: null,
-  
+
   isPathModeActive: false,
   startNode: null,
   endNode: null,
   waypoints: [],
-  
+
+  playedTracks: [],
+  lastAction: null,
+
   alternativePaths: [],
   selectedPathIndex: 0,
-  
+
   pathMetrics: null,
 };
 
@@ -112,16 +125,65 @@ const pathfindingSlice = createSlice({
     },
     
     setStartNode: (state, action: PayloadAction<string | null>) => {
+      // If there are played tracks, prevent changing the first one
+      if (state.playedTracks.length > 0 && action.payload !== state.startNode) {
+        state.error = 'Cannot change start track after tracks have been played';
+        return;
+      }
+
+      // Store undo information
+      state.lastAction = {
+        type: 'setStart',
+        previousValue: state.startNode,
+        nodeId: action.payload
+      };
+
       state.startNode = action.payload;
+      state.error = null;
     },
-    
+
     setEndNode: (state, action: PayloadAction<string | null>) => {
+      const previousEnd = state.endNode;
+
+      // Store undo information
+      state.lastAction = {
+        type: 'setEnd',
+        previousValue: previousEnd,
+        nodeId: action.payload
+      };
+
+      // If there was a previous end node, convert it to a waypoint
+      if (previousEnd && action.payload && previousEnd !== action.payload) {
+        if (!state.waypoints.includes(previousEnd)) {
+          state.waypoints.push(previousEnd);
+        }
+      }
+
       state.endNode = action.payload;
+      state.error = null;
     },
-    
+
     addWaypoint: (state, action: PayloadAction<string>) => {
       if (!state.waypoints.includes(action.payload)) {
-        state.waypoints.push(action.payload);
+        // Find the position to insert the waypoint
+        // It should come after all played tracks
+        const lastPlayedIndex = state.playedTracks.length > 0
+          ? state.waypoints.findIndex(wp => state.playedTracks.includes(wp))
+          : -1;
+
+        // Store undo information
+        state.lastAction = {
+          type: 'addWaypoint',
+          previousValue: null,
+          nodeId: action.payload
+        };
+
+        // Insert after last played track or at the beginning if no played tracks
+        if (lastPlayedIndex >= 0) {
+          state.waypoints.splice(lastPlayedIndex + 1, 0, action.payload);
+        } else {
+          state.waypoints.push(action.payload);
+        }
       }
     },
     
@@ -173,6 +235,49 @@ const pathfindingSlice = createSlice({
         state.currentPath = path;
       }
     },
+
+    // Undo last pathfinding action
+    undoLastAction: (state) => {
+      if (!state.lastAction) return;
+
+      switch (state.lastAction.type) {
+        case 'setStart':
+          state.startNode = state.lastAction.previousValue;
+          break;
+        case 'setEnd':
+          // Restore previous end node
+          const currentEnd = state.endNode;
+          state.endNode = state.lastAction.previousValue;
+          // Remove current end from waypoints if it was added there
+          if (currentEnd) {
+            state.waypoints = state.waypoints.filter(id => id !== currentEnd);
+          }
+          break;
+        case 'addWaypoint':
+          // Remove the added waypoint
+          if (state.lastAction.nodeId) {
+            state.waypoints = state.waypoints.filter(id => id !== state.lastAction.nodeId);
+          }
+          break;
+      }
+
+      state.lastAction = null;
+    },
+
+    // Track played songs
+    setPlayedTracks: (state, action: PayloadAction<string[]>) => {
+      state.playedTracks = action.payload;
+    },
+
+    addPlayedTrack: (state, action: PayloadAction<string>) => {
+      if (!state.playedTracks.includes(action.payload)) {
+        state.playedTracks.push(action.payload);
+      }
+    },
+
+    clearPlayedTracks: (state) => {
+      state.playedTracks = [];
+    },
   },
 });
 
@@ -196,6 +301,10 @@ export const {
   setPathMetrics,
   clearPathHistory,
   restorePathFromHistory,
+  undoLastAction,
+  setPlayedTracks,
+  addPlayedTrack,
+  clearPlayedTracks,
 } = pathfindingSlice.actions;
 
 export default pathfindingSlice.reducer;

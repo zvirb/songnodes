@@ -52,19 +52,43 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
     randomize_download_delay = 0.5
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 2.0,
-        'RANDOMIZE_DOWNLOAD_DELAY': 0.5,
+        # Anti-detection settings
+        'USER_AGENT': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'ROBOTSTXT_OBEY': False,
+        'COOKIES_ENABLED': True,
+        # Conservative request settings to avoid rate limiting
+        'DOWNLOAD_DELAY': 15.0,
+        'RANDOMIZE_DOWNLOAD_DELAY': 0.8,
         'CONCURRENT_REQUESTS': 1,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+        # AutoThrottle for dynamic delay adjustment
         'AUTOTHROTTLE_ENABLED': True,
-        'AUTOTHROTTLE_START_DELAY': 3,
-        'AUTOTHROTTLE_MAX_DELAY': 15,
+        'AUTOTHROTTLE_START_DELAY': 20,
+        'AUTOTHROTTLE_MAX_DELAY': 120,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.3,
+        'AUTOTHROTTLE_DEBUG': True,
+        # Retry settings with rate limiting codes
         'RETRY_TIMES': 5,
         'RETRY_HTTP_CODES': [500, 502, 503, 504, 522, 524, 408, 429, 403],
-        'ITEM_PIPELINES': {
-            'scrapers.database_pipeline.EnhancedMusicDatabasePipeline': 300,
-        }
+        # Realistic headers
+        'DEFAULT_REQUEST_HEADERS': {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Linux"'
+        },
+        # 'ITEM_PIPELINES': {
+        #     'database_pipeline.EnhancedMusicDatabasePipeline': 300,
+        # }
     }
 
     def __init__(self, search_mode='targeted', *args, **kwargs):
