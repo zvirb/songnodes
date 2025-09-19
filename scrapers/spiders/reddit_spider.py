@@ -42,8 +42,8 @@ class RedditSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
 
         # Load search strategies
-        from .improved_search_strategies import search_strategies
-        self.search_items = search_strategies.get_reddit_searches()
+        from .improved_search_strategies import get_reddit_searches
+        self.search_items = get_reddit_searches()
 
         # Generate start URLs
         self.start_urls = self.generate_reddit_urls()

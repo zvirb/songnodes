@@ -1,0 +1,342 @@
+# ================================================
+# SONGNODES REPLICA-READY DOCKER COMPOSE
+# ================================================
+# This configuration removes all external port mappings except nginx
+# to support horizontal scaling with multiple replicas
+#
+# Only nginx is exposed externally as the single entry point
+# All internal services use Docker service discovery
+# ================================================
+
+version: '3.8'
+
+# ===========================================
+# SERVICES
+# ===========================================
+services:
+  # ===========================================
+  # INFRASTRUCTURE SERVICES
+  # ===========================================
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: musicdb-postgres
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - internal access only
+    environment:
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U musicdb_user -d musicdb"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  db-connection-pool:
+    build:
+      context: ./services/db-connection-pool
+      dockerfile: Dockerfile
+    container_name: musicdb-connection-pool
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - internal access only
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-20}
+      POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8025/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: musicdb-redis
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - internal access only
+    command: redis-server --appendonly yes --maxmemory 2048mb --maxmemory-policy allkeys-lru --maxclients 10000 --tcp-keepalive 60
+    volumes:
+      - redis_data:/data
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: musicdb-rabbitmq
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - internal access only
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      RABBITMQ_DEFAULT_VHOST: /musicdb
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  # ===========================================
+  # APPLICATION SERVICES (REPLICA-READY)
+  # ===========================================
+
+  scraper-orchestrator:
+    build:
+      context: ./services/scraper-orchestrator
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - supports multiple replicas
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+    depends_on:
+      - redis
+      - rabbitmq
+      - db-connection-pool
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2  # Multiple replicas supported
+
+  data-validator:
+    build:
+      context: ./services/data-validator
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - supports multiple replicas
+    environment:
+      REDIS_HOST: redis
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2  # Multiple replicas supported
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - accessed through nginx
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_here}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-100}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-900}
+    depends_on:
+      - redis
+      - rabbitmq
+      - db-connection-pool
+    networks:
+      - musicdb-backend
+      - musicdb-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 3  # Multiple replicas for load distribution
+
+  websocket-api:
+    build:
+      context: ./services/websocket-api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - accessed through nginx
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8088,http://localhost:3006}
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - musicdb-backend
+      - musicdb-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2  # Multiple replicas for WebSocket load balancing
+
+  enhanced-visualization-service:
+    build:
+      context: ./services/enhanced-visualization-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - accessed through nginx or internal calls
+    environment:
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_here}
+      PORT: 8085
+      HOST: 0.0.0.0
+    depends_on:
+      - db-connection-pool
+      - redis
+    networks:
+      - musicdb-backend
+      - musicdb-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    deploy:
+      replicas: 2  # Multiple replicas for visualization processing
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    restart: unless-stopped
+    # NO EXTERNAL PORTS - accessed through nginx
+    environment:
+      # Use service discovery without hardcoded ports
+      VITE_API_URL: ${VITE_API_URL:-http://api-gateway:8080}
+      VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://enhanced-visualization-service:8085}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://enhanced-visualization-service:8085}
+      NODE_ENV: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+      - enhanced-visualization-service
+    networks:
+      - musicdb-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      replicas: 2  # Multiple frontend instances for high availability
+
+  # ===========================================
+  # NGINX REVERSE PROXY (SINGLE ENTRY POINT)
+  # ===========================================
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-load-balancer
+    restart: unless-stopped
+    ports:
+      # ONLY nginx has external ports - single entry point
+      - "${HTTP_PORT:-8088}:80"   # Configurable HTTP port
+      - "${HTTPS_PORT:-8443}:443" # Configurable HTTPS port
+    volumes:
+      - ./nginx/nginx-simple.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api-gateway
+      - frontend
+    networks:
+      - musicdb-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ===========================================
+# NETWORKS
+# ===========================================
+networks:
+  musicdb-backend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: 'true'
+      com.docker.network.bridge.enable_ip_masquerade: 'true'
+
+  musicdb-frontend:
+    driver: bridge
+
+# ===========================================
+# VOLUMES
+# ===========================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local

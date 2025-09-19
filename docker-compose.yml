@@ -166,12 +166,14 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.1001tracklists
-    container_name: scraper-1001tracklists
     restart: unless-stopped
-    ports:
-      - "8011:8011"
+    expose:
+      - "8011"  # Internal health port exposed for inter-service checks
     environment:
       SCRAPER_NAME: 1001tracklists
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
     depends_on:
       - scraper-orchestrator
     networks:
@@ -187,10 +189,9 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.mixesdb
-    container_name: scraper-mixesdb
     restart: unless-stopped
-    ports:
-      - "8012:8012"
+    expose:
+      - "8012"
     environment:
       SCRAPER_NAME: mixesdb
       REDIS_HOST: redis
@@ -221,10 +222,9 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.setlistfm
-    container_name: scraper-setlistfm
     restart: unless-stopped
-    ports:
-      - "8013:8013"
+    expose:
+      - "8013"
     environment:
       SCRAPER_NAME: setlistfm
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
@@ -255,10 +255,9 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.reddit
-    container_name: scraper-reddit
     restart: unless-stopped
-    ports:
-      - "8014:8014"
+    expose:
+      - "8014"
     environment:
       SCRAPER_NAME: reddit
       REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
@@ -295,8 +294,8 @@ services:
       dockerfile: Dockerfile
     # container_name removed to allow scaling with replicas
     restart: unless-stopped
-    ports:
-      - "8002:8002"
+    expose:
+      - "8002"
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -809,8 +808,9 @@ services:
     ports:
       - "3006:3006"
     environment:
-      VITE_API_URL: http://localhost:8080
-      VITE_WS_URL: ws://localhost:8090
+      VITE_API_URL: ${VITE_API_URL:-http://api-gateway}
+      VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://enhanced-visualization-service:8085}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://enhanced-visualization-service:8085}
       NODE_ENV: development
     volumes:
       - ./frontend:/app

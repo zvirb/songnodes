@@ -610,12 +610,16 @@ async def get_live_performance_data():
 
             rows = await conn.fetch(query)
 
-            # Transform to expected frontend format
+            # Transform to expected frontend format (exclude entries without valid performer names)
             performances = []
             for row in rows:
+                # Skip performances without valid performer names
+                if not row['performer_name'] or row['performer_name'].strip() == '':
+                    continue
+
                 performance = {
                     "id": str(row['id']),
-                    "artist": row['performer_name'] or "Unknown Artist",
+                    "artist": row['performer_name'],
                     "event": row['event_name'] or "Unknown Event",
                     "venue": row['venue_name'] or "Unknown Venue",
                     "date": row['set_date'].isoformat() if row['set_date'] else None,
