@@ -1,18 +1,51 @@
 {
   "metadata": {
-    "description": "Comprehensive target track list for SongNodes scrapers",
+    "description": "Comprehensive target track list for SongNodes scrapers - Multi-batch electronic music collection",
     "source": "populate_sample_data.py electronic music collection",
-    "total_tracks": 87,
-    "total_artists": 14,
-    "genres": ["Progressive House", "Electro House", "Dubstep", "Trance", "Tech House"],
+    "total_tracks": 149,
+    "total_artists": 140,
+    "genres": [
+      "Big Room",
+      "Big Room House",
+      "Dance",
+      "Dance Pop",
+      "Deep House",
+      "Drum & Bass",
+      "Dubstep",
+      "Electro House",
+      "Electronic",
+      "Funk",
+      "Future Bass",
+      "Garage",
+      "House",
+      "Hyperpop",
+      "Latin",
+      "Melodic House & Techno",
+      "Melodic Techno",
+      "Pop",
+      "Progressive House",
+      "Tech House",
+      "Techno",
+      "Trance",
+      "UK Garage"
+    ],
     "created": "2025-09-18",
-    "purpose": "Find playlists/setlists containing these tracks for graph visualization"
+    "purpose": "Find playlists/setlists containing these tracks for graph visualization",
+    "last_updated": "2025-09-19",
+    "collections": [
+      "Original electronic music collection",
+      "Custom 2025 track selection - Batch 1",
+      "Custom 2025 track selection - Batch 2",
+      "Contemporary electronic focus - Batch 3"
+    ]
   },
   "scraper_targets": {
     "priority_tracks": [
       {
         "title": "Don't You Worry Child",
-        "artists": ["Swedish House Mafia"],
+        "artists": [
+          "Swedish House Mafia"
+        ],
         "primary_artist": "Swedish House Mafia",
         "remix_variations": [
           "Don't You Worry Child (Original Mix)",
@@ -23,13 +56,22 @@
         "genre": "Progressive House",
         "year": 2012,
         "priority": "high",
-        "search_terms": ["Swedish House Mafia", "Don't You Worry Child", "SHM"]
+        "search_terms": [
+          "Swedish House Mafia",
+          "Don't You Worry Child",
+          "SHM"
+        ]
       },
       {
         "title": "Titanium",
-        "artists": ["David Guetta", "Sia"],
+        "artists": [
+          "David Guetta",
+          "Sia"
+        ],
         "primary_artist": "David Guetta",
-        "featured_artists": ["Sia"],
+        "featured_artists": [
+          "Sia"
+        ],
         "remix_variations": [
           "Titanium (Original Mix)",
           "Titanium (Extended Mix)",
@@ -40,11 +82,17 @@
         "genre": "Electro House",
         "year": 2011,
         "priority": "high",
-        "search_terms": ["David Guetta", "Titanium", "Sia"]
+        "search_terms": [
+          "David Guetta",
+          "Titanium",
+          "Sia"
+        ]
       },
       {
         "title": "Animals",
-        "artists": ["Martin Garrix"],
+        "artists": [
+          "Martin Garrix"
+        ],
         "primary_artist": "Martin Garrix",
         "remix_variations": [
           "Animals (Original Mix)",
@@ -56,11 +104,16 @@
         "genre": "Big Room House",
         "year": 2013,
         "priority": "high",
-        "search_terms": ["Martin Garrix", "Animals"]
+        "search_terms": [
+          "Martin Garrix",
+          "Animals"
+        ]
       },
       {
         "title": "Bangarang",
-        "artists": ["Skrillex"],
+        "artists": [
+          "Skrillex"
+        ],
         "primary_artist": "Skrillex",
         "remix_variations": [
           "Bangarang (Original Mix)",
@@ -70,300 +123,1394 @@
         "genre": "Dubstep",
         "year": 2011,
         "priority": "high",
-        "search_terms": ["Skrillex", "Bangarang"]
+        "search_terms": [
+          "Skrillex",
+          "Bangarang"
+        ]
+      },
+      {
+        "title": "Tibet",
+        "artists": [
+          "Artbat",
+          "Argy",
+          "Zaffir"
+        ],
+        "primary_artist": "Artbat",
+        "featured_artists": [
+          "Argy",
+          "Zaffir"
+        ],
+        "remix_variations": [
+          "Tibet (Original Mix)",
+          "Tibet (Extended Mix)"
+        ],
+        "genre": "Melodic Techno",
+        "year": 2025,
+        "priority": "high",
+        "search_terms": [
+          "Artbat",
+          "Tibet"
+        ]
+      },
+      {
+        "title": "Nostalgia",
+        "artists": [
+          "PNAU"
+        ],
+        "primary_artist": "PNAU",
+        "featured_artists": [],
+        "remix_variations": [],
+        "genre": "Electronic",
+        "year": 2025,
+        "priority": "high",
+        "search_terms": [
+          "PNAU",
+          "Nostalgia"
+        ]
+      },
+      {
+        "title": "We Are The People (ARTBAT Remix)",
+        "artists": [
+          "Empire Of The Sun",
+          "Artbat"
+        ],
+        "primary_artist": "Empire Of The Sun",
+        "featured_artists": [],
+        "remix_variations": [
+          "We Are The People (ARTBAT Remix)"
+        ],
+        "genre": "Melodic House & Techno",
+        "year": 2021,
+        "priority": "medium",
+        "search_terms": [
+          "Empire Of The Sun",
+          "We Are The People",
+          "Artbat Remix"
+        ]
+      },
+      {
+        "title": "It's That Time (FISHER Remix)",
+        "artists": [
+          "Marlon Hoffstadt",
+          "Fisher"
+        ],
+        "primary_artist": "Marlon Hoffstadt",
+        "featured_artists": [],
+        "remix_variations": [
+          "It's That Time (FISHER Remix)"
+        ],
+        "genre": "Tech House",
+        "year": 2024,
+        "priority": "medium",
+        "search_terms": [
+          "Marlon Hoffstadt",
+          "It's That Time",
+          "FISHER Remix"
+        ]
+      },
+      {
+        "title": "(It Goes Like) Nanana - Edit",
+        "artists": [
+          "Peggy Gou"
+        ],
+        "primary_artist": "Peggy Gou",
+        "featured_artists": [],
+        "remix_variations": [
+          "(It Goes Like) Nanana - Original Mix",
+          "(It Goes Like) Nanana - Extended Mix"
+        ],
+        "genre": "House",
+        "year": 2023,
+        "priority": "medium",
+        "search_terms": [
+          "Peggy Gou",
+          "Nanana"
+        ]
       }
     ],
     "all_tracks": [
       {
         "title": "Don't You Worry Child",
-        "artists": ["Swedish House Mafia"],
+        "artists": [
+          "Swedish House Mafia"
+        ],
         "primary_artist": "Swedish House Mafia",
         "genre": "Progressive House"
       },
       {
         "title": "Save The World",
-        "artists": ["Swedish House Mafia"],
+        "artists": [
+          "Swedish House Mafia"
+        ],
         "primary_artist": "Swedish House Mafia",
         "genre": "Progressive House"
       },
       {
         "title": "One",
-        "artists": ["Swedish House Mafia"],
+        "artists": [
+          "Swedish House Mafia"
+        ],
         "primary_artist": "Swedish House Mafia",
         "genre": "Progressive House"
       },
       {
         "title": "Greyhound",
-        "artists": ["Swedish House Mafia"],
+        "artists": [
+          "Swedish House Mafia"
+        ],
         "primary_artist": "Swedish House Mafia",
         "genre": "Progressive House"
       },
       {
         "title": "Miami 2 Ibiza",
-        "artists": ["Swedish House Mafia", "Tinie Tempah"],
+        "artists": [
+          "Swedish House Mafia",
+          "Tinie Tempah"
+        ],
         "primary_artist": "Swedish House Mafia",
-        "featured_artists": ["Tinie Tempah"],
+        "featured_artists": [
+          "Tinie Tempah"
+        ],
         "genre": "Progressive House"
       },
       {
         "title": "Titanium",
-        "artists": ["David Guetta", "Sia"],
+        "artists": [
+          "David Guetta",
+          "Sia"
+        ],
         "primary_artist": "David Guetta",
-        "featured_artists": ["Sia"],
+        "featured_artists": [
+          "Sia"
+        ],
         "genre": "Electro House"
       },
       {
         "title": "When Love Takes Over",
-        "artists": ["David Guetta", "Kelly Rowland"],
+        "artists": [
+          "David Guetta",
+          "Kelly Rowland"
+        ],
         "primary_artist": "David Guetta",
-        "featured_artists": ["Kelly Rowland"],
+        "featured_artists": [
+          "Kelly Rowland"
+        ],
         "genre": "Electro House"
       },
       {
         "title": "Memories",
-        "artists": ["David Guetta", "Kid Cudi"],
+        "artists": [
+          "David Guetta",
+          "Kid Cudi"
+        ],
         "primary_artist": "David Guetta",
-        "featured_artists": ["Kid Cudi"],
+        "featured_artists": [
+          "Kid Cudi"
+        ],
         "genre": "Electro House"
       },
       {
         "title": "Without You",
-        "artists": ["David Guetta", "Usher"],
+        "artists": [
+          "David Guetta",
+          "Usher"
+        ],
         "primary_artist": "David Guetta",
-        "featured_artists": ["Usher"],
+        "featured_artists": [
+          "Usher"
+        ],
         "genre": "Electro House"
       },
       {
         "title": "Turn Me On",
-        "artists": ["David Guetta", "Nicki Minaj"],
+        "artists": [
+          "David Guetta",
+          "Nicki Minaj"
+        ],
         "primary_artist": "David Guetta",
-        "featured_artists": ["Nicki Minaj"],
+        "featured_artists": [
+          "Nicki Minaj"
+        ],
         "genre": "Electro House"
       },
       {
         "title": "Feel So Close",
-        "artists": ["Calvin Harris"],
+        "artists": [
+          "Calvin Harris"
+        ],
         "primary_artist": "Calvin Harris",
         "genre": "Electro House"
       },
       {
         "title": "Summer",
-        "artists": ["Calvin Harris"],
+        "artists": [
+          "Calvin Harris"
+        ],
         "primary_artist": "Calvin Harris",
         "genre": "Dance Pop"
       },
       {
         "title": "This Is What You Came For",
-        "artists": ["Calvin Harris", "Rihanna"],
+        "artists": [
+          "Calvin Harris",
+          "Rihanna"
+        ],
         "primary_artist": "Calvin Harris",
-        "featured_artists": ["Rihanna"],
+        "featured_artists": [
+          "Rihanna"
+        ],
         "genre": "Dance Pop"
       },
       {
         "title": "How Deep Is Your Love",
-        "artists": ["Calvin Harris", "Disciples"],
+        "artists": [
+          "Calvin Harris",
+          "Disciples"
+        ],
         "primary_artist": "Calvin Harris",
-        "featured_artists": ["Disciples"],
+        "featured_artists": [
+          "Disciples"
+        ],
         "genre": "Deep House"
       },
       {
         "title": "Outside",
-        "artists": ["Calvin Harris", "Ellie Goulding"],
+        "artists": [
+          "Calvin Harris",
+          "Ellie Goulding"
+        ],
         "primary_artist": "Calvin Harris",
-        "featured_artists": ["Ellie Goulding"],
+        "featured_artists": [
+          "Ellie Goulding"
+        ],
         "genre": "Electro House"
       },
       {
         "title": "Ghosts 'n' Stuff",
-        "artists": ["Deadmau5"],
+        "artists": [
+          "Deadmau5"
+        ],
         "primary_artist": "Deadmau5",
         "genre": "Progressive House"
       },
       {
         "title": "Strobe",
-        "artists": ["Deadmau5"],
+        "artists": [
+          "Deadmau5"
+        ],
         "primary_artist": "Deadmau5",
         "genre": "Progressive House"
       },
       {
         "title": "I Remember",
-        "artists": ["Deadmau5", "Kaskade"],
+        "artists": [
+          "Deadmau5",
+          "Kaskade"
+        ],
         "primary_artist": "Deadmau5",
-        "featured_artists": ["Kaskade"],
+        "featured_artists": [
+          "Kaskade"
+        ],
         "genre": "Progressive House"
       },
       {
         "title": "Raise Your Weapon",
-        "artists": ["Deadmau5"],
+        "artists": [
+          "Deadmau5"
+        ],
         "primary_artist": "Deadmau5",
         "genre": "Progressive House"
       },
       {
         "title": "Some Chords",
-        "artists": ["Deadmau5"],
+        "artists": [
+          "Deadmau5"
+        ],
         "primary_artist": "Deadmau5",
         "genre": "Progressive House"
       },
       {
         "title": "Bangarang",
-        "artists": ["Skrillex"],
+        "artists": [
+          "Skrillex"
+        ],
         "primary_artist": "Skrillex",
         "genre": "Dubstep"
       },
       {
         "title": "Scary Monsters and Nice Sprites",
-        "artists": ["Skrillex"],
+        "artists": [
+          "Skrillex"
+        ],
         "primary_artist": "Skrillex",
         "genre": "Dubstep"
       },
       {
         "title": "First of the Year",
-        "artists": ["Skrillex"],
+        "artists": [
+          "Skrillex"
+        ],
         "primary_artist": "Skrillex",
         "genre": "Dubstep"
       },
       {
         "title": "Cinema",
-        "artists": ["Skrillex"],
+        "artists": [
+          "Skrillex"
+        ],
         "primary_artist": "Skrillex",
         "genre": "Dubstep"
       },
       {
         "title": "Make It Bun Dem",
-        "artists": ["Skrillex", "Damian Marley"],
+        "artists": [
+          "Skrillex",
+          "Damian Marley"
+        ],
         "primary_artist": "Skrillex",
-        "featured_artists": ["Damian Marley"],
+        "featured_artists": [
+          "Damian Marley"
+        ],
         "genre": "Dubstep"
       },
       {
         "title": "Animals",
-        "artists": ["Martin Garrix"],
+        "artists": [
+          "Martin Garrix"
+        ],
         "primary_artist": "Martin Garrix",
         "genre": "Big Room House"
       },
       {
         "title": "Scared to Be Lonely",
-        "artists": ["Martin Garrix", "Dua Lipa"],
+        "artists": [
+          "Martin Garrix",
+          "Dua Lipa"
+        ],
         "primary_artist": "Martin Garrix",
-        "featured_artists": ["Dua Lipa"],
+        "featured_artists": [
+          "Dua Lipa"
+        ],
         "genre": "Future Bass"
       },
       {
         "title": "In the Name of Love",
-        "artists": ["Martin Garrix", "Bebe Rexha"],
+        "artists": [
+          "Martin Garrix",
+          "Bebe Rexha"
+        ],
         "primary_artist": "Martin Garrix",
-        "featured_artists": ["Bebe Rexha"],
+        "featured_artists": [
+          "Bebe Rexha"
+        ],
         "genre": "Future Bass"
       },
       {
         "title": "Tremor",
-        "artists": ["Martin Garrix", "Dimitri Vegas & Like Mike"],
+        "artists": [
+          "Martin Garrix",
+          "Dimitri Vegas & Like Mike"
+        ],
         "primary_artist": "Martin Garrix",
-        "featured_artists": ["Dimitri Vegas & Like Mike"],
+        "featured_artists": [
+          "Dimitri Vegas & Like Mike"
+        ],
         "genre": "Big Room House"
       },
       {
         "title": "Wizard",
-        "artists": ["Martin Garrix", "Jay Hardway"],
+        "artists": [
+          "Martin Garrix",
+          "Jay Hardway"
+        ],
         "primary_artist": "Martin Garrix",
-        "featured_artists": ["Jay Hardway"],
+        "featured_artists": [
+          "Jay Hardway"
+        ],
         "genre": "Big Room House"
       },
       {
         "title": "Adagio for Strings",
-        "artists": ["Tiësto"],
-        "primary_artist": "Tiësto",
+        "artists": [
+          "Ti\u00ebsto"
+        ],
+        "primary_artist": "Ti\u00ebsto",
         "genre": "Trance"
       },
       {
         "title": "Traffic",
-        "artists": ["Tiësto"],
-        "primary_artist": "Tiësto",
+        "artists": [
+          "Ti\u00ebsto"
+        ],
+        "primary_artist": "Ti\u00ebsto",
         "genre": "Trance"
       },
       {
         "title": "Red Lights",
-        "artists": ["Tiësto"],
-        "primary_artist": "Tiësto",
+        "artists": [
+          "Ti\u00ebsto"
+        ],
+        "primary_artist": "Ti\u00ebsto",
         "genre": "Electro House"
       },
       {
         "title": "Wasted",
-        "artists": ["Tiësto", "Matthew Koma"],
-        "primary_artist": "Tiësto",
-        "featured_artists": ["Matthew Koma"],
+        "artists": [
+          "Ti\u00ebsto",
+          "Matthew Koma"
+        ],
+        "primary_artist": "Ti\u00ebsto",
+        "featured_artists": [
+          "Matthew Koma"
+        ],
         "genre": "Electro House"
       },
       {
         "title": "The Business",
-        "artists": ["Tiësto"],
-        "primary_artist": "Tiësto",
+        "artists": [
+          "Ti\u00ebsto"
+        ],
+        "primary_artist": "Ti\u00ebsto",
         "genre": "Tech House"
       },
       {
         "title": "Heroes",
-        "artists": ["Alesso", "Tove Lo"],
+        "artists": [
+          "Alesso",
+          "Tove Lo"
+        ],
         "primary_artist": "Alesso",
-        "featured_artists": ["Tove Lo"],
+        "featured_artists": [
+          "Tove Lo"
+        ],
         "genre": "Progressive House"
       },
       {
         "title": "Calling",
-        "artists": ["Alesso", "Ryan Tedder"],
+        "artists": [
+          "Alesso",
+          "Ryan Tedder"
+        ],
         "primary_artist": "Alesso",
-        "featured_artists": ["Ryan Tedder"],
+        "featured_artists": [
+          "Ryan Tedder"
+        ],
         "genre": "Progressive House"
       },
       {
         "title": "Under Control",
-        "artists": ["Alesso", "Calvin Harris", "Hurts"],
+        "artists": [
+          "Alesso",
+          "Calvin Harris",
+          "Hurts"
+        ],
         "primary_artist": "Alesso",
-        "featured_artists": ["Calvin Harris", "Hurts"],
+        "featured_artists": [
+          "Calvin Harris",
+          "Hurts"
+        ],
         "genre": "Progressive House"
       },
       {
         "title": "If I Lose Myself",
-        "artists": ["Alesso vs OneRepublic"],
+        "artists": [
+          "Alesso vs OneRepublic"
+        ],
         "primary_artist": "Alesso",
-        "featured_artists": ["OneRepublic"],
+        "featured_artists": [
+          "OneRepublic"
+        ],
         "genre": "Progressive House"
       },
       {
         "title": "Years",
-        "artists": ["Alesso", "Matthew Koma"],
+        "artists": [
+          "Alesso",
+          "Matthew Koma"
+        ],
         "primary_artist": "Alesso",
-        "featured_artists": ["Matthew Koma"],
+        "featured_artists": [
+          "Matthew Koma"
+        ],
         "genre": "Progressive House"
       },
       {
         "title": "Call on Me",
-        "artists": ["Eric Prydz"],
+        "artists": [
+          "Eric Prydz"
+        ],
         "primary_artist": "Eric Prydz",
         "genre": "Progressive House"
       },
       {
         "title": "Pjanoo",
-        "artists": ["Eric Prydz"],
+        "artists": [
+          "Eric Prydz"
+        ],
         "primary_artist": "Eric Prydz",
         "genre": "Progressive House"
       },
       {
         "title": "Liberate",
-        "artists": ["Eric Prydz"],
+        "artists": [
+          "Eric Prydz"
+        ],
         "primary_artist": "Eric Prydz",
         "genre": "Progressive House"
       },
       {
         "title": "Every Day",
-        "artists": ["Eric Prydz"],
+        "artists": [
+          "Eric Prydz"
+        ],
         "primary_artist": "Eric Prydz",
         "genre": "Progressive House"
       },
       {
         "title": "Generate",
-        "artists": ["Eric Prydz"],
+        "artists": [
+          "Eric Prydz"
+        ],
         "primary_artist": "Eric Prydz",
         "genre": "Progressive House"
+      },
+      {
+        "title": "Realisa (feat. Maiah Manser)",
+        "artists": [
+          "What So Not",
+          "Habstrakt",
+          "Maiah Manser"
+        ],
+        "primary_artist": "What So Not",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Disco Nap",
+        "artists": [
+          "Polo & Pan",
+          "Metronomy"
+        ],
+        "primary_artist": "Polo & Pan",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Club classics",
+        "artists": [
+          "Charli xcx"
+        ],
+        "primary_artist": "Charli xcx",
+        "genre": "Hyperpop"
+      },
+      {
+        "title": "Got To Be",
+        "artists": [
+          "Childish Gambino"
+        ],
+        "primary_artist": "Childish Gambino",
+        "genre": "Funk"
+      },
+      {
+        "title": "Techno Sh",
+        "artists": [
+          "OKAYVAL"
+        ],
+        "primary_artist": "OKAYVAL",
+        "genre": "Techno"
+      },
+      {
+        "title": "messy",
+        "artists": [
+          "Laszewo"
+        ],
+        "primary_artist": "Laszewo",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Stephanie",
+        "artists": [
+          "Cloonee",
+          "Young M.A",
+          "InntRaw"
+        ],
+        "primary_artist": "Cloonee",
+        "genre": "Tech House"
+      },
+      {
+        "title": "tell you straight",
+        "artists": [
+          "Jigitz"
+        ],
+        "primary_artist": "Jigitz",
+        "genre": "House"
+      },
+      {
+        "title": "Afterparty",
+        "artists": [
+          "Artbat"
+        ],
+        "primary_artist": "Artbat",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Meet Her At The Love Parade",
+        "artists": [
+          "Dimitri Vegas & Like Mike",
+          "Maddix",
+          "Da Hool",
+          "KI"
+        ],
+        "primary_artist": "Dimitri Vegas & Like Mike",
+        "genre": "Big Room"
+      },
+      {
+        "title": "VoXxx (PRX004)",
+        "artists": [
+          "InntRaw",
+          "Nadin"
+        ],
+        "primary_artist": "InntRaw",
+        "genre": "Techno"
+      },
+      {
+        "title": "Asereje (Remix)",
+        "artists": [
+          "M\u0116STIZA",
+          "Las Ketchup"
+        ],
+        "primary_artist": "M\u0116STIZA",
+        "genre": "Latin"
+      },
+      {
+        "title": "Stay",
+        "artists": [
+          "Fisher"
+        ],
+        "primary_artist": "Fisher",
+        "genre": "Tech House"
+      },
+      {
+        "title": "4U",
+        "artists": [
+          "Matroda",
+          "Martin Ikin",
+          "Sian-Lee"
+        ],
+        "primary_artist": "Matroda",
+        "genre": "House"
+      },
+      {
+        "title": "The Less I Know The Better",
+        "artists": [
+          "Mau P"
+        ],
+        "primary_artist": "Mau P",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Somebody (2024)",
+        "artists": [
+          "Gotye",
+          "Kimbra",
+          "FISHER",
+          "Chris Lake",
+          "Sante Sansone"
+        ],
+        "primary_artist": "Gotye",
+        "genre": "Tech House"
+      },
+      {
+        "title": "She The Last One",
+        "artists": [
+          "Artbat",
+          "Vintage Culture"
+        ],
+        "primary_artist": "Artbat",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Make Me Feel",
+        "artists": [
+          "The Chainsmokers",
+          "Cheyenne Giles"
+        ],
+        "primary_artist": "The Chainsmokers",
+        "genre": "Dance"
+      },
+      {
+        "title": "E Tu",
+        "artists": [
+          "Lady Shaka"
+        ],
+        "primary_artist": "Lady Shaka",
+        "genre": "Electronic"
+      },
+      {
+        "title": "GASLIGHT (Disco Lines Remix)",
+        "artists": [
+          "INJI"
+        ],
+        "primary_artist": "INJI",
+        "genre": "Dance"
+      },
+      {
+        "title": "In Your Arms",
+        "artists": [
+          "Artbat",
+          "Another Life",
+          "CAY (DE)"
+        ],
+        "primary_artist": "Artbat",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Want U",
+        "artists": [
+          "Hayley May"
+        ],
+        "primary_artist": "Hayley May",
+        "genre": "Dance"
+      },
+      {
+        "title": "Jigoo",
+        "artists": [
+          "Maurice Fulton",
+          "Peggy Gou"
+        ],
+        "primary_artist": "Maurice Fulton",
+        "genre": "House"
+      },
+      {
+        "title": "Wimbledon",
+        "artists": [
+          "Johannes Albert"
+        ],
+        "primary_artist": "Johannes Albert",
+        "genre": "House"
+      },
+      {
+        "title": "Touch Me",
+        "artists": [
+          "Ian Asher"
+        ],
+        "primary_artist": "Ian Asher",
+        "genre": "Dance"
+      },
+      {
+        "title": "123 Round Again",
+        "artists": [
+          "it's murph"
+        ],
+        "primary_artist": "it's murph",
+        "genre": "Dance"
+      },
+      {
+        "title": "All For You",
+        "artists": [
+          "Dombr\u00e8sky",
+          "Jaded"
+        ],
+        "primary_artist": "Dombr\u00e8sky",
+        "genre": "House"
+      },
+      {
+        "title": "Levitate",
+        "artists": [
+          "Sonny Fodera",
+          "Marten H\u00f8rger"
+        ],
+        "primary_artist": "Sonny Fodera",
+        "genre": "House"
+      },
+      {
+        "title": "Cold Heart (PNAU Remix)",
+        "artists": [
+          "Elton John",
+          "Dua Lipa"
+        ],
+        "primary_artist": "Elton John",
+        "genre": "Pop"
+      },
+      {
+        "title": "TECHNO + TEQUILA (feat. Morgan Harvill)",
+        "artists": [
+          "Disco Lines",
+          "Morgan Harvill"
+        ],
+        "primary_artist": "Disco Lines",
+        "genre": "Dance"
+      },
+      {
+        "title": "Dance with Me",
+        "artists": [
+          "Chris Lake",
+          "Walker",
+          "Royce"
+        ],
+        "primary_artist": "Chris Lake",
+        "genre": "House"
+      },
+      {
+        "title": "Guess featuring billie eilish",
+        "artists": [
+          "Charli xcx",
+          "Billie Eilish"
+        ],
+        "primary_artist": "Charli xcx",
+        "genre": "Hyperpop"
+      },
+      {
+        "title": "Summertime Blues",
+        "artists": [
+          "Chris Lake",
+          "Sammy Virji",
+          "Nathan Nicholson"
+        ],
+        "primary_artist": "Chris Lake",
+        "genre": "House"
+      },
+      {
+        "title": "iluv",
+        "artists": [
+          "Effy",
+          "Mall Grab"
+        ],
+        "primary_artist": "Effy",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Standard Flow (DND Vocal Remix Crews Control Edit) (f...)",
+        "artists": [
+          "Blazin' Squad",
+          "Elephant Man"
+        ],
+        "primary_artist": "Blazin' Squad",
+        "genre": "Garage"
+      },
+      {
+        "title": "Bom Bom (Wookie Remix)",
+        "artists": [
+          "Sam and the Womp"
+        ],
+        "primary_artist": "Sam and the Womp",
+        "genre": "Garage"
+      },
+      {
+        "title": "Different Worlds",
+        "artists": [
+          "Hayden James",
+          "Anabel Englund"
+        ],
+        "primary_artist": "Hayden James",
+        "genre": "Electronic"
+      },
+      {
+        "title": "girl$",
+        "artists": [
+          "Dom Dolla"
+        ],
+        "primary_artist": "Dom Dolla",
+        "genre": "House"
+      },
+      {
+        "title": "Pachamama (feat. Elliphant)",
+        "artists": [
+          "Luude",
+          "Elliphant"
+        ],
+        "primary_artist": "Luude",
+        "genre": "Drum & Bass"
+      },
+      {
+        "title": "Million Dollar Bill - Freemasons Radio Edit",
+        "artists": [
+          "Whitney Houston"
+        ],
+        "primary_artist": "Whitney Houston",
+        "genre": "House"
+      },
+      {
+        "title": "B.O.T.A. (Baddest Of Them All) - Edit",
+        "artists": [
+          "Eliza Rose",
+          "Interplanetary Criminal"
+        ],
+        "primary_artist": "Eliza Rose",
+        "genre": "UK Garage"
+      },
+      {
+        "title": "Pump It Louder",
+        "artists": [
+          "Ti\u00ebsto",
+          "Black Eyed Peas"
+        ],
+        "primary_artist": "Ti\u00ebsto",
+        "genre": "Dance"
+      },
+      {
+        "title": "I'm Good (Blue)",
+        "artists": [
+          "David Guetta",
+          "Bebe Rexha"
+        ],
+        "primary_artist": "David Guetta",
+        "genre": "Dance"
+      },
+      {
+        "title": "Afraid To Feel",
+        "artists": [
+          "LF SYSTEM"
+        ],
+        "primary_artist": "LF SYSTEM",
+        "genre": "Dance"
+      },
+      {
+        "title": "Where You Are",
+        "artists": [
+          "John Summit",
+          "Hayla"
+        ],
+        "primary_artist": "John Summit",
+        "genre": "House"
+      },
+      {
+        "title": "Rhyme Dust",
+        "artists": [
+          "MK",
+          "Dom Dolla"
+        ],
+        "primary_artist": "MK",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Strong",
+        "artists": [
+          "Romy",
+          "Fred again.."
+        ],
+        "primary_artist": "Romy",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Crank It",
+        "artists": [
+          "K Motionz",
+          "Goddard."
+        ],
+        "primary_artist": "K Motionz",
+        "genre": "Drum & Bass"
+      },
+      {
+        "title": "Moth To A Flame (with The Weeknd)",
+        "artists": [
+          "Swedish House Mafia",
+          "The Weeknd"
+        ],
+        "primary_artist": "Swedish House Mafia",
+        "genre": "Dance"
+      },
+      {
+        "title": "adore u",
+        "artists": [
+          "Fred again..",
+          "Obongjayar"
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Losing It",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Atmosphere",
+        "artists": [
+          "FISHER",
+          "Kita Alexander"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Take It Off",
+        "artists": [
+          "FISHER",
+          "AATIG"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Yeah The Girls",
+        "artists": [
+          "FISHER",
+          "MERYLL"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "World, Hold On",
+        "artists": [
+          "Bob Sinclar",
+          "FISHER"
+        ],
+        "primary_artist": "Bob Sinclar",
+        "genre": "House"
+      },
+      {
+        "title": "You Little Beauty",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Just Feels Tight",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Wanna Go Dancin'",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Freaks",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Palm Beach Banga",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Stop It",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Crowd Control",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Ya Kidding",
+        "artists": [
+          "FISHER"
+        ],
+        "primary_artist": "FISHER",
+        "genre": "Tech House"
+      },
+      {
+        "title": "Leavemealone",
+        "artists": [
+          "Fred again..",
+          "Baby Keem"
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "ten",
+        "artists": [
+          "Fred again..",
+          "Jozzy"
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Delilah (pull me out of this)",
+        "artists": [
+          "Fred again.."
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Jungle",
+        "artists": [
+          "Fred again.."
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Marea (We've Lost Dancing)",
+        "artists": [
+          "Fred again..",
+          "The Blessed Madonna"
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Turn On The Lights again.. (feat. Future)",
+        "artists": [
+          "Fred again..",
+          "Swedish House Mafia",
+          "Future"
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Danielle (smile on my face)",
+        "artists": [
+          "Fred again.."
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Billie (loving arms)",
+        "artists": [
+          "Fred again.."
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Kammy (like i do)",
+        "artists": [
+          "Fred again.."
+        ],
+        "primary_artist": "Fred again..",
+        "genre": "Electronic"
+      },
+      {
+        "title": "Rumble",
+        "artists": [
+          "Skrillex",
+          "Fred again..",
+          "Flowdan"
+        ],
+        "primary_artist": "Skrillex",
+        "genre": "Dubstep"
+      },
+      {
+        "title": "RATATA",
+        "artists": [
+          "Skrillex",
+          "Mr. Oizo",
+          "Missy Elliott"
+        ],
+        "primary_artist": "Skrillex",
+        "genre": "Electronic"
+      },
+      {
+        "title": "A Street I Know",
+        "artists": [
+          "Anyma",
+          "Adam Sellouk"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Syren",
+        "artists": [
+          "Anyma",
+          "Reb\u016bke"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Welcome To The Opera",
+        "artists": [
+          "Anyma",
+          "Grimes"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Consciousness",
+        "artists": [
+          "Anyma",
+          "Chris Avantgarde"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "The Sign",
+        "artists": [
+          "Anyma",
+          "CamelPhat"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Higher",
+        "artists": [
+          "Anyma",
+          "Argy",
+          "Magnus"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Save Me",
+        "artists": [
+          "Anyma",
+          "Cassian",
+          "Poppy Baskcomb"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "The Answer",
+        "artists": [
+          "Anyma",
+          "Chris Avantgarde"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Eternity",
+        "artists": [
+          "Anyma",
+          "Chris Avantgarde"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Pictures of You",
+        "artists": [
+          "Anyma"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Walking With A Ghost",
+        "artists": [
+          "Anyma"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Angel 1",
+        "artists": [
+          "Anyma",
+          "Innellea"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Now Or Never",
+        "artists": [
+          "Anyma"
+        ],
+        "primary_artist": "Anyma",
+        "genre": "Melodic Techno"
+      },
+      {
+        "title": "Hear Me Now",
+        "artists": [
+          "Alok",
+          "Bruno Martini",
+          "Zeeba"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
+      },
+      {
+        "title": "Don't Say Goodbye",
+        "artists": [
+          "Alok",
+          "Tove Lo"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
+      },
+      {
+        "title": "On & On",
+        "artists": [
+          "Alok",
+          "Dynoro"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
+      },
+      {
+        "title": "Never Let Me Go",
+        "artists": [
+          "Alok",
+          "Bruno Martini",
+          "Zeeba"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
+      },
+      {
+        "title": "Big Jet Plane",
+        "artists": [
+          "Alok",
+          "Mathieu Koss"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
+      },
+      {
+        "title": "Me & You",
+        "artists": [
+          "Alok",
+          "Iro"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
+      },
+      {
+        "title": "Ocean",
+        "artists": [
+          "Alok",
+          "Zeeba",
+          "Iro"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
+      },
+      {
+        "title": "Alive (It Feels Like)",
+        "artists": [
+          "Alok"
+        ],
+        "primary_artist": "Alok",
+        "genre": "Dance"
       }
     ]
   },
@@ -385,52 +1532,87 @@
       "setlist.fm - Live performance data",
       "Spotify playlists containing these tracks",
       "SoundCloud playlists and DJ sets"
-    ]
+    ],
+    "contemporary_focus": "Strong emphasis on FISHER, Fred again.., Anyma, and Alok catalogs for modern electronic music trends"
   },
   "artist_mapping": {
     "Swedish House Mafia": {
-      "aliases": ["SHM", "Swedish House Mafia"],
-      "members": ["Steve Angello", "Axwell", "Sebastian Ingrosso"],
+      "aliases": [
+        "SHM",
+        "Swedish House Mafia"
+      ],
+      "members": [
+        "Steve Angello",
+        "Axwell",
+        "Sebastian Ingrosso"
+      ],
       "genre": "Progressive House",
       "country": "Sweden"
     },
     "David Guetta": {
-      "aliases": ["David Guetta", "Guetta"],
+      "aliases": [
+        "David Guetta",
+        "Guetta"
+      ],
       "genre": "Electro House",
       "country": "France"
     },
     "Calvin Harris": {
-      "aliases": ["Calvin Harris", "Adam Richard Wiles"],
+      "aliases": [
+        "Calvin Harris",
+        "Adam Richard Wiles"
+      ],
       "genre": "Electro House",
       "country": "United Kingdom"
     },
     "Deadmau5": {
-      "aliases": ["deadmau5", "Deadmau5", "Joel Zimmerman"],
+      "aliases": [
+        "deadmau5",
+        "Deadmau5",
+        "Joel Zimmerman"
+      ],
       "genre": "Progressive House",
       "country": "Canada"
     },
     "Skrillex": {
-      "aliases": ["Skrillex", "Sonny Moore"],
+      "aliases": [
+        "Skrillex",
+        "Sonny Moore"
+      ],
       "genre": "Dubstep",
       "country": "United States"
     },
     "Martin Garrix": {
-      "aliases": ["Martin Garrix", "Martijn Gerard Garritsen"],
+      "aliases": [
+        "Martin Garrix",
+        "Martijn Gerard Garritsen"
+      ],
       "genre": "Big Room House",
       "country": "Netherlands"
     },
-    "Tiësto": {
-      "aliases": ["Tiësto", "Tiesto", "Tijs Michiel Verwest"],
+    "Ti\u00ebsto": {
+      "aliases": [
+        "Ti\u00ebsto",
+        "Tiesto",
+        "Tijs Michiel Verwest"
+      ],
       "genre": "Trance",
       "country": "Netherlands"
     },
     "Alesso": {
-      "aliases": ["Alesso", "Alessandro Lindblad"],
+      "aliases": [
+        "Alesso",
+        "Alessandro Lindblad"
+      ],
       "genre": "Progressive House",
       "country": "Sweden"
     },
     "Eric Prydz": {
-      "aliases": ["Eric Prydz", "Pryda", "Cirez D"],
+      "aliases": [
+        "Eric Prydz",
+        "Pryda",
+        "Cirez D"
+      ],
       "genre": "Progressive House",
       "country": "Sweden"
     }
@@ -438,18 +1620,48 @@
   "expected_relationships": {
     "description": "Expected track adjacencies based on genre and artist similarities",
     "high_probability_pairs": [
-      ["Don't You Worry Child", "Save The World"],
-      ["Titanium", "When Love Takes Over"],
-      ["Animals", "Tremor"],
-      ["Bangarang", "Scary Monsters and Nice Sprites"],
-      ["Strobe", "Ghosts 'n' Stuff"],
-      ["Heroes", "Calling"],
-      ["Call on Me", "Pjanoo"]
+      [
+        "Don't You Worry Child",
+        "Save The World"
+      ],
+      [
+        "Titanium",
+        "When Love Takes Over"
+      ],
+      [
+        "Animals",
+        "Tremor"
+      ],
+      [
+        "Bangarang",
+        "Scary Monsters and Nice Sprites"
+      ],
+      [
+        "Strobe",
+        "Ghosts 'n' Stuff"
+      ],
+      [
+        "Heroes",
+        "Calling"
+      ],
+      [
+        "Call on Me",
+        "Pjanoo"
+      ]
     ],
     "cross_genre_connections": [
-      ["Don't You Worry Child", "Titanium"],
-      ["Animals", "Bangarang"],
-      ["Feel So Close", "Summer"]
+      [
+        "Don't You Worry Child",
+        "Titanium"
+      ],
+      [
+        "Animals",
+        "Bangarang"
+      ],
+      [
+        "Feel So Close",
+        "Summer"
+      ]
     ]
   }
 }
