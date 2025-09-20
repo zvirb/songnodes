@@ -24,51 +24,8 @@ RUN mkdir -p /app/output
 # Expose port for API
 EXPOSE 8011
 
-# Create a simple API server
-RUN cat > /app/scraper_api.py << 'EOF'
-from fastapi import FastAPI, HTTPException
-import subprocess
-from typing import Dict, Any
-
-app = FastAPI(title="1001Tracklists Scraper", version="1.0.0")
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "scraper": "1001tracklists"}
-
-@app.post("/scrape")
-async def scrape_url(request: Dict[str, Any]):
-    url = request.get("url")
-    params = request.get("params", {})
-    task_id = request.get("task_id")
-    
-    if not url:
-        raise HTTPException(status_code=400, detail="URL is required")
-    
-    try:
-        cmd = [
-            "scrapy", "crawl", "1001tracklists",
-            "-L", "INFO",
-            "-a", f"url={url}",
-        ]
-        q = params.get("query") if isinstance(params, dict) else None
-        if q:
-            cmd += ["-a", f"search_query={q}"]
-        cmd += [
-            "-o", f"/app/output/{task_id}_1001.json"
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")
-        if result.returncode != 0:
-            raise HTTPException(status_code=500, detail=f"Scrapy failed: {result.stderr}")
-        return {"status": "success", "task_id": task_id, "url": url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8011)
-EOF
+# Copy the proper API server script
+COPY scraper_api_1001.py /app/scraper_api.py
 
 # Start the API server
 CMD ["python", "/app/scraper_api.py"]

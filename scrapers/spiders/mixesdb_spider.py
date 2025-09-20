@@ -56,9 +56,9 @@ class MixesdbSpider(scrapy.Spider):
         'AUTOTHROTTLE_MAX_DELAY': 20,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.2,
         'RETRY_TIMES': 3,
-        # 'ITEM_PIPELINES': {
-        #     'database_pipeline.EnhancedMusicDatabasePipeline': 300,
-        # }
+        'ITEM_PIPELINES': {
+            'database_pipeline.EnhancedMusicDatabasePipeline': 300,
+        }
     }
 
     def __init__(self, search_artists=None, *args, **kwargs):

@@ -261,6 +261,34 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     };
   }, [wrapText]);
 
+  // Check if only one node is visible in current viewport (for edge labeling)
+  const getVisibleNodesCount = useCallback(() => {
+    if (!svgRef.current || !simulationRef.current) return 0;
+
+    const svg = d3.select(svgRef.current);
+    const currentTransform = d3.zoomTransform(svg.node()!);
+    const nodes = simulationRef.current.nodes();
+
+    let visibleCount = 0;
+    const margin = 50; // Buffer zone
+
+    nodes.forEach((node: any) => {
+      if (node.x !== undefined && node.y !== undefined) {
+        // Calculate screen position
+        const screenX = node.x * currentTransform.k + currentTransform.x;
+        const screenY = node.y * currentTransform.k + currentTransform.y;
+
+        // Check if node is within viewport
+        if (screenX >= -margin && screenX <= width + margin &&
+            screenY >= -margin && screenY <= height + margin) {
+          visibleCount++;
+        }
+      }
+    });
+
+    return visibleCount;
+  }, [width, height]);
+
   // Center a node in the viewport
   const centerNode = useCallback((nodeId: string) => {
     setCenteredNodeId(nodeId);
@@ -385,8 +413,8 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Close any existing persistent tooltip first
     setPersistentTooltip(null);
 
-    // Center the clicked node
-    centerNode(node.id);
+    // Only set the centered node for highlighting, don't actually center the viewport
+    setCenteredNodeId(node.id);
 
     // Select the node in Redux
     dispatch(setSelectedNodes([node.id]));
@@ -480,7 +508,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Close any open menus/tooltips
     setMenu(null);
     setTooltip(null);
-  }, [dispatch, centerNode, edges, nodes]);
+  }, [dispatch, edges, nodes]);
 
   // Enhanced DOM hover effects with detailed track information
   const handleNodeMouseEnter = useCallback((event: MouseEvent, node: any) => {
@@ -587,20 +615,13 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     setCenteredNodeId(null); // Clear the centered node to deselect
     setMenu(null); // Clear any open menus
 
-    // Release any fixed node positions to restore natural physics
+    // Release any fixed node positions but don't restart simulation
     if (simulationRef.current) {
       simulationRef.current.nodes().forEach((node: any) => {
         node.fx = null;
         node.fy = null;
       });
-      simulationRef.current.alpha(0.1).restart(); // Gentle restart to settle nodes naturally
-    }
-
-    // Ensure zoom behavior is properly reset for free navigation
-    if (zoomRef.current && svgRef.current) {
-      const svg = d3.select(svgRef.current);
-      // Re-enable all zoom behaviors to ensure normal navigation
-      svg.call(zoomRef.current);
+      // Don't restart the simulation - let nodes stay where they are
     }
   }, [dispatch]);
 
@@ -718,8 +739,8 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Close current persistent tooltip first
     setPersistentTooltip(null);
 
-    // Center and select the new node
-    centerNode(nodeId);
+    // Select the new node without centering camera
+    setCenteredNodeId(nodeId);
     dispatch(setSelectedNodes([nodeId]));
 
     // After a brief delay, create new persistent tooltip for the new node
@@ -734,8 +755,8 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         } as any;
         handleNodeClick(fakeEvent, newNode);
       }
-    }, 300); // Small delay to allow animation to center the node
-  }, [centerNode, dispatch, nodes]);
+    }, 100); // Reduced delay since no animation
+  }, [dispatch, nodes, handleNodeClick]);
 
   // Main D3 visualization effect
   useEffect(() => {
@@ -795,6 +816,8 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       .scaleExtent([0.1, 10])
       .on('zoom', (event) => {
         container.attr('transform', event.transform);
+        // Update edge labels when zoom changes
+        updateEdgeLabels();
       });
 
     // Store zoom reference for centering functionality
@@ -1200,6 +1223,80 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         .text(d => String(stepIndex.get(d.id)));
     }
 
+    // Edge labels - only shown when heavily zoomed in (1 node visible)
+    const edgeLabelGroup = container.append('g').attr('class', 'edge-labels');
+
+    // Function to update edge label visibility based on zoom
+    const updateEdgeLabels = () => {
+      const visibleCount = getVisibleNodesCount();
+      const showEdgeLabels = visibleCount <= 1;
+
+      edgeLabelGroup.selectAll('*').remove();
+
+      if (showEdgeLabels && simpleEdges.length > 0) {
+        simpleEdges.forEach(edge => {
+          const sourceNode = typeof edge.source === 'object' ? edge.source : simpleNodes.find(n => n.id === edge.source);
+          const targetNode = typeof edge.target === 'object' ? edge.target : simpleNodes.find(n => n.id === edge.target);
+
+          if (sourceNode && targetNode && sourceNode.x !== undefined && sourceNode.y !== undefined &&
+              targetNode.x !== undefined && targetNode.y !== undefined) {
+
+            // Calculate midpoint of edge
+            const midX = (sourceNode.x + targetNode.x) / 2;
+            const midY = (sourceNode.y + targetNode.y) / 2;
+
+            // Get target node info
+            const targetNodeData = nodes.find(n => n.id === targetNode.id);
+            if (targetNodeData) {
+              const title = targetNodeData.title || targetNodeData.label || 'Unknown';
+              const artist = targetNodeData.artist || '';
+
+              // Create edge label
+              const labelGroup = edgeLabelGroup.append('g')
+                .attr('class', 'edge-label')
+                .attr('transform', `translate(${midX}, ${midY})`);
+
+              // Background rectangle for readability
+              const bbox = { width: Math.max(title.length, artist.length) * 7, height: artist ? 32 : 16 };
+              labelGroup.append('rect')
+                .attr('x', -bbox.width / 2)
+                .attr('y', -bbox.height / 2)
+                .attr('width', bbox.width)
+                .attr('height', bbox.height)
+                .attr('fill', '#000000')
+                .attr('fill-opacity', 0.8)
+                .attr('stroke', '#F59E0B')
+                .attr('stroke-width', 1)
+                .attr('rx', 4);
+
+              // Track title
+              labelGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', artist ? '-0.3em' : '0.3em')
+                .attr('font-size', '10px')
+                .attr('font-weight', 'bold')
+                .attr('fill', '#FFFFFF')
+                .text(title.length > 20 ? title.substring(0, 20) + '...' : title);
+
+              // Artist name (if available)
+              if (artist) {
+                labelGroup.append('text')
+                  .attr('text-anchor', 'middle')
+                  .attr('dy', '0.8em')
+                  .attr('font-size', '9px')
+                  .attr('font-weight', 'normal')
+                  .attr('fill', '#CCCCCC')
+                  .text(artist.length > 20 ? artist.substring(0, 20) + '...' : artist);
+              }
+            }
+          }
+        });
+      }
+    };
+
+    // Initial edge label update
+    updateEdgeLabels();
+
     // Add drag behavior
     const drag = d3.drag<SVGCircleElement, SimpleNode>()
       .on('start', (event, d) => {
@@ -1234,40 +1331,8 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       labelGroups
         .attr('transform', d => `translate(${d.x!}, ${d.y!})`);
 
-      // Continuously follow centered node
-      if (centeredNodeId && zoomRef.current) {
-        const centeredNode = simpleNodes.find(n => n.id === centeredNodeId);
-        if (centeredNode && centeredNode.x !== undefined && centeredNode.y !== undefined) {
-          const currentTransform = d3.zoomTransform(svg.node()!);
-
-          // Calculate where the centered node currently appears on screen
-          const currentScreenX = centeredNode.x * currentTransform.k + currentTransform.x;
-          const currentScreenY = centeredNode.y * currentTransform.k + currentTransform.y;
-
-          // Calculate center of screen
-          const centerX = width / 2;
-          const centerY = height / 2;
-
-          // Only adjust if node has moved significantly from center (threshold to prevent jitter)
-          const threshold = 5;
-          const deltaX = centerX - currentScreenX;
-          const deltaY = centerY - currentScreenY;
-
-          if (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold) {
-            // Smoothly adjust the transform to keep node centered
-            const dampening = 0.1; // Smooth following, not instant
-            const newTransform = d3.zoomIdentity
-              .translate(
-                currentTransform.x + (deltaX * dampening),
-                currentTransform.y + (deltaY * dampening)
-              )
-              .scale(currentTransform.k);
-
-            // Apply transform without animation (for smooth following)
-            svg.call(zoomRef.current.transform, newTransform);
-          }
-        }
-      }
+      // Update edge labels on tick (they need to follow node positions)
+      updateEdgeLabels();
     });
 
     // Cleanup
@@ -1437,7 +1502,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                     key={track.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      centerNode(track.id);
+                      setCenteredNodeId(track.id);
                       dispatch(setSelectedNodes([track.id]));
                       setTooltip(null);
                     }}
@@ -1770,7 +1835,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                 <button
                   key={edge.id}
                   onClick={() => {
-                    centerNode(connectedNode.id);
+                    setCenteredNodeId(connectedNode.id);
                     dispatch(setSelectedNodes([connectedNode.id]));
                     setEdgeInfo(null);
                   }}
