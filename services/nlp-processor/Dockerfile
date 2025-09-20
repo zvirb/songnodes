@@ -2,12 +2,25 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
+
+# Download spaCy models
+RUN python download_models.py
+
+# Create non-root user
+RUN useradd -m -u 1000 nlpuser && chown -R nlpuser:nlpuser /app
+USER nlpuser
 
 # Expose port
 EXPOSE 8021

@@ -2,11 +2,11 @@ services:
   # ===========================================
   # DATABASE LAYER
   # ===========================================
-  
+
   postgres:
     image: postgres:15-alpine
     container_name: musicdb-postgres
-    restart: unless-stopped
+    restart: always
     ports:
       - "5433:5432"  # Non-standard port
     environment:
@@ -40,7 +40,7 @@ services:
       context: ./services/db-connection-pool
       dockerfile: Dockerfile
     container_name: musicdb-connection-pool
-    restart: unless-stopped
+    restart: always
     ports:
       - "6433:6432"  # PgBouncer port (changed to avoid conflict)
       - "8025:8025"  # Management API port
@@ -74,7 +74,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: musicdb-redis
-    restart: unless-stopped
+    restart: always
     ports:
       - "6380:6379"  # Non-standard port
     command: redis-server --appendonly yes --maxmemory 2048mb --maxmemory-policy allkeys-lru --maxclients 10000 --tcp-keepalive 60
@@ -100,11 +100,11 @@ services:
   # ===========================================
   # MESSAGE BROKER
   # ===========================================
-  
+
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
     container_name: musicdb-rabbitmq
-    restart: unless-stopped
+    restart: always
     ports:
       - "5673:5672"    # AMQP non-standard port
       - "15673:15672"  # Management UI non-standard port
@@ -134,13 +134,13 @@ services:
   # ===========================================
   # SCRAPING SERVICES
   # ===========================================
-  
+
   scraper-orchestrator:
     build:
       context: ./services/scraper-orchestrator
       dockerfile: Dockerfile
     container_name: scraper-orchestrator
-    restart: unless-stopped
+    restart: always
     ports:
       - "8001:8001"
     volumes:
@@ -168,9 +168,9 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.1001tracklists
-    restart: unless-stopped
+    restart: always
     expose:
-      - "8011"  # Internal health port exposed for inter-service checks
+      - "8011"
     volumes:
       - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
     environment:
@@ -193,7 +193,7 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.mixesdb
-    restart: unless-stopped
+    restart: always
     expose:
       - "8012"
     volumes:
@@ -228,7 +228,7 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.setlistfm
-    restart: unless-stopped
+    restart: always
     expose:
       - "8013"
     environment:
@@ -261,7 +261,7 @@ services:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.reddit
-    restart: unless-stopped
+    restart: always
     expose:
       - "8014"
     environment:
@@ -293,13 +293,12 @@ services:
   # ===========================================
   # DATA PROCESSING SERVICES
   # ===========================================
-  
+
   data-transformer:
     build:
       context: ./services/data-transformer
       dockerfile: Dockerfile
-    # container_name removed to allow scaling with replicas
-    restart: unless-stopped
+    restart: always
     expose:
       - "8002"
     environment:
@@ -324,7 +323,6 @@ services:
       retries: 3
       start_period: 40s
     deploy:
-      replicas: 2
       resources:
         limits:
           cpus: '2.0'
@@ -338,7 +336,7 @@ services:
       context: ./services/nlp-processor
       dockerfile: Dockerfile
     container_name: nlp-processor
-    restart: unless-stopped
+    restart: always
     ports:
       - "8021:8021"
     environment:
@@ -368,7 +366,7 @@ services:
       context: ./services/data-validator
       dockerfile: Dockerfile
     container_name: data-validator
-    restart: unless-stopped
+    restart: always
     ports:
       - "8003:8003"
     environment:
@@ -404,13 +402,13 @@ services:
   # ===========================================
   # API LAYER
   # ===========================================
-  
+
   api-gateway:
     build:
       context: ./services/api-gateway
       dockerfile: Dockerfile
     container_name: api-gateway
-    restart: unless-stopped
+    restart: always
     ports:
       - "8080:8080"
     environment:
@@ -439,9 +437,9 @@ services:
     build:
       context: ./services/rest-api
       dockerfile: Dockerfile
-    # container_name removed to allow scaling with replicas
-    restart: unless-stopped
-    # ports removed to avoid conflicts with replicas - accessed via API gateway
+    restart: always
+    expose:
+      - "8082"
     environment:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
@@ -455,13 +453,12 @@ services:
     networks:
       - musicdb-backend
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     deploy:
-      replicas: 3
       resources:
         limits:
           cpus: '1.5'
@@ -475,7 +472,7 @@ services:
       context: ./services/graphql-api
       dockerfile: Dockerfile
     container_name: graphql-api
-    restart: unless-stopped
+    restart: always
     ports:
       - "8081:8081"
     environment:
@@ -509,7 +506,7 @@ services:
       context: ./services/websocket-api
       dockerfile: Dockerfile
     container_name: websocket-api
-    restart: unless-stopped
+    restart: always
     ports:
       - "8083:8083"
     environment:
@@ -544,7 +541,7 @@ services:
       context: ./services/graph-visualization-api
       dockerfile: Dockerfile
     container_name: graph-visualization-api
-    restart: unless-stopped
+    restart: always
     ports:
       - "8084:8084"
     environment:
@@ -580,7 +577,7 @@ services:
       context: ./services/enhanced-visualization-service
       dockerfile: Dockerfile
     container_name: enhanced-visualization-service
-    restart: unless-stopped
+    restart: always
     ports:
       - "8090:8085"  # Primary API and WebSocket port
     environment:
@@ -620,11 +617,11 @@ services:
   # ===========================================
   # MONITORING & LOGGING
   # ===========================================
-  
+
   prometheus:
     image: prom/prometheus:latest
     container_name: metrics-prometheus
-    restart: unless-stopped
+    restart: always
     ports:
       - "9091:9090"  # Non-standard port
     volumes:
@@ -649,14 +646,15 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: monitoring-grafana
-    restart: unless-stopped
+    container_name: grafana
+    restart: always
     ports:
       - "3001:3000"  # Non-standard port
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
-      GF_PLUGINS_PREINSTALL: redis-datasource
+      GF_INSTALL_PLUGINS: redis-datasource,grafana-metricsdrilldown-app,grafana-lokiexplore-app,grafana-pyroscope-app
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: redis-datasource,grafana-metricsdrilldown-app,grafana-lokiexplore-app,grafana-pyroscope-app
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
@@ -676,7 +674,7 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: logging-elasticsearch
-    restart: unless-stopped
+    restart: always
     ports:
       - "9201:9200"  # Non-standard port
       - "9301:9300"  # Non-standard port
@@ -697,7 +695,7 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
     container_name: logging-kibana
-    restart: unless-stopped
+    restart: always
     ports:
       - "5602:5601"  # Non-standard port
     environment:
@@ -716,11 +714,11 @@ services:
   # ===========================================
   # ADDITIONAL MONITORING SERVICES
   # ===========================================
-  
+
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
-    restart: unless-stopped
+    restart: always
     ports:
       - "9100:9100"
     command:
@@ -743,7 +741,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
-    restart: unless-stopped
+    restart: always
     ports:
       - "8089:8080"
     volumes:
@@ -766,7 +764,7 @@ services:
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres-exporter
-    restart: unless-stopped
+    restart: always
     ports:
       - "9187:9187"
     environment:
@@ -785,7 +783,7 @@ services:
   redis-exporter:
     image: oliver006/redis_exporter:latest
     container_name: redis-exporter
-    restart: unless-stopped
+    restart: always
     ports:
       - "9121:9121"
     environment:
@@ -811,7 +809,7 @@ services:
       dockerfile: Dockerfile
       target: development
     container_name: songnodes-frontend
-    restart: unless-stopped
+    restart: always
     ports:
       - "3006:3006"
     environment:
@@ -849,7 +847,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
-    restart: unless-stopped
+    restart: always
     ports:
       - "8443:443"  # Non-standard HTTPS port
       - "8088:80"   # Non-standard HTTP port
@@ -859,6 +857,7 @@ services:
       - ./static:/usr/share/nginx/html:ro
     depends_on:
       - api-gateway
+      - grafana
     networks:
       - musicdb-frontend
     healthcheck:
@@ -870,7 +869,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: object-storage
-    restart: unless-stopped
+    restart: always
     ports:
       - "9000:9000"  # API port
       - "9001:9001"  # Console port
@@ -888,7 +887,6 @@ services:
       timeout: 10s
       retries: 3
 
-
 # ===========================================
 # NETWORKS
 # ===========================================
@@ -905,10 +903,10 @@ networks:
       com.docker.network.bridge.name: musicdb-backend
       com.docker.network.driver.mtu: 1500
       com.docker.network.bridge.enable_ip_masquerade: 'true'
-  
+
   musicdb-frontend:
     driver: bridge
-  
+
   musicdb-monitoring:
     driver: bridge
 
