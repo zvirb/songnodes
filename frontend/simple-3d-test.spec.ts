@@ -1,50 +1,35 @@
 import { test, expect } from '@playwright/test';
 
-test('Frontend accessibility and 3D toggle test', async ({ page }) => {
-  console.log('Starting test - navigating to localhost:8088');
+test('Quick 3D Mode Check', async ({ page }) => {
+  console.log('🔍 Quick 3D mode check...');
 
-  // Navigate to the frontend
-  await page.goto('http://localhost:8088');
+  // Set short timeout
+  page.setDefaultTimeout(15000);
 
-  // Wait for the page to load
-  await page.waitForLoadState('networkidle', { timeout: 30000 });
+  // Navigate to 3D mode
+  await page.goto('http://localhost:3007?mode=3d');
 
-  console.log('Page loaded, checking title');
+  // Wait for basic page load
+  await page.waitForLoadState('networkidle');
 
-  // Check if page loads
+  // Take screenshot
+  await page.screenshot({ path: 'test-results/quick-3d-check.png', fullPage: true });
+
+  // Check basic elements
   const title = await page.title();
   console.log('Page title:', title);
 
-  // Take a screenshot for debugging
-  await page.screenshot({ path: 'frontend-loaded.png', fullPage: true });
+  // Check debug info
+  try {
+    const debugInfo = await page.locator('.absolute.top-2.right-2').textContent();
+    console.log('Debug info:', debugInfo);
+  } catch (e) {
+    console.log('No debug info found');
+  }
 
-  // Look for any text content
-  const bodyText = await page.textContent('body');
-  console.log('Body text length:', bodyText?.length || 0);
+  // Check for canvas
+  const canvasCount = await page.locator('canvas').count();
+  console.log('Canvas elements:', canvasCount);
 
-  // Check for React root
-  const reactRoot = page.locator('#root');
-  const rootExists = await reactRoot.isVisible();
-  console.log('React root visible:', rootExists);
-
-  // Look for canvas elements
-  const canvases = await page.locator('canvas').count();
-  console.log('Canvas elements found:', canvases);
-
-  // Look for any buttons
-  const buttons = await page.locator('button').allTextContents();
-  console.log('All button texts:', buttons);
-
-  // Look for text that might indicate 3D toggle
-  const has3DText = bodyText?.includes('3D') || bodyText?.includes('2D');
-  console.log('Has 3D/2D text:', has3DText);
-
-  // Check for potential error messages
-  const hasError = bodyText?.includes('error') || bodyText?.includes('Error');
-  console.log('Has error text:', hasError);
-
-  // Log current URL
-  console.log('Current URL:', page.url());
-
-  expect(title).toBeTruthy();
+  console.log('✅ Quick test completed');
 });

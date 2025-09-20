@@ -206,8 +206,20 @@ function isSequentialSongEdge(
 // Helper: hide pure location nodes from visualization
 function shouldIncludeNode(node: any): boolean {
   const t = (node?.type || node?.metadata?.type || '').toString().toLowerCase();
-  // Only include songs/tracks; hide artists, venues, locations, events, etc.
-  return t === 'track' || t === 'song';
+
+  // More permissive filtering - include music-related nodes
+  const isMusicNode = t === 'track' || t === 'song' || t === 'music' ||
+                      t === 'artist' || t === 'performer' ||
+                      (node?.title && node?.artist) || // Has basic track info
+                      (node?.name && !t) || // Has name but no type (default include)
+                      !t || t === ''; // Default inclusion for nodes without explicit type
+
+  // Debug logging for 3D mode issues
+  if (!isMusicNode) {
+    console.log('🎯 Node filtered out:', { id: node?.id, type: t, node: node });
+  }
+
+  return isMusicNode;
 }
 
 const graphSlice = createSlice({
@@ -216,7 +228,17 @@ const graphSlice = createSlice({
   reducers: {
     // Data management
     setNodes: (state, action: PayloadAction<NodeVisual[]>) => {
-      const nodes = (action.payload || []).filter(shouldIncludeNode) as NodeVisual[];
+      const allNodes = action.payload || [];
+      const nodes = allNodes.filter(shouldIncludeNode) as NodeVisual[];
+
+      // Enhanced debug logging for 3D mode investigation
+      console.log('🎯 Redux setNodes Debug:', {
+        total_received: allNodes.length,
+        after_filter: nodes.length,
+        sample_types: allNodes.slice(0, 5).map(n => ({ id: n.id, type: n.type || n.metadata?.type })),
+        filtered_out_count: allNodes.length - nodes.length,
+        first_few_filtered: nodes.slice(0, 3).map(n => ({ id: n.id, type: n.type }))
+      });
       state.nodes = nodes;
 
       // Update node map for quick lookups

@@ -10,7 +10,7 @@ This guide explains how to access SongNodes from any device on your local networ
 
 ### 2. Using songnodes.local Hostname
 
-#### Option A: With Port Number (Simplest)
+#### Option A: With Port Number (Using local hosts file)
 Access the application at: **http://songnodes.local:8088**
 
 This works after running:
@@ -18,25 +18,17 @@ This works after running:
 sudo ./setup-local-access.sh
 ```
 
-#### Option B: Without Port Number (Advanced)
-To access at **http://songnodes.local** (no port), you have three options:
+#### Option B: Using Reverse Proxy (Recommended)
+Access the application at: **http://songnodes.local:8089**
 
-**Option 1: Stop conflicting services**
+This works after running:
 ```bash
-# If k3s is running and using port 80:
-sudo systemctl stop k3s
-# Then start our reverse proxy:
 docker compose -f docker-compose.local-proxy.yml up -d
 ```
 
-**Option 2: Use alternative port**
-```bash
-# Start proxy on port 8000:
-docker compose -f docker-compose.local-proxy.yml up -d
-# Access at: http://songnodes.local:8000
-```
+Note: Port 8089 is used instead of port 80 to avoid conflicts with existing services like k3s/traefik that may be using port 80.
 
-**Option 3: Configure k3s ingress** (if using k3s)
+#### Option C: Configure k3s ingress (if using k3s)
 Create a k3s ingress rule to route songnodes.local to the application.
 
 ## Files Included

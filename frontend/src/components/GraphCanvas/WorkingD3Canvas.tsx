@@ -580,13 +580,42 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     setTooltip(null);
   }, []);
 
-  // Handle clicking outside to close persistent tooltip and deselect nodes
-  const handleBackgroundClick = useCallback(() => {
+  // Centralized deselection logic
+  const deselectAll = useCallback(() => {
     setPersistentTooltip(null);
     dispatch(setSelectedNodes([]));
     setCenteredNodeId(null); // Clear the centered node to deselect
     setMenu(null); // Clear any open menus
+
+    // Release any fixed node positions to restore natural physics
+    if (simulationRef.current) {
+      simulationRef.current.nodes().forEach((node: any) => {
+        node.fx = null;
+        node.fy = null;
+      });
+      simulationRef.current.alpha(0.1).restart(); // Gentle restart to settle nodes naturally
+    }
+
+    // Ensure zoom behavior is properly reset for free navigation
+    if (zoomRef.current && svgRef.current) {
+      const svg = d3.select(svgRef.current);
+      // Re-enable all zoom behaviors to ensure normal navigation
+      svg.call(zoomRef.current);
+    }
   }, [dispatch]);
+
+  // Handle clicking outside to close persistent tooltip and deselect nodes
+  const handleBackgroundClick = useCallback(() => {
+    deselectAll();
+  }, [deselectAll]);
+
+  // Handle escape key to deselect all
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      deselectAll();
+    }
+  }, [deselectAll]);
 
   // Toggle collection status for a track
   const handleToggleCollection = useCallback((nodeId: string) => {
@@ -1247,6 +1276,15 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     };
   }, [nodes, edges, width, height, getNodeColor, getNodeRadius, getNodeDisplayText, distancePower, relationshipPower]);
 
+  // Add keyboard event listener for escape key
+  useEffect(() => {
+    const currentHandleKeyDown = (event: KeyboardEvent) => handleKeyDown(event);
+    document.addEventListener('keydown', currentHandleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', currentHandleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   // Update colors and opacity when selection changes
   useEffect(() => {
     if (!svgRef.current) return;
@@ -1659,9 +1697,9 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                         className={`w-full text-left p-2 rounded border ${strengthColor} bg-gray-800 hover:bg-opacity-80 transition-all text-xs group`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span className="text-sm">{strengthEmoji}</span>
-                            <span className="text-white font-medium truncate group-hover:text-amber-300 transition-colors">
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <span className="text-sm flex-shrink-0 mt-0.5">{strengthEmoji}</span>
+                            <span className="text-white font-medium break-words leading-relaxed group-hover:text-amber-300 transition-colors">
                               {track.title}
                             </span>
                           </div>
@@ -1747,11 +1785,11 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                         </span>
                         <span className="text-xs text-gray-500">({freq}x)</span>
                       </div>
-                      <div className="text-white font-medium truncate">
+                      <div className="text-white font-medium break-words leading-relaxed">
                         {connectedNode.title || connectedNode.label}
                       </div>
                       {connectedNode.artist && (
-                        <div className="text-gray-400 text-sm truncate">
+                        <div className="text-gray-400 text-sm break-words leading-relaxed mt-1">
                           {connectedNode.artist}
                         </div>
                       )}

@@ -50,6 +50,7 @@ const initialState: PathfindingState = {
       minWeight: 0.1,
       allowedTypes: [],
       avoidNodes: [],
+      preventCycles: true,
     },
   },
   progress: 0,
