@@ -69,7 +69,9 @@ services:
     container_name: scraping-orchestrator
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "8005:8001"
+    volumes:
+      - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
     environment:
       REDIS_URL: redis://scraping-redis:6379/0
       RABBITMQ_URL: amqp://musicdb_user:musicdb_secure_pass@scraping-rabbitmq:5672/

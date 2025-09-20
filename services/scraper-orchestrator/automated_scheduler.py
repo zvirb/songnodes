@@ -10,13 +10,15 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 import json
 import os
+import random
+from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
 
-from .robots_parser import RobotsChecker, SmartScheduler
+from robots_parser import RobotsChecker, SmartScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -126,8 +128,66 @@ class AutomatedScrapingScheduler:
         self.scraper_configs = self.SCRAPER_CONFIGS.copy()
         self.job_history: Dict[str, List[Dict]] = {}
 
+        # Load target tracks for scraping
+        self.target_tracks = []
+        self.current_track_index = 0
+        self._load_target_tracks()
+
         # Load custom configurations if they exist
         self._load_custom_configs()
+
+    def _load_target_tracks(self):
+        """Load target tracks from JSON file"""
+        try:
+            # Look for target tracks file in scrapers directory
+            target_file_paths = [
+                "/app/target_tracks_for_scraping.json",  # Container path
+                "../../scrapers/target_tracks_for_scraping.json",  # Relative path
+                "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers/target_tracks_for_scraping.json"  # Absolute path
+            ]
+
+            target_tracks_data = None
+            for file_path in target_file_paths:
+                try:
+                    if Path(file_path).exists():
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            target_tracks_data = json.load(f)
+                        logger.info(f"Loaded target tracks from {file_path}")
+                        break
+                except Exception as e:
+                    logger.debug(f"Could not load from {file_path}: {e}")
+                    continue
+
+            if not target_tracks_data:
+                logger.warning("Could not find target tracks file, using empty list")
+                return
+
+            # Extract priority tracks and all tracks
+            if "scraper_targets" in target_tracks_data:
+                self.target_tracks = target_tracks_data["scraper_targets"].get("priority_tracks", [])
+
+                # Add all tracks if present
+                if "all_tracks" in target_tracks_data["scraper_targets"]:
+                    self.target_tracks.extend(target_tracks_data["scraper_targets"]["all_tracks"])
+
+            # Load rotation state from Redis
+            try:
+                saved_index = self.redis_client.get("scraper:current_track_index")
+                if saved_index:
+                    self.current_track_index = int(saved_index) % len(self.target_tracks)
+                else:
+                    # Start from random position to avoid always starting with same tracks
+                    self.current_track_index = random.randint(0, len(self.target_tracks) - 1) if self.target_tracks else 0
+            except Exception as e:
+                logger.warning(f"Could not load track rotation state: {e}")
+                self.current_track_index = 0
+
+            logger.info(f"Loaded {len(self.target_tracks)} target tracks, starting from index {self.current_track_index}")
+
+        except Exception as e:
+            logger.error(f"Failed to load target tracks: {e}")
+            self.target_tracks = []
+            self.current_track_index = 0
 
     def _load_custom_configs(self):
         """Load custom scraper configurations from Redis or environment"""
@@ -147,6 +207,93 @@ class AutomatedScrapingScheduler:
                 logger.info(f"Loaded custom configurations for {len(configs)} scrapers")
         except Exception as e:
             logger.warning(f"Could not load custom configs: {e}")
+
+    def get_next_track_batch(self, batch_size: int = 10) -> List[Dict]:
+        """
+        Get next batch of tracks with rotation
+
+        Args:
+            batch_size: Number of tracks to return
+
+        Returns:
+            List of track dictionaries
+        """
+        if not self.target_tracks:
+            logger.warning("No target tracks available")
+            return []
+
+        tracks = []
+        for i in range(batch_size):
+            if self.current_track_index >= len(self.target_tracks):
+                self.current_track_index = 0  # Wrap around
+
+            tracks.append(self.target_tracks[self.current_track_index])
+            self.current_track_index += 1
+
+        # Save rotation state to Redis
+        try:
+            self.redis_client.set("scraper:current_track_index", self.current_track_index)
+        except Exception as e:
+            logger.warning(f"Could not save track rotation state: {e}")
+
+        logger.info(f"Retrieved {len(tracks)} tracks, current index: {self.current_track_index}/{len(self.target_tracks)}")
+        return tracks
+
+    def generate_search_urls(self, track: Dict, scraper_name: str) -> List[str]:
+        """
+        Generate search URLs for a specific track based on scraper type
+
+        Args:
+            track: Track dictionary with title, artists, etc.
+            scraper_name: Name of the scraper (1001tracklists, mixesdb, etc.)
+
+        Returns:
+            List of search URLs
+        """
+        urls = []
+
+        # Get search terms
+        title = track.get("title", "")
+        artists = track.get("artists", [])
+        primary_artist = track.get("primary_artist", "")
+        search_terms = track.get("search_terms", [])
+
+        # Combine all search terms
+        all_terms = [title]
+        if primary_artist:
+            all_terms.append(primary_artist)
+        all_terms.extend(artists)
+        all_terms.extend(search_terms)
+
+        # Clean and prepare search query
+        search_query = " ".join(all_terms).replace(" & ", " ").replace("&", "")
+
+        if scraper_name == "1001tracklists":
+            # 1001tracklists search URLs
+            encoded_query = search_query.replace(" ", "%20")
+            urls.append(f"https://www.1001tracklists.com/search/?q={encoded_query}")
+
+            # Also search by artist
+            if primary_artist:
+                encoded_artist = primary_artist.replace(" ", "%20")
+                urls.append(f"https://www.1001tracklists.com/search/?q={encoded_artist}")
+
+        elif scraper_name == "mixesdb":
+            # MixesDB search URLs
+            encoded_query = search_query.replace(" ", "+")
+            urls.append(f"https://www.mixesdb.com/db/index.php/search?q={encoded_query}")
+
+        elif scraper_name == "setlistfm":
+            # Setlist.fm search URLs
+            encoded_query = search_query.replace(" ", "%20")
+            urls.append(f"https://www.setlist.fm/search?query={encoded_query}")
+
+            # Search by artist
+            if primary_artist:
+                encoded_artist = primary_artist.replace(" ", "%20")
+                urls.append(f"https://www.setlist.fm/search?query={encoded_artist}")
+
+        return urls
 
     async def calculate_next_interval(self, scraper_name: str) -> int:
         """
@@ -275,32 +422,53 @@ class AutomatedScrapingScheduler:
                 logger.error(f"No service URL configured for {scraper_name}")
                 return
 
-            # Create scraping tasks respecting robots.txt
+            # Create scraping tasks based on target tracks
             tasks_created = 0
             tasks_blocked = 0
 
-            for pattern in config.base_url_patterns:
-                if config.respect_robots:
-                    # Check if URL is allowed by robots.txt
-                    is_allowed = await self.robots_checker.is_allowed(pattern)
-                    if not is_allowed:
-                        logger.warning(f"URL {pattern} blocked by robots.txt")
-                        tasks_blocked += 1
-                        continue
+            # Get batch of tracks to scrape
+            batch_size = 5  # Process 5 tracks per run to avoid overwhelming
+            tracks_batch = self.get_next_track_batch(batch_size)
 
-                    # Wait for rate limit
-                    await self.robots_checker.wait_if_needed(pattern)
+            if not tracks_batch:
+                logger.warning(f"No target tracks available for {scraper_name}")
+                return
 
-                # Add task to smart scheduler
-                task_data = {
-                    "scraper": scraper_name,
-                    "url": pattern,
-                    "priority": config.priority,
-                    "timestamp": datetime.now().isoformat()
-                }
+            logger.info(f"Processing {len(tracks_batch)} tracks for {scraper_name}")
 
-                self.smart_scheduler.add_task(pattern, task_data)
-                tasks_created += 1
+            for track in tracks_batch:
+                # Generate search URLs for this track
+                search_urls = self.generate_search_urls(track, scraper_name)
+
+                for url in search_urls:
+                    if config.respect_robots:
+                        # Check if URL is allowed by robots.txt
+                        is_allowed = await self.robots_checker.is_allowed(url)
+                        if not is_allowed:
+                            logger.warning(f"URL {url} blocked by robots.txt")
+                            tasks_blocked += 1
+                            continue
+
+                        # Wait for rate limit
+                        await self.robots_checker.wait_if_needed(url)
+
+                    # Add task to smart scheduler with track info
+                    task_data = {
+                        "scraper": scraper_name,
+                        "url": url,
+                        "priority": config.priority,
+                        "timestamp": datetime.now().isoformat(),
+                        "target_track": {
+                            "title": track.get("title"),
+                            "primary_artist": track.get("primary_artist"),
+                            "artists": track.get("artists", [])
+                        }
+                    }
+
+                    self.smart_scheduler.add_task(url, task_data)
+                    tasks_created += 1
+
+            logger.info(f"Created {tasks_created} scraping tasks for {scraper_name} from {len(tracks_batch)} tracks")
 
             # Process tasks with rate limiting
             processed = 0
