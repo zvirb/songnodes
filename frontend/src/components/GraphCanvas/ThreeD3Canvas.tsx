@@ -1,9 +1,6 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import * as THREE from 'three';
-import { useAppSelector, useAppDispatch } from '../../store/index';
-import { setSelectedNodes } from '../../store/graphSlice';
-import { setStartNode, setEndNode, addWaypoint } from '../../store/pathfindingSlice';
-import { detectWebGL, isThreeJSCompatible, logWebGLDiagnostics, getWebGLStatusMessage } from '../../utils/webglDetection';
+import { useAppSelector } from '../../store/index';
 
 interface ThreeD3CanvasProps {
   width: number;
@@ -12,27 +9,9 @@ interface ThreeD3CanvasProps {
   distancePower?: number;
 }
 
-interface Node3D {
-  id: string;
-  label: string;
-  type: string;
-  position: THREE.Vector3;
-  velocity: THREE.Vector3;
-  mesh?: THREE.Mesh;
-  selected?: boolean;
-}
-
-interface Edge3D {
-  id: string;
-  source: string;
-  target: string;
-  weight?: number;
-  metadata?: any;
-  line?: THREE.Line;
-}
-
 /**
  * 3D graph visualization using Three.js for immersive track relationship exploration
+ * Uses the same data source as the working 2D visualization
  */
 export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   width,
@@ -41,470 +20,286 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   distancePower = 1
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const animationIdRef = useRef<number>(0);
-  const nodesRef = useRef<Node3D[]>([]);
-  const edgesRef = useRef<Edge3D[]>([]);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
+  const sceneRef = useRef<THREE.Scene>();
+  const rendererRef = useRef<THREE.WebGLRenderer>();
+  const cameraRef = useRef<THREE.PerspectiveCamera>();
+  const animationIdRef = useRef<number>();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const dispatch = useAppDispatch();
-  const { nodes, edges, selectedNodes } = useAppSelector(state => state.graph);
-  const pathState = useAppSelector(state => state.pathfinding);
+  // Get the same data as the working 2D visualization
+  const { nodes, edges } = useAppSelector(state => state.graph);
 
-  // Get node color based on type and selection state
-  const getNodeColor = useCallback((node: any): number => {
-    if (node.selected || selectedNodes.includes(node.id)) return 0xF59E0B; // Amber
-    if (node.highlighted) return 0xEF4444; // Red
-
-    // Grey out if not in collection
-    const owned = node?.metadata?.owned;
-    if (owned === false) return 0x475569; // Slate grey
-
-    const nodeType = node.type || node.metadata?.type || 'unknown';
-    switch (nodeType) {
-      case 'artist': return 0x3B82F6; // Blue
-      case 'venue': return 0x10B981; // Green
-      case 'location': return 0xF59E0B; // Yellow
-      case 'track': return 0x8B5CF6; // Purple
-      case 'album': return 0xEC4899; // Pink
-      default: return 0x6B7280; // Gray
-    }
-  }, [selectedNodes]);
-
-  // Get edge color based on adjacency strength
-  const getEdgeColor = useCallback((edge: Edge3D): number => {
-    const metadata = edge.metadata || {};
-    const strengthCategory = metadata.strength_category || 'weak';
-
-    switch (strengthCategory) {
-      case 'very_strong': return 0xFF4444; // Bright red
-      case 'strong': return 0x00E5CC; // Bright teal
-      case 'moderate': return 0x3B82F6; // Bright blue
-      default: return 0xA855F7; // Purple
+  // Color mapping for different node types (same as 2D version)
+  const getNodeColor = useCallback((node: any) => {
+    switch (node.type) {
+      case 'artist': return '#3B82F6'; // Blue
+      case 'venue': return '#10B981'; // Green
+      case 'location': return '#F59E0B'; // Yellow
+      case 'track': return '#8B5CF6'; // Purple
+      case 'album': return '#EC4899'; // Pink
+      default: return '#6B7280'; // Gray
     }
   }, []);
 
-  // Initialize 3D scene
-  const initScene = useCallback(() => {
-    if (!mountRef.current) {
-      console.warn('🌌 Mount ref not available for 3D scene initialization');
-      return;
-    }
+  // Initialize Three.js scene
+  const initThreeJS = useCallback(() => {
+    if (!mountRef.current || isInitialized) return;
 
-    console.log('🌌 Initializing 3D scene...', { width, height });
-
-    // Check WebGL compatibility first
-    if (!isThreeJSCompatible()) {
-      console.error('🌌 WebGL not compatible with Three.js');
-      logWebGLDiagnostics();
-
-      if (mountRef.current) {
-        mountRef.current.innerHTML = `
-          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0F172A; color: white;">
-            <div style="text-align: center; max-width: 400px; padding: 20px;">
-              <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">⚠️ WebGL Not Compatible</div>
-              <div style="font-size: 14px; color: #9CA3AF; margin-bottom: 8px;">${getWebGLStatusMessage()}</div>
-              <div style="font-size: 12px; color: #6B7280; line-height: 1.4;">
-                Please ensure your browser supports WebGL and hardware acceleration is enabled.
-                <br><br>
-                Try updating your browser or graphics drivers.
-              </div>
-            </div>
-          </div>
-        `;
-      }
-      return;
-    }
-
-    // Log WebGL diagnostics for debugging
-    logWebGLDiagnostics();
-
-    // Scene
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0F172A); // Dark blue background
-    sceneRef.current = scene;
-
-    // Camera
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000);
-    camera.position.set(0, 0, 500);
-    cameraRef.current = camera;
-
-    // Renderer with error handling
     try {
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true,
-        preserveDrawingBuffer: true
-      });
+      // Create scene
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0F172A); // Dark background
+      sceneRef.current = scene;
+
+      // Create camera
+      const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      camera.position.set(0, 0, 50);
+      cameraRef.current = camera;
+
+      // Create renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-      // Clear any existing canvas elements
-      while (mountRef.current.firstChild) {
-        mountRef.current.removeChild(mountRef.current.firstChild);
-      }
-
-      mountRef.current.appendChild(renderer.domElement);
+      renderer.setPixelRatio(window.devicePixelRatio);
       rendererRef.current = renderer;
 
-      console.log('🌌 WebGL renderer initialized successfully');
-    } catch (error) {
-      console.error('🌌 Failed to create WebGL renderer:', error);
-      // Fallback: show error message
-      if (mountRef.current) {
-        mountRef.current.innerHTML = `
-          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0F172A; color: white;">
-            <div style="text-align: center;">
-              <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">⚠️ WebGL Not Available</div>
-              <div style="font-size: 14px; color: #9CA3AF;">Your browser or system doesn't support WebGL</div>
-              <div style="font-size: 12px; color: #6B7280; margin-top: 8px;">Please use a modern browser with hardware acceleration enabled</div>
-            </div>
-          </div>
-        `;
-      }
-      return;
+      // Append to DOM
+      mountRef.current.appendChild(renderer.domElement);
+
+      // Add basic lighting
+      const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(10, 10, 5);
+      scene.add(directionalLight);
+
+      setIsInitialized(true);
+      console.log('🌌 Three.js scene initialized successfully');
+    } catch (err) {
+      console.error('❌ Three.js initialization failed:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     }
+  }, [width, height, isInitialized]);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(100, 100, 50);
-    directionalLight.castShadow = true;
-    scene.add(directionalLight);
-
-    // Add controls for mouse interaction
-    let mouseX = 0, mouseY = 0;
-    let targetX = 0, targetY = 0;
-
-    const onMouseMove = (event: MouseEvent) => {
-      if (!isMouseDown) {
-        mouseX = (event.clientX - width / 2) * 0.001;
-        mouseY = (event.clientY - height / 2) * 0.001;
-      }
-    };
-
-    const onMouseDown = () => setIsMouseDown(true);
-    const onMouseUp = () => setIsMouseDown(false);
-
-    renderer.domElement.addEventListener('mousemove', onMouseMove);
-    renderer.domElement.addEventListener('mousedown', onMouseDown);
-    renderer.domElement.addEventListener('mouseup', onMouseUp);
-
-    // Animation loop with error handling
-    const animate = () => {
-      if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
-        console.warn('🌌 Animation stopped: missing renderer, scene, or camera');
-        return;
-      }
-
-      animationIdRef.current = requestAnimationFrame(animate);
-
-      // Gentle camera rotation when not interacting
-      if (!isMouseDown) {
-        targetX = mouseX;
-        targetY = mouseY;
-      }
-
-      camera.position.x += (targetX * 200 - camera.position.x) * 0.02;
-      camera.position.y += (-targetY * 200 - camera.position.y) * 0.02;
-      camera.lookAt(scene.position);
-
-      // Update physics simulation
-      updatePhysics();
-
-      try {
-        renderer.render(scene, camera);
-      } catch (error) {
-        console.error('🌌 Render error:', error);
-        // Stop animation on render error
-        if (animationIdRef.current) {
-          cancelAnimationFrame(animationIdRef.current);
-        }
-      }
-    };
-
-    animate();
-
-    return () => {
-      renderer.domElement.removeEventListener('mousemove', onMouseMove);
-      renderer.domElement.removeEventListener('mousedown', onMouseDown);
-      renderer.domElement.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [width, height, isMouseDown]);
-
-  // 3D physics simulation
-  const updatePhysics = useCallback(() => {
-    const nodes3D = nodesRef.current;
-    const edges3D = edgesRef.current;
-
-    if (nodes3D.length === 0) return;
-
-    // Apply forces
-    for (const node of nodes3D) {
-      // Reset forces
-      const force = new THREE.Vector3(0, 0, 0);
-
-      // Repulsion from other nodes
-      for (const other of nodes3D) {
-        if (node.id === other.id) continue;
-
-        const distance = node.position.distanceTo(other.position);
-        if (distance > 0) {
-          const repulsion = node.position.clone().sub(other.position).normalize();
-          repulsion.multiplyScalar(1000 / (distance * distance));
-          force.add(repulsion);
-        }
-      }
-
-      // Attraction along edges
-      for (const edge of edges3D) {
-        let connectedNode: Node3D | undefined;
-        let isSource = false;
-
-        if (edge.source === node.id) {
-          connectedNode = nodes3D.find(n => n.id === edge.target);
-          isSource = true;
-        } else if (edge.target === node.id) {
-          connectedNode = nodes3D.find(n => n.id === edge.source);
-        }
-
-        if (connectedNode) {
-          const metadata = edge.metadata || {};
-          const frequency = metadata.adjacency_frequency || 1;
-          const strengthCategory = metadata.strength_category || 'weak';
-
-          // Calculate target distance based on strength
-          let targetDistance;
-          switch (strengthCategory) {
-            case 'very_strong': targetDistance = 50 * distancePower; break;
-            case 'strong': targetDistance = 100 * distancePower; break;
-            case 'moderate': targetDistance = 200 * distancePower; break;
-            default: targetDistance = 300 * distancePower; break;
-          }
-
-          const distance = node.position.distanceTo(connectedNode.position);
-          const difference = distance - targetDistance;
-
-          if (Math.abs(difference) > 5) {
-            const attraction = connectedNode.position.clone().sub(node.position).normalize();
-            attraction.multiplyScalar(difference * 0.01 * (frequency * 0.1 + 0.1));
-            force.add(attraction);
-          }
-        }
-      }
-
-      // Center attraction (weak)
-      const centerForce = node.position.clone().multiplyScalar(-0.0001);
-      force.add(centerForce);
-
-      // Apply force to velocity
-      node.velocity.add(force.multiplyScalar(0.01));
-
-      // Damping
-      node.velocity.multiplyScalar(0.95);
-
-      // Update position
-      node.position.add(node.velocity);
-
-      // Update mesh position
-      if (node.mesh) {
-        node.mesh.position.copy(node.position);
-      }
-    }
-
-    // Update edge positions
-    for (const edge of edges3D) {
-      const sourceNode = nodes3D.find(n => n.id === edge.source);
-      const targetNode = nodes3D.find(n => n.id === edge.target);
-
-      if (sourceNode && targetNode && edge.line) {
-        const geometry = edge.line.geometry as THREE.BufferGeometry;
-        const positions = geometry.attributes.position;
-        positions.setXYZ(0, sourceNode.position.x, sourceNode.position.y, sourceNode.position.z);
-        positions.setXYZ(1, targetNode.position.x, targetNode.position.y, targetNode.position.z);
-        positions.needsUpdate = true;
-      }
-    }
-  }, [distancePower]);
-
-  // Create 3D nodes and edges
-  useEffect(() => {
-    console.log('🌐 3D nodes/edges effect triggered:', {
-      sceneExists: !!sceneRef.current,
-      rendererExists: !!rendererRef.current,
-      nodesLength: nodes.length,
-      edgesLength: edges.length,
-      firstNode: nodes[0]
-    });
-
-    if (!sceneRef.current || !rendererRef.current || !nodes.length) {
-      console.log('🌐 Skipping 3D creation:', {
-        sceneExists: !!sceneRef.current,
-        rendererExists: !!rendererRef.current,
-        nodesLength: nodes.length
-      });
-      return;
-    }
-
-    console.log('🌐 Creating 3D visualization with', nodes.length, 'nodes and', edges.length, 'edges');
+  // Create 3D graph visualization
+  const createGraph = useCallback(() => {
+    if (!sceneRef.current || !nodes.length) return;
 
     const scene = sceneRef.current;
 
-    // Clear previous objects (but keep lights)
+    // Clear existing objects
     const objectsToRemove = scene.children.filter(child =>
-      child.type === 'Mesh' || child.type === 'Line'
+      child.userData.isGraphElement
     );
-    console.log('🧹 Removing', objectsToRemove.length, 'previous 3D objects');
-    objectsToRemove.forEach(child => scene.remove(child));
+    objectsToRemove.forEach(obj => scene.remove(obj));
 
-    // Create 3D nodes
-    const nodes3D: Node3D[] = nodes.map((node, index) => {
-      // Arrange in 3D sphere
-      const radius = 200;
-      const phi = Math.acos(-1 + (2 * index) / nodes.length);
-      const theta = Math.sqrt(nodes.length * Math.PI) * phi;
+    console.log('🎨 Creating 3D graph with', nodes.length, 'nodes and', edges.length, 'edges');
 
-      const x = radius * Math.cos(theta) * Math.sin(phi);
-      const y = radius * Math.sin(theta) * Math.sin(phi);
+    // Create node geometry and materials
+    const nodeGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+    const nodeGroup = new THREE.Group();
+    nodeGroup.userData.isGraphElement = true;
+
+    // Position nodes in 3D space
+    const nodePositions = new Map<string, THREE.Vector3>();
+    nodes.forEach((node, index) => {
+      // Create spherical distribution for better 3D layout
+      const phi = Math.acos(1 - 2 * (index + 0.5) / nodes.length);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * index;
+      const radius = 20;
+
+      const x = radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.sin(phi) * Math.sin(theta);
       const z = radius * Math.cos(phi);
 
-      // Create sphere geometry for nodes
-      const geometry = new THREE.SphereGeometry(8, 16, 16);
-      const material = new THREE.MeshLambertMaterial({
-        color: getNodeColor(node),
-        transparent: true,
-        opacity: 0.8
-      });
+      const position = new THREE.Vector3(x, y, z);
+      nodePositions.set(node.id, position);
 
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(x, y, z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      // Create node material with proper color
+      const color = new THREE.Color(getNodeColor(node));
+      const nodeMaterial = new THREE.MeshLambertMaterial({ color });
 
-      // Store node reference for interaction
-      mesh.userData = { nodeId: node.id, nodeData: node };
-
-      scene.add(mesh);
-
-      return {
-        id: node.id,
-        label: node.label || node.title || 'Unknown',
-        type: node.type || node.metadata?.type || 'unknown',
-        position: new THREE.Vector3(x, y, z),
-        velocity: new THREE.Vector3(0, 0, 0),
-        mesh,
-        selected: selectedNodes.includes(node.id)
+      // Create node mesh
+      const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
+      nodeMesh.position.copy(position);
+      nodeMesh.userData = {
+        nodeId: node.id,
+        nodeData: node,
+        isGraphElement: true
       };
+
+      nodeGroup.add(nodeMesh);
+
+      // Add text label
+      if (node.title || node.label) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (context) {
+          canvas.width = 256;
+          canvas.height = 64;
+          context.fillStyle = '#FFFFFF';
+          context.font = '16px Arial';
+          context.textAlign = 'center';
+          context.fillText(
+            (node.title || node.label).substring(0, 20),
+            canvas.width / 2,
+            canvas.height / 2
+          );
+
+          const texture = new THREE.CanvasTexture(canvas);
+          const labelMaterial = new THREE.SpriteMaterial({ map: texture });
+          const label = new THREE.Sprite(labelMaterial);
+          label.position.copy(position);
+          label.position.y += 1.5;
+          label.scale.set(4, 1, 1);
+          label.userData.isGraphElement = true;
+
+          nodeGroup.add(label);
+        }
+      }
     });
 
-    // Create 3D edges
-    const edges3D: Edge3D[] = edges.map((edge, index) => {
-      const sourceNode = nodes3D.find(n => n.id === edge.source);
-      const targetNode = nodes3D.find(n => n.id === edge.target);
+    scene.add(nodeGroup);
 
-      if (!sourceNode || !targetNode) return null;
+    // Create edges
+    if (edges.length > 0) {
+      const edgeGroup = new THREE.Group();
+      edgeGroup.userData.isGraphElement = true;
 
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(6); // 2 points * 3 coordinates
+      edges.forEach(edge => {
+        const sourcePos = nodePositions.get(edge.source);
+        const targetPos = nodePositions.get(edge.target);
 
-      positions[0] = sourceNode.position.x;
-      positions[1] = sourceNode.position.y;
-      positions[2] = sourceNode.position.z;
-      positions[3] = targetNode.position.x;
-      positions[4] = targetNode.position.y;
-      positions[5] = targetNode.position.z;
+        if (sourcePos && targetPos) {
+          const points = [sourcePos, targetPos];
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          // Edge color based on frequency/strength
+          const metadata = edge.metadata || {};
+          const frequency = metadata.adjacency_frequency || 1;
+          const alpha = Math.min(1, 0.3 + frequency * 0.1);
 
-      const material = new THREE.LineBasicMaterial({
-        color: getEdgeColor({ ...edge, metadata: edge.metadata }),
-        transparent: true,
-        opacity: 0.6
+          const material = new THREE.LineBasicMaterial({
+            color: 0x4A90E2,
+            opacity: alpha,
+            transparent: true
+          });
+
+          const line = new THREE.Line(geometry, material);
+          line.userData.isGraphElement = true;
+          edgeGroup.add(line);
+        }
       });
 
-      const line = new THREE.Line(geometry, material);
-      scene.add(line);
+      scene.add(edgeGroup);
+    }
 
-      return {
-        id: edge.id || `edge_${index}`,
-        source: edge.source,
-        target: edge.target,
-        weight: edge.weight,
-        metadata: edge.metadata,
-        line
-      };
-    }).filter(Boolean) as Edge3D[];
+    console.log('✅ 3D graph created successfully');
+  }, [nodes, edges, getNodeColor]);
 
-    nodesRef.current = nodes3D;
-    edgesRef.current = edges3D;
+  // Animation loop
+  const animate = useCallback(() => {
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
 
-  }, [nodes, edges, selectedNodes, getNodeColor, getEdgeColor]);
+    // Slow rotation around Y-axis for a dynamic view
+    const time = Date.now() * 0.0005;
+    cameraRef.current.position.x = Math.cos(time) * 50;
+    cameraRef.current.position.z = Math.sin(time) * 50;
+    cameraRef.current.lookAt(0, 0, 0);
 
-  // Initialize scene
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+    animationIdRef.current = requestAnimationFrame(animate);
+  }, []);
+
+  // Initialize Three.js when component mounts
   useEffect(() => {
-    console.log('🌌 Scene initialization effect triggered');
-    const cleanup = initScene();
+    initThreeJS();
 
     return () => {
-      console.log('🌌 Cleaning up 3D scene');
-      if (cleanup) cleanup();
+      // Cleanup
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
-        animationIdRef.current = 0;
       }
-      if (rendererRef.current) {
+      if (rendererRef.current && mountRef.current) {
+        mountRef.current.removeChild(rendererRef.current.domElement);
         rendererRef.current.dispose();
-        if (mountRef.current && rendererRef.current.domElement.parentNode === mountRef.current) {
-          mountRef.current.removeChild(rendererRef.current.domElement);
-        }
-        rendererRef.current = null;
-      }
-      if (sceneRef.current) {
-        // Clean up scene objects
-        sceneRef.current.traverse((object) => {
-          if (object instanceof THREE.Mesh) {
-            object.geometry.dispose();
-            if (object.material instanceof THREE.Material) {
-              object.material.dispose();
-            }
-          }
-        });
-        sceneRef.current = null;
       }
     };
-  }, [width, height]); // Only re-initialize when dimensions change
+  }, [initThreeJS]);
 
-  // Update camera aspect ratio
+  // Create graph when data is available and scene is initialized
   useEffect(() => {
-    if (cameraRef.current && rendererRef.current) {
-      cameraRef.current.aspect = width / height;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(width, height);
+    if (isInitialized && nodes.length > 0) {
+      createGraph();
     }
+  }, [isInitialized, nodes, edges, createGraph]);
+
+  // Start animation when scene is ready
+  useEffect(() => {
+    if (isInitialized && !animationIdRef.current) {
+      animate();
+    }
+  }, [isInitialized, animate]);
+
+  // Handle window resize
+  useEffect(() => {
+    if (!rendererRef.current || !cameraRef.current) return;
+
+    rendererRef.current.setSize(width, height);
+    cameraRef.current.aspect = width / height;
+    cameraRef.current.updateProjectionMatrix();
   }, [width, height]);
 
-  // Debug logging
-  console.log('🌌 ThreeD3Canvas render:', {
-    nodesLength: nodes.length,
-    edgesLength: edges.length,
-    width,
-    height,
-    sceneExists: !!sceneRef.current
-  });
+  // Error state
+  if (error) {
+    return (
+      <div
+        className={className || "absolute inset-0"}
+        style={{ width, height, backgroundColor: '#0F172A' }}
+        data-testid="3d-canvas-error"
+      >
+        <div className="absolute inset-0 flex items-center justify-center text-white">
+          <div className="text-center">
+            <div className="text-xl font-bold mb-2 text-red-400">❌ 3D Visualization Error</div>
+            <div className="text-sm text-gray-400 mb-2">{error}</div>
+            <div className="text-xs text-gray-500">
+              Check browser WebGL support and console for details
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // Loading state
+  if (!isInitialized) {
+    return (
+      <div
+        className={className || "absolute inset-0"}
+        style={{ width, height, backgroundColor: '#0F172A' }}
+        data-testid="3d-canvas-loading"
+      >
+        <div className="absolute inset-0 flex items-center justify-center text-white">
+          <div className="text-center">
+            <div className="text-xl font-bold mb-2">🌌 Initializing 3D Visualization</div>
+            <div className="text-sm text-blue-400 mb-2">Setting up Three.js scene...</div>
+            <div className="text-xs text-gray-500">
+              Data ready: {nodes.length} nodes, {edges.length} edges
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
   if (!nodes.length) {
     return (
       <div
         className={className || "absolute inset-0"}
         style={{ width, height, backgroundColor: '#0F172A' }}
+        data-testid="3d-canvas-no-data"
       >
         <div className="absolute inset-0 flex items-center justify-center text-white">
           <div className="text-center">
@@ -513,38 +308,28 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
             <div className="text-xs text-gray-500 mt-2">
               Nodes: {nodes.length} | Edges: {edges.length}
             </div>
-            <div className="text-xs text-blue-400 mt-2">
-              WebGL Status: {typeof WebGLRenderingContext !== 'undefined' ? '✅ Available' : '❌ Not Available'}
-            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // Render the 3D canvas
   return (
     <div
       className={className || "absolute inset-0"}
-      style={{ width, height }}
+      style={{ width, height, backgroundColor: '#0F172A' }}
+      data-testid="3d-canvas"
     >
-      <div ref={mountRef} style={{ width, height }} />
+      <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Instructions overlay */}
-      <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white text-sm px-3 py-2 rounded">
-        🖱️ Move mouse to rotate • 🎵 Track relationships in 3D space
+      {/* Debug info overlay */}
+      <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs p-2 rounded">
+        <div>🌌 3D Mode</div>
+        <div>Nodes: {nodes.length}</div>
+        <div>Edges: {edges.length}</div>
+        <div>WebGL: ✅</div>
       </div>
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div
-          style={{ position: 'fixed', top: tooltip.y + 10, left: tooltip.x + 10, pointerEvents: 'none' }}
-          className="bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded shadow"
-        >
-          {tooltip.content}
-        </div>
-      )}
     </div>
   );
 };
-
-export default ThreeD3Canvas;

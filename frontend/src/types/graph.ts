@@ -267,6 +267,7 @@ export interface PathFindingOptions {
     bpmTolerance?: number;
     keyCompatibility?: boolean;
     energyProgression?: 'ascending' | 'descending' | 'smooth';
+    preventCycles?: boolean; // Prevent revisiting nodes (default: true)
   };
   diversityFactor?: number;
 }

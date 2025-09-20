@@ -4,6 +4,7 @@ import { store } from '@store/index';
 import { ThemeProvider } from '@theme/ThemeProvider';
 import { WorkingD3Canvas } from '@components/GraphCanvas/WorkingD3Canvas';
 import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3Canvas';
+import { TestThree3D } from '@components/GraphCanvas/TestThree3D';
 // import { SearchPanel } from '@components/SearchPanel/SearchPanel';
 // import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
 // import { ConnectionStatus } from '@components/ConnectionStatus';
@@ -26,7 +27,23 @@ const AppContent: React.FC = () => {
   const dispatch = useAppDispatch();
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
   // const [useMuiSearch, setUseMuiSearch] = useState(true); // Toggle between original and MUI search
-  const [is3DMode, setIs3DMode] = useState(false); // Toggle between 2D and 3D visualization
+  // Initialize mode from URL parameter or default to false
+  const [is3DMode, setIs3DMode] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const is3D = mode === '3d' || mode === '3D';
+    console.log('🚀 Initializing 3D mode from URL:', { mode, is3D });
+    return is3D;
+  });
+
+  // Check for test mode - make it reactive
+  const isTestMode = (() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const testMode = mode === 'test3d';
+    console.log('🧪 Test mode detection:', { mode, testMode, url: window.location.search });
+    return testMode;
+  })();
 
   // Redux state
   const { nodes, edges, loading, selectedNodes } = useAppSelector(state => state.graph);
@@ -73,6 +90,27 @@ const AppContent: React.FC = () => {
     }
   }, [width, height, containerRef, is3DMode, nodes.length, edges.length]);
 
+  // Update URL when 3D mode changes (but preserve test mode)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentMode = urlParams.get('mode');
+
+    // Don't modify URL if we're in test mode
+    if (currentMode === 'test3d') {
+      console.log('🔒 Preserving test mode URL parameter');
+      return;
+    }
+
+    if (is3DMode) {
+      urlParams.set('mode', '3d');
+    } else {
+      urlParams.delete('mode');
+    }
+    const newUrl = urlParams.toString() ? `${window.location.pathname}?${urlParams.toString()}` : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+    console.log('🔗 Updated URL for 3D mode:', { is3DMode, url: newUrl });
+  }, [is3DMode]);
+
   // WebSocket integration for real-time updates
   const {
     connect: connectWebSocket,
@@ -100,12 +138,17 @@ const AppContent: React.FC = () => {
   // Initialize app - load local graph data
   useEffect(() => {
     // Load initial graph data
-    console.log('🚀 App useEffect: nodes.length =', nodes.length, 'loading =', loading);
+    console.log('🚀 App useEffect: nodes.length =', nodes.length, 'loading =', loading, '3D mode =', is3DMode);
     if (nodes.length === 0 && !loading) {
       console.log('📥 Loading local graph data...');
       loadGraphData().then(data => {
         if (data) {
-          console.log('✅ Setting nodes and edges:', { nodes: data.nodes.length, edges: data.edges.length });
+          console.log('✅ Setting nodes and edges:', {
+            nodes: data.nodes.length,
+            edges: data.edges.length,
+            sample_node_types: data.nodes.slice(0, 3).map(n => ({ id: n.id, type: n.type })),
+            is3DMode: is3DMode
+          });
 
           // Use data as-is for the working component
           // The WorkingD3Canvas handles type conversion internally
@@ -118,7 +161,7 @@ const AppContent: React.FC = () => {
         console.error('❌ Error loading graph data:', error);
       });
     }
-  }, [dispatch, nodes.length, loading, width, height]);
+  }, [dispatch, nodes.length, loading, width, height, is3DMode]);
 
   // Handle device info updates separately to prevent infinite loops
   useEffect(() => {
@@ -567,6 +610,8 @@ const AppContent: React.FC = () => {
     setShowLegendDropdown(false);
     setShowSearchDropdown(false);
     setShowFunctionsDropdown(false);
+    setShowScrapingDropdown(false);
+    setShowRouteDropdown(false);
   };
 
   // Handle click outside to close dropdowns
@@ -602,27 +647,46 @@ const AppContent: React.FC = () => {
           <>
             {/* Debug info overlay */}
             <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-50">
-              {is3DMode ? '🌌 3D Mode' : '📊 2D Mode'} | {width}×{height} | Nodes: {nodes.length}
+              {isTestMode ? '🧪 Test Mode' : (is3DMode ? '🌌 3D Mode' : '📊 2D Mode')} | {width}×{height} | Nodes: {nodes.length}
             </div>
 
-            {is3DMode ? (
-              <ThreeD3Canvas
-                key="3d-canvas" // Force re-mount when switching modes
-                width={width || window.innerWidth}
-                height={height || window.innerHeight}
-                className="absolute inset-0"
-                distancePower={distancePower}
-              />
-            ) : (
-              <WorkingD3Canvas
-                key="2d-canvas" // Force re-mount when switching modes
-                width={width || window.innerWidth}
-                height={height || window.innerHeight}
-                className="absolute inset-0"
-                distancePower={distancePower}
-                relationshipPower={relationshipPower}
-              />
-            )}
+{(() => {
+              console.log('🎯 Canvas selection logic:', { isTestMode, is3DMode, nodes: nodes.length });
+              if (isTestMode) {
+                console.log('✅ Rendering TestThree3D component');
+                return (
+                  <TestThree3D
+                    key="test-3d-canvas"
+                    width={width || window.innerWidth}
+                    height={height || window.innerHeight}
+                    className="absolute inset-0"
+                  />
+                );
+              } else if (is3DMode) {
+                console.log('✅ Rendering ThreeD3Canvas component');
+                return (
+                  <ThreeD3Canvas
+                    key="3d-canvas" // Force re-mount when switching modes
+                    width={width || window.innerWidth}
+                    height={height || window.innerHeight}
+                    className="absolute inset-0"
+                    distancePower={distancePower}
+                  />
+                );
+              } else {
+                console.log('✅ Rendering WorkingD3Canvas component');
+                return (
+                  <WorkingD3Canvas
+                    key="2d-canvas" // Force re-mount when switching modes
+                    width={width || window.innerWidth}
+                    height={height || window.innerHeight}
+                    className="absolute inset-0"
+                    distancePower={distancePower}
+                    relationshipPower={relationshipPower}
+                  />
+                );
+              }
+            })()}
           </>
         )}
 
@@ -650,26 +714,29 @@ const AppContent: React.FC = () => {
 
       {/* Fixed Horizontal Menu Bar - Top Center */}
       <nav
-        className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 border-b border-gray-600 shadow-2xl backdrop-blur-sm"
+        className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 border-b border-gray-600 shadow-2xl backdrop-blur-sm dropdown-container"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           zIndex: 9999,
-          height: '64px'
+          height: '64px',
+          overflow: 'visible'
         }}
       >
         <div
-          className="flex items-center justify-center h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          className="flex items-center justify-center h-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-8"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
-            gap: '24px',
+            gap: 'clamp(8px, 2vw, 24px)',
             minWidth: 'fit-content',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            overflow: 'visible',
+            flexWrap: 'nowrap'
           }}
         >
           {/* Logo */}
@@ -693,21 +760,34 @@ const AppContent: React.FC = () => {
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
-              gap: '16px'
+              gap: 'clamp(8px, 1.5vw, 16px)',
+              overflow: 'visible',
+              position: 'relative',
+              flexWrap: 'wrap',
+              justifyContent: 'center'
             }}
           >
               {/* Overview */}
               <div className="relative">
                 <button
                   onClick={() => setShowOverviewDropdown(!showOverviewDropdown)}
-                  className="text-white hover:text-blue-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                  className="text-white hover:text-blue-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Overview
                 </button>
                 {showOverviewDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-64 p-4 z-[10000] max-h-[80vh] overflow-auto">
-                    <h3 className="text-white font-semibold mb-3">Graph Overview</h3>
-                    <div className="space-y-2 text-sm">
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-56 sm:w-64 md:w-72 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
+                       style={{
+                         position: 'absolute',
+                         top: '64px',
+                         left: '0px',
+                         zIndex: 10001,
+                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                         backdropFilter: 'blur(12px) saturate(150%)',
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                       }}>
+                    <h3 className="text-white font-semibold mb-4">Graph Overview</h3>
+                    <div className="space-y-3 text-sm">
                       <div className="flex justify-between text-gray-300">
                         <span>Nodes:</span>
                         <span className="text-white font-medium" data-testid="node-count">{nodes.length.toLocaleString()}</span>
@@ -722,7 +802,7 @@ const AppContent: React.FC = () => {
                       </div>
 
                       {/* Distance Power Slider - Range -5 to 5 */}
-                      <div className="mt-4 pt-3 border-t border-gray-700">
+                      <div className="mt-5 pt-4 border-t border-gray-700">
                         <div className="flex justify-between text-gray-300 mb-2">
                           <span>Distance:</span>
                           <span className="text-white font-medium">
@@ -758,7 +838,7 @@ const AppContent: React.FC = () => {
                       </div>
 
                       {/* Relationship Strength Slider - Range -5 to 5 */}
-                      <div className="mt-4 pt-3 border-t border-gray-700">
+                      <div className="mt-5 pt-4 border-t border-gray-700">
                         <div className="flex justify-between text-gray-300 mb-2">
                           <span>Relationships:</span>
                           <span className="text-white font-medium">
@@ -794,22 +874,65 @@ const AppContent: React.FC = () => {
                       </div>
 
                       {/* 3D Visualization Toggle */}
-                      <div className="mt-4 pt-3 border-t border-gray-700">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">Visualization:</span>
-                          <button
-                            onClick={() => setIs3DMode(!is3DMode)}
-                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                              is3DMode
-                                ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                            }`}
-                          >
-                            {is3DMode ? '3D Mode' : '2D Mode'}
-                          </button>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {is3DMode ? '🌌 Immersive 3D space with Three.js' : '📊 Standard 2D graph with D3.js'}
+                      <div className="mt-5 pt-4 border-t border-gray-700">
+                        <div className="flex flex-col space-y-2">
+                          <span className="text-gray-300 text-sm">Visualization Mode:</span>
+
+                          {/* Dual Button Toggle Switch */}
+                          <div className="flex bg-gray-800 rounded-lg p-1 relative">
+                            {/* 2D Mode Button */}
+                            <button
+                              onClick={() => {
+                                if (is3DMode) {
+                                  console.log('🌌 Switching to 2D Mode:', {
+                                    from: '3D',
+                                    to: '2D',
+                                    current_nodes_count: nodes.length,
+                                    current_edges_count: edges.length
+                                  });
+                                  setIs3DMode(false);
+                                }
+                              }}
+                              className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 flex items-center justify-center space-x-1 ${
+                                !is3DMode
+                                  ? 'bg-blue-600 text-white shadow-md transform scale-105'
+                                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                              }`}
+                            >
+                              <span>📊</span>
+                              <span>2D Graph</span>
+                              {!is3DMode && <span className="text-green-400">●</span>}
+                            </button>
+
+                            {/* 3D Mode Button */}
+                            <button
+                              onClick={() => {
+                                if (!is3DMode) {
+                                  console.log('🌌 Switching to 3D Mode:', {
+                                    from: '2D',
+                                    to: '3D',
+                                    current_nodes_count: nodes.length,
+                                    current_edges_count: edges.length
+                                  });
+                                  setIs3DMode(true);
+                                }
+                              }}
+                              className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 flex items-center justify-center space-x-1 ${
+                                is3DMode
+                                  ? 'bg-purple-600 text-white shadow-md transform scale-105'
+                                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                              }`}
+                            >
+                              <span>🌌</span>
+                              <span>3D Space</span>
+                              {is3DMode && <span className="text-green-400">●</span>}
+                            </button>
+                          </div>
+
+                          {/* Mode Description */}
+                          <div className="text-xs text-gray-500 text-center">
+                            {is3DMode ? 'Immersive 3D space with Three.js & WebGL' : 'Standard 2D graph with D3.js force simulation'}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -821,13 +944,22 @@ const AppContent: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowLegendDropdown(!showLegendDropdown)}
-                  className="text-white hover:text-green-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                  className="text-white hover:text-green-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Legend
                 </button>
                 {showLegendDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-48 sm:w-64 p-4 z-[10000] max-h-[80vh] overflow-auto">
-                    <h3 className="text-white font-semibold mb-3">Node Types</h3>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-48 sm:w-56 md:w-64 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
+                       style={{
+                         position: 'absolute',
+                         top: '64px',
+                         left: '0px',
+                         zIndex: 10001,
+                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                         backdropFilter: 'blur(12px) saturate(150%)',
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                       }}>
+                    <h3 className="text-white font-semibold mb-4">Node Types</h3>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 rounded-full bg-blue-500"></div>
@@ -846,13 +978,22 @@ const AppContent: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowSearchDropdown(!showSearchDropdown)}
-                  className="text-white hover:text-yellow-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                  className="text-white hover:text-yellow-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Search
                 </button>
                 {showSearchDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-80 sm:w-96 p-4 z-[10000] max-h-[80vh] overflow-auto">
-                    <h3 className="text-white font-semibold mb-3">Search Graph</h3>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-64 sm:w-72 md:w-80 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
+                       style={{
+                         position: 'absolute',
+                         top: '64px',
+                         left: '0px',
+                         zIndex: 10001,
+                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                         backdropFilter: 'blur(12px) saturate(150%)',
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                       }}>
+                    <h3 className="text-white font-semibold mb-4">Search Graph</h3>
                     <input
                       type="text"
                       placeholder="Search artists, tracks, venues..."
@@ -866,13 +1007,22 @@ const AppContent: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowFunctionsDropdown(!showFunctionsDropdown)}
-                  className="text-white hover:text-purple-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                  className="text-white hover:text-purple-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Functions
                 </button>
                 {showFunctionsDropdown && (
-                  <div className="absolute top-16 right-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-[28rem] sm:w-[32rem] p-4 z-[10000] max-h-[80vh] overflow-auto">
-                    <h3 className="text-white font-semibold mb-3">Build Graph From Song</h3>
+                  <div className="absolute top-16 right-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-72 sm:w-80 md:w-96 lg:w-[26rem] p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
+                       style={{
+                         position: 'absolute',
+                         top: '64px',
+                         right: '0px',
+                         zIndex: 10001,
+                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                         backdropFilter: 'blur(12px) saturate(150%)',
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                       }}>
+                    <h3 className="text-white font-semibold mb-4">Build Graph From Song</h3>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <input
@@ -931,7 +1081,7 @@ const AppContent: React.FC = () => {
                         <p className="text-gray-400 text-xs">
                           Submits scraping tasks to Setlist.fm, MixesDB, and 1001Tracklists via the orchestrator. The graph updates once setlists are processed into song adjacency edges.
                         </p>
-                      <div className="mt-4 p-3 border border-gray-800 rounded">
+                      <div className="mt-5 p-4 border border-gray-800 rounded">
                         <div className="mb-2 text-white font-semibold">Route Tools</div>
                         <div className="flex items-center gap-2 mb-2">
                           <button onClick={calculateRoute} className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded text-sm">Calculate Path</button>
@@ -943,9 +1093,9 @@ const AppContent: React.FC = () => {
                           <div className="mt-2 text-xs text-gray-300">
                             <div className="mb-1 font-semibold">Waypoints</div>
                             {pathfinding.waypoints.map((wp, idx) => (
-                              <div key={wp} className="flex items-center gap-2 mb-1">
-                                <span className="text-gray-500">{idx+1}.</span>
-                                <span className="truncate flex-1">{wp}</span>
+                              <div key={wp} className="flex items-start gap-2 mb-2">
+                                <span className="text-gray-500 flex-shrink-0 mt-0.5">{idx+1}.</span>
+                                <span className="break-words flex-1 leading-relaxed">{wp}</span>
                                 <button onClick={() => import('@store/pathfindingSlice').then(m => dispatch(m.moveWaypoint({ index: idx, direction: 'up' })))} className="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded">↑</button>
                                 <button onClick={() => import('@store/pathfindingSlice').then(m => dispatch(m.moveWaypoint({ index: idx, direction: 'down' })))} className="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded">↓</button>
                                 <button onClick={() => import('@store/pathfindingSlice').then(m => dispatch(m.removeWaypoint(wp)))} className="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded">✕</button>
@@ -955,24 +1105,31 @@ const AppContent: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="mt-4 p-3 border border-gray-800 rounded">
-                        <div className="mb-2 text-white font-semibold">Import Collection</div>
-                        <div className="flex items-center gap-2 mb-2 text-xs text-gray-300">
-                          <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) importCollection(f); }} />
-                          <span className="text-gray-500">Upload my-collection.json (array of track titles)</span>
+                      <div className="mt-5 p-5 border border-gray-700/60 rounded-lg bg-gray-800/30">
+                        <div className="mb-3 text-white font-semibold text-sm">Import Collection</div>
+                        <div className="space-y-3">
+                          <input
+                            type="file"
+                            accept="application/json"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) importCollection(f); }}
+                            className="text-xs text-gray-300 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:bg-gray-700 file:text-gray-300 file:text-xs"
+                          />
+                          <div className="text-gray-500 text-xs leading-relaxed break-words">
+                            Upload my-collection.json (array of track titles)
+                          </div>
                         </div>
                         {importStatus && <div className="text-xs text-gray-400 mb-2">{importStatus}</div>}
                       </div>
 
-                      <div className="mt-4 p-3 border border-gray-800 rounded">
-                        <div className="mb-2 text-white font-semibold">Variation Review</div>
+                      <div className="mt-5 p-5 border border-gray-700/60 rounded-lg bg-gray-800/30">
+                        <div className="mb-3 text-white font-semibold text-sm">Variation Review</div>
                         <div className="flex items-center gap-2 mb-2">
                           <input
                             type="text"
                             value={variantQuery}
                             onChange={(e) => { setVariantQuery(e.target.value); setVariantSelections({}); }}
-                            placeholder="Type base title to match variants (e.g., Titanium)"
-                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"
+                            placeholder="Type base title (e.g., Titanium)"
+                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 text-xs"
                           />
                           <button
                             onClick={() => {
@@ -989,13 +1146,14 @@ const AppContent: React.FC = () => {
                         {Object.keys(variantSelections).length > 0 && (
                           <div className="max-h-40 overflow-auto space-y-1">
                             {computeVariants().map(v => (
-                              <label key={v.id} className="flex items-center gap-2 text-xs text-gray-300">
+                              <label key={v.id} className="flex items-start gap-2 text-xs text-gray-300 leading-relaxed py-1">
                                 <input
                                   type="checkbox"
                                   checked={variantSelections[v.id] ?? true}
                                   onChange={(e) => setVariantSelections({ ...variantSelections, [v.id]: e.target.checked })}
+                                  className="mt-0.5 flex-shrink-0"
                                 />
-                                <span className="truncate">{v.title}</span>
+                                <span className="break-words">{v.title}</span>
                               </label>
                             ))}
                           </div>
@@ -1018,26 +1176,26 @@ const AppContent: React.FC = () => {
                             </button>
                           </div>
                         )}
-                        <div className="text-[10px] text-gray-500 mt-2">Tracks not in your collection (my-collection.json) appear greyed out.</div>
+                        <div className="text-[10px] text-gray-500 mt-2 leading-relaxed break-words">Tracks not in your collection (my-collection.json) appear greyed out.</div>
                       </div>
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-white font-semibold">Task Status</h4>
-                          <button onClick={fetchScraperTasks} className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-300">Refresh</button>
+                      <div className="mt-5 p-5 border border-gray-700/60 rounded-lg bg-gray-800/30">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-white font-semibold text-sm">Task Status</h4>
+                          <button onClick={fetchScraperTasks} className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300">Refresh</button>
                         </div>
                         {tasksLoading && <div className="text-gray-400 text-xs">Loading tasks…</div>}
                         {tasksError && <div className="text-red-400 text-xs">{tasksError}</div>}
                         <div className="max-h-56 overflow-auto border border-gray-800 rounded">
                           {(tasks || []).slice(0, 50).map((t: any) => (
-                            <div key={t.id} className="px-2 py-1 text-xs text-gray-300 border-b border-gray-800">
-                              <div className="flex justify-between">
-                                <span className="text-gray-400">{t.scraper}</span>
-                                <span className="text-gray-500">{t.status}</span>
+                            <div key={t.id} className="px-3 py-3 text-xs text-gray-300 border-b border-gray-800 last:border-b-0">
+                              <div className="flex justify-between items-start gap-2 mb-1">
+                                <span className="text-gray-400 font-medium break-words">{t.scraper}</span>
+                                <span className="text-gray-500 flex-shrink-0 text-[10px]">{t.status}</span>
                               </div>
-                              <div className="truncate text-gray-500">{t.url}</div>
+                              <div className="controlled-text-url text-gray-500 text-[10px] break-all leading-relaxed">{t.url}</div>
                             </div>
                           ))}
-                          {(!tasks || tasks.length === 0) && !tasksLoading && <div className="px-2 py-2 text-xs text-gray-500">No tasks</div>}
+                          {(!tasks || tasks.length === 0) && !tasksLoading && <div className="px-3 py-3 text-xs text-gray-500">No tasks</div>}
                         </div>
                       </div>
                     </div>
@@ -1048,20 +1206,60 @@ const AppContent: React.FC = () => {
               {/* Route Selector */}
               <div className="relative">
                 <button
-                  onClick={() => setShowRouteDropdown(!showRouteDropdown)}
-                  className="text-white hover:text-purple-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                  onClick={() => {
+                    // Close all other dropdowns
+                    setShowFunctionsDropdown(false);
+                    setShowScrapingDropdown(false);
+                    setShowSearchDropdown(false);
+                    setShowRouteDropdown(!showRouteDropdown);
+                  }}
+                  className="text-white hover:text-purple-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Current Route
                 </button>
                 {showRouteDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-80 sm:w-96 p-4 z-[10000] max-h-[80vh] overflow-auto">
-                    <h3 className="text-white font-semibold mb-3">Route Navigation</h3>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-64 sm:w-72 md:w-80 lg:w-96 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
+                       style={{
+                         position: 'absolute',
+                         top: '64px',
+                         left: '0px',
+                         zIndex: 10001,
+                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                         backdropFilter: 'blur(12px) saturate(150%)',
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                       }}>
+                    <h3 className="text-white font-semibold mb-4">Route Navigation</h3>
+
+                    {/* Action buttons at the top */}
+                    <div className="flex gap-2 mb-4">
+                      <button
+                        onClick={() => {
+                          dispatch(clearPath());
+                          dispatch(setStartNode(null));
+                          dispatch(setEndNode(null));
+                          dispatch(clearWaypoints());
+                        }}
+                        className="flex-1 px-3 py-2 bg-red-800 hover:bg-red-700 text-red-200 text-sm rounded transition-colors"
+                      >
+                        Clear Route
+                      </button>
+                      <button
+                        onClick={() => {
+                          calculateRoute();
+                        }}
+                        className="flex-1 px-3 py-2 bg-green-800 hover:bg-green-700 text-green-200 text-sm rounded transition-colors"
+                        disabled={!pathfinding.startNode || !pathfinding.endNode}
+                      >
+                        Calculate Route
+                      </button>
+                    </div>
+
                     {pathfinding.currentPath?.nodes?.length ? (
                       <>
                         <div className="text-gray-400 text-xs mb-3">
                           {pathfinding.currentPath.nodes.length} tracks in current route
                         </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                        <div className="space-y-1 max-h-96 overflow-y-auto dropdown-scrollbar">
                           {pathfinding.currentPath.nodes.map((nodeId, index) => {
                             const node = nodes.find(n => n.id === nodeId);
                             const isFirst = pathfinding.startNode === nodeId;
@@ -1099,26 +1297,31 @@ const AppContent: React.FC = () => {
                               <button
                                 key={nodeId}
                                 onClick={() => {
+                                  // Select the node
+                                  import('@store/graphSlice').then(m => {
+                                    dispatch(m.setSelectedNodes([nodeId]));
+                                  });
                                   // Center the node in the visualization
                                   const centerEvent = new CustomEvent('centerNode', { detail: nodeId });
                                   window.dispatchEvent(centerEvent);
-                                  setShowRouteDropdown(false);
+                                  // Keep dropdown open for further interaction
+                                  // setShowRouteDropdown(false);
                                 }}
-                                className={`w-full text-left p-3 rounded-lg transition-colors ${bgColor} ${textColor}`}
+                                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${bgColor} ${textColor}`}
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm truncate">
-                                      {indicator}{index + 1}. {node?.metadata?.artist || node?.artist || 'Unknown Artist'}
-                                    </div>
-                                    <div className="text-xs opacity-80 truncate">
-                                      {node?.metadata?.title || node?.title || nodeId}
-                                    </div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <span className="text-xs font-medium flex-shrink-0">
+                                      {indicator}{index + 1}.
+                                    </span>
+                                    <span className="text-xs truncate">
+                                      {node?.metadata?.artist || node?.artist || 'Unknown Artist'} - {node?.metadata?.title || node?.title || nodeId}
+                                    </span>
                                   </div>
-                                  <div className="text-xs opacity-60 ml-2">
+                                  <div className="text-xs opacity-60 flex-shrink-0">
                                     {isFirst && 'START'}
                                     {isLast && 'END'}
-                                    {isWaypoint && !isFirst && !isLast && 'WAYPOINT'}
+                                    {isWaypoint && !isFirst && !isLast && 'WP'}
                                     {isPlayed && 'PLAYED'}
                                   </div>
                                 </div>
@@ -1126,20 +1329,10 @@ const AppContent: React.FC = () => {
                             );
                           })}
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-700 space-y-2">
+                        <div className="mt-4 pt-3 border-t border-gray-700">
                           <div className="text-xs text-gray-400">
                             🟢 Start Track | 🔴 End Track | 🟠 Waypoint | 🟣 Played | 🟡 Route Track
                           </div>
-                          <button
-                            onClick={() => {
-                              setShowRouteDropdown(false);
-                              // Clear the route
-                              dispatch(clearPath());
-                            }}
-                            className="w-full px-3 py-2 bg-red-800 hover:bg-red-700 text-red-200 text-sm rounded transition-colors"
-                          >
-                            Clear Current Route
-                          </button>
                         </div>
                       </>
                     ) : (
@@ -1154,15 +1347,30 @@ const AppContent: React.FC = () => {
               {/* Data Scraping */}
               <div className="relative">
                 <button
-                  onClick={() => setShowScrapingDropdown(!showScrapingDropdown)}
-                  className="text-white hover:text-orange-400 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-700"
+                  onClick={() => {
+                    // Close all other dropdowns
+                    setShowFunctionsDropdown(false);
+                    setShowRouteDropdown(false);
+                    setShowSearchDropdown(false);
+                    setShowScrapingDropdown(!showScrapingDropdown);
+                  }}
+                  className="text-white hover:text-orange-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Data Scraping
                 </button>
                 {showScrapingDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-80 sm:w-96 p-4 z-[10000] max-h-[80vh] overflow-auto">
-                    <h3 className="text-white font-semibold mb-3">Orchestrator-Led Scraping</h3>
-                    <p className="text-gray-400 text-xs mb-4">
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-64 sm:w-72 md:w-80 max-w-80 p-6 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
+                       style={{
+                         position: 'absolute',
+                         top: '64px',
+                         left: '0px',
+                         zIndex: 10001,
+                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                         backdropFilter: 'blur(12px) saturate(150%)',
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                       }}>
+                    <h3 className="text-white font-semibold mb-4 text-sm">Orchestrator-Led Scraping</h3>
+                    <p className="text-gray-400 text-xs mb-4 leading-relaxed break-words">
                       Triggers comprehensive data collection from all configured scrapers (1001tracklists, MixesDB).
                       This runs automatically but can be paused to avoid robots.txt restrictions.
                     </p>
@@ -1190,8 +1398,8 @@ const AppContent: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="mt-4 p-3 border border-gray-800 rounded">
-                        <div className="mb-2 text-white font-semibold text-sm">Live Task Monitor</div>
+                      <div className="mt-5 p-5 border border-gray-700/60 rounded-lg bg-gray-800/30">
+                        <div className="mb-3 text-white font-semibold text-sm">Live Task Monitor</div>
                         <div className="flex items-center gap-2 mb-2">
                           <button
                             onClick={fetchScraperTasks}
@@ -1221,7 +1429,7 @@ const AppContent: React.FC = () => {
                                   {t.status}
                                 </span>
                               </div>
-                              <div className="truncate text-gray-500 text-[10px]">{t.url}</div>
+                              <div className="controlled-text-url text-gray-500 text-[10px]">{t.url}</div>
                             </div>
                           ))}
                           {(!tasks || tasks.length === 0) && !tasksLoading && (
