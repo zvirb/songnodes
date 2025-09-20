@@ -86,9 +86,9 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             'sec-ch-ua-mobile': '?0',
             'sec-ch-ua-platform': '"Linux"'
         },
-        # 'ITEM_PIPELINES': {
-        #     'database_pipeline.EnhancedMusicDatabasePipeline': 300,
-        # }
+        'ITEM_PIPELINES': {
+            'database_pipeline.EnhancedMusicDatabasePipeline': 300,
+        }
     }
 
     def __init__(self, search_mode='targeted', *args, **kwargs):

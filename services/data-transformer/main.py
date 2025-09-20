@@ -224,7 +224,7 @@ class DataNormalizer:
 
             # Skip tracks without valid artists
             if not artist:
-                continue
+                return None
             album = self._clean_text(track_data.album) if track_data.album else None
             genre = self._normalize_genre(track_data.genre) if track_data.genre else None
             label = self._clean_text(track_data.label) if track_data.label else None

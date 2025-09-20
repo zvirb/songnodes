@@ -72,9 +72,9 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#    'database_pipeline.EnhancedMusicDatabasePipeline': 300,
-# }
+ITEM_PIPELINES = {
+   'database_pipeline.EnhancedMusicDatabasePipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension with conservative settings
 AUTOTHROTTLE_ENABLED = True

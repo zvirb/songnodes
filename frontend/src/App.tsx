@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { store } from '@store/index';
 import { ThemeProvider } from '@theme/ThemeProvider';
 import { WorkingD3Canvas } from '@components/GraphCanvas/WorkingD3Canvas';
-import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3Canvas';
+import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3CanvasEnhanced';
 import { TestThree3D } from '@components/GraphCanvas/TestThree3D';
 // import { SearchPanel } from '@components/SearchPanel/SearchPanel';
 // import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
@@ -977,7 +977,13 @@ const AppContent: React.FC = () => {
               {/* Search */}
               <div className="relative">
                 <button
-                  onClick={() => setShowSearchDropdown(!showSearchDropdown)}
+                  onClick={() => {
+                    // Close all other dropdowns
+                    setShowFunctionsDropdown(false);
+                    setShowRouteDropdown(false);
+                    setShowScrapingDropdown(false);
+                    setShowSearchDropdown(!showSearchDropdown);
+                  }}
                   className="text-white hover:text-yellow-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Search
@@ -1006,7 +1012,13 @@ const AppContent: React.FC = () => {
               {/* Functions */}
               <div className="relative">
                 <button
-                  onClick={() => setShowFunctionsDropdown(!showFunctionsDropdown)}
+                  onClick={() => {
+                    // Close all other dropdowns
+                    setShowSearchDropdown(false);
+                    setShowRouteDropdown(false);
+                    setShowScrapingDropdown(false);
+                    setShowFunctionsDropdown(!showFunctionsDropdown);
+                  }}
                   className="text-white hover:text-purple-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Functions
@@ -1301,9 +1313,6 @@ const AppContent: React.FC = () => {
                                   import('@store/graphSlice').then(m => {
                                     dispatch(m.setSelectedNodes([nodeId]));
                                   });
-                                  // Center the node in the visualization
-                                  const centerEvent = new CustomEvent('centerNode', { detail: nodeId });
-                                  window.dispatchEvent(centerEvent);
                                   // Keep dropdown open for further interaction
                                   // setShowRouteDropdown(false);
                                 }}
