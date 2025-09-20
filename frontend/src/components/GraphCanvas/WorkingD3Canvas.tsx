@@ -1229,11 +1229,32 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Function to update edge label visibility based on zoom
     const updateEdgeLabels = () => {
       const visibleCount = getVisibleNodesCount();
-      const showEdgeLabels = visibleCount <= 1;
+      const showEdgeLabels = visibleCount === 1; // Only show when exactly ONE node is visible
 
       edgeLabelGroup.selectAll('*').remove();
 
       if (showEdgeLabels && simpleEdges.length > 0) {
+        // Get current viewport bounds in world coordinates
+        const svg = d3.select(svgRef.current);
+        const currentTransform = d3.zoomTransform(svg.node()!);
+
+        // Calculate viewport bounds in world coordinates
+        const viewportLeft = -currentTransform.x / currentTransform.k;
+        const viewportTop = -currentTransform.y / currentTransform.k;
+        const viewportRight = (width - currentTransform.x) / currentTransform.k;
+        const viewportBottom = (height - currentTransform.y) / currentTransform.k;
+
+        // Add some padding to keep labels comfortably within bounds
+        const padding = 100 / currentTransform.k; // Adjust padding based on zoom level
+        const boundsLeft = viewportLeft + padding;
+        const boundsTop = viewportTop + padding;
+        const boundsRight = viewportRight - padding;
+        const boundsBottom = viewportBottom - padding;
+
+        // Keep track of used label positions to avoid overlaps
+        const usedPositions = [];
+        const minDistance = 80 / currentTransform.k; // Minimum distance between labels
+
         simpleEdges.forEach(edge => {
           const sourceNode = typeof edge.source === 'object' ? edge.source : simpleNodes.find(n => n.id === edge.source);
           const targetNode = typeof edge.target === 'object' ? edge.target : simpleNodes.find(n => n.id === edge.target);
@@ -1241,9 +1262,138 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
           if (sourceNode && targetNode && sourceNode.x !== undefined && sourceNode.y !== undefined &&
               targetNode.x !== undefined && targetNode.y !== undefined) {
 
-            // Calculate midpoint of edge
-            const midX = (sourceNode.x + targetNode.x) / 2;
-            const midY = (sourceNode.y + targetNode.y) / 2;
+            // Calculate optimal label position within viewport bounds
+            let labelX, labelY;
+
+            // Check if either node is visible in viewport
+            const sourceInView = sourceNode.x >= boundsLeft && sourceNode.x <= boundsRight &&
+                                sourceNode.y >= boundsTop && sourceNode.y <= boundsBottom;
+            const targetInView = targetNode.x >= boundsLeft && targetNode.x <= boundsRight &&
+                                targetNode.y >= boundsTop && targetNode.y <= boundsBottom;
+
+            if (sourceInView && targetInView) {
+              // Both nodes visible - use midpoint
+              labelX = (sourceNode.x + targetNode.x) / 2;
+              labelY = (sourceNode.y + targetNode.y) / 2;
+            } else if (sourceInView) {
+              // Only source visible - position label near source but towards target
+              const dx = targetNode.x - sourceNode.x;
+              const dy = targetNode.y - sourceNode.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              const normalizedDx = dx / distance;
+              const normalizedDy = dy / distance;
+
+              // Position label 60 units away from source towards target
+              const offset = 60 / currentTransform.k;
+              labelX = Math.max(boundsLeft, Math.min(boundsRight, sourceNode.x + normalizedDx * offset));
+              labelY = Math.max(boundsTop, Math.min(boundsBottom, sourceNode.y + normalizedDy * offset));
+            } else if (targetInView) {
+              // Only target visible - position label near target but towards source
+              const dx = sourceNode.x - targetNode.x;
+              const dy = sourceNode.y - targetNode.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              const normalizedDx = dx / distance;
+              const normalizedDy = dy / distance;
+
+              // Position label 60 units away from target towards source
+              const offset = 60 / currentTransform.k;
+              labelX = Math.max(boundsLeft, Math.min(boundsRight, targetNode.x + normalizedDx * offset));
+              labelY = Math.max(boundsTop, Math.min(boundsBottom, targetNode.y + normalizedDy * offset));
+            } else {
+              // Neither node visible - position label at intersection of edge with viewport
+              // Calculate line intersection with viewport rectangle
+              const edge_dx = targetNode.x - sourceNode.x;
+              const edge_dy = targetNode.y - sourceNode.y;
+
+              // Find intersection points with viewport edges
+              const intersections = [];
+
+              // Left edge intersection
+              if (edge_dx !== 0) {
+                const t = (boundsLeft - sourceNode.x) / edge_dx;
+                if (t >= 0 && t <= 1) {
+                  const y = sourceNode.y + t * edge_dy;
+                  if (y >= boundsTop && y <= boundsBottom) {
+                    intersections.push({ x: boundsLeft, y, t });
+                  }
+                }
+              }
+
+              // Right edge intersection
+              if (edge_dx !== 0) {
+                const t = (boundsRight - sourceNode.x) / edge_dx;
+                if (t >= 0 && t <= 1) {
+                  const y = sourceNode.y + t * edge_dy;
+                  if (y >= boundsTop && y <= boundsBottom) {
+                    intersections.push({ x: boundsRight, y, t });
+                  }
+                }
+              }
+
+              // Top edge intersection
+              if (edge_dy !== 0) {
+                const t = (boundsTop - sourceNode.y) / edge_dy;
+                if (t >= 0 && t <= 1) {
+                  const x = sourceNode.x + t * edge_dx;
+                  if (x >= boundsLeft && x <= boundsRight) {
+                    intersections.push({ x, y: boundsTop, t });
+                  }
+                }
+              }
+
+              // Bottom edge intersection
+              if (edge_dy !== 0) {
+                const t = (boundsBottom - sourceNode.y) / edge_dy;
+                if (t >= 0 && t <= 1) {
+                  const x = sourceNode.x + t * edge_dx;
+                  if (x >= boundsLeft && x <= boundsRight) {
+                    intersections.push({ x, y: boundsBottom, t });
+                  }
+                }
+              }
+
+              if (intersections.length > 0) {
+                // Use the first intersection point, or midpoint if multiple
+                const intersection = intersections.length === 1 ? intersections[0] :
+                  intersections.sort((a, b) => a.t - b.t)[Math.floor(intersections.length / 2)];
+                labelX = intersection.x;
+                labelY = intersection.y;
+              } else {
+                // Fallback: center of viewport
+                labelX = (boundsLeft + boundsRight) / 2;
+                labelY = (boundsTop + boundsBottom) / 2;
+              }
+            }
+
+            // Ensure label position is within bounds
+            labelX = Math.max(boundsLeft, Math.min(boundsRight, labelX));
+            labelY = Math.max(boundsTop, Math.min(boundsBottom, labelY));
+
+            // Avoid overlapping with existing labels
+            let attempts = 0;
+            const maxAttempts = 20;
+            while (attempts < maxAttempts) {
+              let collision = false;
+              for (const usedPos of usedPositions) {
+                const distance = Math.sqrt((labelX - usedPos.x) ** 2 + (labelY - usedPos.y) ** 2);
+                if (distance < minDistance) {
+                  collision = true;
+                  break;
+                }
+              }
+
+              if (!collision) break;
+
+              // Adjust position in a spiral pattern to avoid overlap
+              const angle = (attempts / maxAttempts) * 2 * Math.PI;
+              const radius = minDistance * (1 + attempts * 0.1);
+              labelX = Math.max(boundsLeft, Math.min(boundsRight, labelX + Math.cos(angle) * radius));
+              labelY = Math.max(boundsTop, Math.min(boundsBottom, labelY + Math.sin(angle) * radius));
+              attempts++;
+            }
+
+            // Record this position
+            usedPositions.push({ x: labelX, y: labelY });
 
             // Get target node info
             const targetNodeData = nodes.find(n => n.id === targetNode.id);
@@ -1251,10 +1401,24 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
               const title = targetNodeData.title || targetNodeData.label || 'Unknown';
               const artist = targetNodeData.artist || '';
 
-              // Create edge label
+              // Calculate direction arrow towards target node
+              const arrowDx = targetNode.x - labelX;
+              const arrowDy = targetNode.y - labelY;
+              const arrowDistance = Math.sqrt(arrowDx * arrowDx + arrowDy * arrowDy);
+              const arrowNormX = arrowDx / arrowDistance;
+              const arrowNormY = arrowDy / arrowDistance;
+
+              // Create clickable edge label positioned within viewport
               const labelGroup = edgeLabelGroup.append('g')
                 .attr('class', 'edge-label')
-                .attr('transform', `translate(${midX}, ${midY})`);
+                .attr('transform', `translate(${labelX}, ${labelY})`)
+                .style('cursor', 'pointer')
+                .on('click', function(event) {
+                  event.stopPropagation();
+                  // Move camera to the target node and select it
+                  centerNode(targetNode.id);
+                  dispatch(setSelectedNodes([targetNode.id]));
+                });
 
               // Background rectangle for readability
               const bbox = { width: Math.max(title.length, artist.length) * 7, height: artist ? 32 : 16 };
@@ -1267,7 +1431,17 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                 .attr('fill-opacity', 0.8)
                 .attr('stroke', '#F59E0B')
                 .attr('stroke-width', 1)
-                .attr('rx', 4);
+                .attr('rx', 4)
+                .on('mouseenter', function() {
+                  d3.select(this)
+                    .attr('stroke', '#FCD34D')
+                    .attr('stroke-width', 2);
+                })
+                .on('mouseleave', function() {
+                  d3.select(this)
+                    .attr('stroke', '#F59E0B')
+                    .attr('stroke-width', 1);
+                });
 
               // Track title
               labelGroup.append('text')
@@ -1276,7 +1450,13 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                 .attr('font-size', '10px')
                 .attr('font-weight', 'bold')
                 .attr('fill', '#FFFFFF')
-                .text(title.length > 20 ? title.substring(0, 20) + '...' : title);
+                .text(title.length > 20 ? title.substring(0, 20) + '...' : title)
+                .on('mouseenter', function() {
+                  d3.select(this).attr('fill', '#FCD34D');
+                })
+                .on('mouseleave', function() {
+                  d3.select(this).attr('fill', '#FFFFFF');
+                });
 
               // Artist name (if available)
               if (artist) {
@@ -1286,7 +1466,35 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                   .attr('font-size', '9px')
                   .attr('font-weight', 'normal')
                   .attr('fill', '#CCCCCC')
-                  .text(artist.length > 20 ? artist.substring(0, 20) + '...' : artist);
+                  .text(artist.length > 20 ? artist.substring(0, 20) + '...' : artist)
+                  .on('mouseenter', function() {
+                    d3.select(this).attr('fill', '#FCD34D');
+                  })
+                  .on('mouseleave', function() {
+                    d3.select(this).attr('fill', '#CCCCCC');
+                  });
+              }
+
+              // Add directional arrow pointing towards target node
+              if (arrowDistance > 10) { // Only show arrow if target is far enough away
+                const arrowSize = 8;
+                const arrowOffset = (bbox.width / 2) + 15; // Position arrow outside the label box
+
+                // Calculate arrow position at the edge of the label
+                labelGroup.append('path')
+                  .attr('d', `M ${arrowNormX * arrowOffset} ${arrowNormY * arrowOffset}
+                             L ${arrowNormX * arrowOffset + arrowNormX * arrowSize - arrowNormY * arrowSize/2} ${arrowNormY * arrowOffset + arrowNormY * arrowSize + arrowNormX * arrowSize/2}
+                             L ${arrowNormX * arrowOffset + arrowNormX * arrowSize + arrowNormY * arrowSize/2} ${arrowNormY * arrowOffset + arrowNormY * arrowSize - arrowNormX * arrowSize/2}
+                             Z`)
+                  .attr('fill', '#F59E0B')
+                  .attr('stroke', '#FCD34D')
+                  .attr('stroke-width', 1)
+                  .on('mouseenter', function() {
+                    d3.select(this).attr('fill', '#FCD34D');
+                  })
+                  .on('mouseleave', function() {
+                    d3.select(this).attr('fill', '#F59E0B');
+                  });
               }
             }
           }

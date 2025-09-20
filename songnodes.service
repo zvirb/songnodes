@@ -1,12 +1,23 @@
-<?xml version="1.0" standalone='no'?>
-<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
-<service-group>
-  <name>SongNodes Music Visualization</name>
-  <service>
-    <type>_http._tcp</type>
-    <port>80</port>
-    <txt-record>path=/</txt-record>
-    <txt-record>description=SongNodes - Interactive Music Graph Visualization</txt-record>
-    <host-name>songnodes.local</host-name>
-  </service>
-</service-group>
+[Unit]
+Description=SongNodes Music Data Platform
+Requires=docker.service
+After=docker.service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --scale rest-api=1
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker compose restart
+TimeoutStartSec=300
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=10
+User=marku
+Group=marku
+
+[Install]
+WantedBy=multi-user.target
