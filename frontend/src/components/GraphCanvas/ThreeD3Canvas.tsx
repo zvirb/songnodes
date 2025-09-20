@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { useAppSelector } from '../../store/index';
 
@@ -44,7 +44,9 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
   // Initialize Three.js scene
   const initThreeJS = useCallback(() => {
-    if (!mountRef.current || isInitialized) return;
+    if (!mountRef.current || isInitialized || width === 0 || height === 0) {
+      return false;
+    }
 
     try {
       // Create scene
@@ -75,10 +77,11 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       scene.add(directionalLight);
 
       setIsInitialized(true);
-      console.log('🌌 Three.js scene initialized successfully');
+      return true;
     } catch (err) {
-      console.error('❌ Three.js initialization failed:', err);
+      console.error('Three.js initialization failed:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
+      return false;
     }
   }, [width, height, isInitialized]);
 
@@ -94,7 +97,6 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     );
     objectsToRemove.forEach(obj => scene.remove(obj));
 
-    console.log('🎨 Creating 3D graph with', nodes.length, 'nodes and', edges.length, 'edges');
 
     // Create node geometry and materials
     const nodeGeometry = new THREE.SphereGeometry(0.5, 16, 16);
@@ -195,7 +197,6 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       scene.add(edgeGroup);
     }
 
-    console.log('✅ 3D graph created successfully');
   }, [nodes, edges, getNodeColor]);
 
   // Animation loop
@@ -212,21 +213,46 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     animationIdRef.current = requestAnimationFrame(animate);
   }, []);
 
-  // Initialize Three.js when component mounts
+  // Polling-based initialization to handle timing issues
   useEffect(() => {
-    initThreeJS();
+    if (isInitialized) return; // Skip if already initialized
 
+    let attempts = 0;
+    const maxAttempts = 20; // Reasonable number of attempts
+
+    const tryInitialize = () => {
+      attempts++;
+
+      if (width > 0 && height > 0 && mountRef.current && !isInitialized) {
+        const success = initThreeJS();
+        if (success) {
+          return; // Stop polling on success
+        }
+      }
+
+      // Continue polling if not successful and under max attempts
+      if (attempts < maxAttempts && !isInitialized) {
+        setTimeout(tryInitialize, 100); // Poll every 100ms
+      }
+    };
+
+    // Start polling after a short delay to allow DOM to settle
+    const timeoutId = setTimeout(tryInitialize, 50);
+    return () => clearTimeout(timeoutId);
+  }, [width, height]);
+
+  // Cleanup effect
+  useEffect(() => {
     return () => {
-      // Cleanup
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
-      if (rendererRef.current && mountRef.current) {
+      if (rendererRef.current && mountRef.current && mountRef.current.contains(rendererRef.current.domElement)) {
         mountRef.current.removeChild(rendererRef.current.domElement);
         rendererRef.current.dispose();
       }
     };
-  }, [initThreeJS]);
+  }, []);
 
   // Create graph when data is available and scene is initialized
   useEffect(() => {
@@ -272,26 +298,8 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     );
   }
 
-  // Loading state
-  if (!isInitialized) {
-    return (
-      <div
-        className={className || "absolute inset-0"}
-        style={{ width, height, backgroundColor: '#0F172A' }}
-        data-testid="3d-canvas-loading"
-      >
-        <div className="absolute inset-0 flex items-center justify-center text-white">
-          <div className="text-center">
-            <div className="text-xl font-bold mb-2">🌌 Initializing 3D Visualization</div>
-            <div className="text-sm text-blue-400 mb-2">Setting up Three.js scene...</div>
-            <div className="text-xs text-gray-500">
-              Data ready: {nodes.length} nodes, {edges.length} edges
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Always render the mount div along with loading overlay if not initialized
+  const showLoadingOverlay = !isInitialized;
 
   // No data state
   if (!nodes.length) {
@@ -314,21 +322,40 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     );
   }
 
-  // Render the 3D canvas
+  // Render the 3D canvas with mount div always present
   return (
     <div
       className={className || "absolute inset-0"}
       style={{ width, height, backgroundColor: '#0F172A' }}
       data-testid="3d-canvas"
     >
-      <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
+      {/* Always render the mount div for Three.js */}
+      <div
+        ref={mountRef}
+        style={{ width: '100%', height: '100%' }}
+      />
+
+      {/* Loading overlay when not initialized */}
+      {showLoadingOverlay && (
+        <div className="absolute inset-0 flex items-center justify-center text-white bg-gray-900 bg-opacity-75">
+          <div className="text-center">
+            <div className="text-xl font-bold mb-2">🌌 Initializing 3D Visualization</div>
+            <div className="text-sm text-blue-400 mb-2">Setting up Three.js scene...</div>
+            <div className="text-xs text-gray-500">
+              Data ready: {nodes.length} nodes, {edges.length} edges
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Debug info overlay */}
       <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs p-2 rounded">
         <div>🌌 3D Mode</div>
         <div>Nodes: {nodes.length}</div>
         <div>Edges: {edges.length}</div>
-        <div>WebGL: ✅</div>
+        <div>WebGL: {isInitialized ? '✅' : '❌'}</div>
+        <div>Initialized: {isInitialized ? 'Yes' : 'No'}</div>
+        <div>Mount Ref: {mountRef.current ? '✅' : '❌'}</div>
       </div>
     </div>
   );
