@@ -353,7 +353,11 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
                 errback=self.handle_error,
                 meta={
                     'download_timeout': 30,
-                    'download_delay': delay
+                    'download_delay': delay,
+                    'playwright': True,  # Enable Playwright for JavaScript rendering
+                    'playwright_page_methods': [
+                        {'wait_for_selector': 'div.tlLink, a[href*="/tracklist/"], div.search-results', 'timeout': 10000}
+                    ]
                 }
             )
 

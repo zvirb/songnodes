@@ -60,9 +60,10 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
-#    'music_scraper.middlewares.MusicScraperDownloaderMiddleware': 543,
-# }
+DOWNLOADER_MIDDLEWARES = {
+    # Add scrapy-playwright middleware
+    'scrapy_playwright.middleware.ScrapyPlaywrightMiddleware': 800,
+}
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -94,6 +95,18 @@ AUTOTHROTTLE_DEBUG = True
 # HTTPCACHE_DIR = 'httpcache'
 # HTTPCACHE_IGNORE_HTTP_CODES =
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+# Playwright settings for JavaScript rendering
+PLAYWRIGHT_BROWSER_TYPE = 'chromium'
+PLAYWRIGHT_LAUNCH_OPTIONS = {
+    'headless': True,
+    'args': [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+    ]
+}
 
 # Logging settings [1, 2]
 LOG_LEVEL = 'INFO' # DEBUG for more verbose output

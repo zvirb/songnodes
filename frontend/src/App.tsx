@@ -235,10 +235,38 @@ const AppContent: React.FC = () => {
   const [showRouteDropdown, setShowRouteDropdown] = useState(false);
   const [scrapeQuery, setScrapeQuery] = useState('');
   const [seeds, setSeeds] = useState<Array<{ title: string; artists: string }>>([]);
-  const [distancePower, setDistancePower] = useState(0); // Slider value -5 to 5, used as 10^power
-  const [relationshipPower, setRelationshipPower] = useState(0); // Relationship strength scaling -5 to 5
-  const [nodeSize, setNodeSize] = useState(12); // Node size in pixels (2-24)
-  const [edgeLabelSize, setEdgeLabelSize] = useState(12); // Edge label text size in pixels (8-20)
+  // Separate settings for 2D and 3D modes
+  const [settings2D, setSettings2D] = useState({
+    distancePower: 0,
+    relationshipPower: 0,
+    nodeSize: 12,
+    edgeLabelSize: 12
+  });
+
+  const [settings3D, setSettings3D] = useState({
+    distancePower: 0,
+    relationshipPower: 0,
+    nodeSize: 12,
+    edgeLabelSize: 12
+  });
+
+  // Current settings based on active mode
+  const currentSettings = visualizationMode === '3d' ? settings3D : settings2D;
+  const setCurrentSettings = visualizationMode === '3d' ? setSettings3D : setSettings2D;
+
+  // Helper functions to update current mode settings
+  const setDistancePower = (value: number) => {
+    setCurrentSettings(prev => ({ ...prev, distancePower: value }));
+  };
+  const setRelationshipPower = (value: number) => {
+    setCurrentSettings(prev => ({ ...prev, relationshipPower: value }));
+  };
+  const setNodeSize = (value: number) => {
+    setCurrentSettings(prev => ({ ...prev, nodeSize: value }));
+  };
+  const setEdgeLabelSize = (value: number) => {
+    setCurrentSettings(prev => ({ ...prev, edgeLabelSize: value }));
+  };
   const [tasks, setTasks] = useState<any[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
@@ -249,6 +277,8 @@ const AppContent: React.FC = () => {
   const [orchestratorScraping, setOrchestratorScraping] = useState(false);
   const [orchestratorStatus, setOrchestratorStatus] = useState<string>('');
   const [showTrackInfoPanel, setShowTrackInfoPanel] = useState(false);
+  const [selectedNodeInfo, setSelectedNodeInfo] = useState<any>(null);
+  const [selectedEdgeInfo, setSelectedEdgeInfo] = useState<any>(null);
   const pathfinding = useSelector(s => s.pathfinding);
 
   const importCollection = async (file: File) => {
@@ -687,9 +717,12 @@ const AppContent: React.FC = () => {
                     width={width || window.innerWidth}
                     height={height || window.innerHeight}
                     className="absolute inset-0"
-                    distancePower={distancePower}
-                    nodeSize={nodeSize}
-                    edgeLabelSize={edgeLabelSize}
+                    distancePower={currentSettings.distancePower}
+                    relationshipPower={currentSettings.relationshipPower}
+                    nodeSize={currentSettings.nodeSize}
+                    edgeLabelSize={currentSettings.edgeLabelSize}
+                    onNodeClick={setSelectedNodeInfo}
+                    onEdgeClick={setSelectedEdgeInfo}
                   />
                 );
               } else {
@@ -700,10 +733,12 @@ const AppContent: React.FC = () => {
                     width={width || window.innerWidth}
                     height={height || window.innerHeight}
                     className="absolute inset-0"
-                    distancePower={distancePower}
-                    relationshipPower={relationshipPower}
-                    nodeSize={nodeSize}
-                    edgeLabelSize={edgeLabelSize}
+                    distancePower={currentSettings.distancePower}
+                    relationshipPower={currentSettings.relationshipPower}
+                    nodeSize={currentSettings.nodeSize}
+                    edgeLabelSize={currentSettings.edgeLabelSize}
+                    onNodeClick={setSelectedNodeInfo}
+                    onEdgeClick={setSelectedEdgeInfo}
                   />
                 );
               }
@@ -800,17 +835,7 @@ const AppContent: React.FC = () => {
                   Overview
                 </button>
                 {showOverviewDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-56 sm:w-64 md:w-72 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
-                       style={{
-                         position: 'absolute',
-                         top: '64px',
-                         left: '0px',
-                         zIndex: 10001,
-                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
-                         backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                         maxWidth: '50ch'
-                       }}>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar" style={{ maxWidth: '50ch', minWidth: '30ch' }}>
                     <h3 className="text-white font-semibold mb-4">Graph Overview</h3>
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between text-gray-300">
@@ -907,17 +932,7 @@ const AppContent: React.FC = () => {
                   Relationship View
                 </button>
                 {showLegendDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-56 sm:w-64 md:w-72 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
-                       style={{
-                         position: 'absolute',
-                         top: '64px',
-                         left: '0px',
-                         zIndex: 10001,
-                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
-                         backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                         maxWidth: '50ch'
-                       }}>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar" style={{ maxWidth: '50ch', minWidth: '30ch' }}>
                     <h3 className="text-white font-semibold mb-4">Relationship View</h3>
                     <div className="space-y-4">
 
@@ -925,18 +940,18 @@ const AppContent: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between text-gray-300">
                           <span>Distance:</span>
-                          <span className="text-white font-medium">10^{distancePower}</span>
+                          <span className="text-white font-medium">10^{currentSettings.distancePower}</span>
                         </div>
                         <input
                           type="range"
                           min="-5"
                           max="5"
                           step="0.1"
-                          value={distancePower}
+                          value={currentSettings.distancePower}
                           onChange={(e) => setDistancePower(parseFloat(e.target.value))}
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                           style={{
-                            background: `linear-gradient(to right, #10b981 0%, #10b981 ${((distancePower + 5) / 10) * 100}%, #374151 ${((distancePower + 5) / 10) * 100}%, #374151 100%)`
+                            background: `linear-gradient(to right, #10b981 0%, #10b981 ${((currentSettings.distancePower + 5) / 10) * 100}%, #374151 ${((currentSettings.distancePower + 5) / 10) * 100}%, #374151 100%)`
                           }}
                         />
                       </div>
@@ -945,18 +960,18 @@ const AppContent: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between text-gray-300">
                           <span>Relationships:</span>
-                          <span className="text-white font-medium">10^{relationshipPower}</span>
+                          <span className="text-white font-medium">10^{currentSettings.relationshipPower}</span>
                         </div>
                         <input
                           type="range"
                           min="-5"
                           max="5"
                           step="0.1"
-                          value={relationshipPower}
+                          value={currentSettings.relationshipPower}
                           onChange={(e) => setRelationshipPower(parseFloat(e.target.value))}
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                           style={{
-                            background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${((relationshipPower + 5) / 10) * 100}%, #374151 ${((relationshipPower + 5) / 10) * 100}%, #374151 100%)`
+                            background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${((currentSettings.relationshipPower + 5) / 10) * 100}%, #374151 ${((currentSettings.relationshipPower + 5) / 10) * 100}%, #374151 100%)`
                           }}
                         />
                       </div>
@@ -965,18 +980,18 @@ const AppContent: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between text-gray-300">
                           <span>Node Size:</span>
-                          <span className="text-white font-medium">{nodeSize}px</span>
+                          <span className="text-white font-medium">{currentSettings.nodeSize}px</span>
                         </div>
                         <input
                           type="range"
                           min="2"
                           max="24"
                           step="0.5"
-                          value={nodeSize}
+                          value={currentSettings.nodeSize}
                           onChange={(e) => setNodeSize(parseFloat(e.target.value))}
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                           style={{
-                            background: `linear-gradient(to right, #F59E0B 0%, #F59E0B ${((nodeSize - 2) / 22) * 100}%, #374151 ${((nodeSize - 2) / 22) * 100}%, #374151 100%)`
+                            background: `linear-gradient(to right, #F59E0B 0%, #F59E0B ${((currentSettings.nodeSize - 2) / 22) * 100}%, #374151 ${((currentSettings.nodeSize - 2) / 22) * 100}%, #374151 100%)`
                           }}
                         />
                       </div>
@@ -985,18 +1000,18 @@ const AppContent: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between text-gray-300">
                           <span>Edge Labels:</span>
-                          <span className="text-white font-medium">{edgeLabelSize}px</span>
+                          <span className="text-white font-medium">{currentSettings.edgeLabelSize}px</span>
                         </div>
                         <input
                           type="range"
                           min="8"
                           max="20"
                           step="0.5"
-                          value={edgeLabelSize}
+                          value={currentSettings.edgeLabelSize}
                           onChange={(e) => setEdgeLabelSize(parseFloat(e.target.value))}
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                           style={{
-                            background: `linear-gradient(to right, #EC4899 0%, #EC4899 ${((edgeLabelSize - 8) / 12) * 100}%, #374151 ${((edgeLabelSize - 8) / 12) * 100}%, #374151 100%)`
+                            background: `linear-gradient(to right, #EC4899 0%, #EC4899 ${((currentSettings.edgeLabelSize - 8) / 12) * 100}%, #374151 ${((currentSettings.edgeLabelSize - 8) / 12) * 100}%, #374151 100%)`
                           }}
                         />
                       </div>
@@ -1017,17 +1032,7 @@ const AppContent: React.FC = () => {
                   Search
                 </button>
                 {showSearchDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-64 sm:w-72 md:w-80 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
-                       style={{
-                         position: 'absolute',
-                         top: '64px',
-                         left: '0px',
-                         zIndex: 10001,
-                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
-                         backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                         maxWidth: '50ch'
-                       }}>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar" style={{ maxWidth: '50ch', minWidth: '30ch' }}>
                     <h3 className="text-white font-semibold mb-4">Search Graph</h3>
                     <input
                       type="text"
@@ -1050,17 +1055,7 @@ const AppContent: React.FC = () => {
                   Functions
                 </button>
                 {showFunctionsDropdown && (
-                  <div className="absolute top-16 right-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-72 sm:w-80 md:w-96 lg:w-[26rem] p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
-                       style={{
-                         position: 'absolute',
-                         top: '64px',
-                         right: '0px',
-                         zIndex: 10001,
-                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
-                         backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                         maxWidth: '50ch'
-                       }}>
+                  <div className="absolute top-16 right-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar" style={{ maxWidth: '50ch', minWidth: '30ch' }}>
                     <h3 className="text-white font-semibold mb-4">Build Graph From Song</h3>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -1254,17 +1249,7 @@ const AppContent: React.FC = () => {
                   Current Route
                 </button>
                 {showRouteDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-64 sm:w-72 md:w-80 lg:w-96 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
-                       style={{
-                         position: 'absolute',
-                         top: '64px',
-                         left: '0px',
-                         zIndex: 10001,
-                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
-                         backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                         maxWidth: '50ch'
-                       }}>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar" style={{ maxWidth: '50ch', minWidth: '30ch' }}>
                     <h3 className="text-white font-semibold mb-4">Route Navigation</h3>
 
                     {/* Action buttons at the top */}
@@ -1390,17 +1375,7 @@ const AppContent: React.FC = () => {
                   Data Scraping
                 </button>
                 {showScrapingDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-64 sm:w-72 md:w-80 max-w-80 p-6 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
-                       style={{
-                         position: 'absolute',
-                         top: '64px',
-                         left: '0px',
-                         zIndex: 10001,
-                         backgroundColor: 'rgba(17, 24, 39, 0.98)',
-                         backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                         maxWidth: '50ch'
-                       }}>
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl p-6 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar" style={{ maxWidth: '50ch', minWidth: '30ch' }}>
                     <h3 className="text-white font-semibold mb-4 text-sm">Orchestrator-Led Scraping</h3>
                     <p className="text-gray-400 text-xs mb-4 leading-relaxed break-words">
                       Triggers comprehensive data collection from all configured scrapers (1001tracklists, MixesDB).
@@ -1492,6 +1467,109 @@ const AppContent: React.FC = () => {
           dispatch(setSelectedNodes([]));
         }}
       />
+
+      {/* Right-side Info Panel for Node/Edge Details */}
+      {(selectedNodeInfo || selectedEdgeInfo) && (
+        <div
+          className="fixed top-24 right-4 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl p-5 z-[10000] max-h-[70vh] overflow-y-auto dropdown-scrollbar"
+          style={{ maxWidth: '50ch', minWidth: '30ch' }}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-lg font-bold text-white">
+              {selectedNodeInfo ? '🎵 Node Details' : '🔗 Edge Details'}
+            </h3>
+            <button
+              onClick={() => {
+                setSelectedNodeInfo(null);
+                setSelectedEdgeInfo(null);
+              }}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              ×
+            </button>
+          </div>
+
+          {selectedNodeInfo && (
+            <div className="space-y-3">
+              <div>
+                <span className="text-gray-400 text-sm">ID:</span>
+                <p className="text-white break-all">{selectedNodeInfo.id}</p>
+              </div>
+              {selectedNodeInfo.label && (
+                <div>
+                  <span className="text-gray-400 text-sm">Label:</span>
+                  <p className="text-white break-words">{selectedNodeInfo.label}</p>
+                </div>
+              )}
+              {selectedNodeInfo.artist && (
+                <div>
+                  <span className="text-gray-400 text-sm">Artist:</span>
+                  <p className="text-white break-words">{selectedNodeInfo.artist}</p>
+                </div>
+              )}
+              {selectedNodeInfo.title && (
+                <div>
+                  <span className="text-gray-400 text-sm">Title:</span>
+                  <p className="text-white break-words">{selectedNodeInfo.title}</p>
+                </div>
+              )}
+              {selectedNodeInfo.type && (
+                <div>
+                  <span className="text-gray-400 text-sm">Type:</span>
+                  <p className="text-white capitalize">{selectedNodeInfo.type}</p>
+                </div>
+              )}
+              {selectedNodeInfo.metrics && (
+                <div>
+                  <span className="text-gray-400 text-sm">Metrics:</span>
+                  <div className="mt-1 space-y-1">
+                    {selectedNodeInfo.metrics.degree && (
+                      <p className="text-white text-sm">Degree: {selectedNodeInfo.metrics.degree}</p>
+                    )}
+                    {selectedNodeInfo.metrics.centrality && (
+                      <p className="text-white text-sm">Centrality: {selectedNodeInfo.metrics.centrality.toFixed(3)}</p>
+                    )}
+                    {selectedNodeInfo.metrics.clustering && (
+                      <p className="text-white text-sm">Clustering: {selectedNodeInfo.metrics.clustering.toFixed(3)}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedEdgeInfo && (
+            <div className="space-y-3">
+              <div>
+                <span className="text-gray-400 text-sm">Source:</span>
+                <p className="text-white break-words">{selectedEdgeInfo.source}</p>
+              </div>
+              <div>
+                <span className="text-gray-400 text-sm">Target:</span>
+                <p className="text-white break-words">{selectedEdgeInfo.target}</p>
+              </div>
+              {selectedEdgeInfo.weight && (
+                <div>
+                  <span className="text-gray-400 text-sm">Weight:</span>
+                  <p className="text-white">{selectedEdgeInfo.weight}</p>
+                </div>
+              )}
+              {selectedEdgeInfo.label && (
+                <div>
+                  <span className="text-gray-400 text-sm">Label:</span>
+                  <p className="text-white break-words">{selectedEdgeInfo.label}</p>
+                </div>
+              )}
+              {selectedEdgeInfo.type && (
+                <div>
+                  <span className="text-gray-400 text-sm">Type:</span>
+                  <p className="text-white capitalize">{selectedEdgeInfo.type}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
