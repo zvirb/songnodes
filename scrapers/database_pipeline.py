@@ -17,6 +17,7 @@ from .items import (
     EnhancedSetlistItem,
     EnhancedTrackArtistItem,
     EnhancedSetlistTrackItem,
+    EnhancedTrackAdjacencyItem,
     EnhancedVenueItem,
     TargetTrackSearchItem
 )
@@ -46,7 +47,8 @@ class EnhancedMusicDatabasePipeline:
             'setlists': [],
             'venues': [],
             'track_artists': [],
-            'setlist_tracks': []
+            'setlist_tracks': [],
+            'track_adjacencies': []
         }
 
         # Target track matching
@@ -140,6 +142,8 @@ class EnhancedMusicDatabasePipeline:
                 await self.process_track_artist_item(processed_item)
             elif isinstance(item, EnhancedSetlistTrackItem):
                 await self.process_setlist_track_item(processed_item)
+            elif isinstance(item, EnhancedTrackAdjacencyItem):
+                await self.process_track_adjacency_item(processed_item)
             elif isinstance(item, TargetTrackSearchItem):
                 await self.process_target_track_item(processed_item)
 
@@ -349,6 +353,13 @@ class EnhancedMusicDatabasePipeline:
         if len(self.item_batches['setlist_tracks']) >= self.batch_size:
             await self.flush_batch('setlist_tracks')
 
+    async def process_track_adjacency_item(self, data: Dict[str, Any]):
+        """Process track adjacency relationship"""
+        self.item_batches['track_adjacencies'].append(data)
+
+        if len(self.item_batches['track_adjacencies']) >= self.batch_size:
+            await self.flush_batch('track_adjacencies')
+
     async def process_target_track_item(self, data: Dict[str, Any]):
         """Process target track search status"""
         # This could be used to track search progress
@@ -376,6 +387,8 @@ class EnhancedMusicDatabasePipeline:
                     await self.insert_track_artists_batch(conn, batch)
                 elif batch_type == 'setlist_tracks':
                     await self.insert_setlist_tracks_batch(conn, batch)
+                elif batch_type == 'track_adjacencies':
+                    await self.insert_track_adjacencies_batch(conn, batch)
 
             self.logger.info(f"✓ Inserted {len(batch)} {batch_type} records")
 
@@ -482,6 +495,64 @@ class EnhancedMusicDatabasePipeline:
         """Insert setlist-track relationships"""
         # Implementation for setlist tracks
         pass
+
+    async def insert_track_adjacencies_batch(self, conn, batch: List[Dict[str, Any]]):
+        """Insert track adjacency relationships into song_adjacency table"""
+        try:
+            # First, we need to resolve track names to song_ids
+            adjacency_records = []
+            for item in batch:
+                # Look up song IDs for track names
+                song_1_query = """
+                    SELECT song_id FROM songs
+                    WHERE LOWER(TRIM(title)) = LOWER(TRIM($1))
+                    LIMIT 1
+                """
+                song_2_query = """
+                    SELECT song_id FROM songs
+                    WHERE LOWER(TRIM(title)) = LOWER(TRIM($1))
+                    LIMIT 1
+                """
+
+                song_1_result = await conn.fetchval(song_1_query, item.get('track_1_name', ''))
+                song_2_result = await conn.fetchval(song_2_query, item.get('track_2_name', ''))
+
+                if song_1_result and song_2_result and song_1_result != song_2_result:
+                    # Ensure song_id_1 < song_id_2 as per schema constraint
+                    song_id_1 = min(song_1_result, song_2_result)
+                    song_id_2 = max(song_1_result, song_2_result)
+
+                    adjacency_records.append({
+                        'song_id_1': song_id_1,
+                        'song_id_2': song_id_2,
+                        'distance': item.get('distance', 1),
+                        'occurrence_count': item.get('occurrence_count', 1)
+                    })
+
+            if adjacency_records:
+                # Insert/update adjacency relationships
+                await conn.executemany("""
+                    INSERT INTO song_adjacency (song_id_1, song_id_2, occurrence_count, avg_distance)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (song_id_1, song_id_2)
+                    DO UPDATE SET
+                        occurrence_count = song_adjacency.occurrence_count + EXCLUDED.occurrence_count,
+                        avg_distance = (
+                            (song_adjacency.avg_distance * song_adjacency.occurrence_count +
+                             EXCLUDED.avg_distance * EXCLUDED.occurrence_count) /
+                            (song_adjacency.occurrence_count + EXCLUDED.occurrence_count)
+                        )
+                """, [
+                    (record['song_id_1'], record['song_id_2'],
+                     record['occurrence_count'], record['distance'])
+                    for record in adjacency_records
+                ])
+
+                self.logger.info(f"✓ Inserted/updated {len(adjacency_records)} track adjacency relationships")
+
+        except Exception as e:
+            self.logger.error(f"Error inserting track adjacencies: {e}")
+            raise
 
     async def flush_all_batches(self):
         """Flush all remaining batches"""

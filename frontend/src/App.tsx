@@ -5,18 +5,19 @@ import { ThemeProvider } from '@theme/ThemeProvider';
 import { WorkingD3Canvas } from '@components/GraphCanvas/WorkingD3Canvas';
 import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3CanvasEnhanced';
 import { TestThree3D } from '@components/GraphCanvas/TestThree3D';
+import { TrackInfoPanel } from '@components/TrackInfoPanel/TrackInfoPanel';
 // import { SearchPanel } from '@components/SearchPanel/SearchPanel';
 // import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
 // import { ConnectionStatus } from '@components/ConnectionStatus';
 import { useAppSelector, useAppDispatch } from '@store/index';
-import { setNodes, setEdges } from '@store/graphSlice';
+import { setNodes, setEdges, setSelectedNodes } from '@store/graphSlice';
 import { updateDeviceInfo, setViewportSize } from '@store/uiSlice';
 import { loadGraphData } from '@utils/dataLoader';
 import { useResizeObserver } from '@hooks/useResizeObserver';
 import { useDebouncedCallback } from '@hooks/useDebouncedCallback';
 import { useWebSocketIntegration } from '@hooks/useWebSocketIntegration';
 import { computeRoute } from '@utils/path';
-import { setPathResult, clearPath } from '@store/pathfindingSlice';
+import { setPathResult, clearPath, setStartNode, setEndNode, clearWaypoints } from '@store/pathfindingSlice';
 import { useAppSelector as useSelector } from '@store/index';
 // import { Box, Fab, Tooltip } from '@mui/material';
 // import { Palette as PaletteIcon } from '@mui/icons-material';
@@ -236,6 +237,8 @@ const AppContent: React.FC = () => {
   const [seeds, setSeeds] = useState<Array<{ title: string; artists: string }>>([]);
   const [distancePower, setDistancePower] = useState(0); // Slider value -5 to 5, used as 10^power
   const [relationshipPower, setRelationshipPower] = useState(0); // Relationship strength scaling -5 to 5
+  const [nodeSize, setNodeSize] = useState(12); // Node size in pixels (2-24)
+  const [edgeLabelSize, setEdgeLabelSize] = useState(12); // Edge label text size in pixels (8-20)
   const [tasks, setTasks] = useState<any[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
@@ -245,6 +248,7 @@ const AppContent: React.FC = () => {
   const [routeName, setRouteName] = useState('My New Setlist');
   const [orchestratorScraping, setOrchestratorScraping] = useState(false);
   const [orchestratorStatus, setOrchestratorStatus] = useState<string>('');
+  const [showTrackInfoPanel, setShowTrackInfoPanel] = useState(false);
   const pathfinding = useSelector(s => s.pathfinding);
 
   const importCollection = async (file: File) => {
@@ -627,6 +631,13 @@ const AppContent: React.FC = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // Auto-open track info panel when a track is selected
+  useEffect(() => {
+    if (selectedNodes.length > 0) {
+      setShowTrackInfoPanel(true);
+    }
+  }, [selectedNodes]);
+
   return (
     <div
       className={classNames(
@@ -638,9 +649,15 @@ const AppContent: React.FC = () => {
       {/* Full-screen Graph Visualization Container */}
       <div
         ref={setContainerRef}
-        className="fixed inset-0 w-full h-full"
+        className={classNames(
+          "fixed inset-0 h-full transition-all duration-300 ease-in-out",
+          // Mobile: Full width always (panel covers entire screen)
+          "w-full lg:w-auto",
+          // Desktop: Adjust for track info panel
+          showTrackInfoPanel && "lg:right-[30vw] lg:max-w-[calc(100vw-350px)]"
+        )}
         data-testid="graph-container"
-        style={{ width: '100vw', height: '100vh' }}
+        style={{ height: '100vh' }}
       >
         {/* Canvas rendering with fallback dimensions */}
         {((width && height) || !containerRef) && (
@@ -671,6 +688,8 @@ const AppContent: React.FC = () => {
                     height={height || window.innerHeight}
                     className="absolute inset-0"
                     distancePower={distancePower}
+                    nodeSize={nodeSize}
+                    edgeLabelSize={edgeLabelSize}
                   />
                 );
               } else {
@@ -683,6 +702,8 @@ const AppContent: React.FC = () => {
                     className="absolute inset-0"
                     distancePower={distancePower}
                     relationshipPower={relationshipPower}
+                    nodeSize={nodeSize}
+                    edgeLabelSize={edgeLabelSize}
                   />
                 );
               }
@@ -770,7 +791,10 @@ const AppContent: React.FC = () => {
               {/* Overview */}
               <div className="relative">
                 <button
-                  onClick={() => setShowOverviewDropdown(!showOverviewDropdown)}
+                  onClick={() => {
+                    closeAllDropdowns();
+                    setShowOverviewDropdown(!showOverviewDropdown);
+                  }}
                   className="text-white hover:text-blue-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
                   Overview
@@ -784,7 +808,8 @@ const AppContent: React.FC = () => {
                          zIndex: 10001,
                          backgroundColor: 'rgba(17, 24, 39, 0.98)',
                          backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                         maxWidth: '50ch'
                        }}>
                     <h3 className="text-white font-semibold mb-4">Graph Overview</h3>
                     <div className="space-y-3 text-sm">
@@ -801,82 +826,10 @@ const AppContent: React.FC = () => {
                         <span className="text-white font-medium">{selectedNodes.length}</span>
                       </div>
 
-                      {/* Distance Power Slider - Range -5 to 5 */}
-                      <div className="mt-5 pt-4 border-t border-gray-700">
-                        <div className="flex justify-between text-gray-300 mb-2">
-                          <span>Distance:</span>
-                          <span className="text-white font-medium">
-                            10^{distancePower}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="-5"
-                          max="5"
-                          step="1"
-                          value={distancePower}
-                          onChange={(e) => setDistancePower(parseInt(e.target.value))}
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                          style={{
-                            background: `linear-gradient(to right, #10b981 0%, #10b981 ${((distancePower + 5) / 10) * 100}%, #374151 ${((distancePower + 5) / 10) * 100}%, #374151 100%)`
-                          }}
-                        />
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                          <span>-5</span>
-                          <span>-2</span>
-                          <span>0</span>
-                          <span>2</span>
-                          <span>5</span>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                          <span>0.00001x</span>
-                          <span>0.01x</span>
-                          <span>1x</span>
-                          <span>100x</span>
-                          <span>100,000x</span>
-                        </div>
-                      </div>
-
-                      {/* Relationship Strength Slider - Range -5 to 5 */}
-                      <div className="mt-5 pt-4 border-t border-gray-700">
-                        <div className="flex justify-between text-gray-300 mb-2">
-                          <span>Relationships:</span>
-                          <span className="text-white font-medium">
-                            10^{relationshipPower}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="-5"
-                          max="5"
-                          step="1"
-                          value={relationshipPower}
-                          onChange={(e) => setRelationshipPower(parseInt(e.target.value))}
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                          style={{
-                            background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${((relationshipPower + 5) / 10) * 100}%, #374151 ${((relationshipPower + 5) / 10) * 100}%, #374151 100%)`
-                          }}
-                        />
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                          <span>-5</span>
-                          <span>-2</span>
-                          <span>0</span>
-                          <span>2</span>
-                          <span>5</span>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                          <span>Strong</span>
-                          <span>Med</span>
-                          <span>Normal</span>
-                          <span>Weak</span>
-                          <span>Ignore</span>
-                        </div>
-                      </div>
-
-                      {/* 3D Visualization Toggle */}
+                      {/* Visualization Mode Selection */}
                       <div className="mt-5 pt-4 border-t border-gray-700">
                         <div className="flex flex-col space-y-2">
-                          <span className="text-gray-300 text-sm">Visualization Mode:</span>
+                          <span className="text-gray-300 text-sm">View Type:</span>
 
                           {/* Dual Button Toggle Switch */}
                           <div className="flex bg-gray-800 rounded-lg p-1 relative">
@@ -892,6 +845,7 @@ const AppContent: React.FC = () => {
                                   });
                                   setIs3DMode(false);
                                 }
+                                closeAllDropdowns();
                               }}
                               className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 flex items-center justify-center space-x-1 ${
                                 !is3DMode
@@ -916,6 +870,7 @@ const AppContent: React.FC = () => {
                                   });
                                   setIs3DMode(true);
                                 }
+                                closeAllDropdowns();
                               }}
                               className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 flex items-center justify-center space-x-1 ${
                                 is3DMode
@@ -930,8 +885,8 @@ const AppContent: React.FC = () => {
                           </div>
 
                           {/* Mode Description */}
-                          <div className="text-xs text-gray-500 text-center">
-                            {is3DMode ? 'Immersive 3D space with Three.js & WebGL' : 'Standard 2D graph with D3.js force simulation'}
+                          <div className="text-xs text-gray-500 text-center break-words">
+                            {is3DMode ? 'Immersive 3D space with Three.js & WebGL' : 'Standard 2D graph with D3.js force'}
                           </div>
                         </div>
                       </div>
@@ -940,16 +895,19 @@ const AppContent: React.FC = () => {
                 )}
               </div>
 
-              {/* Legend */}
+              {/* Relationship View */}
               <div className="relative">
                 <button
-                  onClick={() => setShowLegendDropdown(!showLegendDropdown)}
+                  onClick={() => {
+                    closeAllDropdowns();
+                    setShowLegendDropdown(!showLegendDropdown);
+                  }}
                   className="text-white hover:text-green-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
                 >
-                  Legend
+                  Relationship View
                 </button>
                 {showLegendDropdown && (
-                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-48 sm:w-56 md:w-64 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
+                  <div className="absolute top-16 left-0 bg-gray-900/95 backdrop-blur-md border border-gray-600/80 rounded-lg shadow-2xl w-56 sm:w-64 md:w-72 p-5 z-[10001] max-h-[85vh] overflow-y-auto dropdown-scrollbar"
                        style={{
                          position: 'absolute',
                          top: '64px',
@@ -957,17 +915,90 @@ const AppContent: React.FC = () => {
                          zIndex: 10001,
                          backgroundColor: 'rgba(17, 24, 39, 0.98)',
                          backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                         maxWidth: '50ch'
                        }}>
-                    <h3 className="text-white font-semibold mb-4">Node Types</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                        <span className="text-gray-300 text-sm">Artists</span>
+                    <h3 className="text-white font-semibold mb-4">Relationship View</h3>
+                    <div className="space-y-4">
+
+                      {/* Distance Power Slider */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-gray-300">
+                          <span>Distance:</span>
+                          <span className="text-white font-medium">10^{distancePower}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-5"
+                          max="5"
+                          step="0.1"
+                          value={distancePower}
+                          onChange={(e) => setDistancePower(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                          style={{
+                            background: `linear-gradient(to right, #10b981 0%, #10b981 ${((distancePower + 5) / 10) * 100}%, #374151 ${((distancePower + 5) / 10) * 100}%, #374151 100%)`
+                          }}
+                        />
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        <span className="text-gray-300 text-sm">Venues</span>
+
+                      {/* Relationship Strength Slider */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-gray-300">
+                          <span>Relationships:</span>
+                          <span className="text-white font-medium">10^{relationshipPower}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-5"
+                          max="5"
+                          step="0.1"
+                          value={relationshipPower}
+                          onChange={(e) => setRelationshipPower(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                          style={{
+                            background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${((relationshipPower + 5) / 10) * 100}%, #374151 ${((relationshipPower + 5) / 10) * 100}%, #374151 100%)`
+                          }}
+                        />
+                      </div>
+
+                      {/* Node Size Slider */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-gray-300">
+                          <span>Node Size:</span>
+                          <span className="text-white font-medium">{nodeSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="2"
+                          max="24"
+                          step="0.5"
+                          value={nodeSize}
+                          onChange={(e) => setNodeSize(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                          style={{
+                            background: `linear-gradient(to right, #F59E0B 0%, #F59E0B ${((nodeSize - 2) / 22) * 100}%, #374151 ${((nodeSize - 2) / 22) * 100}%, #374151 100%)`
+                          }}
+                        />
+                      </div>
+
+                      {/* Edge Label Size Slider */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-gray-300">
+                          <span>Edge Labels:</span>
+                          <span className="text-white font-medium">{edgeLabelSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="8"
+                          max="20"
+                          step="0.5"
+                          value={edgeLabelSize}
+                          onChange={(e) => setEdgeLabelSize(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                          style={{
+                            background: `linear-gradient(to right, #EC4899 0%, #EC4899 ${((edgeLabelSize - 8) / 12) * 100}%, #374151 ${((edgeLabelSize - 8) / 12) * 100}%, #374151 100%)`
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -978,10 +1009,7 @@ const AppContent: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => {
-                    // Close all other dropdowns
-                    setShowFunctionsDropdown(false);
-                    setShowRouteDropdown(false);
-                    setShowScrapingDropdown(false);
+                    closeAllDropdowns();
                     setShowSearchDropdown(!showSearchDropdown);
                   }}
                   className="text-white hover:text-yellow-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
@@ -997,13 +1025,14 @@ const AppContent: React.FC = () => {
                          zIndex: 10001,
                          backgroundColor: 'rgba(17, 24, 39, 0.98)',
                          backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                         maxWidth: '50ch'
                        }}>
                     <h3 className="text-white font-semibold mb-4">Search Graph</h3>
                     <input
                       type="text"
                       placeholder="Search artists, tracks, venues..."
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 break-words"
                     />
                   </div>
                 )}
@@ -1013,10 +1042,7 @@ const AppContent: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => {
-                    // Close all other dropdowns
-                    setShowSearchDropdown(false);
-                    setShowRouteDropdown(false);
-                    setShowScrapingDropdown(false);
+                    closeAllDropdowns();
                     setShowFunctionsDropdown(!showFunctionsDropdown);
                   }}
                   className="text-white hover:text-purple-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
@@ -1032,7 +1058,8 @@ const AppContent: React.FC = () => {
                          zIndex: 10001,
                          backgroundColor: 'rgba(17, 24, 39, 0.98)',
                          backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                         maxWidth: '50ch'
                        }}>
                     <h3 className="text-white font-semibold mb-4">Build Graph From Song</h3>
                       <div className="space-y-3">
@@ -1219,10 +1246,7 @@ const AppContent: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => {
-                    // Close all other dropdowns
-                    setShowFunctionsDropdown(false);
-                    setShowScrapingDropdown(false);
-                    setShowSearchDropdown(false);
+                    closeAllDropdowns();
                     setShowRouteDropdown(!showRouteDropdown);
                   }}
                   className="text-white hover:text-purple-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
@@ -1238,7 +1262,8 @@ const AppContent: React.FC = () => {
                          zIndex: 10001,
                          backgroundColor: 'rgba(17, 24, 39, 0.98)',
                          backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                         maxWidth: '50ch'
                        }}>
                     <h3 className="text-white font-semibold mb-4">Route Navigation</h3>
 
@@ -1357,10 +1382,7 @@ const AppContent: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => {
-                    // Close all other dropdowns
-                    setShowFunctionsDropdown(false);
-                    setShowRouteDropdown(false);
-                    setShowSearchDropdown(false);
+                    closeAllDropdowns();
                     setShowScrapingDropdown(!showScrapingDropdown);
                   }}
                   className="text-white hover:text-orange-400 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-700 whitespace-nowrap"
@@ -1376,7 +1398,8 @@ const AppContent: React.FC = () => {
                          zIndex: 10001,
                          backgroundColor: 'rgba(17, 24, 39, 0.98)',
                          backdropFilter: 'blur(12px) saturate(150%)',
-                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                         maxWidth: '50ch'
                        }}>
                     <h3 className="text-white font-semibold mb-4 text-sm">Orchestrator-Led Scraping</h3>
                     <p className="text-gray-400 text-xs mb-4 leading-relaxed break-words">
@@ -1460,6 +1483,15 @@ const AppContent: React.FC = () => {
           </div>
       </nav>
 
+      {/* Track Information Panel */}
+      <TrackInfoPanel
+        isOpen={showTrackInfoPanel}
+        onClose={() => {
+          setShowTrackInfoPanel(false);
+          // Clear selection when closing panel
+          dispatch(setSelectedNodes([]));
+        }}
+      />
     </div>
   );
 };

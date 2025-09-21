@@ -21,7 +21,8 @@ try:
         EnhancedTrackItem,
         EnhancedSetlistItem,
         EnhancedTrackArtistItem,
-        EnhancedSetlistTrackItem
+        EnhancedSetlistTrackItem,
+        EnhancedTrackAdjacencyItem
     )
     from .utils import parse_track_string
 except ImportError:
@@ -34,7 +35,8 @@ except ImportError:
         EnhancedTrackItem,
         EnhancedSetlistItem,
         EnhancedTrackArtistItem,
-        EnhancedSetlistTrackItem
+        EnhancedSetlistTrackItem,
+        EnhancedTrackAdjacencyItem
     )
     from spiders.utils import parse_track_string
 
@@ -392,6 +394,10 @@ class MixesdbSpider(scrapy.Spider):
                         data_source=self.name,
                         scrape_timestamp=datetime.utcnow()
                     )
+
+            # Generate track adjacency relationships within THIS mix only
+            if setlist_data and len(tracks_data) > 1:
+                yield from self.generate_track_adjacencies(tracks_data, setlist_data)
 
         except Exception as e:
             self.logger.error(f"Error parsing mix page {response.url}: {e}")
@@ -794,6 +800,62 @@ class MixesdbSpider(scrapy.Spider):
             if re.search(pattern, track_name, re.IGNORECASE):
                 return remix_type
         return None
+
+    def generate_track_adjacencies(self, tracks_data, setlist_data):
+        """
+        Generate track adjacency relationships within a single mix.
+        Creates adjacency items for tracks within 3 positions of each other.
+        """
+        if not tracks_data or len(tracks_data) < 2:
+            return
+
+        setlist_name = setlist_data.get('setlist_name', 'Unknown Mix')
+        setlist_id = setlist_data.get('setlist_id', f"mix_{hash(setlist_name)}")
+
+        # Sort tracks by their order to ensure proper adjacency
+        sorted_tracks = sorted(tracks_data, key=lambda x: x.get('track_order', 0))
+
+        adjacency_count = 0
+        for i in range(len(sorted_tracks)):
+            for j in range(i + 1, min(i + 4, len(sorted_tracks))):  # Within 3 positions
+                track_1 = sorted_tracks[i]
+                track_2 = sorted_tracks[j]
+
+                # Calculate distance between tracks
+                distance = abs(track_1.get('track_order', 0) - track_2.get('track_order', 0))
+
+                # Determine transition type based on distance
+                if distance == 1:
+                    transition_type = "sequential"
+                elif distance <= 3:
+                    transition_type = "close_proximity"
+                else:
+                    continue  # Skip if too far apart
+
+                # Create adjacency item
+                adjacency_item = EnhancedTrackAdjacencyItem(
+                    track_1_name=track_1['track']['track_name'],
+                    track_1_id=track_1['track'].get('track_id'),
+                    track_2_name=track_2['track']['track_name'],
+                    track_2_id=track_2['track'].get('track_id'),
+                    track_1_position=track_1.get('track_order'),
+                    track_2_position=track_2.get('track_order'),
+                    distance=distance,
+                    setlist_name=setlist_name,
+                    setlist_id=setlist_id,
+                    source_context=f"mixesdb:{setlist_name}",
+                    transition_type=transition_type,
+                    occurrence_count=1,
+                    created_at=datetime.utcnow(),
+                    data_source=self.name,
+                    scrape_timestamp=datetime.utcnow()
+                )
+
+                yield adjacency_item
+                adjacency_count += 1
+
+        if adjacency_count > 0:
+            self.logger.info(f"Generated {adjacency_count} track adjacency relationships for mix: {setlist_name}")
 
     def infer_genre_from_context(self, response, parsed_track):
         """Infer genre from page context and track characteristics"""
