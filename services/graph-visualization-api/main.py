@@ -305,24 +305,34 @@ async def get_graph_nodes(
                         }
                     )
                 else:
-                    # Get all nodes with limit and pagination
+                    # Get all nodes with limit and pagination, including artist data
                     query = text("""
                         SELECT
-                            node_id as id,
-                            node_id as track_id,
+                            'song_' || s.song_id::text as id,
+                            'song_' || s.song_id::text as track_id,
                             0 as x_position,
                             0 as y_position,
                             json_build_object(
-                                'label', label,
-                                'node_type', node_type,
-                                'category', category,
-                                'release_year', release_year,
-                                'appearance_count', appearance_count
+                                'label', CASE
+                                    WHEN a.name IS NOT NULL THEN a.name || ' - ' || s.title
+                                    ELSE s.title
+                                END,
+                                'title', s.title,
+                                'artist', a.name,
+                                'node_type', 'song',
+                                'category', COALESCE(s.genre, 'Electronic'),
+                                'release_year', s.release_year,
+                                'appearance_count', COALESCE(ps.count, 0)
                             ) as metadata,
                             COUNT(*) OVER() as total_count
-                        FROM graph_nodes
-                        WHERE node_type = 'song'
-                        ORDER BY appearance_count DESC
+                        FROM songs s
+                        LEFT JOIN artists a ON s.primary_artist_id = a.artist_id
+                        LEFT JOIN (
+                            SELECT song_id, COUNT(*) as count
+                            FROM playlist_songs
+                            GROUP BY song_id
+                        ) ps ON ps.song_id = s.song_id
+                        ORDER BY COALESCE(ps.count, 0) DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
@@ -479,35 +489,40 @@ async def get_graph_edges(
         async with async_session() as session:
             try:
                 if node_ids:
+                    # Extract song IDs from node_ids (format: 'song_123')
+                    song_ids = [nid.replace('song_', '') for nid in node_ids if nid.startswith('song_')]
+
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER () as id,
-                               source as source_id,
-                               target as target_id,
-                               weight,
-                               edge_type,
+                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as id,
+                               'song_' || song_id_1::text as source_id,
+                               'song_' || song_id_2::text as target_id,
+                               occurrence_count::float as weight,
+                               'adjacency' as edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM graph_edges
-                        WHERE source = ANY(:node_ids) OR target = ANY(:node_ids)
-                        ORDER BY weight DESC
+                        FROM song_adjacency
+                        WHERE song_id_1 = ANY(:song_ids::uuid[]) OR song_id_2 = ANY(:song_ids::uuid[])
+                        ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
-                        "node_ids": node_ids,
+                        "song_ids": song_ids,
                         "limit": limit,
                         "offset": offset
                     })
                 else:
+                    # Query directly from song_adjacency to get ALL adjacencies
+                    # The graph_edges view filters out occurrence_count = 1, missing 80% of data
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY weight DESC) as id,
-                               source as source_id,
-                               target as target_id,
-                               weight,
-                               edge_type,
+                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as id,
+                               'song_' || song_id_1::text as source_id,
+                               'song_' || song_id_2::text as target_id,
+                               occurrence_count::float as weight,
+                               'adjacency' as edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM graph_edges
-                        ORDER BY weight DESC
+                        FROM song_adjacency
+                        ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {

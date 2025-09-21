@@ -179,12 +179,11 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
                   scene.add(sprite);
                   edgeLabelObjectsRef.current.set(edge.id, sprite);
-                }
               }
             }
           }
-        });
-      }
+        }
+      });
     }
   }, [nodes, edges, getVisibleNodesCount]);
 
