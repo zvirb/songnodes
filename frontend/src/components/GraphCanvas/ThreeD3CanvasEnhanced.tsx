@@ -701,7 +701,9 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
       if (hoveredMesh.material instanceof THREE.MeshPhongMaterial) {
         hoveredMesh.material.emissiveIntensity = 0.6;
-        hoveredMesh.scale.set(1.2, 1.2, 1.2);
+        // Dynamic scaling based on nodeSize prop
+        const hoverScale = Math.min(1.5, 1 + (nodeSize / 20));
+        hoveredMesh.scale.set(hoverScale, hoverScale, hoverScale);
       }
 
       setHoveredNode(nodeId);
@@ -710,7 +712,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       setHoveredNode(null);
       mountRef.current.style.cursor = 'grab';
     }
-  }, [hoveredNode]);
+  }, [hoveredNode, nodeSize]);
 
   const handleMouseClick = useCallback((event: MouseEvent) => {
     if (!mountRef.current || !cameraRef.current) return;

@@ -71,11 +71,11 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
 
       // Fetch nodes and edges separately with appropriate limits
       const [nodesResponse, edgesResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/graph/nodes?limit=100`, {
+        fetch(`${baseUrl}/api/graph/nodes?limit=500`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         }),
-        fetch(`${baseUrl}/api/graph/edges?limit=1000`, {
+        fetch(`${baseUrl}/api/graph/edges?limit=5000`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         })
@@ -93,15 +93,40 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
         if (nodesData.nodes && nodesData.nodes.length > 0) {
           // Convert API format to expected GraphData format
           const graphData: GraphData = {
-            nodes: nodesData.nodes.map((node: any) => ({
-              id: node.id,
-              label: `${node.metadata?.title || 'Unknown'} - ${node.metadata?.artist || 'Unknown'}`,
-              type: 'track',
-              size: 12,
-              x: node.x_position || Math.random() * 1000,
-              y: node.y_position || Math.random() * 600,
-              metadata: node.metadata
-            })),
+            nodes: nodesData.nodes.map((node: any) => {
+              // Try to extract artist and title from label if it contains " - "
+              const label = node.metadata?.label || '';
+              let title = label;
+              let artist = '';
+
+              // Check if label contains artist - title format
+              if (label.includes(' - ')) {
+                const parts = label.split(' - ');
+                artist = parts[0].trim();
+                title = parts.slice(1).join(' - ').trim();
+              } else if (label.includes(' – ')) { // Also check for en-dash
+                const parts = label.split(' – ');
+                artist = parts[0].trim();
+                title = parts.slice(1).join(' – ').trim();
+              }
+
+              // Use extracted or provided values
+              return {
+                id: node.id,
+                label: label || `${node.metadata?.title || 'Unknown'} - ${node.metadata?.artist || 'Unknown'}`,
+                title: title || node.metadata?.title || label || 'Unknown',
+                artist: artist || node.metadata?.artist || '',
+                type: 'track',
+                size: 12,
+                x: node.position?.x || node.x_position || Math.random() * 1000,
+                y: node.position?.y || node.y_position || Math.random() * 600,
+                metadata: {
+                  ...node.metadata,
+                  title: title || node.metadata?.title,
+                  artist: artist || node.metadata?.artist
+                }
+              };
+            }),
             edges: edgesData.edges.map((edge: any) => ({
               id: edge.id,
               source: edge.source_id,

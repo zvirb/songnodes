@@ -523,7 +523,10 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     const target = event.target as SVGCircleElement;
     target.setAttribute('stroke', '#F59E0B');
     target.setAttribute('stroke-width', '3');
-    target.setAttribute('r', String(Number(target.getAttribute('r')) * 1.2));
+    // Use dynamic scaling based on nodeSize
+    const currentRadius = Number(target.getAttribute('r'));
+    const hoverScale = Math.min(1.5, 1 + (nodeSize / 20)); // Scale between 1.1 and 1.5 based on nodeSize
+    target.setAttribute('r', String(currentRadius * hoverScale));
 
     // Enhanced tooltip with detailed track information
     const pt = event as any;
@@ -604,16 +607,19 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       content: lines.join('\n'),
       clickableNodes
     });
-  }, [nodes, edges]);
+  }, [nodes, edges, nodeSize]);
 
   const handleNodeMouseLeave = useCallback((event: MouseEvent, node: any) => {
     // Reset hover effects directly on DOM
     const target = event.target as SVGCircleElement;
     target.setAttribute('stroke', '');
     target.setAttribute('stroke-width', '0');
-    target.setAttribute('r', String(Number(target.getAttribute('r')) / 1.2));
+    // Reset to original size based on dynamic scaling
+    const currentRadius = Number(target.getAttribute('r'));
+    const hoverScale = Math.min(1.5, 1 + (nodeSize / 20)); // Must match the scale used in handleNodeMouseEnter
+    target.setAttribute('r', String(currentRadius / hoverScale));
     setTooltip(null);
-  }, []);
+  }, [nodeSize]);
 
   // Centralized deselection logic
   const deselectAll = useCallback(() => {
@@ -1404,10 +1410,14 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                 .attr('fill', '#FFFFFF')
                 .text(title.length > 20 ? title.substring(0, 20) + '...' : title)
                 .on('mouseenter', function() {
-                  d3.select(this).attr('fill', '#FCD34D');
+                  d3.select(this)
+                    .attr('fill', '#FCD34D')
+                    .attr('font-size', `${edgeLabelSize * 1.2}px`);
                 })
                 .on('mouseleave', function() {
-                  d3.select(this).attr('fill', '#FFFFFF');
+                  d3.select(this)
+                    .attr('fill', '#FFFFFF')
+                    .attr('font-size', `${edgeLabelSize}px`);
                 });
 
               // Artist name (if available)
@@ -1420,10 +1430,14 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                   .attr('fill', '#CCCCCC')
                   .text(artist.length > 20 ? artist.substring(0, 20) + '...' : artist)
                   .on('mouseenter', function() {
-                    d3.select(this).attr('fill', '#FCD34D');
+                    d3.select(this)
+                      .attr('fill', '#FCD34D')
+                      .attr('font-size', `${(edgeLabelSize - 1) * 1.2}px`);
                   })
                   .on('mouseleave', function() {
-                    d3.select(this).attr('fill', '#CCCCCC');
+                    d3.select(this)
+                      .attr('fill', '#CCCCCC')
+                      .attr('font-size', `${edgeLabelSize - 1}px`);
                   });
               }
 

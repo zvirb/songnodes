@@ -144,9 +144,10 @@ const io = new Server(server, {
 });
 
 // Redis adapter for Socket.io clustering
+const redisHost = process.env.REDIS_HOST || 'redis';
+const redisPort = process.env.REDIS_PORT || 6379;
 const redisClient = createClient({
-  host: process.env.REDIS_HOST || 'redis',
-  port: process.env.REDIS_PORT || 6379
+  url: `redis://${redisHost}:${redisPort}`
 });
 
 const subClient = redisClient.duplicate();
