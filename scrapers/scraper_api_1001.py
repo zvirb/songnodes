@@ -1,14 +1,19 @@
 """
 FastAPI wrapper for 1001tracklists scraper
-Handles targeted scraping mode using target_tracks_for_scraping.json
+Now uses API-based data collection instead of web scraping
 """
 from fastapi import FastAPI, HTTPException
-import subprocess
+import asyncio
 import json
 import os
 import logging
+import sys
 from typing import Dict, Any
 from datetime import datetime
+
+# Add current directory to path for imports
+sys.path.append('/app')
+from onethousandone_api_client import OneThousandOneTracklistsAPIClient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,81 +28,58 @@ async def health_check():
 @app.post("/scrape")
 async def scrape_url(request: Dict[str, Any]):
     """
-    Execute scraping task in targeted mode using target_tracks_for_scraping.json
+    Execute API-based data collection instead of web scraping
     URL parameter is optional and ignored (for orchestrator compatibility)
     """
     task_id = request.get("task_id") or f"1001_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     url = request.get("url")
 
     try:
-        # Build scrapy command - always use targeted mode
-        cmd = [
-            "scrapy", "crawl", "1001tracklists",
-            "-L", "INFO",
-            "-s", "LOG_ENABLED=1",
-            "-a", "search_mode=targeted",
-            "-a", "force_run=true"
-        ]
-
-        # Set output file
-        output_file = f"/tmp/{task_id}_1001.json"
-        cmd.extend(["-o", output_file])
-
-        logger.info(f"Executing command: {' '.join(cmd)}")
+        logger.info(f"Starting API-based data collection for task {task_id}")
         if url:
-            logger.info(f"Received URL request: {url}, running in targeted mode")
+            logger.info(f"Received URL request: {url}, using API instead")
 
-        # Run the spider
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd="/app",
-            timeout=300  # 5 minute timeout
-        )
+        # Create API client
+        client = OneThousandOneTracklistsAPIClient()
 
-        # Log output for debugging
-        if result.stdout:
-            logger.info(f"Spider stdout: {result.stdout[:500]}")
-        if result.stderr:
-            logger.warning(f"Spider stderr: {result.stderr[:500]}")
+        # Use default queries for testing with mock API
+        # TODO: Load from target_tracks_for_scraping.json when API key is available
+        queries = [
+            "Carl Cox", "Charlotte de Witte", "Amelie Lens",
+            "Tale of Us", "Solomun"
+        ]
+        logger.info(f"Using {len(queries)} default DJ queries for mock data generation")
 
-        # Check if spider ran successfully
-        if result.returncode != 0:
-            error_msg = result.stderr or result.stdout or "Unknown error"
-            logger.error(f"Scrapy failed with code {result.returncode}: {error_msg}")
+        # Process data through API
+        items_processed = 0
+        for query in queries:
+            logger.info(f"Processing query: {query}")
+            tracklists = client.search_tracklists(query, limit=3)
 
-            # Return structured response instead of raising 500
-            return {
-                "status": "error",
-                "task_id": task_id,
-                "error": f"Spider execution failed: {error_msg[:200]}",
-                "returncode": result.returncode
-            }
+            for tracklist in tracklists:
+                details = client.get_tracklist_details(tracklist['id'])
+                if details and 'tracks' in details:
+                    items_processed += len(details['tracks'])
 
-        # Check if output file was created
-        output_exists = os.path.exists(output_file)
-        output_size = os.path.getsize(output_file) if output_exists else 0
+        # Store results in database
+        await client.process_tracklists_to_db(queries)
+
+        # Close the client if it has a close method
+        if hasattr(client.pipeline, 'close'):
+            await client.pipeline.close()
 
         return {
             "status": "success",
             "task_id": task_id,
             "url": url,
-            "mode": "targeted",
-            "output_file": output_file if output_exists else None,
-            "output_size": output_size,
-            "message": "Spider executed in targeted mode using target_tracks_for_scraping.json"
+            "mode": "api",
+            "items_processed": items_processed,
+            "queries_processed": len(queries),
+            "message": f"API data collection completed. Processed {items_processed} tracks from {len(queries)} queries"
         }
 
-    except subprocess.TimeoutExpired:
-        logger.error(f"Spider timeout for task {task_id}")
-        return {
-            "status": "timeout",
-            "task_id": task_id,
-            "error": "Spider execution timeout after 5 minutes"
-        }
     except Exception as e:
-        logger.error(f"Error executing spider: {str(e)}")
+        logger.error(f"Error in API data collection: {str(e)}")
         return {
             "status": "error",
             "task_id": task_id,

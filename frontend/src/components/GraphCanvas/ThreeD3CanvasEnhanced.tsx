@@ -17,8 +17,11 @@ interface ThreeD3CanvasProps {
   height: number;
   className?: string;
   distancePower?: number;
+  relationshipPower?: number;
   nodeSize?: number;
   edgeLabelSize?: number;
+  onNodeClick?: (node: any) => void;
+  onEdgeClick?: (edge: any) => void;
 }
 
 type LayoutMode = 'sphere' | 'force';
@@ -46,8 +49,11 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   height,
   className,
   distancePower = 1,
+  relationshipPower = 0,
   nodeSize = 12,
-  edgeLabelSize = 12
+  edgeLabelSize = 12,
+  onNodeClick,
+  onEdgeClick
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
@@ -331,14 +337,14 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     const simulation = forceSimulation3d(simNodes)
       .force('link', forceLink3d(simLinks)
         .id((d: any) => d.id)
-        .distance((d: any) => d.distance)
-        .strength(1.5))
+        .distance((d: any) => d.distance * Math.pow(10, distancePower / 5))
+        .strength(1.5 * Math.pow(10, relationshipPower / 5)))
       .force('charge', forceManyBody3d()
-        .strength(-300)
+        .strength(-300 * Math.pow(10, distancePower / 5))
         .distanceMin(5)
-        .distanceMax(200))
+        .distanceMax(200 * Math.pow(10, distancePower / 5)))
       .force('center', forceCenter3d(0, 0, 0))
-      .force('collision', forceCollide3d(10))
+      .force('collision', forceCollide3d(10 * (nodeSize / 12)))
       .alphaDecay(0.02)
       .velocityDecay(0.4);
 
@@ -607,13 +613,6 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     });
 
     scene.add(edgeGroup);
-
-    // Add reference grid in force mode
-    if (layoutMode === 'force') {
-      const gridHelper = new THREE.GridHelper(200, 20, 0x444444, 0x222222);
-      gridHelper.userData.isGraphElement = true;
-      scene.add(gridHelper);
-    }
 
     // Initial edge label update
     setTimeout(() => updateEdgeLabels(), 100);

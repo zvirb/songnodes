@@ -8,6 +8,10 @@ interface D3GraphCanvasProps {
   width: number;
   height: number;
   className?: string;
+  nodeSize?: number;
+  edgeLabelSize?: number;
+  distancePower?: number;
+  relationshipPower?: number;
 }
 
 interface D3Node extends NodeVisual {
@@ -26,7 +30,11 @@ interface D3Edge extends Omit<EdgeVisual, 'source' | 'target'> {
 export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
   width,
   height,
-  className
+  className,
+  nodeSize = 12,
+  edgeLabelSize = 12,
+  distancePower = 0,
+  relationshipPower = 0
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<D3Node, D3Edge> | null>(null);
@@ -51,17 +59,17 @@ export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
     }
   }, []);
 
-  // Get node radius based on importance/degree
+  // Get node radius based on importance/degree and nodeSize prop
   const getNodeRadius = useCallback((node: NodeVisual) => {
-    if (node.radius) return node.radius;
+    if (node.radius) return node.radius * (nodeSize / 12);
 
-    // Calculate radius based on degree or use default
-    const baseRadius = 6;
-    const maxRadius = 12;
+    // Calculate radius based on degree or use default, scaled by nodeSize
+    const baseRadius = (nodeSize / 2);
+    const maxRadius = nodeSize;
     const degree = node.metrics?.degree || 1;
 
     return Math.min(maxRadius, baseRadius + (degree * 0.5));
-  }, []);
+  }, [nodeSize]);
 
   // Memoize processed data to prevent unnecessary re-renders
   const processedData = useMemo(() => {
@@ -123,7 +131,12 @@ export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
       // Single select
       dispatch(setSelectedNodes(isSelected ? [] : [node.id]));
     }
-  }, [dispatch, selectedNodes]);
+
+    // Call the parent's onNodeClick handler if provided
+    if (onNodeClick) {
+      onNodeClick(node);
+    }
+  }, [dispatch, selectedNodes, onNodeClick]);
 
   const handleNodeMouseEnter = useCallback((event: MouseEvent, node: D3Node) => {
     dispatch(setHoveredNode(node.id));
@@ -165,12 +178,12 @@ export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
     simulationRef.current = d3.forceSimulation(processedNodes)
       .force('link', d3.forceLink<D3Node, D3Edge>(processedEdges)
         .id((d) => d.id)
-        .distance(80)
-        .strength(0.1)
+        .distance(80 * Math.pow(10, distancePower / 5))
+        .strength(0.1 * Math.pow(10, relationshipPower / 5))
       )
       .force('charge', d3.forceManyBody()
-        .strength(-300)
-        .distanceMax(400)
+        .strength(-300 * Math.pow(10, distancePower / 5))
+        .distanceMax(400 * Math.pow(10, distancePower / 5))
       )
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide()
@@ -188,6 +201,26 @@ export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
       .attr('stroke-width', (d) => Math.max(1, (d.weight || 1) * 2))
       .attr('stroke-opacity', 0.6)
       .attr('class', 'graph-edge');
+
+    // Create edge labels (if enabled)
+    const edgeLabelElements = edgeLabelSize > 0 ? edgeGroup
+      .selectAll<SVGTextElement, D3Edge>('text.edge-label')
+      .data(processedEdges)
+      .enter()
+      .append('text')
+      .attr('class', 'edge-label')
+      .attr('text-anchor', 'middle')
+      .attr('font-size', `${edgeLabelSize}px`)
+      .attr('fill', '#94a3b8')
+      .attr('stroke', '#0F172A')
+      .attr('stroke-width', 0.3)
+      .attr('pointer-events', 'none')
+      .text((d) => {
+        // Show weight or relationship type
+        if (d.label) return d.label;
+        if (d.weight && d.weight > 1) return d.weight.toFixed(1);
+        return '';
+      }) : null;
 
     // Create nodes
     const nodeElements = nodeGroup
@@ -214,7 +247,7 @@ export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
       .attr('class', 'node-label')
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
-      .attr('font-size', '10px')
+      .attr('font-size', `${Math.max(8, edgeLabelSize * 0.8)}px`)
       .attr('font-weight', 'bold')
       .attr('fill', '#FFFFFF')
       .attr('stroke', '#000000')
@@ -256,6 +289,13 @@ export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
         .attr('y1', (d) => d.source.y!)
         .attr('x2', (d) => d.target.x!)
         .attr('y2', (d) => d.target.y!);
+
+      // Update edge label positions (centered on edge)
+      if (edgeLabelElements) {
+        edgeLabelElements
+          .attr('x', (d) => (d.source.x! + d.target.x!) / 2)
+          .attr('y', (d) => (d.source.y! + d.target.y!) / 2);
+      }
 
       // Update node positions
       nodeElements
@@ -312,7 +352,11 @@ export const D3GraphCanvas: React.FC<D3GraphCanvasProps> = ({
     handleNodeClick,
     handleNodeMouseEnter,
     handleNodeMouseLeave,
-    dispatch
+    dispatch,
+    nodeSize,
+    edgeLabelSize,
+    distancePower,
+    relationshipPower
   ]);
 
   // Update node colors when selection/hover state changes
