@@ -477,9 +477,53 @@ class EnhancedMusicDatabasePipeline:
         ])
 
     async def insert_setlists_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert setlists batch"""
-        # Similar implementation for setlists
-        pass
+        """Insert setlists/playlists batch"""
+        try:
+            # Check if playlists table has a unique constraint we can use
+            playlist_records = []
+            for item in batch:
+                # Generate a unique playlist ID based on name and source
+                playlist_id = str(uuid.uuid5(
+                    uuid.NAMESPACE_DNS,
+                    f"{item.get('setlist_name', '')}:{item.get('data_source', '')}"
+                ))
+
+                playlist_records.append((
+                    playlist_id,
+                    item.get('setlist_name', 'Unknown Setlist'),
+                    item.get('data_source', 'unknown'),
+                    item.get('event_url'),
+                    item.get('event_type', 'dj_mix'),
+                    item.get('event_name'),
+                    item.get('event_date'),
+                    item.get('duration_minutes'),
+                    item.get('track_count', 0),
+                    item.get('play_count', 0),
+                    item.get('like_count', 0)
+                ))
+
+            if playlist_records:
+                await conn.executemany("""
+                    INSERT INTO playlists (
+                        playlist_id, name, source, source_url, playlist_type,
+                        event_name, event_date,
+                        duration_minutes, tracklist_count, play_count, like_count
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    ON CONFLICT (playlist_id)
+                    DO UPDATE SET
+                        source_url = EXCLUDED.source_url,
+                        event_date = COALESCE(EXCLUDED.event_date, playlists.event_date),
+                        duration_minutes = COALESCE(EXCLUDED.duration_minutes, playlists.duration_minutes),
+                        tracklist_count = GREATEST(EXCLUDED.tracklist_count, playlists.tracklist_count),
+                        updated_at = CURRENT_TIMESTAMP
+                """, playlist_records)
+
+                self.logger.info(f"✓ Inserted/updated {len(playlist_records)} playlists")
+
+        except Exception as e:
+            self.logger.error(f"Error inserting setlists: {e}")
+            # Don't raise - continue processing other items
 
     async def insert_venues_batch(self, conn, batch: List[Dict[str, Any]]):
         """Insert venues batch"""
@@ -492,9 +536,106 @@ class EnhancedMusicDatabasePipeline:
         pass
 
     async def insert_setlist_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert setlist-track relationships"""
-        # Implementation for setlist tracks
-        pass
+        """Insert setlist-track relationships into playlist_songs table"""
+        try:
+            playlist_song_records = []
+
+            for item in batch:
+                # Generate playlist ID same way as in insert_setlists_batch
+                playlist_id = str(uuid.uuid5(
+                    uuid.NAMESPACE_DNS,
+                    f"{item.get('setlist_name', '')}:{item.get('data_source', '')}"
+                ))
+
+                # Look up song ID for track name
+                track_name = item.get('track_name', '')
+                song_query = """
+                    SELECT song_id FROM songs
+                    WHERE LOWER(TRIM(title)) = LOWER(TRIM($1))
+                    LIMIT 1
+                """
+                song_id = await conn.fetchval(song_query, track_name)
+
+                if song_id:
+                    playlist_song_records.append((
+                        playlist_id,
+                        song_id,
+                        item.get('track_order', 0),
+                        item.get('transition_rating'),
+                        item.get('energy_level'),
+                        item.get('crowd_reaction')
+                    ))
+                else:
+                    # Track not found in songs table - add it first
+                    self.logger.debug(f"Track not found in songs table: {track_name}")
+
+            if playlist_song_records:
+                # Insert playlist-song relationships
+                await conn.executemany("""
+                    INSERT INTO playlist_songs (
+                        playlist_id, song_id, position,
+                        transition_rating, energy_level, crowd_reaction
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (playlist_id, position)
+                    DO UPDATE SET
+                        song_id = EXCLUDED.song_id,
+                        transition_rating = COALESCE(EXCLUDED.transition_rating, playlist_songs.transition_rating),
+                        energy_level = COALESCE(EXCLUDED.energy_level, playlist_songs.energy_level),
+                        crowd_reaction = COALESCE(EXCLUDED.crowd_reaction, playlist_songs.crowd_reaction)
+                """, playlist_song_records)
+
+                self.logger.info(f"✓ Inserted {len(playlist_song_records)} playlist-song relationships")
+
+                # After inserting playlist songs, create adjacencies from the sequences
+                await self.create_adjacencies_from_playlist(conn, playlist_id)
+
+        except Exception as e:
+            self.logger.error(f"Error inserting setlist tracks: {e}")
+            # Don't raise - continue processing other items
+
+    async def create_adjacencies_from_playlist(self, conn, playlist_id: str):
+        """Create song adjacencies from playlist sequences"""
+        try:
+            # Get all songs in the playlist in order
+            songs_query = """
+                SELECT song_id, position
+                FROM playlist_songs
+                WHERE playlist_id = $1
+                ORDER BY position
+            """
+            songs = await conn.fetch(songs_query, playlist_id)
+
+            if len(songs) < 2:
+                return
+
+            # Create adjacencies for consecutive songs
+            adjacency_records = []
+            for i in range(len(songs) - 1):
+                song_1 = songs[i]['song_id']
+                song_2 = songs[i + 1]['song_id']
+
+                # Ensure song_id_1 < song_id_2 for consistency
+                if song_1 != song_2:
+                    song_id_1 = min(song_1, song_2)
+                    song_id_2 = max(song_1, song_2)
+                    adjacency_records.append((song_id_1, song_id_2, 1, 1.0))
+
+            if adjacency_records:
+                # Insert/update adjacencies
+                await conn.executemany("""
+                    INSERT INTO song_adjacency (song_id_1, song_id_2, occurrence_count, avg_distance)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (song_id_1, song_id_2)
+                    DO UPDATE SET
+                        occurrence_count = song_adjacency.occurrence_count + 1,
+                        avg_distance = 1.0
+                """, adjacency_records)
+
+                self.logger.debug(f"Created {len(adjacency_records)} adjacencies from playlist {playlist_id}")
+
+        except Exception as e:
+            self.logger.error(f"Error creating adjacencies from playlist: {e}")
 
     async def insert_track_adjacencies_batch(self, conn, batch: List[Dict[str, Any]]):
         """Insert track adjacency relationships into song_adjacency table"""
