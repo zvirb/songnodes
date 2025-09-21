@@ -307,20 +307,34 @@ async def get_graph_nodes(
                 else:
                     # Get all nodes with limit and pagination
                     query = text("""
-                        SELECT id, track_id, x_position, y_position, metadata,
-                               COUNT(*) OVER() as total_count
-                        FROM musicdb.nodes
-                        ORDER BY created_at DESC
+                        SELECT
+                            node_id as id,
+                            node_id as track_id,
+                            0 as x_position,
+                            0 as y_position,
+                            json_build_object(
+                                'label', label,
+                                'node_type', node_type,
+                                'category', category,
+                                'release_year', release_year,
+                                'appearance_count', appearance_count
+                            ) as metadata,
+                            COUNT(*) OVER() as total_count
+                        FROM graph_nodes
+                        WHERE node_type = 'song'
+                        ORDER BY appearance_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
                         "limit": limit,
                         "offset": offset
                     })
-                
+
                 nodes = []
                 total_count = 0
+                logger.info(f"DEBUG: Query executed, processing results...")
                 for row in result:
+                    logger.info(f"DEBUG: Processing row: {row}")
                     node_data = {
                         'id': str(row.id),
                         'track_id': str(row.track_id),
@@ -466,10 +480,15 @@ async def get_graph_edges(
             try:
                 if node_ids:
                     query = text("""
-                        SELECT id, source_id, target_id, weight, edge_type,
+                        SELECT
+                               ROW_NUMBER() OVER () as id,
+                               source as source_id,
+                               target as target_id,
+                               weight,
+                               edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM musicdb.edges
-                        WHERE source_id = ANY(:node_ids) OR target_id = ANY(:node_ids)
+                        FROM graph_edges
+                        WHERE source = ANY(:node_ids) OR target = ANY(:node_ids)
                         ORDER BY weight DESC
                         LIMIT :limit OFFSET :offset
                     """)
@@ -480,10 +499,15 @@ async def get_graph_edges(
                     })
                 else:
                     query = text("""
-                        SELECT id, source_id, target_id, weight, edge_type,
+                        SELECT
+                               ROW_NUMBER() OVER (ORDER BY weight DESC) as id,
+                               source as source_id,
+                               target as target_id,
+                               weight,
+                               edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM musicdb.edges
-                        ORDER BY created_at DESC
+                        FROM graph_edges
+                        ORDER BY weight DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
@@ -517,29 +541,38 @@ async def get_graph_edges(
                 raise HTTPException(status_code=500, detail="Database query failed")
 
 async def bulk_insert_nodes(nodes_data: List[Dict[str, Any]]) -> int:
-    """Bulk insert nodes with conflict resolution."""
-    with DATABASE_QUERY_DURATION.labels(query_type='bulk_insert').time():
-        async with async_session() as session:
-            try:
-                # Use direct SQL for better compatibility
-                inserted_count = 0
-                for node in nodes_data:
-                    query = text("""
-                        INSERT INTO musicdb.nodes (track_id, x_position, y_position, metadata)
-                        VALUES (:track_id, :x_position, :y_position, :metadata)
-                        ON CONFLICT (track_id) DO UPDATE SET
-                            x_position = EXCLUDED.x_position,
-                            y_position = EXCLUDED.y_position,
-                            metadata = EXCLUDED.metadata,
-                            updated_at = NOW()
-                    """)
-                    await session.execute(query, {
-                        "track_id": node.get('track_id'),
-                        "x_position": node.get('x', 0),
-                        "y_position": node.get('y', 0),
-                        "metadata": json.dumps(node.get('metadata', {}))
-                    })
-                    inserted_count += 1
+    """
+    Bulk insert nodes with conflict resolution.
+    NOTE: This function is disabled as our architecture uses dynamic views (graph_nodes)
+    instead of static node tables. Nodes are generated automatically from songs and artists.
+    """
+    # Disabled - nodes are generated dynamically from graph_nodes view
+    logger.warning("bulk_insert_nodes called but disabled - using dynamic graph_nodes view")
+    return 0
+
+    # COMMENTED OUT - Original implementation incompatible with view-based architecture
+    # with DATABASE_QUERY_DURATION.labels(query_type='bulk_insert').time():
+    #     async with async_session() as session:
+    #         try:
+    #             # Use direct SQL for better compatibility
+    #             inserted_count = 0
+    #             for node in nodes_data:
+    #                 query = text("""
+    #                     INSERT INTO musicdb.nodes (track_id, x_position, y_position, metadata)
+    #                     VALUES (:track_id, :x_position, :y_position, :metadata)
+    #                     ON CONFLICT (track_id) DO UPDATE SET
+    #                         x_position = EXCLUDED.x_position,
+    #                         y_position = EXCLUDED.y_position,
+    #                         metadata = EXCLUDED.metadata,
+    #                         updated_at = NOW()
+    #                 """)
+    #                 await session.execute(query, {
+    #                     "track_id": node.get('track_id'),
+    #                     "x_position": node.get('x', 0),
+    #                     "y_position": node.get('y', 0),
+    #                     "metadata": json.dumps(node.get('metadata', {}))
+    #                 })
+    #                 inserted_count += 1
 
                 await session.commit()
                 return inserted_count
@@ -639,8 +672,9 @@ async def get_nodes(
 ):
     """Get all graph nodes with pagination."""
     try:
-        result = await db_circuit_breaker.call(
-            get_graph_nodes,
+        # Temporarily bypass circuit breaker to debug
+        logger.info(f"DEBUG: Calling get_graph_nodes directly...")
+        result = await get_graph_nodes(
             center_node_id,
             max_depth,
             limit,  # max_nodes parameter
@@ -648,6 +682,7 @@ async def get_nodes(
             limit,  # limit parameter
             offset  # offset parameter
         )
+        logger.info(f"DEBUG: Result from get_graph_nodes: {result}")
         return result
 
     except Exception as e:
@@ -723,6 +758,28 @@ async def search_graph(
             "facets": {},
             "status": "Search service temporarily offline"
         }
+
+@app.get("/test/nodes")
+async def test_nodes():
+    """Simple test endpoint to verify database connection."""
+    try:
+        async with async_session() as session:
+            query = text("SELECT COUNT(*) as count FROM graph_nodes WHERE node_type = 'song'")
+            result = await session.execute(query)
+            count = result.scalar()
+
+            # Get sample data
+            query2 = text("SELECT * FROM graph_nodes WHERE node_type = 'song' LIMIT 3")
+            result2 = await session.execute(query2)
+            sample_data = [dict(row._mapping) for row in result2]
+
+            return {
+                "count": count,
+                "sample_data": sample_data
+            }
+    except Exception as e:
+        logger.error(f"Test endpoint error: {e}")
+        return {"error": str(e)}
 
 @app.get("/health")
 async def health_check():
@@ -937,6 +994,87 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
         manager.disconnect(websocket)
+
+@app.get("/api/v1/graph")
+async def get_combined_graph_data():
+    """Get combined nodes and edges data for frontend visualization."""
+    try:
+        # Get nodes data
+        async with db_session_manager.get_session() as session:
+            nodes_query = text("""
+                SELECT
+                    node_id as id,
+                    node_id as track_id,
+                    0 as x_position,
+                    0 as y_position,
+                    json_build_object(
+                        'label', label,
+                        'node_type', node_type,
+                        'category', category,
+                        'release_year', release_year,
+                        'appearance_count', appearance_count
+                    ) as metadata,
+                    CURRENT_TIMESTAMP as created_at
+                FROM graph_nodes
+                WHERE node_type = 'song'
+                ORDER BY appearance_count DESC
+                LIMIT 1000
+            """)
+            nodes_result = await session.execute(nodes_query)
+            nodes_data = [dict(row._mapping) for row in nodes_result]
+
+            # Get edges data
+            edges_query = text("""
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY weight DESC) as id,
+                    source as source_id,
+                    target as target_id,
+                    weight,
+                    edge_type,
+                    CURRENT_TIMESTAMP as created_at
+                FROM graph_edges
+                ORDER BY weight DESC
+                LIMIT 2000
+            """)
+            edges_result = await session.execute(edges_query)
+            edges_data = [dict(row._mapping) for row in edges_result]
+
+            # Transform to frontend format
+            nodes = []
+            for node in nodes_data:
+                metadata = node.get('metadata', {}) or {}
+                nodes.append({
+                    'id': str(node['id']),
+                    'title': metadata.get('title', 'Unknown'),
+                    'artist': metadata.get('artist', 'Unknown'),
+                    'type': 'track',
+                    'position': {
+                        'x': node.get('x_position'),
+                        'y': node.get('y_position')
+                    },
+                    'metadata': metadata
+                })
+
+            edges = []
+            for edge in edges_data:
+                edges.append({
+                    'id': str(edge['id']),
+                    'source': str(edge['source_id']),
+                    'target': str(edge['target_id']),
+                    'weight': edge.get('weight', 1),
+                    'type': edge.get('edge_type', 'adjacency')
+                })
+
+            return {
+                'nodes': nodes,
+                'edges': edges,
+                'total_nodes': len(nodes),
+                'total_edges': len(edges)
+            }
+
+    except Exception as e:
+        logger.error(f"Error getting combined graph data: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve graph data")
 
 if __name__ == "__main__":
     uvicorn.run(

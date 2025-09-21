@@ -15,13 +15,13 @@ import requests
 from urllib import robotparser
 from scrapy.exceptions import CloseSpider
 try:
-    from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+    from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem
 except ImportError:
     # Fallback for standalone execution
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+    from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem
 
 class SetlistFmSpider(scrapy.Spider):
     name = 'setlistfm'
@@ -266,6 +266,7 @@ class SetlistFmSpider(scrapy.Spider):
                 # Process tracks in the setlist
                 sets = setlist.get('sets', {}).get('set', [])
                 track_position = 1
+                tracks_data = []  # Collect tracks for adjacency generation
 
                 for set_data in sets:
                     for song in set_data.get('song', []):
@@ -298,7 +299,17 @@ class SetlistFmSpider(scrapy.Spider):
                         setlist_track_item['start_time'] = None
                         yield setlist_track_item
 
+                        # Collect track data for adjacency generation
+                        tracks_data.append({
+                            'track': {'track_name': name, 'track_id': None},
+                            'track_order': track_position
+                        })
+
                         track_position += 1
+
+                # Generate track adjacency relationships within THIS setlist only
+                if len(tracks_data) > 1:
+                    yield from self.generate_track_adjacencies(tracks_data, setlist_item)
 
                 self.logger.info(f"Processed setlist: {setlist_item['setlist_name']}")
                 self.mark_source_processed(setlist_id)
@@ -342,6 +353,62 @@ class SetlistFmSpider(scrapy.Spider):
             self.redis_client.setex(key, self.source_ttl_seconds, datetime.utcnow().isoformat())
         except Exception as exc:
             self.logger.debug("Redis setex failed for Setlist.fm: %s", exc)
+
+    def generate_track_adjacencies(self, tracks_data, setlist_data):
+        """
+        Generate track adjacency relationships within a single setlist.
+        Creates adjacency items for tracks within 3 positions of each other.
+        """
+        if not tracks_data or len(tracks_data) < 2:
+            return
+
+        setlist_name = setlist_data.get('setlist_name', 'Unknown Setlist')
+        setlist_id = f"setlistfm_{hash(setlist_name)}"
+
+        # Sort tracks by their order to ensure proper adjacency
+        sorted_tracks = sorted(tracks_data, key=lambda x: x.get('track_order', 0))
+
+        adjacency_count = 0
+        for i in range(len(sorted_tracks)):
+            for j in range(i + 1, min(i + 4, len(sorted_tracks))):  # Within 3 positions
+                track_1 = sorted_tracks[i]
+                track_2 = sorted_tracks[j]
+
+                # Calculate distance between tracks
+                distance = abs(track_1.get('track_order', 0) - track_2.get('track_order', 0))
+
+                # Determine transition type based on distance
+                if distance == 1:
+                    transition_type = "sequential"
+                elif distance <= 3:
+                    transition_type = "close_proximity"
+                else:
+                    continue  # Skip if too far apart
+
+                # Create adjacency item
+                adjacency_item = EnhancedTrackAdjacencyItem(
+                    track_1_name=track_1['track']['track_name'],
+                    track_1_id=track_1['track'].get('track_id'),
+                    track_2_name=track_2['track']['track_name'],
+                    track_2_id=track_2['track'].get('track_id'),
+                    track_1_position=track_1.get('track_order'),
+                    track_2_position=track_2.get('track_order'),
+                    distance=distance,
+                    setlist_name=setlist_name,
+                    setlist_id=setlist_id,
+                    source_context=f"setlistfm:{setlist_name}",
+                    transition_type=transition_type,
+                    occurrence_count=1,
+                    created_at=datetime.utcnow(),
+                    data_source=self.name,
+                    scrape_timestamp=datetime.utcnow()
+                )
+
+                yield adjacency_item
+                adjacency_count += 1
+
+        if adjacency_count > 0:
+            self.logger.info(f"Generated {adjacency_count} track adjacency relationships for setlist: {setlist_name}")
 
     def closed(self, reason):
         self.record_run_timestamp()

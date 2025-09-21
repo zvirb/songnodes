@@ -34,6 +34,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
   const nodeObjectsRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const edgeObjectsRef = useRef<Map<string, THREE.Line>>(new Map());
+  const edgeLabelObjectsRef = useRef<Map<string, THREE.Sprite>>(new Map());
   const pathLinesRef = useRef<THREE.Line[]>([]);
 
   const [isInitialized, setIsInitialized] = useState(false);
@@ -62,6 +63,130 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       default: return '#6B7280'; // Gray
     }
   }, [selectedNodes, shortestPath]);
+
+  // Check if only one node is visible in current viewport (for edge labeling)
+  const getVisibleNodesCount = useCallback(() => {
+    if (!cameraRef.current || !nodeObjectsRef.current.size) return 0;
+
+    const camera = cameraRef.current;
+    const frustum = new THREE.Frustum();
+    const cameraMatrix = new THREE.Matrix4();
+    cameraMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(cameraMatrix);
+
+    let visibleCount = 0;
+    nodeObjectsRef.current.forEach((nodeObject) => {
+      if (frustum.containsPoint(nodeObject.position)) {
+        visibleCount++;
+      }
+    });
+
+    return visibleCount;
+  }, []);
+
+  // Update edge labels based on viewport visibility
+  const updateEdgeLabels = useCallback(() => {
+    if (!sceneRef.current) return;
+
+    const scene = sceneRef.current;
+    const visibleCount = getVisibleNodesCount();
+    const showEdgeLabels = visibleCount > 0 && visibleCount <= 3; // Show when zoomed in enough
+
+    // Remove existing edge labels
+    edgeLabelObjectsRef.current.forEach((sprite) => {
+      scene.remove(sprite);
+    });
+    edgeLabelObjectsRef.current.clear();
+
+    if (showEdgeLabels && cameraRef.current) {
+      const camera = cameraRef.current;
+      const frustum = new THREE.Frustum();
+      const cameraMatrix = new THREE.Matrix4();
+      cameraMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      frustum.setFromProjectionMatrix(cameraMatrix);
+
+      // Check each edge to see if at least one node is visible
+      edges.forEach(edge => {
+        const sourceNode = nodeObjectsRef.current.get(edge.source);
+        const targetNode = nodeObjectsRef.current.get(edge.target);
+
+        if (sourceNode && targetNode) {
+          // Check if either node is visible in the viewport
+          const sourceVisible = frustum.containsPoint(sourceNode.position);
+          const targetVisible = frustum.containsPoint(targetNode.position);
+
+          // Only show edge label if at least one node is visible
+          if (sourceVisible || targetVisible) {
+            // Determine which node to show in the label (the non-visible one, or either if both visible)
+            let labelNodeData;
+            if (sourceVisible && !targetVisible) {
+              labelNodeData = nodes.find(n => n.id === edge.target);
+            } else if (targetVisible && !sourceVisible) {
+              labelNodeData = nodes.find(n => n.id === edge.source);
+            } else {
+              // Both visible - show target node info
+              labelNodeData = nodes.find(n => n.id === edge.target);
+            }
+
+            if (labelNodeData) {
+              // Create edge label
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              if (context) {
+                  canvas.width = 256;
+                  canvas.height = 48;
+
+                  // Prepare label text
+                  const artist = labelNodeData.artist || labelNodeData.label?.split(' - ')[0] || '';
+                  const title = labelNodeData.title || labelNodeData.label?.split(' - ')[1] || labelNodeData.label || labelNodeData.id;
+                  const displayText = artist ? `${artist} - ${title}` : title;
+
+                  // Draw background
+                  context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                  context.roundRect(5, 5, 246, 38, 4);
+                  context.fill();
+
+                  // Draw text
+                  context.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                  context.font = '12px Arial';
+                  context.textAlign = 'center';
+
+                  // Truncate if too long
+                  const maxLength = 30;
+                  const truncatedText = displayText.length > maxLength
+                    ? displayText.substring(0, maxLength - 3) + '...'
+                    : displayText;
+
+                  context.fillText(truncatedText, 128, 28);
+
+                  const texture = new THREE.CanvasTexture(canvas);
+                  const spriteMaterial = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.9
+                  });
+                  const sprite = new THREE.Sprite(spriteMaterial);
+
+                  // Position label at midpoint of edge
+                  const midpoint = new THREE.Vector3().addVectors(sourceNode.position, targetNode.position).multiplyScalar(0.5);
+                  sprite.position.copy(midpoint);
+                  sprite.scale.set(8, 2, 1);
+                  sprite.userData = {
+                    isEdgeLabel: true,
+                    edgeId: edge.id,
+                    labeledNodeId: labelNodeData.id
+                  };
+
+                  scene.add(sprite);
+                  edgeLabelObjectsRef.current.set(edge.id, sprite);
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+  }, [nodes, edges, getVisibleNodesCount]);
 
   // Initialize Three.js scene
   const initThreeJS = useCallback(() => {
@@ -217,9 +342,10 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     const scene = sceneRef.current;
 
     // Clear existing objects
-    scene.children = scene.children.filter(child => !child.userData.isGraphElement);
+    scene.children = scene.children.filter(child => !child.userData.isGraphElement && !child.userData.isEdgeLabel);
     nodeObjectsRef.current.clear();
     edgeObjectsRef.current.clear();
+    edgeLabelObjectsRef.current.clear();
     pathLinesRef.current = [];
 
     // Create nodes
@@ -386,7 +512,10 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     });
 
     scene.add(edgeGroup);
-  }, [nodes, edges, selectedNodes, shortestPath, getNodeColor]);
+
+    // Initial edge label update
+    setTimeout(() => updateEdgeLabels(), 100);
+  }, [nodes, edges, selectedNodes, shortestPath, getNodeColor, updateEdgeLabels]);
 
   // Handle mouse movement for hover
   const handleMouseMove = useCallback((event: MouseEvent) => {
@@ -502,6 +631,24 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
     return () => clearTimeout(timer);
   }, [initThreeJS, isInitialized]);
+
+  // Setup controls event listener for edge labels
+  useEffect(() => {
+    if (isInitialized && controlsRef.current) {
+      const controls = controlsRef.current;
+
+      const handleControlsChange = () => {
+        // Debounce the update to avoid excessive recalculation
+        setTimeout(() => updateEdgeLabels(), 50);
+      };
+
+      controls.addEventListener('change', handleControlsChange);
+
+      return () => {
+        controls.removeEventListener('change', handleControlsChange);
+      };
+    }
+  }, [isInitialized, updateEdgeLabels]);
 
   // Create graph when ready
   useEffect(() => {

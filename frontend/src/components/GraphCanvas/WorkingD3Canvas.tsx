@@ -18,6 +18,8 @@ interface WorkingD3CanvasProps {
   className?: string;
   distancePower?: number;
   relationshipPower?: number;
+  nodeSize?: number;
+  edgeLabelSize?: number;
 }
 
 interface SimpleNode {
@@ -49,7 +51,9 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   height,
   className,
   distancePower = 1,
-  relationshipPower = 0
+  relationshipPower = 0,
+  nodeSize = 12,
+  edgeLabelSize = 12
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<SimpleNode, SimpleEdge> | null>(null);
@@ -198,11 +202,11 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
 
   // Get node radius
   const getNodeRadius = useCallback((node: any) => {
-    const baseRadius = 8;
+    const baseRadius = nodeSize;
     const degree = (node.metrics?.degree || 1);
     const isCentered = centeredNodeId === node.id;
-    return Math.min(20, baseRadius + Math.sqrt(degree) + (isCentered ? 4 : 0));
-  }, [centeredNodeId]);
+    return Math.min(24, baseRadius + Math.sqrt(degree) + (isCentered ? 4 : 0));
+  }, [centeredNodeId, nodeSize]);
 
   // Helper function to wrap text into lines with max 15 characters per line
   const wrapText = useCallback((text: string, maxLength: number = 15): string[] => {
@@ -270,7 +274,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     const nodes = simulationRef.current.nodes();
 
     let visibleCount = 0;
-    const margin = 50; // Buffer zone
+    const margin = 20; // Reduced buffer zone for more precise detection
 
     nodes.forEach((node: any) => {
       if (node.x !== undefined && node.y !== undefined) {
@@ -278,13 +282,16 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         const screenX = node.x * currentTransform.k + currentTransform.x;
         const screenY = node.y * currentTransform.k + currentTransform.y;
 
-        // Check if node is within viewport
+        // Check if node is within viewport (more strict detection)
         if (screenX >= -margin && screenX <= width + margin &&
             screenY >= -margin && screenY <= height + margin) {
           visibleCount++;
         }
       }
     });
+
+    // Debug logging for troubleshooting
+    console.log(`Visible nodes count: ${visibleCount}, zoom level: ${currentTransform.k.toFixed(2)}`);
 
     return visibleCount;
   }, [width, height]);
@@ -1197,7 +1204,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         group.append('text')
           .attr('text-anchor', 'middle')
           .attr('dy', `${(index - (textData.lines.length - 1) / 2) * 12}px`)
-          .attr('font-size', '10px')
+          .attr('font-size', `${edgeLabelSize}px`)
           .attr('font-weight', index === 0 ? 'bold' : 'normal') // Title bold, artist normal
           .attr('fill', '#FFFFFF')
           .attr('fill-opacity', getNodeOpacity(d))
@@ -1229,7 +1236,11 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Function to update edge label visibility based on zoom
     const updateEdgeLabels = () => {
       const visibleCount = getVisibleNodesCount();
-      const showEdgeLabels = visibleCount === 1; // Only show when exactly ONE node is visible
+      // Show edge labels when zoomed in enough (few nodes visible) rather than exactly 1
+      const showEdgeLabels = visibleCount > 0 && visibleCount <= 3;
+
+      // Debug logging
+      console.log(`Updating edge labels: visibleCount=${visibleCount}, showEdgeLabels=${showEdgeLabels}, simpleEdges.length=${simpleEdges.length}`);
 
       edgeLabelGroup.selectAll('*').remove();
 
@@ -1271,6 +1282,11 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
             const targetInView = targetNode.x >= boundsLeft && targetNode.x <= boundsRight &&
                                 targetNode.y >= boundsTop && targetNode.y <= boundsBottom;
 
+            // Skip edges where neither node is visible in the current viewport
+            if (!sourceInView && !targetInView) {
+              return; // Skip this edge
+            }
+
             if (sourceInView && targetInView) {
               // Both nodes visible - use midpoint
               labelX = (sourceNode.x + targetNode.x) / 2;
@@ -1299,70 +1315,6 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
               const offset = 60 / currentTransform.k;
               labelX = Math.max(boundsLeft, Math.min(boundsRight, targetNode.x + normalizedDx * offset));
               labelY = Math.max(boundsTop, Math.min(boundsBottom, targetNode.y + normalizedDy * offset));
-            } else {
-              // Neither node visible - position label at intersection of edge with viewport
-              // Calculate line intersection with viewport rectangle
-              const edge_dx = targetNode.x - sourceNode.x;
-              const edge_dy = targetNode.y - sourceNode.y;
-
-              // Find intersection points with viewport edges
-              const intersections = [];
-
-              // Left edge intersection
-              if (edge_dx !== 0) {
-                const t = (boundsLeft - sourceNode.x) / edge_dx;
-                if (t >= 0 && t <= 1) {
-                  const y = sourceNode.y + t * edge_dy;
-                  if (y >= boundsTop && y <= boundsBottom) {
-                    intersections.push({ x: boundsLeft, y, t });
-                  }
-                }
-              }
-
-              // Right edge intersection
-              if (edge_dx !== 0) {
-                const t = (boundsRight - sourceNode.x) / edge_dx;
-                if (t >= 0 && t <= 1) {
-                  const y = sourceNode.y + t * edge_dy;
-                  if (y >= boundsTop && y <= boundsBottom) {
-                    intersections.push({ x: boundsRight, y, t });
-                  }
-                }
-              }
-
-              // Top edge intersection
-              if (edge_dy !== 0) {
-                const t = (boundsTop - sourceNode.y) / edge_dy;
-                if (t >= 0 && t <= 1) {
-                  const x = sourceNode.x + t * edge_dx;
-                  if (x >= boundsLeft && x <= boundsRight) {
-                    intersections.push({ x, y: boundsTop, t });
-                  }
-                }
-              }
-
-              // Bottom edge intersection
-              if (edge_dy !== 0) {
-                const t = (boundsBottom - sourceNode.y) / edge_dy;
-                if (t >= 0 && t <= 1) {
-                  const x = sourceNode.x + t * edge_dx;
-                  if (x >= boundsLeft && x <= boundsRight) {
-                    intersections.push({ x, y: boundsBottom, t });
-                  }
-                }
-              }
-
-              if (intersections.length > 0) {
-                // Use the first intersection point, or midpoint if multiple
-                const intersection = intersections.length === 1 ? intersections[0] :
-                  intersections.sort((a, b) => a.t - b.t)[Math.floor(intersections.length / 2)];
-                labelX = intersection.x;
-                labelY = intersection.y;
-              } else {
-                // Fallback: center of viewport
-                labelX = (boundsLeft + boundsRight) / 2;
-                labelY = (boundsTop + boundsBottom) / 2;
-              }
             }
 
             // Ensure label position is within bounds
@@ -1447,7 +1399,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
               labelGroup.append('text')
                 .attr('text-anchor', 'middle')
                 .attr('dy', artist ? '-0.3em' : '0.3em')
-                .attr('font-size', '10px')
+                .attr('font-size', `${edgeLabelSize}px`)
                 .attr('font-weight', 'bold')
                 .attr('fill', '#FFFFFF')
                 .text(title.length > 20 ? title.substring(0, 20) + '...' : title)
@@ -1463,7 +1415,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                 labelGroup.append('text')
                   .attr('text-anchor', 'middle')
                   .attr('dy', '0.8em')
-                  .attr('font-size', '9px')
+                  .attr('font-size', `${edgeLabelSize - 1}px`)
                   .attr('font-weight', 'normal')
                   .attr('fill', '#CCCCCC')
                   .text(artist.length > 20 ? artist.substring(0, 20) + '...' : artist)

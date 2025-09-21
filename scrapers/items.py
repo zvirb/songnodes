@@ -293,6 +293,34 @@ class TargetTrackSearchItem(scrapy.Item):
     data_source = scrapy.Field()
 
 
+class EnhancedTrackAdjacencyItem(scrapy.Item):
+    """Track adjacency relationship for graph edge creation"""
+    # Track identifiers
+    track_1_name = scrapy.Field()
+    track_1_id = scrapy.Field()  # External track ID
+    track_2_name = scrapy.Field()
+    track_2_id = scrapy.Field()  # External track ID
+
+    # Position context
+    track_1_position = scrapy.Field()  # Position in setlist
+    track_2_position = scrapy.Field()  # Position in setlist
+    distance = scrapy.Field()  # Absolute difference in positions
+
+    # Source context
+    setlist_name = scrapy.Field()
+    setlist_id = scrapy.Field()
+    source_context = scrapy.Field()  # Which setlist/mix they came from
+
+    # Adjacency metadata
+    transition_type = scrapy.Field()  # "sequential", "close_proximity", etc.
+    occurrence_count = scrapy.Field()  # How many times seen together (default 1)
+
+    # System fields
+    created_at = scrapy.Field()
+    data_source = scrapy.Field()
+    scrape_timestamp = scrapy.Field()
+
+
 # Legacy item classes for backward compatibility with old spiders
 class SetlistItem(scrapy.Item):
     event_id = scrapy.Field()

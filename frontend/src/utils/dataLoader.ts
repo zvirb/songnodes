@@ -64,34 +64,51 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
     console.log('🎵 Loading real scraped data from API...');
 
     try {
-      // Call the enhanced visualization service through environment-aware URL
-      const apiUrl = import.meta.env.VITE_VISUALIZATION_API_URL
-        ? `${import.meta.env.VITE_VISUALIZATION_API_URL}/api/v1/graph`
-        : '/api/v1/graph';
+      // Call the graph visualization API directly using separate endpoints
+      const baseUrl = import.meta.env.VITE_GRAPH_API_URL || 'http://localhost:8084';
 
-      const apiResponse = await fetch(apiUrl, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.log('🎵 Fetching nodes and edges from separate endpoints...');
 
-      if (apiResponse.ok) {
-        const apiData = await apiResponse.json();
+      // Fetch nodes and edges separately with appropriate limits
+      const [nodesResponse, edgesResponse] = await Promise.all([
+        fetch(`${baseUrl}/api/graph/nodes?limit=100`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        }),
+        fetch(`${baseUrl}/api/graph/edges?limit=1000`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        })
+      ]);
+
+      if (nodesResponse.ok && edgesResponse.ok) {
+        const nodesData = await nodesResponse.json();
+        const edgesData = await edgesResponse.json();
+
         console.log('✅ Loaded real scraped data:', {
-          nodes: apiData.nodes?.length || 0,
-          edges: apiData.edges?.length || 0
+          nodes: nodesData.nodes?.length || 0,
+          edges: edgesData.edges?.length || 0
         });
 
-        if (apiData.nodes && apiData.nodes.length > 0) {
+        if (nodesData.nodes && nodesData.nodes.length > 0) {
           // Convert API format to expected GraphData format
           const graphData: GraphData = {
-            nodes: apiData.nodes.map((node: any) => ({
-              ...node,
-              label: `${node.title} - ${node.artist}`, // Show both title and artist
+            nodes: nodesData.nodes.map((node: any) => ({
+              id: node.id,
+              label: `${node.metadata?.title || 'Unknown'} - ${node.metadata?.artist || 'Unknown'}`,
+              type: 'track',
               size: 12,
-              x: node.position?.x || Math.random() * 1000,
-              y: node.position?.y || Math.random() * 600
+              x: node.x_position || Math.random() * 1000,
+              y: node.y_position || Math.random() * 600,
+              metadata: node.metadata
             })),
-            edges: apiData.edges || []
+            edges: edgesData.edges.map((edge: any) => ({
+              id: edge.id,
+              source: edge.source_id,
+              target: edge.target_id,
+              type: edge.edge_type || 'adjacency',
+              weight: edge.weight || 1
+            }))
           };
 
           return graphData;
