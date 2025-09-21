@@ -573,14 +573,14 @@ async def bulk_insert_nodes(nodes_data: List[Dict[str, Any]]) -> int:
     #                     "metadata": json.dumps(node.get('metadata', {}))
     #                 })
     #                 inserted_count += 1
-
-                await session.commit()
-                return inserted_count
-
-            except Exception as e:
-                await session.rollback()
-                logger.error(f"Database error in bulk_insert_nodes: {e}")
-                raise HTTPException(status_code=500, detail="Bulk insert failed")
+    #
+    #             await session.commit()
+    #             return inserted_count
+    #
+    #         except Exception as e:
+    #             await session.rollback()
+    #             logger.error(f"Database error in bulk_insert_nodes: {e}")
+    #             raise HTTPException(status_code=500, detail="Bulk insert failed")
 
 # Background task processing
 async def process_node_batch(nodes: List[Dict[str, Any]], batch_id: str):
