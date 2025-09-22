@@ -11,7 +11,7 @@ class GraphService {
   private baseUrl: string;
   private apiKey?: string;
 
-  constructor(baseUrl: string = 'http://localhost:8090/api/v1', apiKey?: string) {
+  constructor(baseUrl: string = 'http://localhost:8084/api/graph', apiKey?: string) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
   }
@@ -84,40 +84,61 @@ class GraphService {
   }
 
   async getGraph(request: GetGraphRequest = {}): Promise<ApiResponse<Graph>> {
-    const endpoint = `/visualization/graph`;
-    
-    // Convert frontend request format to backend format
-    const body = {
-      center_node_id: request.centerNodeId,
-      max_depth: request.depth || 3,
-      max_nodes: request.limit || 100,
-      filters: request.filters || {},
-    };
-    
-    // Remove undefined values
-    Object.keys(body).forEach(key => {
-      if (body[key as keyof typeof body] === undefined) {
-        delete body[key as keyof typeof body];
+    // The graph-visualization-api provides nodes and edges at separate endpoints
+    try {
+      // Fetch nodes and edges in parallel
+      const [nodesResponse, edgesResponse] = await Promise.all([
+        fetch(`${this.baseUrl}/nodes`),
+        fetch(`${this.baseUrl}/edges`)
+      ]);
+
+      if (!nodesResponse.ok || !edgesResponse.ok) {
+        throw new Error('Failed to fetch graph data');
       }
-    });
-    
-    // Fallback empty graph
-    const fallbackGraph: Graph = {
-      nodes: [],
-      edges: [],
-      metadata: {
-        total_nodes: 0,
-        total_edges: 0,
-        center_node: null,
-        max_depth: 3,
-        generated_at: new Date().toISOString()
-      }
-    };
-    
-    return this.request<Graph>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }, fallbackGraph);
+
+      const nodesData = await nodesResponse.json();
+      const edgesData = await edgesResponse.json();
+
+      // Transform the data to match our Graph interface
+      const graph: Graph = {
+        nodes: nodesData.nodes || [],
+        edges: edgesData.edges || [],
+        metadata: {
+          total_nodes: nodesData.nodes?.length || 0,
+          total_edges: edgesData.edges?.length || 0,
+          center_node: null,
+          max_depth: 3,
+          generated_at: new Date().toISOString()
+        }
+      };
+
+      return {
+        data: graph,
+        success: true,
+        message: 'Graph data fetched successfully'
+      };
+    } catch (error) {
+      console.error('Failed to fetch graph data:', error);
+
+      // Fallback empty graph
+      const fallbackGraph: Graph = {
+        nodes: [],
+        edges: [],
+        metadata: {
+          total_nodes: 0,
+          total_edges: 0,
+          center_node: null,
+          max_depth: 3,
+          generated_at: new Date().toISOString()
+        }
+      };
+
+      return {
+        data: fallbackGraph,
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch graph data'
+      };
+    }
   }
 
   async getNodeDetails(nodeId: string, options: Omit<GetNodeRequest, 'nodeId'> = {}): Promise<ApiResponse<{ node: SongNode }>> {
@@ -316,12 +337,8 @@ class GraphService {
   // Health check
   async healthCheck(): Promise<boolean> {
     try {
-      // Health endpoint is at root level, not under /api/v1
-      // In development, use proxy; in production, use direct backend URL
-      const healthUrl = process.env.NODE_ENV === 'production' 
-        ? 'http://localhost:8084/health' 
-        : '/health';
-      const response = await fetch(healthUrl);
+      // Check if the graph API is available
+      const response = await fetch('http://localhost:8084/health');
       return response.ok;
     } catch {
       return false;
