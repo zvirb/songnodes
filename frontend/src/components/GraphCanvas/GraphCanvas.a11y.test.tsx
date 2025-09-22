@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
-import { GraphCanvas } from './GraphCanvas';
+import { WorkingD3Canvas as GraphCanvas } from './WorkingD3Canvas';
 import { createMockGraphData, waitForAccessibilityTree } from '../../test/setup';
 import { 
   clearAnnouncements, 

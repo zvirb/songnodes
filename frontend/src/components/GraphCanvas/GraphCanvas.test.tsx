@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { GraphCanvas } from './GraphCanvas';
+import { WorkingD3Canvas as GraphCanvas } from './WorkingD3Canvas';
 import { createMockGraphData, createMockNode, createMockEdge } from '../../test/setup';
 import graphSlice from '../../store/graphSlice';
 import uiSlice from '../../store/uiSlice';
@@ -22,18 +22,7 @@ vi.mock('./WebGLRenderer', () => ({
   })),
 }));
 
-// Mock D3 force simulation
-vi.mock('./D3ForceSimulation', () => ({
-  D3ForceSimulation: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn(),
-    start: vi.fn(),
-    stop: vi.fn(),
-    updateNodes: vi.fn(),
-    updateForces: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-  })),
-}));
+// Mock D3 - WorkingD3Canvas uses D3 directly, not a separate simulation module
 
 const createTestStore = (initialState = {}) => {
   return configureStore({
