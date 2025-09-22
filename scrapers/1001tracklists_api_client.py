@@ -44,8 +44,15 @@ class OneThousandOneTracklistsAPIClient:
             'User-Agent': 'MusicDB-Scraper/1.0'
         }
 
-        # Initialize database pipeline
-        self.pipeline = EnhancedMusicDatabasePipeline()
+        # Initialize database pipeline with configuration
+        db_config = {
+            'host': os.getenv('DATABASE_HOST', 'musicdb-postgres'),
+            'port': int(os.getenv('DATABASE_PORT', 5432)),
+            'database': os.getenv('DATABASE_NAME', 'musicdb'),
+            'user': os.getenv('DATABASE_USER', 'musicdb_user'),
+            'password': os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass')
+        }
+        self.pipeline = EnhancedMusicDatabasePipeline(db_config)
 
     def search_tracklists(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Search for tracklists by query"""
@@ -197,8 +204,14 @@ class OneThousandOneTracklistsAPIClient:
 
         if all_items:
             logger.info(f"Processing {len(all_items)} tracks to database")
-            await self.pipeline.process_batch(all_items)
-            logger.info("Database processing complete")
+            try:
+                result = await self.pipeline.process_batch(all_items)
+                logger.info(f"Database processing complete, result: {result}")
+            except Exception as e:
+                logger.error(f"ERROR processing batch: {e}")
+                logger.error(f"Exception type: {type(e).__name__}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
         else:
             logger.warning("No tracks found to process")
 
