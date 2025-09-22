@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import * as d3 from 'd3';
 import { useAppSelector, useAppDispatch } from '../../store/index';
 import { setSelectedNodes } from '../../store/graphSlice';
+import { cullEdges, getEdgeStyle, type Edge as CullingEdge, type Node as CullingNode, type ViewportBounds } from '../../utils/edgeCulling';
 import {
   setStartNode,
   setEndNode,
@@ -824,6 +825,77 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     const linkGroup = container.append('g').attr('class', 'links');
     const nodeGroup = container.append('g').attr('class', 'nodes');
 
+    // Track current zoom level for edge culling
+    let currentZoom = 1;
+
+    // Function to update edge visibility based on zoom
+    const updateEdgeVisibility = () => {
+      const transform = d3.zoomTransform(svg.node() as Element);
+      const newZoom = transform.k;
+
+      // Only update if zoom changed significantly (avoid excessive updates)
+      if (Math.abs(newZoom - currentZoom) > 0.1) {
+        currentZoom = newZoom;
+
+        // Calculate viewport with transform
+        const viewportBounds: ViewportBounds = {
+          left: -transform.x / transform.k - 200,
+          right: (width - transform.x) / transform.k + 200,
+          top: -transform.y / transform.k - 200,
+          bottom: (height - transform.y) / transform.k + 200
+        };
+
+        // Reapply edge culling
+        const cullingResult = cullEdges({
+          viewport: viewportBounds,
+          zoomLevel: newZoom,
+          nodes: simpleNodes as CullingNode[],
+          edges: simpleEdges as CullingEdge[],
+          highlightedPath: pathState.currentPath?.nodes,
+          selectedNodes,
+          preserveHighlighted: true,
+          is3D: false
+        });
+
+        // Update edge visibility
+        linkGroup.selectAll('line')
+          .style('display', (d: any) => {
+            const isVisible = cullingResult.visibleEdges.some(e =>
+              e.id === d.id || (e.source === d.source && e.target === d.target)
+            );
+            return isVisible ? null : 'none';
+          })
+          .style('opacity', (d: any) => {
+            const edge = cullingResult.visibleEdges.find(e =>
+              e.id === d.id || (e.source === d.source && e.target === d.target)
+            );
+            if (edge) {
+              const isHighlighted = pathState.currentPath?.nodes &&
+                isEdgeInPath(edge, pathState.currentPath.nodes);
+              const style = getEdgeStyle(edge as CullingEdge, newZoom, isHighlighted);
+              return style.opacity;
+            }
+            return 0;
+          });
+
+        console.log(`Zoom ${newZoom.toFixed(2)}: showing ${cullingResult.visibleEdges.length}/${simpleEdges.length} edges`);
+      }
+    };
+
+    // Helper function to check if edge is in path
+    const isEdgeInPath = (edge: any, path: string[]) => {
+      const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+      const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+      for (let i = 0; i < path.length - 1; i++) {
+        if ((path[i] === sourceId && path[i + 1] === targetId) ||
+            (path[i] === targetId && path[i + 1] === sourceId)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     // Add zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 10])
@@ -831,6 +903,8 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
         container.attr('transform', event.transform);
         // Update edge labels when zoom changes
         updateEdgeLabels();
+        // Update edge visibility based on new zoom level
+        updateEdgeVisibility();
       });
 
     // Store zoom reference for centering functionality
@@ -1097,9 +1171,41 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       return similarity > 0.6 && sharedRatio < 0.3;
     };
 
+    // Apply edge culling based on viewport and zoom
+    const viewportBounds: ViewportBounds = {
+      left: -200,
+      right: width + 200,
+      top: -200,
+      bottom: height + 200
+    };
+
+    // Calculate zoom level from transform (default to 1 if no transform)
+    const currentTransform = d3.zoomTransform(svg.node() as Element);
+    const zoomLevel = currentTransform ? currentTransform.k : 1;
+
+    // Apply edge culling
+    const cullingResult = cullEdges({
+      viewport: viewportBounds,
+      zoomLevel,
+      nodes: simpleNodes as CullingNode[],
+      edges: simpleEdges as CullingEdge[],
+      highlightedPath: pathState.currentPath?.nodes,
+      selectedNodes,
+      preserveHighlighted: true,
+      is3D: false
+    });
+
+    // Use culled edges for rendering
+    const visibleEdges = cullingResult.visibleEdges;
+
+    // Log culling stats for debugging
+    if (cullingResult.culledCount > 0) {
+      console.log(`Edge culling: showing ${visibleEdges.length}/${cullingResult.totalCount} edges`, cullingResult.stats);
+    }
+
     const link = linkGroup
       .selectAll('line')
-      .data(simpleEdges)
+      .data(visibleEdges)
       .enter()
       .append('line')
       .attr('stroke', (d: any) => {
@@ -1353,15 +1459,45 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
             // Record this position
             usedPositions.push({ x: labelX, y: labelY });
 
-            // Get target node info
-            const targetNodeData = nodes.find(n => n.id === targetNode.id);
-            if (targetNodeData) {
-              const title = targetNodeData.title || targetNodeData.label || 'Unknown';
-              const artist = targetNodeData.artist || '';
+            // Determine which node to show in the label (the one not visible)
+            let labelNodeData = null;
+            let labelNodeId = null;
 
-              // Calculate direction arrow towards target node
-              const arrowDx = targetNode.x - labelX;
-              const arrowDy = targetNode.y - labelY;
+            if (!sourceInView && targetInView) {
+              // Source is off-screen, show source info
+              labelNodeData = nodes.find(n => n.id === sourceNode.id);
+              labelNodeId = sourceNode.id;
+            } else if (sourceInView && !targetInView) {
+              // Target is off-screen, show target info
+              labelNodeData = nodes.find(n => n.id === targetNode.id);
+              labelNodeId = targetNode.id;
+            } else if (!sourceInView && !targetInView) {
+              // Both off-screen, show the one further from viewport center
+              const viewportCenterX = (boundsLeft + boundsRight) / 2;
+              const viewportCenterY = (boundsTop + boundsBottom) / 2;
+              const sourceDist = Math.sqrt((sourceNode.x - viewportCenterX) ** 2 + (sourceNode.y - viewportCenterY) ** 2);
+              const targetDist = Math.sqrt((targetNode.x - viewportCenterX) ** 2 + (targetNode.y - viewportCenterY) ** 2);
+
+              if (sourceDist > targetDist) {
+                labelNodeData = nodes.find(n => n.id === sourceNode.id);
+                labelNodeId = sourceNode.id;
+              } else {
+                labelNodeData = nodes.find(n => n.id === targetNode.id);
+                labelNodeId = targetNode.id;
+              }
+            } else {
+              // Both visible, skip this edge label to avoid redundancy
+              return;
+            }
+
+            if (labelNodeData) {
+              const title = labelNodeData.title || labelNodeData.label || 'Unknown';
+              const artist = labelNodeData.artist || '';
+
+              // Calculate direction arrow towards the labeled node
+              const labeledNode = labelNodeId === sourceNode.id ? sourceNode : targetNode;
+              const arrowDx = labeledNode.x - labelX;
+              const arrowDy = labeledNode.y - labelY;
               const arrowDistance = Math.sqrt(arrowDx * arrowDx + arrowDy * arrowDy);
               const arrowNormX = arrowDx / arrowDistance;
               const arrowNormY = arrowDy / arrowDistance;
@@ -1373,9 +1509,9 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                 .style('cursor', 'pointer')
                 .on('click', function(event) {
                   event.stopPropagation();
-                  // Move camera to the target node and select it
-                  centerNode(targetNode.id);
-                  dispatch(setSelectedNodes([targetNode.id]));
+                  // Move camera to the labeled node and select it
+                  centerNode(labelNodeId);
+                  dispatch(setSelectedNodes([labelNodeId]));
                 });
 
               // Background rectangle for readability
