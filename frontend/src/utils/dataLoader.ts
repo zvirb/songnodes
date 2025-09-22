@@ -48,14 +48,26 @@ const isSequentialEdge = (e: { type?: string }) => {
 
 const filterToSongsOnly = (data: GraphData): GraphData => {
   if (!data) return { nodes: [], edges: [] } as any;
-  const nodeSet = new Set(
-    data.nodes.filter(isSongNode).map(n => n.id)
-  );
-  const edges = (data.edges || []).filter(e =>
+  const songNodes = data.nodes.filter(isSongNode);
+  console.log('🔍 Filtering nodes:', {
+    totalNodes: data.nodes.length,
+    songNodes: songNodes.length,
+    nodeTypes: [...new Set(data.nodes.map(n => n.type))]
+  });
+
+  const nodeSet = new Set(songNodes.map(n => n.id));
+  const filteredEdges = (data.edges || []).filter(e =>
     nodeSet.has(e.source) && nodeSet.has(e.target) && isSequentialEdge(e)
   );
+
+  console.log('🔍 Filtering edges:', {
+    totalEdges: data.edges.length,
+    filteredEdges: filteredEdges.length,
+    edgeTypes: [...new Set(data.edges.map(e => e.type))]
+  });
+
   const nodes = data.nodes.filter(n => nodeSet.has(n.id));
-  return { nodes, edges } as GraphData;
+  return { nodes, edges: filteredEdges } as GraphData;
 };
 
 export const loadGraphData = async (): Promise<GraphData | null> => {
@@ -87,7 +99,9 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
 
         console.log('✅ Loaded real scraped data:', {
           nodes: nodesData.nodes?.length || 0,
-          edges: edgesData.edges?.length || 0
+          edges: edgesData.edges?.length || 0,
+          firstNode: nodesData.nodes?.[0],
+          firstEdge: edgesData.edges?.[0]
         });
 
         if (nodesData.nodes && nodesData.nodes.length > 0) {
@@ -136,15 +150,26 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
             }))
           };
 
+          console.log('🎯 Successfully loaded API data, returning:', {
+            nodes: graphData.nodes.length,
+            edges: graphData.edges.length
+          });
           return graphData;
+        } else {
+          console.warn('⚠️ API returned data but nodes array is empty');
         }
+      } else {
+        console.warn('⚠️ API response not OK:', {
+          nodesStatus: nodesResponse.status,
+          edgesStatus: edgesResponse.status
+        });
       }
     } catch (apiError) {
-      console.warn('❌ Failed to load from API, falling back:', apiError);
+      console.error('❌ Failed to load from API:', apiError);
     }
 
     // Fallback: Try to load static data only if API fails
-    console.log('🎵 Falling back to static data...');
+    console.warn('⚠️ API failed, falling back to static data...');
     const liveResponse = await fetch('/live-performance-data.json');
 
     if (liveResponse.ok) {

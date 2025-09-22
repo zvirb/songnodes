@@ -133,11 +133,7 @@ class EnhancedMusicDatabasePipeline:
             if isinstance(item, dict):
                 self.logger.info(f"Received dict item with keys: {list(item.keys())}")
                 # Detect item type based on dict keys
-                if item.get('item_type') == 'track_adjacency':
-                    self.logger.info("Detected track adjacency item from dict")
-                    await self.process_track_adjacency_item(item)
-                    return item
-                elif 'track_name' in item and 'artist_name' in item:
+                if 'track_name' in item and 'artist_name' in item:
                     self.logger.info("Detected track item from dict")
                     # First create/get artist
                     artist_name = item.get('artist_name', 'Unknown Artist')
@@ -350,7 +346,7 @@ class EnhancedMusicDatabasePipeline:
             })
 
         # Deduplication
-        if track_key in self.processed_items['songs']:
+        if track_key in self.processed_items['tracks']:
             return
 
         self.processed_items['songs'].add(track_key)
@@ -406,10 +402,6 @@ class EnhancedMusicDatabasePipeline:
         if len(self.item_batches['song_adjacency']) >= self.batch_size:
             await self.flush_batch('song_adjacency')
 
-    async def process_track_adjacency_item(self, data: Dict[str, Any]):
-        """Process track adjacency relationship (alias for song adjacency)"""
-        await self.process_song_adjacency_item(data)
-
     async def process_target_track_item(self, data: Dict[str, Any]):
         """Process target track search status"""
         # This could be used to track search progress
@@ -433,11 +425,11 @@ class EnhancedMusicDatabasePipeline:
                     await self.insert_playlists_batch(conn, batch)
                 elif batch_type == 'venues':
                     await self.insert_venues_batch(conn, batch)
-                elif batch_type == 'song_artists':
-                    await self.insert_song_artists_batch(conn, batch)
-                elif batch_type == 'playlist_songs':
-                    await self.insert_playlist_songs_batch(conn, batch)
-                elif batch_type == 'song_adjacency':
+                elif batch_type == 'track_artists':
+                    await self.insert_track_artists_batch(conn, batch)
+                elif batch_type == 'setlist_tracks':
+                    await self.insert_setlist_tracks_batch(conn, batch)
+                elif batch_type == 'track_adjacencies':
                     await self.insert_track_adjacencies_batch(conn, batch)
 
             self.logger.info(f"✓ Inserted {len(batch)} {batch_type} records")
@@ -448,101 +440,88 @@ class EnhancedMusicDatabasePipeline:
             self.item_batches[batch_type].extend(batch)
 
     async def insert_artists_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert artists batch with correct schema"""
-        # Prepare records matching the actual database schema
-        records = []
-        for item in batch:
-            record = (
-                item.get('artist_id', str(uuid.uuid4())),  # artist_id
-                item.get('name', item.get('artist_name', 'Unknown')),  # name
-                item.get('spotify_id'),  # spotify_id
-                item.get('musicbrainz_id'),  # musicbrainz_id
-                item.get('genres', []),  # genres (PostgreSQL array)
-                item.get('country'),  # country
-                item.get('aliases', []),  # aliases (PostgreSQL array)
-                datetime.now(),  # created_at
-                datetime.now()  # updated_at
-            )
-            records.append(record)
-
+        """Insert artists batch with conflict resolution"""
         await conn.executemany("""
             INSERT INTO artists (
-                artist_id, name, spotify_id, musicbrainz_id,
-                genres, country, aliases, created_at, updated_at
+                id, name, normalized_name, aliases, spotify_id, apple_music_id,
+                youtube_channel_id, soundcloud_id, genre_preferences, country,
+                is_verified, follower_count, monthly_listeners, popularity_score,
+                metadata, external_urls, created_at, updated_at
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
             )
-            ON CONFLICT (artist_id) DO UPDATE SET
+            ON CONFLICT (name) DO UPDATE SET
+                aliases = EXCLUDED.aliases,
                 spotify_id = COALESCE(EXCLUDED.spotify_id, artists.spotify_id),
-                genres = COALESCE(EXCLUDED.genres, artists.genres),
+                apple_music_id = COALESCE(EXCLUDED.apple_music_id, artists.apple_music_id),
+                genre_preferences = COALESCE(EXCLUDED.genre_preferences, artists.genre_preferences),
+                country = COALESCE(EXCLUDED.country, artists.country),
+                is_verified = COALESCE(EXCLUDED.is_verified, artists.is_verified),
+                follower_count = GREATEST(COALESCE(EXCLUDED.follower_count, 0), COALESCE(artists.follower_count, 0)),
+                popularity_score = GREATEST(COALESCE(EXCLUDED.popularity_score, 0), COALESCE(artists.popularity_score, 0)),
+                metadata = COALESCE(EXCLUDED.metadata, artists.metadata),
+                external_urls = COALESCE(EXCLUDED.external_urls, artists.external_urls),
                 updated_at = EXCLUDED.updated_at
-        """, records)
+        """, [
+            (
+                item.get('id'), item.get('artist_name'), item.get('normalized_name'),
+                item.get('aliases'), item.get('spotify_id'), item.get('apple_music_id'),
+                item.get('youtube_channel_id'), item.get('soundcloud_id'),
+                item.get('genre_preferences'), item.get('country'),
+                item.get('is_verified'), item.get('follower_count'),
+                item.get('monthly_listeners'), item.get('popularity_score'),
+                item.get('metadata'), item.get('external_urls'),
+                item.get('created_at'), item.get('updated_at')
+            ) for item in batch
+        ])
 
-    async def insert_songs_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert songs batch matching actual database schema"""
+    async def insert_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
+        """Insert tracks batch with comprehensive metadata"""
+        await conn.executemany("""
+            INSERT INTO tracks (
+                id, title, normalized_title, isrc, spotify_id, apple_music_id,
+                youtube_id, soundcloud_id, bpm, musical_key, energy, danceability,
+                valence, acousticness, instrumentalness, liveness, speechiness,
+                loudness, release_date, genre, subgenre, record_label,
+                is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
+                remix_type, original_artist, remixer, popularity_score, play_count,
+                metadata, external_urls, audio_features, duration_ms,
+                created_at, updated_at
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+                $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+                $31, $32, $33, $34, $35, $36, $37, $38, $39
+            )
+            ON CONFLICT (title, normalized_title) DO UPDATE SET
+                spotify_id = COALESCE(EXCLUDED.spotify_id, tracks.spotify_id),
+                bpm = COALESCE(EXCLUDED.bpm, tracks.bpm),
+                musical_key = COALESCE(EXCLUDED.musical_key, tracks.musical_key),
+                energy = COALESCE(EXCLUDED.energy, tracks.energy),
+                genre = COALESCE(EXCLUDED.genre, tracks.genre),
+                metadata = COALESCE(EXCLUDED.metadata, tracks.metadata),
+                updated_at = EXCLUDED.updated_at
+        """, [
+            (
+                item.get('id'), item.get('track_name'), item.get('normalized_title'),
+                item.get('isrc'), item.get('spotify_id'), item.get('apple_music_id'),
+                item.get('youtube_id'), item.get('soundcloud_id'), item.get('bpm'),
+                item.get('musical_key'), item.get('energy'), item.get('danceability'),
+                item.get('valence'), item.get('acousticness'), item.get('instrumentalness'),
+                item.get('liveness'), item.get('speechiness'), item.get('loudness'),
+                item.get('release_date'), item.get('genre'), item.get('subgenre'),
+                item.get('record_label'), item.get('is_remix'), item.get('is_mashup'),
+                item.get('is_live'), item.get('is_cover'), item.get('is_instrumental'),
+                item.get('is_explicit'), item.get('remix_type'), item.get('original_artist'),
+                item.get('remixer'), item.get('popularity_score'), item.get('play_count'),
+                item.get('metadata'), item.get('external_urls'), item.get('audio_features'),
+                item.get('duration_ms'), item.get('created_at'), item.get('updated_at')
+            ) for item in batch
+        ])
+
+    async def insert_setlists_batch(self, conn, batch: List[Dict[str, Any]]):
+        """Insert setlists/playlists batch"""
         try:
-            song_records = []
-            for item in batch:
-                # Generate song_id if not provided
-                song_id = item.get('id') or str(uuid.uuid4())
-
-                # Convert duration from ms to seconds if needed
-                duration_seconds = None
-                if item.get('duration_ms'):
-                    duration_seconds = int(item.get('duration_ms', 0) / 1000)
-                elif item.get('duration_seconds'):
-                    duration_seconds = item.get('duration_seconds')
-
-                # Convert release date to release year
-                release_year = None
-                if item.get('release_date'):
-                    try:
-                        if isinstance(item['release_date'], str):
-                            release_year = int(item['release_date'][:4])
-                        elif hasattr(item['release_date'], 'year'):
-                            release_year = item['release_date'].year
-                    except (ValueError, TypeError):
-                        pass
-
-                song_records.append((
-                    song_id,
-                    item.get('track_name') or item.get('title', 'Unknown Track'),
-                    None,  # primary_artist_id - will be set later via relationship
-                    release_year,
-                    item.get('genre'),
-                    item.get('bpm'),
-                    item.get('key') or item.get('musical_key'),
-                    duration_seconds,
-                    item.get('spotify_id'),
-                    item.get('musicbrainz_id'),
-                    item.get('isrc'),
-                    item.get('label') or item.get('record_label'),
-                    None  # remix_of - will be handled separately
-                ))
-
-            if song_records:
-                await conn.executemany("""
-                    INSERT INTO songs (
-                        song_id, title, primary_artist_id, release_year, genre, bpm, key,
-                        duration_seconds, spotify_id, musicbrainz_id, isrc, label, remix_of
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                    ON CONFLICT (song_id) DO UPDATE SET
-                        spotify_id = COALESCE(EXCLUDED.spotify_id, songs.spotify_id),
-                        bpm = COALESCE(EXCLUDED.bpm, songs.bpm),
-                        genre = COALESCE(EXCLUDED.genre, songs.genre),
-                        duration_seconds = COALESCE(EXCLUDED.duration_seconds, songs.duration_seconds),
-                        updated_at = CURRENT_TIMESTAMP
-                """, song_records)
-
-                self.logger.info(f"✓ Inserted/updated {len(song_records)} songs")
-
-        except Exception as e:
-            self.logger.error(f"Error inserting songs: {e}")
-            # Don't raise - continue processing other items
-
-    async def insert_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert playlists batch matching actual database schema"""
-        try:
+            # Check if playlists table has a unique constraint we can use
             playlist_records = []
             for item in batch:
                 # Generate a unique playlist ID based on name and source
@@ -551,27 +530,14 @@ class EnhancedMusicDatabasePipeline:
                     f"{item.get('setlist_name', '')}:{item.get('data_source', '')}"
                 ))
 
-                # Parse event date
-                event_date = None
-                if item.get('event_date') or item.get('date_played'):
-                    date_str = item.get('event_date') or item.get('date_played')
-                    if isinstance(date_str, str):
-                        try:
-                            from datetime import datetime
-                            event_date = datetime.strptime(date_str[:10], '%Y-%m-%d').date()
-                        except ValueError:
-                            pass
-
                 playlist_records.append((
                     playlist_id,
-                    item.get('setlist_name') or item.get('tracklist_name', 'Unknown Playlist'),
+                    item.get('setlist_name', 'Unknown Setlist'),
                     item.get('data_source', 'unknown'),
-                    item.get('event_url') or item.get('source_url'),
+                    item.get('event_url'),
                     item.get('event_type', 'dj_mix'),
-                    None,  # dj_artist_id - will be set via relationship
                     item.get('event_name'),
-                    None,  # venue_id - will be set via relationship
-                    event_date,
+                    item.get('event_date'),
                     item.get('duration_minutes'),
                     item.get('track_count', 0),
                     item.get('play_count', 0),
@@ -581,11 +547,11 @@ class EnhancedMusicDatabasePipeline:
             if playlist_records:
                 await conn.executemany("""
                     INSERT INTO playlists (
-                        playlist_id, name, source, source_url, playlist_type, dj_artist_id,
-                        event_name, venue_id, event_date, duration_minutes, tracklist_count,
-                        play_count, like_count
+                        playlist_id, name, source, source_url, playlist_type,
+                        event_name, event_date,
+                        duration_minutes, tracklist_count, play_count, like_count
                     )
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                     ON CONFLICT (playlist_id)
                     DO UPDATE SET
                         source_url = EXCLUDED.source_url,
@@ -598,98 +564,26 @@ class EnhancedMusicDatabasePipeline:
                 self.logger.info(f"✓ Inserted/updated {len(playlist_records)} playlists")
 
         except Exception as e:
-            self.logger.error(f"Error inserting playlists: {e}")
+            self.logger.error(f"Error inserting setlists: {e}")
             # Don't raise - continue processing other items
 
     async def insert_venues_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert venues batch matching actual database schema"""
-        try:
-            venue_records = []
-            for item in batch:
-                venue_name = item.get('venue') or item.get('venue_name')
-                if venue_name:
-                    venue_id = str(uuid.uuid5(
-                        uuid.NAMESPACE_DNS,
-                        f"{venue_name}:{item.get('venue_city', '')}:{item.get('venue_country', '')}"
-                    ))
+        """Insert venues batch"""
+        # Similar implementation for venues
+        pass
 
-                    venue_records.append((
-                        venue_id,
-                        venue_name,
-                        item.get('venue_city'),
-                        item.get('venue_country'),
-                        item.get('venue_capacity'),
-                        item.get('venue_type', 'club')
-                    ))
+    async def insert_track_artists_batch(self, conn, batch: List[Dict[str, Any]]):
+        """Insert track-artist relationships"""
+        # Implementation for relationships
+        pass
 
-            if venue_records:
-                await conn.executemany("""
-                    INSERT INTO venues (
-                        venue_id, name, city, country, capacity, venue_type
-                    )
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (name, city, country)
-                    DO UPDATE SET
-                        capacity = COALESCE(EXCLUDED.capacity, venues.capacity),
-                        venue_type = COALESCE(EXCLUDED.venue_type, venues.venue_type),
-                        updated_at = CURRENT_TIMESTAMP
-                """, venue_records)
-
-                self.logger.info(f"✓ Inserted/updated {len(venue_records)} venues")
-
-        except Exception as e:
-            self.logger.error(f"Error inserting venues: {e}")
-            # Don't raise - continue processing other items
-
-    async def insert_song_artists_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert song-artist relationships"""
-        try:
-            # First, get song and artist IDs from the batch
-            song_artist_records = []
-
-            for item in batch:
-                # Try to find song ID by title
-                song_title = item.get('track_name') or item.get('title')
-                artist_name = item.get('artist_name')
-
-                if song_title and artist_name:
-                    # Get song_id and artist_id from database
-                    song_result = await conn.fetchrow(
-                        "SELECT song_id FROM songs WHERE title ILIKE $1 LIMIT 1",
-                        song_title
-                    )
-                    artist_result = await conn.fetchrow(
-                        "SELECT artist_id FROM artists WHERE name ILIKE $1 LIMIT 1",
-                        artist_name
-                    )
-
-                    if song_result and artist_result:
-                        song_artist_records.append((
-                            song_result['song_id'],
-                            artist_result['artist_id'],
-                            'performer'  # default role
-                        ))
-
-            if song_artist_records:
-                await conn.executemany("""
-                    INSERT INTO song_artists (song_id, artist_id, role)
-                    VALUES ($1, $2, $3)
-                    ON CONFLICT (song_id, artist_id, role) DO NOTHING
-                """, song_artist_records)
-
-                self.logger.info(f"✓ Inserted {len(song_artist_records)} song-artist relationships")
-
-        except Exception as e:
-            self.logger.error(f"Error inserting song-artist relationships: {e}")
-            # Don't raise - continue processing other items
-
-    async def insert_playlist_songs_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert playlist-song relationships into playlist_songs table"""
+    async def insert_setlist_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
+        """Insert setlist-track relationships into playlist_songs table"""
         try:
             playlist_song_records = []
 
             for item in batch:
-                # Generate playlist ID same way as in insert_playlists_batch
+                # Generate playlist ID same way as in insert_setlists_batch
                 playlist_id = str(uuid.uuid5(
                     uuid.NAMESPACE_DNS,
                     f"{item.get('setlist_name', '')}:{item.get('data_source', '')}"
@@ -790,13 +684,7 @@ class EnhancedMusicDatabasePipeline:
         try:
             # First, we need to resolve track names to song_ids
             adjacency_records = []
-            failed_lookups = 0
-            successful_lookups = 0
-
             for item in batch:
-                track1_name = item.get('track1_name', '')
-                track2_name = item.get('track2_name', '')
-
                 # Look up song IDs for track names
                 song_1_query = """
                     SELECT song_id FROM songs
@@ -809,20 +697,10 @@ class EnhancedMusicDatabasePipeline:
                     LIMIT 1
                 """
 
-                song_1_result = await conn.fetchval(song_1_query, track1_name)
-                song_2_result = await conn.fetchval(song_2_query, track2_name)
-
-                if not song_1_result or not song_2_result:
-                    if not song_1_result and not song_2_result:
-                        self.logger.debug(f"Failed to find both tracks: '{track1_name}' and '{track2_name}'")
-                    elif not song_1_result:
-                        self.logger.debug(f"Failed to find track1: '{track1_name}'")
-                    else:
-                        self.logger.debug(f"Failed to find track2: '{track2_name}'")
-                    failed_lookups += 1
+                song_1_result = await conn.fetchval(song_1_query, item.get('track_1_name', ''))
+                song_2_result = await conn.fetchval(song_2_query, item.get('track_2_name', ''))
 
                 if song_1_result and song_2_result and song_1_result != song_2_result:
-                    successful_lookups += 1
                     # Ensure song_id_1 < song_id_2 as per schema constraint
                     song_id_1 = min(song_1_result, song_2_result)
                     song_id_2 = max(song_1_result, song_2_result)
@@ -854,9 +732,6 @@ class EnhancedMusicDatabasePipeline:
                 ])
 
                 self.logger.info(f"✓ Inserted/updated {len(adjacency_records)} track adjacency relationships")
-
-            # Log the summary of this batch
-            self.logger.info(f"Adjacency batch summary: {successful_lookups} successful, {failed_lookups} failed out of {len(batch)} total")
 
         except Exception as e:
             self.logger.error(f"Error inserting track adjacencies: {e}")
@@ -938,9 +813,3 @@ class EnhancedMusicDatabasePipeline:
                 self.logger.info(f"  ✓ {track.get('track_name')} - {track.get('primary_artist')}")
 
         self.logger.info("="*60)
-
-    async def close(self):
-        """Close database connection pool"""
-        if self.connection_pool:
-            await self.connection_pool.close()
-            self.logger.info("✓ Database connection pool closed")
