@@ -45,14 +45,14 @@ class OneThousandOneTracklistsAPIClient:
         }
 
         # Initialize database pipeline with configuration
-        database_config = {
-            'host': os.getenv('POSTGRES_HOST', 'musicdb-postgres'),
-            'port': os.getenv('POSTGRES_PORT', '5432'),
-            'database': os.getenv('POSTGRES_DB', 'musicdb'),
-            'user': os.getenv('POSTGRES_USER', 'musicdb_user'),
-            'password': os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass')
+        db_config = {
+            'host': os.getenv('DATABASE_HOST', 'musicdb-postgres'),
+            'port': int(os.getenv('DATABASE_PORT', 5432)),
+            'database': os.getenv('DATABASE_NAME', 'musicdb'),
+            'user': os.getenv('DATABASE_USER', 'musicdb_user'),
+            'password': os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass')
         }
-        self.pipeline = EnhancedMusicDatabasePipeline(database_config)
+        self.pipeline = EnhancedMusicDatabasePipeline(db_config)
 
     def search_tracklists(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Search for tracklists by query"""
@@ -181,7 +181,10 @@ class OneThousandOneTracklistsAPIClient:
                 details = self.get_tracklist_details(tracklist['id'])
 
                 if details and 'tracks' in details:
-                    for track_entry in details['tracks']:
+                    tracks = details['tracks']
+
+                    # Process individual tracks
+                    for track_entry in tracks:
                         track = track_entry.get('track', {})
 
                         # Create item in format expected by database pipeline
@@ -202,18 +205,58 @@ class OneThousandOneTracklistsAPIClient:
                         }
                         all_items.append(item)
 
+                    # Generate adjacency relationships between consecutive tracks
+                    for i in range(len(tracks) - 1):
+                        current_track = tracks[i].get('track', {})
+                        next_track = tracks[i + 1].get('track', {})
+
+                        adjacency_item = {
+                            'item_type': 'track_adjacency',
+                            'track1_name': current_track.get('name', 'Unknown Track'),
+                            'track1_artist': current_track.get('artist', 'Unknown Artist'),
+                            'track2_name': next_track.get('name', 'Unknown Track'),
+                            'track2_artist': next_track.get('artist', 'Unknown Artist'),
+                            'distance': 1,  # Sequential tracks
+                            'occurrence_count': 1,
+                            'transition_type': 'sequential',
+                            'source_context': f"1001tracklists:{details.get('name', '')}",
+                            'source_url': f"https://www.1001tracklists.com/tracklist/{tracklist['id']}",
+                            'discovered_at': datetime.now().isoformat()
+                        }
+                        all_items.append(adjacency_item)
+
+                    # Also generate relationships for tracks within 3 positions of each other
+                    for i in range(len(tracks)):
+                        for j in range(i + 2, min(i + 4, len(tracks))):  # Distance 2-3
+                            track1 = tracks[i].get('track', {})
+                            track2 = tracks[j].get('track', {})
+                            distance = j - i
+
+                            adjacency_item = {
+                                'item_type': 'track_adjacency',
+                                'track1_name': track1.get('name', 'Unknown Track'),
+                                'track1_artist': track1.get('artist', 'Unknown Artist'),
+                                'track2_name': track2.get('name', 'Unknown Track'),
+                                'track2_artist': track2.get('artist', 'Unknown Artist'),
+                                'distance': distance,
+                                'occurrence_count': 1,
+                                'transition_type': 'close_proximity',
+                                'source_context': f"1001tracklists:{details.get('name', '')}",
+                                'source_url': f"https://www.1001tracklists.com/tracklist/{tracklist['id']}",
+                                'discovered_at': datetime.now().isoformat()
+                            }
+                            all_items.append(adjacency_item)
+
         if all_items:
             logger.info(f"Processing {len(all_items)} tracks to database")
-            # Process items individually through the pipeline
-            for item in all_items:
-                try:
-                    await self.pipeline.process_item(item, spider=None)
-                except Exception as e:
-                    logger.error(f"Failed to process item: {e}")
-            # Flush any remaining batches
-            if hasattr(self.pipeline, 'flush_all_batches'):
-                await self.pipeline.flush_all_batches()
-            logger.info("Database processing complete")
+            try:
+                result = await self.pipeline.process_batch(all_items)
+                logger.info(f"Database processing complete, result: {result}")
+            except Exception as e:
+                logger.error(f"ERROR processing batch: {e}")
+                logger.error(f"Exception type: {type(e).__name__}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
         else:
             logger.warning("No tracks found to process")
 
@@ -226,16 +269,9 @@ class OneThousandOneTracklistsAPIClient:
                 queries = [track['track_name'] for track in target_data.get('tracks', [])][:10]
         except FileNotFoundError:
             queries = [
-                "Carl Cox",
-                "Charlotte de Witte",
-                "Amelie Lens",
-                "Tale of Us",
-                "Solomun",
-                "Adam Beyer",
-                "Nina Kraviz",
-                "Richie Hawtin",
-                "Dixon",
-                "Maceo Plex"
+                "Techno",
+                "House",
+                "Trance"
             ]
 
         logger.info(f"Starting API data collection for {len(queries)} queries")
@@ -245,9 +281,8 @@ class OneThousandOneTracklistsAPIClient:
 
         await self.process_tracklists_to_db(queries)
 
-        # Close database connection if available
-        if hasattr(self.pipeline, 'close'):
-            await self.pipeline.close()
+        # Close database connection
+        await self.pipeline.close()
 
         logger.info("API data collection completed")
 
