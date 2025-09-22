@@ -1441,27 +1441,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
                   });
               }
 
-              // Add directional arrow pointing towards target node
-              if (arrowDistance > 10) { // Only show arrow if target is far enough away
-                const arrowSize = 8;
-                const arrowOffset = (bbox.width / 2) + 15; // Position arrow outside the label box
-
-                // Calculate arrow position at the edge of the label
-                labelGroup.append('path')
-                  .attr('d', `M ${arrowNormX * arrowOffset} ${arrowNormY * arrowOffset}
-                             L ${arrowNormX * arrowOffset + arrowNormX * arrowSize - arrowNormY * arrowSize/2} ${arrowNormY * arrowOffset + arrowNormY * arrowSize + arrowNormX * arrowSize/2}
-                             L ${arrowNormX * arrowOffset + arrowNormX * arrowSize + arrowNormY * arrowSize/2} ${arrowNormY * arrowOffset + arrowNormY * arrowSize - arrowNormX * arrowSize/2}
-                             Z`)
-                  .attr('fill', '#F59E0B')
-                  .attr('stroke', '#FCD34D')
-                  .attr('stroke-width', 1)
-                  .on('mouseenter', function() {
-                    d3.select(this).attr('fill', '#FCD34D');
-                  })
-                  .on('mouseleave', function() {
-                    d3.select(this).attr('fill', '#F59E0B');
-                  });
-              }
+              // Arrows removed per user request - cleaner visualization
             }
           }
         });
@@ -1513,7 +1493,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     return () => {
       simulation.stop();
     };
-  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, getNodeDisplayText, distancePower, relationshipPower]);
+  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, getNodeDisplayText, distancePower, relationshipPower, nodeSize, edgeLabelSize]);
 
   // Add keyboard event listener for escape key
   useEffect(() => {
