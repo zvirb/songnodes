@@ -81,6 +81,9 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   const [shortestPath, setShortestPath] = useState<string[]>([]);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
   const [simulationRunning, setSimulationRunning] = useState(false);
+  const [nodeMenu, setNodeMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
+  const [initialPositions, setInitialPositions] = useState<Map<string, THREE.Vector3>>(new Map());
+  const [forceSimulationCompleted, setForceSimulationCompleted] = useState(false);
 
   // Get graph data from Redux
   const { nodes, edges } = useAppSelector(state => state.graph);
@@ -156,7 +159,6 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     if (!sceneRef.current) return;
 
     const scene = sceneRef.current;
-    const visibleCount = getVisibleNodesCount();
 
     // Remove existing edge labels
     edgeLabelObjectsRef.current.forEach((sprite) => {
@@ -170,23 +172,21 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     });
     edgeLabelObjectsRef.current.clear();
 
-    // Show edge labels only when a few nodes are visible (updated condition)
-    if (visibleCount > 0 && visibleCount <= 3) {
-      console.log(`🏷️ Showing edge labels for ${visibleCount} visible nodes`);
+    // Show edge labels only when exactly one node is selected
+    if (selectedNodes.size === 1) {
+      const selectedNodeId = Array.from(selectedNodes)[0];
+      console.log(`🏷️ Showing edge labels for selected node: ${selectedNodeId}`);
 
-      // Check each edge individually - only show labels for edges where at least one node is visible
+      // Only show labels for edges connected to the selected node
       edges.forEach(edge => {
-        const sourceNode = nodeObjectsRef.current.get(edge.source);
-        const targetNode = nodeObjectsRef.current.get(edge.target);
+        // Check if this edge is connected to the selected node
+        if (edge.source === selectedNodeId || edge.target === selectedNodeId) {
+          const sourceNode = nodeObjectsRef.current.get(edge.source);
+          const targetNode = nodeObjectsRef.current.get(edge.target);
 
-        if (sourceNode && targetNode) {
-          const sourceVisible = isNodeVisibleInCamera(sourceNode);
-          const targetVisible = isNodeVisibleInCamera(targetNode);
-
-          // Only show edge labels for edges where at least one node is visible
-          if (sourceVisible || targetVisible) {
-            // Use the visible node's data for the label, or source if both are visible
-            const labelNodeId = sourceVisible ? edge.source : edge.target;
+          if (sourceNode && targetNode) {
+            // Get the OTHER node (not the selected one) for the label
+            const labelNodeId = edge.source === selectedNodeId ? edge.target : edge.source;
             const labelNodeData = nodes.find(n => n.id === labelNodeId);
 
             if (labelNodeData) {
@@ -246,7 +246,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
         }
       });
     }
-  }, [nodes, edges, getVisibleNodesCount, isNodeVisibleInCamera]);
+  }, [nodes, edges, selectedNodes, edgeLabelSize]);
 
   // Initialize Three.js scene
   const initThreeJS = useCallback(() => {
@@ -318,16 +318,20 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     }
   }, [width, height, isInitialized]);
 
-  // Calculate force-directed positions
-  const calculateForcePositions = useCallback(() => {
+  // Calculate force-directed positions - only once on initial load
+  const calculateForcePositions = useCallback((forceDistancePower: number = distancePower, forceRelationshipPower: number = relationshipPower, nodesToUse: any[] = nodes) => {
     console.log('🌀 Calculating force-directed layout...');
 
-    const simNodes: SimulationNode[] = nodes.map(node => ({
-      id: node.id,
-      x: (Math.random() - 0.5) * 100,
-      y: (Math.random() - 0.5) * 100,
-      z: (Math.random() - 0.5) * 100
-    }));
+    // Use existing positions if available, otherwise random
+    const simNodes: SimulationNode[] = nodesToUse.map(node => {
+      const existingPos = initialPositions.get(node.id);
+      return {
+        id: node.id,
+        x: existingPos?.x || (Math.random() - 0.5) * 100,
+        y: existingPos?.y || (Math.random() - 0.5) * 100,
+        z: existingPos?.z || (Math.random() - 0.5) * 100
+      };
+    });
 
     const simLinks = edges.map(edge => ({
       source: edge.source,
@@ -336,16 +340,16 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       distance: 30 / Math.max(1, edge.metadata?.adjacency_frequency || edge.weight || 1)
     }));
 
-    // Create force simulation
+    // Create force simulation with provided power values
     const simulation = forceSimulation3d(simNodes)
       .force('link', forceLink3d(simLinks)
         .id((d: any) => d.id)
-        .distance((d: any) => d.distance * Math.pow(10, distancePower / 5))
-        .strength(1.5 * Math.pow(10, relationshipPower / 5)))
+        .distance((d: any) => d.distance * Math.pow(10, forceDistancePower / 5))
+        .strength(1.5 * Math.pow(10, forceRelationshipPower / 5)))
       .force('charge', forceManyBody3d()
-        .strength(-300 * Math.pow(10, distancePower / 5))
+        .strength(-300 * Math.pow(10, forceDistancePower / 5))
         .distanceMin(5)
-        .distanceMax(200 * Math.pow(10, distancePower / 5)))
+        .distanceMax(200 * Math.pow(10, forceDistancePower / 5)))
       .force('center', forceCenter3d(0, 0, 0))
       .force('collision', forceCollide3d(10 * (nodeSize / 12)))
       .alphaDecay(0.02)
@@ -371,18 +375,28 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     simulation.on('end', () => {
       console.log('✅ Force simulation complete');
       setSimulationRunning(false);
+      setForceSimulationCompleted(true);
+
+      // Store final positions
+      const finalPositions = new Map<string, THREE.Vector3>();
+      simNodes.forEach(simNode => {
+        if (simNode.x !== undefined && simNode.y !== undefined && simNode.z !== undefined) {
+          finalPositions.set(simNode.id, new THREE.Vector3(simNode.x, simNode.y, simNode.z));
+        }
+      });
+      setInitialPositions(finalPositions);
     });
 
     return simNodes;
-  }, [nodes, edges]);
+  }, [nodes, edges, nodeSize, initialPositions]);
 
   // Calculate sphere positions
-  const calculateSpherePositions = useCallback(() => {
+  const calculateSpherePositions = useCallback((nodesToUse: any[] = nodes) => {
     const positions = new Map<string, THREE.Vector3>();
 
-    nodes.forEach((node, index) => {
-      const phi = Math.acos(-1 + (2 * index) / nodes.length);
-      const theta = Math.sqrt(nodes.length * Math.PI) * phi;
+    nodesToUse.forEach((node, index) => {
+      const phi = Math.acos(-1 + (2 * index) / nodesToUse.length);
+      const theta = Math.sqrt(nodesToUse.length * Math.PI) * phi;
       const radius = 40 + (node.ring || 0) * 15;
 
       const position = new THREE.Vector3(
@@ -440,12 +454,53 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     edgeObjectsRef.current.clear();
     edgeLabelObjectsRef.current.clear();
 
+    // Filter out nodes with no edges and log them
+    const nodesWithEdges = new Set<string>();
+    const unconnectedNodes: any[] = [];
+
+    // Find all nodes that have at least one edge
+    edges.forEach(edge => {
+      nodesWithEdges.add(edge.source);
+      nodesWithEdges.add(edge.target);
+    });
+
+    // Identify and log unconnected nodes
+    nodes.forEach(node => {
+      if (!nodesWithEdges.has(node.id)) {
+        unconnectedNodes.push({
+          id: node.id,
+          label: node.label,
+          metadata: node.metadata,
+          type: node.type
+        });
+      }
+    });
+
+    // Log error for unconnected nodes
+    if (unconnectedNodes.length > 0) {
+      console.error('🔴 ERROR: Found nodes with no edges (hidden from visualization):', {
+        count: unconnectedNodes.length,
+        nodes: unconnectedNodes,
+        message: 'These nodes have no connections in the graph. This may indicate:',
+        possibleCauses: [
+          '1. Missing adjacency data in the database',
+          '2. Incomplete scraping of track relationships',
+          '3. Isolated tracks not part of any setlist',
+          '4. Data pipeline error during adjacency generation'
+        ]
+      });
+    }
+
+    // Filter nodes to only include connected ones
+    const connectedNodes = nodes.filter(node => nodesWithEdges.has(node.id));
+    console.log(`🔗 Displaying ${connectedNodes.length}/${nodes.length} connected nodes`);
+
     // Calculate positions based on layout mode
     let nodePositions: Map<string, THREE.Vector3>;
 
     if (layoutMode === 'force') {
-      // Initialize force simulation
-      const simNodes = calculateForcePositions();
+      // Initialize force simulation with only connected nodes
+      const simNodes = calculateForcePositions(distancePower, relationshipPower, connectedNodes);
       nodePositions = new Map();
       simNodes.forEach(node => {
         if (node.x !== undefined && node.y !== undefined && node.z !== undefined) {
@@ -453,15 +508,15 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
         }
       });
     } else {
-      // Use sphere layout
-      nodePositions = calculateSpherePositions();
+      // Use sphere layout with only connected nodes
+      nodePositions = calculateSpherePositions(connectedNodes);
     }
 
-    // Create nodes
+    // Create nodes (only connected ones)
     const nodeGroup = new THREE.Group();
     nodeGroup.userData.isGraphElement = true;
 
-    nodes.forEach(node => {
+    connectedNodes.forEach(node => {
       const position = nodePositions.get(node.id) || new THREE.Vector3(0, 0, 0);
 
       // Node size based on connections
@@ -499,56 +554,66 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       nodeObjectsRef.current.set(node.id, sphere);
       nodeGroup.add(sphere);
 
-      // Add enhanced label
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (context) {
-        canvas.width = 512;
-        canvas.height = 96;
+      // Add node title label - only show when node is selected or hovered
+      const isNodeSelected = selectedNodes.has(node.id);
+      const shouldShowLabel = isNodeSelected || hoveredNode === node.id;
 
-        const artist = node.artist || node.label?.split(' - ')[0] || '';
-        const title = node.title || node.label?.split(' - ')[1] || node.label || node.id;
+      if (shouldShowLabel) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (context) {
+          canvas.width = 512;
+          canvas.height = 96;
 
-        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        context.roundRect(10, 10, 492, 76, 8);
-        context.fill();
+          // Extract artist and title from metadata
+          const artist = node.metadata?.artist || node.artist || node.label?.split(' - ')[0] || '';
+          const title = node.metadata?.title || node.title || node.label?.split(' - ')[1] || node.label || node.id;
 
-        context.fillStyle = 'rgba(150, 150, 150, 0.9)';
-        context.font = '18px Arial';
-        context.textAlign = 'center';
-        if (artist) {
-          context.fillText(artist, 256, 35);
+          context.fillStyle = 'rgba(0, 0, 0, 0.85)';
+          context.roundRect(10, 10, 492, 76, 8);
+          context.fill();
+
+          // Artist name
+          context.fillStyle = 'rgba(150, 150, 150, 0.9)';
+          context.font = '18px Arial';
+          context.textAlign = 'center';
+          if (artist) {
+            context.fillText(artist, 256, 35);
+          }
+
+          // Track title
+          context.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          context.font = 'bold 22px Arial';
+          context.textAlign = 'center';
+
+          const maxTitleLength = 40;
+          const displayTitle = title.length > maxTitleLength
+            ? title.substring(0, maxTitleLength - 3) + '...'
+            : title;
+          context.fillText(displayTitle, 256, artist ? 60 : 48);
+
+          // Add connection strength indicator
+          if (layoutMode === 'force') {
+            context.fillStyle = 'rgba(100, 200, 255, 0.8)';
+            context.font = '14px Arial';
+            context.fillText(`Strength: ${totalStrength.toFixed(1)}`, 256, 80);
+          }
+
+          const texture = new THREE.CanvasTexture(canvas);
+          const spriteMaterial = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true,
+            opacity: isNodeSelected ? 1.0 : 0.8
+          });
+          const sprite = new THREE.Sprite(spriteMaterial);
+          sprite.position.copy(position);
+          sprite.position.y += nodeRadius + 2;
+          sprite.scale.set(12, 3, 1);
+          sprite.userData.isGraphElement = true;
+          sprite.userData.isNodeLabel = true;
+          sprite.userData.nodeId = node.id;
+          nodeGroup.add(sprite);
         }
-
-        context.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        context.font = 'bold 22px Arial';
-        context.textAlign = 'center';
-
-        const maxTitleLength = 40;
-        const displayTitle = title.length > maxTitleLength
-          ? title.substring(0, maxTitleLength - 3) + '...'
-          : title;
-        context.fillText(displayTitle, 256, artist ? 60 : 48);
-
-        // Add connection strength indicator
-        if (layoutMode === 'force') {
-          context.fillStyle = 'rgba(100, 200, 255, 0.8)';
-          context.font = '14px Arial';
-          context.fillText(`Strength: ${totalStrength.toFixed(1)}`, 256, 80);
-        }
-
-        const texture = new THREE.CanvasTexture(canvas);
-        const spriteMaterial = new THREE.SpriteMaterial({
-          map: texture,
-          transparent: true,
-          opacity: 0.9
-        });
-        const sprite = new THREE.Sprite(spriteMaterial);
-        sprite.position.copy(position);
-        sprite.position.y += nodeRadius + 2;
-        sprite.scale.set(12, 3, 1);
-        sprite.userData.isGraphElement = true;
-        nodeGroup.add(sprite);
       }
     });
 
@@ -568,8 +633,8 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     const cameraDistance = camera ? camera.position.length() : 100;
     const zoomLevel = 100 / cameraDistance; // Inverse relationship for 3D
 
-    // Convert nodes to culling format with 3D positions
-    const cullingNodes: CullingNode[] = nodes.map(node => {
+    // Convert connected nodes to culling format with 3D positions
+    const cullingNodes: CullingNode[] = connectedNodes.map(node => {
       const pos = nodePositions.get(node.id);
       return {
         id: node.id,
@@ -668,7 +733,15 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
     // Initial edge label update
     setTimeout(() => updateEdgeLabels(), 100);
-  }, [nodes, edges, selectedNodes, shortestPath, getNodeColor, layoutMode, calculateForcePositions, calculateSpherePositions, connectionStrengths, updateEdgeLabels]);
+
+    // Update node labels when selection changes
+    requestAnimationFrame(() => {
+      // Force a re-render to update node labels
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+    });
+  }, [nodes, edges, selectedNodes, shortestPath, getNodeColor, layoutMode, calculateForcePositions, calculateSpherePositions, connectionStrengths, updateEdgeLabels, hoveredNode]);
 
   // Dijkstra's shortest path
   const findShortestPath = useCallback((start: string, end: string) => {
@@ -778,6 +851,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     if (intersects.length > 0) {
       const clickedMesh = intersects[0].object as THREE.Mesh;
       const nodeId = clickedMesh.userData.nodeId;
+      const nodeData = clickedMesh.userData.nodeData;
 
       if (pathMode) {
         if (!startNode) {
@@ -804,11 +878,30 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
           newSelected.add(nodeId);
         }
         setSelectedNodes(newSelected);
+
+        // Show node menu on right click or when node is selected
+        if (event.button === 2 || newSelected.has(nodeId)) {
+          setNodeMenu({
+            nodeId,
+            x: event.clientX,
+            y: event.clientY
+          });
+        }
+      }
+
+      // Call the onNodeClick prop if provided
+      if (onNodeClick && nodeData) {
+        onNodeClick(nodeData);
       }
 
       createGraph();
+    } else {
+      // Clear selection and menu when clicking empty space
+      setSelectedNodes(new Set());
+      setNodeMenu(null);
+      createGraph();
     }
-  }, [pathMode, startNode, endNode, selectedNodes, findShortestPath, createGraph]);
+  }, [pathMode, startNode, endNode, selectedNodes, findShortestPath, createGraph, onNodeClick]);
 
   // Animation loop
   const animate = useCallback(() => {
@@ -831,12 +924,18 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     return () => clearTimeout(timer);
   }, [initThreeJS, isInitialized]);
 
-  // Create graph
+  // Create graph - with proper dependency on slider values
   useEffect(() => {
     if (isInitialized && nodes.length > 0) {
-      createGraph();
+      // Only recalculate if sliders change and we're in force mode
+      if (layoutMode === 'force' && forceSimulationCompleted) {
+        // Check if we need to recalculate based on slider changes
+        calculateForcePositions(distancePower, relationshipPower);
+      } else {
+        createGraph();
+      }
     }
-  }, [isInitialized, nodes, edges, createGraph]);
+  }, [isInitialized, nodes, edges, createGraph, distancePower, relationshipPower, layoutMode, forceSimulationCompleted, calculateForcePositions]);
 
   // Setup controls event listener for edge labels
   useEffect(() => {
@@ -880,11 +979,20 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   useEffect(() => {
     if (!isInitialized || !mountRef.current) return;
     const mount = mountRef.current;
+
+    // Prevent context menu on right click
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      handleMouseClick(e);
+    };
+
     mount.addEventListener('mousemove', handleMouseMove);
     mount.addEventListener('click', handleMouseClick);
+    mount.addEventListener('contextmenu', handleContextMenu);
     return () => {
       mount.removeEventListener('mousemove', handleMouseMove);
       mount.removeEventListener('click', handleMouseClick);
+      mount.removeEventListener('contextmenu', handleContextMenu);
     };
   }, [isInitialized, handleMouseMove, handleMouseClick]);
 
@@ -921,15 +1029,99 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     >
       <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
 
+      {/* Node Selection Menu */}
+      {nodeMenu && (
+        <div
+          className="absolute bg-gray-900 bg-opacity-95 text-white text-xs rounded-lg shadow-xl p-2 z-50"
+          style={{
+            left: `${nodeMenu.x}px`,
+            top: `${nodeMenu.y}px`,
+            transform: 'translate(-50%, -100%)'
+          }}
+        >
+          <div className="font-bold mb-2 text-blue-400 border-b border-gray-700 pb-1">
+            Node Options
+          </div>
+          <div className="space-y-1">
+            <button
+              onClick={() => {
+                setStartNode(nodeMenu.nodeId);
+                setPathMode(true);
+                setNodeMenu(null);
+              }}
+              className="block w-full text-left px-2 py-1 hover:bg-gray-800 rounded"
+            >
+              🏁 Set as Start
+            </button>
+            <button
+              onClick={() => {
+                if (startNode && startNode !== nodeMenu.nodeId) {
+                  setEndNode(nodeMenu.nodeId);
+                  const path = findShortestPath(startNode, nodeMenu.nodeId);
+                  setShortestPath(path);
+                  setPathMode(true);
+                }
+                setNodeMenu(null);
+              }}
+              className="block w-full text-left px-2 py-1 hover:bg-gray-800 rounded"
+              disabled={!startNode || startNode === nodeMenu.nodeId}
+            >
+              🎯 Set as End
+            </button>
+            <button
+              onClick={() => {
+                // Find connected nodes
+                const connectedNodes = edges
+                  .filter(e => e.source === nodeMenu.nodeId || e.target === nodeMenu.nodeId)
+                  .map(e => e.source === nodeMenu.nodeId ? e.target : e.source);
+
+                // Select all connected nodes
+                const newSelection = new Set(selectedNodes);
+                connectedNodes.forEach(nodeId => newSelection.add(nodeId));
+                setSelectedNodes(newSelection);
+                setNodeMenu(null);
+                createGraph();
+              }}
+              className="block w-full text-left px-2 py-1 hover:bg-gray-800 rounded"
+            >
+              🔗 Select Connected
+            </button>
+            <button
+              onClick={() => {
+                const node = nodes.find(n => n.id === nodeMenu.nodeId);
+                if (node && onNodeClick) {
+                  onNodeClick(node);
+                }
+                setNodeMenu(null);
+              }}
+              className="block w-full text-left px-2 py-1 hover:bg-gray-800 rounded"
+            >
+              ℹ️ Show Details
+            </button>
+            <div className="border-t border-gray-700 pt-1 mt-1">
+              <button
+                onClick={() => setNodeMenu(null)}
+                className="block w-full text-left px-2 py-1 hover:bg-gray-800 rounded text-gray-400"
+              >
+                ❌ Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Info Panel */}
       <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs p-3 rounded-lg shadow-lg max-w-xs">
         <div className="font-bold mb-2 text-blue-400">
           🌌 3D Graph - {layoutMode === 'sphere' ? '🌐 Sphere' : '🔀 Force'} Layout
         </div>
         <div className="space-y-1">
-          <div>Nodes: {nodes.length}</div>
-          <div>Edges: {edges.length}</div>
+          <div>Nodes: {nodeObjectsRef.current.size}/{nodes.length}</div>
+          <div>Edges: {edgeObjectsRef.current.size}/{edges.length}</div>
           <div>Selected: {selectedNodes.size}</div>
+          {nodeObjectsRef.current.size < nodes.length && (
+            <div className="text-orange-400 text-xs">⚠️ {nodes.length - nodeObjectsRef.current.size} unconnected nodes hidden</div>
+          )}
           {simulationRunning && (
             <div className="text-yellow-400">⚡ Simulating forces...</div>
           )}

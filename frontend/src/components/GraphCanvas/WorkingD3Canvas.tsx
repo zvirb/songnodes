@@ -21,6 +21,8 @@ interface WorkingD3CanvasProps {
   relationshipPower?: number;
   nodeSize?: number;
   edgeLabelSize?: number;
+  onNodeClick?: (nodeInfo: any) => void;
+  onEdgeClick?: (edgeInfo: any) => void;
 }
 
 interface SimpleNode {
@@ -54,11 +56,15 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   distancePower = 1,
   relationshipPower = 0,
   nodeSize = 12,
-  edgeLabelSize = 12
+  edgeLabelSize = 12,
+  onNodeClick,
+  onEdgeClick
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<SimpleNode, SimpleEdge> | null>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const previousPowersRef = useRef({ distancePower, relationshipPower });
+  const isInitialLoadRef = useRef(true);
   const dispatch = useAppDispatch();
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string; clickableNodes?: Array<{id: string, title: string}> } | null>(null);
   const [persistentTooltip, setPersistentTooltip] = useState<{ x: number; y: number; content: string; clickableNodes: Array<{id: string, title: string}>; nodeId: string } | null>(null);
@@ -427,6 +433,16 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Select the node in Redux
     dispatch(setSelectedNodes([node.id]));
 
+    // Call the external callback if provided
+    if (onNodeClick) {
+      onNodeClick({
+        id: node.id,
+        label: node.label,
+        metadata: node.metadata,
+        type: node.type
+      });
+    }
+
     // Create persistent tooltip with track information and connections
     const metadata = node.metadata || {};
     const lines = [];
@@ -516,7 +532,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Close any open menus/tooltips
     setMenu(null);
     setTooltip(null);
-  }, [dispatch, edges, nodes]);
+  }, [dispatch, edges, nodes, onNodeClick]);
 
   // Enhanced DOM hover effects with detailed track information
   const handleNodeMouseEnter = useCallback((event: MouseEvent, node: any) => {
@@ -913,6 +929,28 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
 
     // Create simulation with frequency-aware force parameters
     const nodeRadius = 15;
+
+    // Check if sliders have changed
+    const slidersChanged =
+      previousPowersRef.current.distancePower !== distancePower ||
+      previousPowersRef.current.relationshipPower !== relationshipPower;
+
+    // Track if simulation should be running (only on initial load or slider changes)
+    let simulationShouldRun = isInitialLoadRef.current || slidersChanged;
+
+    // If sliders changed, unfix all nodes first
+    if (slidersChanged && !isInitialLoadRef.current) {
+      simpleNodes.forEach(node => {
+        node.fx = null;
+        node.fy = null;
+      });
+      console.log('Sliders changed - recalculating layout');
+    }
+
+    // Update refs
+    previousPowersRef.current = { distancePower, relationshipPower };
+    isInitialLoadRef.current = false;
+
     const simulation = d3.forceSimulation(simpleNodes)
       .force('link', d3.forceLink<SimpleNode, SimpleEdge>(simpleEdges)
         .id(d => d.id)
@@ -1208,6 +1246,18 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       .data(visibleEdges)
       .enter()
       .append('line')
+      .style('cursor', 'pointer')
+      .on('click', (event: any, d: any) => {
+        event.stopPropagation();
+        if (onEdgeClick) {
+          onEdgeClick({
+            source: typeof d.source === 'object' ? d.source.id : d.source,
+            target: typeof d.target === 'object' ? d.target.id : d.target,
+            weight: d.weight,
+            metadata: d.metadata
+          });
+        }
+      })
       .attr('stroke', (d: any) => {
         // Get the actual node IDs from edge
         const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
@@ -1587,21 +1637,43 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
     // Initial edge label update
     updateEdgeLabels();
 
-    // Add drag behavior
+    // Add drag behavior (without restarting simulation)
     const drag = d3.drag<SVGCircleElement, SimpleNode>()
       .on('start', (event, d) => {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+        // Don't restart simulation, just fix the node position
         d.fx = d.x;
         d.fy = d.y;
       })
       .on('drag', (event, d) => {
+        // Update position directly without simulation
         d.fx = event.x;
         d.fy = event.y;
+        d.x = event.x;
+        d.y = event.y;
+
+        // Manually update the visual positions
+        node.filter(n => n.id === d.id)
+          .attr('cx', d.x!)
+          .attr('cy', d.y!);
+
+        labelGroups.filter(n => n.id === d.id)
+          .attr('transform', `translate(${d.x!}, ${d.y!})`);
+
+        // Update connected edges
+        link
+          .filter((e: any) => e.source.id === d.id || e.target.id === d.id)
+          .attr('x1', (e: any) => e.source.x!)
+          .attr('y1', (e: any) => e.source.y!)
+          .attr('x2', (e: any) => e.target.x!)
+          .attr('y2', (e: any) => e.target.y!);
+
+        // Update edge labels if visible
+        updateEdgeLabels();
       })
       .on('end', (event, d) => {
-        if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+        // Keep the node fixed at its new position
+        d.fx = d.x;
+        d.fy = d.y;
       });
 
     node.call(drag);
@@ -1625,11 +1697,37 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       updateEdgeLabels();
     });
 
+    // Stop simulation after initial layout calculation
+    simulation.on('end', () => {
+      console.log('Force simulation completed - layout is now static');
+      simulationShouldRun = false;
+
+      // Fix all node positions
+      simpleNodes.forEach(node => {
+        node.fx = node.x;
+        node.fy = node.y;
+      });
+    });
+
+    // Run simulation briefly for initial layout, then stop
+    setTimeout(() => {
+      if (simulationShouldRun) {
+        simulation.stop();
+        console.log('Force simulation stopped after initial layout');
+
+        // Fix all node positions
+        simpleNodes.forEach(node => {
+          node.fx = node.x;
+          node.fy = node.y;
+        });
+      }
+    }, 5000); // Run for 5 seconds to find good positions
+
     // Cleanup
     return () => {
       simulation.stop();
     };
-  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, getNodeDisplayText, distancePower, relationshipPower, nodeSize, edgeLabelSize]);
+  }, [nodes, edges, width, height, getNodeColor, getNodeRadius, getNodeDisplayText, distancePower, relationshipPower, nodeSize, edgeLabelSize, onNodeClick, onEdgeClick]);
 
   // Add keyboard event listener for escape key
   useEffect(() => {
