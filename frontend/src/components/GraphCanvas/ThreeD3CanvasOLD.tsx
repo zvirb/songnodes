@@ -24,6 +24,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   className,
   distancePower = 1
 }) => {
+  console.log('⚠️ OLD ThreeD3Canvas loaded - this might have old GridHelper code');
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
   const rendererRef = useRef<THREE.WebGLRenderer>();

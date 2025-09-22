@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { store } from '@store/index';
 import { ThemeProvider } from '@theme/ThemeProvider';
 import { WorkingD3Canvas } from '@components/GraphCanvas/WorkingD3Canvas';
-import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3CanvasEnhanced';
+import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3CanvasEnhanced'; // NO PLANE VERSION
 import { TestThree3D } from '@components/GraphCanvas/TestThree3D';
 import { TrackInfoPanel } from '@components/TrackInfoPanel/TrackInfoPanel';
 // import { SearchPanel } from '@components/SearchPanel/SearchPanel';
@@ -251,8 +251,8 @@ const AppContent: React.FC = () => {
   });
 
   // Current settings based on active mode
-  const currentSettings = visualizationMode === '3d' ? settings3D : settings2D;
-  const setCurrentSettings = visualizationMode === '3d' ? setSettings3D : setSettings2D;
+  const currentSettings = is3DMode ? settings3D : settings2D;
+  const setCurrentSettings = is3DMode ? setSettings3D : setSettings2D;
 
   // Helper functions to update current mode settings
   const setDistancePower = (value: number) => {

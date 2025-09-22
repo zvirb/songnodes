@@ -40,9 +40,10 @@ interface SimulationNode {
 }
 
 /**
- * Enhanced 3D graph visualization with multiple layout modes
+ * Enhanced 3D graph visualization with multiple layout modes (NO PLANE VERSION)
  * - Sphere Layout: Organized spherical distribution
  * - Force Layout: Physics-based positioning based on connection strength
+ * - NO GridHelper plane visualization
  */
 export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   width,
@@ -55,6 +56,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   onNodeClick,
   onEdgeClick
 }) => {
+  console.log('🚀 ThreeD3CanvasEnhanced loaded - NO GRID PLANE VERSION');
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
   const rendererRef = useRef<THREE.WebGLRenderer>();
