@@ -11,6 +11,7 @@ import {
   ForceSimulation3D,
   ForceLink3D
 } from 'd3-force-3d';
+import { cullEdges, getEdgeStyle, type Edge as CullingEdge, type Node as CullingNode, type ViewportBounds } from '../../utils/edgeCulling';
 
 interface ThreeD3CanvasProps {
   width: number;
@@ -553,11 +554,60 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
     scene.add(nodeGroup);
 
+    // Calculate viewport bounds for 3D culling
+    const camera = cameraRef.current;
+    const frustum = new THREE.Frustum();
+    const matrix = new THREE.Matrix4();
+
+    if (camera) {
+      matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      frustum.setFromProjectionMatrix(matrix);
+    }
+
+    // Get camera distance for zoom level calculation
+    const cameraDistance = camera ? camera.position.length() : 100;
+    const zoomLevel = 100 / cameraDistance; // Inverse relationship for 3D
+
+    // Convert nodes to culling format with 3D positions
+    const cullingNodes: CullingNode[] = nodes.map(node => {
+      const pos = nodePositions.get(node.id);
+      return {
+        id: node.id,
+        x: pos?.x || 0,
+        y: pos?.y || 0,
+        z: pos?.z || 0,
+        visible: true
+      };
+    });
+
+    // Apply edge culling
+    const viewportBounds: ViewportBounds = {
+      left: -1000,  // Will use frustum culling instead
+      right: 1000,
+      top: -1000,
+      bottom: 1000,
+      near: -1000,
+      far: 1000
+    };
+
+    const cullingResult = cullEdges({
+      viewport: viewportBounds,
+      zoomLevel,
+      nodes: cullingNodes,
+      edges: edges as CullingEdge[],
+      highlightedPath: shortestPath,
+      selectedNodes: Array.from(selectedNodes),
+      preserveHighlighted: true,
+      is3D: true
+    });
+
+    console.log(`3D Edge culling: showing ${cullingResult.visibleEdges.length}/${edges.length} edges at zoom ${zoomLevel.toFixed(2)}`);
+
     // Create edges
     const edgeGroup = new THREE.Group();
     edgeGroup.userData.isGraphElement = true;
 
-    edges.forEach(edge => {
+    cullingResult.visibleEdges.forEach(edge => {
       const sourcePos = nodePositions.get(edge.source);
       const targetPos = nodePositions.get(edge.target);
 
