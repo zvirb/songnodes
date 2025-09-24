@@ -1,0 +1,455 @@
+/* Enhanced UI Patterns Styles */
+
+/* Custom scrollbar styles for dropdowns and panels */
+.dropdown-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+
+/* Enhanced slider styles */
+.slider {
+  background: linear-gradient(to right, #3B82F6 0%, #3B82F6 50%, #374151 50%, #374151 100%);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #3B82F6;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: #F3F4F6;
+  border-color: #2563EB;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #3B82F6;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Tooltip placement arrows */
+.tooltip-top::before {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(17, 24, 39, 0.95);
+}
+
+.tooltip-bottom::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid rgba(17, 24, 39, 0.95);
+}
+
+.tooltip-left::before {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid rgba(17, 24, 39, 0.95);
+}
+
+.tooltip-right::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid rgba(17, 24, 39, 0.95);
+}
+
+/* Smooth transitions for UI elements */
+.ui-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ui-transition-slow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Backdrop blur enhancement */
+.enhanced-backdrop {
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+/* Glass morphism effect */
+.glass-morphism {
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(16px) saturate(1.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Improved focus styles for accessibility */
+.focus-ring:focus {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+}
+
+/* Enhanced button styles */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 ease-out transform hover:scale-105 active:scale-95;
+}
+
+.btn-secondary {
+  @apply bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 ease-out;
+}
+
+.btn-ghost {
+  @apply bg-transparent hover:bg-gray-700/50 active:bg-gray-700 text-gray-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 ease-out;
+}
+
+/* Panel slide animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+/* Fade and scale animations */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeOutScale {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* Progressive disclosure animations */
+.disclosure-enter {
+  animation: fadeInScale 0.2s ease-out;
+}
+
+.disclosure-exit {
+  animation: fadeOutScale 0.2s ease-out;
+}
+
+/* HUD widget positioning classes */
+.hud-top-left {
+  top: 80px;
+  left: 16px;
+}
+
+.hud-top-right {
+  top: 80px;
+  right: 16px;
+}
+
+.hud-bottom-left {
+  bottom: 16px;
+  left: 16px;
+}
+
+.hud-bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+.hud-bottom-center {
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .mobile-full-width {
+    width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  .mobile-safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Adjust HUD positions for mobile */
+  .hud-top-left {
+    top: calc(64px + env(safe-area-inset-top) + 8px);
+    left: calc(8px + env(safe-area-inset-left));
+  }
+
+  .hud-top-right {
+    top: calc(64px + env(safe-area-inset-top) + 8px);
+    right: calc(8px + env(safe-area-inset-right));
+  }
+
+  .hud-bottom-left {
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    left: calc(8px + env(safe-area-inset-left));
+  }
+
+  .hud-bottom-right {
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    right: calc(8px + env(safe-area-inset-right));
+  }
+
+  .hud-bottom-center {
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass-morphism {
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .btn-primary {
+    @apply border-2 border-blue-300;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-gray-300;
+  }
+}
+
+/* Dark mode specific enhancements */
+@media (prefers-color-scheme: dark) {
+  .auto-dark-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.3);
+  }
+
+  .auto-dark-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.5);
+  }
+}
+
+/* Print styles (hide interactive elements) */
+@media print {
+  .no-print,
+  .hud-overlay,
+  .tooltip,
+  .info-card,
+  .bottom-sheet,
+  .settings-panel {
+    display: none !important;
+  }
+}
+
+/* Utility classes for common patterns */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Interactive state styles */
+.interactive:hover {
+  @apply transform scale-105 transition-transform duration-200 ease-out;
+}
+
+.interactive:active {
+  @apply transform scale-95 transition-transform duration-100 ease-out;
+}
+
+/* Badge and indicator styles */
+.status-badge {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.status-online {
+  @apply bg-green-900/30 text-green-400 border border-green-700;
+}
+
+.status-offline {
+  @apply bg-red-900/30 text-red-400 border border-red-700;
+}
+
+.status-warning {
+  @apply bg-yellow-900/30 text-yellow-400 border border-yellow-700;
+}
+
+/* Loading and skeleton styles */
+.skeleton {
+  @apply bg-gray-700 animate-pulse rounded;
+}
+
+.skeleton-text {
+  @apply h-4 bg-gray-700 animate-pulse rounded;
+}
+
+.skeleton-circle {
+  @apply bg-gray-700 animate-pulse rounded-full;
+}
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Enhanced form controls */
+.form-input {
+  @apply w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors;
+}
+
+.form-checkbox {
+  @apply h-4 w-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2;
+}
+
+.form-select {
+  @apply w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors;
+}

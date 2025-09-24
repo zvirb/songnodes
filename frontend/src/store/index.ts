@@ -23,6 +23,7 @@ export const store = configureStore({
     collaboration: collaborationReducer,
     settings: settingsReducer,
     websocket: websocketReducer,
+    theme: settingsReducer, // Add theme alias for compatibility
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -47,6 +48,11 @@ export const store = configureStore({
   devTools: process.env.NODE_ENV !== 'production',
   preloadedState: undefined,
 });
+
+// Expose store to window for debugging
+if (typeof window !== 'undefined') {
+  (window as any).__REDUX_STORE__ = store;
+}
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

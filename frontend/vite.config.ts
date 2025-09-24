@@ -128,7 +128,7 @@ export default defineConfig({
         secure: false,
       },
       '/api': {
-        target: process.env.VITE_API_URL || 'http://api-gateway',
+        target: process.env.VITE_API_URL || 'http://api-gateway:8080',
         changeOrigin: true,
         secure: false,
       },
@@ -166,7 +166,7 @@ export default defineConfig({
         secure: false,
       },
       '/api': {
-        target: process.env.VITE_API_URL || 'http://api-gateway',
+        target: process.env.VITE_API_URL || 'http://api-gateway:8080',
         changeOrigin: true,
         secure: false,
       },

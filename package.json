@@ -15,6 +15,7 @@
     "stop": "docker-compose down",
     "logs": "docker-compose logs -f",
     "test": "npm run test --workspaces",
+    "test:mem": "node --max-old-space-size=8192 node_modules/.bin/npm run test --workspaces",
     "lint": "npm run lint --workspaces",
     "install:all": "npm install --workspaces",
     "mcp:start": "cd mcp_servers && ./start_integrated_mcp.sh",

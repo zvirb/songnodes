@@ -87,7 +87,7 @@ class ScraperRunner:
         try:
             # Build scrapy command
             cmd = [
-                'scrapy', 'crawl', scraper_name,
+                str(scrapers_dir / 'venv/bin/scrapy'), 'crawl', scraper_name,
                 '-L', 'INFO',
                 '--loglevel=INFO'
             ]
@@ -97,8 +97,10 @@ class ScraperRunner:
                 output_file = os.path.join(output_dir, f"{scraper_name}_output.json")
                 cmd.extend(['-o', output_file, '-t', 'jsonlines'])
 
-            # Set working directory to scrapers folder
+            # Set working directory to scrapers folder and add project root to PYTHONPATH
             cwd = scrapers_dir
+            env = os.environ.copy()
+            env['PYTHONPATH'] = str(Path(__file__).parent) + os.pathsep + env.get('PYTHONPATH', '')
 
             # Run the scraper
             logger.info(f"Executing: {' '.join(cmd)} in {cwd}")
@@ -107,7 +109,8 @@ class ScraperRunner:
                 cwd=cwd,
                 capture_output=True,
                 text=True,
-                timeout=1800  # 30 minute timeout
+                timeout=1800,  # 30 minute timeout
+                env=env
             )
 
             end_time = datetime.now()

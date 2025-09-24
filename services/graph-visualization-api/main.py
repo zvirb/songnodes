@@ -308,31 +308,32 @@ async def get_graph_nodes(
                     # Get all nodes with limit and pagination, including artist data
                     query = text("""
                         SELECT
-                            'song_' || s.song_id::text as id,
-                            'song_' || s.song_id::text as track_id,
+                            'song_' || t.song_id::text as id,
+                            'song_' || t.song_id::text as track_id,
                             0 as x_position,
                             0 as y_position,
                             json_build_object(
                                 'label', CASE
-                                    WHEN a.name IS NOT NULL THEN a.name || ' - ' || s.title
-                                    ELSE s.title
+                                    WHEN a.name IS NOT NULL THEN a.name || ' - ' || t.title
+                                    ELSE t.title
                                 END,
-                                'title', s.title,
+                                'title', t.title,
                                 'artist', a.name,
                                 'node_type', 'song',
-                                'category', COALESCE(s.genre, 'Electronic'),
-                                'release_year', s.release_year,
-                                'appearance_count', COALESCE(ps.count, 0)
+                                'category', COALESCE(t.genre, 'Electronic'),
+                                'release_year', t.release_year,
+                                'appearance_count', COALESCE(pt.count, 0)
                             ) as metadata,
                             COUNT(*) OVER() as total_count
-                        FROM songs s
-                        LEFT JOIN artists a ON s.primary_artist_id = a.artist_id
+                        FROM songs t
+                        LEFT JOIN song_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
+                        LEFT JOIN artists a ON ta.artist_id = a.artist_id
                         LEFT JOIN (
                             SELECT song_id, COUNT(*) as count
                             FROM playlist_songs
                             GROUP BY song_id
-                        ) ps ON ps.song_id = s.song_id
-                        ORDER BY COALESCE(ps.count, 0) DESC
+                        ) pt ON pt.song_id = t.song_id
+                        ORDER BY COALESCE(pt.count, 0) DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
@@ -387,16 +388,16 @@ async def search_tracks(
                 # Simple search query with basic ILIKE matching (exclude tracks without artists)
                 search_query = text("""
                     SELECT
-                        t.id,
+                        t.song_id as id,
                         t.title,
                         a.name as artist,
                         1.0 as relevance_score,
                         COUNT(*) OVER() as total_count
-                    FROM musicdb.tracks t
-                    JOIN musicdb.track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                    JOIN musicdb.artists a ON ta.artist_id = a.id
-                    WHERE (t.title ILIKE :query OR t.normalized_title ILIKE :query
-                           OR a.name ILIKE :query OR a.normalized_name ILIKE :query)
+                    FROM songs t
+                    JOIN song_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
+                    JOIN artists a ON ta.artist_id = a.artist_id
+                    WHERE (t.title ILIKE :query
+                           OR a.name ILIKE :query)
                         AND a.name IS NOT NULL AND a.name != ''
                     ORDER BY t.title
                     LIMIT :limit OFFSET :offset

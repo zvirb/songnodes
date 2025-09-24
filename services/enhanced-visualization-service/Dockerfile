@@ -102,6 +102,7 @@ USER devuser
 COPY --chown=devuser:devgroup src/ ./src/
 COPY --chown=devuser:devgroup public/ ./public/
 COPY --chown=devuser:devgroup minimal-server.js ./minimal-server.js
+COPY --chown=devuser:devgroup metrics.js ./metrics.js
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

@@ -1,0 +1,11 @@
+{
+  "1001tracklists": {
+    "status": "failed",
+    "duration": 0.631766,
+    "start_time": "2025-09-23T12:41:15.101938",
+    "end_time": "2025-09-23T12:41:15.733704",
+    "return_code": 2,
+    "output": "",
+    "error": "2025-09-23 12:41:15 [scrapy.utils.log] INFO: Scrapy 2.13.3 started (bot: scrapers)\n2025-09-23 12:41:15 [scrapy.utils.log] INFO: Versions:\n{'lxml': '6.0.1',\n 'libxml2': '2.14.5',\n 'cssselect': '1.3.0',\n 'parsel': '1.10.0',\n 'w3lib': '2.3.1',\n 'Twisted': '25.5.0',\n 'Python': '3.12.3 (main, Aug 14 2025, 17:47:21) [GCC 13.3.0]',\n 'pyOpenSSL': '25.3.0 (OpenSSL 3.5.3 16 Sep 2025)',\n 'cryptography': '46.0.1',\n 'Platform': 'Linux-6.14.0-29-generic-x86_64-with-glibc2.39'}\nUsage\n=====\n  scrapy crawl [options] <spider>\nscrapy: error: running 'scrapy crawl' with more than one spider is not supported\n"
+  }
+}

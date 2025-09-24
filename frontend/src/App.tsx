@@ -6,6 +6,7 @@ import { WorkingD3Canvas } from '@components/GraphCanvas/WorkingD3Canvas';
 import { ThreeD3Canvas } from '@components/GraphCanvas/ThreeD3CanvasEnhanced'; // NO PLANE VERSION
 import { TestThree3D } from '@components/GraphCanvas/TestThree3D';
 import { TrackInfoPanel } from '@components/TrackInfoPanel/TrackInfoPanel';
+import { ErrorBoundary } from '@components/ErrorBoundary';
 // import { SearchPanel } from '@components/SearchPanel/SearchPanel';
 // import { EnhancedMuiSearchPanel } from '@components/SearchPanel/EnhancedMuiSearchPanel';
 // import { ConnectionStatus } from '@components/ConnectionStatus';
@@ -23,6 +24,7 @@ import { useAppSelector as useSelector } from '@store/index';
 // import { Palette as PaletteIcon } from '@mui/icons-material';
 import classNames from 'classnames';
 import './index.css';
+import './styles/mobile-fixes.css';
 
 const AppContent: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -305,8 +307,38 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Trigger scrapers via API Gateway (8080) with graceful fallback to Orchestrator (8001)
+  // Trigger scrapers - enhanced orchestrator uses schedule endpoint for immediate execution
   const submitScraperTask = async (scraper: string, url: string, params: any = {}) => {
+    // Map scraper names to match orchestrator expectations
+    const scraperMap: { [key: string]: string } = {
+      '1001tracklists': '1001tracklists',
+      'mixesdb': 'mixesdb',
+      'setlistfm': 'setlistfm',
+      'reddit': 'reddit'
+    };
+
+    const scraperName = scraperMap[scraper] || scraper;
+
+    // Try the enhanced orchestrator schedule endpoint for immediate execution
+    try {
+      const res = await fetch('http://localhost:8001/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scraper_name: scraperName,
+          immediate: true  // Execute immediately, bypasses time restrictions
+        })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        console.log(`✅ Scraper ${scraperName} triggered immediately:`, result);
+        return result;
+      }
+    } catch (e) {
+      console.warn(`Enhanced orchestrator schedule failed:`, e);
+    }
+
+    // Fallback to old endpoints if needed
     const payload = { scraper, url, params };
     const endpoints = [
       '/api/v1/scrapers/tasks/submit',                 // dev proxy via gateway
@@ -728,18 +760,20 @@ const AppContent: React.FC = () => {
               } else {
                 console.log('✅ Rendering WorkingD3Canvas component');
                 return (
-                  <WorkingD3Canvas
-                    key="2d-canvas" // Force re-mount when switching modes
-                    width={width || window.innerWidth}
-                    height={height || window.innerHeight}
-                    className="absolute inset-0"
-                    distancePower={currentSettings.distancePower}
-                    relationshipPower={currentSettings.relationshipPower}
-                    nodeSize={currentSettings.nodeSize}
-                    edgeLabelSize={currentSettings.edgeLabelSize}
-                    onNodeClick={setSelectedNodeInfo}
-                    onEdgeClick={setSelectedEdgeInfo}
-                  />
+                  <ErrorBoundary>
+                    <WorkingD3Canvas
+                      key="2d-canvas" // Force re-mount when switching modes
+                      width={width || window.innerWidth}
+                      height={height || window.innerHeight}
+                      className="absolute inset-0"
+                      distancePower={currentSettings.distancePower}
+                      relationshipPower={currentSettings.relationshipPower}
+                      nodeSize={currentSettings.nodeSize}
+                      edgeLabelSize={currentSettings.edgeLabelSize}
+                      onNodeClick={setSelectedNodeInfo}
+                      onEdgeClick={setSelectedEdgeInfo}
+                    />
+                  </ErrorBoundary>
                 );
               }
             })()}
@@ -1150,6 +1184,78 @@ const AppContent: React.FC = () => {
                           />
                           <div className="text-gray-500 text-xs leading-relaxed break-words">
                             Upload my-collection.json (array of track titles)
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 p-5 border border-gray-700/60 rounded-lg bg-gray-800/30">
+                        <div className="mb-3 text-white font-semibold text-sm">Database Backup & Restore</div>
+                        <div className="space-y-3">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/v1/backup/backup', { method: 'POST' });
+                                if (res.ok) {
+                                  const blob = await res.blob();
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = `musicdb_backup_${new Date().toISOString().split('T')[0]}.sql`;
+                                  a.click();
+                                  URL.revokeObjectURL(url);
+                                  alert('Database backup downloaded successfully');
+                                } else {
+                                  alert('Backup failed: ' + await res.text());
+                                }
+                              } catch (e) {
+                                alert('Backup error: ' + e);
+                              }
+                            }}
+                            className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium"
+                          >
+                            Download Database Backup
+                          </button>
+
+                          <div className="border-t border-gray-700 pt-3">
+                            <input
+                              type="file"
+                              id="restore-file"
+                              accept=".sql"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (confirm('WARNING: This will replace ALL current data. Are you sure you want to restore from backup?')) {
+                                    try {
+                                      const formData = new FormData();
+                                      formData.append('backup', file);
+                                      const res = await fetch('/api/v1/backup/restore', {
+                                        method: 'POST',
+                                        body: formData
+                                      });
+                                      if (res.ok) {
+                                        alert('Database restored successfully. Refreshing page...');
+                                        window.location.reload();
+                                      } else {
+                                        alert('Restore failed: ' + await res.text());
+                                      }
+                                    } catch (e) {
+                                      alert('Restore error: ' + e);
+                                    }
+                                  }
+                                  (e.target as HTMLInputElement).value = '';
+                                }
+                              }}
+                              className="hidden"
+                            />
+                            <label
+                              htmlFor="restore-file"
+                              className="block w-full px-3 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded text-sm font-medium cursor-pointer text-center"
+                            >
+                              Restore From Backup
+                            </label>
+                          </div>
+                          <div className="text-gray-500 text-xs leading-relaxed break-words">
+                            Backup saves all songs, artists, relationships, and scraped data. Restore completely replaces the current database.
                           </div>
                         </div>
                         {importStatus && <div className="text-xs text-gray-400 mb-2">{importStatus}</div>}

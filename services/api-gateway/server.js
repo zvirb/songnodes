@@ -116,6 +116,10 @@ Object.entries(serviceProxies).forEach(([path, config]) => {
   }));
 });
 
+// Database backup/restore routes
+const backupRoutes = require('./backup');
+app.use('/api/v1/backup', backupRoutes);
+
 // Catch-all for unknown routes
 app.use('*', (req, res) => {
   res.status(404).json({

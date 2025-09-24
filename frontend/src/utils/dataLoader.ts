@@ -76,10 +76,11 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
     console.log('🎵 Loading real scraped data from API...');
 
     try {
-      // Call the graph visualization API directly using separate endpoints
-      const baseUrl = import.meta.env.VITE_GRAPH_API_URL || 'http://localhost:8084';
+      // Call the graph visualization API through the proxy (relative URLs)
+      // This will go through the dev server proxy or nginx in production
+      const baseUrl = '';  // Use relative URLs to work with proxy
 
-      console.log('🎵 Fetching nodes and edges from separate endpoints...');
+      console.log('🎵 Fetching nodes and edges from API...');
 
       // Fetch nodes and edges separately with appropriate limits
       const [nodesResponse, edgesResponse] = await Promise.all([

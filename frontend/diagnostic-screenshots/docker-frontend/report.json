@@ -1,0 +1,118 @@
+{
+  "frontend": "docker-frontend",
+  "port": 3006,
+  "timestamp": "2025-09-23T10:01:11.257Z",
+  "elements": {
+    "canvas": 0,
+    "svg": 0,
+    "nodeDisplay": "Not found",
+    "edgeDisplay": "Not found",
+    "loadingIndicators": 6
+  },
+  "appState": {
+    "hasStore": true,
+    "nodes": 240,
+    "edges": 1549,
+    "loading": false
+  },
+  "apiTests": [
+    {
+      "url": "/api/graph/nodes",
+      "status": 200,
+      "ok": true,
+      "nodes": 5
+    },
+    {
+      "url": "http://localhost:8080/api/graph/nodes",
+      "status": 200,
+      "ok": true,
+      "nodes": 5
+    }
+  ],
+  "apiCalls": [
+    {
+      "url": "http://localhost:3006/api/graph/nodes?limit=500",
+      "status": 200,
+      "ok": true,
+      "nodes": 240,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:3006/api/graph/edges?limit=5000",
+      "status": 200,
+      "ok": true,
+      "nodes": 0,
+      "edges": 1549
+    },
+    {
+      "url": "http://localhost:3006/api/graph/nodes?limit=500",
+      "status": 200,
+      "ok": true,
+      "nodes": 240,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:3006/api/graph/nodes?limit=500",
+      "status": 200,
+      "ok": true,
+      "nodes": 240,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:3006/api/graph/edges?limit=5000",
+      "status": 200,
+      "ok": true,
+      "nodes": 0,
+      "edges": 1549
+    },
+    {
+      "url": "http://localhost:3006/api/graph/edges?limit=5000",
+      "status": 200,
+      "ok": true,
+      "nodes": 0,
+      "edges": 1549
+    },
+    {
+      "url": "http://localhost:3006/api/graph/nodes?limit=5",
+      "status": 200,
+      "ok": true,
+      "nodes": 5,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:8080/api/graph/nodes?limit=5",
+      "status": 200,
+      "ok": true,
+      "nodes": 5,
+      "edges": 0
+    }
+  ],
+  "consoleLogs": [
+    "[log] 🏁 Force layout start called: JSHandle@object",
+    "[log] ⚡ Using fallback force layout (no worker)",
+    "[log] 🔄 Using fallback in-thread force simulation",
+    "[error] Global error: JSHandle@object",
+    "[error] The above error occurred in the <WorkingD3Canvas> component:\n\n    at WorkingD3Canvas (http://localhost:3006/src/components/GraphCanvas/WorkingD3Canvas.tsx:24:3)\n    at div\n    at div\n    at AppContent (http://localhost:3006/src/App.tsx:41:20)\n    at DefaultPropsProvider (http://localhost:3006/node_modules/.vite/deps/chunk-D7GNQBVC.js?v=c40aeabc:6244:3)\n    at RtlProvider (http://localhost:3006/node_modules/.vite/deps/chunk-2U2VKICD.js?v=c40aeabc:1017:5)\n    at ThemeProvider (http://localhost:3006/node_modules/.vite/deps/chunk-2U2VKICD.js?v=c40aeabc:969:5)\n    at ThemeProvider2 (http://localhost:3006/node_modules/.vite/deps/chunk-2U2VKICD.js?v=c40aeabc:1102:5)\n    at ThemeProvider3 (http://localhost:3006/node_modules/.vite/deps/chunk-2U2VKICD.js?v=c40aeabc:3186:12)\n    at ThemeProvider (http://localhost:3006/src/theme/ThemeProvider.tsx:23:33)\n    at Provider (http://localhost:3006/node_modules/.vite/deps/react-redux.js?v=c40aeabc:923:11)\n    at App\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+    "[error] Global error: JSHandle@object",
+    "[log] 🔌 WebSocket disconnected: 1000 Client disconnect",
+    "[log] ❌ WebSocket connection lost: JSHandle@object",
+    "[log] ❌ WebSocket connection lost: JSHandle@object",
+    "[log] ❌ WebSocket connection lost: JSHandle@object",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback"
+  ],
+  "summary": {
+    "apiTotal": 8,
+    "apiSuccess": 8,
+    "apiFailed": 0,
+    "consoleErrors": 6
+  }
+}
