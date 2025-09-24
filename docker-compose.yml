@@ -813,7 +813,7 @@ services:
     ports:
       - "3006:3006"
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://api-gateway}
+      VITE_API_URL: ${VITE_API_URL:-http://api-gateway:8080}
       VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://enhanced-visualization-service:8085}
       VITE_WS_URL: ${VITE_WS_URL:-ws://enhanced-visualization-service:8085}
       NODE_ENV: development

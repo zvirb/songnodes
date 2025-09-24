@@ -11,7 +11,8 @@ import {
   ForceSimulation3D,
   ForceLink3D
 } from 'd3-force-3d';
-import { cullEdges, getEdgeStyle, type Edge as CullingEdge, type Node as CullingNode, type ViewportBounds } from '../../utils/edgeCulling';
+import { useOptimizedForceLayout } from '../../hooks/useOptimizedForceLayout';
+import { clusterNodes } from '../../utils/cluster';
 
 interface ThreeD3CanvasProps {
   width: number;
@@ -69,7 +70,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   const nodeObjectsRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const edgeObjectsRef = useRef<Map<string, THREE.Line>>(new Map());
   const edgeLabelObjectsRef = useRef<Map<string, THREE.Sprite>>(new Map());
-  const simulationRef = useRef<any>();
+  
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   const [simulationRunning, setSimulationRunning] = useState(false);
   const [nodeMenu, setNodeMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const [initialPositions, setInitialPositions] = useState<Map<string, THREE.Vector3>>(new Map());
-  const [forceSimulationCompleted, setForceSimulationCompleted] = useState(false);
+  
 
   // Get graph data from Redux
   const { nodes, edges } = useAppSelector(state => state.graph);
@@ -126,14 +127,14 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     if (!cameraRef.current || !nodeObjectsRef.current.size) return 0;
 
     const camera = cameraRef.current;
-    const frustum = new THREE.Frustum();
-    const cameraMatrix = new THREE.Matrix4();
-    cameraMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    frustum.setFromProjectionMatrix(cameraMatrix);
+    const frustumVisCount = new THREE.Frustum();
+    const cameraMatrixVisCount = new THREE.Matrix4();
+    cameraMatrixVisCount.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustumVisCount.setFromProjectionMatrix(cameraMatrixVisCount);
 
     let visibleCount = 0;
     nodeObjectsRef.current.forEach((nodeObject) => {
-      if (frustum.containsPoint(nodeObject.position)) {
+      if (frustumVisCount.containsPoint(nodeObject.position)) {
         visibleCount++;
       }
     });
@@ -147,12 +148,12 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     if (!cameraRef.current) return false;
 
     const camera = cameraRef.current;
-    const frustum = new THREE.Frustum();
-    const cameraMatrix = new THREE.Matrix4();
-    cameraMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    frustum.setFromProjectionMatrix(cameraMatrix);
+    const frustumNodeVis = new THREE.Frustum();
+    const cameraMatrixNodeVis = new THREE.Matrix4();
+    cameraMatrixNodeVis.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustumNodeVis.setFromProjectionMatrix(cameraMatrixNodeVis);
 
-    return frustum.containsPoint(nodeObject.position);
+    return frustumNodeVis.containsPoint(nodeObject.position);
   }, []);
 
   const updateEdgeLabels = useCallback(() => {
@@ -318,77 +319,56 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     }
   }, [width, height, isInitialized]);
 
-  // Calculate force-directed positions - only once on initial load
-  const calculateForcePositions = useCallback((forceDistancePower: number = distancePower, forceRelationshipPower: number = relationshipPower, nodesToUse: any[] = nodes) => {
-    console.log('🌀 Calculating force-directed layout...');
+  const layoutOptions = {
+    forceDirected: {
+      linkDistance: 100,
+      linkStrength: 0.1,
+      chargeStrength: -300,
+      chargeTheta: 0.8,
+      alpha: 1,
+      alphaDecay: 0.0228,
+      velocityDecay: 0.4,
+      iterations: 300,
+      centering: true,
+      collisionRadius: 10,
+    },
+  };
 
-    // Use existing positions if available, otherwise random
-    const simNodes: SimulationNode[] = nodesToUse.map(node => {
-      const existingPos = initialPositions.get(node.id);
-      return {
-        id: node.id,
-        x: existingPos?.x || (Math.random() - 0.5) * 100,
-        y: existingPos?.y || (Math.random() - 0.5) * 100,
-        z: existingPos?.z || (Math.random() - 0.5) * 100
-      };
-    });
+  const { start, stop } = useOptimizedForceLayout({
+    width,
+    height,
+    layoutOptions,
+    onTick: (tickedNodes) => {
+      const dummy = new THREE.Object3D();
+      const cameraDistance = cameraRef.current?.position.length() || 100;
+      const zoom = 100 / cameraDistance;
 
-    const simLinks = edges.map(edge => ({
-      source: edge.source,
-      target: edge.target,
-      // Inverse weight: stronger connections = shorter distance
-      distance: 30 / Math.max(1, edge.metadata?.adjacency_frequency || edge.weight || 1)
-    }));
-
-    // Create force simulation with provided power values
-    const simulation = forceSimulation3d(simNodes)
-      .force('link', forceLink3d(simLinks)
-        .id((d: any) => d.id)
-        .distance((d: any) => d.distance * Math.pow(10, forceDistancePower / 5))
-        .strength(1.5 * Math.pow(10, forceRelationshipPower / 5)))
-      .force('charge', forceManyBody3d()
-        .strength(-300 * Math.pow(10, forceDistancePower / 5))
-        .distanceMin(5)
-        .distanceMax(200 * Math.pow(10, forceDistancePower / 5)))
-      .force('center', forceCenter3d(0, 0, 0))
-      .force('collision', forceCollide3d(10 * (nodeSize / 12)))
-      .alphaDecay(0.02)
-      .velocityDecay(0.4);
-
-    simulationRef.current = simulation;
-    setSimulationRunning(true);
-
-    // Run simulation
-    simulation.on('tick', () => {
-      // Update node positions in real-time
-      simNodes.forEach(simNode => {
-        const mesh = nodeObjectsRef.current.get(simNode.id);
-        if (mesh && simNode.x !== undefined && simNode.y !== undefined && simNode.z !== undefined) {
-          mesh.position.set(simNode.x, simNode.y, simNode.z);
+      tickedNodes.forEach((node: any, i: number) => {
+        const nodeObject = nodeObjectsRef.current.get(node.id);
+        if (nodeObject) {
+          const nodeRadius = (nodeSize / 12) * 0.8 + Math.min((connectionStrengths.get(node.id) ? Array.from(connectionStrengths.get(node.id)!.values()).reduce((a, b) => a + b, 0) : 0) * 0.2, 3);
+          const scale = zoom > 0.5 ? 1 : 0.5;
+          dummy.position.set(node.x, node.y, node.z || 0);
+          dummy.scale.set(nodeRadius * scale, nodeRadius * scale, nodeRadius * scale);
+          dummy.updateMatrix();
+          (sceneRef.current?.children.find(c => c.type === 'InstancedMesh') as THREE.InstancedMesh).setMatrixAt(i, dummy.matrix);
         }
       });
-
-      // Update edge positions
+      (sceneRef.current?.children.find(c => c.type === 'InstancedMesh') as THREE.InstancedMesh).instanceMatrix.needsUpdate = true;
       updateEdgePositions();
-    });
+    },
+    enabled: true,
+  });
 
-    simulation.on('end', () => {
-      console.log('✅ Force simulation complete');
-      setSimulationRunning(false);
-      setForceSimulationCompleted(true);
+  // Create graph
+  const createGraph = useCallback(() => {
+    if (!sceneRef.current || !nodes.length) return;
 
-      // Store final positions
-      const finalPositions = new Map<string, THREE.Vector3>();
-      simNodes.forEach(simNode => {
-        if (simNode.x !== undefined && simNode.y !== undefined && simNode.z !== undefined) {
-          finalPositions.set(simNode.id, new THREE.Vector3(simNode.x, simNode.y, simNode.z));
-        }
-      });
-      setInitialPositions(finalPositions);
-    });
+    start(nodes, edges);
 
-    return simNodes;
-  }, [nodes, edges, nodeSize, initialPositions]);
+    // ... (rest of the createGraph function, without the simulation part)
+
+  }, [nodes, edges, start]);
 
   // Calculate sphere positions
   const calculateSpherePositions = useCallback((nodesToUse: any[] = nodes) => {
@@ -442,8 +422,8 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     });
   }, [edges]);
 
-  // Create 3D graph
-  const createGraph = useCallback(() => {
+  // Create 3D graph visualization
+  const createGraph3D = useCallback(() => {
     if (!sceneRef.current || !nodes.length) return;
 
     const scene = sceneRef.current;
@@ -512,125 +492,69 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       nodePositions = calculateSpherePositions(connectedNodes);
     }
 
-    // Create nodes (only connected ones)
-    const nodeGroup = new THREE.Group();
-    nodeGroup.userData.isGraphElement = true;
+    const frustumClusters = new THREE.Frustum();
+    const cameraViewProjectionMatrix = new THREE.Matrix4();
+    cameraRef.current.updateMatrixWorld();
+    cameraViewProjectionMatrix.multiplyMatrices(cameraRef.current.projectionMatrix, cameraRef.current.matrixWorldInverse);
+    frustumClusters.setFromProjectionMatrix(cameraViewProjectionMatrix);
 
-    connectedNodes.forEach(node => {
-      const position = nodePositions.get(node.id) || new THREE.Vector3(0, 0, 0);
-
-      // Node size based on connections
-      const nodeConnections = edges.filter(e => e.source === node.id || e.target === node.id).length;
-      const connectionStrength = connectionStrengths.get(node.id);
-      const totalStrength = connectionStrength
-        ? Array.from(connectionStrength.values()).reduce((a, b) => a + b, 0)
-        : 0;
-
-      const nodeRadius = (nodeSize / 12) * 0.8 + Math.min(totalStrength * 0.2, 3);
-
-      // Create sphere
-      const geometry = new THREE.SphereGeometry(nodeRadius, 32, 32);
-      const material = new THREE.MeshPhongMaterial({
-        color: getNodeColor(node),
-        emissive: getNodeColor(node),
-        emissiveIntensity: 0.2,
-        shininess: 150,
-        specular: 0x222222
-      });
-
-      const sphere = new THREE.Mesh(geometry, material);
-      sphere.position.copy(position);
-      sphere.castShadow = true;
-      sphere.receiveShadow = true;
-      sphere.userData = {
-        isGraphElement: true,
-        nodeId: node.id,
-        nodeData: node,
-        originalColor: getNodeColor(node),
-        connections: nodeConnections,
-        connectionStrength: totalStrength
-      };
-
-      nodeObjectsRef.current.set(node.id, sphere);
-      nodeGroup.add(sphere);
-
-      // Add node title label - only show when node is selected or hovered
-      const isNodeSelected = selectedNodes.has(node.id);
-      const shouldShowLabel = isNodeSelected || hoveredNode === node.id;
-
-      if (shouldShowLabel) {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        if (context) {
-          canvas.width = 512;
-          canvas.height = 96;
-
-          // Extract artist and title from metadata
-          const artist = node.metadata?.artist || node.artist || node.label?.split(' - ')[0] || '';
-          const title = node.metadata?.title || node.title || node.label?.split(' - ')[1] || node.label || node.id;
-
-          context.fillStyle = 'rgba(0, 0, 0, 0.85)';
-          context.roundRect(10, 10, 492, 76, 8);
-          context.fill();
-
-          // Artist name
-          context.fillStyle = 'rgba(150, 150, 150, 0.9)';
-          context.font = '18px Arial';
-          context.textAlign = 'center';
-          if (artist) {
-            context.fillText(artist, 256, 35);
-          }
-
-          // Track title
-          context.fillStyle = 'rgba(255, 255, 255, 0.95)';
-          context.font = 'bold 22px Arial';
-          context.textAlign = 'center';
-
-          const maxTitleLength = 40;
-          const displayTitle = title.length > maxTitleLength
-            ? title.substring(0, maxTitleLength - 3) + '...'
-            : title;
-          context.fillText(displayTitle, 256, artist ? 60 : 48);
-
-          // Add connection strength indicator
-          if (layoutMode === 'force') {
-            context.fillStyle = 'rgba(100, 200, 255, 0.8)';
-            context.font = '14px Arial';
-            context.fillText(`Strength: ${totalStrength.toFixed(1)}`, 256, 80);
-          }
-
-          const texture = new THREE.CanvasTexture(canvas);
-          const spriteMaterial = new THREE.SpriteMaterial({
-            map: texture,
-            transparent: true,
-            opacity: isNodeSelected ? 1.0 : 0.8
-          });
-          const sprite = new THREE.Sprite(spriteMaterial);
-          sprite.position.copy(position);
-          sprite.position.y += nodeRadius + 2;
-          sprite.scale.set(12, 3, 1);
-          sprite.userData.isGraphElement = true;
-          sprite.userData.isNodeLabel = true;
-          sprite.userData.nodeId = node.id;
-          nodeGroup.add(sprite);
-        }
-      }
+    const visibleNodes = connectedNodes.filter(node => {
+      const position = nodePositions.get(node.id);
+      return position && frustumClusters.containsPoint(position);
     });
 
-    scene.add(nodeGroup);
+    const cameraDistance = cameraRef.current?.position.length() || 100;
+    const zoom = 100 / cameraDistance;
+    const clusteredNodes = clusterNodes(visibleNodes, zoom);
+
+    const individualNodes = clusteredNodes.filter(n => !n.isCluster);
+    const clusterNodes = clusteredNodes.filter(n => n.isCluster);
+
+    const nodeGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const nodeMaterial = new THREE.MeshPhongMaterial();
+    const instancedNodes = new THREE.InstancedMesh(nodeGeometry, nodeMaterial, individualNodes.length);
+    const dummy = new THREE.Object3D();
+
+    individualNodes.forEach((node, i) => {
+      const position = nodePositions.get(node.id) || new THREE.Vector3(0, 0, 0);
+      const nodeRadius = (nodeSize / 12) * 0.8 + Math.min((connectionStrengths.get(node.id) ? Array.from(connectionStrengths.get(node.id)!.values()).reduce((a, b) => a + b, 0) : 0) * 0.2, 3);
+
+      dummy.position.copy(position);
+      dummy.scale.set(nodeRadius, nodeRadius, nodeRadius);
+      dummy.updateMatrix();
+      instancedNodes.setMatrixAt(i, dummy.matrix);
+      instancedNodes.setColorAt(i, new THREE.Color(getNodeColor(node)));
+
+      nodeObjectsRef.current.set(node.id, dummy);
+    });
+
+    scene.add(instancedNodes);
+
+    const clusterGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const clusterMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
+    const instancedClusters = new THREE.InstancedMesh(clusterGeometry, clusterMaterial, clusterNodes.length);
+
+    clusterNodes.forEach((cluster, i) => {
+      const clusterRadius = 5 + Math.sqrt(cluster.size) * 2;
+      dummy.position.set(cluster.x, cluster.y, 0);
+      dummy.scale.set(clusterRadius, clusterRadius, clusterRadius);
+      dummy.updateMatrix();
+      instancedClusters.setMatrixAt(i, dummy.matrix);
+    });
+
+    scene.add(instancedClusters);
 
     // Calculate viewport bounds for 3D culling
     const camera = cameraRef.current;
-    const frustum = new THREE.Frustum();
-    const matrix = new THREE.Matrix4();
+    const frustum3D = new THREE.Frustum();
+    const matrix3D = new THREE.Matrix4();
 
     if (camera) {
-      matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-      frustum.setFromProjectionMatrix(matrix);
+      matrix3D.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      frustum3D.setFromProjectionMatrix(matrix3D);
     }
 
-    // Get camera distance for zoom level calculation
-    const cameraDistance = camera ? camera.position.length() : 100;
+    // Use already calculated camera distance for zoom level
     const zoomLevel = 100 / cameraDistance; // Inverse relationship for 3D
 
     // Convert connected nodes to culling format with 3D positions
@@ -810,31 +734,31 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     raycastRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-    const intersects = raycastRef.current.intersectObjects(Array.from(nodeObjectsRef.current.values()));
+    const instancedMesh = sceneRef.current?.children.find(c => c.type === 'InstancedMesh') as THREE.InstancedMesh;
+    if (!instancedMesh) return;
 
-    nodeObjectsRef.current.forEach((mesh, nodeId) => {
-      if (nodeId === hoveredNode && mesh.material instanceof THREE.MeshPhongMaterial) {
-        mesh.material.emissiveIntensity = 0.2;
-        mesh.scale.set(1, 1, 1);
-      }
-    });
+    const intersects = raycastRef.current.intersectObject(instancedMesh);
 
     if (intersects.length > 0) {
-      const hoveredMesh = intersects[0].object as THREE.Mesh;
-      const nodeId = hoveredMesh.userData.nodeId;
-
-      if (hoveredMesh.material instanceof THREE.MeshPhongMaterial) {
-        hoveredMesh.material.emissiveIntensity = 0.6;
-        // Dynamic scaling based on nodeSize prop
-        const hoverScale = Math.min(1.5, 1 + (nodeSize / 20));
-        hoveredMesh.scale.set(hoverScale, hoverScale, hoverScale);
+      const instanceId = intersects[0].instanceId;
+      if (instanceId !== undefined) {
+        const nodeId = Array.from(nodeObjectsRef.current.keys())[instanceId];
+        if (nodeId) {
+          if (hoveredNode !== nodeId) {
+            if (hoveredNode) {
+              // Reset previous hovered node
+            }
+            setHoveredNode(nodeId);
+            mountRef.current.style.cursor = 'pointer';
+          }
+        }
       }
-
-      setHoveredNode(nodeId);
-      mountRef.current.style.cursor = 'pointer';
     } else {
-      setHoveredNode(null);
-      mountRef.current.style.cursor = 'grab';
+      if (hoveredNode) {
+        // Reset previous hovered node
+        setHoveredNode(null);
+        mountRef.current.style.cursor = 'grab';
+      }
     }
   }, [hoveredNode, nodeSize]);
 
@@ -846,60 +770,67 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     raycastRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-    const intersects = raycastRef.current.intersectObjects(Array.from(nodeObjectsRef.current.values()));
+    const instancedMesh = sceneRef.current?.children.find(c => c.type === 'InstancedMesh') as THREE.InstancedMesh;
+    if (!instancedMesh) return;
+
+    const intersects = raycastRef.current.intersectObject(instancedMesh);
 
     if (intersects.length > 0) {
-      const clickedMesh = intersects[0].object as THREE.Mesh;
-      const nodeId = clickedMesh.userData.nodeId;
-      const nodeData = clickedMesh.userData.nodeData;
+      const instanceId = intersects[0].instanceId;
+      if (instanceId !== undefined) {
+        const nodeId = Array.from(nodeObjectsRef.current.keys())[instanceId];
+        const nodeData = nodes.find(n => n.id === nodeId);
 
-      if (pathMode) {
-        if (!startNode) {
-          setStartNode(nodeId);
-        } else if (!endNode && nodeId !== startNode) {
-          setEndNode(nodeId);
-          const path = findShortestPath(startNode, nodeId);
-          setShortestPath(path);
-        } else {
-          setStartNode(nodeId);
-          setEndNode(null);
-          setShortestPath([]);
-        }
-      } else {
-        const newSelected = new Set(selectedNodes);
-        if (event.shiftKey) {
-          if (newSelected.has(nodeId)) {
-            newSelected.delete(nodeId);
+        if (nodeId && nodeData) {
+          if (pathMode) {
+            if (!startNode) {
+              setStartNode(nodeId);
+            } else if (!endNode && nodeId !== startNode) {
+              setEndNode(nodeId);
+              const path = findShortestPath(startNode, nodeId);
+              setShortestPath(path);
+            } else {
+              setStartNode(nodeId);
+              setEndNode(null);
+              setShortestPath([]);
+            }
           } else {
-            newSelected.add(nodeId);
+            const newSelected = new Set(selectedNodes);
+            if (event.shiftKey) {
+              if (newSelected.has(nodeId)) {
+                newSelected.delete(nodeId);
+              } else {
+                newSelected.add(nodeId);
+              }
+            } else {
+              newSelected.clear();
+              newSelected.add(nodeId);
+            }
+            setSelectedNodes(newSelected);
+
+            // Show node menu on right click or when node is selected
+            if (event.button === 2 || newSelected.has(nodeId)) {
+              setNodeMenu({
+                nodeId,
+                x: event.clientX,
+                y: event.clientY
+              });
+            }
           }
-        } else {
-          newSelected.clear();
-          newSelected.add(nodeId);
-        }
-        setSelectedNodes(newSelected);
 
-        // Show node menu on right click or when node is selected
-        if (event.button === 2 || newSelected.has(nodeId)) {
-          setNodeMenu({
-            nodeId,
-            x: event.clientX,
-            y: event.clientY
-          });
+          // Call the onNodeClick prop if provided
+          if (onNodeClick && nodeData) {
+            onNodeClick(nodeData);
+          }
+
+          createGraph3D();
         }
       }
-
-      // Call the onNodeClick prop if provided
-      if (onNodeClick && nodeData) {
-        onNodeClick(nodeData);
-      }
-
-      createGraph();
     } else {
       // Clear selection and menu when clicking empty space
       setSelectedNodes(new Set());
       setNodeMenu(null);
-      createGraph();
+      createGraph3D();
     }
   }, [pathMode, startNode, endNode, selectedNodes, findShortestPath, createGraph, onNodeClick]);
 
@@ -924,18 +855,15 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     return () => clearTimeout(timer);
   }, [initThreeJS, isInitialized]);
 
-  // Create graph - with proper dependency on slider values
   useEffect(() => {
     if (isInitialized && nodes.length > 0) {
-      // Only recalculate if sliders change and we're in force mode
-      if (layoutMode === 'force' && forceSimulationCompleted) {
-        // Check if we need to recalculate based on slider changes
-        calculateForcePositions(distancePower, relationshipPower);
-      } else {
-        createGraph();
-      }
+      start(nodes, edges);
     }
-  }, [isInitialized, nodes, edges, createGraph, distancePower, relationshipPower, layoutMode, forceSimulationCompleted, calculateForcePositions]);
+
+    return () => {
+      stop();
+    }
+  }, [isInitialized, nodes, edges, start, stop]);
 
   // Setup controls event listener for edge labels
   useEffect(() => {
@@ -1080,7 +1008,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
                 connectedNodes.forEach(nodeId => newSelection.add(nodeId));
                 setSelectedNodes(newSelection);
                 setNodeMenu(null);
-                createGraph();
+                createGraph3D();
               }}
               className="block w-full text-left px-2 py-1 hover:bg-gray-800 rounded"
             >
@@ -1166,7 +1094,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
         <button
           onClick={() => {
             setLayoutMode(layoutMode === 'sphere' ? 'force' : 'sphere');
-            setTimeout(() => createGraph(), 100);
+            setTimeout(() => createGraph3D(), 100);
           }}
           className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
             layoutMode === 'force'
@@ -1195,7 +1123,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
 
         {layoutMode === 'force' && !simulationRunning && (
           <button
-            onClick={() => createGraph()}
+            onClick={() => createGraph3D()}
             className="px-3 py-2 rounded-lg text-xs font-medium bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
           >
             ⚡ Re-simulate

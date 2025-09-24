@@ -1,3 +1,6 @@
+import sys
+print("SYS_PATH:", sys.path)
+
 # Scrapy settings for music_scraper project
 #
 # For simplicity, this file contains only settings considered important or

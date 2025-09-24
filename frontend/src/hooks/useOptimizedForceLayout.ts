@@ -1,12 +1,6 @@
-/**
- * Optimized Force Layout Hook with Barnes-Hut Algorithm
- * Provides 85% performance improvement over naive O(N²) implementation
- */
-
-import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { useAppDispatch, useAppSelector } from '@store/index';
+import { useEffect, useRef, useCallback } from 'react';
 import { NodeVisual, EdgeVisual, LayoutOptions } from '@types/graph';
-import { BarnesHutSimulation, Point, Rectangle } from '@utils/barnesHut';
+import * as d3 from 'd3';
 
 interface UseOptimizedForceLayoutOptions {
   width: number;
@@ -17,14 +11,11 @@ interface UseOptimizedForceLayoutOptions {
   enabled: boolean;
 }
 
-interface ForceLayoutMetrics {
-  fps: number;
-  nodeCount: number;
-  averageForceTime: number;
-  alpha: number;
-  theta: number;
-  isOptimized: boolean;
-  computationReduction: number;
+interface SimulationNode extends NodeVisual {
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
 }
 
 export const useOptimizedForceLayout = ({
@@ -35,290 +26,231 @@ export const useOptimizedForceLayout = ({
   onEnd,
   enabled
 }: UseOptimizedForceLayoutOptions) => {
-  const dispatch = useAppDispatch();
-  
-  // References for simulation state
-  const simulationRef = useRef<BarnesHutSimulation | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const simulationRef = useRef<d3.Simulation<SimulationNode, EdgeVisual> | null>(null);
   const nodesRef = useRef<NodeVisual[]>([]);
   const edgesRef = useRef<EdgeVisual[]>([]);
   const isRunningRef = useRef<boolean>(false);
-  
-  // Performance tracking
-  const frameTimesRef = useRef<number[]>([]);
-  const forceTimesRef = useRef<number[]>([]);
-  const lastTickTimeRef = useRef<number>(0);
-  
-  // Simulation bounds
-  const bounds = useMemo<Rectangle>(() => ({
-    x: 0,
-    y: 0,
-    width: width || 1000,
-    height: height || 600
-  }), [width, height]);
+  // Disable worker by default - just use fallback
+  const useWorkerRef = useRef<boolean>(false);
+  const animationFrameRef = useRef<number | null>(null);
 
-  // Initialize Barnes-Hut simulation
-  const initializeSimulation = useCallback(() => {
-    const options = layoutOptions.forceDirected;
-    if (!options || !enabled) return null;
+  // Fallback in-thread simulation
+  const createFallbackSimulation = useCallback((nodes: SimulationNode[], edges: EdgeVisual[]) => {
+    console.log('🔄 Using fallback in-thread force simulation');
 
-    const simulation = new BarnesHutSimulation(bounds, {
-      theta: options.chargeTheta || 0.5,
-      alpha: options.alpha || 1.0,
-      alphaDecay: options.alphaDecay || 0.0228,
-      velocityDecay: options.velocityDecay || 0.4
-    });
+    // Create mutable copies of nodes to avoid Redux immutability errors
+    const mutableNodes = nodes.map(node => ({ ...node }));
+    const mutableEdges = edges.map(edge => ({ ...edge }));
 
-    return simulation;
-  }, [bounds, layoutOptions, enabled]);
+    // Create D3 force simulation
+    const simulation = d3.forceSimulation(mutableNodes)
+      .force('charge', d3.forceManyBody()
+        .strength(layoutOptions?.forceDirected?.charge || -300)
+        .distanceMax(300))
+      .force('link', d3.forceLink(mutableEdges)
+        .id((d: any) => d.id)
+        .distance(layoutOptions?.forceDirected?.linkDistance || 100)
+        .strength(layoutOptions?.forceDirected?.linkStrength || 0.1))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collision', d3.forceCollide()
+        .radius(20)
+        .strength(0.5))
+      .force('x', d3.forceX(width / 2).strength(0.05))
+      .force('y', d3.forceY(height / 2).strength(0.05))
+      .alpha(1)
+      .alphaDecay(layoutOptions?.forceDirected?.alphaDecay || 0.01)
+      .velocityDecay(layoutOptions?.forceDirected?.velocityDecay || 0.4);
 
-  // Convert NodeVisual to Point for simulation
-  const convertNodesToPoints = useCallback((nodes: NodeVisual[]): Point[] => {
-    return nodes.map(node => ({
-      x: node.x || Math.random() * bounds.width,
-      y: node.y || Math.random() * bounds.height,
-      vx: node.vx || 0,
-      vy: node.vy || 0,
-      mass: node.metrics?.centrality ? 1 + node.metrics.centrality * 5 : 1,
-      id: node.id
-    }));
-  }, [bounds]);
+    simulationRef.current = simulation;
 
-  // Convert Points back to NodeVisual
-  const updateNodesFromPoints = useCallback((nodes: NodeVisual[], points: Point[]): void => {
-    points.forEach((point, index) => {
-      if (nodes[index]) {
-        nodes[index].x = point.x;
-        nodes[index].y = point.y;
-        nodes[index].vx = point.vx;
-        nodes[index].vy = point.vy;
+    // Manual tick handling for better control
+    let tickCount = 0;
+    const maxTicks = 300;
+
+    const tick = () => {
+      if (!simulationRef.current || tickCount >= maxTicks || simulation.alpha() < 0.005) {
+        isRunningRef.current = false;
+        if (onEnd) onEnd();
+        return;
       }
-    });
-  }, []);
 
-  // Apply link forces manually (Barnes-Hut handles charge forces)
-  const applyLinkForces = useCallback((points: Point[], edges: EdgeVisual[], alpha: number): void => {
-    const options = layoutOptions.forceDirected;
-    if (!options) return;
+      simulation.tick();
+      tickCount++;
 
-    for (const edge of edges) {
-      const sourcePoint = points.find(p => p.id === edge.sourceNode.id);
-      const targetPoint = points.find(p => p.id === edge.targetNode.id);
-      
-      if (!sourcePoint || !targetPoint) continue;
+      // Update node positions (use mutableNodes which have been updated by D3)
+      const updatedNodes = mutableNodes.map(node => ({
+        ...node,
+        x: Math.max(10, Math.min(width - 10, node.x || width / 2)),
+        y: Math.max(10, Math.min(height - 10, node.y || height / 2))
+      }));
 
-      const dx = targetPoint.x - sourcePoint.x;
-      const dy = targetPoint.y - sourcePoint.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      if (distance === 0) continue;
+      nodesRef.current = updatedNodes;
+      if (onTick) onTick(updatedNodes);
 
-      // Calculate desired link distance
-      const baseDistance = options.linkDistance || 100;
-      const weightFactor = Math.max(0.5, edge.weight);
-      const desiredDistance = baseDistance * (1 / weightFactor);
-      
-      // Calculate force magnitude
-      const forceMagnitude = (distance - desiredDistance) * (options.linkStrength || 0.1) * alpha;
-      const forceX = (dx / distance) * forceMagnitude;
-      const forceY = (dy / distance) * forceMagnitude;
-      
-      // Apply forces
-      sourcePoint.vx = (sourcePoint.vx || 0) + forceX;
-      sourcePoint.vy = (sourcePoint.vy || 0) + forceY;
-      targetPoint.vx = (targetPoint.vx || 0) - forceX;
-      targetPoint.vy = (targetPoint.vy || 0) - forceY;
-    }
-  }, [layoutOptions]);
-
-  // Main simulation tick
-  const tick = useCallback(() => {
-    if (!simulationRef.current || !isRunningRef.current) return;
-
-    const startTime = performance.now();
-    const points = convertNodesToPoints(nodesRef.current);
-    
-    // Apply link forces before Barnes-Hut calculation
-    applyLinkForces(points, edgesRef.current, simulationRef.current.isRunning() ? 1 : 0);
-    
-    // Run Barnes-Hut simulation tick
-    const forceStart = performance.now();
-    const shouldContinue = simulationRef.current.tick(points);
-    const forceTime = performance.now() - forceStart;
-    
-    // Update nodes with new positions
-    updateNodesFromPoints(nodesRef.current, points);
-    
-    // Track performance metrics
-    const tickTime = performance.now() - startTime;
-    frameTimesRef.current.push(tickTime);
-    forceTimesRef.current.push(forceTime);
-    
-    // Keep only recent measurements
-    if (frameTimesRef.current.length > 60) frameTimesRef.current.shift();
-    if (forceTimesRef.current.length > 60) forceTimesRef.current.shift();
-    
-    // Call onTick callback
-    if (onTick) {
-      onTick([...nodesRef.current]);
-    }
-    
-    // Continue or end simulation
-    if (shouldContinue && isRunningRef.current) {
+      // Continue animation
       animationFrameRef.current = requestAnimationFrame(tick);
-    } else {
-      isRunningRef.current = false;
-      if (onEnd) onEnd();
-    }
-    
-    lastTickTimeRef.current = performance.now();
-  }, [convertNodesToPoints, applyLinkForces, updateNodesFromPoints, onTick, onEnd]);
-
-  // Start simulation
-  const start = useCallback((nodes: NodeVisual[], edges: EdgeVisual[]) => {
-    if (!enabled || isRunningRef.current) return;
-
-    nodesRef.current = [...nodes];
-    edgesRef.current = [...edges];
-    
-    // Initialize simulation if needed
-    if (!simulationRef.current) {
-      simulationRef.current = initializeSimulation();
-      if (!simulationRef.current) return;
-    }
-
-    // Reset performance tracking
-    frameTimesRef.current = [];
-    forceTimesRef.current = [];
-    
-    isRunningRef.current = true;
-    animationFrameRef.current = requestAnimationFrame(tick);
-  }, [enabled, initializeSimulation, tick]);
-
-  // Stop simulation
-  const stop = useCallback(() => {
-    isRunningRef.current = false;
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-  }, []);
-
-  // Restart simulation
-  const restart = useCallback((alpha: number = 1.0) => {
-    if (simulationRef.current) {
-      simulationRef.current.restart(alpha);
-      if (!isRunningRef.current && enabled) {
-        isRunningRef.current = true;
-        animationFrameRef.current = requestAnimationFrame(tick);
-      }
-    }
-  }, [tick, enabled]);
-
-  // Update simulation parameters
-  const updateParameters = useCallback((params: {
-    theta?: number;
-    alpha?: number;
-    alphaDecay?: number;
-    velocityDecay?: number;
-  }) => {
-    if (simulationRef.current) {
-      simulationRef.current.updateParameters(params);
-    }
-  }, []);
-
-  // Get current metrics
-  const getMetrics = useCallback((): ForceLayoutMetrics => {
-    const simulation = simulationRef.current;
-    const frameTimes = frameTimesRef.current;
-    const forceTimes = forceTimesRef.current;
-    
-    const averageFrameTime = frameTimes.length > 0 
-      ? frameTimes.reduce((sum, time) => sum + time, 0) / frameTimes.length
-      : 0;
-    
-    const averageForceTime = forceTimes.length > 0
-      ? forceTimes.reduce((sum, time) => sum + time, 0) / forceTimes.length
-      : 0;
-
-    const fps = averageFrameTime > 0 ? 1000 / averageFrameTime : 0;
-    
-    // Calculate computation reduction vs O(N²)
-    const nodeCount = nodesRef.current.length;
-    const naiveComplexity = nodeCount * nodeCount;
-    const optimizedComplexity = nodeCount * Math.log2(nodeCount);
-    const computationReduction = naiveComplexity > 0 
-      ? (1 - optimizedComplexity / naiveComplexity) * 100
-      : 0;
-
-    return {
-      fps,
-      nodeCount,
-      averageForceTime,
-      alpha: simulation?.getMetrics()?.alpha || 0,
-      theta: simulation?.getMetrics()?.theta || 0.5,
-      isOptimized: true,
-      computationReduction
     };
-  }, []);
 
-  // Spatial queries using Barnes-Hut quadtree
-  const findNodesInRadius = useCallback((center: { x: number; y: number }, radius: number): NodeVisual[] => {
-    if (!simulationRef.current) return [];
-    
-    const points = simulationRef.current.findPointsInRadius(center, radius);
-    return nodesRef.current.filter(node => 
-      points.some(point => point.id === node.id)
-    );
-  }, []);
+    tick();
+  }, [width, height]); // Simplified dependencies to avoid loops
 
-  const findClosestNode = useCallback((x: number, y: number): NodeVisual | null => {
-    if (!simulationRef.current) return null;
-    
-    const closestPoint = simulationRef.current.findClosestPoint(x, y);
-    if (!closestPoint) return null;
-    
-    return nodesRef.current.find(node => node.id === closestPoint.id) || null;
-  }, []);
-
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      stop();
-      simulationRef.current = null;
-    };
-  }, [stop]);
+    // Try to create Worker, fall back if it fails
+    let testTimeout: NodeJS.Timeout | null = null;
 
-  // Update simulation when layout options change
-  useEffect(() => {
-    if (simulationRef.current && enabled) {
-      const options = layoutOptions.forceDirected;
-      if (options) {
-        updateParameters({
-          theta: options.chargeTheta,
-          alphaDecay: options.alphaDecay,
-          velocityDecay: options.velocityDecay
+    if (useWorkerRef.current) {
+      try {
+        console.log('🔧 Attempting to create physics worker...');
+        const worker = new Worker(new URL('../../workers/physics.worker.ts', import.meta.url), {
+          type: 'module'
         });
+
+        // Test the worker with a timeout
+        testTimeout = setTimeout(() => {
+          console.warn('⚠️ Worker initialization timeout, switching to fallback');
+          try {
+            worker.terminate();
+          } catch (e) {
+            // Ignore termination errors
+          }
+          workerRef.current = null;
+          useWorkerRef.current = false;
+        }, 2000);
+
+        worker.onmessage = (event) => {
+          if (testTimeout) {
+            clearTimeout(testTimeout);
+            testTimeout = null;
+          }
+          const { type, nodes } = event.data;
+          console.log('📨 Worker message:', type, nodes?.length || 0);
+          if (type === 'tick') {
+            nodesRef.current = nodes;
+            if (onTick) {
+              onTick(nodes);
+            }
+          } else if (type === 'end') {
+            isRunningRef.current = false;
+            if (onEnd) {
+              onEnd();
+            }
+          }
+        };
+
+        worker.onerror = (error) => {
+          console.warn('⚠️ Worker error (switching to fallback):', error);
+          if (testTimeout) {
+            clearTimeout(testTimeout);
+            testTimeout = null;
+          }
+          try {
+            worker.terminate();
+          } catch (e) {
+            // Ignore termination errors
+          }
+          workerRef.current = null;
+          useWorkerRef.current = false;
+
+          // If simulation is running, switch to fallback immediately
+          if (isRunningRef.current && nodesRef.current.length > 0) {
+            console.log('🔄 Switching running simulation to fallback');
+            const currentNodes = nodesRef.current;
+            const currentEdges = edgesRef.current;
+            createFallbackSimulation(currentNodes, currentEdges);
+          }
+        };
+
+        workerRef.current = worker;
+      } catch (error) {
+        console.warn('⚠️ Failed to create worker (using fallback):', error);
+        useWorkerRef.current = false;
       }
     }
-  }, [layoutOptions, updateParameters, enabled]);
 
-  // Reinitialize simulation when bounds change
-  useEffect(() => {
-    if (enabled) {
-      simulationRef.current = initializeSimulation();
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
+      if (simulationRef.current) {
+        simulationRef.current.stop();
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []); // Only run once on mount
+
+  const start = useCallback((nodes: NodeVisual[], edges: EdgeVisual[]) => {
+    console.log('🏁 Force layout start called:', {
+      enabled,
+      isRunning: isRunningRef.current,
+      hasWorker: !!workerRef.current,
+      useWorker: useWorkerRef.current,
+      nodeCount: nodes.length
+    });
+
+    if (!enabled || isRunningRef.current || nodes.length === 0) return;
+
+    // Initialize node positions if not set - create mutable copies
+    const simulationNodes: SimulationNode[] = nodes.map(node => ({
+      ...JSON.parse(JSON.stringify(node)), // Deep clone to ensure mutability
+      x: node.x || Math.random() * width,
+      y: node.y || Math.random() * height,
+      vx: 0,
+      vy: 0
+    }));
+
+    // Create mutable copies of edges as well
+    const simulationEdges = edges.map(edge => ({
+      ...JSON.parse(JSON.stringify(edge))
+    }));
+
+    nodesRef.current = [...simulationNodes];
+    edgesRef.current = [...simulationEdges]; // Store edges for potential fallback
+    isRunningRef.current = true;
+
+    if (workerRef.current && useWorkerRef.current) {
+      // Use worker if available
+      console.log('✅ Using Web Worker for force layout');
+      workerRef.current.postMessage({ type: 'start', nodes: simulationNodes, edges: simulationEdges, width, height, layoutOptions });
+    } else {
+      // Use fallback
+      console.log('⚡ Using fallback force layout (no worker)');
+      createFallbackSimulation(simulationNodes, simulationEdges);
     }
-  }, [bounds, initializeSimulation, enabled]);
+  }, [enabled, width, height]); // Remove createFallbackSimulation from dependencies
+
+  const stop = useCallback(() => {
+    if (!isRunningRef.current) return;
+
+    if (workerRef.current && useWorkerRef.current) {
+      workerRef.current.postMessage({ type: 'stop' });
+    } else if (simulationRef.current) {
+      simulationRef.current.stop();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    }
+    isRunningRef.current = false;
+  }, []);
+
+  const restart = useCallback((alpha: number = 1.0) => {
+    if (workerRef.current && useWorkerRef.current) {
+      workerRef.current.postMessage({ type: 'restart', alpha });
+    } else if (simulationRef.current) {
+      simulationRef.current.alpha(alpha);
+      simulationRef.current.restart();
+    }
+    isRunningRef.current = true;
+  }, []);
 
   return {
     start,
     stop,
     restart,
-    updateParameters,
-    getMetrics,
-    findNodesInRadius,
-    findClosestNode,
     isRunning: isRunningRef.current,
-    isOptimized: true
+    isOptimized: useWorkerRef.current
   };
 };

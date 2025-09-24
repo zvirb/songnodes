@@ -8,6 +8,7 @@ import { Pool } from 'pg';
 import Redis from 'ioredis';
 import websocket from '@fastify/websocket';
 import jwt from 'jsonwebtoken';
+import metrics from './metrics.js';
 
 // Configuration from environment variables
 const config = {
@@ -89,6 +90,30 @@ function extractTokenFromRequest(url, headers) {
 
 async function createServer() {
   const app = Fastify({ logger: true });
+
+  // Add HTTP metrics middleware
+  app.addHook('onRequest', async (request, reply) => {
+    request.startTime = Date.now();
+  });
+
+  app.addHook('onResponse', async (request, reply) => {
+    if (request.startTime) {
+      const duration = (Date.now() - request.startTime) / 1000;
+      const route = request.routerPath || request.url;
+      metrics.httpRequestsTotal.inc({
+        method: request.method,
+        route: route,
+        status_code: reply.statusCode,
+        job: 'enhanced-visualization-service'
+      });
+      metrics.httpRequestDuration.observe({
+        method: request.method,
+        route: route,
+        status_code: reply.statusCode,
+        job: 'enhanced-visualization-service'
+      }, duration);
+    }
+  });
 
   // Register WebSocket plugin
   await app.register(websocket);
@@ -206,6 +231,9 @@ async function createServer() {
 
       console.log(`Authenticated WebSocket connection established for user ${user.username} (${user.userId})`);
 
+      // Track WebSocket connection in metrics
+      metrics.onWebSocketConnection();
+
       // Send welcome message
       connection.socket.send(JSON.stringify({
         type: 'connected',
@@ -219,6 +247,9 @@ async function createServer() {
 
       // Handle incoming messages
       connection.socket.on('message', (message) => {
+        // Track received message in metrics
+        metrics.onWebSocketMessageReceived();
+
         try {
           const data = JSON.parse(message.toString());
           
@@ -296,6 +327,8 @@ async function createServer() {
       // Handle connection close
       connection.socket.on('close', (code, reason) => {
         console.log(`WebSocket connection ${connectionId} closed: ${code} - ${reason || 'unknown'}`);
+        // Track WebSocket disconnection in metrics
+        metrics.onWebSocketDisconnection();
       });
 
       // Handle connection error
@@ -492,22 +525,15 @@ async function createServer() {
     }
   });
 
-  // Metrics endpoint
+  // Metrics endpoint - use comprehensive metrics
   app.get('/metrics', async (request, reply) => {
-    reply.type('text/plain').send(`
-# HELP enhanced_viz_health Service health status
-# TYPE enhanced_viz_health gauge
-enhanced_viz_health{service="enhanced-visualization-service"} 1
-
-# HELP enhanced_viz_uptime Service uptime in seconds
-# TYPE enhanced_viz_uptime counter
-enhanced_viz_uptime ${process.uptime()}
-
-# HELP enhanced_viz_memory_usage Memory usage in bytes
-# TYPE enhanced_viz_memory_usage gauge
-enhanced_viz_memory_usage{type="rss"} ${process.memoryUsage().rss}
-enhanced_viz_memory_usage{type="heapUsed"} ${process.memoryUsage().heapUsed}
-`);
+    try {
+      const metricsData = await metrics.getMetrics();
+      reply.type('text/plain').send(metricsData);
+    } catch (error) {
+      console.error('Error generating metrics:', error);
+      reply.code(500).send('Error generating metrics');
+    }
   });
 
   return app;

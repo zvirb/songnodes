@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Install PostgreSQL client tools for backup/restore
+RUN apk add --no-cache postgresql-client
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodeuser -u 1001
@@ -12,6 +15,9 @@ RUN npm install --only=production && npm cache clean --force
 
 # Copy application code
 COPY . .
+
+# Create temp directory for uploads and backups
+RUN mkdir -p /tmp/uploads && chmod 777 /tmp/uploads
 
 # Change ownership to non-root user
 RUN chown -R nodeuser:nodejs /app

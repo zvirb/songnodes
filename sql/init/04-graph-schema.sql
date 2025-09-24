@@ -15,7 +15,10 @@ SET search_path TO musicdb, public;
 -- Graph nodes table with spatial indexing
 CREATE TABLE IF NOT EXISTS nodes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    track_id VARCHAR(255) NOT NULL,
+    track_id UUID NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    artist VARCHAR(255),
+    genre VARCHAR(100),
     position POINT NOT NULL,
     metadata JSONB DEFAULT '{}'::JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -71,7 +74,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_edges_traversal ON edges(source_id, 
 -- Audio analysis data with partitioning for time-series performance
 CREATE TABLE IF NOT EXISTS audio_analysis (
     id UUID DEFAULT uuid_generate_v4(),
-    track_id VARCHAR(255) NOT NULL,
+    track_id UUID NOT NULL,
     analysis_data JSONB NOT NULL,
     features_vector FLOAT[] NOT NULL,
     tempo FLOAT,
@@ -151,18 +154,24 @@ CREATE INDEX IF NOT EXISTS idx_graph_clusters_algorithm ON graph_clusters(algori
 -- Bulk node insertion function with conflict resolution
 CREATE OR REPLACE FUNCTION bulk_insert_nodes(
     node_data JSONB
-) RETURNS INTEGER AS $$
+) RETURNS INTEGER AS $
 DECLARE
     inserted_count INTEGER;
 BEGIN
     WITH bulk_insert AS (
-        INSERT INTO nodes (track_id, position, metadata)
+        INSERT INTO nodes (track_id, title, artist, genre, position, metadata)
         SELECT 
-            (value->>'track_id')::VARCHAR,
+            (value->>'track_id')::UUID,
+            (value->>'title')::VARCHAR,
+            (value->>'artist')::VARCHAR,
+            (value->>'genre')::VARCHAR,
             POINT((value->>'x')::FLOAT, (value->>'y')::FLOAT),
             COALESCE(value->'metadata', '{}'::JSONB)
         FROM jsonb_array_elements(node_data) AS value
         ON CONFLICT (track_id) DO UPDATE SET
+            title = EXCLUDED.title,
+            artist = EXCLUDED.artist,
+            genre = EXCLUDED.genre,
             position = EXCLUDED.position,
             metadata = EXCLUDED.metadata,
             updated_at = NOW()
@@ -171,7 +180,7 @@ BEGIN
     SELECT COUNT(*) INTO inserted_count FROM bulk_insert;
     RETURN inserted_count;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 -- Bulk edge insertion function
 CREATE OR REPLACE FUNCTION bulk_insert_edges(
@@ -206,7 +215,7 @@ CREATE OR REPLACE FUNCTION get_connected_nodes(
     max_nodes INTEGER DEFAULT 100
 ) RETURNS TABLE(
     node_id UUID,
-    track_id VARCHAR,
+    track_id UUID,
     position POINT,
     metadata JSONB,
     depth INTEGER
@@ -252,7 +261,7 @@ CREATE OR REPLACE FUNCTION get_nodes_in_radius(
     max_nodes INTEGER DEFAULT 100
 ) RETURNS TABLE(
     node_id UUID,
-    track_id VARCHAR,
+    track_id UUID,
     position POINT,
     metadata JSONB,
     distance FLOAT

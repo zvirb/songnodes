@@ -1,0 +1,118 @@
+{
+  "frontend": "local-vite",
+  "port": 3007,
+  "timestamp": "2025-09-23T10:01:17.941Z",
+  "elements": {
+    "canvas": 0,
+    "svg": 0,
+    "nodeDisplay": "Not found",
+    "edgeDisplay": "Not found",
+    "loadingIndicators": 6
+  },
+  "appState": {
+    "hasStore": true,
+    "nodes": 240,
+    "edges": 1549,
+    "loading": false
+  },
+  "apiTests": [
+    {
+      "url": "/api/graph/nodes",
+      "status": 200,
+      "ok": true,
+      "nodes": 5
+    },
+    {
+      "url": "http://localhost:8080/api/graph/nodes",
+      "status": 200,
+      "ok": true,
+      "nodes": 5
+    }
+  ],
+  "apiCalls": [
+    {
+      "url": "http://localhost:3007/api/graph/nodes?limit=500",
+      "status": 200,
+      "ok": true,
+      "nodes": 240,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:3007/api/graph/edges?limit=5000",
+      "status": 200,
+      "ok": true,
+      "nodes": 0,
+      "edges": 1549
+    },
+    {
+      "url": "http://localhost:3007/api/graph/nodes?limit=500",
+      "status": 200,
+      "ok": true,
+      "nodes": 240,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:3007/api/graph/nodes?limit=500",
+      "status": 200,
+      "ok": true,
+      "nodes": 240,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:3007/api/graph/edges?limit=5000",
+      "status": 200,
+      "ok": true,
+      "nodes": 0,
+      "edges": 1549
+    },
+    {
+      "url": "http://localhost:3007/api/graph/edges?limit=5000",
+      "status": 200,
+      "ok": true,
+      "nodes": 0,
+      "edges": 1549
+    },
+    {
+      "url": "http://localhost:3007/api/graph/nodes?limit=5",
+      "status": 200,
+      "ok": true,
+      "nodes": 5,
+      "edges": 0
+    },
+    {
+      "url": "http://localhost:8080/api/graph/nodes?limit=5",
+      "status": 200,
+      "ok": true,
+      "nodes": 5,
+      "edges": 0
+    }
+  ],
+  "consoleLogs": [
+    "[log] 🎯 Redux setNodes Debug: JSHandle@object",
+    "[log] 🎯 Redux setNodes: Set 240 nodes",
+    "[log] 🔗 Redux setEdges: Set 1549 edges",
+    "[log] 🔌 WebSocket disconnected: 1000 Client disconnect",
+    "[log] ❌ WebSocket connection lost: JSHandle@object",
+    "[log] ❌ WebSocket connection lost: JSHandle@object",
+    "[log] ❌ WebSocket connection lost: JSHandle@object",
+    "[log] ✅ Loaded real scraped data: JSHandle@object",
+    "[log] 🎯 Successfully loaded API data, returning: JSHandle@object",
+    "[log] ✅ Setting nodes and edges: JSHandle@object",
+    "[log] 🎯 Redux setNodes Debug: JSHandle@object",
+    "[log] 🎯 Redux setNodes: Set 240 nodes",
+    "[log] 🔗 Redux setEdges: Set 1549 edges",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback",
+    "[warn] ⚠️ Worker initialization timeout, switching to fallback"
+  ],
+  "summary": {
+    "apiTotal": 8,
+    "apiSuccess": 8,
+    "apiFailed": 0,
+    "consoleErrors": 6
+  }
+}
