@@ -12,6 +12,7 @@ import {
 import { useAutoPathCalculation } from '../../hooks/useAutoPathCalculation';
 import { useOptimizedForceLayout } from '../../hooks/useOptimizedForceLayout';
 import { PixiCanvas } from './PixiCanvas';
+import { HighPerformanceCanvas } from './HighPerformanceCanvas';
 
 interface WorkingD3CanvasProps {
   width: number;
@@ -26,14 +27,6 @@ interface WorkingD3CanvasProps {
   onContextMenu?: (e: React.MouseEvent, item: any) => void;
 }
 
-// ... (rest of the component)
-
-  const handleNodeRightClick = (node: any, event: React.MouseEvent) => {
-    if (onContextMenu) {
-      onContextMenu(event, node);
-    }
-  };
-
 export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   width,
   height,
@@ -43,8 +36,31 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   nodeSize = 12,
   edgeLabelSize = 12,
   onNodeClick,
-  onEdgeClick
+  onEdgeClick,
+  onContextMenu
 }) => {
+  // Enable high-performance mode for better responsiveness
+  const USE_HIGH_PERFORMANCE = true;
+
+  const handleNodeRightClick = (node: any, event: React.MouseEvent) => {
+    if (onContextMenu) {
+      onContextMenu(event, node);
+    }
+  };
+
+  // Use high-performance canvas if enabled
+  if (USE_HIGH_PERFORMANCE) {
+    return (
+      <HighPerformanceCanvas
+        width={width}
+        height={height}
+        className={className || "absolute inset-0"}
+        onNodeClick={onNodeClick}
+        onNodeRightClick={handleNodeRightClick}
+        onEdgeClick={onEdgeClick}
+      />
+    );
+  }
   const dispatch = useAppDispatch();
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string; clickableNodes?: Array<{id: string, title: string}> } | null>(null);
   const [persistentTooltip, setPersistentTooltip] = useState<{ x: number; y: number; content: string; clickableNodes: Array<{id: string, title: string}>; nodeId: string } | null>(null);
