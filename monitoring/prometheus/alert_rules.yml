@@ -1,53 +1,118 @@
 groups:
-  - name: infrastructure_alerts
+  - name: service_health
+    interval: 30s
     rules:
-      # High-level service availability
       - alert: ServiceDown
         expr: up == 0
-        for: 5m
+        for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "Service {{ $labels.instance }} is down"
-          description: "Service {{ $labels.instance }} has been down for more than 5 minutes."
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} at {{ $labels.instance }} has been down for more than 1 minute."
 
-      # PostgreSQL alerts
-      - alert: PostgreSQLDown
-        expr: pg_up == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "PostgreSQL is down"
-          description: "PostgreSQL database is down on {{ $labels.instance }}"
-
-      - alert: PostgreSQLHighConnections
-        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "PostgreSQL connection usage high"
-          description: "PostgreSQL connection usage is above 80% on {{ $labels.instance }}"
+          summary: "High error rate on {{ $labels.job }}"
+          description: "{{ $labels.job }} is experiencing {{ $value | humanizePercentage }} error rate."
 
-      - alert: PostgreSQLHighQueryTime
-        expr: rate(pg_stat_database_tup_fetched[5m]) / rate(pg_stat_database_tup_returned[5m]) < 0.1
+  - name: performance
+    interval: 30s
+    rules:
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time on {{ $labels.job }}"
+          description: "95th percentile response time is {{ $value }}s for {{ $labels.job }}."
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
         for: 10m
         labels:
           severity: warning
         annotations:
-          summary: "PostgreSQL query performance degraded"
-          description: "PostgreSQL query performance has degraded on {{ $labels.instance }}"
+          summary: "High CPU usage on {{ $labels.job }}"
+          description: "{{ $labels.job }} CPU usage is {{ $value | humanize }}%."
 
-      # Redis alerts
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"
+          description: "{{ $labels.job }} is using {{ $value | humanize }}MB of memory."
+
+  - name: database
+    interval: 30s
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been down for more than 1 minute."
+
+      - alert: HighDatabaseConnections
+        expr: pg_stat_database_numbackends{datname="musicdb"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High number of database connections"
+          description: "Database has {{ $value }} active connections."
+
+      - alert: SlowQueries
+        expr: rate(pg_stat_statements_mean_exec_time_seconds[5m]) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query execution time is {{ $value }}s."
+
+      - alert: DatabaseLockWaits
+        expr: rate(pg_stat_database_conflicts[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database lock conflicts detected"
+          description: "Database is experiencing {{ $value }} conflicts per second."
+
+  - name: cache
+    interval: 30s
+    rules:
       - alert: RedisDown
-        expr: redis_up == 0
-        for: 2m
+        expr: up{job="redis"} == 0
+        for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "Redis is down"
-          description: "Redis instance is down on {{ $labels.instance }}"
+          summary: "Redis cache is down"
+          description: "Redis has been down for more than 1 minute."
+
+      - alert: HighRedisCPU
+        expr: redis_cpu_sys_seconds_total > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Redis CPU usage"
+          description: "Redis CPU usage is {{ $value | humanize }}."
 
       - alert: RedisMemoryHigh
         expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
@@ -56,101 +121,69 @@ groups:
           severity: warning
         annotations:
           summary: "Redis memory usage high"
-          description: "Redis memory usage is above 90% on {{ $labels.instance }}"
+          description: "Redis is using {{ $value | humanize }}% of max memory."
 
-      - alert: RedisConnectedClientsHigh
-        expr: redis_connected_clients > 8000
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Redis connected clients high"
-          description: "Redis has {{ $value }} connected clients on {{ $labels.instance }}"
-
-      # API Performance alerts
-      - alert: HighHTTPErrorRate
-        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High HTTP error rate"
-          description: "HTTP error rate is above 5% for {{ $labels.job }}"
-
-      - alert: HighResponseTime
-        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 2
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High response time"
-          description: "95th percentile response time is above 2s for {{ $labels.job }}"
-
-      # Container resource alerts
-      - alert: HighCPUUsage
-        expr: sum(rate(container_cpu_usage_seconds_total[5m])) by (name) * 100 > 80
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High CPU usage"
-          description: "Container {{ $labels.name }} CPU usage is above 80%"
-
-      - alert: HighMemoryUsage
-        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes * 100 > 90
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High memory usage"
-          description: "Container {{ $labels.name }} memory usage is above 90%"
-
-      # Scraping performance alerts
-      - alert: LowScrapingThroughput
-        expr: rate(scraper_tracks_processed_total[5m]) < 5
-        for: 15m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Low scraping throughput"
-          description: "Scraping throughput is below 5 tracks/minute for {{ $labels.scraper }}"
-
-      - alert: ScrapingErrors
-        expr: rate(scraper_errors_total[5m]) > 1
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High scraping error rate"
-          description: "Scraping error rate is above 1/minute for {{ $labels.scraper }}"
-
-  - name: business_metrics_alerts
+  - name: graph_visualization
+    interval: 30s
     rules:
-      # Track processing performance
-      - alert: TrackProcessingBacklog
-        expr: queue_size{queue="track_processing"} > 10000
+      - alert: GraphAPIHighLatency
+        expr: histogram_quantile(0.95, rate(graph_api_request_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: graph-visualization
+        annotations:
+          summary: "Graph API latency is high"
+          description: "95th percentile latency is {{ $value }}s."
+
+      - alert: LowCacheHitRate
+        expr: rate(graph_api_cache_hits_total[5m]) / (rate(graph_api_cache_hits_total[5m]) + rate(graph_api_cache_misses_total[5m])) < 0.5
+        for: 10m
+        labels:
+          severity: info
+          service: graph-visualization
+        annotations:
+          summary: "Low cache hit rate for Graph API"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}."
+
+  - name: scraper
+    interval: 30s
+    rules:
+      - alert: ScraperOrchestratorDown
+        expr: up{job="scraper-orchestrator"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scraper orchestrator is down"
+          description: "Scraper orchestrator has been down for more than 5 minutes."
+
+      - alert: ScraperHighErrorRate
+        expr: rate(scraper_errors_total[10m]) > 0.1
         for: 10m
         labels:
           severity: warning
         annotations:
-          summary: "Track processing backlog high"
-          description: "Track processing queue has {{ $value }} items backlogged"
+          summary: "High scraper error rate"
+          description: "Scraper error rate is {{ $value | humanize }} errors per second."
 
-      - alert: LowTrackIngestionRate
-        expr: rate(tracks_ingested_total[5m]) < 2
-        for: 15m
+  - name: capacity
+    interval: 60s
+    rules:
+      - alert: DiskSpaceWarning
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 20
+        for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Low track ingestion rate"
-          description: "Track ingestion rate is below 2/minute"
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Only {{ $value | humanize }}% disk space remaining."
 
-      # Data quality alerts
-      - alert: HighDataValidationFailures
-        expr: rate(data_validation_failures_total[5m]) / rate(data_validation_attempts_total[5m]) * 100 > 10
-        for: 10m
+      - alert: DiskSpaceCritical
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 10
+        for: 1m
         labels:
-          severity: warning
+          severity: critical
         annotations:
-          summary: "High data validation failure rate"
-          description: "Data validation failure rate is above 10%"
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Only {{ $value | humanize }}% disk space remaining!"

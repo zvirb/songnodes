@@ -23,7 +23,16 @@ interface WorkingD3CanvasProps {
   edgeLabelSize?: number;
   onNodeClick?: (nodeInfo: any) => void;
   onEdgeClick?: (edgeInfo: any) => void;
+  onContextMenu?: (e: React.MouseEvent, item: any) => void;
 }
+
+// ... (rest of the component)
+
+  const handleNodeRightClick = (node: any, event: React.MouseEvent) => {
+    if (onContextMenu) {
+      onContextMenu(event, node);
+    }
+  };
 
 export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
   width,
@@ -121,7 +130,7 @@ export const WorkingD3Canvas: React.FC<WorkingD3CanvasProps> = ({
       className={className || "absolute inset-0"}
       style={{ width, height, backgroundColor: '#0F172A' }}
     >
-      <PixiCanvas width={width} height={height} nodes={displayNodes} edges={edges} />
+      <PixiCanvas width={width} height={height} nodes={displayNodes} edges={edges} onNodeRightClick={handleNodeRightClick} />
 
       {/* Enhanced Interactive Tooltip with clickable connections */}
       {tooltip && (

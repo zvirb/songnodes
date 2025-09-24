@@ -12,6 +12,7 @@ require('dotenv').config();
 
 const healthRoutes = require('./routes/health');
 const logger = require('./utils/logger');
+const { metricsMiddleware, metricsEndpoint } = require('./metrics');
 
 const app = express();
 const server = createServer(app);
@@ -47,8 +48,12 @@ app.use(morgan('combined', {
 // Health check (simple, no authentication)
 app.use('/health', healthRoutes);
 app.use('/api/health', healthRoutes);
-// Expose metrics endpoint for Prometheus
-app.use('/metrics', healthRoutes);
+
+// Prometheus metrics endpoint
+app.get('/metrics', metricsEndpoint);
+
+// Apply metrics middleware to track all requests
+app.use(metricsMiddleware);
 
 // API documentation
 app.get('/api', (req, res) => {

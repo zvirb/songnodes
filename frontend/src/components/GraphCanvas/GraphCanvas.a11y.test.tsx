@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { render, screen, waitFor } from '@testing-library/react';
+import { axe } from 'jest-axe';
+
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { WorkingD3Canvas as GraphCanvas } from './WorkingD3Canvas';
 import { createMockGraphData, waitForAccessibilityTree } from '../../test/setup';
 import { 
   clearAnnouncements, 
-  mockScreenReaderAnnouncement,
   getAllAnnouncements,
   simulateKeyboardNavigation,
   getFocusableElements,
@@ -17,15 +18,14 @@ import { configureStore } from '@reduxjs/toolkit';
 import graphSlice from '../../store/graphSlice';
 import uiSlice from '../../store/uiSlice';
 import settingsSlice from '../../store/settingsSlice';
+import { RootState } from '../../store';
 
-expect.extend(toHaveNoViolations);
-
-const createTestStore = (initialState = {}) => {
+const createTestStore = (initialState: Partial<RootState> = {}) => {
   return configureStore({
     reducer: {
-      graph: graphSlice.reducer,
-      ui: uiSlice.reducer,
-      settings: settingsSlice.reducer,
+      graph: graphSlice,
+      ui: uiSlice,
+      settings: settingsSlice,
     },
     preloadedState: {
       graph: {
@@ -35,15 +35,29 @@ const createTestStore = (initialState = {}) => {
         hoveredNode: null,
         isLoading: false,
         error: null,
-        metadata: {},
-        ...initialState.graph,
+
+        ...(initialState.graph || {}),
       },
       ui: {
         selectedPanel: null,
         isFullscreen: false,
-        zoom: 1,
-        pan: { x: 0, y: 0 },
-        ...initialState.ui,
+        viewport: {
+          x: 0,
+          y: 0,
+          scale: 1,
+          width: 1200,
+          height: 800,
+        },
+        device: {
+          isMobile: false,
+          isTablet: false,
+          isDesktop: true,
+          hasTouch: false,
+          screenSize: 'lg',
+          orientation: 'landscape',
+          pixelRatio: 1,
+        },
+        ...(initialState.ui || {}),
       },
       settings: {
         accessibility: {
@@ -53,23 +67,41 @@ const createTestStore = (initialState = {}) => {
           reducedMotion: false,
           announceUpdates: true,
         },
-        ...initialState.settings,
+        ...(initialState.settings || {}),
       },
-    },
+    } as any,
   });
 };
 
-const renderWithProvider = (component: React.ReactElement, store = createTestStore()) => {
+const renderWithProvider = (component: React.ReactElement, store: ReturnType<typeof createTestStore>) => {
   return render(<Provider store={store}>{component}</Provider>);
 };
 
+const user = userEvent.setup();
+
 describe('GraphCanvas Accessibility Tests', () => {
   let mockGraphData: ReturnType<typeof createMockGraphData>;
-  let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
     mockGraphData = createMockGraphData(5, 4);
-    user = userEvent.setup();
+    clearAnnouncements();
+
+    // Mock getBoundingClientRect
+    Element.prototype.getBoundingClientRect = vi.fn(() => ({
+      top: 0,
+      left: 0,
+      bottom: 600,
+      right: 800,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    }));
+  });
+
+  beforeEach(() => {
+    mockGraphData = createMockGraphData(5, 4);
     clearAnnouncements();
 
     // Mock getBoundingClientRect
@@ -97,11 +129,11 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      const { container } = renderWithProvider(<GraphCanvas />, store);
+      const { container } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
       
       await waitForAccessibilityTree();
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toHaveLength(0);
     });
 
     it('provides proper ARIA labels and roles', () => {
@@ -109,7 +141,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toHaveAttribute('aria-label');
@@ -126,7 +158,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       // Should have appropriate heading levels
       const headings = screen.getAllByRole('heading');
@@ -148,7 +180,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -166,7 +198,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toHaveClass('high-contrast');
@@ -179,7 +211,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -192,7 +224,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -216,7 +248,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -234,7 +266,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -256,7 +288,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -274,7 +306,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      const { container } = renderWithProvider(<GraphCanvas />, store);
+      const { container } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const focusableElements = getFocusableElements(container);
       expect(focusableElements.length).toBeGreaterThan(0);
@@ -294,7 +326,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      const { container } = renderWithProvider(<GraphCanvas />, store);
+      const { container } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const focusTrap = simulateFocusTrap(container);
       
@@ -315,7 +347,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { isLoading: true, nodes: [], edges: [] },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       await waitFor(() => {
         const liveRegion = screen.getByLabelText(/graph announcements/i);
@@ -328,14 +360,14 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: [], edges: [] },
       });
 
-      const { rerender } = renderWithProvider(<GraphCanvas />, store);
+      const { rerender } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       // Update with data
       const updatedStore = createTestStore({
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      rerender(<Provider store={updatedStore}><GraphCanvas /></Provider>);
+      rerender(<Provider store={updatedStore}><GraphCanvas width={1200} height={800} /></Provider>);
 
       await waitFor(() => {
         const liveRegion = screen.getByLabelText(/graph announcements/i);
@@ -352,7 +384,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       await waitFor(() => {
         const liveRegion = screen.getByLabelText(/graph announcements/i);
@@ -365,7 +397,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       const nodeDetails = screen.getByLabelText(/node details/i);
@@ -383,7 +415,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       await waitFor(() => {
         const liveRegion = screen.getByLabelText(/graph announcements/i);
@@ -396,7 +428,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const helpButton = screen.getByLabelText(/help.*keyboard shortcuts/i);
       expect(helpButton).toBeInTheDocument();
@@ -428,7 +460,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toHaveClass('reduced-motion');
@@ -442,7 +474,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toHaveAttribute('data-animations', 'disabled');
@@ -455,7 +487,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -473,7 +505,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -487,7 +519,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      const { container } = renderWithProvider(<GraphCanvas />, store);
+      const { container } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const focusableElements = getFocusableElements(container);
       
@@ -506,7 +538,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       const altText = canvas.getAttribute('aria-label');
@@ -521,7 +553,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: [], edges: [] },
       });
 
-      const { rerender } = renderWithProvider(<GraphCanvas />, store);
+      const { rerender } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas.getAttribute('aria-label')).toContain('empty');
@@ -531,7 +563,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      rerender(<Provider store={updatedStore}><GraphCanvas /></Provider>);
+      rerender(<Provider store={updatedStore}><GraphCanvas width={1200} height={800} /></Provider>);
 
       await waitFor(() => {
         expect(canvas.getAttribute('aria-label')).toContain('5 nodes');
@@ -543,7 +575,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const zoomInButton = screen.getByLabelText(/zoom in/i);
       const zoomOutButton = screen.getByLabelText(/zoom out/i);
@@ -561,7 +593,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      const { container } = renderWithProvider(<GraphCanvas />, store);
+      const { container } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       // Should have main content area
       const main = container.querySelector('main');
@@ -581,7 +613,7 @@ describe('GraphCanvas Accessibility Tests', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const main = screen.getByRole('main');
       const navigation = screen.getByRole('navigation');

@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '../../store/index';
 import { setSelectedNodes } from '../../store/graphSlice';
+import { openContextMenu, closeContextMenu } from '../../store/uiSlice';
 import { ResponsiveLayoutProvider, useResponsiveLayout } from './ResponsiveLayoutProvider';
-import { UnifiedHeaderBar } from './UnifiedHeaderBar';
+import UnifiedHeader from '../UnifiedHeader/UnifiedHeader';
 import { NavigationPanel, ControlPanel, TrackInfoPanel, SearchPanel } from './ResponsivePanelSystem';
 import ViewTransitionLayer from './ViewTransitionLayer';
 import { WorkingD3Canvas } from '../GraphCanvas/WorkingD3Canvas';
 import { ThreeD3Canvas } from '../GraphCanvas/ThreeD3CanvasEnhanced';
+import ContextMenu from '../ContextMenu/ContextMenu';
+import Settings from '../Settings/Settings';
+import SmartSearch from '../Search/SmartSearch';
+import HUD from '../HUD/HUD';
+import KeyboardNavigation from '../Accessibility/KeyboardNavigation';
+import ScreenReaderOptimization from '../Accessibility/ScreenReaderOptimization';
 import classNames from 'classnames';
 
 interface ResponsiveInterfaceProps {
@@ -223,20 +230,22 @@ const ResponsiveInterfaceContent: React.FC<ResponsiveInterfaceProps> = ({ classN
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNodes, panels, openPanel, closePanel]);
 
-  // Calculate layout adjustments for open panels
   const layoutAdjustments = useMemo(() => {
     let rightOffset = 0;
     let leftOffset = 0;
-    let topOffset = isMobile ? 56 : 64; // Header height
-    let bottomOffset = 0;
+    let topOffset = 0;
+    const bottomOffset = 0;
 
     if (isDesktop) {
+      topOffset = 64; // TopNav height
       if (panels.trackInfo.isOpen && panels.trackInfo.position === 'right') {
         rightOffset = 350; // Panel width
       }
       if (panels.navigation.isOpen && panels.navigation.position === 'left') {
         leftOffset = 320; // Panel width
       }
+    } else if (isTablet) {
+      leftOffset = 80; // SideNav width
     }
 
     if (panels.controls.isOpen && panels.controls.position === 'top') {
@@ -244,7 +253,7 @@ const ResponsiveInterfaceContent: React.FC<ResponsiveInterfaceProps> = ({ classN
     }
 
     return { rightOffset, leftOffset, topOffset, bottomOffset };
-  }, [panels, isMobile, isDesktop]);
+  }, [panels, isMobile, isTablet, isDesktop]);
 
   return (
     <div
@@ -255,10 +264,7 @@ const ResponsiveInterfaceContent: React.FC<ResponsiveInterfaceProps> = ({ classN
       )}
     >
       {/* Unified Header */}
-      <UnifiedHeaderBar
-        is3DMode={is3DMode}
-        onViewModeToggle={handleViewModeToggle}
-      />
+      <UnifiedHeader />
 
       {/* Main Graph Viewport */}
       <div
@@ -329,51 +335,7 @@ const ResponsiveInterfaceContent: React.FC<ResponsiveInterfaceProps> = ({ classN
       </NavigationPanel>
 
       <ControlPanel>
-        <div className="p-4 space-y-4">
-          <div>
-            <label className="block text-gray-300 text-sm mb-2">
-              Distance Power: {currentSettings.distancePower}
-            </label>
-            <input
-              type="range"
-              min="-5"
-              max="5"
-              step="0.1"
-              value={currentSettings.distancePower}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (is3DMode) {
-                  setSettings3D(prev => ({ ...prev, distancePower: value }));
-                } else {
-                  setSettings2D(prev => ({ ...prev, distancePower: value }));
-                }
-              }}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-300 text-sm mb-2">
-              Node Size: {currentSettings.nodeSize}px
-            </label>
-            <input
-              type="range"
-              min="2"
-              max="24"
-              step="0.5"
-              value={currentSettings.nodeSize}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (is3DMode) {
-                  setSettings3D(prev => ({ ...prev, nodeSize: value }));
-                } else {
-                  setSettings2D(prev => ({ ...prev, nodeSize: value }));
-                }
-              }}
-              className="w-full"
-            />
-          </div>
-        </div>
+        <Settings />
       </ControlPanel>
 
       <TrackInfoPanel>
@@ -398,17 +360,18 @@ const ResponsiveInterfaceContent: React.FC<ResponsiveInterfaceProps> = ({ classN
       </TrackInfoPanel>
 
       <SearchPanel>
-        <div className="p-4">
-          <input
-            type="text"
-            placeholder="Search artists, tracks, venues..."
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"
-          />
-          <p className="text-gray-400 text-sm mt-2">
-            Start typing to search the graph...
-          </p>
-        </div>
+        <SmartSearch />
       </SearchPanel>
+
+      {/* HUD for performance metrics */}
+      <HUD />
+
+      {/* Accessibility Components */}
+      <KeyboardNavigation />
+      <ScreenReaderOptimization />
+
+      {/* Context Menu */}
+      <ContextMenu />
     </div>
   );
 };

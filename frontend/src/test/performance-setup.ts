@@ -2,8 +2,8 @@ import { beforeEach, afterEach, vi } from 'vitest';
 
 // Performance testing setup
 let performanceEntries: PerformanceEntry[] = [];
-let performanceMarks: Map<string, number> = new Map();
-let performanceMeasures: Map<string, { start: number; duration: number }> = new Map();
+const performanceMarks: Map<string, number> = new Map();
+const performanceMeasures: Map<string, { start: number; duration: number }> = new Map();
 
 beforeEach(() => {
   // Reset performance tracking
@@ -256,7 +256,7 @@ export const simulateSlowDevice = () => {
   
   // Simulate slower performance.now()
   const originalNow = performance.now;
-  let slowdownFactor = 1.5;
+  const slowdownFactor = 1.5;
   performance.now = vi.fn(() => originalNow() * slowdownFactor);
 };
 

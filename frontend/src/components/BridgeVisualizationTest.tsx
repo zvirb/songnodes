@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   generateTwoClusterBridgeScenario,
   generateMultiClusterBridgeScenario,
@@ -6,6 +6,31 @@ import {
   convertToVisualizationFormat
 } from '../utils/bridgeTestDataGenerator';
 import { BridgeDetectionAnalyzer } from '../utils/bridgeDetectionMetrics';
+
+interface NodeData {
+  id: string;
+  cluster: string;
+  label: string;
+  x?: number;
+  y?: number;
+}
+
+interface LinkData {
+  source: string;
+  target: string;
+  type: string;
+  similarity: number;
+  isBridge?: boolean;
+}
+
+interface TestData {
+  nodes: NodeData[];
+  links: LinkData[];
+  metadata: {
+    bridgeNodes: string[];
+    clusters: string[];
+  };
+}
 
 /**
  * Test Component for Bridge Connection Visualization
@@ -16,9 +41,9 @@ import { BridgeDetectionAnalyzer } from '../utils/bridgeDetectionMetrics';
 export const BridgeVisualizationTest: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<string>('twoCluster');
   const [metrics, setMetrics] = useState<string>('');
-  const [testData, setTestData] = useState<any>(null);
+  const [testData, setTestData] = useState<TestData | null>(null);
 
-  const scenarios = {
+  const scenarios = useMemo(() => ({
     twoCluster: {
       name: 'Two Clusters with Bridges',
       description: 'Simple scenario with two genre clusters connected by crossover tracks',
@@ -34,13 +59,9 @@ export const BridgeVisualizationTest: React.FC = () => {
       description: 'Linear arrangement of clusters testing bridge elasticity',
       generator: generateChainedClustersScenario
     }
-  };
+  }), []);
 
-  useEffect(() => {
-    runScenarioTest();
-  }, [selectedScenario]);
-
-  const runScenarioTest = () => {
+  const runScenarioTest = useCallback(() => {
     const scenario = scenarios[selectedScenario];
     const data = scenario.generator();
     setTestData(data);
@@ -53,7 +74,7 @@ export const BridgeVisualizationTest: React.FC = () => {
     const detectedBridges = new Set<string>();
     const expectedBridges = new Set<string>();
 
-    data.links.forEach((link: any) => {
+    data.links.forEach((link: LinkData) => {
       const edgeId = `${link.source}-${link.target}`;
       if (link.type === 'bridge') {
         expectedBridges.add(edgeId);
@@ -67,12 +88,16 @@ export const BridgeVisualizationTest: React.FC = () => {
     analyzer.endDetection();
     analyzer.analyzeDetectionAccuracy(detectedBridges, expectedBridges, data.links);
     analyzer.analyzeClusterStructure(
-      data.nodes.map((n: any) => ({ ...n, x: Math.random() * 1000, y: Math.random() * 1000 })),
-      data.links.map((l: any) => ({ ...l, isBridge: l.type === 'bridge' }))
+      data.nodes.map((n: NodeData) => ({ ...n, x: Math.random() * 1000, y: Math.random() * 1000 })),
+      data.links.map((l: LinkData) => ({ ...l, isBridge: l.type === 'bridge' }))
     );
 
     setMetrics(analyzer.generateReport());
-  };
+  }, [selectedScenario, scenarios]);
+
+  useEffect(() => {
+    runScenarioTest();
+  }, [selectedScenario, runScenarioTest]);
 
   const exportTestData = () => {
     if (!testData) return;
@@ -149,13 +174,13 @@ export const BridgeVisualizationTest: React.FC = () => {
               <h3 className="text-lg font-semibold mb-2">Cluster Composition</h3>
               <div className="space-y-2">
                 {testData.metadata.clusters.map((cluster: string) => {
-                  const clusterNodes = testData.nodes.filter((n: any) => n.cluster === cluster);
+                  const clusterNodes = testData.nodes.filter((n: NodeData) => n.cluster === cluster);
                   return (
                     <div key={cluster} className="flex items-center gap-4 bg-gray-700 rounded p-2">
                       <span className="font-medium">Cluster {cluster}:</span>
                       <span className="text-gray-400">{clusterNodes.length} nodes</span>
                       <div className="flex gap-1">
-                        {clusterNodes.slice(0, 3).map((node: any) => (
+                        {clusterNodes.slice(0, 3).map((node: NodeData) => (
                           <span key={node.id} className="text-xs bg-gray-600 px-2 py-1 rounded">
                             {node.label.split(' ')[0]}
                           </span>
@@ -175,10 +200,10 @@ export const BridgeVisualizationTest: React.FC = () => {
               <h3 className="text-lg font-semibold mb-2">Bridge Connections</h3>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {testData.links
-                  .filter((link: any) => link.type === 'bridge')
-                  .map((link: any, idx: number) => {
-                    const sourceNode = testData.nodes.find((n: any) => n.id === link.source);
-                    const targetNode = testData.nodes.find((n: any) => n.id === link.target);
+                  .filter((link: LinkData) => link.type === 'bridge')
+                  .map((link: LinkData, idx: number) => {
+                    const sourceNode = testData.nodes.find((n: NodeData) => n.id === link.source);
+                    const targetNode = testData.nodes.find((n: NodeData) => n.id === link.target);
                     return (
                       <div key={idx} className="flex items-center gap-2 text-sm bg-gray-700 rounded p-1">
                         <span className="text-purple-400">→</span>

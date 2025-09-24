@@ -41,6 +41,12 @@ interface UIState {
   // Layout and panels
   layout: LayoutConfig;
   theme: Theme;
+  panels: {
+    search: boolean;
+    controls: boolean;
+    trackInfo: boolean;
+    navigation: boolean;
+  };
   
   // Interaction states
   selection: SelectionState;
@@ -51,7 +57,15 @@ interface UIState {
   loading: LoadingState;
   errors: ErrorState[];
   toasts: Toast[];
-  contextMenu: ContextMenu;
+  contextMenu: {
+    isOpen: boolean;
+    x: number;
+    y: number;
+    items: {
+      label: string;
+      action: () => void;
+    }[];
+  };
   
   // Animation
   animation: AnimationState;
@@ -72,6 +86,7 @@ interface UIState {
   showLabels: boolean;
   showPerformanceOverlay: boolean;
   showDebugInfo: boolean;
+  is3DMode: boolean;
 }
 
 // Default theme
@@ -133,6 +148,13 @@ const initialState: UIState = {
   
   theme: defaultTheme,
   
+  panels: {
+    search: false,
+    controls: false,
+    trackInfo: false,
+    navigation: false,
+  },
+
   selection: {
     mode: 'single',
     nodes: [],
@@ -217,12 +239,34 @@ const initialState: UIState = {
   showLabels: true,
   showPerformanceOverlay: false,
   showDebugInfo: false,
+  is3DMode: false,
 };
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
+    toggle3DMode: (state) => {
+      state.is3DMode = !state.is3DMode;
+    },
+    openPanel: (state, action: PayloadAction<keyof UIState['panels']>) => {
+      state.panels[action.payload] = true;
+    },
+    closePanel: (state, action: PayloadAction<keyof UIState['panels']>) => {
+      state.panels[action.payload] = false;
+    },
+    toggleHighContrast: (state) => {
+      state.accessibility.highContrast = !state.accessibility.highContrast;
+    },
+    toggleReducedMotion: (state) => {
+      state.accessibility.reducedMotion = !state.accessibility.reducedMotion;
+    },
+    openContextMenu: (state, action: PayloadAction<Omit<UIState['contextMenu'], 'isOpen'>>) => {
+      state.contextMenu = { ...action.payload, isOpen: true };
+    },
+    closeContextMenu: (state) => {
+      state.contextMenu.isOpen = false;
+    },
     // Viewport actions
     updateViewport: (state, action: PayloadAction<Partial<Viewport>>) => {
       state.viewport = { ...state.viewport, ...action.payload };
@@ -405,15 +449,6 @@ const uiSlice = createSlice({
       state.toasts = [];
     },
     
-    // Context menu actions
-    openContextMenu: (state, action: PayloadAction<Omit<ContextMenu, 'isOpen'>>) => {
-      state.contextMenu = { ...action.payload, isOpen: true };
-    },
-    
-    closeContextMenu: (state) => {
-      state.contextMenu.isOpen = false;
-    },
-    
     // Animation actions
     setLayoutTransition: (state, action: PayloadAction<Partial<AnimationState['layoutTransition']>>) => {
       state.animation.layoutTransition = {
@@ -485,6 +520,13 @@ const uiSlice = createSlice({
 });
 
 export const {
+  toggle3DMode,
+  openPanel,
+  closePanel,
+  toggleHighContrast,
+  toggleReducedMotion,
+  openContextMenu,
+  closeContextMenu,
   updateViewport,
   setViewportSize,
   zoomTo,
@@ -514,8 +556,6 @@ export const {
   addToast,
   removeToast,
   clearToasts,
-  openContextMenu,
-  closeContextMenu,
   setLayoutTransition,
   setViewportTransition,
   setGlobalAnimationsEnabled,

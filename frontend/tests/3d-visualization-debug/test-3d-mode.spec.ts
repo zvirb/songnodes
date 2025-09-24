@@ -148,7 +148,7 @@ test.describe('3D Mode Testing', () => {
     const webglCanvas = await page.evaluate(() => {
       const canvases = document.querySelectorAll('canvas');
       let webglCanvases = 0;
-      let totalCanvases = canvases.length;
+      const totalCanvases = canvases.length;
 
       for (const canvas of canvases) {
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');

@@ -291,7 +291,7 @@ test.describe('Graph Visualization Improvements Verification', () => {
       verificationResults.statistics.totalLabelGroups = groupCount;
 
       const multiLineDetails: string[] = [];
-      let multiLineImplemented = groupCount > 0;
+      const multiLineImplemented = groupCount > 0;
 
       for (let i = 0; i < Math.min(5, groupCount); i++) {
         const textsInGroup = labelGroups.nth(i).locator('text');

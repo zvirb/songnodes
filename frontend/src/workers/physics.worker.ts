@@ -170,7 +170,7 @@ export class QuadTreeNode {
     }
 
     // Otherwise, recursively calculate forces from children
-    let totalForce: ForceResult = { fx: 0, fy: 0 };
+    const totalForce: ForceResult = { fx: 0, fy: 0 };
 
     if (this.northwest) {
       const force = this.northwest.calculateForce(point, theta);

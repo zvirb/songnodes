@@ -15,13 +15,12 @@ rule_files:
 
 # Scrape configuration
 scrape_configs:
-  # PostgreSQL metrics
+  # PostgreSQL metrics via the exporter
   - job_name: 'postgres'
     static_configs:
-      - targets: ['postgres:5432']
+      - targets: ['postgres-exporter:9187']
     scrape_interval: 30s
-    metrics_path: /metrics
-    
+
   # PgBouncer connection pool metrics
   - job_name: 'pgbouncer'
     static_configs:
@@ -29,7 +28,7 @@ scrape_configs:
     scrape_interval: 15s
     metrics_path: /metrics
 
-  # Application services
+  # Application services (scraping /health as a temporary fix)
   - job_name: 'api-gateway'
     static_configs:
       - targets: ['api-gateway:8080']
@@ -50,13 +49,13 @@ scrape_configs:
 
   - job_name: 'data-transformer'
     static_configs:
-      - targets: ['data-transformer:8020']
+      - targets: ['data-transformer:8002'] # Corrected port
     scrape_interval: 30s
     metrics_path: /metrics
 
   - job_name: 'data-validator'
     static_configs:
-      - targets: ['data-validator:8022']
+      - targets: ['data-validator:8003'] # Corrected port
     scrape_interval: 30s
     metrics_path: /metrics
 
@@ -66,42 +65,28 @@ scrape_configs:
     scrape_interval: 60s
     metrics_path: /metrics
 
-  # Graph Visualization API - high-frequency monitoring for performance targets
   - job_name: 'graph-visualization-api'
     static_configs:
       - targets: ['graph-visualization-api:8084']
-    scrape_interval: 10s  # More frequent for performance monitoring
+    scrape_interval: 10s
     metrics_path: /metrics
-    scrape_timeout: 5s
 
-  # Enhanced Visualization Service - real-time monitoring for WebSocket and visualization metrics
   - job_name: 'enhanced-visualization-service'
     static_configs:
       - targets: ['enhanced-visualization-service:8085']
-    scrape_interval: 10s  # High frequency for real-time metrics
+    scrape_interval: 10s
     metrics_path: /metrics
-    scrape_timeout: 5s
-    metric_relabel_configs:
-      - source_labels: [__name__]
-        regex: 'enhanced_viz_.*'
-        target_label: service
-        replacement: 'enhanced-visualization-service'
-      - source_labels: [__name__]
-        regex: '(websocket_.*|visualization_.*|graph_.*|memory_.*|event_loop_.*)'
-        target_label: category
-        replacement: 'realtime_metrics'
 
-  # Scraping services
   - job_name: 'scraper-orchestrator'
     static_configs:
       - targets: ['scraper-orchestrator:8001']
     scrape_interval: 30s
     metrics_path: /metrics
 
-  # Redis metrics
+  # Redis metrics via the exporter
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['redis-exporter:9121']
     scrape_interval: 30s
 
   # RabbitMQ metrics
