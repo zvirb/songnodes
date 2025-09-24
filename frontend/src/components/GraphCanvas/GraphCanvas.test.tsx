@@ -49,6 +49,7 @@ const createTestStore = (initialState: Partial<RootState> = {}) => {
         ...(initialState.settings || {}),
       },
     } as RootState,
+  });
 
 const renderWithProvider = (component: React.ReactElement, store: ReturnType<typeof createTestStore>) => {
   return render(<Provider store={store}>{component}</Provider>);
