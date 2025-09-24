@@ -4,32 +4,18 @@ import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { WorkingD3Canvas as GraphCanvas } from './WorkingD3Canvas';
-import { createMockGraphData, createMockNode, createMockEdge } from '../../test/setup';
+import { createMockGraphData, createMockNode } from '../../test/setup';
 import graphSlice from '../../store/graphSlice';
 import uiSlice from '../../store/uiSlice';
 import settingsSlice from '../../store/settingsSlice';
+import { RootState } from '../../store';
 
-// Mock the WebGL renderer
-vi.mock('./WebGLRenderer', () => ({
-  WebGLRenderer: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn(),
-    render: vi.fn(),
-    updateNodes: vi.fn(),
-    updateEdges: vi.fn(),
-    setCamera: vi.fn(),
-    cleanup: vi.fn(),
-    isInitialized: true,
-  })),
-}));
-
-// Mock D3 - WorkingD3Canvas uses D3 directly, not a separate simulation module
-
-const createTestStore = (initialState = {}) => {
+const createTestStore = (initialState: Partial<RootState> = {}) => {
   return configureStore({
     reducer: {
-      graph: graphSlice.reducer,
-      ui: uiSlice.reducer,
-      settings: settingsSlice.reducer,
+      graph: graphSlice,
+      ui: uiSlice,
+      settings: settingsSlice,
     },
     preloadedState: {
       graph: {
@@ -39,15 +25,15 @@ const createTestStore = (initialState = {}) => {
         hoveredNode: null,
         isLoading: false,
         error: null,
-        metadata: {},
-        ...initialState.graph,
+
+        ...(initialState.graph || {}),
       },
       ui: {
         selectedPanel: null,
         isFullscreen: false,
         zoom: 1,
         pan: { x: 0, y: 0 },
-        ...initialState.ui,
+        ...(initialState.ui || {}),
       },
       settings: {
         performance: {
@@ -60,23 +46,21 @@ const createTestStore = (initialState = {}) => {
           enableKeyboardNavigation: true,
           highContrast: false,
         },
-        ...initialState.settings,
+        ...(initialState.settings || {}),
       },
-    },
-  });
-};
+    } as RootState,
 
-const renderWithProvider = (component: React.ReactElement, store = createTestStore()) => {
+const renderWithProvider = (component: React.ReactElement, store: ReturnType<typeof createTestStore>) => {
   return render(<Provider store={store}>{component}</Provider>);
 };
 
+const user = userEvent.setup();
+
 describe('GraphCanvas Component', () => {
   let mockGraphData: ReturnType<typeof createMockGraphData>;
-  let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
     mockGraphData = createMockGraphData(5, 4);
-    user = userEvent.setup();
     
     // Mock getBoundingClientRect for canvas
     Element.prototype.getBoundingClientRect = vi.fn(() => ({
@@ -103,7 +87,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={800} height={600} />, store);
 
       const canvas = screen.getByRole('img', { name: /graph visualization/i });
       expect(canvas).toBeInTheDocument();
@@ -116,7 +100,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toHaveAttribute('aria-label');
@@ -128,7 +112,7 @@ describe('GraphCanvas Component', () => {
         graph: { isLoading: true, nodes: [], edges: [] },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
@@ -142,7 +126,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
     });
@@ -152,7 +136,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: [], edges: [] },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       expect(screen.getByText(/no data to display/i)).toBeInTheDocument();
     });
@@ -164,7 +148,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -180,7 +164,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -196,7 +180,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -225,7 +209,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -251,7 +235,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       await waitFor(() => {
         const canvas = screen.getByRole('img');
@@ -270,7 +254,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toBeInTheDocument();
@@ -284,7 +268,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -304,7 +288,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -319,7 +303,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       
@@ -337,7 +321,7 @@ describe('GraphCanvas Component', () => {
         ui: { zoom: 10 }, // Very high zoom
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toBeInTheDocument();
@@ -353,7 +337,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       // WebGL renderer should be initialized
       expect(screen.getByRole('img')).toBeInTheDocument();
@@ -375,7 +359,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       expect(screen.getByRole('img')).toBeInTheDocument();
     });
@@ -387,14 +371,14 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: [], edges: [] },
       });
 
-      const { rerender } = renderWithProvider(<GraphCanvas />, store);
+      const { rerender } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       // Update store with new data
       const updatedStore = createTestStore({
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      rerender(<Provider store={updatedStore}><GraphCanvas /></Provider>);
+      rerender(<Provider store={updatedStore}><GraphCanvas width={1200} height={800} /></Provider>);
 
       await waitFor(() => {
         const announcement = screen.getByLabelText(/graph updated/i);
@@ -411,7 +395,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       canvas.focus();
@@ -428,7 +412,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toHaveClass('high-contrast');
@@ -448,7 +432,7 @@ describe('GraphCanvas Component', () => {
         },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       expect(screen.getByText(/rendering error/i)).toBeInTheDocument();
       
@@ -460,7 +444,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img') as HTMLCanvasElement;
       
@@ -484,7 +468,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: mockGraphData.nodes, edges: mockGraphData.edges },
       });
 
-      const { unmount } = renderWithProvider(<GraphCanvas />, store);
+      const { unmount } = renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       unmount();
 
@@ -498,7 +482,7 @@ describe('GraphCanvas Component', () => {
         graph: { nodes: largeDataset.nodes, edges: largeDataset.edges },
       });
 
-      renderWithProvider(<GraphCanvas />, store);
+      renderWithProvider(<GraphCanvas width={1200} height={800} />, store);
 
       const canvas = screen.getByRole('img');
       expect(canvas).toBeInTheDocument();

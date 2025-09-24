@@ -39,6 +39,8 @@ typing_extensions==4.14.1
 tzdata==2025.2
 tzlocal==5.3.1
 uvicorn==0.24.0
+asyncpg==0.29.0
+SQLAlchemy==2.0.23
 uvloop==0.21.0
 vine==5.1.0
 watchfiles==1.1.0

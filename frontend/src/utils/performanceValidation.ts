@@ -151,7 +151,7 @@ export class PerformanceValidator {
     }));
 
     const startTime = performance.now();
-    let violationsBefore = this.violationCount;
+    const violationsBefore = this.violationCount;
 
     // Process messages and monitor violations
     for (const message of heavyMessages) {

@@ -1,146 +1,195 @@
 {
-  "dashboard": {
-    "id": null,
-    "uid": "minimal-viz",
-    "title": "Enhanced Visualization Service - Basic Metrics",
-    "tags": ["visualization", "minimal"],
-    "timezone": "browser",
-    "schemaVersion": 30,
-    "version": 1,
-    "refresh": "10s",
-    "panels": [
-      {
-        "id": 1,
-        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
-        "type": "stat",
-        "title": "Service Health",
-        "targets": [
-          {
-            "expr": "enhanced_viz_health{service=\"enhanced-visualization-service\"}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "mappings": [
-              {"type": "value", "value": "1", "text": "Healthy"},
-              {"type": "value", "value": "0", "text": "Unhealthy"}
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "red", "value": null},
-                {"color": "green", "value": 1}
-              ]
+  "id": null,
+  "uid": "minimal-viz",
+  "title": "Enhanced Visualization Service - Basic Metrics",
+  "tags": [
+    "visualization",
+    "minimal"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 30,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "type": "stat",
+      "title": "Service Health",
+      "targets": [
+        {
+          "expr": "enhanced_viz_health{service=\"enhanced-visualization-service\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "value": "1",
+              "text": "Healthy"
             },
-            "unit": "none"
-          }
-        }
-      },
-      {
-        "id": 2,
-        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
-        "type": "stat",
-        "title": "Uptime",
-        "targets": [
-          {
-            "expr": "enhanced_viz_uptime",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "s",
-            "decimals": 0
-          }
-        }
-      },
-      {
-        "id": 3,
-        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
-        "type": "gauge",
-        "title": "Memory Usage (MB)",
-        "targets": [
-          {
-            "expr": "enhanced_viz_memory_usage{type=\"heapUsed\"} / 1024 / 1024",
-            "legendFormat": "Heap Used",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "decmbytes",
-            "min": 0,
-            "max": 500,
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 200},
-                {"color": "red", "value": 400}
-              ]
+            {
+              "type": "value",
+              "value": "0",
+              "text": "Unhealthy"
             }
-          }
-        }
-      },
-      {
-        "id": 4,
-        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 8},
-        "type": "timeseries",
-        "title": "Memory Usage Over Time",
-        "targets": [
-          {
-            "expr": "enhanced_viz_memory_usage{type=\"rss\"} / 1024 / 1024",
-            "legendFormat": "RSS Memory",
-            "refId": "A"
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
           },
-          {
-            "expr": "enhanced_viz_memory_usage{type=\"heapUsed\"} / 1024 / 1024",
-            "legendFormat": "Heap Used",
-            "refId": "B"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "decmbytes",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10,
-              "showPoints": "never"
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
+          "unit": "none"
         }
+      }
+    },
+    {
+      "id": 2,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
       },
-      {
-        "id": 5,
-        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 8},
-        "type": "stat",
-        "title": "System Metrics",
-        "targets": [
-          {
-            "expr": "node_memory_MemAvailable_bytes / 1024 / 1024 / 1024",
-            "legendFormat": "Available Memory (GB)",
-            "refId": "A"
-          },
-          {
-            "expr": "rate(node_cpu_seconds_total{mode=\"user\"}[5m]) * 100",
-            "legendFormat": "CPU Usage %",
-            "refId": "B"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "none",
-            "decimals": 2
+      "type": "stat",
+      "title": "Uptime",
+      "targets": [
+        {
+          "expr": "enhanced_viz_uptime",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0
+        }
+      }
+    },
+    {
+      "id": 3,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "type": "gauge",
+      "title": "Memory Usage (MB)",
+      "targets": [
+        {
+          "expr": "enhanced_viz_memory_usage{type=\"heapUsed\"} / 1024 / 1024",
+          "legendFormat": "Heap Used",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes",
+          "min": 0,
+          "max": 500,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "red",
+                "value": 400
+              }
+            ]
           }
         }
       }
-    ]
-  }
+    },
+    {
+      "id": 4,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "type": "timeseries",
+      "title": "Memory Usage Over Time",
+      "targets": [
+        {
+          "expr": "enhanced_viz_memory_usage{type=\"rss\"} / 1024 / 1024",
+          "legendFormat": "RSS Memory",
+          "refId": "A"
+        },
+        {
+          "expr": "enhanced_viz_memory_usage{type=\"heapUsed\"} / 1024 / 1024",
+          "legendFormat": "Heap Used",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "type": "stat",
+      "title": "System Metrics",
+      "targets": [
+        {
+          "expr": "node_memory_MemAvailable_bytes / 1024 / 1024 / 1024",
+          "legendFormat": "Available Memory (GB)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_cpu_seconds_total{mode=\"user\"}[5m]) * 100",
+          "legendFormat": "CPU Usage %",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2
+        }
+      }
+    }
+  ]
 }

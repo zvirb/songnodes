@@ -81,18 +81,22 @@ beforeEach(() => {
     configurable: true,
   });
 
-  // Enhanced focus method mock
-  HTMLElement.prototype.focus = vi.fn().mockImplementation(function(this: HTMLElement) {
-    focusedElement = this;
-    this.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+  Object.defineProperty(HTMLElement.prototype, 'focus', {
+    value: vi.fn(function(this: HTMLElement) {
+      focusedElement = this;
+      this.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+    }),
+    configurable: true,
   });
 
-  // Enhanced blur method mock
-  HTMLElement.prototype.blur = vi.fn().mockImplementation(function(this: HTMLElement) {
-    if (focusedElement === this) {
-      focusedElement = null;
-    }
-    this.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+  Object.defineProperty(HTMLElement.prototype, 'blur', {
+    value: vi.fn(function(this: HTMLElement) {
+      if (focusedElement === this) {
+        focusedElement = null;
+      }
+      this.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+    }),
+    configurable: true,
   });
 
   // Mock tabindex behavior

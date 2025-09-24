@@ -626,6 +626,24 @@ async def scheduled_scraping():
             task_id = task_queue.add_task(task)
             logger.info(f"Scheduled task {task_id} for {schedule.scraper}")
 
+from sqlalchemy.ext.asyncio import create_async_engine
+
+# Database connection
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@postgres:5432/musicdb")
+engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
+
+async def refresh_database_views():
+    """Periodically refresh materialized views in the database."""
+    logger.info("Starting database materialized view refresh...")
+    try:
+        async with engine.connect() as conn:
+            await conn.execute("SELECT refresh_performance_views();")
+            await conn.execute("SELECT refresh_graph_views();")
+            await conn.commit()
+        logger.info("Successfully refreshed database materialized views.")
+    except Exception as e:
+        logger.error(f"Error refreshing database views: {e}")
+
 # =====================
 # API Endpoints
 # =====================
@@ -642,6 +660,12 @@ async def startup_event():
         scheduled_scraping,
         CronTrigger(hour=2, minute=0),  # Daily at 2 AM
         id="daily_scraping"
+    )
+    # Add the new database refresh job
+    scheduler.add_job(
+        refresh_database_views,
+        CronTrigger(minute=0),  # Every hour at the start of the hour
+        id="hourly_db_refresh"
     )
     scheduler.start()
     

@@ -24,6 +24,7 @@ interface ThreeD3CanvasProps {
   edgeLabelSize?: number;
   onNodeClick?: (node: any) => void;
   onEdgeClick?: (edge: any) => void;
+  onContextMenu?: (e: React.MouseEvent, item: any) => void;
 }
 
 type LayoutMode = 'sphere' | 'force';
@@ -41,6 +42,41 @@ interface SimulationNode {
   fz?: number | null;
 }
 
+// Edge culling types
+interface ViewportBounds {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  near: number;
+  far: number;
+}
+
+interface CullingNode {
+  id: string;
+  x: number;
+  y: number;
+  z?: number;
+  visible: boolean;
+}
+
+interface CullingEdge {
+  id?: string;
+  source: string;
+  target: string;
+  weight?: number;
+  metadata?: any;
+}
+
+// Stub functions for missing imports
+const cullEdges = (params: any) => {
+  // Simple stub that returns all edges as visible
+  return {
+    visibleEdges: params.edges || [],
+    hiddenEdges: []
+  };
+};
+
 /**
  * Enhanced 3D graph visualization with multiple layout modes (NO PLANE VERSION)
  * - Sphere Layout: Organized spherical distribution
@@ -56,7 +92,8 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   nodeSize = 12,
   edgeLabelSize = 12,
   onNodeClick,
-  onEdgeClick
+  onEdgeClick,
+  onContextMenu
 }) => {
   console.log('🚀 ThreeD3CanvasEnhanced loaded - NO GRID PLANE VERSION');
   const mountRef = useRef<HTMLDivElement>(null);
@@ -70,7 +107,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
   const nodeObjectsRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const edgeObjectsRef = useRef<Map<string, THREE.Line>>(new Map());
   const edgeLabelObjectsRef = useRef<Map<string, THREE.Sprite>>(new Map());
-  
+  const simulationRef = useRef<ForceSimulation3D<SimulationNode, any>>();
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -369,6 +406,23 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     // ... (rest of the createGraph function, without the simulation part)
 
   }, [nodes, edges, start]);
+
+  // Calculate force-directed positions
+  const calculateForcePositions = useCallback((distancePower: number, relationshipPower: number, nodesToUse: any[]) => {
+    const simulation = forceSimulation3d(nodesToUse as SimulationNode[])
+      .force('link', forceLink3d(edges).distance(100))
+      .force('charge', forceManyBody3d().strength(-300))
+      .force('center', forceCenter3d(0, 0, 0))
+      .force('collision', forceCollide3d(10))
+      .stop();
+
+    // Run simulation synchronously
+    for (let i = 0; i < 300; i++) {
+      simulation.tick();
+    }
+
+    return simulation.nodes();
+  }, [edges]);
 
   // Calculate sphere positions
   const calculateSpherePositions = useCallback((nodesToUse: any[] = nodes) => {
@@ -911,6 +965,28 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
     // Prevent context menu on right click
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
+      if (onContextMenu) {
+        const rect = mountRef.current.getBoundingClientRect();
+        mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseRef.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycastRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+        const instancedMesh = sceneRef.current?.children.find(c => c.type === 'InstancedMesh') as THREE.InstancedMesh;
+        if (!instancedMesh) return;
+
+        const intersects = raycastRef.current.intersectObject(instancedMesh);
+
+        if (intersects.length > 0) {
+          const instanceId = intersects[0].instanceId;
+          if (instanceId !== undefined) {
+            const nodeId = Array.from(nodeObjectsRef.current.keys())[instanceId];
+            const nodeData = nodes.find(n => n.id === nodeId);
+            if (nodeData) {
+              onContextMenu(e as unknown as React.MouseEvent, nodeData);
+            }
+          }
+        }
+      }
       handleMouseClick(e);
     };
 
@@ -922,7 +998,7 @@ export const ThreeD3Canvas: React.FC<ThreeD3CanvasProps> = ({
       mount.removeEventListener('click', handleMouseClick);
       mount.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [isInitialized, handleMouseMove, handleMouseClick]);
+  }, [isInitialized, handleMouseMove, handleMouseClick, onContextMenu]);
 
   // Cleanup
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import classNames from 'classnames';
 import { useAppDispatch, useAppSelector } from '@store/index';
 import { setStartNode, setEndNode, addWaypoint } from '@store/pathfindingSlice';
@@ -27,20 +27,17 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { nodes } = useAppSelector(state => state.graph);
-  const { startNode, endNode, waypoints } = useAppSelector(state => state.pathfinding);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
 
   const node = nodes.find(n => n.id === nodeId);
 
-  if (!isOpen || !nodeId || !node) return null;
-
-  const menuItems: RadialMenuItem[] = [
+  const menuItems: RadialMenuItem[] = useMemo(() => [
     {
       id: 'set-start',
       label: 'Set Start',
       icon: '🟢',
       action: () => {
-        dispatch(setStartNode(nodeId));
+        if (nodeId) dispatch(setStartNode(nodeId));
         onClose();
       },
       color: 'bg-green-600',
@@ -50,7 +47,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
       label: 'Set End',
       icon: '🔴',
       action: () => {
-        dispatch(setEndNode(nodeId));
+        if (nodeId) dispatch(setEndNode(nodeId));
         onClose();
       },
       color: 'bg-red-600',
@@ -60,7 +57,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
       label: 'Add Waypoint',
       icon: '🟠',
       action: () => {
-        dispatch(addWaypoint(nodeId));
+        if (nodeId) dispatch(addWaypoint(nodeId));
         onClose();
       },
       color: 'bg-orange-600',
@@ -70,7 +67,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
       label: 'View Details',
       icon: '📊',
       action: () => {
-        dispatch(setSelectedNodes([nodeId]));
+        if (nodeId) dispatch(setSelectedNodes([nodeId]));
         onClose();
       },
       color: 'bg-blue-600',
@@ -97,7 +94,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
       },
       color: 'bg-gray-600',
     },
-  ];
+  ], [nodeId, node, dispatch, onClose]);
 
   // Calculate item positions in a circle
   const radius = 80;
@@ -138,6 +135,8 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, selectedItemIndex, menuItems, onClose]);
 
+  if (!isOpen || !nodeId || !node) return null;
+
   return (
     <>
       {/* Backdrop */}
@@ -161,7 +160,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
         {/* Center node info */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-xs text-gray-400 text-center max-w-[80px] truncate">
-            {node.title || (node as any).label || nodeId}
+            {node?.title || nodeId}
           </div>
         </div>
 

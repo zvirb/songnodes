@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test('Quick 3D Mode Check', async ({ page }) => {
   console.log('🔍 Quick 3D mode check...');

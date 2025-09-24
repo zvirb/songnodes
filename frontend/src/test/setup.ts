@@ -119,24 +119,71 @@ beforeAll(() => {
     return null;
   });
 
-  // Mock WebGL context
-  window.WebGLRenderingContext = vi.fn().mockImplementation(() => ({}));
-  window.WebGL2RenderingContext = vi.fn().mockImplementation(() => ({}));
+vi.mock('pixi.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  class MockApplication {
+    view: HTMLCanvasElement;
+    renderer: any;
 
-  // Mock performance API
-  Object.defineProperty(window, 'performance', {
-    writable: true,
-    value: {
-      now: vi.fn(() => Date.now()),
-      mark: vi.fn(),
-      measure: vi.fn(),
-      getEntriesByType: vi.fn(() => []),
-      getEntriesByName: vi.fn(() => []),
-      clearMarks: vi.fn(),
-      clearMeasures: vi.fn(),
-      observer: vi.fn(),
+    constructor(options: any) {
+      this.view = document.createElement('canvas');
+      this.view.setAttribute('role', 'img');
+      this.view.setAttribute('aria-label', 'Graph visualization');
+      this.renderer = {
+        destroy: vi.fn(),
+        resize: vi.fn(),
+        width: options.width,
+        height: options.height,
+      };
+    }
+
+    destroy = vi.fn();
+    resize = vi.fn();
+    stage = {
+      addChild: vi.fn(),
+      removeChild: vi.fn(),
+    };
+    ticker = {
+      add: vi.fn(),
+      remove: vi.fn(),
+    };
+  }
+  return {
+    ...actual,
+    Application: MockApplication,
+    Graphics: vi.fn().mockImplementation(() => ({
+      clear: vi.fn(),
+      beginFill: vi.fn(),
+      drawCircle: vi.fn(),
+      endFill: vi.fn(),
+      lineStyle: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      bezierCurveTo: vi.fn(),
+      closePath: vi.fn(),
+      render: vi.fn(),
+    })),
+    Container: vi.fn().mockImplementation(() => ({
+      addChild: vi.fn(),
+      removeChild: vi.fn(),
+    })),
+  };
+});
+
+  // Mock @react-spring/web's useSpring
+  vi.mock('@react-spring/web', () => ({
+    useSpring: vi.fn(() => [
+      {
+        x: { onChange: vi.fn(() => vi.fn()) },
+        y: { onChange: vi.fn(() => vi.fn()) },
+        scale: { onChange: vi.fn(() => vi.fn()) },
+      },
+      { start: vi.fn(), stop: vi.fn() },
+    ]),
+    animated: {
+      div: vi.fn(({ children }) => children),
     },
-  });
+  }));
 
   // Mock requestAnimationFrame
   global.requestAnimationFrame = vi.fn((callback) => {
@@ -164,20 +211,11 @@ beforeAll(() => {
     readyState: WebSocket.OPEN,
   }));
 
-  // Mock navigator.hardwareConcurrency
-  Object.defineProperty(navigator, 'hardwareConcurrency', {
-    writable: true,
-    value: 4,
-  });
+  // Mock URL.createObjectURL and URL.revokeObjectURL
+  global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+  global.URL.revokeObjectURL = vi.fn();
 
-  // Mock clipboard API
-  Object.defineProperty(navigator, 'clipboard', {
-    writable: true,
-    value: {
-      writeText: vi.fn().mockResolvedValue(undefined),
-      readText: vi.fn().mockResolvedValue(''),
-    },
-  });
+
 
   // Mock localStorage
   const localStorageMock = {

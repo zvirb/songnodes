@@ -75,6 +75,32 @@ const ResponsivePanel: React.FC<ResponsivePanelProps> = ({
 }) => {
   const { panels, closePanel, isMobile, isTablet, isDesktop, hasTouch } = useResponsiveLayout();
   const panelRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(350);
+
+  const isResizable = isDesktop && (position === 'left' || position === 'right');
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isResizable) return;
+
+    const startX = e.clientX;
+    const startWidth = width;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = position === 'left' ? startWidth + e.clientX - startX : startWidth - e.clientX + startX;
+      if (newWidth > 200 && newWidth < 800) {
+        setWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
 
   const panel = panels[panelType];
   const { isOpen, position, size } = panel;
@@ -159,10 +185,17 @@ const ResponsivePanel: React.FC<ResponsivePanelProps> = ({
         'shadow-2xl',
         className
       )}
+      style={isResizable ? { width: `${width}px` } : {}}
       role="dialog"
       aria-modal="true"
       aria-labelledby={`${panelType}-panel-title`}
     >
+      {isResizable && (
+        <div
+          className={`absolute top-0 ${position === 'left' ? 'right-0' : 'left-0'} w-2 h-full cursor-col-resize`}
+          onMouseDown={handleMouseDown}
+        />
+      )}
       {/* Panel Header */}
       <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 z-10 flex items-center justify-between">
         <h2

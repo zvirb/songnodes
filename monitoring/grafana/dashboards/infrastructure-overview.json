@@ -1,309 +1,310 @@
 {
-  "dashboard": {
-    "id": null,
-    "title": "MusicDB Infrastructure Overview",
-    "tags": ["infrastructure", "musicdb"],
-    "timezone": "browser",
-    "refresh": "30s",
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Service Status",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "up",
-            "legendFormat": "{{job}} - {{instance}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "mappings": [
-              {
-                "options": {
-                  "0": {
-                    "text": "DOWN",
-                    "color": "red"
-                  },
-                  "1": {
-                    "text": "UP",
-                    "color": "green"
-                  }
+  "id": null,
+  "title": "MusicDB Infrastructure Overview",
+  "tags": [
+    "infrastructure",
+    "musicdb"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Status",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up",
+          "legendFormat": "{{job}} - {{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
                 },
-                "type": "value"
-              }
-            ],
-            "thresholds": {
-              "steps": [
-                {
-                  "color": "red",
-                  "value": null
-                },
-                {
-                  "color": "green",
-                  "value": 1
+                "1": {
+                  "text": "UP",
+                  "color": "green"
                 }
-              ]
+              },
+              "type": "value"
             }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
           }
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 0
         }
       },
-      {
-        "id": 2,
-        "title": "PostgreSQL Performance",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(pg_stat_database_tup_fetched[5m])",
-            "legendFormat": "Tuples Fetched/sec"
-          },
-          {
-            "expr": "rate(pg_stat_database_tup_inserted[5m])",
-            "legendFormat": "Tuples Inserted/sec"
-          },
-          {
-            "expr": "rate(pg_stat_database_tup_updated[5m])",
-            "legendFormat": "Tuples Updated/sec"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Operations/sec",
-            "min": 0
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 8
-        }
-      },
-      {
-        "id": 3,
-        "title": "Redis Performance",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(redis_commands_processed_total[5m])",
-            "legendFormat": "Commands/sec"
-          },
-          {
-            "expr": "redis_connected_clients",
-            "legendFormat": "Connected Clients"
-          },
-          {
-            "expr": "redis_memory_used_bytes / 1024 / 1024",
-            "legendFormat": "Memory Used (MB)"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Count",
-            "min": 0
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 8
-        }
-      },
-      {
-        "id": 4,
-        "title": "API Response Times",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
-            "legendFormat": "{{job}} - 50th percentile"
-          },
-          {
-            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
-            "legendFormat": "{{job}} - 95th percentile"
-          },
-          {
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
-            "legendFormat": "{{job}} - 99th percentile"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Response Time (s)",
-            "min": 0
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 16
-        }
-      },
-      {
-        "id": 5,
-        "title": "HTTP Request Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "sum(rate(http_requests_total[5m])) by (job)",
-            "legendFormat": "{{job}} - Requests/sec"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Requests/sec",
-            "min": 0
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 24
-        }
-      },
-      {
-        "id": 6,
-        "title": "HTTP Error Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job) * 100",
-            "legendFormat": "{{job}} - Error Rate %"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Error Rate %",
-            "min": 0,
-            "max": 100
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 24
-        }
-      },
-      {
-        "id": 7,
-        "title": "Container CPU Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (name) * 100",
-            "legendFormat": "{{name}} - CPU %"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "CPU Usage %",
-            "min": 0,
-            "max": 100
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 32
-        }
-      },
-      {
-        "id": 8,
-        "title": "Container Memory Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "container_memory_usage_bytes / container_spec_memory_limit_bytes * 100",
-            "legendFormat": "{{name}} - Memory %"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Memory Usage %",
-            "min": 0,
-            "max": 100
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 32
-        }
-      },
-      {
-        "id": 9,
-        "title": "Track Processing Metrics",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(tracks_processed_total[5m])",
-            "legendFormat": "Tracks Processed/min"
-          },
-          {
-            "expr": "rate(tracks_ingested_total[5m])",
-            "legendFormat": "Tracks Ingested/min"
-          },
-          {
-            "expr": "queue_size{queue=\"track_processing\"}",
-            "legendFormat": "Processing Queue Size"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Count",
-            "min": 0
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 40
-        }
-      },
-      {
-        "id": 10,
-        "title": "Scraping Performance",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(scraper_tracks_processed_total[5m])",
-            "legendFormat": "{{scraper}} - Tracks/min"
-          },
-          {
-            "expr": "rate(scraper_errors_total[5m])",
-            "legendFormat": "{{scraper}} - Errors/min"
-          }
-        ],
-        "yAxes": [
-          {
-            "label": "Count",
-            "min": 0
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 48
-        }
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
       }
-    ]
-  }
+    },
+    {
+      "id": 2,
+      "title": "PostgreSQL Performance",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_database_tup_fetched[5m])",
+          "legendFormat": "Tuples Fetched/sec"
+        },
+        {
+          "expr": "rate(pg_stat_database_tup_inserted[5m])",
+          "legendFormat": "Tuples Inserted/sec"
+        },
+        {
+          "expr": "rate(pg_stat_database_tup_updated[5m])",
+          "legendFormat": "Tuples Updated/sec"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Operations/sec",
+          "min": 0
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      }
+    },
+    {
+      "id": 3,
+      "title": "Redis Performance",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(redis_commands_processed_total[5m])",
+          "legendFormat": "Commands/sec"
+        },
+        {
+          "expr": "redis_connected_clients",
+          "legendFormat": "Connected Clients"
+        },
+        {
+          "expr": "redis_memory_used_bytes / 1024 / 1024",
+          "legendFormat": "Memory Used (MB)"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Count",
+          "min": 0
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      }
+    },
+    {
+      "id": 4,
+      "title": "API Response Times",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
+          "legendFormat": "{{job}} - 50th percentile"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
+          "legendFormat": "{{job}} - 95th percentile"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
+          "legendFormat": "{{job}} - 99th percentile"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Response Time (s)",
+          "min": 0
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      }
+    },
+    {
+      "id": 5,
+      "title": "HTTP Request Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[5m])) by (job)",
+          "legendFormat": "{{job}} - Requests/sec"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Requests/sec",
+          "min": 0
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "id": 6,
+      "title": "HTTP Error Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job) * 100",
+          "legendFormat": "{{job}} - Error Rate %"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Error Rate %",
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      }
+    },
+    {
+      "id": 7,
+      "title": "Container CPU Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (name) * 100",
+          "legendFormat": "{{name}} - CPU %"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "CPU Usage %",
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      }
+    },
+    {
+      "id": 8,
+      "title": "Container Memory Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes / container_spec_memory_limit_bytes * 100",
+          "legendFormat": "{{name}} - Memory %"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Memory Usage %",
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      }
+    },
+    {
+      "id": 9,
+      "title": "Track Processing Metrics",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(tracks_processed_total[5m])",
+          "legendFormat": "Tracks Processed/min"
+        },
+        {
+          "expr": "rate(tracks_ingested_total[5m])",
+          "legendFormat": "Tracks Ingested/min"
+        },
+        {
+          "expr": "queue_size{queue=\"track_processing\"}",
+          "legendFormat": "Processing Queue Size"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Count",
+          "min": 0
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      }
+    },
+    {
+      "id": 10,
+      "title": "Scraping Performance",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(scraper_tracks_processed_total[5m])",
+          "legendFormat": "{{scraper}} - Tracks/min"
+        },
+        {
+          "expr": "rate(scraper_errors_total[5m])",
+          "legendFormat": "{{scraper}} - Errors/min"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Count",
+          "min": 0
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      }
+    }
+  ]
 }
