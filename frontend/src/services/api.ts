@@ -173,8 +173,8 @@ export const graphApi = {
     try {
       // Fetch nodes and edges separately from working endpoints
       const [nodesResponse, edgesResponse] = await Promise.all([
-        graphApiClient.get<{nodes: any[], total: number}>('/graph/nodes'),
-        graphApiClient.get<{edges: any[], total: number}>('/graph/edges')
+        graphApiClient.get<{nodes: any[], total: number}>('/graph/nodes?limit=500'),
+        graphApiClient.get<{edges: any[], total: number}>('/graph/edges?limit=5000')
       ]);
 
       if (nodesResponse.status === 'error' || edgesResponse.status === 'error') {
@@ -193,33 +193,43 @@ export const graphApi = {
       }
 
       // Transform data to expected format
-      const graphData: GraphData = {
-        nodes: nodesResponse.data.nodes?.map((node: any) => ({
-          id: node.id,
-          label: node.metadata?.title || node.metadata?.label || node.id,
-          type: 'track' as const,
-          x: node.position?.x || 0,
-          y: node.position?.y || 0,
-          // Map metadata to node properties for compatibility
-          title: node.metadata?.title,
-          artist: node.metadata?.artist,
-          name: node.metadata?.title,
+      const nodes = nodesResponse.data.nodes?.map((node: any) => ({
+        id: node.id,
+        label: node.metadata?.title || node.metadata?.label || node.id,
+        type: 'track' as const,
+        x: node.position?.x || 0,
+        y: node.position?.y || 0,
+        // Map metadata to node properties for compatibility
+        title: node.metadata?.title,
+        artist: node.metadata?.artist,
+        name: node.metadata?.title,
+        genre: node.metadata?.category,
+        track: {
+          id: node.track_id || node.id,
+          name: node.metadata?.title || node.metadata?.label || '',
+          artist: node.metadata?.artist || '',
           genre: node.metadata?.category,
-          track: {
-            id: node.track_id || node.id,
-            name: node.metadata?.title || node.metadata?.label || '',
-            artist: node.metadata?.artist || '',
-            genre: node.metadata?.category,
-          }
-        })) || [],
-        edges: edgesResponse.data.edges?.map((edge: any) => ({
+        }
+      })) || [];
+
+      // Create a set of loaded node IDs for efficient filtering
+      const nodeIds = new Set(nodes.map(n => n.id));
+
+      // Filter edges to only include those connecting loaded nodes
+      // The API returns edges with source/target fields
+      const edges = (edgesResponse.data.edges || [])
+        .filter((edge: any) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+        .map((edge: any) => ({
           id: edge.id,
-          source: edge.source_id,
-          target: edge.target_id,
+          source: edge.source,  // Note: API returns 'source' not 'source_id'
+          target: edge.target,  // Note: API returns 'target' not 'target_id'
           weight: edge.weight || 1,
-          type: edge.edge_type as any || 'adjacency',
-        })) || []
-      };
+          type: edge.edge_type as any || edge.type || 'adjacency',
+        }));
+
+      console.log(`Filtered ${edges.length} edges from ${edgesResponse.data.edges?.length || 0} total for ${nodes.length} nodes`);
+
+      const graphData: GraphData = { nodes, edges };
 
       return {
         data: graphData,

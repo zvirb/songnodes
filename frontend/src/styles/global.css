@@ -39,9 +39,9 @@ p, h1, h2, h3, h4, h5, h6 {
   isolation: isolate;
   height: 100vh;
   width: 100vw;
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: relative;
+  overflow: hidden;
+  display: block;
 }
 
 /* Dark Theme Colors */
@@ -126,6 +126,7 @@ p, h1, h2, h3, h4, h5, h6 {
   color: var(--color-text-primary);
   position: relative;
   overflow: hidden;
+  min-height: 0; /* Prevent flex children from overflowing */
 }
 
 .app-header {
@@ -137,6 +138,8 @@ p, h1, h2, h3, h4, h5, h6 {
   padding: 0 20px;
   z-index: var(--z-header);
   flex-shrink: 0;
+  position: relative; /* Ensure header is positioned correctly */
+  width: 100%; /* Ensure full width */
 }
 
 .app-main {
@@ -144,12 +147,15 @@ p, h1, h2, h3, h4, h5, h6 {
   display: flex;
   position: relative;
   overflow: hidden;
+  min-height: 0; /* Prevent flex children from overflowing */
 }
 
 .app-content {
   flex: 1;
   position: relative;
   overflow: hidden;
+  min-height: 0; /* Ensure content area has proper height */
+  background: var(--color-bg-primary); /* Ensure background is visible */
 }
 
 /* Panel Styles */
@@ -242,6 +248,8 @@ p, h1, h2, h3, h4, h5, h6 {
   gap: 8px;
   z-index: var(--z-toolbar);
   flex-shrink: 0;
+  position: relative; /* Ensure toolbar is positioned correctly */
+  width: 100%; /* Ensure full width */
 }
 
 /* Button Styles */
@@ -416,8 +424,12 @@ p, h1, h2, h3, h4, h5, h6 {
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100%;
+  height: 100%;
   background: var(--color-bg-primary);
   overflow: hidden;
+  display: block; /* Ensure it's visible */
+  z-index: var(--z-graph); /* Ensure proper layering */
 }
 
 .graph-canvas {
@@ -753,6 +765,49 @@ p, h1, h2, h3, h4, h5, h6 {
     --color-border-primary: #666666;
     --color-accent-primary: #00ff00;
   }
+}
+
+/* DEBUG: Emergency visibility fixes */
+.app-container {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-header {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+}
+
+.toolbar {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+}
+
+.app-main {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+}
+
+.app-content {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+}
+
+.graph-container {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+}
+
+/* Ensure buttons are visible */
+.btn {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
 }
 
 /* Reduced Motion */

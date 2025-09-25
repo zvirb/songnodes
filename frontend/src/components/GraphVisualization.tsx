@@ -13,7 +13,7 @@ import {
 } from 'd3-force';
 import { zoom, zoomIdentity, ZoomBehavior, ZoomTransform } from 'd3-zoom';
 import { select } from 'd3-selection';
-import { useStore } from '../store/useStore';
+import useStore from '../store/useStore';
 import { GraphNode, GraphEdge, DEFAULT_CONFIG, Bounds } from '../types';
 
 // Performance constants
@@ -283,7 +283,6 @@ export const GraphVisualization: React.FC = () => {
     viewState,
     pathfindingState,
     graph,
-    view,
     pathfinding,
     performance,
   } = useStore();
@@ -367,6 +366,37 @@ export const GraphVisualization: React.FC = () => {
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
 
+    // Debug container dimensions and state
+    console.log('Container debug info:', {
+      container,
+      containerChildren: container.children.length,
+      containerStyle: {
+        width: container.style.width,
+        height: container.style.height,
+        display: container.style.display,
+        position: container.style.position,
+      },
+      containerClasses: container.className,
+      containerId: container.id,
+      parentElement: container.parentElement,
+      boundingRect: rect,
+      offsetDimensions: {
+        width: container.offsetWidth,
+        height: container.offsetHeight
+      },
+      clientDimensions: {
+        width: container.clientWidth,
+        height: container.clientHeight
+      }
+    });
+
+    // Check if container has zero dimensions
+    if (rect.width === 0 || rect.height === 0) {
+      console.warn('Container has zero dimensions, delaying PIXI initialization');
+      setTimeout(() => initializePixi(), 100);
+      return;
+    }
+
     try {
       console.log('Initializing PIXI.js application...', {
         containerWidth: rect.width,
@@ -415,8 +445,34 @@ export const GraphVisualization: React.FC = () => {
 
       // Make PIXI app globally accessible for debugging
       (window as any).pixiApp = app;
+      (window as any).__PIXI_APP__ = app;
       (window as any).PIXI = PIXI;
       (window as any).pixiCanvas = canvas;
+      (canvas as any).__pixi_app__ = app;
+
+      // Additional canvas debugging
+      console.log('Canvas DOM state after append:', {
+        canvasParent: canvas.parentElement,
+        canvasInDocument: document.contains(canvas),
+        canvasStyle: {
+          position: canvas.style.position,
+          top: canvas.style.top,
+          left: canvas.style.left,
+          width: canvas.style.width,
+          height: canvas.style.height,
+          display: canvas.style.display,
+          visibility: canvas.style.visibility,
+          opacity: canvas.style.opacity,
+          zIndex: canvas.style.zIndex
+        },
+        canvasComputedStyle: {
+          display: window.getComputedStyle(canvas).display,
+          visibility: window.getComputedStyle(canvas).visibility,
+          opacity: window.getComputedStyle(canvas).opacity
+        },
+        containerRect: container.getBoundingClientRect(),
+        canvasRect: canvas.getBoundingClientRect()
+      });
 
       console.log('PIXI.js application initialized successfully', {
         canvasElement: canvas,
@@ -432,9 +488,13 @@ export const GraphVisualization: React.FC = () => {
 
     // Create container hierarchy for proper layering
     const edgesContainer = new PIXI.Container();
+    edgesContainer.label = 'edges';
     const nodesContainer = new PIXI.Container();
+    nodesContainer.label = 'nodes';
     const labelsContainer = new PIXI.Container();
+    labelsContainer.label = 'labels';
     const interactionContainer = new PIXI.Container();
+    interactionContainer.label = 'interaction';
 
     // Add containers in rendering order (bottom to top)
     app.stage.addChild(edgesContainer);
@@ -448,6 +508,17 @@ export const GraphVisualization: React.FC = () => {
     labelsContainerRef.current = labelsContainer;
     interactionContainerRef.current = interactionContainer;
 
+    // Remove test visuals - no longer needed
+    // const testVisual = new PIXI.Graphics();
+    // app.stage.addChild(testVisual);
+
+    // Also add a background to verify the canvas is visible
+    const background = new PIXI.Graphics();
+    background.rect(0, 0, rect.width, rect.height);
+    background.fill(0x1a1a1a); // Darker background for better contrast
+    app.stage.addChildAt(background, 0); // Add as first child (bottom layer)
+    console.log('Added background visual to PIXI stage');
+
     // Update viewport dimensions
     viewportRef.current.width = rect.width;
     viewportRef.current.height = rect.height;
@@ -457,8 +528,14 @@ export const GraphVisualization: React.FC = () => {
 
     // Start render loop
     app.ticker.add(renderFrame);
+    console.log('Started PIXI render loop with ticker');
+
+    // Force an initial render to show test visuals
+    app.render();
+    console.log('Forced initial PIXI render');
 
     setIsInitialized(true);
+    console.log('PIXI initialization complete, isInitialized set to true');
 
     } catch (error) {
       console.error('Failed to initialize PIXI.js application:', error);
@@ -505,21 +582,23 @@ export const GraphVisualization: React.FC = () => {
     const simulation = forceSimulation<EnhancedGraphNode, EnhancedGraphEdge>()
       .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>()
         .id(d => d.id)
-        .distance(d => 50 + (1 - d.weight) * 100)
-        .strength(d => Math.max(0.1, d.weight))
+        .distance(250) // Much larger distance for better separation
+        .strength(0.3)  // Weaker strength to allow more spread
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-100)
-        .distanceMax(500)
+        .strength(-1500) // Even stronger repulsion for maximum separation
+        .distanceMax(2000) // Much larger influence radius
+        .distanceMin(50)   // Larger minimum distance
       )
       .force('center', forceCenter<EnhancedGraphNode>(0, 0))
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 2)
-        .strength(0.7)
+        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 40) // Much larger collision radius
+        .strength(1.0)  // Strong collision prevention
+        .iterations(3)  // More iterations for better separation
       )
-      .velocityDecay(0.3)
-      .alphaDecay(0.02)
-      .alphaMin(0.01);
+      .velocityDecay(0.4)  // Lower decay for more spreading motion
+      .alphaDecay(0.02)    // Slower stabilization to allow full spread
+      .alphaMin(0.001);    // Lower min for complete stop
 
     simulation.on('tick', handleSimulationTick);
     simulation.on('end', handleSimulationEnd);
@@ -529,26 +608,69 @@ export const GraphVisualization: React.FC = () => {
   }, []);
 
   // Initialize D3 zoom behavior
+  // NOTE: We define the zoom handler inline to avoid React hook ordering issues
   const initializeZoom = useCallback(() => {
     if (!containerRef.current) return;
+    if (zoomBehaviorRef.current) return; // Already initialized
 
     const zoomHandler = zoom<HTMLDivElement, unknown>()
       .scaleExtent([DEFAULT_CONFIG.ui.minZoom, DEFAULT_CONFIG.ui.maxZoom])
-      .on('zoom', handleZoom);
+      .filter((event: any) => {
+        // Allow wheel zoom and drag events, block right-click drag
+        return !event.ctrlKey && !event.button;
+      })
+      .wheelDelta((event: any) => {
+        // Standard wheel delta handling for proper zoom speed
+        return -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002);
+      })
+      .on('zoom', (event: any) => {
+        const transform: ZoomTransform = event.transform;
+        currentTransformRef.current = transform;
+
+        // Update viewport with consistent coordinate system
+        viewportRef.current.x = transform.x;
+        viewportRef.current.y = transform.y;
+        viewportRef.current.zoom = transform.k;
+
+        // Update store
+        requestAnimationFrame(() => {
+          const store = useStore.getState();
+          store.view.updateViewport(transform.k, { x: transform.x, y: transform.y });
+        });
+
+        // Update LOD system
+        if (lodSystemRef.current) {
+          lodSystemRef.current.updateViewport(viewportRef.current);
+        }
+
+        // Apply unified transform to PIXI stage - single source of truth
+        if (pixiAppRef.current?.stage) {
+          pixiAppRef.current.stage.x = transform.x;
+          pixiAppRef.current.stage.y = transform.y;
+          pixiAppRef.current.stage.scale.set(transform.k, transform.k);
+        }
+      });
 
     const selection = select(containerRef.current);
     selection.call(zoomHandler);
 
-    // Set initial transform
+    // Set initial transform - center the graph in the viewport
+    const centerX = viewportRef.current.width / 2;
+    const centerY = viewportRef.current.height / 2;
+
     const initialTransform = zoomIdentity
-      .translate(viewportRef.current.width / 2, viewportRef.current.height / 2)
-      .scale(viewState.zoom)
-      .translate(viewState.pan.x, viewState.pan.y);
+      .translate(centerX + (viewState.pan.x || 0), centerY + (viewState.pan.y || 0))
+      .scale(viewState.zoom || 1);
 
     selection.call(zoomHandler.transform, initialTransform);
 
+    // Make sure the container can receive events
+    if (containerRef.current) {
+      containerRef.current.style.touchAction = 'none'; // Prevents browser zoom on touch devices
+    }
+
     zoomBehaviorRef.current = zoomHandler;
-  }, [viewState.zoom, viewState.pan]);
+  }, []);
 
   // Handle D3 simulation tick
   const handleSimulationTick = useCallback(() => {
@@ -580,32 +702,6 @@ export const GraphVisualization: React.FC = () => {
   }, []);
 
   // Handle zoom events
-  const handleZoom = useCallback((event: any) => {
-    const transform: ZoomTransform = event.transform;
-    currentTransformRef.current = transform;
-
-    // Update viewport
-    viewportRef.current.x = -transform.x;
-    viewportRef.current.y = -transform.y;
-    viewportRef.current.zoom = transform.k;
-
-    // Update store
-    view.updateViewport(transform.k, { x: -transform.x, y: -transform.y });
-
-    // Update LOD system
-    if (lodSystemRef.current) {
-      lodSystemRef.current.updateViewport(viewportRef.current);
-    }
-
-    // Apply transform to PIXI stage
-    if (pixiAppRef.current) {
-      const stage = pixiAppRef.current.stage;
-      stage.position.set(transform.x, transform.y);
-      stage.scale.set(transform.k);
-    }
-
-    frameRef.current++;
-  }, [view]);
 
   // Create enhanced node from graph node
   const createEnhancedNode = useCallback((node: GraphNode): EnhancedGraphNode => {
@@ -668,24 +764,41 @@ export const GraphVisualization: React.FC = () => {
     const circle = new PIXI.Graphics();
     container.addChild(circle);
 
-    // Label (created but initially hidden for performance)
-    const label = new PIXI.Text({
-      text: node.label,
+    // Create artist label (above node)
+    const artistLabel = new PIXI.Text({
+      text: node.artist || 'Unknown Artist',
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 11,
+        fill: 0xaaaaaa,  // Lighter gray for artist
+        align: 'center',
+        fontWeight: 'normal',
+      },
+    });
+    artistLabel.anchor.set(0.5, 1);  // Bottom-centered anchor
+    artistLabel.visible = false; // Hidden by default
+    container.addChild(artistLabel);
+
+    // Create title label (below node)
+    const titleLabel = new PIXI.Text({
+      text: node.title || node.label || 'Unknown',
       style: {
         fontFamily: 'Arial',
         fontSize: 12,
-        fill: 0xffffff,
+        fill: 0xffffff,  // White for song title
         align: 'center',
+        fontWeight: 'bold',
       },
     });
-    label.anchor.set(0.5);
-    label.visible = false; // Hidden by default
-    container.addChild(label);
+    titleLabel.anchor.set(0.5, 0);  // Top-centered anchor
+    titleLabel.visible = false; // Hidden by default
+    container.addChild(titleLabel);
 
-    // Store references
+    // Store references (using pixiLabel for title, add new property for artist)
     node.pixiNode = container;
     node.pixiCircle = circle;
-    node.pixiLabel = label;
+    node.pixiLabel = titleLabel;  // Main label is the title
+    (node as any).pixiArtistLabel = artistLabel;  // Store artist label separately
 
     // Add interaction handlers
     container.on('pointerover', () => handleNodeHover(node.id, true));
@@ -707,14 +820,8 @@ export const GraphVisualization: React.FC = () => {
   const updateNodeVisuals = useCallback((node: EnhancedGraphNode, lodLevel: number) => {
     if (!node.pixiNode || !node.pixiCircle || !node.pixiLabel) return;
 
-    const transform = currentTransformRef.current;
-    const screenRadius = Math.max(
-      PERFORMANCE_THRESHOLDS.MIN_NODE_SIZE,
-      Math.min(
-        PERFORMANCE_THRESHOLDS.MAX_NODE_SIZE,
-        (node.screenRadius * transform.k)
-      )
-    );
+    // Use fixed radius - let stage scaling handle zoom
+    const screenRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
 
     const color = getNodeColor(node);
     const alpha = lodLevel > 1 ? 0.5 : node.opacity || 1;
@@ -722,23 +829,42 @@ export const GraphVisualization: React.FC = () => {
     // Update position
     node.pixiNode.position.set(node.x || 0, node.y || 0);
 
-    // Update circle
+    // Clear and redraw the circle using PIXI v8 API
     node.pixiCircle.clear();
 
     if (viewState.selectedNodes.has(node.id)) {
       // Selected node outline
-      node.pixiCircle.circle(0, 0, screenRadius + 2).stroke({ width: 2, color: COLOR_SCHEMES.node.selected, alpha });
+      node.pixiCircle.circle(0, 0, screenRadius + 2);
+      node.pixiCircle.setStrokeStyle({ width: 2, color: COLOR_SCHEMES.node.selected, alpha: alpha });
+      node.pixiCircle.stroke();
     }
 
-    node.pixiCircle.circle(0, 0, screenRadius).fill({ color, alpha });
+    // Draw the main node circle
+    node.pixiCircle.circle(0, 0, screenRadius);
+    node.pixiCircle.fill({ color: color, alpha: alpha });
 
     // Update label visibility and content
-    const shouldShowLabel = viewState.showLabels && lodLevel === 0 && transform.k > 1.5;
+    // Always show labels for now to make nodes identifiable
+    const shouldShowLabel = true; // viewState.showLabels && lodLevel === 0 && transform.k > 1.5;
     node.pixiLabel.visible = shouldShowLabel;
 
+    const artistLabel = (node as any).pixiArtistLabel;
+    if (artistLabel) {
+      artistLabel.visible = shouldShowLabel;
+    }
+
     if (shouldShowLabel) {
-      node.pixiLabel.style.fontSize = Math.max(8, Math.min(16, 12 * transform.k));
-      node.pixiLabel.position.set(0, screenRadius + 8);
+      const fontSize = 11; // Fixed font size - stage scaling will handle zoom
+
+      // Update title label (below node)
+      node.pixiLabel.style.fontSize = fontSize * 1.2;  // Title slightly larger
+      node.pixiLabel.position.set(0, screenRadius + 10);
+
+      // Update artist label (above node)
+      if (artistLabel) {
+        artistLabel.style.fontSize = fontSize;
+        artistLabel.position.set(0, -screenRadius - 5);
+      }
     }
 
     // Update container alpha
@@ -749,26 +875,52 @@ export const GraphVisualization: React.FC = () => {
 
   // Update edge visual appearance
   const updateEdgeVisuals = useCallback((edge: EnhancedGraphEdge, lodLevel: number) => {
-    if (!edge.pixiEdge || !edge.sourceNode || !edge.targetNode) return;
-    if (!edge.sourceNode.x || !edge.sourceNode.y || !edge.targetNode.x || !edge.targetNode.y) return;
+    if (!edge.pixiEdge || !edge.sourceNode || !edge.targetNode) {
+      console.log('Edge missing components:', {
+        hasPixiEdge: !!edge.pixiEdge,
+        hasSource: !!edge.sourceNode,
+        hasTarget: !!edge.targetNode
+      });
+      return;
+    }
+    if (!edge.sourceNode.x || !edge.sourceNode.y || !edge.targetNode.x || !edge.targetNode.y) {
+      console.log('Edge missing positions:', {
+        sourcePos: { x: edge.sourceNode.x, y: edge.sourceNode.y },
+        targetPos: { x: edge.targetNode.x, y: edge.targetNode.y }
+      });
+      return;
+    }
 
-    const transform = currentTransformRef.current;
-    const screenWidth = Math.max(
-      PERFORMANCE_THRESHOLDS.MIN_EDGE_WIDTH,
-      Math.min(
-        PERFORMANCE_THRESHOLDS.MAX_EDGE_WIDTH,
-        edge.screenWidth * transform.k
-      )
-    );
+    // Use very thin edges for clean visualization
+    // Weight-based width: stronger relationships get slightly thicker lines
+    const baseWidth = 0.5; // Very thin base width
+    const weight = edge.weight || 1;
+    const screenWidth = baseWidth + Math.min(weight / 10, 1); // Max width of 1.5 for highest weights
 
     const color = getEdgeColor(edge);
-    const alpha = (lodLevel > 1 ? 0.3 : viewState.edgeOpacity) * (edge.opacity || 1);
+    // Reduce edge opacity for cleaner appearance
+    const baseAlpha = lodLevel > 1 ? 0.2 : Math.max(0.3, viewState.edgeOpacity || 0.4);
+    const alpha = baseAlpha * Math.max(0.6, edge.opacity || 1);
 
-    // Update graphics
+    // Update graphics using PIXI v8 API
     edge.pixiEdge.clear();
+    edge.pixiEdge.setStrokeStyle({ width: screenWidth, color: color, alpha: alpha });
     edge.pixiEdge.moveTo(edge.sourceNode.x, edge.sourceNode.y);
     edge.pixiEdge.lineTo(edge.targetNode.x, edge.targetNode.y);
-    edge.pixiEdge.stroke({ width: screenWidth, color, alpha });
+    edge.pixiEdge.stroke();
+
+    // Debug first few edges
+    if (Math.random() < 0.001) { // Log ~0.1% of edges to avoid spam
+      console.log('Edge rendered:', {
+        id: edge.id,
+        width: screenWidth,
+        color: color.toString(16),
+        alpha: alpha,
+        from: { x: edge.sourceNode.x, y: edge.sourceNode.y },
+        to: { x: edge.targetNode.x, y: edge.targetNode.y },
+        visible: edge.pixiEdge.visible
+      });
+    }
 
     edge.lodLevel = lodLevel;
     edge.lastUpdateFrame = frameRef.current;
@@ -803,6 +955,7 @@ export const GraphVisualization: React.FC = () => {
 
     // Render edges first (bottom layer)
     if (viewState.showEdges && edgesContainerRef.current) {
+      let visibleEdgeCount = 0;
       enhancedEdgesRef.current.forEach(edge => {
         const lodLevel = lodSystem.getEdgeLOD(edge);
         const shouldRender = lodLevel < 3;
@@ -811,11 +964,21 @@ export const GraphVisualization: React.FC = () => {
           edge.pixiEdge.visible = shouldRender;
           edge.isVisible = shouldRender;
 
-          if (shouldRender && (edge.lastUpdateFrame < currentFrame || shouldOptimize)) {
-            updateEdgeVisuals(edge, lodLevel);
+          if (shouldRender) {
+            visibleEdgeCount++;
+            if (edge.lastUpdateFrame < currentFrame || shouldOptimize) {
+              updateEdgeVisuals(edge, lodLevel);
+            }
           }
         }
       });
+
+      // Debug logging - only log occasionally to avoid spam
+      if (currentFrame % 60 === 0) {
+        console.log(`Edge render debug: ${visibleEdgeCount}/${enhancedEdgesRef.current.size} edges visible, showEdges=${viewState.showEdges}`);
+      }
+    } else if (currentFrame % 60 === 0) {
+      console.log(`Edges not rendering: showEdges=${viewState.showEdges}, container=${!!edgesContainerRef.current}`);
     }
 
     // Render nodes (middle layer)
@@ -961,12 +1124,20 @@ export const GraphVisualization: React.FC = () => {
 
   // Effects
 
-  // Initialize on mount
+  // Initialize on mount - delayed to ensure container is properly mounted
   useEffect(() => {
-    initializePixi();
+    const initializeAfterMount = () => {
+      console.log('Attempting PIXI initialization after component mount');
+      initializePixi();
+    };
+
+    // Use a small delay to ensure the DOM is fully rendered
+    const timeoutId = setTimeout(initializeAfterMount, 0);
 
     return () => {
+      clearTimeout(timeoutId);
       if (pixiAppRef.current) {
+        console.log('Destroying PIXI application on unmount');
         pixiAppRef.current.destroy(true);
         pixiAppRef.current = null;
       }
