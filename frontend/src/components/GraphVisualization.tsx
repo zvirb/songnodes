@@ -367,21 +367,68 @@ export const GraphVisualization: React.FC = () => {
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
 
-    // Create PIXI application with WebGL
-    const app = new PIXI.Application();
-    await app.init({
-      width: rect.width,
-      height: rect.height,
-      backgroundColor: 0x1a1a1a,
-      antialias: true,
-      autoDensity: true,
-      resolution: window.devicePixelRatio || 1,
-      powerPreference: 'high-performance',
-    });
+    try {
+      console.log('Initializing PIXI.js application...', {
+        containerWidth: rect.width,
+        containerHeight: rect.height,
+        devicePixelRatio: window.devicePixelRatio
+      });
 
-    // Add canvas to container
-    container.appendChild(app.canvas as HTMLCanvasElement);
-    pixiAppRef.current = app;
+      // Create PIXI application with WebGL
+      const app = new PIXI.Application();
+
+      // Initialize PIXI application with enhanced settings
+      await app.init({
+        width: Math.max(rect.width || 800, 100),  // Ensure minimum width
+        height: Math.max(rect.height || 600, 100), // Ensure minimum height
+        backgroundColor: 0x1a1a1a,
+        antialias: true,
+        autoDensity: true,
+        resolution: window.devicePixelRatio || 1,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: true, // Enable for debugging
+        hello: true, // Show PIXI greeting in console
+      });
+
+      // Verify canvas was created
+      if (!app.canvas) {
+        throw new Error('PIXI.js failed to create canvas element');
+      }
+
+      // Style canvas element for proper integration
+      const canvas = app.canvas as HTMLCanvasElement;
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.display = 'block';
+      canvas.style.zIndex = '10';
+      canvas.setAttribute('data-testid', 'pixi-canvas');
+      canvas.setAttribute('data-pixi-version', PIXI.VERSION);
+      canvas.id = 'songnodes-pixi-canvas';
+      canvas.className = 'pixi-graph-canvas';
+
+      // Add canvas to container
+      container.appendChild(canvas);
+      pixiAppRef.current = app;
+
+      // Make PIXI app globally accessible for debugging
+      (window as any).pixiApp = app;
+      (window as any).PIXI = PIXI;
+      (window as any).pixiCanvas = canvas;
+
+      console.log('PIXI.js application initialized successfully', {
+        canvasElement: canvas,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        canvasStyleWidth: canvas.style.width,
+        canvasStyleHeight: canvas.style.height,
+        rendererType: app.renderer.type,
+        pixiVersion: PIXI.VERSION,
+        container: container,
+        containerChildren: container.children.length
+      });
 
     // Create container hierarchy for proper layering
     const edgesContainer = new PIXI.Container();
@@ -412,6 +459,45 @@ export const GraphVisualization: React.FC = () => {
     app.ticker.add(renderFrame);
 
     setIsInitialized(true);
+
+    } catch (error) {
+      console.error('Failed to initialize PIXI.js application:', error);
+
+      // Create fallback canvas for debugging
+      const fallbackCanvas = document.createElement('canvas');
+      fallbackCanvas.id = 'songnodes-fallback-canvas';
+      fallbackCanvas.className = 'fallback-graph-canvas';
+      fallbackCanvas.style.position = 'absolute';
+      fallbackCanvas.style.top = '0';
+      fallbackCanvas.style.left = '0';
+      fallbackCanvas.style.width = '100%';
+      fallbackCanvas.style.height = '100%';
+      fallbackCanvas.style.backgroundColor = '#1a1a1a';
+      fallbackCanvas.style.border = '2px solid #ff4444';
+      fallbackCanvas.width = Math.max(rect.width || 800, 100);
+      fallbackCanvas.height = Math.max(rect.height || 600, 100);
+
+      // Add error message to canvas
+      const ctx = fallbackCanvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ff4444';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('PIXI.js Initialization Failed', fallbackCanvas.width / 2, fallbackCanvas.height / 2 - 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Arial';
+        ctx.fillText('Check console for details', fallbackCanvas.width / 2, fallbackCanvas.height / 2 + 10);
+      }
+
+      container.appendChild(fallbackCanvas);
+
+      // Store error state globally for debugging
+      (window as any).pixiInitError = error;
+      (window as any).fallbackCanvas = fallbackCanvas;
+
+      // Set initialized to true to prevent infinite retry
+      setIsInitialized(true);
+    }
   }, []);
 
   // Initialize D3 force simulation

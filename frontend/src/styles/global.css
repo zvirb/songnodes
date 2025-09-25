@@ -454,6 +454,58 @@ p, h1, h2, h3, h4, h5, h6 {
   display: block;
 }
 
+/* PIXI.js Canvas Styles */
+.pixi-graph-canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  z-index: 10 !important;
+  cursor: grab;
+}
+
+.pixi-graph-canvas:active {
+  cursor: grabbing;
+}
+
+/* Fallback Canvas Styles */
+.fallback-graph-canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  z-index: 10 !important;
+  border: 2px solid var(--color-accent-secondary) !important;
+  background-color: var(--color-bg-primary) !important;
+}
+
+/* Canvas container styling */
+#songnodes-pixi-canvas,
+#songnodes-fallback-canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Debug information display */
+.canvas-debug-info {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--color-text-primary);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  z-index: 100;
+  pointer-events: none;
+}
+
 /* Performance Monitor */
 .performance-monitor {
   position: absolute;
