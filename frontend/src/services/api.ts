@@ -101,21 +101,38 @@ class ApiClient {
 
   // GET request
   async get<T>(endpoint: string, params?: Record<string, any>, timeoutMs?: number): Promise<ApiResponse<T>> {
-    const url = new URL(endpoint, this.baseUrl);
+    let fullUrl: string;
+    let queryString = '';
 
+    // Handle params manually to avoid URL constructor issues with relative baseUrl
     if (params) {
+      const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (Array.isArray(value)) {
-            value.forEach(v => url.searchParams.append(key, v.toString()));
+            value.forEach(v => searchParams.append(key, v.toString()));
           } else {
-            url.searchParams.set(key, value.toString());
+            searchParams.set(key, value.toString());
           }
         }
       });
+      queryString = searchParams.toString();
     }
 
-    return this.request<T>(url.pathname + url.search, {
+    // Construct full URL manually
+    if (this.baseUrl.startsWith('http')) {
+      // Absolute base URL
+      const url = new URL(endpoint, this.baseUrl);
+      if (queryString) {
+        url.search = queryString;
+      }
+      fullUrl = url.pathname + (queryString ? '?' + queryString : '');
+    } else {
+      // Relative base URL (like '/api')
+      fullUrl = endpoint + (queryString ? '?' + queryString : '');
+    }
+
+    return this.request<T>(fullUrl, {
       method: 'GET',
     }, timeoutMs);
   }

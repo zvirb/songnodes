@@ -9,6 +9,7 @@ import {
   SimulationNodeDatum,
   SimulationLinkDatum,
   Simulation,
+  ForceLink,
 } from 'd3-force';
 import { zoom, zoomIdentity, ZoomBehavior, ZoomTransform } from 'd3-zoom';
 import { select } from 'd3-selection';
@@ -540,11 +541,17 @@ export const GraphVisualization: React.FC = () => {
   }, [viewState.nodeSize]);
 
   // Create enhanced edge from graph edge
-  const createEnhancedEdge = useCallback((edge: GraphEdge, nodes: Map<string, EnhancedGraphNode>): EnhancedGraphEdge => {
+  const createEnhancedEdge = useCallback((edge: GraphEdge, nodes: Map<string, EnhancedGraphNode>): EnhancedGraphEdge | null => {
     const sourceId = typeof edge.source === 'string' ? edge.source : edge.source;
     const targetId = typeof edge.target === 'string' ? edge.target : edge.target;
     const sourceNode = nodes.get(sourceId);
     const targetNode = nodes.get(targetId);
+
+    // Skip edges where source or target nodes don't exist
+    if (!sourceNode || !targetNode) {
+      console.warn(`Skipping edge ${edge.id}: missing nodes (source: ${sourceId}, target: ${targetId})`);
+      return null;
+    }
 
     const enhanced: EnhancedGraphEdge = {
       id: edge.id,
@@ -554,8 +561,8 @@ export const GraphVisualization: React.FC = () => {
       color: edge.color,
       opacity: edge.opacity,
       distance: edge.distance,
-      source: sourceNode!,
-      target: targetNode!,
+      source: sourceNode,
+      target: targetNode,
       sourceNode,
       targetNode,
       lodLevel: 0,
@@ -825,23 +832,27 @@ export const GraphVisualization: React.FC = () => {
       enhancedNodesRef.current.set(node.id, node);
     });
 
-    // Create enhanced edges
+    // Create enhanced edges (skip invalid ones)
     graphData.edges.forEach(edgeData => {
       const edge = createEnhancedEdge(edgeData, nodeMap);
+      if (!edge) {
+        return; // Skip invalid edges
+      }
+
       const pixiGraphics = createPixiEdge(edge);
 
       edgesContainerRef.current!.addChild(pixiGraphics);
       enhancedEdgesRef.current.set(edge.id, edge);
     });
 
-    // Update simulation
-    simulation
-      .nodes(Array.from(nodeMap.values()))
-      .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>(Array.from(enhancedEdgesRef.current.values()))
-        .id(d => d.id)
-        .distance(d => 50 + (1 - d.weight) * 100)
-        .strength(d => Math.max(0.1, d.weight))
-      );
+    // Update simulation with nodes and edges
+    simulation.nodes(Array.from(nodeMap.values()));
+
+    // Update the existing link force with new edges data
+    const linkForce = simulation.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
+    if (linkForce) {
+      linkForce.links(Array.from(enhancedEdgesRef.current.values()));
+    }
 
     // Restart simulation
     simulation.alpha(0.3).restart();
@@ -912,11 +923,11 @@ export const GraphVisualization: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full overflow-hidden bg-gray-900 relative"
+      className="graph-canvas graph-container graph-visualization graph-component w-full h-full overflow-hidden bg-gray-900 relative"
       style={{ touchAction: 'none' }}
     >
       {!isInitialized && (
-        <div className="absolute inset-0 flex items-center justify-center text-white">
+        <div className="graph-loading absolute inset-0 flex items-center justify-center text-white">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
             <p>Initializing visualization...</p>
@@ -925,7 +936,7 @@ export const GraphVisualization: React.FC = () => {
       )}
 
       {isInitialized && graphData.nodes.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center text-white/60">
+        <div className="graph-empty absolute inset-0 flex items-center justify-center text-white/60">
           <div className="text-center">
             <p className="text-lg mb-2">No graph data available</p>
             <p className="text-sm">Load some tracks to see the visualization</p>
