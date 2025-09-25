@@ -280,7 +280,7 @@ export type Color = {
 // Export default app configuration
 export const DEFAULT_CONFIG: AppConfig = {
   api: {
-    baseUrl: 'http://localhost:8080',
+    baseUrl: '/api',
     graphEndpoint: '/v1/graph',
     searchEndpoint: '/v1/search',
     timeout: 30000,
