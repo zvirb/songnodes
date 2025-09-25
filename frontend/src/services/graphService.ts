@@ -11,7 +11,8 @@ class GraphService {
   private baseUrl: string;
   private apiKey?: string;
 
-  constructor(baseUrl: string = 'http://localhost:8084/api/graph', apiKey?: string) {
+  constructor(baseUrl: string = '/api/v1/graph', apiKey?: string) {
+    // Use the proxied endpoint from vite.config.ts
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
   }
