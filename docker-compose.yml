@@ -808,19 +808,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: development
     container_name: songnodes-frontend
     restart: always
     ports:
-      - "3006:3006"
+      - "3006:80"
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://api-gateway:8080}
       VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://graph-visualization-api:8084}
       VITE_WS_URL: ${VITE_WS_URL:-ws://websocket-api:8083}
-      NODE_ENV: development
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      NODE_ENV: production
     depends_on:
       - api-gateway
       - enhanced-visualization-service

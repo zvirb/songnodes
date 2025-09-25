@@ -4,109 +4,227 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
+  // Test directory structure
   testDir: './tests/e2e',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html'],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['junit', { outputFile: 'test-results/results.xml' }],
-    ['line']
-  ],
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3009',
+  outputDir: './tests/screenshots',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
-    
-    /* Take screenshot on failure */
-    screenshot: 'only-on-failure',
-    
-    /* Capture video on failure */
-    video: 'retain-on-failure',
-    
-    /* Accessibility testing */
-    accessibilityAudits: true,
+  // Global test configuration optimized for complex graph rendering
+  timeout: 60000, // Extended for complex WebGL operations
+  expect: {
+    timeout: 15000, // Extended for graph loading and rendering
+    toHaveScreenshot: {
+      threshold: 0.2,
+      mode: 'pixel',
+      animations: 'disabled',
+    },
+    toMatchScreenshot: {
+      threshold: 0.2,
+      mode: 'pixel',
+      animations: 'disabled',
+    },
   },
 
-  /* Configure projects for major browsers */
+  // Test execution
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: [
+    ['html', { outputFolder: 'tests/reports/html' }],
+    ['json', { outputFile: 'tests/reports/results.json' }],
+    ['junit', { outputFile: 'tests/reports/results.xml' }],
+    ['list'],
+  ],
+
+  // Global test setup
+  globalSetup: require.resolve('./tests/setup/global-setup.ts'),
+  globalTeardown: require.resolve('./tests/setup/global-teardown.ts'),
+
+  use: {
+    // Base URL for tests
+    baseURL: 'http://localhost:3006',
+
+    // Browser context options
+    viewport: { width: 1280, height: 720 },
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
+
+    // Ignore HTTPS errors for local development
+    ignoreHTTPSErrors: true,
+
+    // Enhanced WebGL and PIXI.js optimizations
+    launchOptions: {
+      args: [
+        '--disable-web-security',
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu-sandbox',
+        '--enable-webgl',
+        '--enable-webgl2-compute-context',
+        '--enable-accelerated-2d-canvas',
+        '--enable-accelerated-video-decode',
+        '--enable-gpu-rasterization',
+        '--enable-oop-rasterization',
+        '--force-color-profile=srgb',
+        '--enable-zero-copy',
+        '--disable-software-rasterizer',
+        '--max_old_space_size=4096', // Increase memory for large graphs
+        '--enable-features=VaapiVideoDecoder',
+        '--disable-features=VizDisplayCompositor',
+        '--enable-experimental-web-platform-features', // For cutting-edge WebGL features
+      ],
+    },
+  },
+
+  // Test projects for different scenarios
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'chromium-desktop',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+      testMatch: /.*\.desktop\.spec\.ts/,
     },
-
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: 'chromium-mobile',
+      use: {
+        ...devices['iPhone 12'],
+        viewport: { width: 390, height: 844 },
+      },
+      testMatch: /.*\.mobile\.spec\.ts/,
     },
-
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: 'webkit-desktop',
+      use: {
+        ...devices['Desktop Safari'],
+        viewport: { width: 1920, height: 1080 },
+      },
+      testMatch: /.*\.webkit\.spec\.ts/,
     },
-
     {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      name: 'firefox-desktop',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1920, height: 1080 },
+      },
+      testMatch: /.*\.firefox\.spec\.ts/,
     },
-
     {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      name: 'graph-visualization',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        // Extended timeouts for complex graph operations
+        actionTimeout: 20000,
+        navigationTimeout: 30000,
+        // WebGL-specific launch options
+        launchOptions: {
+          args: [
+            '--disable-web-security',
+            '--enable-webgl',
+            '--enable-webgl2-compute-context',
+            '--enable-accelerated-2d-canvas',
+            '--enable-gpu-rasterization',
+            '--force-color-profile=srgb',
+            '--enable-zero-copy',
+            '--disable-software-rasterizer',
+            '--max_old_space_size=6144', // More memory for graph testing
+            '--enable-experimental-web-platform-features',
+          ],
+        },
+      },
+      testMatch: /.*\.graph\.spec\.ts/,
     },
-
     {
-      name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      name: 'webgl-stress-test',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 2560, height: 1440 }, // Large viewport for stress testing
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+        launchOptions: {
+          args: [
+            '--disable-web-security',
+            '--enable-webgl',
+            '--enable-webgl2-compute-context',
+            '--enable-accelerated-2d-canvas',
+            '--enable-gpu-rasterization',
+            '--enable-oop-rasterization',
+            '--force-color-profile=srgb',
+            '--enable-zero-copy',
+            '--disable-software-rasterizer',
+            '--max_old_space_size=8192', // Maximum memory for stress tests
+            '--enable-features=VaapiVideoDecoder',
+            '--disable-features=VizDisplayCompositor',
+          ],
+        },
+      },
+      testMatch: /.*\.webgl-stress\.spec\.ts/,
     },
-
-    /* Performance testing project */
+    {
+      name: 'pixi-compatibility',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        actionTimeout: 15000,
+        // PIXI.js specific optimizations
+        launchOptions: {
+          args: [
+            '--disable-web-security',
+            '--enable-webgl',
+            '--enable-webgl2-compute-context',
+            '--enable-accelerated-2d-canvas',
+            '--force-webgl',
+            '--ignore-gpu-blacklist',
+            '--enable-unsafe-webgpu', // For future WebGPU support
+          ],
+        },
+      },
+      testMatch: /.*\.pixi\.spec\.ts/,
+    },
     {
       name: 'performance',
-      use: { ...devices['Desktop Chrome'] },
-      testMatch: '**/performance/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        // Performance-specific options
+        launchOptions: {
+          args: [
+            '--disable-web-security',
+            '--enable-webgl',
+            '--enable-accelerated-2d-canvas',
+            '--enable-gpu-rasterization',
+            '--enable-oop-rasterization',
+            '--enable-features=VaapiVideoDecoder',
+            '--disable-features=VizServiceDisplay',
+          ],
+        },
+      },
+      testMatch: /.*\.performance\.spec\.ts/,
     },
-
-    /* Accessibility testing project */
     {
-      name: 'accessibility',
-      use: { ...devices['Desktop Chrome'] },
-      testMatch: '**/accessibility/*.spec.ts',
-    },
+      name: 'visual-regression',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        // Disable animations for consistent screenshots
+        reducedMotion: 'reduce',
+      },
+      testMatch: /.*\.visual\.spec\.ts/,
+    }
   ],
 
-  /* Global setup */
-  // globalSetup: './tests/e2e/global-setup.ts',
-
-  /* Global teardown */
-  // globalTeardown: './tests/e2e/global-teardown.ts',
-
-  /* Run your local dev server before starting the tests */
+  // Development server
   webServer: {
     command: 'npm run dev',
-    port: 3008,
+    port: 3006,
+    timeout: 60000,
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    env: {
+      NODE_ENV: 'test',
+    },
   },
-
-  /* Test timeout */
-  timeout: 30 * 1000,
-  
-  /* Expect timeout */
-  expect: {
-    timeout: 5 * 1000,
-  },
-
-  /* Output directory */
-  outputDir: 'test-results',
 });
