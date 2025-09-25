@@ -9,6 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      disabled: true, // COMPLETELY DISABLE PWA AND CACHING
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
@@ -88,6 +89,10 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV === 'development',
     rollupOptions: {
       output: {
+        // Force unique filenames with timestamp to prevent any caching
+        entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`,
         manualChunks: {
           vendor: ['react', 'react-dom'],
           d3: ['d3', 'd3-force', 'd3-selection', 'd3-zoom', 'd3-drag'],
@@ -116,6 +121,11 @@ export default defineConfig({
     port: 3006,
     open: false,
     cors: true,
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    },
     proxy: {
       '/api/v1/graph': {
         target: process.env.VITE_VISUALIZATION_API_URL || 'http://graph-visualization-api:8084',
