@@ -18,7 +18,9 @@
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
-    "test:install": "playwright install"
+    "test:install": "playwright install",
+    "diagnose": "node diagnostic-script.js",
+    "diagnose:system": "node diagnostic-script.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",

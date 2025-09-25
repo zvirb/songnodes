@@ -1,0 +1,208 @@
+{
+  "config": {
+    "configFile": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/playwright.config.ts",
+    "rootDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/setup/global-setup.ts",
+    "globalTeardown": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/setup/global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "tests/reports/html"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "tests/reports/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "tests/reports/results.xml"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "chromium-desktop",
+        "name": "chromium-desktop",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.desktop\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "chromium-mobile",
+        "name": "chromium-mobile",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.mobile\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "webkit-desktop",
+        "name": "webkit-desktop",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.webkit\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "firefox-desktop",
+        "name": "firefox-desktop",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.firefox\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "graph-visualization",
+        "name": "graph-visualization",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.graph\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "webgl-stress-test",
+        "name": "webgl-stress-test",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.webgl-stress\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "pixi-compatibility",
+        "name": "pixi-compatibility",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.pixi\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "performance",
+        "name": "performance",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.performance\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/screenshots",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "visual-regression",
+        "name": "visual-regression",
+        "testDir": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.visual\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.1",
+    "workers": 8,
+    "webServer": {
+      "command": "npm run dev",
+      "port": 3006,
+      "timeout": 60000,
+      "reuseExistingServer": true,
+      "env": {
+        "NODE_ENV": "test"
+      }
+    }
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "ReferenceError: require is not defined",
+      "stack": "ReferenceError: require is not defined\n    at globalSetup (/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/setup/global-setup.ts:7:14)",
+      "location": {
+        "file": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/setup/global-setup.ts",
+        "column": 14,
+        "line": 7
+      },
+      "snippet": "\u001b[90m   at \u001b[39m../setup/global-setup.ts:7\n\n   5 |\n   6 |   // Ensure test directories exist\n>  7 |   const fs = require('fs');\n     |              ^\n   8 |   const path = require('path');\n   9 |\n  10 |   const testDirs = ["
+    }
+  ],
+  "stats": {
+    "startTime": "2025-09-25T06:11:39.726Z",
+    "duration": 172.046,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

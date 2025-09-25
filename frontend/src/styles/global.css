@@ -434,6 +434,26 @@ p, h1, h2, h3, h4, h5, h6 {
   cursor: crosshair;
 }
 
+/* Graph component states for testing */
+.graph-loading {
+  z-index: var(--z-loading);
+}
+
+.graph-empty {
+  z-index: var(--z-graph);
+}
+
+/* Additional graph-related classes for test discovery */
+.graph-visualization {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.graph-component {
+  display: block;
+}
+
 /* Performance Monitor */
 .performance-monitor {
   position: absolute;
