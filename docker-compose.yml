@@ -557,6 +557,7 @@ services:
       - redis
     networks:
       - musicdb-backend
+      - musicdb-frontend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8084/health"]
       interval: 30s
@@ -814,8 +815,8 @@ services:
       - "3006:3006"
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://api-gateway:8080}
-      VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://enhanced-visualization-service:8085}
-      VITE_WS_URL: ${VITE_WS_URL:-ws://enhanced-visualization-service:8085}
+      VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://graph-visualization-api:8084}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://websocket-api:8083}
       NODE_ENV: development
     volumes:
       - ./frontend:/app

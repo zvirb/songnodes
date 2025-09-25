@@ -84,11 +84,11 @@ export const loadGraphData = async (): Promise<GraphData | null> => {
 
       // Fetch nodes and edges separately with appropriate limits
       const [nodesResponse, edgesResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/graph/nodes?limit=500`, {
+        fetch(`${baseUrl}/api/v1/graph/nodes?limit=500`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         }),
-        fetch(`${baseUrl}/api/graph/edges?limit=5000`, {
+        fetch(`${baseUrl}/api/v1/graph/edges?limit=5000`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         })

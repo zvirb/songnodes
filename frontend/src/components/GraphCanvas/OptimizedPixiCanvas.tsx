@@ -109,6 +109,9 @@ class ObjectPool<T> {
   }
 
   releaseAll(items: T[]) {
+    if (!items || !Array.isArray(items)) {
+      return;
+    }
     items.forEach(item => {
       if (item) this.release(item);
     });
@@ -254,9 +257,16 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
     const nodePool = nodePoolRef.current;
     const spatialIndex = spatialIndexRef.current;
 
-    nodePool.releaseAll(activeNodesRef.current);
+    // Safely release active nodes with null checks
+    if (activeNodesRef.current && Array.isArray(activeNodesRef.current)) {
+      nodePool.releaseAll(activeNodesRef.current.filter(node => node && !node.destroyed));
+    }
     activeNodesRef.current = [];
-    nodeContainer.removeChildren();
+
+    // Safely remove children from node container
+    if (nodeContainer && !nodeContainer.destroyed && typeof nodeContainer.removeChildren === 'function') {
+      nodeContainer.removeChildren();
+    }
 
     spatialIndex.clear();
     const processedNodes = enableClustering ? clusterNodes(nodes, zoom) : nodes;
@@ -277,23 +287,46 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
 
     const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
 
-    edgeGraphics.clear();
-    if (lodLevel > 0) {
-      const edgesToRender = edges.filter(edge =>
-        visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)
-      );
-
-      const edgeAlpha = lodLevel === 1 ? 0.3 : lodLevel === 2 ? 0.5 : 0.7;
-      const lineWidth = lodLevel === 1 ? 0.5 : 1;
-
-      edgeGraphics.lineStyle(lineWidth, 0x4A5568, edgeAlpha);
+    // Safely clear edge graphics
+    if (edgeGraphics && !edgeGraphics.destroyed && typeof edgeGraphics.clear === 'function') {
+      edgeGraphics.clear();
+    }
+    if (lodLevel > 0 && edgeGraphics && !edgeGraphics.destroyed) {
+      // Map edges properly - handle both naming conventions
+      const edgesToRender = edges.filter(edge => {
+        const sourceId = edge.source_id || edge.source;
+        const targetId = edge.target_id || edge.target;
+        return visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId);
+      });
 
       const nodeMap = new Map(visibleNodes.map(n => [n.id, n]));
 
       edgesToRender.forEach(edge => {
-        const source = nodeMap.get(edge.source);
-        const target = nodeMap.get(edge.target);
+        const sourceId = edge.source_id || edge.source;
+        const targetId = edge.target_id || edge.target;
+        const source = nodeMap.get(sourceId);
+        const target = nodeMap.get(targetId);
+
         if (source && target) {
+          // Scale edge thickness and opacity by weight
+          const weight = edge.weight || 1;
+          const normalizedWeight = Math.min(Math.log(weight + 1) / 3, 1); // Logarithmic scale
+
+          // Higher opacity for better visibility (0.5 - 1.0 range)
+          const edgeAlpha = 0.5 + (normalizedWeight * 0.5);
+
+          // Thicker lines for stronger connections (1-4 pixels)
+          const lineWidth = 1 + (normalizedWeight * 3);
+
+          // Color based on weight - green for strong, blue for medium, gray for weak
+          let edgeColor = 0x4A5568; // Default gray
+          if (weight > 50) {
+            edgeColor = 0x10B981; // Green for strong connections
+          } else if (weight > 20) {
+            edgeColor = 0x3B82F6; // Blue for medium connections
+          }
+
+          edgeGraphics.lineStyle(lineWidth, edgeColor, edgeAlpha);
           edgeGraphics.moveTo(source.x, source.y);
           edgeGraphics.lineTo(target.x, target.y);
         }
@@ -303,6 +336,13 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
     visibleNodes.forEach(node => {
       const nodeGraphic = nodePool.acquire();
       nodeGraphic.clear();
+
+      // Calculate connection count for this node
+      const connectionCount = edges.filter(e => {
+        const sourceId = e.source_id || e.source;
+        const targetId = e.target_id || e.target;
+        return sourceId === node.id || targetId === node.id;
+      }).length;
 
       if (node.isCluster) {
         const clusterRadius = 8 + Math.min(20, Math.sqrt(node.size || 1) * 3);
@@ -326,23 +366,135 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
           nodeGraphic.addChild(text);
         }
       } else {
-        const nodeRadius = lodLevel === 0 ? 3 : lodLevel === 1 ? 4 : lodLevel === 2 ? 5 : 6;
-        const color = node.color || 0x60A5FA;
-        const alpha = lodLevel === 0 ? 0.6 : lodLevel === 1 ? 0.7 : lodLevel === 2 ? 0.85 : 1;
+        // Enhance node size based on connections
+        const baseRadius = lodLevel === 0 ? 3 : lodLevel === 1 ? 4 : lodLevel === 2 ? 5 : 6;
+        const nodeRadius = baseRadius + Math.min(connectionCount / 10, 3); // Scale by connections
+
+        // Color by genre if available
+        let color = 0x60A5FA; // Default blue
+        if (node.genre || node.category) {
+          const genre = (node.genre || node.category || '').toLowerCase();
+          if (genre.includes('house')) color = 0xFBBF24; // Yellow
+          else if (genre.includes('techno')) color = 0xEF4444; // Red
+          else if (genre.includes('trance')) color = 0xA78BFA; // Purple
+          else if (genre.includes('dubstep')) color = 0x10B981; // Green
+          else if (genre.includes('drum')) color = 0xF97316; // Orange
+        }
+
+        const alpha = lodLevel === 0 ? 0.7 : lodLevel === 1 ? 0.8 : lodLevel === 2 ? 0.9 : 1;
 
         nodeGraphic.beginFill(color, alpha);
-        if (lodLevel > 2) {
-          nodeGraphic.lineStyle(1, 0xFFFFFF, 0.3);
+        if (lodLevel > 1) {
+          nodeGraphic.lineStyle(1.5, 0xFFFFFF, 0.4);
         }
         nodeGraphic.drawCircle(0, 0, nodeRadius);
         nodeGraphic.endFill();
+
+        // Add labels for important nodes at higher LOD
+        if (lodLevel > 2 && (connectionCount > 5 || zoom > 1.5)) {
+          const label = node.label || node.title || 'Unknown';
+          const artist = node.artist || '';
+
+          // Create text label
+          const fontSize = Math.min(12, 8 + zoom * 2);
+          const text = new PIXI.Text(label.substring(0, 20), {
+            fontSize: fontSize,
+            fill: 0xFFFFFF,
+            fontFamily: 'Arial',
+            align: 'center'
+          });
+          text.anchor.set(0.5, -1.5);
+          text.alpha = 0.9;
+          nodeGraphic.addChild(text);
+
+          // Add artist name if available
+          if (artist && zoom > 2) {
+            const artistText = new PIXI.Text(artist.substring(0, 15), {
+              fontSize: fontSize * 0.8,
+              fill: 0xBBBBBB,
+              fontFamily: 'Arial',
+              align: 'center'
+            });
+            artistText.anchor.set(0.5, -2.8);
+            artistText.alpha = 0.7;
+            nodeGraphic.addChild(artistText);
+          }
+        }
       }
 
       nodeGraphic.position.set(node.x, node.y);
-      nodeGraphic.interactive = lodLevel > 0;
-      nodeGraphic.buttonMode = lodLevel > 0;
+      nodeGraphic.interactive = true; // Always interactive for hover
+      nodeGraphic.buttonMode = true;
 
-      if (lodLevel > 0 && onNodeRightClick) {
+      // Store node data for interaction
+      (nodeGraphic as any).nodeData = node;
+
+      // Add hover effects
+      nodeGraphic.on('mouseover', () => {
+        nodeGraphic.scale.set(1.2);
+        nodeGraphic.alpha = 1;
+
+        // Show tooltip
+        if (fpsTextRef.current) {
+          const tooltipText = `${node.label || node.title || 'Unknown'}
+${node.artist ? `Artist: ${node.artist}` : ''}
+${node.genre || node.category ? `Genre: ${node.genre || node.category}` : ''}
+Connections: ${connectionCount}`;
+
+          // Update FPS text to show tooltip temporarily (quick hack)
+          const originalText = fpsTextRef.current.text;
+          fpsTextRef.current.text = tooltipText;
+          setTimeout(() => {
+            if (fpsTextRef.current) {
+              fpsTextRef.current.text = originalText;
+            }
+          }, 3000);
+        }
+      });
+
+      nodeGraphic.on('mouseout', () => {
+        nodeGraphic.scale.set(1.0);
+        nodeGraphic.alpha = alpha;
+      });
+
+      // Add click to explore
+      nodeGraphic.on('click', () => {
+        // Highlight connected nodes
+        const connectedNodeIds = new Set<string>();
+        edges.forEach(edge => {
+          const sourceId = edge.source_id || edge.source;
+          const targetId = edge.target_id || edge.target;
+          if (sourceId === node.id) {
+            connectedNodeIds.add(targetId);
+          } else if (targetId === node.id) {
+            connectedNodeIds.add(sourceId);
+          }
+        });
+
+        // Update visual emphasis on connected nodes
+        nodeContainer.children.forEach((child: any) => {
+          const childNode = child.nodeData;
+          if (childNode) {
+            if (connectedNodeIds.has(childNode.id)) {
+              child.alpha = 1;
+              child.scale.set(1.1);
+            } else if (childNode.id !== node.id) {
+              child.alpha = 0.3;
+              child.scale.set(0.9);
+            }
+          }
+        });
+
+        // Clear emphasis after 5 seconds
+        setTimeout(() => {
+          nodeContainer.children.forEach((child: any) => {
+            child.alpha = 1;
+            child.scale.set(1);
+          });
+        }, 5000);
+      });
+
+      if (onNodeRightClick) {
         nodeGraphic.on('rightclick', (event: PIXI.InteractionEvent) => {
           onNodeRightClick(node, event.data.originalEvent as React.MouseEvent);
         });
@@ -394,12 +546,35 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
     nodePoolRef.current = new ObjectPool<PIXI.Graphics>(
       () => new PIXI.Graphics(),
       (g) => {
-        if (g && !g.destroyed) {
-          g.clear();
-          g.removeAllListeners();
-          if (g.children && g.children.length > 0) {
-            g.removeChildren();
+        // Enhanced null and destroyed checks
+        if (!g || g === null || g === undefined) {
+          return;
+        }
+
+        try {
+          // Check if the graphics object is still valid
+          if (g.destroyed === true) {
+            return;
           }
+
+          // Safely clear the graphics
+          if (typeof g.clear === 'function') {
+            g.clear();
+          }
+
+          // Safely remove listeners
+          if (typeof g.removeAllListeners === 'function') {
+            g.removeAllListeners();
+          }
+
+          // Safely remove children if they exist
+          if (g.children && Array.isArray(g.children) && g.children.length > 0) {
+            if (typeof g.removeChildren === 'function') {
+              g.removeChildren();
+            }
+          }
+        } catch (error) {
+          console.warn('Error resetting graphics object in pool:', error);
         }
       },
       500

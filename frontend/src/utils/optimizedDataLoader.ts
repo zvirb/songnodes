@@ -158,7 +158,7 @@ class ProgressiveDataLoader {
       progressCallback?.(0);
 
       // Fetch nodes with pagination
-      const nodesResponse = await fetch(`/api/graph/nodes?offset=${offset}&limit=${limit}`, {
+      const nodesResponse = await fetch(`/api/v1/graph/nodes?offset=${offset}&limit=${limit}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -181,7 +181,7 @@ class ProgressiveDataLoader {
 
       // Fetch edges with pagination
       const edgesResponse = await fetch(
-        `/api/graph/edges?offset=${edgeOffset}&limit=${edgeLimit}`,
+        `/api/v1/graph/edges?offset=${edgeOffset}&limit=${edgeLimit}`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
