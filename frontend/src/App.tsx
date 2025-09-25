@@ -104,10 +104,24 @@ const AppContent: React.FC = () => {
   }, [selectedNodes]);
 
   return (
-    <div className={classNames('h-screen w-screen relative overflow-hidden', theme.isDark ? 'dark bg-gray-900' : 'bg-white')}>
+    <div className={classNames('fixed inset-0 overflow-hidden', theme.isDark ? 'dark bg-gray-900' : 'bg-white')}>
       <UnifiedHeader />
 
-      <main ref={setContainerRef as React.Ref<HTMLElement>} className="absolute top-[56px] left-0 right-0" style={{ bottom: deviceInfo.isMobile ? '5rem' : 0 }} data-testid="graph-container">
+      <main
+        ref={setContainerRef as React.Ref<HTMLElement>}
+        className="absolute left-0 right-0 overflow-hidden"
+        style={{
+          top: deviceInfo.isDesktop ? '64px' : deviceInfo.isTablet ? '0' : '0',
+          bottom: deviceInfo.isMobile ? '80px' : '0',
+          height: deviceInfo.isDesktop
+            ? 'calc(100vh - 64px)'
+            : deviceInfo.isTablet
+              ? '100vh'
+              : deviceInfo.isMobile
+                ? 'calc(100vh - 80px)'
+                : 'calc(100vh - 64px)'
+        }}
+        data-testid="graph-container">
         <Routes>
           <Route path="/" element={<GraphPage />} />
           <Route path="/graph" element={<GraphPage />} />

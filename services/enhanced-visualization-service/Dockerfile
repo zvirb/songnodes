@@ -5,7 +5,7 @@
 # ===========================================
 
 # ===== DEPENDENCIES CACHE STAGE =====
-FROM node:18-alpine AS deps-cache
+FROM public.ecr.aws/docker/library/node:18-alpine AS deps-cache
 
 # Install system dependencies once for better caching
 RUN apk add --no-cache \
@@ -41,7 +41,7 @@ RUN npm run build && \
     rm -rf .npm tsconfig.json src/
 
 # ===== NODE.JS PRODUCTION STAGE =====
-FROM node:18-alpine AS production
+FROM public.ecr.aws/docker/library/node:18-alpine AS production
 
 # Apply security updates and install minimal runtime dependencies
 RUN apk upgrade --no-cache && \
