@@ -12,6 +12,7 @@ import gzip
 import hashlib
 import traceback
 import re
+import uuid
 from typing import List, Dict, Optional, Any
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -25,8 +26,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import QueuePool
-from sqlalchemy import text, select, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import text, select, func, bindparam
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
 import prometheus_client
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 import logging
@@ -490,22 +491,42 @@ async def get_graph_edges(
         async with async_session() as session:
             try:
                 if node_ids:
-                    # Extract song IDs from node_ids (format: 'song_123')
-                    song_ids = [nid.replace('song_', '') for nid in node_ids if nid.startswith('song_')]
+                    # Extract song IDs from node_ids (format: 'song_<uuid>')
+                    raw_song_ids = [nid.replace('song_', '') for nid in node_ids if nid.startswith('song_')]
+
+                    # Convert to UUID objects for proper binding and filter invalid values
+                    song_ids: List[uuid.UUID] = []
+                    for raw_id in raw_song_ids:
+                        try:
+                            song_ids.append(uuid.UUID(raw_id))
+                        except ValueError:
+                            logger.warning(f"Ignoring invalid song UUID in get_graph_edges: {raw_id}")
+
+                    if not song_ids:
+                        logger.warning("No valid song IDs provided to get_graph_edges; returning empty result")
+                        return {
+                            'edges': [],
+                            'total': 0,
+                            'limit': limit,
+                            'offset': offset
+                        }
 
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as id,
+                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as row_number,
                                'song_' || song_id_1::text as source_id,
                                'song_' || song_id_2::text as target_id,
                                occurrence_count::float as weight,
                                'adjacency' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM song_adjacency
-                        WHERE song_id_1 = ANY(:song_ids::uuid[]) OR song_id_2 = ANY(:song_ids::uuid[])
+                        WHERE song_id_1 = ANY(:song_ids) OR song_id_2 = ANY(:song_ids)
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
-                    """)
+                    """).bindparams(
+                        bindparam('song_ids', type_=ARRAY(UUID(as_uuid=True)))
+                    )
+
                     result = await session.execute(query, {
                         "song_ids": song_ids,
                         "limit": limit,
@@ -516,7 +537,7 @@ async def get_graph_edges(
                     # The graph_edges view filters out occurrence_count = 1, missing 80% of data
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as id,
+                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as row_number,
                                'song_' || song_id_1::text as source_id,
                                'song_' || song_id_2::text as target_id,
                                occurrence_count::float as weight,
@@ -534,11 +555,16 @@ async def get_graph_edges(
                 edges = []
                 total_count = 0
                 for row in result:
+                    source_id = str(row.source_id)
+                    target_id = str(row.target_id)
+                    edge_id = f"{source_id}__{target_id}"
+
                     edge_data = {
-                        'id': str(row.id),
-                        'source_id': str(row.source_id),
-                        'target_id': str(row.target_id),
+                        'id': edge_id,
+                        'source': source_id,
+                        'target': target_id,
                         'weight': float(row.weight),
+                        'type': row.edge_type,
                         'edge_type': row.edge_type
                     }
                     edges.append(edge_data)
