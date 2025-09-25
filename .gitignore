@@ -61,6 +61,7 @@ frontend/playwright-report/
 frontend/test-results/
 test-results/
 playwright-report/
+frontend/tests/screenshots/
 
 # Scrapy projects (external)
 musicdb_scrapy/
@@ -170,3 +171,9 @@ data/rabbitmq/
 # Shell scripts (generated)
 # *.sh  # Temporarily allowing for integration
 !scripts/*.sh
+
+# Custom temporary files
+fix_main_py.py
+run_playwright_test.py
+test-data-integrity.js
+playwright.ci.config.js
