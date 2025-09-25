@@ -291,13 +291,25 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
     if (edgeGraphics && !edgeGraphics.destroyed && typeof edgeGraphics.clear === 'function') {
       edgeGraphics.clear();
     }
-    if (lodLevel > 0 && edgeGraphics && !edgeGraphics.destroyed) {
+    // Debug edge rendering
+    console.log('🔍 Edge rendering debug:', {
+      lodLevel,
+      edgeCount: edges.length,
+      visibleNodes: visibleNodeIds.size,
+      sampleEdge: edges[0],
+      edgeGraphicsValid: edgeGraphics && !edgeGraphics.destroyed
+    });
+
+    // Always render edges, just adjust detail based on LOD
+    if (edgeGraphics && !edgeGraphics.destroyed) {
       // Map edges properly - handle both naming conventions
       const edgesToRender = edges.filter(edge => {
         const sourceId = edge.source_id || edge.source;
         const targetId = edge.target_id || edge.target;
         return visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId);
       });
+
+      console.log(`🎨 Rendering ${edgesToRender.length} edges out of ${edges.length}`);
 
       const nodeMap = new Map(visibleNodes.map(n => [n.id, n]));
 
@@ -390,21 +402,25 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
         nodeGraphic.drawCircle(0, 0, nodeRadius);
         nodeGraphic.endFill();
 
-        // Add labels for important nodes at higher LOD
-        if (lodLevel > 2 && (connectionCount > 5 || zoom > 1.5)) {
+        // Add labels - always show for important nodes, scale with zoom
+        const showLabel = (lodLevel > 1 && connectionCount > 3) || zoom > 1.2;
+        if (showLabel) {
           const label = node.label || node.title || 'Unknown';
           const artist = node.artist || '';
 
-          // Create text label
-          const fontSize = Math.min(12, 8 + zoom * 2);
-          const text = new PIXI.Text(label.substring(0, 20), {
+          // Scale font size with zoom level properly
+          const baseFontSize = 10;
+          const fontSize = Math.round(baseFontSize / Math.sqrt(zoom)); // Inverse scale to maintain readability
+
+          const text = new PIXI.Text(label.substring(0, 25), {
             fontSize: fontSize,
             fill: 0xFFFFFF,
             fontFamily: 'Arial',
             align: 'center'
           });
-          text.anchor.set(0.5, -1.5);
-          text.alpha = 0.9;
+          text.anchor.set(0.5, -2);
+          text.alpha = Math.min(1, 0.6 + (zoom * 0.2)); // Fade in with zoom
+          text.scale.set(1 / zoom); // Counter-scale to maintain consistent size
           nodeGraphic.addChild(text);
 
           // Add artist name if available
