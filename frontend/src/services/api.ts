@@ -145,9 +145,9 @@ class ApiClient {
 }
 
 // Create API client instances
-const apiClient = new ApiClient('http://localhost:8080'); // API Gateway for main services
-// Use the correct base URL for development environment
-const graphApiClient = new ApiClient('http://localhost:8084'); // Direct to graph visualization service
+// For containerized deployment, use proxy through API Gateway
+const apiClient = new ApiClient('/api'); // API Gateway for main services
+const graphApiClient = new ApiClient('/api'); // Proxied through API Gateway
 
 // Graph data API
 export const graphApi = {
@@ -156,8 +156,8 @@ export const graphApi = {
     try {
       // Fetch nodes and edges separately from working endpoints
       const [nodesResponse, edgesResponse] = await Promise.all([
-        graphApiClient.get<{nodes: any[], total: number}>('/api/graph/nodes'),
-        graphApiClient.get<{edges: any[], total: number}>('/api/graph/edges')
+        graphApiClient.get<{nodes: any[], total: number}>('/graph/nodes'),
+        graphApiClient.get<{edges: any[], total: number}>('/graph/edges')
       ]);
 
       if (nodesResponse.status === 'error' || edgesResponse.status === 'error') {
