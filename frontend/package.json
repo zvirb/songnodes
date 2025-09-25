@@ -46,6 +46,7 @@
     "react-hotkeys-hook": "^4.5.1",
     "react-use": "^17.5.1",
     "react-window": "^2.1.1",
+    "web-vitals": "^5.1.0",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
