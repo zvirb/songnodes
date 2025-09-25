@@ -1,11 +1,11 @@
 import { FullConfig, chromium } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting SongNodes WebGL E2E Test Setup...');
 
   // Ensure test directories exist
-  const fs = require('fs');
-  const path = require('path');
 
   const testDirs = [
     'tests/reports',

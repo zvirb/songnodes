@@ -37,8 +37,8 @@ export default defineConfig({
   ],
 
   // Global test setup
-  globalSetup: require.resolve('./tests/setup/global-setup.ts'),
-  globalTeardown: require.resolve('./tests/setup/global-teardown.ts'),
+  globalSetup: './tests/setup/global-setup.ts',
+  globalTeardown: './tests/setup/global-teardown.ts',
 
   use: {
     // Base URL for tests
