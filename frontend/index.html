@@ -2,237 +2,131 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SongNodes - Music Graph Visualization</title>
-    <meta name="description" content="Interactive music relationship graph visualization with React 18, D3.js, and PIXI.js" />
+    <title>SongNodes DJ - Interactive Mixing Assistant</title>
 
-    <!-- COMPLETELY DISABLE ALL CACHING -->
+    <!-- Disable ALL caching -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#4F46E5" />
-    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
-    <link rel="manifest" href="/manifest.json" />
-    
-    <!-- Performance Hints -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-    
-    <!-- SEO -->
-    <meta property="og:title" content="SongNodes - Music Graph Visualization" />
-    <meta property="og:description" content="Interactive music relationship graph visualization with React 18, D3.js, and PIXI.js" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://songnodes.app" />
-    <meta property="og:image" content="/og-image.png" />
-    
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="SongNodes - Music Graph Visualization" />
-    <meta name="twitter:description" content="Interactive music relationship graph visualization with React 18, D3.js, and PIXI.js" />
-    <meta name="twitter:image" content="/og-image.png" />
-    
-    <!-- Performance and Compatibility -->
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="format-detection" content="telephone=no" />
-    
-    <!-- Accessibility -->
-    <meta name="color-scheme" content="dark light" />
-    
+
+    <!-- Prevent zoom on mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
     <style>
-      /* Critical CSS for initial render */
-      body {
+      /* Critical CSS for immediate render */
+      * {
         margin: 0;
         padding: 0;
-        background-color: #0f172a;
-        color: #f8fafc;
-        font-family: 'Inter', system-ui, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+        box-sizing: border-box;
       }
-      
-      /* Loading spinner */
-      .loading-container {
+
+      body {
+        background: #0a0a0a;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+
+      #root {
+        width: 100vw;
+        height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      /* Loading screen */
+      .loading {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
+        background: #0a0a0a;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #0f172a;
         z-index: 9999;
       }
-      
+
+      .loading-content {
+        text-align: center;
+      }
+
       .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(79, 70, 229, 0.3);
-        border-top: 3px solid #4f46e5;
+        width: 60px;
+        height: 60px;
+        border: 3px solid #1a1a1a;
+        border-top: 3px solid #00ff41;
         border-radius: 50%;
         animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
       }
-      
-      .loading-text {
-        margin-top: 16px;
-        color: #94a3b8;
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
+
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
-      
-      /* Hide loading when app is ready */
-      .app-ready .loading-container {
-        display: none;
-      }
-      
-      /* Reduced motion */
-      @media (prefers-reduced-motion: reduce) {
-        .loading-spinner {
-          animation: none;
-        }
-      }
-      
-      /* High contrast mode */
-      @media (prefers-contrast: high) {
-        body {
-          background-color: #000000;
-          color: #ffffff;
-        }
-        
-        .loading-spinner {
-          border-color: #ffffff;
-          border-top-color: #ffffff;
-        }
-      }
-      
-      /* Focus management */
-      .js-focus-visible :focus:not(.focus-visible) {
-        outline: none;
+
+      .loading-text {
+        color: #00ff41;
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: 1px;
       }
     </style>
   </head>
   <body>
-    <!-- Initial loading screen -->
-    <div class="loading-container" id="loading-container">
-      <div style="text-align: center;">
+    <div id="loading" class="loading">
+      <div class="loading-content">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Loading SongNodes...</div>
+        <div class="loading-text">INITIALIZING DJ INTERFACE</div>
       </div>
     </div>
-    
-    <!-- React app root -->
+
     <div id="root"></div>
-    
-    <!-- Error fallback -->
-    <noscript>
-      <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #0f172a; color: #f8fafc; text-align: center; padding: 20px; box-sizing: border-box;">
-        <div>
-          <h1 style="color: #ef4444; margin-bottom: 16px;">JavaScript Required</h1>
-          <p style="color: #94a3b8; margin-bottom: 16px;">
-            SongNodes requires JavaScript to run. Please enable JavaScript in your browser and refresh the page.
-          </p>
-          <p style="color: #64748b; font-size: 14px;">
-            If you're using a screen reader or need accessibility assistance, 
-            please contact support at accessibility@songnodes.app
-          </p>
-        </div>
-      </div>
-    </noscript>
-    
-    <script type="module" src="/src/main.tsx"></script>
-    
+
     <script>
-      // Hide loading screen when React app is ready
-      window.addEventListener('DOMContentLoaded', function() {
-        // Add focus-visible polyfill class
-        document.body.classList.add('js-focus-visible');
-        
-        // Simple check if app loaded successfully
-        setTimeout(function() {
-          if (document.querySelector('#root > *')) {
-            document.body.classList.add('app-ready');
-          }
-        }, 100);
-      });
-      
-      // Error handling
-      window.addEventListener('error', function(e) {
-        console.error('Global error:', e);
-        
-        // Show error message if app fails to load
-        const loadingContainer = document.getElementById('loading-container');
-        if (loadingContainer) {
-          loadingContainer.innerHTML = `
-            <div style="text-align: center; color: #ef4444;">
-              <h2>Application Error</h2>
-              <p style="color: #94a3b8; margin: 16px 0;">
-                SongNodes failed to load. Please refresh the page to try again.
-              </p>
-              <button onclick="location.reload()" style="
-                background: #4f46e5; 
-                color: white; 
-                border: none; 
-                padding: 8px 16px; 
-                border-radius: 6px; 
-                cursor: pointer;
-                font-size: 14px;
-              ">
-                Refresh Page
-              </button>
-            </div>
-          `;
-        }
-      });
-      
-      // Performance monitoring
-      if (window.performance && window.performance.mark) {
-        window.performance.mark('app-start');
-      }
-      
-      // CLEAR ALL CACHES AND SERVICE WORKERS ON EVERY LOAD
-      (function clearAllCaches() {
-        // Unregister ALL service workers
+      // Kill ALL service workers and caches on load
+      (async function() {
+        // Unregister all service workers
         if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-              registration.unregister();
-              console.log('🧹 Unregistered service worker:', registration.scope);
-            }
-          });
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let registration of registrations) {
+            await registration.unregister();
+          }
         }
 
-        // Delete ALL caches
+        // Delete all caches
         if ('caches' in window) {
-          caches.keys().then(function(names) {
-            for (let name of names) {
-              caches.delete(name);
-              console.log('🗑️ Deleted cache:', name);
-            }
-          });
+          const names = await caches.keys();
+          for (let name of names) {
+            await caches.delete(name);
+          }
         }
 
-        // Clear storage periodically
-        const lastClear = sessionStorage.getItem('lastCacheClear');
-        const now = Date.now();
-        if (!lastClear || now - parseInt(lastClear) > 30000) { // Clear every 30 seconds
+        // Clear storage
+        try {
           localStorage.clear();
           sessionStorage.clear();
-          sessionStorage.setItem('lastCacheClear', now.toString());
-          console.log('🔄 Cleared all storage at', new Date().toLocaleTimeString());
-        }
+        } catch (e) {}
+
+        // Hide loading screen once app loads
+        window.addEventListener('DOMContentLoaded', () => {
+          setTimeout(() => {
+            const loader = document.getElementById('loading');
+            if (loader && document.querySelector('#root').children.length > 0) {
+              loader.style.display = 'none';
+            }
+          }, 100);
+        });
       })();
     </script>
+
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
