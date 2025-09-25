@@ -34,9 +34,8 @@
       #root {
         width: 100vw;
         height: 100vh;
-        position: absolute;
-        top: 0;
-        left: 0;
+        position: relative;
+        display: block;
       }
 
       /* Loading screen */
@@ -119,11 +118,25 @@
         window.addEventListener('DOMContentLoaded', () => {
           setTimeout(() => {
             const loader = document.getElementById('loading');
-            if (loader && document.querySelector('#root').children.length > 0) {
-              loader.style.display = 'none';
+            const root = document.querySelector('#root');
+            // Hide loading screen when React has mounted or after 2 seconds max
+            if (loader && (root.children.length > 0 || root.querySelector('.app-container'))) {
+              loader.style.opacity = '0';
+              loader.style.transition = 'opacity 0.3s ease-out';
+              setTimeout(() => {
+                loader.style.display = 'none';
+              }, 300);
             }
-          }, 100);
+          }, 200);
         });
+
+        // Fallback: Force hide loading screen after 3 seconds
+        setTimeout(() => {
+          const loader = document.getElementById('loading');
+          if (loader) {
+            loader.style.display = 'none';
+          }
+        }, 3000);
       })();
     </script>
 

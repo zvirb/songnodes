@@ -75,8 +75,19 @@ class EnhancedMusicDatabasePipeline:
         }
         return cls(db_config)
 
-    async def open_spider(self, spider):
-        """Initialize database connection and load target tracks"""
+    def open_spider(self, spider):
+        """Initialize database connection and load target tracks - synchronous wrapper"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        return loop.run_until_complete(self._async_open_spider(spider))
+
+    async def _async_open_spider(self, spider):
+        """Async spider opening implementation"""
         self.logger.info("Initializing enhanced database pipeline...")
 
         try:
@@ -103,8 +114,19 @@ class EnhancedMusicDatabasePipeline:
             self.logger.error(f"Failed to initialize database pipeline: {e}")
             raise
 
-    async def close_spider(self, spider):
-        """Process remaining batches and close connections"""
+    def close_spider(self, spider):
+        """Process remaining batches and close connections - synchronous wrapper"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        return loop.run_until_complete(self._async_close_spider(spider))
+
+    async def _async_close_spider(self, spider):
+        """Async spider closing implementation"""
         self.logger.info("Closing enhanced database pipeline...")
 
         try:
@@ -123,8 +145,20 @@ class EnhancedMusicDatabasePipeline:
         except Exception as e:
             self.logger.error(f"Error closing pipeline: {e}")
 
-    async def process_item(self, item, spider):
-        """Main item processing entry point"""
+    def process_item(self, item, spider):
+        """Main item processing entry point - synchronous wrapper for Scrapy"""
+        # Scrapy expects synchronous processing, so we run async in event loop
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        return loop.run_until_complete(self._async_process_item(item, spider))
+
+    async def _async_process_item(self, item, spider):
+        """Async item processing implementation"""
         try:
             item_type = type(item).__name__
             self.logger.debug(f"Processing item of type: {item_type}")

@@ -10,41 +10,48 @@ export const useDataLoader = () => {
     const loadData = async () => {
       try {
         // Load nodes
-        const nodesResponse = await fetch('/api/v1/graph/nodes?limit=1000');
+        const nodesResponse = await fetch('/api/graph/nodes?limit=500');
         const nodesData = await nodesResponse.json();
 
         // Load edges
-        const edgesResponse = await fetch('/api/v1/graph/edges?limit=5000');
+        const edgesResponse = await fetch('/api/graph/edges?limit=5000');
         const edgesData = await edgesResponse.json();
 
         // Transform nodes
         const nodes: GraphNode[] = nodesData.nodes.map((node: any) => ({
           id: node.id,
-          title: node.label || node.name || 'Unknown',
-          artist: node.artist || 'Unknown',
+          title: node.metadata?.title || 'Unknown',
+          artist: node.metadata?.artist || 'Unknown',
           artistId: node.artist_id,
-          bpm: node.bpm,
-          key: node.key,
-          genre: node.genre || node.type,
-          energy: node.energy,
-          year: node.year,
-          label: node.label,
-          connections: node.connection_count || 0,
-          popularity: node.popularity || 0,
-          // Random initial positions
-          x: Math.random() * 800 - 400,
-          y: Math.random() * 600 - 300,
+          bpm: node.metadata?.bpm,
+          key: node.metadata?.key,
+          genre: node.metadata?.genre || node.metadata?.category || 'Electronic',
+          energy: node.metadata?.energy,
+          year: node.metadata?.release_year,
+          label: node.metadata?.label || node.metadata?.title || 'Unknown',
+          connections: node.metadata?.appearance_count || 0,
+          popularity: node.metadata?.popularity || 0,
+          // Use provided positions or random
+          x: node.position?.x || Math.random() * 800 - 400,
+          y: node.position?.y || Math.random() * 600 - 300,
         }));
 
-        // Transform edges
-        const edges: GraphEdge[] = edgesData.edges.map((edge: any, index: number) => ({
-          id: edge.id || `edge-${index}`,
-          source: edge.source_id || edge.source,
-          target: edge.target_id || edge.target,
-          weight: edge.weight || edge.occurrence_count || 1,
-          distance: edge.avg_distance || 1,
-          type: edge.edge_type || 'mix',
-        }));
+        // Create a set of loaded node IDs for quick lookup
+        const nodeIds = new Set(nodes.map(n => n.id));
+
+        // Transform edges - only include edges where both nodes are in our loaded set
+        const edges: GraphEdge[] = edgesData.edges
+          .filter((edge: any) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+          .map((edge: any, index: number) => ({
+            id: edge.id || `edge-${index}`,
+            source: edge.source,
+            target: edge.target,
+            weight: edge.weight || 1,
+            distance: edge.distance || 1,
+            type: edge.type || edge.edge_type || 'adjacency',
+          }));
+
+        console.log(`Filtered ${edges.length} edges from ${edgesData.edges.length} total edges`);
 
         setGraphData({ nodes, edges });
         applyFilters({});

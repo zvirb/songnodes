@@ -306,35 +306,18 @@ async def get_graph_nodes(
                         }
                     )
                 else:
-                    # Get all nodes with limit and pagination, including artist data
+                    # Get all nodes from the nodes view
+                    # The view already provides metadata as a JSONB object with all fields
                     query = text("""
                         SELECT
-                            'song_' || t.song_id::text as id,
-                            'song_' || t.song_id::text as track_id,
-                            0 as x_position,
-                            0 as y_position,
-                            json_build_object(
-                                'label', CASE
-                                    WHEN a.name IS NOT NULL THEN a.name || ' - ' || t.title
-                                    ELSE t.title
-                                END,
-                                'title', t.title,
-                                'artist', a.name,
-                                'node_type', 'song',
-                                'category', COALESCE(t.genre, 'Electronic'),
-                                'release_year', t.release_year,
-                                'appearance_count', COALESCE(pt.count, 0)
-                            ) as metadata,
+                            'song_' || n.id::text as id,
+                            'song_' || n.track_id::text as track_id,
+                            COALESCE(n.x_position, 0) as x_position,
+                            COALESCE(n.y_position, 0) as y_position,
+                            n.metadata as metadata,
                             COUNT(*) OVER() as total_count
-                        FROM songs t
-                        LEFT JOIN song_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
-                        LEFT JOIN artists a ON ta.artist_id = a.artist_id
-                        LEFT JOIN (
-                            SELECT song_id, COUNT(*) as count
-                            FROM playlist_songs
-                            GROUP BY song_id
-                        ) pt ON pt.song_id = t.song_id
-                        ORDER BY COALESCE(pt.count, 0) DESC
+                        FROM musicdb.nodes n
+                        ORDER BY n.created_at DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
@@ -347,6 +330,21 @@ async def get_graph_nodes(
                 logger.info(f"DEBUG: Query executed, processing results...")
                 for row in result:
                     logger.info(f"DEBUG: Processing row: {row}")
+                    # Get the metadata from the view
+                    metadata = dict(row.metadata) if row.metadata else {}
+
+                    # Add computed fields
+                    artist = metadata.get('artist', 'Unknown')
+                    title = metadata.get('title', 'Unknown')
+                    if artist and artist != 'Unknown':
+                        metadata['label'] = f"{artist} - {title}"
+                    else:
+                        metadata['label'] = title
+
+                    metadata['node_type'] = 'song'
+                    metadata['category'] = metadata.get('genre', 'Electronic')
+                    metadata['appearance_count'] = 0
+
                     node_data = {
                         'id': str(row.id),
                         'track_id': str(row.track_id),
@@ -354,7 +352,7 @@ async def get_graph_nodes(
                             'x': float(row.x_position) if row.x_position is not None else 0.0,
                             'y': float(row.y_position) if row.y_position is not None else 0.0
                         },
-                        'metadata': row.metadata or {}
+                        'metadata': metadata
                     }
                     nodes.append(node_data)
                     if hasattr(row, 'total_count'):
@@ -517,10 +515,12 @@ async def get_graph_edges(
                                'song_' || song_id_1::text as source_id,
                                'song_' || song_id_2::text as target_id,
                                occurrence_count::float as weight,
-                               'adjacency' as edge_type,
+                               'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM song_adjacency
-                        WHERE song_id_1 = ANY(:song_ids) OR song_id_2 = ANY(:song_ids)
+                        WHERE (song_id_1 = ANY(:song_ids) OR song_id_2 = ANY(:song_ids))
+                          AND avg_distance = 1.0  -- Only consecutive tracks in setlists
+                          AND occurrence_count >= 3  -- Only show strong adjacency relationships
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """).bindparams(
@@ -533,17 +533,19 @@ async def get_graph_edges(
                         "offset": offset
                     })
                 else:
-                    # Query directly from song_adjacency to get ALL adjacencies
-                    # The graph_edges view filters out occurrence_count = 1, missing 80% of data
+                    # Query song_adjacency for SEQUENTIAL adjacencies only (consecutive tracks in setlists)
+                    # Filter to only show the strongest adjacency relationships to reduce visual clutter
                     query = text("""
                         SELECT
                                ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as row_number,
                                'song_' || song_id_1::text as source_id,
                                'song_' || song_id_2::text as target_id,
                                occurrence_count::float as weight,
-                               'adjacency' as edge_type,
+                               'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM song_adjacency
+                        WHERE avg_distance = 1.0  -- Only consecutive tracks in setlists
+                          AND occurrence_count >= 3  -- Only show strong adjacency relationships
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
@@ -1130,3 +1132,5 @@ if __name__ == "__main__":
         loop="uvloop",
         access_log=True
     )
+# Cache bust: 1758790368
+# Cache bust: 1758790461
