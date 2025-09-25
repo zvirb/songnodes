@@ -5,7 +5,7 @@
     "FAIL": 3,
     "WARN": 3
   },
-  "duration": 12604,
+  "duration": 12999,
   "results": [
     {
       "test": "API_GATEWAY_HEALTH",
@@ -13,14 +13,14 @@
       "message": "API Gateway is responding",
       "details": {
         "status": "healthy",
-        "timestamp": "2025-09-25T06:27:28.138Z",
-        "uptime": 346.253769162,
+        "timestamp": "2025-09-25T06:35:40.687Z",
+        "uptime": 838.802894837,
         "memory": {
-          "rss": 69033984,
-          "heapTotal": 19513344,
-          "heapUsed": 17829600,
-          "external": 1562821,
-          "arrayBuffers": 298280
+          "rss": 68919296,
+          "heapTotal": 21086208,
+          "heapUsed": 19269520,
+          "external": 1882478,
+          "arrayBuffers": 617937
         },
         "version": "1.0.0",
         "environment": "development"
@@ -33,19 +33,19 @@
       "message": "Graph API is responding",
       "details": {
         "status": "healthy",
-        "timestamp": "2025-09-25T06:27:28.145Z",
-        "uptime": 346.261456985,
+        "timestamp": "2025-09-25T06:35:40.694Z",
+        "uptime": 838.810429245,
         "memory": {
-          "rss": 69165056,
-          "heapTotal": 19513344,
-          "heapUsed": 17906688,
-          "external": 1562821,
-          "arrayBuffers": 298280
+          "rss": 69181440,
+          "heapTotal": 21086208,
+          "heapUsed": 19346152,
+          "external": 1882478,
+          "arrayBuffers": 617937
         },
         "version": "1.0.0",
         "environment": "development"
       },
-      "timestamp": 34
+      "timestamp": 33
     },
     {
       "test": "GRAPH_NODES_ENDPOINT",
@@ -63,14 +63,14 @@
       "details": {
         "edgeCount": 1000
       },
-      "timestamp": 64
+      "timestamp": 80
     },
     {
       "test": "BROWSER_INIT",
       "status": "PASS",
       "message": "Browser initialized successfully",
       "details": null,
-      "timestamp": 375
+      "timestamp": 871
     },
     {
       "test": "FRONTEND_LOAD",
@@ -80,56 +80,56 @@
         "url": "http://localhost:3006/",
         "status": 200
       },
-      "timestamp": 1196
+      "timestamp": 1495
     },
     {
       "test": "REACT_ROOT",
       "status": "PASS",
       "message": "React root element found",
       "details": null,
-      "timestamp": 3269
+      "timestamp": 3570
     },
     {
       "test": "REACT_APP_MOUNT",
       "status": "FAIL",
       "message": "App container not found",
       "details": "locator.waitFor: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.app-container').first() to be visible\u001b[22m\n",
-      "timestamp": 6271
+      "timestamp": 6572
     },
     {
       "test": "API_LOADING_STATE",
       "status": "WARN",
       "message": "No loading overlay found",
       "details": null,
-      "timestamp": 8273
+      "timestamp": 8575
     },
     {
       "test": "API_ERROR_CHECK",
       "status": "PASS",
       "message": "No error messages visible",
       "details": null,
-      "timestamp": 8275
+      "timestamp": 8577
     },
     {
       "test": "GRAPH_COMPONENT",
       "status": "FAIL",
       "message": "Graph component not found",
       "details": "locator.waitFor: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.app-content, .graph-canvas, [class*=\"graph\"]').first() to be visible\u001b[22m\n",
-      "timestamp": 11338
+      "timestamp": 11617
     },
     {
       "test": "PIXI_LIBRARY",
       "status": "WARN",
       "message": "PIXI library not found in global scope (may be module-scoped)",
       "details": null,
-      "timestamp": 11342
+      "timestamp": 11621
     },
     {
       "test": "PIXI_CANVAS_INFO",
       "status": "FAIL",
       "message": "No canvas elements found",
       "details": null,
-      "timestamp": 11343
+      "timestamp": 11622
     },
     {
       "test": "WEBGL_CONTEXT",
@@ -149,14 +149,14 @@
           "EXT_depth_clamp"
         ]
       },
-      "timestamp": 11451
+      "timestamp": 11830
     },
     {
       "test": "PERFORMANCE_MONITOR",
       "status": "WARN",
       "message": "Performance monitor not visible (may be disabled)",
       "details": null,
-      "timestamp": 12454
+      "timestamp": 12833
     },
     {
       "test": "BROWSER_PERFORMANCE",
@@ -166,31 +166,31 @@
         "loadTime": null,
         "domContentLoaded": null,
         "domInteractive": null,
-        "memoryUsed": 26
+        "memoryUsed": 12
       },
-      "timestamp": 12455
+      "timestamp": 12835
     }
   ],
   "screenshots": [
     {
       "filename": "01-frontend-load.png",
       "description": "Initial frontend load",
-      "timestamp": 1195
+      "timestamp": 1495
     },
     {
       "filename": "02-after-initial-wait.png",
       "description": "After initial wait",
-      "timestamp": 3263
+      "timestamp": 3561
     },
     {
       "filename": "04-api-data-loaded.png",
       "description": "After API data loading attempt",
-      "timestamp": 8337
+      "timestamp": 8616
     },
     {
       "filename": "06-final-state.png",
       "description": "Final application state",
-      "timestamp": 12512
+      "timestamp": 12894
     }
   ],
   "errors": [
@@ -198,7 +198,7 @@
       "test": "PAGE_ERROR",
       "error": "Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.",
       "stack": "Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at Ie (http://localhost:3006/assets/index.js:41:33642)\n    at Ia (http://localhost:3006/assets/index.js:39:19759)\n    at http://localhost:3006/assets/index.js:39:19622\n    at http://localhost:3006/assets/index.js:41:58549\n    at Set.forEach (<anonymous>)\n    at r (http://localhost:3006/assets/index.js:41:58538)\n    at http://localhost:3006/assets/index.js:61:3733\n    at Object.updateViewport (http://localhost:3006/assets/index.js:61:9566)\n    at HTMLDivElement.<anonymous> (http://localhost:3006/assets/GraphVisualization.js:248:105501)\n    at gi.call (http://localhost:3006/assets/GraphVisualization.js:248:71738)",
-      "timestamp": 1164
+      "timestamp": 1439
     }
   ]
 }
