@@ -119,6 +119,14 @@ export const HighPerformanceCanvas: React.FC<HighPerformanceCanvasProps> = ({
           setEdges(data.edges);
           setHasMore(data.hasMore ?? false);
 
+          // Debug logging
+          console.log('🎯 Loaded graph data:', {
+            nodeCount: nodesWithPositions.length,
+            edgeCount: data.edges.length,
+            sampleEdge: data.edges[0],
+            sampleNode: nodesWithPositions[0]
+          });
+
           // Start force layout
           forceLayout.start(nodesWithPositions, data.edges);
         }
