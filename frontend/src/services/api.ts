@@ -145,25 +145,91 @@ class ApiClient {
 }
 
 // Create API client instances
-const apiClient = new ApiClient();
-const graphApiClient = new ApiClient('/graph-api'); // Proxy to graph visualization service
+const apiClient = new ApiClient('http://localhost:8080'); // API Gateway for main services
+// Use the correct base URL for development environment
+const graphApiClient = new ApiClient('http://localhost:8084'); // Direct to graph visualization service
 
 // Graph data API
 export const graphApi = {
   // Get full graph data
   async getGraphData(filters?: SearchFilters): Promise<GraphApiResponse> {
-    const params = filters ? { filters: JSON.stringify(filters) } : undefined;
-    const response = await graphApiClient.get<GraphData>('/api/graph/data', params);
+    try {
+      // Fetch nodes and edges separately from working endpoints
+      const [nodesResponse, edgesResponse] = await Promise.all([
+        graphApiClient.get<{nodes: any[], total: number}>('/api/graph/nodes'),
+        graphApiClient.get<{edges: any[], total: number}>('/api/graph/edges')
+      ]);
 
-    return {
-      ...response,
-      metadata: {
-        totalNodes: response.data.nodes?.length || 0,
-        totalEdges: response.data.edges?.length || 0,
-        filters,
-        processingTime: 0, // This would come from the backend
-      },
-    };
+      if (nodesResponse.status === 'error' || edgesResponse.status === 'error') {
+        return {
+          data: { nodes: [], edges: [] },
+          status: 'error',
+          message: 'Failed to fetch graph data',
+          timestamp: Date.now(),
+          metadata: {
+            totalNodes: 0,
+            totalEdges: 0,
+            filters,
+            processingTime: 0,
+          },
+        };
+      }
+
+      // Transform data to expected format
+      const graphData: GraphData = {
+        nodes: nodesResponse.data.nodes?.map((node: any) => ({
+          id: node.id,
+          label: node.metadata?.title || node.metadata?.label || node.id,
+          type: 'track' as const,
+          x: node.position?.x || 0,
+          y: node.position?.y || 0,
+          // Map metadata to node properties for compatibility
+          title: node.metadata?.title,
+          artist: node.metadata?.artist,
+          name: node.metadata?.title,
+          genre: node.metadata?.category,
+          track: {
+            id: node.track_id || node.id,
+            name: node.metadata?.title || node.metadata?.label || '',
+            artist: node.metadata?.artist || '',
+            genre: node.metadata?.category,
+          }
+        })) || [],
+        edges: edgesResponse.data.edges?.map((edge: any) => ({
+          id: edge.id,
+          source: edge.source_id,
+          target: edge.target_id,
+          weight: edge.weight || 1,
+          type: edge.edge_type as any || 'adjacency',
+        })) || []
+      };
+
+      return {
+        data: graphData,
+        status: 'success',
+        timestamp: Date.now(),
+        metadata: {
+          totalNodes: graphData.nodes.length,
+          totalEdges: graphData.edges.length,
+          filters,
+          processingTime: 0,
+        },
+      };
+    } catch (error) {
+      console.error('Failed to fetch graph data:', error);
+      return {
+        data: { nodes: [], edges: [] },
+        status: 'error',
+        message: 'Failed to fetch graph data',
+        timestamp: Date.now(),
+        metadata: {
+          totalNodes: 0,
+          totalEdges: 0,
+          filters,
+          processingTime: 0,
+        },
+      };
+    }
   },
 
   // Get graph data for specific tracks
