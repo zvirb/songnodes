@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SongNodes - Music Graph Visualization</title>
     <meta name="description" content="Interactive music relationship graph visualization with React 18, D3.js, and PIXI.js" />
+
+    <!-- COMPLETELY DISABLE ALL CACHING -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -196,20 +201,38 @@
         window.performance.mark('app-start');
       }
       
-      // Service worker registration (if PWA is enabled)
-      // Check if in production by looking at the hostname
-      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-      if ('serviceWorker' in navigator && isProduction) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-              console.log('SW registered: ', registration);
-            })
-            .catch(function(registrationError) {
-              console.log('SW registration failed: ', registrationError);
-            });
-        });
-      }
+      // CLEAR ALL CACHES AND SERVICE WORKERS ON EVERY LOAD
+      (function clearAllCaches() {
+        // Unregister ALL service workers
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              registration.unregister();
+              console.log('🧹 Unregistered service worker:', registration.scope);
+            }
+          });
+        }
+
+        // Delete ALL caches
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) {
+              caches.delete(name);
+              console.log('🗑️ Deleted cache:', name);
+            }
+          });
+        }
+
+        // Clear storage periodically
+        const lastClear = sessionStorage.getItem('lastCacheClear');
+        const now = Date.now();
+        if (!lastClear || now - parseInt(lastClear) > 30000) { // Clear every 30 seconds
+          localStorage.clear();
+          sessionStorage.clear();
+          sessionStorage.setItem('lastCacheClear', now.toString());
+          console.log('🔄 Cleared all storage at', new Date().toLocaleTimeString());
+        }
+      })();
     </script>
   </body>
 </html>
