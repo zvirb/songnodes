@@ -628,14 +628,12 @@ export const GraphVisualization: React.FC = () => {
 
   // Create enhanced edge from graph edge
   const createEnhancedEdge = useCallback((edge: GraphEdge, nodes: Map<string, EnhancedGraphNode>): EnhancedGraphEdge | null => {
-    const sourceId = typeof edge.source === 'string' ? edge.source : edge.source;
-    const targetId = typeof edge.target === 'string' ? edge.target : edge.target;
-    const sourceNode = nodes.get(sourceId);
-    const targetNode = nodes.get(targetId);
+    const sourceNode = nodes.get(edge.source);
+    const targetNode = nodes.get(edge.target);
 
     // Skip edges where source or target nodes don't exist
     if (!sourceNode || !targetNode) {
-      console.warn(`Skipping edge ${edge.id}: missing nodes (source: ${sourceId}, target: ${targetId})`);
+      console.warn(`Skipping edge ${edge.id}: missing nodes (source: ${edge.source}, target: ${edge.target})`);
       return null;
     }
 
@@ -918,11 +916,22 @@ export const GraphVisualization: React.FC = () => {
       enhancedNodesRef.current.set(node.id, node);
     });
 
-    // Create enhanced edges (skip invalid ones)
-    graphData.edges.forEach(edgeData => {
+    // Filter out invalid edges before processing
+    const nodeIds = new Set(graphData.nodes.map(n => n.id));
+    const validEdges = graphData.edges.filter(edge => {
+      const sourceExists = nodeIds.has(edge.source);
+      const targetExists = nodeIds.has(edge.target);
+      if (!sourceExists || !targetExists) {
+        console.warn(`Filtering out edge ${edge.id} due to missing nodes. Source: ${edge.source} (exists: ${sourceExists}), Target: ${edge.target} (exists: ${targetExists})`);
+      }
+      return sourceExists && targetExists;
+    });
+
+    // Create enhanced edges
+    validEdges.forEach(edgeData => {
       const edge = createEnhancedEdge(edgeData, nodeMap);
       if (!edge) {
-        return; // Skip invalid edges
+        return; // This check is now redundant but safe to keep
       }
 
       const pixiGraphics = createPixiEdge(edge);

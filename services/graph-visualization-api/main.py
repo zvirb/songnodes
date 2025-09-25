@@ -713,9 +713,11 @@ async def get_edges(
 ):
     """Get all graph edges with pagination."""
     try:
-        # Parse node_ids if provided as comma-separated string
-        parsed_node_ids = None
-        if node_ids:
+        # If node_ids are not provided, fetch all nodes first
+        if not node_ids:
+            nodes_result = await get_graph_nodes(limit=10000)  # A large limit to get all nodes
+            parsed_node_ids = [node['id'] for node in nodes_result['nodes']]
+        else:
             parsed_node_ids = [id.strip() for id in node_ids.split(',')]
 
         result = await db_circuit_breaker.call(
