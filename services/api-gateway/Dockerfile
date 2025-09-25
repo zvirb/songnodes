@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM public.ecr.aws/docker/library/node:18-alpine
 
 # Install PostgreSQL client tools for backup/restore
 RUN apk add --no-cache postgresql-client

@@ -4,7 +4,7 @@ services:
   # ===========================================
 
   postgres:
-    image: postgres:15-alpine
+    image: public.ecr.aws/docker/library/postgres:15-alpine
     container_name: musicdb-postgres
     restart: always
     ports:
@@ -72,7 +72,7 @@ services:
           memory: 256M
 
   redis:
-    image: redis:7-alpine
+    image: public.ecr.aws/docker/library/redis:7-alpine
     container_name: musicdb-redis
     restart: always
     ports:
@@ -102,7 +102,7 @@ services:
   # ===========================================
 
   rabbitmq:
-    image: rabbitmq:3.12-management-alpine
+    image: public.ecr.aws/docker/library/rabbitmq:3.12-management-alpine
     container_name: musicdb-rabbitmq
     restart: always
     ports:
@@ -619,7 +619,7 @@ services:
   # ===========================================
 
   prometheus:
-    image: prom/prometheus:latest
+    image: quay.io/prometheus/prometheus:latest
     container_name: metrics-prometheus
     restart: always
     ports:
@@ -645,7 +645,7 @@ services:
           memory: 1G
 
   grafana:
-    image: grafana/grafana:latest
+    image: public.ecr.aws/bitnami/grafana:latest
     container_name: grafana
     restart: always
     ports:
@@ -716,7 +716,7 @@ services:
   # ===========================================
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: quay.io/prometheus/node-exporter:latest
     container_name: node-exporter
     restart: always
     ports:
@@ -739,7 +739,7 @@ services:
           memory: 256M
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
     container_name: cadvisor
     restart: always
     ports:
@@ -762,7 +762,7 @@ services:
           memory: 512M
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
     container_name: postgres-exporter
     restart: always
     ports:
@@ -781,7 +781,7 @@ services:
           memory: 256M
 
   redis-exporter:
-    image: oliver006/redis_exporter:latest
+    image: quay.io/oliver006/redis_exporter:latest
     container_name: redis-exporter
     restart: always
     ports:
@@ -845,7 +845,7 @@ services:
   # ===========================================
 
   nginx:
-    image: nginx:alpine
+    image: public.ecr.aws/nginx/nginx:alpine
     container_name: nginx-proxy
     restart: always
     ports:
@@ -869,7 +869,7 @@ services:
       retries: 3
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: object-storage
     restart: always
     ports:

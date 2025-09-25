@@ -431,8 +431,50 @@ export const OptimizedPixiCanvas: React.FC<OptimizedPixiCanvasProps> = ({
       style={{ width, height, touchAction: 'none' }}
       onWheel={(e) => {
         e.preventDefault();
-        const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        api.start({ scale: scale.get() * scaleFactor });
+        e.stopPropagation();
+
+        // Zoom settings
+        const zoomSensitivity = 0.002; // Adjust for smoother zooming
+        const minZoom = 0.1;
+        const maxZoom = 5;
+
+        // Calculate zoom based on wheel delta
+        const delta = e.deltaY * -zoomSensitivity;
+        const zoomFactor = Math.exp(delta); // Exponential zoom for smoother feel
+
+        // Get current scale and calculate new scale
+        const currentScale = scale.get();
+        const newScale = Math.max(minZoom, Math.min(maxZoom, currentScale * zoomFactor));
+
+        // Get mouse position relative to canvas
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Calculate zoom towards mouse position
+          const currentX = x.get();
+          const currentY = y.get();
+
+          // Adjust pan to zoom towards mouse cursor
+          const scaleRatio = newScale / currentScale;
+          const newX = mouseX - (mouseX - currentX) * scaleRatio;
+          const newY = mouseY - (mouseY - currentY) * scaleRatio;
+
+          // Animate zoom and pan smoothly
+          api.start({
+            scale: newScale,
+            x: newX,
+            y: newY,
+            config: { mass: 1, tension: 300, friction: 30 }
+          });
+        } else {
+          // Fallback to center zoom if rect not available
+          api.start({
+            scale: newScale,
+            config: { mass: 1, tension: 300, friction: 30 }
+          });
+        }
       }}
     />
   );

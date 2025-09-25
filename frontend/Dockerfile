@@ -2,7 +2,7 @@
 # Development and Production Build Support
 
 # Development stage
-FROM node:20-alpine AS development
+FROM public.ecr.aws/docker/library/node:20-alpine AS development
 
 # Set working directory
 WORKDIR /app
@@ -30,7 +30,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3006"]
 
 # Stage 1: Build environment
-FROM node:20-alpine AS builder
+FROM public.ecr.aws/docker/library/node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
