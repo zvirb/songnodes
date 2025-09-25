@@ -1,28 +1,60 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-// import { initPixiDeprecationFilter } from './utils/pixiDeprecationFilter'
-// import { globalPerformanceValidator } from './utils/performanceValidation'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './styles/global.css';
 
-// Initialize PIXI deprecation warning filter for production readiness
-// initPixiDeprecationFilter()
+// Disable right-click context menu for cleaner UX
+document.addEventListener('contextmenu', (e) => {
+  if (e.target instanceof HTMLCanvasElement) {
+    e.preventDefault();
+  }
+});
 
-// Initialize performance monitoring in development
-// if (process.env.NODE_ENV === 'development') {
-//   // Add performance testing to window for manual testing
-//   (window as any).testPerformance = async () => {
-//     const result = await globalPerformanceValidator.validatePerformanceOptimizations();
-//     console.table(result);
-//     return result;
-//   };
+// Prevent zoom on mobile double-tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) {
+    e.preventDefault();
+  }
+  lastTouchEnd = now;
+}, { passive: false });
 
-//   // Log that performance testing is available
-//   console.log('🚀 Performance testing available: run window.testPerformance() in console');
-// }
+// Performance monitoring
+const startTime = performance.now();
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Hide loading screen once React app is ready
+function hideLoadingScreen() {
+  const loader = document.getElementById('loading');
+  if (loader) {
+    loader.style.opacity = '0';
+    loader.style.transition = 'opacity 0.3s ease-out';
+    setTimeout(() => {
+      loader.style.display = 'none';
+    }, 300);
+  }
+
+  // Log performance metrics
+  const endTime = performance.now();
+  console.log(`🎵 SongNodes DJ Interface loaded in ${Math.round(endTime - startTime)}ms`);
+}
+
+// Mount the app
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
+
+root.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
-)
+  </React.StrictMode>
+);
+
+// Hide loading screen after initial render
+setTimeout(hideLoadingScreen, 100);
+
+// Performance monitoring (basic timing)
+if (process.env.NODE_ENV === 'development') {
+  // Simple performance logging without web-vitals
+  console.log('🎵 SongNodes DJ Interface - Development mode enabled');
+}
