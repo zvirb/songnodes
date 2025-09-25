@@ -64,8 +64,13 @@ DEFAULT_REQUEST_HEADERS = {
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    # Add scrapy-playwright middleware
-    'scrapy_playwright.middleware.ScrapyPlaywrightMiddleware': 800,
+    # Playwright download handler (newer scrapy-playwright versions use DOWNLOAD_HANDLERS instead)
+}
+
+# Download handlers for scrapy-playwright
+DOWNLOAD_HANDLERS = {
+    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
 }
 
 # Enable or disable extensions
