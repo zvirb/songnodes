@@ -45,13 +45,27 @@ class OneThousandOneTracklistsAPIClient:
         }
 
         # Initialize database pipeline with configuration
-        db_config = {
-            'host': os.getenv('DATABASE_HOST', 'musicdb-postgres'),
-            'port': int(os.getenv('DATABASE_PORT', 5432)),
-            'database': os.getenv('DATABASE_NAME', 'musicdb'),
-            'user': os.getenv('DATABASE_USER', 'musicdb_user'),
-            'password': os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass')
-        }
+        # Try to parse DATABASE_URL first, then fall back to individual env vars
+        database_url = os.getenv('DATABASE_URL')
+        if database_url:
+            # Parse postgresql://user:password@host:port/database
+            import urllib.parse as urlparse
+            parsed = urlparse.urlparse(database_url)
+            db_config = {
+                'host': parsed.hostname,
+                'port': parsed.port or 5432,
+                'database': parsed.path.lstrip('/'),
+                'user': parsed.username,
+                'password': parsed.password
+            }
+        else:
+            db_config = {
+                'host': os.getenv('DATABASE_HOST', 'musicdb-postgres'),
+                'port': int(os.getenv('DATABASE_PORT', 5432)),
+                'database': os.getenv('DATABASE_NAME', 'musicdb'),
+                'user': os.getenv('DATABASE_USER', 'musicdb_user'),
+                'password': os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass')
+            }
         self.pipeline = EnhancedMusicDatabasePipeline(db_config)
 
     def search_tracklists(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:

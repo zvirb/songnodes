@@ -3,13 +3,17 @@ Enhanced Database Pipeline for SongNodes Scrapers
 Writes comprehensive music data directly to PostgreSQL with full schema support
 """
 import asyncio
-import asyncpg
 import json
 import logging
 import uuid
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from scrapy.exceptions import DropItem
+from twisted.internet import defer, reactor
+from twisted.internet.defer import ensureDeferred, inlineCallbacks
+from twisted.enterprise import adbapi
+import psycopg2
+import psycopg2.extras
 
 from items import (
     EnhancedArtistItem,
@@ -36,7 +40,7 @@ class EnhancedMusicDatabasePipeline:
 
     def __init__(self, database_config: Dict[str, Any]):
         self.database_config = database_config
-        self.connection_pool: Optional[asyncpg.Pool] = None
+        self.dbpool = None
         self.logger = logging.getLogger(__name__)
 
         # Batch processing
@@ -75,38 +79,28 @@ class EnhancedMusicDatabasePipeline:
         }
         return cls(db_config)
 
+    @inlineCallbacks
     def open_spider(self, spider):
-        """Initialize database connection and load target tracks - synchronous wrapper"""
-        import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(self._async_open_spider(spider))
-
-    async def _async_open_spider(self, spider):
-        """Async spider opening implementation"""
+        """Initialize database connection and load target tracks - Twisted compatible"""
         self.logger.info("Initializing enhanced database pipeline...")
 
         try:
-            # Initialize connection pool
-            connection_string = (
-                f"postgresql://{self.database_config['user']}:{self.database_config['password']}@"
-                f"{self.database_config['host']}:{self.database_config['port']}/"
-                f"{self.database_config['database']}"
-            )
-
-            self.connection_pool = await asyncpg.create_pool(
-                connection_string,
-                min_size=5,
-                max_size=20,
-                command_timeout=30
+            # Initialize Twisted database connection pool
+            self.dbpool = adbapi.ConnectionPool(
+                'psycopg2',
+                host=self.database_config['host'],
+                port=self.database_config['port'],
+                database=self.database_config['database'],
+                user=self.database_config['user'],
+                password=self.database_config['password'],
+                cp_min=5,
+                cp_max=20,
+                cp_noisy=False,
+                cursor_factory=psycopg2.extras.RealDictCursor
             )
 
             # Load target tracks for matching
-            await self.load_target_tracks()
+            yield self.load_target_tracks()
 
             self.logger.info("✓ Enhanced database pipeline initialized successfully")
 
@@ -114,48 +108,33 @@ class EnhancedMusicDatabasePipeline:
             self.logger.error(f"Failed to initialize database pipeline: {e}")
             raise
 
+    @inlineCallbacks
     def close_spider(self, spider):
-        """Process remaining batches and close connections - synchronous wrapper"""
-        import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(self._async_close_spider(spider))
-
-    async def _async_close_spider(self, spider):
-        """Async spider closing implementation"""
+        """Process remaining batches and close connections - Twisted compatible"""
         self.logger.info("Closing enhanced database pipeline...")
 
         try:
             # Process any remaining batches
-            await self.flush_all_batches()
+            yield self.flush_all_batches()
 
             # Generate statistics
-            await self.generate_pipeline_statistics()
+            yield self.generate_pipeline_statistics()
 
             # Close connection pool
-            if self.connection_pool:
-                await self.connection_pool.close()
+            if self.dbpool:
+                self.dbpool.close()
 
             self.logger.info("✓ Enhanced database pipeline closed successfully")
 
         except Exception as e:
             self.logger.error(f"Error closing pipeline: {e}")
 
+    @inlineCallbacks
     def process_item(self, item, spider):
-        """Main item processing entry point - synchronous wrapper for Scrapy"""
-        # Scrapy expects synchronous processing, so we run async in event loop
-        import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(self._async_process_item(item, spider))
+        """Main item processing entry point - Twisted compatible"""
+        # Process items using Twisted deferreds
+        result = yield self._process_item_deferred(item, spider)
+        defer.returnValue(result)
 
     async def _async_process_item(self, item, spider):
         """Async item processing implementation"""
