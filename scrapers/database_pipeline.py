@@ -3,6 +3,7 @@ Enhanced Database Pipeline for SongNodes Scrapers
 Writes comprehensive music data directly to PostgreSQL with full schema support
 """
 import asyncio
+import asyncpg
 import json
 import logging
 import uuid
@@ -41,6 +42,7 @@ class EnhancedMusicDatabasePipeline:
     def __init__(self, database_config: Dict[str, Any]):
         self.database_config = database_config
         self.dbpool = None
+        self.connection_pool = None  # For async operations
         self.logger = logging.getLogger(__name__)
 
         # Batch processing
@@ -70,12 +72,14 @@ class EnhancedMusicDatabasePipeline:
     @classmethod
     def from_crawler(cls, crawler):
         """Initialize pipeline from Scrapy crawler settings"""
+        import os
+        # First try crawler settings, then environment variables, then defaults
         db_config = {
-            'host': crawler.settings.get('DATABASE_HOST', 'localhost'),
-            'port': crawler.settings.get('DATABASE_PORT', 5433),
-            'database': crawler.settings.get('DATABASE_NAME', 'musicdb'),
-            'user': crawler.settings.get('DATABASE_USER', 'musicdb_user'),
-            'password': crawler.settings.get('DATABASE_PASSWORD', 'musicdb_secure_pass')
+            'host': crawler.settings.get('DATABASE_HOST', os.getenv('POSTGRES_HOST', 'localhost')),
+            'port': crawler.settings.get('DATABASE_PORT', int(os.getenv('POSTGRES_PORT', '5433'))),
+            'database': crawler.settings.get('DATABASE_NAME', os.getenv('POSTGRES_DB', 'musicdb')),
+            'user': crawler.settings.get('DATABASE_USER', os.getenv('POSTGRES_USER', 'musicdb_user')),
+            'password': crawler.settings.get('DATABASE_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass'))
         }
         return cls(db_config)
 
