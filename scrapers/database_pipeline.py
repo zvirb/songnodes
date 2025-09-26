@@ -140,6 +140,10 @@ class EnhancedMusicDatabasePipeline:
         result = yield self._process_item_deferred(item, spider)
         defer.returnValue(result)
 
+    def _process_item_deferred(self, item, spider):
+        """Bridge method to convert async processing to Twisted deferreds"""
+        return ensureDeferred(self._async_process_item(item, spider))
+
     async def _async_process_item(self, item, spider):
         """Async item processing implementation"""
         try:
