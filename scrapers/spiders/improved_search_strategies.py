@@ -72,17 +72,27 @@ def get_improved_selectors() -> Dict:
     return {
         "1001tracklists": {
             "tracklist_links": [
-                "table.table-borderless.table-striped.table-sm a[href*='/tracklist/']",
-                "div.row a[href*='/tracklist/']",
-                ".list-group a[href*='/tracklist/']",
-                "a[href*='/tracklist/']"
+                # Search results page selectors
+                "div.tlLink a::attr(href)",
+                "div.bTitle a::attr(href)",
+                "a.tlLink::attr(href)",
+                # Table based results
+                "table.table-borderless.table-striped.table-sm a[href*='/tracklist/']::attr(href)",
+                "table.table a[href*='/tracklist/']::attr(href)",
+                # Generic search results
+                "div.row a[href*='/tracklist/']::attr(href)",
+                ".list-group a[href*='/tracklist/']::attr(href)",
+                "div.search-results a[href*='/tracklist/']::attr(href)",
+                # Fallback to any tracklist links
+                "a[href*='/tracklist/']::attr(href)"
             ],
             "track_info": [
                 ".tracklist-track",
                 ".tl-track-row",
                 "div[data-tid]",
                 ".track-row",
-                "tr.track"
+                "tr.track",
+                "div.tlpTog"
             ]
         },
         "mixesdb": {
