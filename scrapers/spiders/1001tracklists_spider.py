@@ -380,7 +380,11 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         if not tracklist_links:
             self.logger.info("Traditional selectors failed, using Ollama HTML analyzer...")
             try:
-                from ..ollama_html_analyzer import get_adaptive_selectors
+                # Fix import path for Ollama analyzer
+                import sys
+                import os
+                sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                from ollama_html_analyzer import get_adaptive_selectors
                 adapted_selectors = get_adaptive_selectors('1001tracklists', response.text)
 
                 self.logger.info(f"Ollama analyzer suggested {len(adapted_selectors)} selectors")
