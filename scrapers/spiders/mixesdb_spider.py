@@ -66,7 +66,8 @@ class MixesdbSpider(scrapy.Spider):
     def __init__(self, search_artists=None, *args, **kwargs):
         force_run_arg = kwargs.pop('force_run', None)
         super().__init__(*args, **kwargs)
-        self.logger = logging.getLogger(__name__)
+        # Use Scrapy's built-in logger instead of reassigning
+        # self.logger is already provided by Scrapy Spider base class
 
         # Target artists for contemporary electronic music (2023-2025)
         self.target_artists = search_artists or self.load_target_artists()
@@ -183,8 +184,6 @@ class MixesdbSpider(scrapy.Spider):
 
     def generate_search_urls(self):
         """Generate search URLs using improved strategies"""
-        from .improved_search_strategies import search_strategies
-
         search_urls = []
         base_url = "https://www.mixesdb.com/db/index.php"
 
@@ -320,8 +319,29 @@ class MixesdbSpider(scrapy.Spider):
                 )
 
     def parse_category_page(self, response):
-        """Parse category pages for mix links"""
-        mix_links = response.css('div.mw-category a::attr(href), li a::attr(href)').getall()
+        """Parse category pages for mix links using LLM"""
+        mix_links = []
+
+        # Try LLM extraction first
+        try:
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from llm_scraper_engine import ScrapyLLMExtractor
+
+            llm_extractor = ScrapyLLMExtractor("mixesdb")
+            llm_links = llm_extractor.extract_tracklists(response)
+
+            if llm_links:
+                self.logger.info(f"LLM extraction found {len(llm_links)} mix links")
+                mix_links = llm_links[:20]  # Limit results
+
+        except Exception as e:
+            self.logger.warning(f"LLM extraction failed for MixesDB: {e}, falling back to CSS")
+
+        # Fallback to traditional CSS selectors
+        if not mix_links:
+            mix_links = response.css('div.mw-category a::attr(href), li a::attr(href)').getall()
 
         for link in mix_links[:20]:
             full_url = response.urljoin(link)

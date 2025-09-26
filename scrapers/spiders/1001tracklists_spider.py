@@ -365,44 +365,45 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         """Parse search results and extract tracklist links using intelligent adaptation"""
         self.logger.info(f"Parsing search results: {response.url}")
 
-        # Try traditional selectors first
-        from .improved_search_strategies import get_improved_selectors
-        selectors = get_improved_selectors()['1001tracklists']['tracklist_links']
-        tracklist_links = []
+        # Initialize LLM scraper engine
+        try:
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from llm_scraper_engine import ScrapyLLMExtractor
 
-        for selector in selectors:
-            links = response.css(selector).getall()
-            if links:
-                tracklist_links.extend(links)
-                self.logger.debug(f"Found {len(links)} links with selector: {selector}")
+            # Use LLM-powered extraction
+            llm_extractor = ScrapyLLMExtractor("1001tracklists")
+            tracklist_links = llm_extractor.extract_tracklists(response)
 
-        # If no links found with traditional selectors, use NLP-powered analysis
+            if tracklist_links:
+                self.logger.info(f"LLM extraction found {len(tracklist_links)} tracklist links")
+
+        except Exception as e:
+            self.logger.warning(f"LLM extraction failed: {e}, falling back to traditional selectors")
+            tracklist_links = []
+
+        # Fallback to traditional selectors if LLM fails
         if not tracklist_links:
-            self.logger.info("Traditional selectors failed, using Ollama HTML analyzer...")
-            try:
-                # Fix import path for Ollama analyzer
-                import sys
-                import os
-                sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                from ollama_html_analyzer import get_adaptive_selectors
-                adapted_selectors = get_adaptive_selectors('1001tracklists', response.text)
+            from .improved_search_strategies import get_improved_selectors
+            selectors = get_improved_selectors()['1001tracklists']['tracklist_links']
 
-                self.logger.info(f"Ollama analyzer suggested {len(adapted_selectors)} selectors")
+            for selector in selectors:
+                links = response.css(selector).getall()
+                if links:
+                    tracklist_links.extend(links)
+                    self.logger.debug(f"Found {len(links)} links with selector: {selector}")
 
-                # Try the adapted selectors
-                for selector_name, selector in adapted_selectors.items():
-                    if 'link' in selector_name.lower() or 'tracklist' in selector_name.lower():
-                        links = response.css(selector + ' ::attr(href)').getall()
-                        if links:
-                            # Filter for actual tracklist URLs
-                            tracklist_links.extend([
-                                link for link in links
-                                if '/tracklist/' in link.lower() or '/setlist/' in link.lower()
-                            ])
-                            self.logger.info(f"Found {len([link for link in links if '/tracklist/' in link.lower()])} tracklist links with adapted selector: {selector}")
-
-            except Exception as e:
-                self.logger.error(f"Ollama HTML analyzer failed: {e}")
+        # Additional fallback - try regex extraction directly
+        if not tracklist_links:
+            self.logger.info("Attempting regex extraction as final fallback...")
+            import re
+            # Look for tracklist URLs in the HTML
+            pattern = r'href=["\']([^"\']*\/tracklist\/[^"\']*)["\']'
+            matches = re.findall(pattern, response.text, re.IGNORECASE)
+            if matches:
+                tracklist_links = matches
+                self.logger.info(f"Regex extraction found {len(matches)} tracklist links")
 
         # Also try XPath selectors for better coverage
         xpath_links = response.xpath('//a[contains(@href, "/tracklist/")]/@href').getall()
@@ -640,10 +641,59 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         return artists
 
     def extract_tracks_with_metadata(self, response, setlist_data) -> list:
-        """Extract tracks with comprehensive metadata and relationships"""
+        """Extract tracks with comprehensive metadata and relationships using LLM"""
         tracks_data = []
 
-        # Get track elements using multiple selectors
+        # Try LLM extraction first
+        try:
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from llm_scraper_engine import ScrapyLLMExtractor
+
+            llm_extractor = ScrapyLLMExtractor("1001tracklists")
+            llm_tracks = llm_extractor.extract_tracks(response)
+
+            if llm_tracks:
+                self.logger.info(f"LLM extraction found {len(llm_tracks)} tracks")
+
+                # Convert LLM results to our format
+                for i, track in enumerate(llm_tracks):
+                    track_info = {
+                        'track': {
+                            'track_name': track.get('name', ''),
+                            'track_id': None,
+                            'duration': None,
+                            'start_time': None,
+                            'track_type': 'DJ Mix',
+                            'is_remix': self.is_remix_track(track.get('name', '')),
+                            'is_mashup': self.is_mashup_track(track.get('name', '')),
+                            'data_source': self.name,
+                            'scrape_timestamp': datetime.utcnow()
+                        },
+                        'primary_artist': track.get('artist', ''),
+                        'track_order': track.get('position', i + 1),
+                        'relationships': []
+                    }
+
+                    # Add artist relationship
+                    if track.get('artist'):
+                        track_info['relationships'].append({
+                            'track_name': track.get('name', ''),
+                            'artist_name': track.get('artist', ''),
+                            'artist_role': 'primary',
+                            'data_source': self.name,
+                            'scrape_timestamp': datetime.utcnow()
+                        })
+
+                    tracks_data.append(track_info)
+
+                return tracks_data
+
+        except Exception as e:
+            self.logger.warning(f"LLM track extraction failed: {e}, falling back to traditional parsing")
+
+        # Fallback to traditional extraction
         track_elements = self.extract_track_elements(response)
 
         for i, track_el in enumerate(track_elements):

@@ -32,7 +32,7 @@ class SetlistFmSpider(scrapy.Spider):
         'CONCURRENT_REQUESTS': 1,
         'DEFAULT_REQUEST_HEADERS': {
             'Accept': 'application/json',
-            'x-api-key': os.environ.get('SETLISTFM_API_KEY', '8xTq8eBNbEZCWKg1ZrGpgsRQlU9GlNYNZVtG')
+            'x-api-key': os.environ.get('SETLISTFM_API_KEY', '')
         }
     }
 
