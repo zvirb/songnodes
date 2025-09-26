@@ -362,12 +362,11 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             )
 
     def parse_search_results(self, response):
-        """Parse search results and extract tracklist links"""
+        """Parse search results and extract tracklist links using intelligent adaptation"""
         self.logger.info(f"Parsing search results: {response.url}")
 
-        # Extract tracklist links using multiple selectors for better coverage
+        # Try traditional selectors first
         from .improved_search_strategies import get_improved_selectors
-
         selectors = get_improved_selectors()['1001tracklists']['tracklist_links']
         tracklist_links = []
 
@@ -376,6 +375,30 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             if links:
                 tracklist_links.extend(links)
                 self.logger.debug(f"Found {len(links)} links with selector: {selector}")
+
+        # If no links found with traditional selectors, use NLP-powered analysis
+        if not tracklist_links:
+            self.logger.info("Traditional selectors failed, using Ollama HTML analyzer...")
+            try:
+                from ..ollama_html_analyzer import get_adaptive_selectors
+                adapted_selectors = get_adaptive_selectors('1001tracklists', response.text)
+
+                self.logger.info(f"Ollama analyzer suggested {len(adapted_selectors)} selectors")
+
+                # Try the adapted selectors
+                for selector_name, selector in adapted_selectors.items():
+                    if 'link' in selector_name.lower() or 'tracklist' in selector_name.lower():
+                        links = response.css(selector + ' ::attr(href)').getall()
+                        if links:
+                            # Filter for actual tracklist URLs
+                            tracklist_links.extend([
+                                link for link in links
+                                if '/tracklist/' in link.lower() or '/setlist/' in link.lower()
+                            ])
+                            self.logger.info(f"Found {len([link for link in links if '/tracklist/' in link.lower()])} tracklist links with adapted selector: {selector}")
+
+            except Exception as e:
+                self.logger.error(f"Ollama HTML analyzer failed: {e}")
 
         # Also try XPath selectors for better coverage
         xpath_links = response.xpath('//a[contains(@href, "/tracklist/")]/@href').getall()
@@ -387,7 +410,10 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         tracklist_links = list(set(tracklist_links))
 
         if not tracklist_links:
-            self.logger.warning(f"No tracklist links found in search results: {response.url}")
+            self.logger.warning(f"No tracklist links found even with intelligent adaptation: {response.url}")
+            # Debug: Save HTML sample for manual inspection
+            with open(f'/tmp/failed_search_{int(time.time())}.html', 'w', encoding='utf-8') as f:
+                f.write(response.text[:10000])
             return
 
         # Process up to 20 tracklists per search to manage load

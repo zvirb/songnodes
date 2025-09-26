@@ -399,6 +399,42 @@ services:
           cpus: '0.75'
           memory: 768M
 
+  # AI-powered HTML analysis service with GPU acceleration
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-ai
+    restart: always
+    runtime: nvidia
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - musicdb-backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   # ===========================================
   # API LAYER
   # ===========================================
@@ -958,10 +994,12 @@ volumes:
       device: ./data/minio
   nlp_models:
     driver: local
+  ollama_data:
+    driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./data/nlp_models
+      device: ./data/ollama
   nginx_logs:
     driver: local
     driver_opts:
