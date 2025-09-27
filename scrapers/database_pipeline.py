@@ -118,13 +118,18 @@ class EnhancedMusicDatabasePipeline:
         self.logger.info("Closing enhanced database pipeline...")
 
         try:
-            # Process any remaining batches
-            yield self.flush_all_batches()
+            # Process any remaining batches - wrap async function with ensureDeferred
+            yield ensureDeferred(self.flush_all_batches())
 
-            # Generate statistics
-            yield self.generate_pipeline_statistics()
+            # Generate statistics - wrap async function with ensureDeferred
+            yield ensureDeferred(self.generate_pipeline_statistics())
 
-            # Close connection pool
+            # Close async connection pool if it exists
+            if self.connection_pool:
+                yield ensureDeferred(self.connection_pool.close())
+                self.logger.info("✓ Closed async connection pool")
+
+            # Close Twisted connection pool
             if self.dbpool:
                 self.dbpool.close()
 
@@ -446,24 +451,8 @@ class EnhancedMusicDatabasePipeline:
 
         try:
             # Check if we have connection_pool (async context) or need to create one
-            if self.connection_pool:
-                async with self.connection_pool.acquire() as conn:
-                    if batch_type == 'artists':
-                        await self.insert_artists_batch(conn, batch)
-                    elif batch_type == 'songs':
-                        await self.insert_songs_batch(conn, batch)
-                    elif batch_type == 'playlists':
-                        await self.insert_playlists_batch(conn, batch)
-                    elif batch_type == 'venues':
-                        await self.insert_venues_batch(conn, batch)
-                    elif batch_type == 'song_artists':
-                        await self.insert_song_artists_batch(conn, batch)
-                    elif batch_type == 'playlist_songs':
-                        await self.insert_playlist_songs_batch(conn, batch)
-                    elif batch_type == 'song_adjacency':
-                        await self.insert_track_adjacencies_batch(conn, batch)
-            else:
-                # Create temporary connection pool for Scrapy context
+            if not self.connection_pool:
+                # Create connection pool if it doesn't exist
                 self.connection_pool = await asyncpg.create_pool(
                     **self.database_config,
                     min_size=1,
@@ -472,30 +461,29 @@ class EnhancedMusicDatabasePipeline:
                     max_inactive_connection_lifetime=300,
                     command_timeout=60
                 )
-                try:
-                    async with self.connection_pool.acquire() as conn:
-                        if batch_type == 'artists':
-                            await self.insert_artists_batch(conn, batch)
-                        elif batch_type == 'songs':
-                            await self.insert_songs_batch(conn, batch)
-                        elif batch_type == 'playlists':
-                            await self.insert_playlists_batch(conn, batch)
-                        elif batch_type == 'venues':
-                            await self.insert_venues_batch(conn, batch)
-                        elif batch_type == 'song_artists':
-                            await self.insert_song_artists_batch(conn, batch)
-                        elif batch_type == 'playlist_songs':
-                            await self.insert_playlist_songs_batch(conn, batch)
-                        elif batch_type == 'song_adjacency':
-                            await self.insert_track_adjacencies_batch(conn, batch)
-                finally:
-                    # Don't close the pool - keep it for future batches
-                    pass
+
+            async with self.connection_pool.acquire() as conn:
+                if batch_type == 'artists':
+                    await self.insert_artists_batch(conn, batch)
+                elif batch_type == 'songs':
+                    await self.insert_songs_batch(conn, batch)
+                elif batch_type == 'playlists':
+                    await self.insert_playlists_batch(conn, batch)
+                elif batch_type == 'venues':
+                    await self.insert_venues_batch(conn, batch)
+                elif batch_type == 'song_artists':
+                    await self.insert_song_artists_batch(conn, batch)
+                elif batch_type == 'playlist_songs':
+                    await self.insert_playlist_songs_batch(conn, batch)
+                elif batch_type == 'song_adjacency':
+                    await self.insert_track_adjacencies_batch(conn, batch)
 
             self.logger.info(f"✓ Inserted {len(batch)} {batch_type} records")
 
         except Exception as e:
             self.logger.error(f"Failed to insert {batch_type} batch: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             # Re-add to batch for retry
             self.item_batches[batch_type].extend(batch)
 
