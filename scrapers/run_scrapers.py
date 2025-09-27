@@ -97,7 +97,7 @@ class ScraperOrchestrator:
             await asyncio.sleep(0.1)
 
         # Flush any remaining data
-        await self.client.pipeline.flush_all_batches()
+        await self.client.pipeline.flush_all_batches_async()
 
         # Close the spider connection
         await self.client.pipeline.close_spider(spider)

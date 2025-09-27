@@ -27,6 +27,17 @@ from items import (
     TargetTrackSearchItem
 )
 
+# Import synchronous database methods for Twisted compatibility
+from database_pipeline_twisted import (
+    insert_track_adjacencies_batch_sync,
+    insert_songs_batch_sync,
+    insert_artists_batch_sync,
+    insert_playlists_batch_sync,
+    insert_venues_batch_sync,
+    insert_song_artists_batch_sync,
+    insert_playlist_songs_batch_sync
+)
+
 
 class EnhancedMusicDatabasePipeline:
     """
@@ -118,8 +129,8 @@ class EnhancedMusicDatabasePipeline:
         self.logger.info("Closing enhanced database pipeline...")
 
         try:
-            # Process any remaining batches - wrap async function with ensureDeferred
-            yield ensureDeferred(self.flush_all_batches())
+            # Process any remaining batches using Twisted
+            yield self.flush_all_batches()
 
             # Generate statistics - wrap async function with ensureDeferred
             yield ensureDeferred(self.generate_pipeline_statistics())
@@ -441,42 +452,31 @@ class EnhancedMusicDatabasePipeline:
         # This could be used to track search progress
         pass
 
-    async def flush_batch(self, batch_type: str):
-        """Flush a specific batch to database"""
+    @inlineCallbacks
+    def flush_batch(self, batch_type: str):
+        """Flush a specific batch to database using Twisted database pool"""
         if not self.item_batches[batch_type]:
-            return
+            defer.returnValue(None)
 
         batch = self.item_batches[batch_type].copy()
         self.item_batches[batch_type].clear()
 
         try:
-            # Check if we have connection_pool (async context) or need to create one
-            if not self.connection_pool:
-                # Create connection pool if it doesn't exist
-                self.connection_pool = await asyncpg.create_pool(
-                    **self.database_config,
-                    min_size=1,
-                    max_size=10,
-                    max_queries=50000,
-                    max_inactive_connection_lifetime=300,
-                    command_timeout=60
-                )
-
-            async with self.connection_pool.acquire() as conn:
-                if batch_type == 'artists':
-                    await self.insert_artists_batch(conn, batch)
-                elif batch_type == 'songs':
-                    await self.insert_songs_batch(conn, batch)
-                elif batch_type == 'playlists':
-                    await self.insert_playlists_batch(conn, batch)
-                elif batch_type == 'venues':
-                    await self.insert_venues_batch(conn, batch)
-                elif batch_type == 'song_artists':
-                    await self.insert_song_artists_batch(conn, batch)
-                elif batch_type == 'playlist_songs':
-                    await self.insert_playlist_songs_batch(conn, batch)
-                elif batch_type == 'song_adjacency':
-                    await self.insert_track_adjacencies_batch(conn, batch)
+            # Use Twisted database pool with synchronous methods
+            if batch_type == 'artists':
+                yield self.dbpool.runInteraction(insert_artists_batch_sync, batch)
+            elif batch_type == 'songs':
+                yield self.dbpool.runInteraction(insert_songs_batch_sync, batch)
+            elif batch_type == 'playlists':
+                yield self.dbpool.runInteraction(insert_playlists_batch_sync, batch)
+            elif batch_type == 'venues':
+                yield self.dbpool.runInteraction(insert_venues_batch_sync, batch)
+            elif batch_type == 'song_artists':
+                yield self.dbpool.runInteraction(insert_song_artists_batch_sync, batch)
+            elif batch_type == 'playlist_songs':
+                yield self.dbpool.runInteraction(insert_playlist_songs_batch_sync, batch)
+            elif batch_type == 'song_adjacency':
+                yield self.dbpool.runInteraction(insert_track_adjacencies_batch_sync, batch)
 
             self.logger.info(f"✓ Inserted {len(batch)} {batch_type} records")
 
@@ -930,11 +930,75 @@ class EnhancedMusicDatabasePipeline:
             self.logger.error(f"Error inserting track adjacencies: {e}")
             raise
 
-    async def flush_all_batches(self):
-        """Flush all remaining batches"""
+    @inlineCallbacks
+    def flush_all_batches(self):
+        """Flush all remaining batches using Twisted"""
         for batch_type in self.item_batches.keys():
             if self.item_batches[batch_type]:
-                await self.flush_batch(batch_type)
+                yield self.flush_batch(batch_type)
+
+    async def flush_all_batches_async(self):
+        """Async wrapper for flush_all_batches that can be awaited from asyncio code"""
+        # Convert each batch flush to a coroutine that asyncio can handle
+        for batch_type in self.item_batches.keys():
+            if self.item_batches[batch_type]:
+                # Use Twisted's database pool directly for async contexts
+                await self._flush_batch_async(batch_type)
+
+    async def _flush_batch_async(self, batch_type: str):
+        """Async version of flush_batch for asyncio contexts"""
+        if not self.item_batches[batch_type]:
+            return
+
+        batch = self.item_batches[batch_type].copy()
+        self.item_batches[batch_type].clear()
+
+        try:
+            # Use a thread pool to run the synchronous database operations
+            import asyncio
+            loop = asyncio.get_event_loop()
+
+            if batch_type == 'artists':
+                await loop.run_in_executor(None, self._run_db_interaction, insert_artists_batch_sync, batch)
+            elif batch_type == 'songs':
+                await loop.run_in_executor(None, self._run_db_interaction, insert_songs_batch_sync, batch)
+            elif batch_type == 'playlists':
+                await loop.run_in_executor(None, self._run_db_interaction, insert_playlists_batch_sync, batch)
+            elif batch_type == 'venues':
+                await loop.run_in_executor(None, self._run_db_interaction, insert_venues_batch_sync, batch)
+            elif batch_type == 'song_artists':
+                await loop.run_in_executor(None, self._run_db_interaction, insert_song_artists_batch_sync, batch)
+            elif batch_type == 'playlist_songs':
+                await loop.run_in_executor(None, self._run_db_interaction, insert_playlist_songs_batch_sync, batch)
+            elif batch_type == 'song_adjacency':
+                await loop.run_in_executor(None, self._run_db_interaction, insert_track_adjacencies_batch_sync, batch)
+
+            self.logger.info(f"✓ Inserted {len(batch)} {batch_type} records")
+
+        except Exception as e:
+            self.logger.error(f"Failed to insert {batch_type} batch: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            # Re-add to batch for retry
+            self.item_batches[batch_type].extend(batch)
+
+    def _run_db_interaction(self, func, batch):
+        """Helper to run database interaction synchronously"""
+        import psycopg2
+        conn = psycopg2.connect(
+            host=self.database_config['host'],
+            port=self.database_config['port'],
+            database=self.database_config['database'],
+            user=self.database_config['user'],
+            password=self.database_config['password']
+        )
+        try:
+            with conn:
+                with conn.cursor() as cursor:
+                    func(cursor, batch)
+                    conn.commit()
+        finally:
+            conn.close()
 
     async def process_batch(self, items: List[Any]):
         """Process a batch of items through the pipeline"""
@@ -983,7 +1047,7 @@ class EnhancedMusicDatabasePipeline:
 
         # Flush all batches after processing
         self.logger.info(f"Flushing batches after processing {processed_count} items...")
-        await self.flush_all_batches()
+        await self.flush_all_batches_async()
         self.logger.info(f"Successfully processed batch of {len(items)} items ({processed_count} succeeded)")
 
     async def generate_pipeline_statistics(self):
@@ -1009,6 +1073,13 @@ class EnhancedMusicDatabasePipeline:
 
     async def close(self):
         """Close database connection pool"""
+        # Flush any remaining batches before closing
+        try:
+            await self.flush_all_batches_async()
+            self.logger.info("✓ Flushed remaining batches before close")
+        except Exception as e:
+            self.logger.error(f"Error flushing batches during close: {e}")
+
         if self.connection_pool:
             await self.connection_pool.close()
             self.logger.info("✓ Database connection pool closed")
