@@ -87,6 +87,15 @@ class GraphData(BaseModel):
     nodes: List[Dict[str, Any]]
     links: List[Dict[str, Any]]
 
+class TargetTrack(BaseModel):
+    track_id: Optional[str] = None
+    title: str
+    artist: str
+    priority: Optional[str] = "medium"
+    search_terms: Optional[List[str]] = None
+    genres: Optional[List[str]] = None
+    is_active: Optional[bool] = True
+
 async def get_db():
     """Get database connection from pool"""
     global db_pool
@@ -634,6 +643,207 @@ async def get_live_performance_data():
         logger.error(f"Failed to fetch live performance data: {str(e)}")
         # Return empty data on error to avoid frontend breaking
         return {"performances": []}
+
+# Target Tracks Endpoints
+@app.get("/api/v1/target-tracks", response_model=List[TargetTrack])
+async def get_target_tracks(
+    limit: int = Query(100, le=1000),
+    offset: int = Query(0, ge=0),
+    priority: Optional[str] = None,
+    is_active: Optional[bool] = True
+):
+    """Get list of target tracks for discovery"""
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            # Build query with filters
+            query = """
+                SELECT track_id, title, artist, priority, search_terms, genres, is_active,
+                       last_searched, playlists_found, adjacencies_found
+                FROM target_tracks
+                WHERE 1=1
+            """
+            params = []
+            param_count = 1
+
+            if is_active is not None:
+                query += f" AND is_active = ${param_count}"
+                params.append(is_active)
+                param_count += 1
+
+            if priority:
+                query += f" AND priority = ${param_count}"
+                params.append(priority)
+                param_count += 1
+
+            query += f" ORDER BY priority DESC, last_searched ASC NULLS FIRST"
+            query += f" LIMIT ${param_count} OFFSET ${param_count + 1}"
+            params.extend([limit, offset])
+
+            rows = await conn.fetch(query, *params)
+
+            return [
+                TargetTrack(
+                    track_id=str(row['track_id']),
+                    title=row['title'],
+                    artist=row['artist'],
+                    priority=row['priority'],
+                    search_terms=row['search_terms'] or [],
+                    genres=row['genres'] or [],
+                    is_active=row['is_active']
+                ) for row in rows
+            ]
+
+    except Exception as e:
+        logger.error(f"Failed to fetch target tracks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/target-tracks", response_model=TargetTrack)
+async def create_target_track(track: TargetTrack):
+    """Add a new target track for discovery"""
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            query = """
+                INSERT INTO target_tracks (title, artist, priority, search_terms, genres, is_active)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (title, artist) DO UPDATE
+                SET priority = EXCLUDED.priority,
+                    search_terms = EXCLUDED.search_terms,
+                    genres = EXCLUDED.genres,
+                    is_active = EXCLUDED.is_active,
+                    updated_at = CURRENT_TIMESTAMP
+                RETURNING track_id, title, artist, priority, search_terms, genres, is_active
+            """
+
+            row = await conn.fetchrow(
+                query,
+                track.title,
+                track.artist,
+                track.priority or "medium",
+                track.search_terms or [],
+                track.genres or [],
+                track.is_active if track.is_active is not None else True
+            )
+
+            return TargetTrack(
+                track_id=str(row['track_id']),
+                title=row['title'],
+                artist=row['artist'],
+                priority=row['priority'],
+                search_terms=row['search_terms'],
+                genres=row['genres'],
+                is_active=row['is_active']
+            )
+
+    except Exception as e:
+        logger.error(f"Failed to create target track: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/v1/target-tracks/{track_id}", response_model=TargetTrack)
+async def update_target_track(track_id: str, track: TargetTrack):
+    """Update an existing target track"""
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            query = """
+                UPDATE target_tracks
+                SET title = $1, artist = $2, priority = $3,
+                    search_terms = $4, genres = $5, is_active = $6,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE track_id = $7
+                RETURNING track_id, title, artist, priority, search_terms, genres, is_active
+            """
+
+            row = await conn.fetchrow(
+                query,
+                track.title,
+                track.artist,
+                track.priority or "medium",
+                track.search_terms or [],
+                track.genres or [],
+                track.is_active if track.is_active is not None else True,
+                track_id
+            )
+
+            if not row:
+                raise HTTPException(status_code=404, detail="Target track not found")
+
+            return TargetTrack(
+                track_id=str(row['track_id']),
+                title=row['title'],
+                artist=row['artist'],
+                priority=row['priority'],
+                search_terms=row['search_terms'],
+                genres=row['genres'],
+                is_active=row['is_active']
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update target track: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/v1/target-tracks/{track_id}")
+async def delete_target_track(track_id: str):
+    """Delete a target track"""
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM target_tracks WHERE track_id = $1",
+                track_id
+            )
+
+            if result == "DELETE 0":
+                raise HTTPException(status_code=404, detail="Target track not found")
+
+            return {"status": "deleted", "track_id": track_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete target track: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/target-tracks/stats")
+async def get_target_tracks_stats():
+    """Get statistics about target tracks"""
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            stats_query = """
+                SELECT
+                    COUNT(*) as total_tracks,
+                    COUNT(CASE WHEN is_active THEN 1 END) as active_tracks,
+                    COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority,
+                    COUNT(CASE WHEN priority = 'medium' THEN 1 END) as medium_priority,
+                    COUNT(CASE WHEN priority = 'low' THEN 1 END) as low_priority,
+                    SUM(playlists_found) as total_playlists_found,
+                    SUM(adjacencies_found) as total_adjacencies_found
+                FROM target_tracks
+            """
+
+            row = await conn.fetchrow(stats_query)
+
+            return {
+                "total_tracks": row['total_tracks'],
+                "active_tracks": row['active_tracks'],
+                "priority_breakdown": {
+                    "high": row['high_priority'],
+                    "medium": row['medium_priority'],
+                    "low": row['low_priority']
+                },
+                "discovery_stats": {
+                    "playlists_found": row['total_playlists_found'] or 0,
+                    "adjacencies_found": row['total_adjacencies_found'] or 0
+                }
+            }
+
+    except Exception as e:
+        logger.error(f"Failed to fetch target tracks stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
