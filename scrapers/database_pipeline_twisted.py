@@ -217,18 +217,32 @@ def insert_playlists_batch_sync(txn, batch: List[Dict[str, Any]]):
 
     records = []
     for item in batch:
+        # Parse event_date if provided
+        event_date = None
+        if item.get('event_date'):
+            try:
+                if isinstance(item['event_date'], str):
+                    from dateutil import parser
+                    event_date = parser.parse(item['event_date']).date()
+                else:
+                    event_date = item['event_date']
+            except:
+                pass
+
         record = (
             item.get('playlist_id', str(uuid.uuid4())),
             item.get('name', 'Unknown Playlist'),
             item.get('source', 'unknown'),
-            item.get('spotify_id'),
-            item.get('apple_music_id'),
-            item.get('description', ''),
-            item.get('curator'),
-            item.get('follower_count', 0),
-            item.get('is_public', True),
-            item.get('tags', []),
             item.get('source_url'),
+            item.get('playlist_type'),
+            item.get('dj_artist_id'),
+            item.get('event_name'),
+            item.get('venue_id'),
+            event_date,
+            item.get('duration_minutes'),
+            item.get('tracklist_count', 0),
+            item.get('play_count'),
+            item.get('like_count'),
             datetime.now(),
             datetime.now()
         )
@@ -236,14 +250,15 @@ def insert_playlists_batch_sync(txn, batch: List[Dict[str, Any]]):
 
     insert_query = """
         INSERT INTO playlists (
-            playlist_id, name, source, spotify_id, apple_music_id,
-            description, curator, follower_count, is_public, tags,
-            source_url, created_at, updated_at
+            playlist_id, name, source, source_url, playlist_type,
+            dj_artist_id, event_name, venue_id, event_date,
+            duration_minutes, tracklist_count, play_count, like_count,
+            created_at, updated_at
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
         ON CONFLICT (playlist_id) DO UPDATE SET
-            follower_count = EXCLUDED.follower_count,
+            tracklist_count = EXCLUDED.tracklist_count,
             updated_at = EXCLUDED.updated_at
     """
 

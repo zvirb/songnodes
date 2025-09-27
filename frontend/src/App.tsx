@@ -11,6 +11,7 @@ const SetlistBuilder = React.lazy(() => import('./components/SetlistBuilder'));
 const FilterPanel = React.lazy(() => import('./components/FilterPanel'));
 const StatsPanel = React.lazy(() => import('./components/StatsPanel'));
 const DJInterface = React.lazy(() => import('./components/DJInterface').then(module => ({ default: module.DJInterface })));
+const TargetTracksManager = React.lazy(() => import('./components/TargetTracksManager'));
 
 // Toolbar icons (using text for now - replace with SVG icons in production)
 const icons = {
@@ -19,6 +20,7 @@ const icons = {
   setlist: '🎵',
   filter: '🔧',
   stats: '📊',
+  targets: '🎯',
   settings: '⚙️',
   help: '❓',
 };
@@ -212,6 +214,12 @@ const App: React.FC = () => {
               <SetlistBuilder />
             </React.Suspense>
           );
+        case 'targets':
+          return (
+            <React.Suspense fallback={<div className="loading-spinner" />}>
+              <TargetTracksManager />
+            </React.Suspense>
+          );
         default:
           return <div>Panel not implemented</div>;
       }
@@ -223,6 +231,7 @@ const App: React.FC = () => {
         case 'filters': return 'Filters';
         case 'path': return 'Path Builder';
         case 'setlist': return 'Setlist Builder';
+        case 'targets': return 'Target Tracks';
         default: return 'Panel';
       }
     };
@@ -406,6 +415,12 @@ const App: React.FC = () => {
             label="Search Tracks (Ctrl+F)"
             active={panelState.leftPanel === 'search'}
             onClick={() => handleToggleLeftPanel('search')}
+          />
+          <ToolbarButton
+            icon={icons.targets}
+            label="Target Tracks"
+            active={panelState.leftPanel === 'targets'}
+            onClick={() => handleToggleLeftPanel('targets')}
           />
           <ToolbarButton
             icon={icons.stats}

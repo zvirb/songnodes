@@ -174,6 +174,10 @@ class EnhancedMusicDatabasePipeline:
                     self.logger.info("Detected track adjacency item from dict")
                     await self.process_track_adjacency_item(item)
                     return item
+                elif item.get('item_type') == 'playlist':
+                    self.logger.info("Detected playlist item from dict")
+                    await self.process_playlist_item(item)
+                    return item
                 elif 'track_name' in item and 'artist_name' in item:
                     self.logger.info("Detected track item from dict")
                     # First create/get artist
@@ -397,17 +401,50 @@ class EnhancedMusicDatabasePipeline:
             await self.flush_batch('songs')
 
     async def process_playlist_item(self, data: Dict[str, Any]):
-        """Process setlist item"""
-        setlist_key = self.normalize_text(data['setlist_name']).lower()
+        """Process setlist/playlist item with duplicate checking"""
+        # Handle both 'name' and 'setlist_name' fields
+        playlist_name = data.get('name') or data.get('setlist_name', 'Unknown Playlist')
 
-        if setlist_key in self.processed_items['playlists']:
-            return
+        # Check if URL already scraped to avoid duplicates
+        source_url = data.get('source_url', '')
+        if source_url and hasattr(self, 'pool') and self.pool:
+            try:
+                async with self.pool.acquire() as conn:
+                    existing = await conn.fetchrow(
+                        "SELECT playlist_id, name FROM playlists WHERE source_url = $1",
+                        source_url
+                    )
+                    if existing:
+                        self.logger.info(f"Playlist already exists: {existing['name']} for URL: {source_url}")
+                        # Store playlist_id for linking adjacencies
+                        self.current_playlist_id = existing['playlist_id']
+                        return
+            except Exception as e:
+                self.logger.debug(f"Could not check for duplicate playlist: {e}")
 
-        self.processed_items['playlists'].add(setlist_key)
-        self.item_batches['playlists'].append(data)
+        # Generate playlist ID for new playlist
+        playlist_id = str(uuid.uuid4())
+        self.current_playlist_id = playlist_id
 
-        if len(self.item_batches['playlists']) >= self.batch_size:
-            await self.flush_batch('playlists')
+        # Prepare playlist data with correct field mapping
+        playlist_data = {
+            'playlist_id': playlist_id,
+            'name': playlist_name,
+            'source': data.get('platform') or data.get('source', 'unknown'),
+            'source_url': source_url,
+            'event_date': data.get('playlist_date') or data.get('event_date'),
+            'curator': data.get('curator') or data.get('dj', ''),
+            'tracklist_count': data.get('total_tracks', 0)
+        }
+
+        # Add normalized key for in-memory duplicate checking
+        setlist_key = self.normalize_text(playlist_name).lower()
+        if setlist_key not in self.processed_items['playlists']:
+            self.processed_items['playlists'].add(setlist_key)
+            self.item_batches['playlists'].append(playlist_data)
+
+            if len(self.item_batches['playlists']) >= self.batch_size:
+                await self.flush_batch('playlists')
 
     async def process_venue_item(self, data: Dict[str, Any]):
         """Process venue item"""
@@ -462,6 +499,13 @@ class EnhancedMusicDatabasePipeline:
         self.item_batches[batch_type].clear()
 
         try:
+            # Check if we have a Twisted database pool (only when running through Scrapy)
+            if self.dbpool is None:
+                # If no Twisted pool, we're likely being called from async context
+                # Return without processing - the async flush will handle it
+                self.item_batches[batch_type].extend(batch)  # Re-add for async processing
+                defer.returnValue(None)
+
             # Use Twisted database pool with synchronous methods
             if batch_type == 'artists':
                 yield self.dbpool.runInteraction(insert_artists_batch_sync, batch)
