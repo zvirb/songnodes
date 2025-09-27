@@ -13,6 +13,10 @@ from datetime import datetime
 import json
 import subprocess
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Setup logging
 logging.basicConfig(
@@ -25,14 +29,14 @@ logger = logging.getLogger(__name__)
 scrapers_dir = Path(__file__).parent / 'scrapers'
 sys.path.insert(0, str(scrapers_dir))
 
-# Environment variables for database connection
+# Environment variables for database connection - loaded from .env
 DEFAULT_ENV = {
-    'POSTGRES_HOST': 'localhost',
-    'POSTGRES_PORT': '5432',
-    'POSTGRES_DB': 'musicdb',
-    'POSTGRES_USER': 'musicdb_app',
-    'POSTGRES_PASSWORD': 'musicdb_pass',
-    'SETLISTFM_API_KEY': '8xTq8eBNbEZCWKg1ZrGpgsRQlU9GlNYNZVtG',
+    'POSTGRES_HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+    'POSTGRES_PORT': os.getenv('POSTGRES_PORT', '5433'),  # Use mapped port for local access
+    'POSTGRES_DB': os.getenv('POSTGRES_DB', 'musicdb'),
+    'POSTGRES_USER': os.getenv('POSTGRES_USER', 'musicdb_user'),
+    'POSTGRES_PASSWORD': os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass'),
+    'SETLISTFM_API_KEY': os.getenv('SETLISTFM_API_KEY', ''),
     'SCRAPY_SETTINGS_MODULE': 'scrapers.settings'
 }
 
@@ -53,8 +57,8 @@ class ScraperRunner:
                 'enabled': True,
                 'delay': 2.0
             },
-            'setlistfm_api': {
-                'name': 'setlistfm_api',
+            'setlistfm': {
+                'name': 'setlistfm',
                 'description': 'Live performance data from setlist.fm API',
                 'enabled': True,
                 'delay': 1.0
@@ -230,7 +234,7 @@ def main():
     parser.add_argument(
         '--scrapers', '-s',
         nargs='+',
-        choices=['1001tracklists', 'mixesdb', 'setlistfm_api', 'all'],
+        choices=['1001tracklists', 'mixesdb', 'setlistfm', 'all'],
         default=['all'],
         help='Scrapers to run (default: all)'
     )
