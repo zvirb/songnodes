@@ -306,18 +306,27 @@ async def get_graph_nodes(
                         }
                     )
                 else:
-                    # Get all nodes from the nodes view
-                    # The view already provides metadata as a JSONB object with all fields
+                    # Get all nodes from the graph_nodes view
+                    # Build metadata object from view columns
                     query = text("""
                         SELECT
-                            'song_' || n.id::text as id,
-                            'song_' || n.track_id::text as track_id,
-                            COALESCE(n.x_position, 0) as x_position,
-                            COALESCE(n.y_position, 0) as y_position,
-                            n.metadata as metadata,
+                            node_id as id,
+                            node_id as track_id,
+                            0 as x_position,
+                            0 as y_position,
+                            json_build_object(
+                                'title', label,
+                                'artist', artist_name,
+                                'node_type', node_type,
+                                'category', category,
+                                'genre', category,
+                                'release_year', release_year,
+                                'appearance_count', appearance_count
+                            ) as metadata,
                             COUNT(*) OVER() as total_count
-                        FROM musicdb.nodes n
-                        ORDER BY n.created_at DESC
+                        FROM graph_nodes
+                        WHERE node_type = 'song'
+                        ORDER BY appearance_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
@@ -759,6 +768,32 @@ async def get_edges(
     except Exception as e:
         logger.error(f"Error in get_edges: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve edges")
+
+@app.get("/api/graph/data")
+async def get_graph_data():
+    """Get combined nodes and edges data for frontend visualization."""
+    try:
+        # Get nodes data
+        nodes_result = await get_graph_nodes(limit=1000, offset=0)
+        nodes = nodes_result['nodes']
+
+        # Get edges data (get all edges, not filtered by specific nodes)
+        edges_result = await get_graph_edges(node_ids=None, limit=2000, offset=0)
+        edges = edges_result['edges']
+
+        return {
+            'nodes': nodes,
+            'edges': edges,
+            'metadata': {
+                'total_nodes': len(nodes),
+                'total_edges': len(edges),
+                'generated_at': datetime.utcnow().isoformat()
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error in get_graph_data: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve graph data")
 
 @app.get("/api/graph/search")
 async def search_graph(

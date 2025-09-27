@@ -445,21 +445,52 @@ class EnhancedMusicDatabasePipeline:
         self.item_batches[batch_type].clear()
 
         try:
-            async with self.connection_pool.acquire() as conn:
-                if batch_type == 'artists':
-                    await self.insert_artists_batch(conn, batch)
-                elif batch_type == 'songs':
-                    await self.insert_songs_batch(conn, batch)
-                elif batch_type == 'playlists':
-                    await self.insert_playlists_batch(conn, batch)
-                elif batch_type == 'venues':
-                    await self.insert_venues_batch(conn, batch)
-                elif batch_type == 'song_artists':
-                    await self.insert_song_artists_batch(conn, batch)
-                elif batch_type == 'playlist_songs':
-                    await self.insert_playlist_songs_batch(conn, batch)
-                elif batch_type == 'song_adjacency':
-                    await self.insert_track_adjacencies_batch(conn, batch)
+            # Check if we have connection_pool (async context) or need to create one
+            if self.connection_pool:
+                async with self.connection_pool.acquire() as conn:
+                    if batch_type == 'artists':
+                        await self.insert_artists_batch(conn, batch)
+                    elif batch_type == 'songs':
+                        await self.insert_songs_batch(conn, batch)
+                    elif batch_type == 'playlists':
+                        await self.insert_playlists_batch(conn, batch)
+                    elif batch_type == 'venues':
+                        await self.insert_venues_batch(conn, batch)
+                    elif batch_type == 'song_artists':
+                        await self.insert_song_artists_batch(conn, batch)
+                    elif batch_type == 'playlist_songs':
+                        await self.insert_playlist_songs_batch(conn, batch)
+                    elif batch_type == 'song_adjacency':
+                        await self.insert_track_adjacencies_batch(conn, batch)
+            else:
+                # Create temporary connection pool for Scrapy context
+                self.connection_pool = await asyncpg.create_pool(
+                    **self.database_config,
+                    min_size=1,
+                    max_size=10,
+                    max_queries=50000,
+                    max_inactive_connection_lifetime=300,
+                    command_timeout=60
+                )
+                try:
+                    async with self.connection_pool.acquire() as conn:
+                        if batch_type == 'artists':
+                            await self.insert_artists_batch(conn, batch)
+                        elif batch_type == 'songs':
+                            await self.insert_songs_batch(conn, batch)
+                        elif batch_type == 'playlists':
+                            await self.insert_playlists_batch(conn, batch)
+                        elif batch_type == 'venues':
+                            await self.insert_venues_batch(conn, batch)
+                        elif batch_type == 'song_artists':
+                            await self.insert_song_artists_batch(conn, batch)
+                        elif batch_type == 'playlist_songs':
+                            await self.insert_playlist_songs_batch(conn, batch)
+                        elif batch_type == 'song_adjacency':
+                            await self.insert_track_adjacencies_batch(conn, batch)
+                finally:
+                    # Don't close the pool - keep it for future batches
+                    pass
 
             self.logger.info(f"✓ Inserted {len(batch)} {batch_type} records")
 
@@ -716,11 +747,20 @@ class EnhancedMusicDatabasePipeline:
                     f"{item.get('setlist_name', '')}:{item.get('data_source', '')}"
                 ))
 
-                # Look up song ID for track name
+                # Look up song ID for track name with flexible matching
                 track_name = item.get('track_name', '')
                 song_query = """
                     SELECT song_id FROM songs
                     WHERE LOWER(TRIM(title)) = LOWER(TRIM($1))
+                       OR LOWER(REPLACE(REPLACE(REPLACE(title, ' - ', ' '), ' (', ' '), ')', ''))
+                          LIKE LOWER(REPLACE(REPLACE(REPLACE($1, ' - ', ' '), ' (', ' '), ')', '') || '%')
+                       OR LOWER(title) LIKE '%' || LOWER(TRIM($1)) || '%'
+                    ORDER BY
+                        CASE
+                            WHEN LOWER(TRIM(title)) = LOWER(TRIM($1)) THEN 1
+                            WHEN LOWER(title) LIKE LOWER(TRIM($1)) || '%' THEN 2
+                            ELSE 3
+                        END
                     LIMIT 1
                 """
                 song_id = await conn.fetchval(song_query, track_name)
@@ -818,15 +858,34 @@ class EnhancedMusicDatabasePipeline:
                 track1_name = item.get('track1_name', '')
                 track2_name = item.get('track2_name', '')
 
-                # Look up song IDs for track names
+                # Look up song IDs for track names using flexible matching
+                # First try exact match, then progressively more flexible
                 song_1_query = """
                     SELECT song_id FROM songs
                     WHERE LOWER(TRIM(title)) = LOWER(TRIM($1))
+                       OR LOWER(REPLACE(REPLACE(REPLACE(title, ' - ', ' '), ' (', ' '), ')', ''))
+                          LIKE LOWER(REPLACE(REPLACE(REPLACE($1, ' - ', ' '), ' (', ' '), ')', '') || '%')
+                       OR LOWER(title) LIKE '%' || LOWER(TRIM($1)) || '%'
+                    ORDER BY
+                        CASE
+                            WHEN LOWER(TRIM(title)) = LOWER(TRIM($1)) THEN 1
+                            WHEN LOWER(title) LIKE LOWER(TRIM($1)) || '%' THEN 2
+                            ELSE 3
+                        END
                     LIMIT 1
                 """
                 song_2_query = """
                     SELECT song_id FROM songs
                     WHERE LOWER(TRIM(title)) = LOWER(TRIM($1))
+                       OR LOWER(REPLACE(REPLACE(REPLACE(title, ' - ', ' '), ' (', ' '), ')', ''))
+                          LIKE LOWER(REPLACE(REPLACE(REPLACE($1, ' - ', ' '), ' (', ' '), ')', '') || '%')
+                       OR LOWER(title) LIKE '%' || LOWER(TRIM($1)) || '%'
+                    ORDER BY
+                        CASE
+                            WHEN LOWER(TRIM(title)) = LOWER(TRIM($1)) THEN 1
+                            WHEN LOWER(title) LIKE LOWER(TRIM($1)) || '%' THEN 2
+                            ELSE 3
+                        END
                     LIMIT 1
                 """
 

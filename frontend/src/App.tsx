@@ -10,6 +10,7 @@ const PathBuilder = React.lazy(() => import('./components/PathBuilder').then(mod
 const SetlistBuilder = React.lazy(() => import('./components/SetlistBuilder'));
 const FilterPanel = React.lazy(() => import('./components/FilterPanel'));
 const StatsPanel = React.lazy(() => import('./components/StatsPanel'));
+const DJInterface = React.lazy(() => import('./components/DJInterface').then(module => ({ default: module.DJInterface })));
 
 // Toolbar icons (using text for now - replace with SVG icons in production)
 const icons = {
@@ -64,6 +65,7 @@ const App: React.FC = () => {
   } = useStore();
 
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(false);
+  const [djModeEnabled, setDjModeEnabled] = useState(true); // Default to DJ mode for testing
 
   // Load initial graph data
   const loadGraphData = useCallback(async () => {
@@ -308,6 +310,23 @@ const App: React.FC = () => {
     );
   }
 
+  // Render DJ Interface if enabled
+  if (djModeEnabled) {
+    return (
+      <React.Suspense fallback={
+        <div className="app-container">
+          <div className="loading-overlay">
+            <div className="loading-spinner" />
+            <div>Loading DJ Interface...</div>
+          </div>
+        </div>
+      }>
+        <DJInterface />
+      </React.Suspense>
+    );
+  }
+
+  // Classic interface
   return (
     <div className="app-container">
       {/* Header */}
@@ -322,6 +341,15 @@ const App: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* DJ Mode Toggle */}
+          <button
+            className="btn btn-small btn-primary"
+            onClick={() => setDjModeEnabled(true)}
+            style={{ backgroundColor: '#7ED321' }}
+          >
+            🎤 Switch to DJ Mode
+          </button>
+
           {/* Connection Status */}
           <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)' }}>
             {graphData.nodes.length} tracks • {graphData.edges.length} connections
