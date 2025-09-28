@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { useStore } from './store/useStore';
 import { api } from './services/api';
+import { PanelState } from './types';
 import './styles/global.css';
 
 // Lazy load components for performance

@@ -22,7 +22,8 @@ try:
         EnhancedSetlistItem,
         EnhancedTrackArtistItem,
         EnhancedSetlistTrackItem,
-        EnhancedTrackAdjacencyItem
+        EnhancedTrackAdjacencyItem,
+        PlaylistItem
     )
     from .utils import parse_track_string
 except ImportError:
@@ -36,7 +37,8 @@ except ImportError:
         EnhancedSetlistItem,
         EnhancedTrackArtistItem,
         EnhancedSetlistTrackItem,
-        EnhancedTrackAdjacencyItem
+        EnhancedTrackAdjacencyItem,
+        PlaylistItem
     )
     from spiders.utils import parse_track_string
 
@@ -397,6 +399,14 @@ class MixesdbSpider(scrapy.Spider):
             # Extract tracks with full metadata
             tracks_data = self.extract_enhanced_tracks(response, setlist_data)
 
+            # CRITICAL: Create and yield playlist item FIRST, before processing tracks
+            if setlist_data and tracks_data:
+                track_names = [track_info['track']['track_name'] for track_info in tracks_data if track_info.get('track', {}).get('track_name')]
+                playlist_item = self.create_playlist_item_from_setlist(setlist_data, response.url, track_names)
+                if playlist_item:
+                    self.logger.info(f"Yielding playlist item: {playlist_item.get('name')} with {len(track_names)} tracks")
+                    yield playlist_item
+
             for track_info in tracks_data:
                 yield EnhancedTrackItem(**track_info['track'])
 
@@ -557,6 +567,38 @@ class MixesdbSpider(scrapy.Spider):
             'scrape_timestamp': datetime.utcnow(),
             'created_at': datetime.utcnow()
         }
+
+    def create_playlist_item_from_setlist(self, setlist_data, source_url, track_names=None):
+        """Create a PlaylistItem from setlist metadata for database storage"""
+        try:
+            playlist_item = PlaylistItem(
+                item_type='playlist',
+                name=setlist_data.get('setlist_name'),
+                source='mixesdb',
+                source_url=source_url,
+                dj_name=setlist_data.get('dj_artist_name'),
+                artist_name=setlist_data.get('dj_artist_name'),
+                curator=setlist_data.get('dj_artist_name'),
+                event_name=setlist_data.get('event_name'),
+                event_date=setlist_data.get('set_date'),
+                venue_name=setlist_data.get('venue_name'),
+                tracks=track_names,  # List of track names
+                total_tracks=len(track_names) if track_names else setlist_data.get('total_tracks', 0),
+                description=setlist_data.get('description'),
+                genre_tags=setlist_data.get('genre_tags'),
+                duration_minutes=None,  # Could be calculated from track durations if available
+                bpm_range=setlist_data.get('bpm_range'),
+                data_source=self.name,
+                scrape_timestamp=datetime.utcnow(),
+                created_at=datetime.utcnow()
+            )
+
+            self.logger.debug(f"Created playlist item: {setlist_data.get('setlist_name')}")
+            return playlist_item
+
+        except Exception as e:
+            self.logger.error(f"Error creating playlist item: {e}")
+            return None
 
     def extract_enhanced_tracks(self, response, setlist_data):
         """Extract tracks with comprehensive metadata"""

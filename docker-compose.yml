@@ -418,10 +418,10 @@ services:
       - musicdb-backend
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -663,6 +663,7 @@ services:
       - "9091:9090"  # Non-standard port
     volumes:
       - ./monitoring/prometheus:/etc/prometheus
+      - ./observability/alerting:/etc/prometheus/alerts
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -672,6 +673,8 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
+    depends_on:
+      - alertmanager
     networks:
       - musicdb-monitoring
       - musicdb-backend
@@ -681,23 +684,66 @@ services:
           cpus: '1.0'
           memory: 1G
 
+  # Alertmanager for intelligent alert routing
+  alertmanager:
+    image: quay.io/prometheus/alertmanager:latest
+    container_name: alertmanager
+    restart: always
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./observability/alerting/alertmanager.yaml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--cluster.advertise-address=0.0.0.0:9093'
+    networks:
+      - musicdb-monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   grafana:
-    image: public.ecr.aws/bitnami/grafana:latest
+    image: grafana/grafana:10.2.3
     container_name: grafana
     restart: always
+    user: "472:472"  # Standard Grafana user ID for consistent permissions
     ports:
       - "3001:3000"  # Non-standard port
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
-      GF_INSTALL_PLUGINS: redis-datasource,grafana-metricsdrilldown-app,grafana-lokiexplore-app,grafana-pyroscope-app
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: redis-datasource,grafana-metricsdrilldown-app,grafana-lokiexplore-app,grafana-pyroscope-app
+      GF_INSTALL_PLUGINS: redis-datasource
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: redis-datasource
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+      GF_LOG_LEVEL: info
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      # Configure for nginx reverse proxy
+      GF_SERVER_ROOT_URL: http://localhost:3001/
+      GF_SERVER_DOMAIN: localhost
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana-datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana-dashboards:/etc/grafana/provisioning/dashboards/observability:ro
     depends_on:
       - prometheus
+      - loki
+      - tempo
     networks:
       - musicdb-monitoring
       - musicdb-backend
@@ -708,45 +754,127 @@ services:
       retries: 3
       start_period: 60s
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: logging-elasticsearch
+  # OpenTelemetry Collector - Modern observability hub
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: otel-collector
     restart: always
     ports:
-      - "9201:9200"  # Non-standard port
-      - "9301:9300"  # Non-standard port
-    environment:
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - xpack.security.enabled=false
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8889:8889"   # Prometheus metrics endpoint
+      - "13133:13133" # Health check endpoint
+      - "1777:1777"   # Performance profiler
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+      - ./observability/otel-collector-config.yaml:/etc/otelcol-contrib/otel-collector-config.yaml:ro
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["--config=/etc/otelcol-contrib/otel-collector-config.yaml"]
+    networks:
+      - musicdb-monitoring
+      - musicdb-backend
+    depends_on:
+      - tempo
+      - loki
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:13133"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Grafana Tempo - Distributed tracing backend
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: tempo
+    restart: always
+    ports:
+      - "3200:3200"   # Tempo HTTP
+      - "14317:4317"  # OTLP gRPC (remapped to avoid conflict)
+    command:
+      - "-config.file=/etc/tempo/config.yaml"
+      - "-target=all"
+    volumes:
+      - ./observability/tempo-config.yaml:/etc/tempo/config.yaml
+      - tempo_data:/var/tempo
     networks:
       - musicdb-monitoring
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 2G
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3200/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: logging-kibana
+  # Grafana Loki - Log aggregation system
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
     restart: always
     ports:
-      - "5602:5601"  # Non-standard port
-    environment:
-      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
-    depends_on:
-      - elasticsearch
+      - "3100:3100"   # Loki HTTP API
+    command:
+      - "--config.file=/etc/loki/local-config.yaml"
+      - "--target=all"
+    volumes:
+      - loki_data:/loki
+      - ./observability/loki-config.yaml:/etc/loki/local-config.yaml
     networks:
       - musicdb-monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:5601/api/status || exit 1"]
-      interval: 60s
-      timeout: 30s
-      retries: 5
-      start_period: 180s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Grafana Promtail - Log shipper for Loki
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: promtail
+    restart: always
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./observability/promtail-config.yaml:/etc/promtail/config.yml:ro
+    command:
+      - "--config.file=/etc/promtail/config.yml"
+    networks:
+      - musicdb-monitoring
+    depends_on:
+      - loki
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
   # ===========================================
   # ADDITIONAL MONITORING SERVICES
@@ -859,7 +987,7 @@ services:
     networks:
       - musicdb-frontend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:3006"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -889,10 +1017,12 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./static:/usr/share/nginx/html:ro
     depends_on:
-      - api-gateway
-      - grafana
-      - websocket-api
-      - kibana
+      api-gateway:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+      websocket-api:
+        condition: service_healthy
     networks:
       - musicdb-frontend
     healthcheck:
@@ -968,18 +1098,30 @@ volumes:
       type: none
       o: bind
       device: ./data/rabbitmq
-  elasticsearch_data:
+  tempo_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./data/elasticsearch
+      device: ./data/tempo
+  loki_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/loki
   prometheus_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: ./data/prometheus
+  alertmanager_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/alertmanager
   grafana_data:
     driver: local
     driver_opts:

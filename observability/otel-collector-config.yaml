@@ -1,0 +1,172 @@
+receivers:
+  # OTLP receiver for traces, metrics, and logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Prometheus scraping for existing metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'scrapers'
+          static_configs:
+            - targets: ['scraper-orchestrator:8000', 'scraper-1001tracklists:8000', 'scraper-mixesdb:8000', 'scraper-setlistfm:8000']
+          scrape_interval: 30s
+          metrics_path: /metrics
+
+        - job_name: 'api-services'
+          static_configs:
+            - targets: ['api-gateway:8080', 'graph-visualization-api:8000', 'rest-api:8000']
+          scrape_interval: 30s
+          metrics_path: /metrics
+
+        - job_name: 'infrastructure'
+          static_configs:
+            - targets: ['db:5432', 'redis:6379']
+          scrape_interval: 60s
+
+  # Docker stats receiver for container metrics
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    timeout: 10s
+
+  # File log receiver for structured logs
+  filelog:
+    include:
+      - /var/log/songnodes/**/*.log
+      - /var/log/containers/*.log
+    start_at: end
+    operators:
+      - type: json_parser
+        id: json_parser
+        parse_from: attributes.message
+        parse_to: body
+      - type: move
+        from: body.timestamp
+        to: attributes.timestamp
+      - type: move
+        from: body.level
+        to: attributes.log_level
+      - type: move
+        from: body.service
+        to: attributes.service_name
+      - type: move
+        from: body.trace_id
+        to: attributes.trace_id
+      - type: move
+        from: body.span_id
+        to: attributes.span_id
+
+processors:
+  # Batch processor for performance
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Memory limiter to prevent OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Resource processor to add common attributes
+  resource:
+    attributes:
+      - key: environment
+        value: "development"
+        action: insert
+      - key: service.namespace
+        value: "songnodes"
+        action: insert
+      - key: deployment.environment
+        value: "docker-compose"
+        action: insert
+
+  # Attributes processor for enrichment
+  attributes:
+    actions:
+      - key: container.name
+        from_attribute: container_name
+        action: insert
+      - key: host.name
+        from_attribute: hostname
+        action: insert
+
+  # Probabilistic sampler for traces (sample 100% in dev, adjust for prod)
+  probabilistic_sampler:
+    sampling_percentage: 100
+
+exporters:
+  # Jaeger/Tempo for traces
+  otlp/tempo:
+    endpoint: http://tempo:4317
+    tls:
+      insecure: true
+
+  # Loki for logs
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    headers:
+      X-Scope-OrgID: "songnodes"
+
+  # Prometheus for metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    metric_expiration: 180m
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # Debug exporter for troubleshooting
+  debug:
+    verbosity: basic
+
+  # File exporter for backup
+  file:
+    path: /var/log/otel/telemetry.json
+
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  # Performance profiler
+  pprof:
+    endpoint: 0.0.0.0:1777
+
+  # Memory ballast for performance
+  memory_ballast:
+    size_mib: 64
+
+service:
+  extensions: [health_check, pprof, memory_ballast]
+
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, attributes, probabilistic_sampler]
+      exporters: [otlp/tempo, debug]
+
+    # Metrics pipeline
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource, attributes]
+      exporters: [prometheus, debug]
+
+    # Logs pipeline
+    logs:
+      receivers: [otlp, filelog]
+      processors: [memory_limiter, batch, resource, attributes]
+      exporters: [loki, debug]
+
+  telemetry:
+    logs:
+      level: "info"
+    metrics:
+      address: 0.0.0.0:8888
+      level: basic

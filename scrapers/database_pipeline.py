@@ -1,12 +1,14 @@
 """
 Enhanced Database Pipeline for SongNodes Scrapers
 Writes comprehensive music data directly to PostgreSQL with full schema support
+Integrates with modern observability stack for monitoring and tracing
 """
 import asyncio
 import asyncpg
 import json
 import logging
 import uuid
+import time
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from scrapy.exceptions import DropItem
@@ -15,6 +17,12 @@ from twisted.internet.defer import ensureDeferred, inlineCallbacks
 from twisted.enterprise import adbapi
 import psycopg2
 import psycopg2.extras
+import sys
+import os
+
+# Add observability module to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'observability'))
+from logger import get_logger, trace_operation
 
 from items import (
     EnhancedArtistItem,
@@ -54,7 +62,10 @@ class EnhancedMusicDatabasePipeline:
         self.database_config = database_config
         self.dbpool = None
         self.connection_pool = None  # For async operations
-        self.logger = logging.getLogger(__name__)
+
+        # Initialize structured logger with observability
+        self.obs_logger = get_logger("database-pipeline")
+        self.logger = logging.getLogger(__name__)  # Keep for compatibility
 
         # Batch processing
         self.batch_size = 100
@@ -79,6 +90,10 @@ class EnhancedMusicDatabasePipeline:
             'playlists': set(),
             'venues': set()
         }
+
+        # Performance metrics
+        self.batch_start_time = None
+        self.items_processed = 0
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -160,15 +175,23 @@ class EnhancedMusicDatabasePipeline:
         """Bridge method to convert async processing to Twisted deferreds"""
         return ensureDeferred(self._async_process_item(item, spider))
 
+    @trace_operation("database_pipeline.process_item")
     async def _async_process_item(self, item, spider):
         """Async item processing implementation"""
+        start_time = time.time()
+
         try:
+            # Set correlation context for request tracking
+            correlation_id = self.obs_logger.set_correlation_id()
+
             item_type = type(item).__name__
-            self.logger.debug(f"Processing item of type: {item_type}")
+            self.obs_logger.debug(f"Processing item of type: {item_type}",
+                                 item_type=item_type, spider=spider.name)
 
             # Handle plain dictionaries from API client
             if isinstance(item, dict):
-                self.logger.info(f"Received dict item with keys: {list(item.keys())}")
+                self.obs_logger.info(f"Received dict item with keys: {list(item.keys())}",
+                                   item_keys=list(item.keys()), spider=spider.name)
                 # Detect item type based on dict keys
                 if item.get('item_type') == 'track_adjacency':
                     self.logger.info("Detected track adjacency item from dict")
@@ -226,9 +249,35 @@ class EnhancedMusicDatabasePipeline:
             elif isinstance(item, TargetTrackSearchItem):
                 await self.process_target_track_item(processed_item)
 
+            # Log successful completion with metrics
+            processing_time = (time.time() - start_time) * 1000
+            self.items_processed += 1
+
+            self.obs_logger.log_db_operation(
+                operation="process_item",
+                table_name="multiple",
+                rows_affected=1,
+                query_time_ms=processing_time,
+                item_type=item_type,
+                spider=spider.name,
+                correlation_id=correlation_id
+            )
+
             return item
 
         except Exception as e:
+            # Log error with observability
+            processing_time = (time.time() - start_time) * 1000
+
+            self.obs_logger.log_db_error(
+                operation="process_item",
+                table_name="multiple",
+                error=str(e),
+                item_type=item_type,
+                spider=spider.name,
+                processing_time_ms=processing_time
+            )
+
             self.logger.error(f"Error processing {type(item).__name__}: {e}")
             raise DropItem(f"Processing failed: {e}")
 

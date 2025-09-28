@@ -1,0 +1,198 @@
+global:
+  # Default SMTP configuration
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'songnodes-alerts@localhost'
+  smtp_auth_username: ''
+  smtp_auth_password: ''
+
+  # Default notification templates
+  resolve_timeout: 5m
+
+# Routing configuration
+route:
+  group_by: ['alertname', 'severity', 'component']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default-receiver'
+
+  # Routing tree for different alert types
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 30m
+
+    # Infrastructure alerts
+    - match:
+        component: infrastructure
+      receiver: 'infrastructure-team'
+      group_interval: 2m
+
+    # Data platform alerts
+    - match:
+        team: data-platform
+      receiver: 'data-platform-team'
+      group_interval: 3m
+
+    # Performance alerts (less urgent)
+    - match:
+        component: api
+      receiver: 'backend-team'
+      group_interval: 10m
+
+    # Info level alerts (batched)
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_interval: 15m
+      repeat_interval: 12h
+
+# Alert receivers/notification channels
+receivers:
+  # Default receiver (fallback)
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'admin@songnodes.local'
+        headers:
+          Subject: 'SongNodes Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@songnodes.local'
+        headers:
+          Subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        html: |
+          CRITICAL ALERT REQUIRES IMMEDIATE ATTENTION
+
+          {{ range .Alerts }}
+          🔥 {{ .Annotations.summary }}
+
+          Description: {{ .Annotations.description }}
+          Started: {{ .StartsAt | humanizeTimestamp }}
+          {% if .Annotations.runbook_url %}
+          Runbook: {{ .Annotations.runbook_url }}
+          {% endif %}
+
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+    # Webhook for Slack/Discord integration
+    webhook_configs:
+      - url: 'http://localhost:9093/webhook/critical'
+        send_resolved: true
+
+  # Infrastructure team notifications
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infrastructure@songnodes.local'
+        headers:
+          Subject: '⚠️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          Infrastructure Alert Summary:
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Component: {{ .Labels.component }}
+          Description: {{ .Annotations.description }}
+          Started: {{ .StartsAt | humanizeTimestamp }}
+          {{ end }}
+
+  # Data platform team notifications
+  - name: 'data-platform-team'
+    email_configs:
+      - to: 'data-platform@songnodes.local'
+        headers:
+          Subject: '📊 Data Platform Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          Data Platform Alert:
+
+          {{ range .Alerts }}
+          🔍 {{ .Annotations.summary }}
+
+          Component: {{ .Labels.component }}
+          Description: {{ .Annotations.description }}
+
+          {% if .Labels.scraper %}
+          Affected Scraper: {{ .Labels.scraper }}
+          {% endif %}
+
+          {% if .Labels.table %}
+          Database Table: {{ .Labels.table }}
+          {% endif %}
+
+          Started: {{ .StartsAt | humanizeTimestamp }}
+          {{ end }}
+
+  # Backend team for API issues
+  - name: 'backend-team'
+    email_configs:
+      - to: 'backend@songnodes.local'
+        headers:
+          Subject: '🔧 Backend Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          Backend Service Alert:
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          {% if .Labels.endpoint %}
+          Endpoint: {{ .Labels.endpoint }}
+          {% endif %}
+          Description: {{ .Annotations.description }}
+          Started: {{ .StartsAt | humanizeTimestamp }}
+          {{ end }}
+
+  # Info alerts - batched summary
+  - name: 'info-alerts'
+    email_configs:
+      - to: 'monitoring@songnodes.local'
+        headers:
+          Subject: '📈 SongNodes System Summary ({{ .Alerts | len }} alerts)'
+        html: |
+          SongNodes System Information Summary
+
+          {{ .Alerts | len }} informational alerts in the last period:
+
+          {{ range .Alerts }}
+          • {{ .Annotations.summary }}
+            Component: {{ .Labels.component }}
+            {{ .Annotations.description }}
+
+          {{ end }}
+
+# Inhibition rules to reduce noise
+inhibit_rules:
+  # If service is down, don't alert on high latency for same service
+  - source_match:
+      alertname: ServiceDown
+    target_match:
+      alertname: APIHighLatency
+    equal: ['instance']
+
+  # If there's a critical database issue, don't alert on query latency
+  - source_match:
+      severity: critical
+      component: database
+    target_match:
+      alertname: DatabaseHighLatency
+    equal: ['instance']
+
+  # If scraper has high error rate, don't alert on low activity
+  - source_match:
+      alertname: ScraperHighErrorRate
+    target_match:
+      alertname: ScraperLowActivity
+    equal: ['scraper']
+
+# Templates for custom formatting
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

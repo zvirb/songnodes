@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import clsx from 'clsx';
-import { useStore } from '../store/useStore';
 import { api } from '../services/api';
 
 interface TargetTrack {

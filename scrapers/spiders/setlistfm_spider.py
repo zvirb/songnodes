@@ -15,13 +15,13 @@ import requests
 from urllib import robotparser
 from scrapy.exceptions import CloseSpider
 try:
-    from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem
+    from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
 except ImportError:
     # Fallback for standalone execution
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem
+    from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
 
 class SetlistFmSpider(scrapy.Spider):
     name = 'setlistfm'
@@ -267,10 +267,12 @@ class SetlistFmSpider(scrapy.Spider):
                 sets = setlist.get('sets', {}).get('set', [])
                 track_position = 1
                 tracks_data = []  # Collect tracks for adjacency generation
+                track_names = []  # Collect track names for playlist item
 
                 for set_data in sets:
                     for song in set_data.get('song', []):
                         name = song.get('name') or ''
+                        track_names.append(name)  # Collect track name for playlist item
                         track_item = TrackItem()
                         track_item['track_name'] = name
                         track_item['is_remix'] = bool(re.search(r'(remix|edit|mix)\b', name, re.IGNORECASE))
@@ -306,6 +308,13 @@ class SetlistFmSpider(scrapy.Spider):
                         })
 
                         track_position += 1
+
+                # CRITICAL: Create and yield playlist item FIRST, before adjacencies
+                if track_names:
+                    playlist_item = self.create_playlist_item_from_setlist(setlist_item, track_names)
+                    if playlist_item:
+                        self.logger.info(f"Yielding playlist item: {playlist_item.get('name')} with {len(track_names)} tracks")
+                        yield playlist_item
 
                 # Generate track adjacency relationships within THIS setlist only
                 if len(tracks_data) > 1:
@@ -409,6 +418,38 @@ class SetlistFmSpider(scrapy.Spider):
 
         if adjacency_count > 0:
             self.logger.info(f"Generated {adjacency_count} track adjacency relationships for setlist: {setlist_name}")
+
+    def create_playlist_item_from_setlist(self, setlist_item, track_names):
+        """Create a PlaylistItem from setlist metadata for database storage"""
+        try:
+            playlist_item = PlaylistItem(
+                item_type='playlist',
+                name=setlist_item.get('setlist_name'),
+                source='setlistfm',
+                source_url=setlist_item.get('source_url', ''),
+                dj_name=setlist_item.get('dj_artist_name'),
+                artist_name=setlist_item.get('dj_artist_name'),
+                curator=setlist_item.get('dj_artist_name'),
+                event_name=setlist_item.get('event_name'),
+                event_date=setlist_item.get('set_date'),
+                venue_name=setlist_item.get('venue_name'),
+                tracks=track_names,  # List of track names
+                total_tracks=len(track_names) if track_names else 0,
+                description=None,
+                genre_tags=None,
+                duration_minutes=None,
+                bpm_range=None,
+                data_source=self.name,
+                scrape_timestamp=datetime.utcnow(),
+                created_at=datetime.utcnow()
+            )
+
+            self.logger.debug(f"Created playlist item: {setlist_item.get('setlist_name')}")
+            return playlist_item
+
+        except Exception as e:
+            self.logger.error(f"Error creating playlist item: {e}")
+            return None
 
     def closed(self, reason):
         self.record_run_timestamp()

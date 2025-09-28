@@ -349,3 +349,43 @@ class PlaylistTrackItem(scrapy.Item):
     playlist_id = scrapy.Field()
     track_id = scrapy.Field()
     position = scrapy.Field()
+
+
+class PlaylistItem(scrapy.Item):
+    """Playlist item for yielding playlist metadata from scrapers"""
+    # Required field for pipeline routing
+    item_type = scrapy.Field()  # Should be set to 'playlist'
+
+    # Basic playlist info
+    name = scrapy.Field()  # Playlist/tracklist name
+    source = scrapy.Field()  # Source platform (e.g., '1001tracklists', 'mixesdb')
+    source_url = scrapy.Field()  # URL being scraped
+
+    # DJ/Artist info
+    dj_name = scrapy.Field()  # DJ/artist name
+    artist_name = scrapy.Field()  # Alternative field name
+    curator = scrapy.Field()  # Playlist curator
+
+    # Event info
+    event_name = scrapy.Field()  # Event name
+    event_date = scrapy.Field()  # Date of the event/mix
+    venue_name = scrapy.Field()  # Venue name
+
+    # Track listing
+    tracks = scrapy.Field()  # List of track titles/names
+    total_tracks = scrapy.Field()  # Number of tracks
+
+    # Additional metadata
+    description = scrapy.Field()  # Playlist description
+    genre_tags = scrapy.Field()  # List of genres
+    duration_minutes = scrapy.Field()  # Total duration
+    bpm_range = scrapy.Field()  # BPM range info
+
+    # Platform-specific IDs
+    playlist_id = scrapy.Field()  # External playlist ID
+    platform_id = scrapy.Field()  # Platform-specific ID
+
+    # System fields
+    data_source = scrapy.Field()  # Which scraper collected this
+    scrape_timestamp = scrapy.Field()  # When it was scraped
+    created_at = scrapy.Field()  # Creation timestamp

@@ -171,6 +171,7 @@ class TargetTrackSearcher:
     async def _update_search_results(self, track: Dict, urls: List[str]):
         """Update database with search results"""
         if not self.db:
+            logger.warning("No database connection available for updating search results")
             return
 
         try:
@@ -191,6 +192,21 @@ class TargetTrackSearcher:
                 len(urls),
                 len(urls),
                 datetime.now()
+            )
+
+            # Also update the target_tracks table with last_searched timestamp
+            update_query = """
+                UPDATE target_tracks
+                SET last_searched = NOW(),
+                    playlists_found = playlists_found + $1
+                WHERE title = $2 AND artist = $3
+            """
+
+            await self.db.execute(
+                update_query,
+                len(urls),
+                track['title'],
+                track['artist']
             )
 
             logger.info(f"Updated search results: {len(urls)} playlists found for {track['title']}")

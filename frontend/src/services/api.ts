@@ -540,6 +540,34 @@ export const healthApi = {
   },
 };
 
+// Create simple HTTP client for target tracks API
+const createTargetTracksClient = () => {
+  const baseURL = 'http://localhost:8080/api/v1';
+
+  const request = async (method: string, url: string, data?: any) => {
+    const response = await fetch(`${baseURL}${url}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  };
+
+  return {
+    get: (url: string) => request('GET', url),
+    post: (url: string, data?: any) => request('POST', url, data),
+    put: (url: string, data?: any) => request('PUT', url, data),
+    delete: (url: string) => request('DELETE', url),
+  };
+};
+
 // Combined API object for easy importing
 export const api = {
   graph: graphApi,
@@ -548,6 +576,7 @@ export const api = {
   pathfinding: pathfindingApi,
   setlist: setlistApi,
   health: healthApi,
+  ...createTargetTracksClient(), // Add HTTP methods directly to api object
 };
 
 // Export individual APIs as well

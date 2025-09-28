@@ -1,0 +1,254 @@
+groups:
+  - name: songnodes-scraper-alerts
+    interval: 30s
+    rules:
+      # High error rate alert
+      - alert: ScraperHighErrorRate
+        expr: |
+          (
+            rate(scraper_errors_total[5m]) /
+            (rate(scraper_requests_total[5m]) + 1e-10)
+          ) * 100 > 10
+        for: 2m
+        labels:
+          severity: warning
+          component: scraper
+          team: data-platform
+        annotations:
+          summary: "High error rate detected for {{ $labels.scraper }}"
+          description: |
+            Scraper {{ $labels.scraper }} has error rate of {{ $value | humanizePercentage }}
+            over the last 5 minutes. This indicates potential issues with the target website
+            or scraper logic.
+          runbook_url: "https://docs.songnodes.com/runbooks/scraper-errors"
+
+      # Low request rate (scraper might be stuck)
+      - alert: ScraperLowActivity
+        expr: |
+          rate(scraper_requests_total[10m]) < 0.01
+        for: 5m
+        labels:
+          severity: warning
+          component: scraper
+          team: data-platform
+        annotations:
+          summary: "Low activity detected for {{ $labels.scraper }}"
+          description: |
+            Scraper {{ $labels.scraper }} has made fewer than 0.6 requests per minute
+            over the last 10 minutes. This may indicate the scraper is stuck or paused.
+
+      # No tracks discovered (efficiency issue)
+      - alert: ScraperNoTracksDiscovered
+        expr: |
+          rate(tracks_discovered_total[15m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          component: scraper
+          team: data-platform
+        annotations:
+          summary: "No tracks discovered by {{ $labels.scraper }}"
+          description: |
+            Scraper {{ $labels.scraper }} has not discovered any tracks in the last 15 minutes.
+            This may indicate website changes or selector issues.
+
+      # High LLM adaptation rate (website changes)
+      - alert: HighLLMAdaptationRate
+        expr: |
+          rate(llm_adaptations_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: info
+          component: llm-adapter
+          team: data-platform
+        annotations:
+          summary: "High LLM adaptation rate for {{ $labels.scraper }}"
+          description: |
+            Scraper {{ $labels.scraper }} is using LLM adaptations frequently ({{ $value }} per minute).
+            This suggests the target website structure has changed significantly.
+
+  - name: songnodes-database-alerts
+    interval: 30s
+    rules:
+      # High database query latency
+      - alert: DatabaseHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+          team: data-platform
+        annotations:
+          summary: "High database query latency detected"
+          description: |
+            95th percentile database query latency is {{ $value | humanizeDuration }}.
+            This may indicate database performance issues or inefficient queries.
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolHigh
+        expr: |
+          rate(db_operations_total[1m]) > 50
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          team: data-platform
+        annotations:
+          summary: "High database operation rate"
+          description: |
+            Database operations are occurring at {{ $value }} per second, which may
+            overwhelm the connection pool. Consider scaling or optimizing queries.
+
+      # Failed database operations
+      - alert: DatabaseOperationFailures
+        expr: |
+          increase(db_operation_errors_total[5m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          team: data-platform
+        annotations:
+          summary: "Database operation failures detected"
+          description: |
+            {{ $value }} database operations have failed in the last 5 minutes for
+            operation {{ $labels.operation }} on table {{ $labels.table }}.
+
+  - name: songnodes-system-alerts
+    interval: 30s
+    rules:
+      # Container resource usage
+      - alert: ContainerHighMemoryUsage
+        expr: |
+          (
+            container_memory_usage_bytes{name=~"musicdb-.*|scraper-.*|.*-api"} /
+            container_spec_memory_limit_bytes
+          ) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          component: infrastructure
+          team: platform
+        annotations:
+          summary: "High memory usage for {{ $labels.name }}"
+          description: |
+            Container {{ $labels.name }} is using {{ $value | humanizePercentage }}
+            of its memory limit. Consider increasing limits or investigating memory leaks.
+
+      - alert: ContainerHighCPUUsage
+        expr: |
+          rate(container_cpu_usage_seconds_total{name=~"musicdb-.*|scraper-.*|.*-api"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+          team: platform
+        annotations:
+          summary: "High CPU usage for {{ $labels.name }}"
+          description: |
+            Container {{ $labels.name }} is using {{ $value | humanizePercentage }}
+            CPU over the last 5 minutes.
+
+      # Service health checks
+      - alert: ServiceDown
+        expr: |
+          up{job=~"scrapers|api-services"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: |
+            Service {{ $labels.instance }} has been down for more than 1 minute.
+            Immediate attention required.
+
+  - name: songnodes-data-quality-alerts
+    interval: 60s
+    rules:
+      # Duplicate detection rate
+      - alert: HighDuplicateRate
+        expr: |
+          (
+            increase(duplicate_items_detected_total[1h]) /
+            (increase(tracks_discovered_total[1h]) + 1e-10)
+          ) * 100 > 30
+        for: 5m
+        labels:
+          severity: info
+          component: data-quality
+          team: data-platform
+        annotations:
+          summary: "High duplicate detection rate"
+          description: |
+            {{ $value | humanizePercentage }} of discovered tracks in the last hour
+            were duplicates. This may indicate inefficient scraping or data quality issues.
+
+      # Low data volume (potential outage)
+      - alert: LowDataVolume
+        expr: |
+          rate(tracks_discovered_total[1h]) < 10
+        for: 15m
+        labels:
+          severity: warning
+          component: data-pipeline
+          team: data-platform
+        annotations:
+          summary: "Low data discovery rate"
+          description: |
+            Only {{ $value }} tracks discovered per hour over the last hour.
+            This is significantly below normal levels and may indicate an outage.
+
+      # Target track matching efficiency
+      - alert: LowTargetTrackMatching
+        expr: |
+          (
+            rate(target_tracks_matched_total[1h]) /
+            (rate(tracks_discovered_total[1h]) + 1e-10)
+          ) * 100 < 5
+        for: 30m
+        labels:
+          severity: info
+          component: target-matching
+          team: data-platform
+        annotations:
+          summary: "Low target track matching rate"
+          description: |
+            Only {{ $value | humanizePercentage }} of discovered tracks matched target tracks
+            in the last hour. Consider reviewing target track definitions.
+
+  - name: songnodes-performance-alerts
+    interval: 60s
+    rules:
+      # API response time degradation
+      - alert: APIHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(api_response_time_seconds_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+          component: api
+          team: backend
+        annotations:
+          summary: "High API response time"
+          description: |
+            95th percentile API response time is {{ $value | humanizeDuration }}
+            for endpoint {{ $labels.endpoint }}.
+
+      # OpenTelemetry collector performance
+      - alert: OTelCollectorHighLoadLevel
+        expr: |
+          rate(otelcol_processor_batch_send_size_sum[5m]) /
+          rate(otelcol_processor_batch_send_size_count[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: observability
+          team: platform
+        annotations:
+          summary: "OpenTelemetry Collector high load"
+          description: |
+            OTel Collector is processing large batches ({{ $value }} items per batch).
+            Consider scaling or optimizing configuration.

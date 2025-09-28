@@ -475,6 +475,9 @@ class ScraperManager:
 
 scraper_manager = ScraperManager()
 
+# Global instance for target track searcher
+target_track_searcher = None
+
 # =====================
 # Task Execution
 # =====================
@@ -627,6 +630,7 @@ async def scheduled_scraping():
             logger.info(f"Scheduled task {task_id} for {schedule.scraper}")
 
 from sqlalchemy.ext.asyncio import create_async_engine
+from target_track_searcher import TargetTrackSearcher
 
 # Database connection
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@postgres:5432/musicdb")
@@ -644,6 +648,121 @@ async def refresh_database_views():
     except Exception as e:
         logger.error(f"Error refreshing database views: {e}")
 
+async def load_target_tracks():
+    """Load active target tracks from database for searching."""
+    logger.info("Loading target tracks from database...")
+    try:
+        async with engine.connect() as conn:
+            query = """
+                SELECT track_id, title, artist, priority, last_searched
+                FROM target_tracks
+                WHERE is_active = true
+                AND (last_searched IS NULL OR last_searched < NOW() - INTERVAL '24 hours')
+                ORDER BY
+                    CASE priority
+                        WHEN 'high' THEN 1
+                        WHEN 'medium' THEN 2
+                        ELSE 3
+                    END,
+                    last_searched ASC NULLS FIRST
+                LIMIT 20
+            """
+            result = await conn.execute(query)
+            rows = result.fetchall()
+
+            target_tracks = [
+                {
+                    'track_id': row[0],
+                    'title': row[1],
+                    'artist': row[2],
+                    'priority': row[3]
+                }
+                for row in rows
+            ]
+
+            logger.info(f"Loaded {len(target_tracks)} target tracks for searching")
+            return target_tracks
+
+    except Exception as e:
+        logger.error(f"Error loading target tracks: {e}")
+        return []
+
+async def get_database_connection():
+    """Get a database connection for the target track searcher"""
+    return engine.connect()
+
+async def target_track_search_pipeline():
+    """Execute the target track search pipeline"""
+    logger.info("Starting target track search pipeline")
+
+    try:
+        # Load active target tracks from database
+        target_tracks = await load_target_tracks()
+
+        if not target_tracks:
+            logger.info("No target tracks found, skipping search pipeline")
+            return
+
+        logger.info(f"Found {len(target_tracks)} target tracks to search for")
+
+        # Create a searcher instance with database connection for this pipeline run
+        async with engine.connect() as db_conn:
+            searcher = TargetTrackSearcher(db_connection=db_conn)
+
+            # Search for playlists containing these tracks
+            search_results = await searcher.search_for_target_tracks(target_tracks)
+
+            # Close the searcher's HTTP client
+            await searcher.close()
+
+        # Convert search results to scraping tasks and queue them
+        total_urls_found = 0
+        for track_key, urls in search_results.items():
+            total_urls_found += len(urls)
+
+            # Queue each discovered URL as a scraping task
+            for url in urls:
+                # Determine which scraper to use based on URL
+                scraper = determine_scraper_from_url(url)
+
+                # Create scraping task
+                task = ScrapingTask(
+                    scraper=scraper,
+                    url=url,
+                    priority=TaskPriority.HIGH,  # Target track searches are high priority
+                    params={
+                        'discovered_via': 'target_track_search',
+                        'target_track': track_key
+                    }
+                )
+
+                # Add to queue
+                task_id = task_queue.add_task(task)
+                logger.info(f"Queued task {task_id} for URL: {url}")
+
+        logger.info(f"Target track search pipeline complete: {total_urls_found} URLs discovered and queued")
+
+    except Exception as e:
+        logger.error(f"Error in target track search pipeline: {e}")
+
+def determine_scraper_from_url(url: str) -> str:
+    """Determine which scraper to use based on URL domain"""
+    if '1001tracklists.com' in url:
+        return '1001tracklists'
+    elif 'mixesdb.com' in url:
+        return 'mixesdb'
+    elif 'setlist.fm' in url:
+        return 'setlistfm'
+    elif 'reddit.com' in url:
+        return 'reddit'
+    elif 'music.apple.com' in url:
+        return 'applemusic'
+    elif 'watchthedj.com' in url:
+        return 'watchthedj'
+    else:
+        # Default to first available scraper
+        return '1001tracklists'
+
 # =====================
 # API Endpoints
 # =====================
@@ -651,10 +770,16 @@ async def refresh_database_views():
 @app.on_event("startup")
 async def startup_event():
     """Initialize background tasks on startup"""
+    global target_track_searcher
+
+    # Initialize Target Track Searcher
+    target_track_searcher = TargetTrackSearcher()
+    logger.info("Target Track Searcher initialized")
+
     # Start background workers
     asyncio.create_task(task_processor())
     asyncio.create_task(health_checker())
-    
+
     # Schedule periodic tasks
     scheduler.add_job(
         scheduled_scraping,
@@ -667,8 +792,14 @@ async def startup_event():
         CronTrigger(minute=0),  # Every hour at the start of the hour
         id="hourly_db_refresh"
     )
+    # Add target track search job
+    scheduler.add_job(
+        target_track_search_pipeline,
+        CronTrigger(hour=1, minute=30),  # Daily at 1:30 AM, before main scraping
+        id="daily_target_search"
+    )
     scheduler.start()
-    
+
     logger.info("Scraper Orchestrator started")
 
 @app.on_event("shutdown")
@@ -835,11 +966,11 @@ async def get_orchestration_status():
     """Get overall orchestration status"""
     scrapers_status = await get_scrapers_status()
     queue_status = await get_queue_status()
-    
+
     # Count healthy scrapers
     healthy_count = sum(1 for s in scrapers_status.values() if s["status"] == "idle" or s["status"] == "running")
     total_count = len(scrapers_status)
-    
+
     return {
         "status": "operational" if healthy_count > 0 else "degraded",
         "healthy_scrapers": f"{healthy_count}/{total_count}",
@@ -847,6 +978,58 @@ async def get_orchestration_status():
         "scrapers": scrapers_status,
         "queue": queue_status
     }
+
+@app.post("/target-tracks/search")
+async def trigger_target_track_search(background_tasks: BackgroundTasks):
+    """Manually trigger target track search pipeline"""
+    logger.info("Target track search manually triggered")
+
+    try:
+        # Run the pipeline in background
+        background_tasks.add_task(target_track_search_pipeline)
+
+        return {
+            "status": "started",
+            "message": "Target track search pipeline started in background"
+        }
+    except Exception as e:
+        logger.error(f"Error triggering target track search: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/target-tracks/status")
+async def get_target_tracks_status():
+    """Get status of target tracks in database"""
+    try:
+        async with engine.connect() as conn:
+            # Count total target tracks
+            total_query = "SELECT COUNT(*) FROM target_tracks"
+            total_result = await conn.execute(total_query)
+            total_count = total_result.scalar()
+
+            # Count active target tracks
+            active_query = "SELECT COUNT(*) FROM target_tracks WHERE is_active = true"
+            active_result = await conn.execute(active_query)
+            active_count = active_result.scalar()
+
+            # Count target tracks needing search
+            needs_search_query = """
+                SELECT COUNT(*) FROM target_tracks
+                WHERE is_active = true
+                AND (last_searched IS NULL OR last_searched < NOW() - INTERVAL '24 hours')
+            """
+            needs_search_result = await conn.execute(needs_search_query)
+            needs_search_count = needs_search_result.scalar()
+
+            return {
+                "total_tracks": total_count,
+                "active_tracks": active_count,
+                "needs_search": needs_search_count,
+                "searcher_initialized": target_track_searcher is not None
+            }
+
+    except Exception as e:
+        logger.error(f"Error getting target tracks status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
