@@ -132,7 +132,7 @@ export interface ViewState {
 }
 
 export interface PanelState {
-  leftPanel: 'search' | 'filters' | 'setlist' | 'path' | 'graph' | null;
+  leftPanel: 'search' | 'filters' | 'setlist' | 'path' | 'graph' | 'targets' | null;
   rightPanel: 'stats' | 'details' | 'history' | null;
   bottomPanel: 'player' | 'timeline' | null;
   leftPanelWidth: number;
