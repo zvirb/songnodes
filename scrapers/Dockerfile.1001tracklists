@@ -51,10 +51,10 @@ RUN mkdir -p /app/output
 # Expose port for API
 EXPOSE 8011
 
-# Copy the proper API server script and API client
-COPY scraper_api_1001.py /app/scraper_api.py
-COPY onethousandone_api_client.py /app/onethousandone_api_client.py
+# Copy the REAL scraper API (not mock)
+COPY scraper_api_real.py /app/scraper_api.py
+COPY real_data_scraper.py /app/real_data_scraper.py
 
-# Start the API server
+# Start the REAL API server
 CMD ["python", "/app/scraper_api.py"]
 
