@@ -131,7 +131,7 @@ class AutomatedScrapingScheduler:
 
         # Database connection settings for target tracks
         self.db_config = {
-            'host': os.getenv('DB_HOST', 'db'),
+            'host': os.getenv('DB_HOST', 'musicdb-postgres'),
             'port': int(os.getenv('DB_PORT', 5432)),
             'database': os.getenv('DB_NAME', 'musicdb'),
             'user': os.getenv('DB_USER', 'musicdb_user'),

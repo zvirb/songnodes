@@ -633,7 +633,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from target_track_searcher import TargetTrackSearcher
 
 # Database connection
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@postgres:5432/musicdb")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@musicdb-postgres:5432/musicdb")
 engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
 
 async def refresh_database_views():

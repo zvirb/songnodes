@@ -181,17 +181,26 @@ class EnhancedMusicDatabasePipeline:
         start_time = time.time()
 
         try:
-            # Set correlation context for request tracking
-            correlation_id = self.obs_logger.set_correlation_id()
+            # Set correlation context for request tracking (with fallback)
+            try:
+                correlation_id = self.obs_logger.set_correlation_id()
+            except AttributeError:
+                correlation_id = str(uuid.uuid4())
 
             item_type = type(item).__name__
-            self.obs_logger.debug(f"Processing item of type: {item_type}",
-                                 item_type=item_type, spider=spider.name)
+            try:
+                self.obs_logger.debug(f"Processing item of type: {item_type}",
+                                     item_type=item_type, spider=spider.name if spider else "unknown")
+            except AttributeError:
+                self.logger.debug(f"Processing item of type: {item_type}")
 
             # Handle plain dictionaries from API client
             if isinstance(item, dict):
-                self.obs_logger.info(f"Received dict item with keys: {list(item.keys())}",
-                                   item_keys=list(item.keys()), spider=spider.name)
+                try:
+                    self.obs_logger.info(f"Received dict item with keys: {list(item.keys())}",
+                                       item_keys=list(item.keys()), spider=spider.name if spider else "unknown")
+                except AttributeError:
+                    self.logger.info(f"Received dict item with keys: {list(item.keys())}")
                 # Detect item type based on dict keys
                 if item.get('item_type') == 'track_adjacency':
                     self.logger.info("Detected track adjacency item from dict")
@@ -253,30 +262,43 @@ class EnhancedMusicDatabasePipeline:
             processing_time = (time.time() - start_time) * 1000
             self.items_processed += 1
 
-            self.obs_logger.log_db_operation(
-                operation="process_item",
-                table_name="multiple",
-                rows_affected=1,
-                query_time_ms=processing_time,
-                item_type=item_type,
-                spider=spider.name,
-                correlation_id=correlation_id
-            )
+            # Log database operation with observability (with fallback)
+            try:
+                self.obs_logger.log_db_operation(
+                    operation="process_item",
+                    table_name="multiple",
+                    rows_affected=1,
+                    query_time_ms=processing_time,
+                    item_type=item_type,
+                    spider=spider.name if spider else "unknown",
+                    correlation_id=correlation_id
+                )
+            except AttributeError:
+                # Fallback to regular logging if observability logger doesn't have the method
+                self.logger.info(
+                    f"Database operation completed: {item_type} in {processing_time:.2f}ms"
+                )
 
             return item
 
         except Exception as e:
             # Log error with observability
             processing_time = (time.time() - start_time) * 1000
+            item_type_name = type(item).__name__
 
-            self.obs_logger.log_db_error(
-                operation="process_item",
-                table_name="multiple",
-                error=str(e),
-                item_type=item_type,
-                spider=spider.name,
-                processing_time_ms=processing_time
-            )
+            # Log database error with observability (with fallback)
+            try:
+                self.obs_logger.log_db_error(
+                    operation="process_item",
+                    table_name="multiple",
+                    error=str(e),
+                    item_type=item_type_name,
+                    spider=spider.name if spider else "unknown",
+                    processing_time_ms=processing_time
+                )
+            except AttributeError:
+                # Fallback to regular logging if observability logger doesn't have the method
+                self.logger.error(f"Database operation failed: {item_type_name} - {str(e)}")
 
             self.logger.error(f"Error processing {type(item).__name__}: {e}")
             raise DropItem(f"Processing failed: {e}")
