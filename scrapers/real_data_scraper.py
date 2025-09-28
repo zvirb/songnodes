@@ -31,13 +31,13 @@ class RealDataScraper:
         self.target_tracks = self._load_target_tracks()
         logger.info(f"Loaded {len(self.target_tracks)} target tracks to search for")
 
-        # Initialize database pipeline
+        # Initialize database pipeline with correct Docker network hostname
         db_config = {
-            'host': os.getenv('DATABASE_HOST', 'musicdb-postgres'),
+            'host': os.getenv('DATABASE_HOST', 'postgres'),  # Use service name from docker-compose
             'port': int(os.getenv('DATABASE_PORT', 5432)),
             'database': os.getenv('DATABASE_NAME', 'musicdb'),
             'user': os.getenv('DATABASE_USER', 'musicdb_user'),
-            'password': os.getenv('DATABASE_PASSWORD', 'musicdb_password')
+            'password': os.getenv('DATABASE_PASSWORD', '7D82_xqNs55tGyk')  # Use actual database password
         }
         self.db_pipeline = EnhancedMusicDatabasePipeline(db_config)
 
@@ -281,20 +281,26 @@ class RealDataScraper:
             # Sequential adjacency (next track)
             if i < len(tracks) - 1:
                 next_track = tracks[i + 1]['track']
-                adjacency_item = {
-                    'item_type': 'track_adjacency',
-                    'track1_name': track['name'],
-                    'track1_artist': track.get('artist', 'Unknown Artist'),
-                    'track2_name': next_track['name'],
-                    'track2_artist': next_track.get('artist', 'Unknown Artist'),
-                    'distance': 1,  # Sequential
-                    'occurrence_count': 1,
-                    'transition_type': 'sequential',
-                    'source_context': f"{playlist['type']}:{playlist['name']}",
-                    'source_url': playlist['url'],
-                    'discovered_at': datetime.now().isoformat()
-                }
-                items.append(adjacency_item)
+
+                # Skip same-artist consecutive tracks to avoid meaningless adjacencies
+                track_artist = track.get('artist', 'Unknown Artist')
+                next_artist = next_track.get('artist', 'Unknown Artist')
+
+                if track_artist != next_artist:
+                    adjacency_item = {
+                        'item_type': 'track_adjacency',
+                        'track1_name': track['name'],
+                        'track1_artist': track_artist,
+                        'track2_name': next_track['name'],
+                        'track2_artist': next_artist,
+                        'distance': 1,  # Sequential
+                        'occurrence_count': 1,
+                        'transition_type': 'sequential',
+                        'source_context': f"{playlist['type']}:{playlist['name']}",
+                        'source_url': playlist['url'],
+                        'discovered_at': datetime.now().isoformat()
+                    }
+                    items.append(adjacency_item)
 
             # Close proximity adjacencies (tracks within 3 positions)
             for j in range(i + 2, min(i + 4, len(tracks))):
@@ -302,20 +308,25 @@ class RealDataScraper:
                     nearby_track = tracks[j]['track']
                     distance = j - i
 
-                    adjacency_item = {
-                        'item_type': 'track_adjacency',
-                        'track1_name': track['name'],
-                        'track1_artist': track.get('artist', 'Unknown Artist'),
-                        'track2_name': nearby_track['name'],
-                        'track2_artist': nearby_track.get('artist', 'Unknown Artist'),
-                        'distance': distance,
-                        'occurrence_count': 1,
-                        'transition_type': 'close_proximity',
-                        'source_context': f"{playlist['type']}:{playlist['name']}",
-                        'source_url': playlist['url'],
-                        'discovered_at': datetime.now().isoformat()
-                    }
-                    items.append(adjacency_item)
+                    # Skip same-artist adjacencies for proximity relationships too
+                    track_artist = track.get('artist', 'Unknown Artist')
+                    nearby_artist = nearby_track.get('artist', 'Unknown Artist')
+
+                    if track_artist != nearby_artist:
+                        adjacency_item = {
+                            'item_type': 'track_adjacency',
+                            'track1_name': track['name'],
+                            'track1_artist': track_artist,
+                            'track2_name': nearby_track['name'],
+                            'track2_artist': nearby_artist,
+                            'distance': distance,
+                            'occurrence_count': 1,
+                            'transition_type': 'close_proximity',
+                            'source_context': f"{playlist['type']}:{playlist['name']}",
+                            'source_url': playlist['url'],
+                            'discovered_at': datetime.now().isoformat()
+                        }
+                        items.append(adjacency_item)
 
         return items
 
@@ -401,6 +412,17 @@ class RealDataScraper:
 
         except Exception as e:
             logger.error(f"Error getting statistics: {e}")
+
+    async def close(self):
+        """Close the scraper and flush any remaining database batches"""
+        try:
+            logger.info("Closing scraper and flushing database batches...")
+            await self.db_pipeline.flush_all_batches_async()
+            if hasattr(self.db_pipeline, 'close'):
+                await self.db_pipeline.close()
+            logger.info("✓ Scraper closed successfully")
+        except Exception as e:
+            logger.error(f"Error closing scraper: {e}")
 
 
 async def main():

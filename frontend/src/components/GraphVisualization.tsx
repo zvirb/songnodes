@@ -16,19 +16,20 @@ import { select } from 'd3-selection';
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge, DEFAULT_CONFIG, Bounds } from '../types';
 
-// Performance constants
+// Performance constants - updated for 2025 best practices
 const PERFORMANCE_THRESHOLDS = {
   NODE_COUNT_HIGH: 1000,
   NODE_COUNT_MEDIUM: 500,
   EDGE_COUNT_HIGH: 2000,
   EDGE_COUNT_MEDIUM: 1000,
-  CULL_DISTANCE: 2000,
-  LOD_DISTANCE_1: 400,
-  LOD_DISTANCE_2: 800,
+  // Removed CULL_DISTANCE - using proper viewport bounds instead
+  LOD_DISTANCE_1: 400, // Screen-space distance for detail levels
+  LOD_DISTANCE_2: 800, // Screen-space distance for detail levels
   MIN_NODE_SIZE: 2,
   MAX_NODE_SIZE: 32,
   MIN_EDGE_WIDTH: 0.5,
   MAX_EDGE_WIDTH: 8,
+  VIEWPORT_BUFFER: 200, // Pixels buffer for smooth culling transitions
 } as const;
 
 // Color schemes
@@ -102,14 +103,36 @@ class LODSystem {
   getNodeLOD(node: EnhancedGraphNode): number {
     if (!node.x || !node.y) return 3; // Hide if no position
 
-    const dx = node.x - this.viewport.x;
-    const dy = node.y - this.viewport.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    // Calculate screen bounds for proper viewport culling (2025 best practice)
+    // Transform world coordinates to screen coordinates
+    const screenX = (node.x * this.viewport.zoom) + this.viewport.x;
+    const screenY = (node.y * this.viewport.zoom) + this.viewport.y;
 
-    // Performance-based LOD adjustment
+    // Define screen bounds with buffer for smooth transitions
+    const buffer = 200; // pixels buffer for smooth appearing/disappearing
+    const leftBound = -buffer;
+    const rightBound = this.viewport.width + buffer;
+    const topBound = -buffer;
+    const bottomBound = this.viewport.height + buffer;
+
+    // Check if node is completely outside screen bounds (true viewport culling)
+    if (screenX < leftBound || screenX > rightBound ||
+        screenY < topBound || screenY > bottomBound) {
+      return 3; // Cull completely - outside viewport
+    }
+
+    // Calculate distance from viewport center for LOD decisions
+    const centerX = this.viewport.width / 2;
+    const centerY = this.viewport.height / 2;
+    const distanceFromCenter = Math.sqrt(
+      Math.pow(screenX - centerX, 2) + Math.pow(screenY - centerY, 2)
+    );
+
+    // Performance-based LOD adjustment using screen-space distances
     let baseDistance1 = PERFORMANCE_THRESHOLDS.LOD_DISTANCE_1;
     let baseDistance2 = PERFORMANCE_THRESHOLDS.LOD_DISTANCE_2;
 
+    // Scale LOD distances based on performance requirements
     if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_HIGH) {
       baseDistance1 *= 0.6;
       baseDistance2 *= 0.6;
@@ -118,14 +141,16 @@ class LODSystem {
       baseDistance2 *= 0.8;
     }
 
-    if (distance > PERFORMANCE_THRESHOLDS.CULL_DISTANCE / this.viewport.zoom) {
-      return 3; // Cull completely
-    } else if (distance > baseDistance2 / this.viewport.zoom) {
-      return 2; // Minimal detail
-    } else if (distance > baseDistance1 / this.viewport.zoom) {
-      return 1; // Reduced detail
+    // Use screen-space distances for consistent LOD behavior
+    const screenDiagonal = Math.sqrt(this.viewport.width * this.viewport.width + this.viewport.height * this.viewport.height);
+    const normalizedDistance = distanceFromCenter / screenDiagonal;
+
+    if (normalizedDistance > 0.8) {
+      return 2; // Minimal detail - far from center
+    } else if (normalizedDistance > 0.4) {
+      return 1; // Reduced detail - medium distance
     } else {
-      return 0; // Full detail
+      return 0; // Full detail - near center
     }
   }
 
@@ -135,15 +160,27 @@ class LODSystem {
     const sourceLOD = this.getNodeLOD(edge.sourceNode);
     const targetLOD = this.getNodeLOD(edge.targetNode);
 
-    // Edge LOD is determined by the worst node LOD
-    const maxLOD = Math.max(sourceLOD, targetLOD);
-
-    // Additional edge-specific culling
-    if (this.edgeCount > PERFORMANCE_THRESHOLDS.EDGE_COUNT_HIGH && maxLOD > 0) {
-      return 3; // Cull edges aggressively on high edge counts
+    // If both nodes are culled (LOD 3), cull the edge
+    if (sourceLOD === 3 && targetLOD === 3) {
+      return 3;
     }
 
-    return maxLOD;
+    // If one node is culled but the other is visible, check if edge crosses viewport
+    if (sourceLOD === 3 || targetLOD === 3) {
+      // Keep edge visible if it might cross the viewport
+      // This prevents edges from disappearing when one node is just outside bounds
+      return Math.min(sourceLOD, targetLOD);
+    }
+
+    // Edge LOD is determined by the best (lowest) node LOD for smoother transitions
+    const minLOD = Math.min(sourceLOD, targetLOD);
+
+    // Additional edge-specific culling for performance
+    if (this.edgeCount > PERFORMANCE_THRESHOLDS.EDGE_COUNT_HIGH && minLOD > 0) {
+      return Math.min(minLOD + 1, 3); // Slightly more aggressive culling for high edge counts
+    }
+
+    return minLOD;
   }
 
   shouldRenderNode(node: EnhancedGraphNode): boolean {

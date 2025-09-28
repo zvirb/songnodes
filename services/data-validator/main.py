@@ -60,7 +60,7 @@ redis_client = redis.Redis(
 )
 
 # Database configuration - use DATABASE_URL for connection pooling
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:password@postgres:5432/musicdb")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:password@musicdb-postgres:5432/musicdb")
 
 # Parse DATABASE_URL for asyncpg connection
 import urllib.parse

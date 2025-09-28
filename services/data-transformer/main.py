@@ -67,7 +67,7 @@ redis_client = redis.Redis(
 
 # Database configuration
 DATABASE_CONFIG = {
-    "host": os.getenv("POSTGRES_HOST", "postgres"),
+    "host": os.getenv("POSTGRES_HOST", "musicdb-postgres"),
     "port": int(os.getenv("POSTGRES_PORT", 5432)),
     "database": os.getenv("POSTGRES_DB", "musicdb"),
     "user": os.getenv("POSTGRES_USER", "postgres"),

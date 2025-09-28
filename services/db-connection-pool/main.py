@@ -67,7 +67,7 @@ class PoolManager:
         self.pgbouncer_port = int(os.getenv('PGBOUNCER_PORT', '6432'))
         self.pgbouncer_admin_user = os.getenv('PGBOUNCER_ADMIN_USER', 'pgbouncer')
         self.pgbouncer_admin_password = os.getenv('PGBOUNCER_ADMIN_PASSWORD', 'pgbouncer')
-        self.postgres_host = os.getenv('POSTGRES_HOST', 'postgres')
+        self.postgres_host = os.getenv('POSTGRES_HOST', 'musicdb-postgres')
         self.postgres_port = int(os.getenv('POSTGRES_PORT', '5432'))
         self.postgres_user = os.getenv('POSTGRES_USER', 'musicdb_user')
         self.postgres_password = os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass')

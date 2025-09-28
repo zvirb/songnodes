@@ -520,16 +520,19 @@ async def get_graph_edges(
 
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as row_number,
-                               'song_' || song_id_1::text as source_id,
-                               'song_' || song_id_2::text as target_id,
-                               occurrence_count::float as weight,
+                               ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
+                               'song_' || sa.song_id_1::text as source_id,
+                               'song_' || sa.song_id_2::text as target_id,
+                               sa.occurrence_count::float as weight,
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM song_adjacency
-                        WHERE (song_id_1 = ANY(:song_ids) OR song_id_2 = ANY(:song_ids))
-                          AND avg_distance = 1.0  -- Only consecutive tracks in setlists
-                          AND occurrence_count >= 3  -- Only show strong adjacency relationships
+                        FROM song_adjacency sa
+                        JOIN songs s1 ON sa.song_id_1 = s1.song_id
+                        JOIN songs s2 ON sa.song_id_2 = s2.song_id
+                        WHERE (sa.song_id_1 = ANY(:song_ids) OR sa.song_id_2 = ANY(:song_ids))
+                          AND sa.avg_distance = 1.0  -- Only consecutive tracks in setlists
+                          AND sa.occurrence_count >= 1  -- Show all adjacency relationships
+                          AND s1.primary_artist_id != s2.primary_artist_id  -- Exclude same-artist consecutive tracks
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """).bindparams(
@@ -546,15 +549,18 @@ async def get_graph_edges(
                     # Filter to only show the strongest adjacency relationships to reduce visual clutter
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY occurrence_count DESC) as row_number,
-                               'song_' || song_id_1::text as source_id,
-                               'song_' || song_id_2::text as target_id,
-                               occurrence_count::float as weight,
+                               ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
+                               'song_' || sa.song_id_1::text as source_id,
+                               'song_' || sa.song_id_2::text as target_id,
+                               sa.occurrence_count::float as weight,
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM song_adjacency
-                        WHERE avg_distance = 1.0  -- Only consecutive tracks in setlists
-                          AND occurrence_count >= 3  -- Only show strong adjacency relationships
+                        FROM song_adjacency sa
+                        JOIN songs s1 ON sa.song_id_1 = s1.song_id
+                        JOIN songs s2 ON sa.song_id_2 = s2.song_id
+                        WHERE sa.avg_distance = 1.0  -- Only consecutive tracks in setlists
+                          AND sa.occurrence_count >= 1  -- Show all adjacency relationships
+                          AND s1.primary_artist_id != s2.primary_artist_id  -- Exclude same-artist consecutive tracks
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
@@ -777,8 +783,46 @@ async def get_graph_data():
         nodes_result = await get_graph_nodes(limit=1000, offset=0)
         nodes = nodes_result['nodes']
 
-        # Get edges data (get all edges, not filtered by specific nodes)
-        edges_result = await get_graph_edges(node_ids=None, limit=2000, offset=0)
+        # Get edges data (get all available edges, no filtering by specific nodes)
+        # Query song_adjacency directly for better performance
+        logger.info("DEBUG: EXECUTING FILTERED ADJACENCY QUERY - Excluding same-artist consecutive tracks")
+        async with async_session() as session:
+            edges_query = text("""
+                SELECT
+                       ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
+                       'song_' || sa.song_id_1::text as source_id,
+                       'song_' || sa.song_id_2::text as target_id,
+                       sa.occurrence_count::float as weight,
+                       'sequential' as edge_type,
+                       COUNT(*) OVER() as total_count
+                FROM song_adjacency sa
+                JOIN songs s1 ON sa.song_id_1 = s1.song_id
+                JOIN songs s2 ON sa.song_id_2 = s2.song_id
+                WHERE sa.avg_distance = 1.0  -- Only consecutive tracks in setlists
+                  AND sa.occurrence_count >= 1  -- Show all adjacency relationships
+                  AND s1.primary_artist_id != s2.primary_artist_id  -- Exclude same-artist consecutive tracks
+                ORDER BY occurrence_count DESC
+                LIMIT 1000
+            """)
+            result = await session.execute(edges_query)
+
+            edges = []
+            for row in result:
+                source_id = str(row.source_id)
+                target_id = str(row.target_id)
+                edge_id = f"{source_id}__{target_id}"
+
+                edge_data = {
+                    'id': edge_id,
+                    'source': source_id,
+                    'target': target_id,
+                    'weight': float(row.weight),
+                    'type': row.edge_type,
+                    'edge_type': row.edge_type
+                }
+                edges.append(edge_data)
+
+        edges_result = {'edges': edges, 'total': len(edges)}
         edges = edges_result['edges']
 
         return {
@@ -839,6 +883,31 @@ async def search_graph(
             "facets": {},
             "status": "Search service temporarily offline"
         }
+
+@app.get("/test/adjacency")
+async def test_adjacency():
+    """Test endpoint to verify adjacency data directly."""
+    try:
+        async with async_session() as session:
+            query = text("""
+                SELECT COUNT(*) as count
+                FROM song_adjacency sa
+                JOIN songs s1 ON sa.song_id_1 = s1.song_id
+                JOIN songs s2 ON sa.song_id_2 = s2.song_id
+                WHERE sa.avg_distance = 1.0
+                  AND sa.occurrence_count >= 1
+                  AND s1.primary_artist_id != s2.primary_artist_id
+            """)
+            result = await session.execute(query)
+            count = result.scalar()
+
+            return {
+                "total_adjacencies": count,
+                "message": "Direct adjacency query test"
+            }
+    except Exception as e:
+        logger.error(f"Test adjacency endpoint error: {e}")
+        return {"error": str(e)}
 
 @app.get("/test/nodes")
 async def test_nodes():
