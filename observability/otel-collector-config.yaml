@@ -7,26 +7,25 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  # Prometheus scraping for existing metrics
+  # Prometheus scraping for existing metrics (only from services that expose them)
   prometheus:
     config:
       scrape_configs:
-        - job_name: 'scrapers'
+        # Only scrape from services with confirmed /metrics endpoints
+        - job_name: 'otel-collector-self'
           static_configs:
-            - targets: ['scraper-orchestrator:8000', 'scraper-1001tracklists:8000', 'scraper-mixesdb:8000', 'scraper-setlistfm:8000']
+            - targets: ['localhost:8888']
           scrape_interval: 30s
           metrics_path: /metrics
 
-        - job_name: 'api-services'
+        - job_name: 'prometheus-server'
           static_configs:
-            - targets: ['api-gateway:8080', 'graph-visualization-api:8000', 'rest-api:8000']
+            - targets: ['prometheus:9090']
           scrape_interval: 30s
           metrics_path: /metrics
 
-        - job_name: 'infrastructure'
-          static_configs:
-            - targets: ['db:5432', 'redis:6379']
-          scrape_interval: 60s
+        # Container-level metrics via docker_stats receiver instead of Prometheus scraping
+        # Application metrics will be collected via OTLP push model when services are instrumented
 
   # Docker stats receiver for container metrics
   docker_stats:
@@ -166,7 +165,7 @@ service:
 
   telemetry:
     logs:
-      level: "info"
+      level: "error"  # Reduce noise from scraping warnings
     metrics:
       address: 0.0.0.0:8888
       level: basic
