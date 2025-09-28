@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { EnergyMeter } from './EnergyMeter';
-import { HarmonicCompatibility } from './HarmonicCompatibility';
-import { CamelotKey, Track } from '../types/dj';
+import { Track } from '../types/dj';
 
 /**
  * NowPlayingDeck - Primary focus of DJ interface
@@ -11,19 +10,14 @@ import { CamelotKey, Track } from '../types/dj';
 
 interface NowPlayingDeckProps {
   track: Track | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  onTimeUpdate?: (time: number) => void;
-  onTrackEnd?: () => void;
+  onTrackSelect?: () => void;
 }
 
-// Waveform visualization for track structure awareness
+// Visual waveform display for track structure awareness (static)
 const WaveformDisplay: React.FC<{
   waveformData?: number[];
-  progress: number;
   height?: number;
-}> = ({ waveformData = [], progress, height = 60 }) => {
+}> = ({ waveformData = [], height = 60 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -41,31 +35,21 @@ const WaveformDisplay: React.FC<{
       Array.from({ length: 100 }, () => Math.random() * 0.8 + 0.2);
 
     const barWidth = canvas.width / data.length;
-    const progressX = progress * canvas.width;
 
     data.forEach((value, i) => {
       const x = i * barWidth;
       const barHeight = value * canvas.height;
       const y = (canvas.height - barHeight) / 2;
 
-      // Color based on position relative to progress
-      if (x < progressX) {
-        ctx.fillStyle = '#7ED321'; // Played portion - green
-      } else {
-        ctx.fillStyle = '#4A90E2'; // Unplayed portion - blue
-      }
+      // Gradient color for visual appeal
+      const gradient = ctx.createLinearGradient(x, 0, x, canvas.height);
+      gradient.addColorStop(0, '#4A90E2');
+      gradient.addColorStop(1, '#7ED321');
+      ctx.fillStyle = gradient;
 
       ctx.fillRect(x, y, barWidth - 1, barHeight);
     });
-
-    // Draw progress line
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(progressX, 0);
-    ctx.lineTo(progressX, canvas.height);
-    ctx.stroke();
-  }, [waveformData, progress]);
+  }, [waveformData]);
 
   return (
     <canvas
@@ -83,41 +67,11 @@ const WaveformDisplay: React.FC<{
   );
 };
 
-// Time formatting helper
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
 
 export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
   track,
-  isPlaying,
-  currentTime,
-  duration,
-  onTimeUpdate,
-  onTrackEnd
+  onTrackSelect
 }) => {
-  const [timeRemaining, setTimeRemaining] = useState(duration - currentTime);
-  const progress = duration > 0 ? currentTime / duration : 0;
-
-  useEffect(() => {
-    setTimeRemaining(duration - currentTime);
-    if (currentTime >= duration && duration > 0) {
-      onTrackEnd?.();
-    }
-  }, [currentTime, duration, onTrackEnd]);
-
-  // Simulate playback for demo
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const interval = setInterval(() => {
-      onTimeUpdate?.(currentTime + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, currentTime, onTimeUpdate]);
 
   if (!track) {
     return (
@@ -133,14 +87,14 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
           fontSize: '18px',
           margin: 0
         }}>
-          No Track Loaded
+          No Track Selected
         </p>
         <p style={{
           color: '#8E8E93',
           fontSize: '14px',
           marginTop: '8px'
         }}>
-          Load a track to begin mixing
+          Select a track from the graph or browser
         </p>
       </div>
     );
@@ -187,13 +141,13 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
           gap: '16px',
           alignItems: 'center'
         }}>
-          {/* Playing Status */}
+          {/* Current Track Status */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
             padding: '8px 16px',
-            backgroundColor: isPlaying ? '#7ED321' : '#F5A623',
+            backgroundColor: '#7ED321',
             borderRadius: '20px'
           }}>
             <span style={{
@@ -201,7 +155,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
               fontSize: '14px',
               fontWeight: 600
             }}>
-              {isPlaying ? '▶ PLAYING' : '⏸ PAUSED'}
+              🎯 CURRENTLY SELECTED
             </span>
           </div>
         </div>
@@ -297,16 +251,19 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
       <div>
         <WaveformDisplay
           waveformData={track.waveform}
-          progress={progress}
           height={80}
         />
       </div>
 
-      {/* Progress Bar and Time */}
+      {/* Track Metadata */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px'
+        gap: '12px',
+        padding: '16px',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: '8px',
+        border: '1px solid rgba(255,255,255,0.1)'
       }}>
         <div style={{
           display: 'flex',
@@ -315,56 +272,59 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
         }}>
           <span style={{
             color: '#8E8E93',
-            fontSize: '14px',
-            fontVariantNumeric: 'tabular-nums'
+            fontSize: '12px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
           }}>
-            {formatTime(currentTime)}
+            Genre
           </span>
           <span style={{
-            color: timeRemaining < 30 ? '#F5A623' : '#8E8E93',
+            color: '#FFFFFF',
             fontSize: '14px',
-            fontWeight: timeRemaining < 30 ? 600 : 400,
-            fontVariantNumeric: 'tabular-nums'
+            fontWeight: 600
           }}>
-            -{formatTime(timeRemaining)}
+            {track.genre || 'Electronic'}
           </span>
         </div>
-
-        {/* Progress Bar */}
-        <div style={{
-          height: '8px',
-          backgroundColor: 'rgba(255,255,255,0.1)',
-          borderRadius: '4px',
-          overflow: 'hidden'
-        }}>
+        {track.duration && (
           <div style={{
-            height: '100%',
-            width: `${progress * 100}%`,
-            backgroundColor: timeRemaining < 30 ? '#F5A623' : '#7ED321',
-            transition: 'width 0.5s linear',
-            boxShadow: `0 0 10px ${timeRemaining < 30 ? '#F5A623' : '#7ED321'}80`
-          }} />
-        </div>
-
-        {/* Warning when track is ending */}
-        {timeRemaining < 30 && timeRemaining > 0 && (
-          <div style={{
-            padding: '8px',
-            backgroundColor: 'rgba(245,166,35,0.2)',
-            border: '1px solid #F5A623',
-            borderRadius: '4px',
-            textAlign: 'center',
-            animation: 'pulse 1s infinite'
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
             <span style={{
-              color: '#F5A623',
+              color: '#8E8E93',
+              fontSize: '12px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              Duration
+            </span>
+            <span style={{
+              color: '#FFFFFF',
               fontSize: '14px',
               fontWeight: 600
             }}>
-              ⚠ Track ending soon - Select next track
+              {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
             </span>
           </div>
         )}
+        <div style={{
+          marginTop: '8px',
+          padding: '12px',
+          backgroundColor: 'rgba(126,211,33,0.1)',
+          border: '1px solid rgba(126,211,33,0.3)',
+          borderRadius: '6px',
+          textAlign: 'center'
+        }}>
+          <span style={{
+            color: '#7ED321',
+            fontSize: '13px',
+            fontWeight: 600
+          }}>
+            💡 Tip: Check the recommendations below for harmonically compatible tracks
+          </span>
+        </div>
       </div>
     </div>
   );

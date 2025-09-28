@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NowPlayingDeck } from './NowPlayingDeck';
 import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
+import { TrackDetailsModal } from './TrackDetailsModal';
 import { Track, DJMode } from '../types/dj';
 import useStore from '../store/useStore';
 
@@ -27,9 +28,11 @@ const MOCK_TRACKS: Track[] = [
 export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'performer' }) => {
   const [mode, setMode] = useState<DJMode>(initialMode);
   const [nowPlaying, setNowPlaying] = useState<Track | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [tracks] = useState<Track[]>(MOCK_TRACKS);
+
+  // Track inspection modal state
+  const [inspectedTrack, setInspectedTrack] = useState<Track | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Get graph data from store
   const { nodes } = useStore();
@@ -39,27 +42,26 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     setMode(mode === 'performer' ? 'librarian' : 'performer');
   };
 
-  // Track selection handler
-  const handleTrackSelect = (track: Track) => {
+  // Track inspection handler (replaces direct selection)
+  const handleTrackInspect = (track: Track) => {
+    console.log('handleTrackInspect called with:', track.name);
+    setInspectedTrack(track);
+    setIsModalOpen(true);
+    console.log('Track inspection modal opened for:', track.name);
+  };
+
+  // Set as currently playing handler (from modal)
+  const handleSetAsCurrentlyPlaying = (track: Track) => {
+    console.log('handleSetAsCurrentlyPlaying called with:', track.name);
     setNowPlaying(track);
-    setCurrentTime(0);
-    setIsPlaying(true);
+    setIsModalOpen(false);
+    console.log('Track set as currently playing:', track.name);
   };
 
-  // Time update handler
-  const handleTimeUpdate = (time: number) => {
-    if (nowPlaying && time <= nowPlaying.duration) {
-      setCurrentTime(time);
-    }
-  };
-
-  // Track end handler
-  const handleTrackEnd = () => {
-    setIsPlaying(false);
-    if (nowPlaying) {
-      const updatedTrack = { ...nowPlaying, status: 'played' as const };
-      setNowPlaying(updatedTrack);
-    }
+  // Modal close handler
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setInspectedTrack(null);
   };
 
   return (
@@ -156,11 +158,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
             >
               <NowPlayingDeck
                 track={nowPlaying}
-                isPlaying={isPlaying}
-                currentTime={currentTime}
-                duration={nowPlaying?.duration || 0}
-                onTimeUpdate={handleTimeUpdate}
-                onTrackEnd={handleTrackEnd}
+                onTrackSelect={() => {}} // No direct selection from NowPlayingDeck
               />
             </section>
 
@@ -223,7 +221,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 <IntelligentBrowser
                   currentTrack={nowPlaying}
                   allTracks={tracks}
-                  onTrackSelect={handleTrackSelect}
+                  onTrackSelect={handleTrackInspect}
                   config={{
                     maxRecommendations: 12,
                     showReasons: true,
@@ -257,7 +255,15 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 {tracks.map(track => (
                   <button
                     key={track.id}
-                    onClick={() => handleTrackSelect(track)}
+                    onClick={() => {
+                      console.log('Library track clicked:', track.name);
+                      handleTrackInspect(track);
+                    }}
+                    onTouchEnd={(e) => {
+                      console.log('Library track touched:', track.name);
+                      e.preventDefault();
+                      handleTrackInspect(track);
+                    }}
                     style={{
                       padding: '12px',
                       backgroundColor: nowPlaying?.id === track.id ? 'rgba(126,211,33,0.2)' : 'transparent',
@@ -266,7 +272,14 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                       color: '#F8F8F8',
                       textAlign: 'left',
                       cursor: 'pointer',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
+                      userSelect: 'none',
+                      WebkitTouchCallout: 'none',
+                      WebkitUserSelect: 'none',
+                      minHeight: '44px', // Ensures good touch target size
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
                     }}
                   >
                     <div style={{ fontSize: '14px', fontWeight: 600 }}>{track.name}</div>
@@ -363,6 +376,15 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           </section>
         )}
       </main>
+
+      {/* Track Details Modal */}
+      <TrackDetailsModal
+        track={inspectedTrack}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSetAsCurrentlyPlaying={handleSetAsCurrentlyPlaying}
+        currentlyPlayingTrack={nowPlaying}
+      />
     </div>
   );
 };

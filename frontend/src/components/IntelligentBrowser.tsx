@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { HarmonicCompatibility, HarmonicSet } from './HarmonicCompatibility';
-import { EnergyMeter, EnergyFlow } from './EnergyMeter';
+import React, { useState, useMemo } from 'react';
+import { HarmonicCompatibility } from './HarmonicCompatibility';
+import { EnergyMeter } from './EnergyMeter';
 import {
   Track,
   TrackRecommendation,
   DJFilterCriteria,
   IntelligentBrowserConfig,
-  CamelotKey,
-  EnergyLevel
+  CamelotKey
 } from '../types/dj';
 
 /**
@@ -36,13 +35,12 @@ const DEFAULT_CONFIG: IntelligentBrowserConfig = {
 // Intelligent recommendation engine
 const calculateRecommendations = (
   currentTrack: Track | null,
-  allTracks: Track[],
-  filters: DJFilterCriteria
+  allTracks: Track[]
 ): TrackRecommendation[] => {
   if (!currentTrack) return [];
 
   return allTracks
-    .filter(track => track.id !== currentTrack.id && track.status !== 'played')
+    .filter(track => track.id !== currentTrack.id)
     .map(track => {
       const recommendation: TrackRecommendation = {
         track,
@@ -161,7 +159,15 @@ const RecommendationCard: React.FC<{
   return (
     <div
       className="recommendation-card"
-      onClick={onSelect}
+      onClick={() => {
+        console.log('RecommendationCard clicked:', recommendation.track.name);
+        onSelect();
+      }}
+      onTouchEnd={(e) => {
+        console.log('RecommendationCard touched:', recommendation.track.name);
+        e.preventDefault();
+        onSelect();
+      }}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -172,10 +178,9 @@ const RecommendationCard: React.FC<{
         borderRadius: '8px',
         cursor: 'pointer',
         transition: 'all 0.2s',
-        ':hover': {
-          backgroundColor: 'rgba(255,255,255,0.05)',
-          transform: 'translateX(4px)'
-        }
+        userSelect: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none'
       }}
     >
       {/* Track Info Row */}
@@ -333,14 +338,13 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
   config = {}
 }) => {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
-  const [filters, setFilters] = useState<DJFilterCriteria>({});
   const [sortBy, setSortBy] = useState(finalConfig.sortBy);
 
   // Calculate recommendations
   const recommendations = useMemo(() => {
-    const recs = calculateRecommendations(currentTrack, allTracks, filters);
+    const recs = calculateRecommendations(currentTrack, allTracks);
     return recs.slice(0, finalConfig.maxRecommendations);
-  }, [currentTrack, allTracks, filters, finalConfig.maxRecommendations]);
+  }, [currentTrack, allTracks, finalConfig.maxRecommendations]);
 
   // Group recommendations by compatibility if requested
   const groupedRecommendations = useMemo(() => {
@@ -400,7 +404,7 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
           margin: 0,
           fontWeight: 600
         }}>
-          🎯 Intelligent Recommendations
+          🎯 Track Browser
         </h3>
         <span style={{
           color: '#7ED321',

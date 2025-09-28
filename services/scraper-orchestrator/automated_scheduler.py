@@ -13,6 +13,7 @@ import os
 import random
 from pathlib import Path
 
+import asyncpg
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -128,53 +129,63 @@ class AutomatedScrapingScheduler:
         self.scraper_configs = self.SCRAPER_CONFIGS.copy()
         self.job_history: Dict[str, List[Dict]] = {}
 
+        # Database connection settings for target tracks
+        self.db_config = {
+            'host': os.getenv('DB_HOST', 'db'),
+            'port': int(os.getenv('DB_PORT', 5432)),
+            'database': os.getenv('DB_NAME', 'musicdb'),
+            'user': os.getenv('DB_USER', 'musicdb_user'),
+            'password': os.getenv('DB_PASSWORD', '7D82_xqNs55tGyk')
+        }
+
         # Load target tracks for scraping
         self.target_tracks = []
         self.current_track_index = 0
-        self._load_target_tracks()
+        # Initialize with empty list, will be loaded async on startup
 
         # Load custom configurations if they exist
         self._load_custom_configs()
 
-    def _load_target_tracks(self):
-        """Load target tracks from JSON file"""
+    async def _load_target_tracks_from_database(self):
+        """Load target tracks from database"""
         try:
-            # Look for target tracks file in scrapers directory
-            target_file_paths = [
-                "/app/target_tracks_for_scraping.json",  # Container path
-                "../../scrapers/target_tracks_for_scraping.json",  # Relative path
-                "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers/target_tracks_for_scraping.json"  # Absolute path
-            ]
+            logger.info("Loading target tracks from database...")
+            conn = await asyncpg.connect(**self.db_config)
 
-            target_tracks_data = None
-            for file_path in target_file_paths:
-                try:
-                    if Path(file_path).exists():
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            target_tracks_data = json.load(f)
-                        logger.info(f"Loaded target tracks from {file_path}")
-                        break
-                except Exception as e:
-                    logger.debug(f"Could not load from {file_path}: {e}")
-                    continue
+            try:
+                # Query active target tracks from database
+                query = """
+                    SELECT title, artist, priority, search_terms, genres
+                    FROM target_tracks
+                    WHERE is_active = TRUE
+                    ORDER BY priority DESC, title
+                """
 
-            if not target_tracks_data:
-                logger.warning("Could not find target tracks file, using empty list")
-                return
+                rows = await conn.fetch(query)
 
-            # Extract priority tracks and all tracks
-            if "scraper_targets" in target_tracks_data:
-                self.target_tracks = target_tracks_data["scraper_targets"].get("priority_tracks", [])
+                # Convert database rows to track dictionaries
+                self.target_tracks = []
+                for row in rows:
+                    track = {
+                        'title': row['title'],
+                        'primary_artist': row['artist'],
+                        'artists': [row['artist']] if row['artist'] else [],
+                        'priority': row['priority'] or 'medium',
+                        'search_terms': row['search_terms'] if row['search_terms'] else [],
+                        'genres': row['genres'] if row['genres'] else []
+                    }
+                    self.target_tracks.append(track)
 
-                # Add all tracks if present
-                if "all_tracks" in target_tracks_data["scraper_targets"]:
-                    self.target_tracks.extend(target_tracks_data["scraper_targets"]["all_tracks"])
+                logger.info(f"Loaded {len(self.target_tracks)} target tracks from database")
+
+            finally:
+                await conn.close()
 
             # Load rotation state from Redis
             try:
                 saved_index = self.redis_client.get("scraper:current_track_index")
                 if saved_index:
-                    self.current_track_index = int(saved_index) % len(self.target_tracks)
+                    self.current_track_index = int(saved_index) % len(self.target_tracks) if self.target_tracks else 0
                 else:
                     # Start from random position to avoid always starting with same tracks
                     self.current_track_index = random.randint(0, len(self.target_tracks) - 1) if self.target_tracks else 0
@@ -182,10 +193,10 @@ class AutomatedScrapingScheduler:
                 logger.warning(f"Could not load track rotation state: {e}")
                 self.current_track_index = 0
 
-            logger.info(f"Loaded {len(self.target_tracks)} target tracks, starting from index {self.current_track_index}")
+            logger.info(f"Using {len(self.target_tracks)} target tracks, starting from index {self.current_track_index}")
 
         except Exception as e:
-            logger.error(f"Failed to load target tracks: {e}")
+            logger.error(f"Failed to load target tracks from database: {e}")
             self.target_tracks = []
             self.current_track_index = 0
 
@@ -413,6 +424,13 @@ class AutomatedScrapingScheduler:
             logger.warning(f"Scraper {scraper_name} is disabled, skipping run")
             return
 
+        # Record the start time immediately to prevent overlapping executions
+        try:
+            last_run_key = f"scraper:last_run:{scraper_name}"
+            self.redis_client.set(last_run_key, start_time.isoformat())
+        except Exception as e:
+            logger.warning(f"Could not record start time for {scraper_name}: {e}")
+
         logger.info(f"Starting automated scraping run for {scraper_name}")
 
         try:
@@ -621,9 +639,71 @@ class AutomatedScrapingScheduler:
         self.job_history[scraper_name].append(record)
         self.job_history[scraper_name] = self.job_history[scraper_name][-100:]  # Keep last 100
 
+    async def _check_and_run_overdue_tasks(self):
+        """Check for overdue tasks and execute them immediately"""
+        logger.info("Checking for overdue scraping tasks...")
+
+        current_time = datetime.now()
+        overdue_scrapers = []
+
+        for scraper_name, config in self.scraper_configs.items():
+            if not config.enabled:
+                continue
+
+            # Get last run timestamp from Redis
+            try:
+                last_run_key = f"scraper:last_run:{scraper_name}"
+                last_run_str = self.redis_client.get(last_run_key)
+
+                if last_run_str:
+                    last_run = datetime.fromisoformat(last_run_str.decode() if isinstance(last_run_str, bytes) else last_run_str)
+                    expected_interval = config.min_interval  # Use minimum interval for overdue check
+                    time_since_last_run = (current_time - last_run).total_seconds()
+
+                    if time_since_last_run > expected_interval:
+                        overdue_time = time_since_last_run - expected_interval
+                        logger.warning(f"Scraper {scraper_name} is overdue by {overdue_time:.0f} seconds ({overdue_time/3600:.1f} hours)")
+                        overdue_scrapers.append(scraper_name)
+                    else:
+                        logger.info(f"Scraper {scraper_name} last ran {time_since_last_run:.0f}s ago, next run in {expected_interval - time_since_last_run:.0f}s")
+                else:
+                    # No last run recorded - consider it overdue for initial run
+                    logger.info(f"No previous run recorded for {scraper_name}, marking for immediate execution")
+                    overdue_scrapers.append(scraper_name)
+
+            except Exception as e:
+                logger.error(f"Error checking last run for {scraper_name}: {e}")
+                # If we can't determine last run, consider it overdue to be safe
+                overdue_scrapers.append(scraper_name)
+
+        # Execute overdue tasks immediately
+        if overdue_scrapers:
+            logger.info(f"Executing {len(overdue_scrapers)} overdue scrapers: {', '.join(overdue_scrapers)}")
+
+            # Run overdue scrapers in parallel to catch up quickly
+            overdue_tasks = []
+            for scraper_name in overdue_scrapers:
+                logger.info(f"Starting immediate execution for overdue scraper: {scraper_name}")
+                overdue_tasks.append(self._run_scraper(scraper_name))
+
+            # Execute all overdue tasks concurrently
+            try:
+                await asyncio.gather(*overdue_tasks, return_exceptions=True)
+                logger.info("Completed execution of all overdue scrapers")
+            except Exception as e:
+                logger.error(f"Error during overdue task execution: {e}")
+        else:
+            logger.info("No overdue scrapers found - all are up to date")
+
     async def start(self):
         """Start the automated scheduling system"""
         logger.info("Starting automated scraping scheduler...")
+
+        # Load target tracks from database first
+        await self._load_target_tracks_from_database()
+
+        # Check for and execute any overdue tasks before starting regular scheduling
+        await self._check_and_run_overdue_tasks()
 
         # Schedule all enabled scrapers
         for scraper_name, config in self.scraper_configs.items():

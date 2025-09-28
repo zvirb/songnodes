@@ -12,6 +12,7 @@ rule_files:
   - "postgres-alerts.yml"
   - "alert_rules.yml"
   - "alerts/enhanced-visualization-alerts.yml"
+  - "alerts/alert-rules.yaml"  # Modern observability alerts
 
 # Scrape configuration
 scrape_configs:

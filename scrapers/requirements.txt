@@ -29,6 +29,17 @@ pydantic>=2.5.2
 python-dotenv>=1.0.0
 python-dateutil>=2.8.2
 
+# Observability (OpenTelemetry)
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-instrumentation>=0.42b0
+opentelemetry-exporter-otlp-proto-grpc>=1.21.0
+opentelemetry-instrumentation-requests>=0.42b0
+opentelemetry-instrumentation-psycopg2>=0.42b0
+opentelemetry-instrumentation-redis>=0.42b0
+opentelemetry-instrumentation-asyncpg>=0.42b0
+structlog>=23.2.0
+
 # Logging and monitoring
 loguru>=0.7.2
 
