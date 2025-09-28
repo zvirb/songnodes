@@ -6,15 +6,36 @@ from typing import List, Optional, Dict, Any
 import logging
 import os
 from datetime import datetime
+import asyncpg
+import json
+from contextlib import asynccontextmanager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Database connection
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:musicdb_secure_pass@db:5432/musicdb")
+db_pool = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage database connection pool lifecycle"""
+    global db_pool
+    try:
+        db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=5, max_size=20)
+        logger.info("Database connection pool created")
+        yield
+    finally:
+        if db_pool:
+            await db_pool.close()
+            logger.info("Database connection pool closed")
+
 app = FastAPI(
     title="SongNodes REST API",
     description="Main REST API for music data operations",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -113,23 +134,77 @@ async def get_mixes(dj_id: Optional[int] = None, limit: int = 100):
         logger.error(f"Failed to fetch mixes: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/graph/nodes")
-async def get_graph_nodes():
-    """Get graph visualization nodes"""
+@app.get("/api/graph/nodes")
+async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
+    """Get graph nodes - only songs with adjacencies"""
     try:
-        return {
-            "nodes": [
-                {"id": "artist1", "label": "Artist 1", "type": "artist", "size": 30},
-                {"id": "artist2", "label": "Artist 2", "type": "artist", "size": 25},
-                {"id": "track1", "label": "Track 1", "type": "track", "size": 15}
-            ],
-            "links": [
-                {"source": "artist1", "target": "track1", "type": "performed"},
-                {"source": "artist1", "target": "artist2", "type": "collaborated"}
-            ]
-        }
+        async with db_pool.acquire() as conn:
+            # Query only songs that have adjacencies
+            query = """
+            SELECT DISTINCT s.song_id, s.title, s.primary_artist_id,
+                   a.name as artist_name, s.bpm, s.key,
+                   COUNT(DISTINCT sa.*) as connection_count
+            FROM songs s
+            LEFT JOIN artists a ON s.primary_artist_id = a.artist_id
+            INNER JOIN (
+                SELECT song_id_1 as song_id FROM song_adjacency WHERE occurrence_count >= $1
+                UNION
+                SELECT song_id_2 as song_id FROM song_adjacency WHERE occurrence_count >= $1
+            ) connected ON s.song_id = connected.song_id
+            LEFT JOIN song_adjacency sa ON (sa.song_id_1 = s.song_id OR sa.song_id_2 = s.song_id)
+            GROUP BY s.song_id, s.title, s.primary_artist_id, a.name, s.bpm, s.key
+            LIMIT $2
+            """
+            rows = await conn.fetch(query, min_weight, limit)
+
+            nodes = []
+            for row in rows:
+                nodes.append({
+                    "id": str(row['song_id']),
+                    "label": row['title'],
+                    "artist": row['artist_name'] or "Unknown Artist",
+                    "type": "track",
+                    "bpm": row['bpm'],
+                    "key": row['key'],
+                    "size": min(30, 10 + row['connection_count'] * 2),  # Size based on connections
+                    "connections": row['connection_count']
+                })
+
+            return nodes
     except Exception as e:
-        logger.error(f"Failed to fetch graph data: {str(e)}")
+        logger.error(f"Failed to fetch graph nodes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/graph/edges")
+async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
+    """Get graph edges - adjacency relationships"""
+    try:
+        async with db_pool.acquire() as conn:
+            query = """
+            SELECT sa.song_id_1, sa.song_id_2, sa.occurrence_count as weight,
+                   s1.title as source_title, s2.title as target_title
+            FROM song_adjacency sa
+            JOIN songs s1 ON sa.song_id_1 = s1.song_id
+            JOIN songs s2 ON sa.song_id_2 = s2.song_id
+            WHERE sa.occurrence_count >= $1
+            ORDER BY sa.occurrence_count DESC
+            LIMIT $2
+            """
+            rows = await conn.fetch(query, min_weight, limit)
+
+            edges = []
+            for row in rows:
+                edges.append({
+                    "source": str(row['song_id_1']),
+                    "target": str(row['song_id_2']),
+                    "weight": row['weight'],
+                    "source_label": row['source_title'],
+                    "target_label": row['target_title']
+                })
+
+            return edges
+    except Exception as e:
+        logger.error(f"Failed to fetch graph edges: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/scrape/trigger")
