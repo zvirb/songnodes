@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NowPlayingDeck } from './NowPlayingDeck';
 import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
-import { Track, DJMode, DJInterfaceState } from '../types/dj';
+import { Track, DJMode } from '../types/dj';
 import useStore from '../store/useStore';
 
 /**
@@ -32,7 +32,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   const [tracks] = useState<Track[]>(MOCK_TRACKS);
 
   // Get graph data from store
-  const { nodes, edges } = useStore();
+  const { nodes } = useStore();
 
   // Mode toggle handler
   const toggleMode = () => {

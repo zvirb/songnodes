@@ -1,17 +1,18 @@
-# MusicDB Scrapy Project - Orchestrated Data Pipeline
+# 🎵 SongNodes - Music Data Visualization & Analysis Platform
 
 ## 🎵 Overview
 
-MusicDB is a sophisticated data engineering pipeline that scrapes, transforms, and loads music tracklist data from diverse online sources into a unified PostgreSQL database. Built with containerized microservices using non-standard ports to avoid conflicts, it follows a 12-step orchestration workflow for reliable, scalable data processing.
+SongNodes is a comprehensive music data platform that combines intelligent scraping, graph visualization, and real-time analytics. Built with containerized microservices and AI-powered data processing, it provides interactive graph-based insights into music relationships, track adjacencies, and performance analytics.
 
 ## 🚀 Key Features
 
-- **Multi-Source Scraping**: Automated data collection from 1001tracklists, MixesDB, Setlist.fm, Reddit, Apple Music, and more
-- **Intelligent Data Processing**: NLP-powered normalization, deduplication, and entity extraction
-- **Scalable Architecture**: Containerized microservices with horizontal scaling capabilities
-- **Real-time Analytics**: GraphQL and REST APIs with WebSocket support for live updates
+- **Interactive Graph Visualization**: D3.js force-directed graphs with WebGL acceleration showing track relationships and adjacencies
+- **Target Tracks Management**: User-driven feedback loop for managing tracks to scrape and analyze
+- **AI-Powered Scraping**: GPU-accelerated Ollama integration for adaptive HTML analysis and selector recovery
+- **Multi-Source Data Collection**: Automated scraping from 1001tracklists, MixesDB, Setlist.fm, Reddit, and more
+- **Real-time Analytics**: RESTful and GraphQL APIs with WebSocket support for live updates
 - **Comprehensive Monitoring**: Prometheus, Grafana, and ELK stack integration
-- **Orchestrated Workflow**: 12-step agentic orchestration for reliable pipeline execution
+- **Containerized Architecture**: Full Docker Compose deployment with service isolation and health checks
 
 ## 📊 Architecture
 
@@ -61,14 +62,15 @@ MusicDB is a sophisticated data engineering pipeline that scrapes, transforms, a
 
 ## 🛠️ Technology Stack
 
-- **Scraping**: Scrapy, Playwright, BeautifulSoup, Selenium
-- **Data Processing**: Python, spaCy, pandas, NumPy
-- **Database**: PostgreSQL 15 with JSONB support
-- **Cache/Queue**: Redis, RabbitMQ
-- **APIs**: FastAPI, GraphQL, WebSocket
-- **Monitoring**: Prometheus, Grafana, Elasticsearch, Kibana
-- **Containerization**: Docker, Docker Compose
-- **CI/CD**: GitHub Actions, Blue-Green Deployment
+- **Frontend**: React 18 + TypeScript + Vite + Redux Toolkit + D3.js
+- **Backend**: Python FastAPI microservices with async/await
+- **AI/LLM**: Ollama with GPU acceleration (RTX 4050) + Llama 3.2 3B
+- **Database**: PostgreSQL 15 with JSONB support and connection pooling
+- **Cache/Queue**: Redis 7 + RabbitMQ for message queuing
+- **APIs**: RESTful APIs, GraphQL, WebSocket real-time connections
+- **Monitoring**: Prometheus + Grafana + Elasticsearch + Kibana
+- **Containerization**: Docker + Docker Compose with health checks
+- **Visualization**: D3.js force simulation with WebGL acceleration
 
 ## 📁 Project Structure
 
@@ -122,29 +124,64 @@ cp .env.example .env
 
 3. **Start the services**
 ```bash
-# Start core services
-docker-compose up -d postgres redis rabbitmq
+# Start essential services (MANDATORY: Use Docker Compose)
+docker compose up -d postgres redis rest-api api-gateway
 
-# Start scraping services
-docker-compose up -d scraper-orchestrator scraper-1001tracklists
+# Start frontend UI
+docker compose up -d frontend
 
-# Start API services
-docker-compose up -d api-gateway rest-api graphql-api
+# Start scraping services (optional)
+docker compose up -d scraper-orchestrator scraper-1001tracklists
 
-# Start monitoring
-docker-compose up -d prometheus grafana
+# Start monitoring (optional)
+docker compose up -d prometheus grafana
 ```
 
-4. **Initialize the database**
+4. **Verify services are running**
 ```bash
-docker-compose exec postgres psql -U musicdb_user -d musicdb -f /docker-entrypoint-initdb.d/01-schema.sql
+docker compose ps
+curl http://localhost:8080/health
+curl http://localhost:8082/health
 ```
 
 5. **Access the services**
-- API Gateway: http://localhost:8080
-- GraphQL Playground: http://localhost:8081/graphql
-- Grafana Dashboard: http://localhost:3001 (admin/admin)
-- Kibana Logs: http://localhost:5602
+- **SongNodes UI**: http://localhost:3006 (Main interface)
+- **API Gateway**: http://localhost:8080 (REST endpoints)
+- **Target Tracks API**: http://localhost:8082/api/v1/target-tracks
+- **GraphQL Playground**: http://localhost:8081/graphql
+- **Grafana Dashboard**: http://localhost:3001 (admin/admin)
+- **Ollama AI**: http://localhost:11434
+
+## ✅ Current System Status (Sept 2025)
+
+### Working Features
+- ✅ **REST API Connectivity**: Fixed port exposure, now accessible from frontend
+- ✅ **API Gateway Routing**: Complete proxy routing for target tracks endpoints
+- ✅ **Target Tracks CRUD**: Full create/read/update/delete operations working
+- ✅ **User Feedback Loop**: Frontend → API Gateway → REST API pathway verified
+- ✅ **TypeScript Compilation**: Fixed type definitions and imports
+- ✅ **Docker System**: Optimized with 60GB+ cleanup, services running healthy
+
+### API Endpoints Working
+```bash
+# List target tracks
+curl http://localhost:8080/api/v1/target-tracks
+
+# Create new target track
+curl -X POST http://localhost:8080/api/v1/target-tracks \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Test Track", "artist": "Test Artist", "priority": "medium"}'
+
+# Trigger search for track
+curl -X POST http://localhost:8080/api/v1/target-tracks/1/search
+```
+
+### Service Health
+- 🟢 PostgreSQL (port 5433) - Healthy
+- 🟢 Redis (port 6380) - Healthy
+- 🟢 REST API (port 8082) - Healthy
+- 🟢 API Gateway (port 8080) - Healthy
+- 🟢 Frontend (port 3006) - Building and running
 
 ## 📋 Orchestration Workflow
 

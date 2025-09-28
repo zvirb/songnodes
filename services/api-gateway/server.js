@@ -82,6 +82,10 @@ const serviceProxies = {
     target: 'http://rest-api:8082',
     pathRewrite: { '^/api/v1/search': '/api/v1/search' }
   },
+  '/api/v1/target-tracks': {
+    target: 'http://rest-api:8082',
+    pathRewrite: { '^/api/v1/target-tracks': '/api/v1/target-tracks' }
+  },
   '/api/v1/visualization': {
     target: 'http://graph-visualization-api:8084',
     pathRewrite: { '^/api/v1/visualization': '/api/v1/visualization' }
