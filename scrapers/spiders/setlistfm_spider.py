@@ -162,26 +162,45 @@ class SetlistFmSpider(scrapy.Spider):
         return [str(current_year - offset) for offset in range(span)]
 
     def apply_robots_policy(self):
+        """Apply robots.txt policy with proper error handling and timeout."""
+        # Skip robots.txt check if disabled
+        if os.getenv('SKIP_ROBOTS_CHECK', 'false').lower() in ('true', '1', 'yes'):
+            self.logger.debug("Skipping robots.txt check (disabled)")
+            self.custom_settings['DOWNLOAD_DELAY'] = 0.5
+            return
+
         robots_url = os.getenv('SETLISTFM_ROBOTS_URL', 'https://api.setlist.fm/robots.txt')
         user_agent = self.custom_settings.get('USER_AGENT', 'Mozilla/5.0')
         parser = robotparser.RobotFileParser()
 
         try:
-            response = requests.get(robots_url, timeout=5)
+            # Use a very short timeout to prevent blocking
+            response = requests.get(robots_url, timeout=1)
             if response.status_code != 200:
                 self.logger.debug("Setlist.fm robots.txt returned status %s", response.status_code)
+                # Use default delay if robots.txt is unavailable
+                self.custom_settings['DOWNLOAD_DELAY'] = 0.5
                 return
             parser.parse(response.text.splitlines())
             delay = parser.crawl_delay(user_agent) or parser.crawl_delay('*')
             if delay:
                 delay = float(delay)
-                current_delay = self.custom_settings.get('DOWNLOAD_DELAY', self.download_delay)
+                # Cap the delay at a reasonable maximum to prevent slowdowns
+                delay = min(delay, 2.0)
+                current_delay = self.custom_settings.get('DOWNLOAD_DELAY', getattr(self, 'download_delay', 0.1))
                 if delay > current_delay:
                     self.download_delay = delay
                     self.custom_settings['DOWNLOAD_DELAY'] = delay
                     self.logger.info("Applied Setlist.fm robots.txt crawl-delay of %s seconds", delay)
+        except requests.exceptions.Timeout:
+            self.logger.warning("Timeout fetching robots.txt, using default delay of 0.5s")
+            self.custom_settings['DOWNLOAD_DELAY'] = 0.5
+        except requests.exceptions.RequestException as exc:
+            self.logger.warning("Failed to fetch robots.txt: %s, using default delay", exc)
+            self.custom_settings['DOWNLOAD_DELAY'] = 0.5
         except Exception as exc:
-            self.logger.debug("Failed to apply Setlist.fm robots policy: %s", exc)
+            self.logger.debug("Failed to apply Setlist.fm robots policy: %s, using default delay", exc)
+            self.custom_settings['DOWNLOAD_DELAY'] = 0.5
 
     def initialize_state_store(self):
         host = os.getenv('SCRAPER_STATE_REDIS_HOST', os.getenv('REDIS_HOST', 'localhost'))
