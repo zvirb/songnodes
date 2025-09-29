@@ -174,32 +174,18 @@
     "updateSourceMethod": "patch",
     "version": "1.55.1",
     "workers": 8,
-    "webServer": {
-      "command": "npm run dev",
-      "port": 3006,
-      "timeout": 60000,
-      "reuseExistingServer": true,
-      "env": {
-        "NODE_ENV": "test"
-      }
-    }
+    "webServer": null
   },
   "suites": [],
   "errors": [
     {
-      "message": "ReferenceError: require is not defined",
-      "stack": "ReferenceError: require is not defined\n    at globalSetup (/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/setup/global-setup.ts:7:14)",
-      "location": {
-        "file": "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/frontend/tests/setup/global-setup.ts",
-        "column": 14,
-        "line": 7
-      },
-      "snippet": "\u001b[90m   at \u001b[39m../setup/global-setup.ts:7\n\n   5 |\n   6 |   // Ensure test directories exist\n>  7 |   const fs = require('fs');\n     |              ^\n   8 |   const path = require('path');\n   9 |\n  10 |   const testDirs = ["
+      "message": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
+      "stack": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments."
     }
   ],
   "stats": {
-    "startTime": "2025-09-25T06:11:39.726Z",
-    "duration": 172.046,
+    "startTime": "2025-09-29T14:52:59.730Z",
+    "duration": 255.13799999999998,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,
