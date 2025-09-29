@@ -1,77 +1,71 @@
 """
-Scraper Orchestrator Service
-Manages and coordinates scraping tasks across multiple scrapers
+🎵 SongNodes Scraper Orchestrator - 2025 Best Practices Edition
+Enhanced with circuit breakers, structured logging, comprehensive monitoring, and graceful error handling
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
 import asyncio
-import logging
 import json
 import os
+import time
+import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
-import redis
 import httpx
+import redis
+import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
-from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-# Configure logging
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Import our 2025 best practices components
+from target_track_searcher import TargetTrackSearcher2025, SearchOrchestrator2025, AsyncDatabaseService
+from redis_queue_consumer import RedisQueueConsumer
 
-# Prometheus metrics
-scraping_tasks_total = Counter('scraping_tasks_total', 'Total number of scraping tasks', ['scraper', 'status'])
-active_scrapers = Gauge('active_scrapers', 'Number of active scrapers', ['scraper'])
-scraping_duration = Histogram('scraping_duration_seconds', 'Scraping task duration', ['scraper'])
-queue_size = Gauge('scraping_queue_size', 'Number of tasks in queue', ['priority'])
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="Scraper Orchestrator",
-    description="Orchestrates and manages web scraping tasks",
-    version="1.0.0"
-)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for non-security-conscious app
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+# Configure structured logging
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.add_log_level,
+        structlog.processors.StackInfoRenderer(),
+        structlog.dev.set_exc_info,
+        structlog.processors.JSONRenderer()
+    ],
+    wrapper_class=structlog.make_filtering_bound_logger(20),
+    logger_factory=structlog.WriteLoggerFactory(),
+    cache_logger_on_first_use=False,
 )
 
-# Redis connection with connection pooling
-redis_pool = redis.ConnectionPool(
-    host=os.getenv("REDIS_HOST", "redis"),
-    port=int(os.getenv("REDIS_PORT", 6379)),
-    max_connections=10,
-    decode_responses=True
-)
-redis_client = redis.Redis(connection_pool=redis_pool)
+logger = structlog.get_logger(__name__)
 
-# Scheduler for periodic tasks
-scheduler = AsyncIOScheduler()
+# ===================
+# 2025 METRICS & MONITORING
+# ===================
+scraping_tasks_total = Counter('scraping_tasks_total', 'Total scraping tasks', ['scraper', 'status'])
+active_scrapers = Gauge('active_scrapers', 'Active scrapers', ['scraper'])
+scraping_duration = Histogram('scraping_duration_seconds', 'Task duration', ['scraper'])
+queue_size = Gauge('scraping_queue_size', 'Queue size', ['priority'])
+circuit_breaker_state = Gauge('circuit_breaker_state', 'Circuit breaker states', ['service', 'state'])
+database_operations = Counter('database_operations_total', 'Database operations', ['operation', 'status'])
+search_operations = Counter('search_operations_total', 'Search operations', ['platform', 'status'])
 
-# =====================
-# Data Models
-# =====================
-
+# ===================
+# ENHANCED DATA MODELS
+# ===================
 class ScraperStatus(str, Enum):
     IDLE = "idle"
     RUNNING = "running"
     ERROR = "error"
     DISABLED = "disabled"
+    CIRCUIT_OPEN = "circuit_open"
 
 class TaskPriority(str, Enum):
     LOW = "low"
@@ -85,10 +79,11 @@ class TaskStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    TIMEOUT = "timeout"
 
 class ScrapingTask(BaseModel):
     model_config = {"use_enum_values": True}
-    
+
     id: Optional[str] = Field(default=None)
     scraper: str
     url: Optional[str] = None
@@ -101,987 +96,669 @@ class ScrapingTask(BaseModel):
     completed_at: Optional[datetime] = None
     status: TaskStatus = TaskStatus.PENDING
     error_message: Optional[str] = None
+    correlation_id: Optional[str] = None
 
-class ScraperConfig(BaseModel):
-    name: str
-    enabled: bool = True
-    concurrent_requests: int = 8
-    download_delay: float = 1.0
-    rate_limit: Optional[str] = None  # e.g., "10/minute"
-    priority: TaskPriority = TaskPriority.MEDIUM
-    health_check_url: Optional[str] = None
-
-class ScrapingSchedule(BaseModel):
-    scraper: str
-    cron_expression: str  # e.g., "0 2 * * *" for daily at 2 AM
-    enabled: bool = True
-    params: Optional[Dict[str, Any]] = {}
-
-# =====================
-# Scraper Registry
-# =====================
-
-SCRAPER_CONFIGS = {
-    "1001tracklists": ScraperConfig(
-        name="1001tracklists",
-        enabled=True,
-        concurrent_requests=8,
-        download_delay=1.0,
-        rate_limit="30/minute",
-        health_check_url="http://scraper-1001tracklists:8011/health"
-    ),
-    "mixesdb": ScraperConfig(
-        name="mixesdb",
-        enabled=True,
-        concurrent_requests=4,
-        download_delay=2.0,
-        rate_limit="20/minute",
-        health_check_url="http://scraper-mixesdb:8012/health"
-    ),
-    "setlistfm": ScraperConfig(
-        name="setlistfm",
-        enabled=True,
-        concurrent_requests=4,
-        download_delay=1.5,
-        rate_limit="60/minute",
-        health_check_url="http://scraper-setlistfm:8013/health"
-    ),
-    "reddit": ScraperConfig(
-        name="reddit",
-        enabled=True,
-        concurrent_requests=2,
-        download_delay=3.0,
-        rate_limit="60/minute",
-        health_check_url="http://scraper-reddit:8014/health"
-    ),
-    "applemusic": ScraperConfig(
-        name="applemusic",
-        enabled=False,  # Disabled by default, needs API key
-        concurrent_requests=4,
-        download_delay=1.0,
-        health_check_url="http://scraper-applemusic:8015/health"
-    ),
-    "watchthedj": ScraperConfig(
-        name="watchthedj",
-        enabled=True,
-        concurrent_requests=2,
-        download_delay=2.0,
-        health_check_url="http://scraper-watchthedj:8016/health"
-    )
-}
-
-# =====================
-# Task Queue Management
-# =====================
-
-class TaskQueue:
-    """Manages scraping task queue in Redis"""
-    
-    def __init__(self, redis_client):
-        self.redis = redis_client
-        self.queue_prefix = "scraping:queue"
-        
-    def add_task(self, task: ScrapingTask) -> str:
-        """Add task to queue based on priority"""
-        logger.info(f"Starting add_task for scraper: {task.scraper}")
-        if not task.id:
-            task.id = f"{task.scraper}_{datetime.now().timestamp()}"
-        
-        task.created_at = datetime.now()
-        priority_enum = self._normalize_priority(task.priority)
-        queue_key = f"{self.queue_prefix}:{priority_enum.value}"
-        logger.info(f"Generated queue_key: {queue_key}")
-        
-        # Store task details
-        task_key = f"scraping:task:{task.id}"
-        # Convert task to JSON-serializable format for Redis
-        task_data = self._serialize_task_for_redis(task)
-        self.redis.hset(task_key, mapping=task_data)
-        self.redis.expire(task_key, 86400)  # Expire after 24 hours
-        
-        # Add to priority queue
-        score = self._get_priority_score(priority_enum)
-        logger.info(f"Adding to queue: queue_key={queue_key}, task.id={task.id}, score={score}")
-        logger.info(f"task.id type: {type(task.id)}, score type: {type(score)}")
-        self.redis.zadd(queue_key, {task.id: score})
-        
-        # Update metrics
-        queue_size.labels(priority=priority_enum.value).inc()
-        logger.info(f"Added task {task.id} to {priority_enum.value} priority queue")
-        return task.id
-    
-    def get_next_task(self, scraper: Optional[str] = None) -> Optional[ScrapingTask]:
-        """Get next task from highest priority queue"""
-        for priority in [TaskPriority.CRITICAL, TaskPriority.HIGH, TaskPriority.MEDIUM, TaskPriority.LOW]:
-            queue_key = f"{self.queue_prefix}:{priority.value}"
-            
-            # Get task with lowest score (oldest)
-            task_ids = self.redis.zrange(queue_key, 0, 0)
-            if task_ids:
-                task_id = task_ids[0]
-                
-                # Get task details
-                task_key = f"scraping:task:{task_id}"
-                task_data = self.redis.hgetall(task_key)
-                
-                if not task_data:
-                    # Remove orphaned task ID
-                    self.redis.zrem(queue_key, task_id)
-                    continue
-                
-                task = self._deserialize_task_from_redis(task_data)
-                
-                # Check if scraper matches (if specified)
-                if scraper and task.scraper != scraper:
-                    continue
-                
-                # Remove from queue
-                self.redis.zrem(queue_key, task_id)
-                queue_size.labels(priority=priority.value).dec()
-                
-                return task
-        
-        return None
-    
-    def _get_priority_score(self, priority: TaskPriority) -> float:
-        """Convert priority to score (lower = higher priority)"""
-        priority_enum = self._normalize_priority(priority)
-        scores = {
-            TaskPriority.CRITICAL: 0,
-            TaskPriority.HIGH: 1000,
-            TaskPriority.MEDIUM: 2000,
-            TaskPriority.LOW: 3000
-        }
-        # Add timestamp to maintain FIFO within priority
-        return scores[priority_enum] + datetime.now().timestamp() / 1000000
-
-    def _normalize_priority(self, priority: Any) -> TaskPriority:
-        """Ensure priority is a TaskPriority enum"""
-        if isinstance(priority, TaskPriority):
-            return priority
-        try:
-            return TaskPriority(priority)
-        except (ValueError, TypeError):
-            logger.warning(f"Unknown priority '{priority}', defaulting to MEDIUM")
-            return TaskPriority.MEDIUM
-    
-    def _serialize_task_for_redis(self, task: ScrapingTask) -> Dict[str, str]:
-        """Convert task to Redis-compatible format"""
-        try:
-            # Use model_dump with mode='json' to get values properly serialized
-            task_dict = task.model_dump(mode='json')
-            logger.info(f"Task dict after model_dump: {task_dict}")
-            
-            # Convert datetime objects to ISO strings
-            for field in ['created_at', 'started_at', 'completed_at']:
-                if task_dict.get(field):
-                    if isinstance(task_dict[field], datetime):
-                        task_dict[field] = task_dict[field].isoformat()
-                    elif isinstance(task_dict[field], str):
-                        # Already serialized by Pydantic
-                        pass
-            
-            # Convert any dict/list fields to JSON strings
-            for field in ['params']:
-                if task_dict.get(field) and isinstance(task_dict[field], (dict, list)):
-                    task_dict[field] = json.dumps(task_dict[field])
-            
-            # Convert all values to strings for Redis
-            redis_data = {}
-            for k, v in task_dict.items():
-                if v is None:
-                    redis_data[k] = ''
-                elif isinstance(v, (dict, list)):
-                    redis_data[k] = json.dumps(v)
-                else:
-                    redis_data[k] = str(v)
-            
-            logger.info(f"Redis data after serialization: {redis_data}")
-            return redis_data
-        except Exception as e:
-            logger.error(f"Error in _serialize_task_for_redis: {e}")
-            raise
-    
-    def _deserialize_task_from_redis(self, task_data: Dict[str, str]) -> ScrapingTask:
-        """Convert Redis data back to ScrapingTask object"""
-        if not task_data:
-            return None
-        
-        # Convert string values back to appropriate types
-        for field in ['created_at', 'started_at', 'completed_at']:
-            if task_data.get(field) and task_data[field]:
-                try:
-                    task_data[field] = datetime.fromisoformat(task_data[field])
-                except ValueError:
-                    task_data[field] = None
-        
-        # Convert params back from JSON string
-        if task_data.get('params') and task_data['params']:
-            try:
-                task_data['params'] = json.loads(task_data['params'])
-            except json.JSONDecodeError:
-                task_data['params'] = {}
-        
-        # Convert numeric fields
-        if task_data.get('retry_count'):
-            task_data['retry_count'] = int(task_data['retry_count'])
-        if task_data.get('max_retries'):
-            task_data['max_retries'] = int(task_data['max_retries'])
-        
-        # Handle enum fields - they should already be values, but handle legacy format
-        if task_data.get('priority'):
-            if 'TaskPriority.' in task_data['priority']:
-                task_data['priority'] = task_data['priority'].split('.')[-1].lower()
-            # Ensure it's a valid priority value
-            if task_data['priority'] not in ['low', 'medium', 'high', 'critical']:
-                task_data['priority'] = 'medium'  # Default fallback
-        
-        if task_data.get('status'):
-            if 'TaskStatus.' in task_data['status']:
-                task_data['status'] = task_data['status'].split('.')[-1].lower()
-            # Ensure it's a valid status value
-            if task_data['status'] not in ['pending', 'running', 'completed', 'failed', 'cancelled']:
-                task_data['status'] = 'pending'  # Default fallback
-        
-        # Remove empty string values
-        task_data = {k: v for k, v in task_data.items() if v != ''}
-        
-        return ScrapingTask(**task_data)
-
-task_queue = TaskQueue(redis_client)
-
-# =====================
-# Rate Limiting
-# =====================
-
-class RateLimiter:
-    """Manages rate limiting for scrapers"""
-    
-    def __init__(self, redis_client):
-        self.redis = redis_client
-        
-    async def check_rate_limit(self, scraper: str) -> bool:
-        """Check if scraper is within rate limit"""
-        config = SCRAPER_CONFIGS.get(scraper)
-        if not config or not config.rate_limit:
-            return True
-        
-        # Parse rate limit (e.g., "30/minute")
-        limit, period = config.rate_limit.split("/")
-        limit = int(limit)
-        
-        # Convert period to seconds
-        period_seconds = {
-            "second": 1,
-            "minute": 60,
-            "hour": 3600
-        }.get(period, 60)
-        
-        # Check current rate
-        key = f"rate_limit:{scraper}"
-        current = self.redis.get(key)
-        
-        if current is None:
-            # First request
-            self.redis.setex(key, period_seconds, 1)
-            return True
-        
-        current = int(current)
-        if current >= limit:
-            return False
-        
-        # Increment counter
-        self.redis.incr(key)
-        return True
-    
-    async def wait_if_limited(self, scraper: str) -> None:
-        """Wait if rate limited"""
-        while not await self.check_rate_limit(scraper):
-            await asyncio.sleep(1)
-
-rate_limiter = RateLimiter(redis_client)
-
-# =====================
-# Scraper Management
-# =====================
-
-class ScraperManager:
-    """Manages scraper instances and health checks"""
-    
+# ===================
+# ENHANCED CONNECTION MANAGEMENT
+# ===================
+class EnhancedConnectionManager:
     def __init__(self):
-        self.scrapers = SCRAPER_CONFIGS
-        self.health_status = {}
-        
-    async def check_health(self, scraper: str) -> bool:
-        """Check if scraper is healthy"""
-        config = self.scrapers.get(scraper)
-        if not config or not config.health_check_url:
-            return False
-        
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(config.health_check_url)
-                is_healthy = response.status_code == 200
-                
-                # Update status
-                self.health_status[scraper] = {
-                    "healthy": is_healthy,
-                    "last_check": datetime.now().isoformat(),
-                    "status_code": response.status_code
-                }
-                
-                # Update metrics
-                if is_healthy:
-                    active_scrapers.labels(scraper=scraper).set(1)
-                else:
-                    active_scrapers.labels(scraper=scraper).set(0)
-                
-                return is_healthy
-        except Exception as e:
-            logger.error(f"Health check failed for {scraper}: {str(e)}")
-            self.health_status[scraper] = {
-                "healthy": False,
-                "last_check": datetime.now().isoformat(),
-                "error": str(e)
-            }
-            active_scrapers.labels(scraper=scraper).set(0)
-            return False
-    
-    async def check_all_health(self) -> Dict[str, bool]:
-        """Check health of all scrapers"""
-        results = {}
-        for scraper in self.scrapers:
-            results[scraper] = await self.check_health(scraper)
-        return results
-    
-    def get_status(self, scraper: str) -> ScraperStatus:
-        """Get current status of scraper"""
-        if scraper not in self.scrapers:
-            return ScraperStatus.ERROR
-        
-        if not self.scrapers[scraper].enabled:
-            return ScraperStatus.DISABLED
-        
-        health = self.health_status.get(scraper, {})
-        if not health.get("healthy", False):
-            return ScraperStatus.ERROR
-        
-        # Check if actively processing
-        active_key = f"scraper:active:{scraper}"
-        if redis_client.exists(active_key):
-            return ScraperStatus.RUNNING
-        
-        return ScraperStatus.IDLE
+        self.db_engine = None
+        self.session_factory = None
+        self.redis_client = None
+        self.http_client = None
 
-scraper_manager = ScraperManager()
+    async def initialize(self):
+        """Initialize all connections with 2025 best practices"""
+        correlation_id = str(uuid.uuid4())[:8]
 
-# Global instance for target track searcher
-target_track_searcher = None
-
-# =====================
-# Task Execution
-# =====================
-
-async def execute_scraping_task(task: ScrapingTask):
-    """Execute a scraping task"""
-    logger.info(f"Executing task {task.id} for scraper {task.scraper}")
-    
-    # Wait for rate limit
-    await rate_limiter.wait_if_limited(task.scraper)
-    
-    # Mark as running
-    task.status = TaskStatus.RUNNING
-    task.started_at = datetime.now()
-    
-    # Store in Redis
-    task_key = f"scraping:task:{task.id}"
-    task_data = task_queue._serialize_task_for_redis(task)
-    redis_client.hset(task_key, mapping=task_data)
-    
-    # Mark scraper as active
-    active_key = f"scraper:active:{task.scraper}"
-    redis_client.setex(active_key, 3600, task.id)  # Expire after 1 hour
-    
-    try:
-        # Send task to scraper
-        scraper_url = f"http://scraper-{task.scraper}:{8010 + list(SCRAPER_CONFIGS.keys()).index(task.scraper) + 1}/scrape"
-        
-        async with httpx.AsyncClient(timeout=300.0) as client:
-            response = await client.post(
-                scraper_url,
-                json={
-                    "url": task.url,
-                    "params": task.params,
-                    "task_id": task.id
-                }
-            )
-            
-            if response.status_code == 200:
-                task.status = TaskStatus.COMPLETED
-                task.completed_at = datetime.now()
-                scraping_tasks_total.labels(scraper=task.scraper, status="success").inc()
-                logger.info(f"Task {task.id} completed successfully")
-                # Record processed URL to prevent re-processing; maintain a long-lived set
-                try:
-                    if task.url:
-                        dedupe_key = f"dedupe:{task.scraper}:{task.url}"
-                        redis_client.sadd("scraping:processed_urls", dedupe_key)
-                except Exception as dedupe_err:
-                    logger.warning(f"Failed to record processed URL for task {task.id}: {dedupe_err}")
-            else:
-                raise Exception(f"Scraper returned status {response.status_code}")
-                
-    except Exception as e:
-        logger.error(f"Task {task.id} failed: {str(e)}")
-        task.status = TaskStatus.FAILED
-        task.error_message = str(e)
-        task.completed_at = datetime.now()
-        scraping_tasks_total.labels(scraper=task.scraper, status="failed").inc()
-        
-        # Retry logic
-        if task.retry_count < task.max_retries:
-            task.retry_count += 1
-            task.status = TaskStatus.PENDING
-            task_queue.add_task(task)
-            logger.info(f"Retrying task {task.id} (attempt {task.retry_count}/{task.max_retries})")
-    
-    finally:
-        # Update task in Redis
-        task_data = task_queue._serialize_task_for_redis(task)
-        redis_client.hset(task_key, mapping=task_data)
-        
-        # Remove active marker
-        redis_client.delete(active_key)
-        
-        # Record duration
-        if task.started_at and task.completed_at:
-            duration = (task.completed_at - task.started_at).total_seconds()
-            scraping_duration.labels(scraper=task.scraper).observe(duration)
-
-# =====================
-# Background Workers
-# =====================
-
-async def task_processor():
-    """Background worker to process tasks from queue"""
-    while True:
-        try:
-            # Get next task
-            task = task_queue.get_next_task()
-            
-            if task:
-                # Check if scraper is healthy
-                if await scraper_manager.check_health(task.scraper):
-                    # Execute task
-                    asyncio.create_task(execute_scraping_task(task))
-                else:
-                    # Requeue task
-                    logger.warning(f"Scraper {task.scraper} is unhealthy, requeuing task")
-                    task_queue.add_task(task)
-            
-            await asyncio.sleep(1)  # Check queue every second
-            
-        except Exception as e:
-            logger.error(f"Error in task processor: {str(e)}")
-            await asyncio.sleep(5)
-
-async def health_checker():
-    """Background worker to check scraper health"""
-    while True:
-        try:
-            await scraper_manager.check_all_health()
-            await asyncio.sleep(30)  # Check every 30 seconds
-        except Exception as e:
-            logger.error(f"Error in health checker: {str(e)}")
-            await asyncio.sleep(60)
-
-# =====================
-# Scheduled Tasks
-# =====================
-
-async def scheduled_scraping():
-    """Execute scheduled scraping tasks"""
-    schedules = [
-        ScrapingSchedule(
-            scraper="1001tracklists",
-            cron_expression="0 2 * * *",  # Daily at 2 AM
-            enabled=True
-        ),
-        ScrapingSchedule(
-            scraper="mixesdb",
-            cron_expression="0 3 * * *",  # Daily at 3 AM
-            enabled=True
-        ),
-        ScrapingSchedule(
-            scraper="setlistfm",
-            cron_expression="0 4 * * *",  # Daily at 4 AM
-            enabled=True
+        structlog.contextvars.bind_contextvars(
+            operation="connection_initialization",
+            correlation_id=correlation_id
         )
-    ]
-    
-    for schedule in schedules:
-        if schedule.enabled:
-            task = ScrapingTask(
-                scraper=schedule.scraper,
-                priority=TaskPriority.HIGH,
-                params=schedule.params
-            )
-            task_id = task_queue.add_task(task)
-            logger.info(f"Scheduled task {task_id} for {schedule.scraper}")
 
-from sqlalchemy.ext.asyncio import create_async_engine
-from target_track_searcher import TargetTrackSearcher
+        logger.info("Initializing enhanced connection manager")
 
-# Database connection
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@musicdb-postgres:5432/musicdb")
-engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
+        # Database connection with optimized pool settings
+        database_url = os.getenv(
+            "DATABASE_URL",
+            "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@db:5432/musicdb"
+        )
 
-async def refresh_database_views():
-    """Periodically refresh materialized views in the database."""
-    logger.info("Starting database materialized view refresh...")
-    try:
-        async with engine.connect() as conn:
-            await conn.execute("SELECT refresh_performance_views();")
-            await conn.execute("SELECT refresh_graph_views();")
-            await conn.commit()
-        logger.info("Successfully refreshed database materialized views.")
-    except Exception as e:
-        logger.error(f"Error refreshing database views: {e}")
+        self.db_engine = create_async_engine(
+            database_url,
+            pool_size=20,
+            max_overflow=30,
+            pool_timeout=30,
+            pool_recycle=3600,
+            pool_pre_ping=True,
+            connect_args={
+                # PostgreSQL accepts 'options' for server-side parameters
+                # But some options may not be supported by all versions
+            },
+            echo=False,
+            future=True
+        )
 
-async def load_target_tracks():
-    """Load active target tracks from database for searching."""
-    logger.info("Loading target tracks from database...")
-    try:
-        async with engine.connect() as conn:
-            query = """
-                SELECT track_id, title, artist, priority, last_searched
-                FROM target_tracks
-                WHERE is_active = true
-                AND (last_searched IS NULL OR last_searched < NOW() - INTERVAL '24 hours')
-                ORDER BY
-                    CASE priority
-                        WHEN 'high' THEN 1
-                        WHEN 'medium' THEN 2
-                        ELSE 3
-                    END,
-                    last_searched ASC NULLS FIRST
-                LIMIT 20
-            """
-            result = await conn.execute(query)
-            rows = result.fetchall()
+        self.session_factory = async_sessionmaker(
+            self.db_engine,
+            class_=AsyncSession,
+            expire_on_commit=False
+        )
 
-            target_tracks = [
-                {
-                    'track_id': row[0],
-                    'title': row[1],
-                    'artist': row[2],
-                    'priority': row[3]
-                }
-                for row in rows
-            ]
+        # Redis connection with enhanced error handling
+        redis_host = os.getenv("REDIS_HOST", "redis")
+        redis_port = int(os.getenv("REDIS_PORT", 6379))
 
-            logger.info(f"Loaded {len(target_tracks)} target tracks for searching")
-            return target_tracks
+        self.redis_client = redis.Redis(
+            host=redis_host,
+            port=redis_port,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
+            health_check_interval=30
+        )
 
-    except Exception as e:
-        logger.error(f"Error loading target tracks: {e}")
-        return []
+        # HTTP client for external API calls
+        self.http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(30.0, connect=10.0),
+            limits=httpx.Limits(max_keepalive_connections=50, max_connections=200)
+        )
 
-async def get_database_connection():
-    """Get a database connection for the target track searcher"""
-    return engine.connect()
+        logger.info("Connection manager initialized successfully")
 
-async def target_track_search_pipeline():
-    """Execute the target track search pipeline"""
-    logger.info("Starting target track search pipeline")
-
-    try:
-        # Load active target tracks from database
-        target_tracks = await load_target_tracks()
-
-        if not target_tracks:
-            logger.info("No target tracks found, skipping search pipeline")
-            return
-
-        logger.info(f"Found {len(target_tracks)} target tracks to search for")
-
-        # Create a searcher instance with database connection for this pipeline run
-        async with engine.connect() as db_conn:
-            searcher = TargetTrackSearcher(db_connection=db_conn)
-
-            # Search for playlists containing these tracks
-            search_results = await searcher.search_for_target_tracks(target_tracks)
-
-            # Close the searcher's HTTP client
-            await searcher.close()
-
-        # Convert search results to scraping tasks and queue them
-        total_urls_found = 0
-        for track_key, urls in search_results.items():
-            total_urls_found += len(urls)
-
-            # Queue each discovered URL as a scraping task
-            for url in urls:
-                # Determine which scraper to use based on URL
-                scraper = determine_scraper_from_url(url)
-
-                # Create scraping task
-                task = ScrapingTask(
-                    scraper=scraper,
-                    url=url,
-                    priority=TaskPriority.HIGH,  # Target track searches are high priority
-                    params={
-                        'discovered_via': 'target_track_search',
-                        'target_track': track_key
-                    }
-                )
-
-                # Add to queue
-                task_id = task_queue.add_task(task)
-                logger.info(f"Queued task {task_id} for URL: {url}")
-
-        logger.info(f"Target track search pipeline complete: {total_urls_found} URLs discovered and queued")
-
-    except Exception as e:
-        logger.error(f"Error in target track search pipeline: {e}")
-
-def determine_scraper_from_url(url: str) -> str:
-    """Determine which scraper to use based on URL domain"""
-    if '1001tracklists.com' in url:
-        return '1001tracklists'
-    elif 'mixesdb.com' in url:
-        return 'mixesdb'
-    elif 'setlist.fm' in url:
-        return 'setlistfm'
-    elif 'reddit.com' in url:
-        return 'reddit'
-    elif 'music.apple.com' in url:
-        return 'applemusic'
-    elif 'watchthedj.com' in url:
-        return 'watchthedj'
-    else:
-        # Default to first available scraper
-        return '1001tracklists'
-
-# =====================
-# API Endpoints
-# =====================
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize background tasks on startup"""
-    global target_track_searcher
-
-    # Initialize Target Track Searcher
-    target_track_searcher = TargetTrackSearcher()
-    logger.info("Target Track Searcher initialized")
-
-    # Start background workers
-    asyncio.create_task(task_processor())
-    asyncio.create_task(health_checker())
-
-    # Schedule periodic tasks
-    scheduler.add_job(
-        scheduled_scraping,
-        CronTrigger(hour=2, minute=0),  # Daily at 2 AM
-        id="daily_scraping"
-    )
-    # Add the new database refresh job
-    scheduler.add_job(
-        refresh_database_views,
-        CronTrigger(minute=0),  # Every hour at the start of the hour
-        id="hourly_db_refresh"
-    )
-    # Add target track search job
-    scheduler.add_job(
-        target_track_search_pipeline,
-        CronTrigger(hour=1, minute=30),  # Daily at 1:30 AM, before main scraping
-        id="daily_target_search"
-    )
-    scheduler.start()
-
-    logger.info("Scraper Orchestrator started")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    scheduler.shutdown()
-    logger.info("Scraper Orchestrator stopped")
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
-
-@app.get("/scrapers/status")
-async def get_scrapers_status():
-    """Get status of all scrapers"""
-    statuses = {}
-    for scraper in SCRAPER_CONFIGS:
-        statuses[scraper] = {
-            "status": scraper_manager.get_status(scraper).value,
-            "config": SCRAPER_CONFIGS[scraper].dict(),
-            "health": scraper_manager.health_status.get(scraper, {})
+    async def health_check(self) -> Dict[str, Any]:
+        """Comprehensive health check"""
+        health_status = {
+            'database': 'unknown',
+            'redis': 'unknown',
+            'http_client': 'unknown'
         }
-    return statuses
 
-@app.get("/scrapers/{scraper}/status")
-async def get_scraper_status(scraper: str):
-    """Get status of specific scraper"""
-    if scraper not in SCRAPER_CONFIGS:
-        raise HTTPException(status_code=404, detail="Scraper not found")
-    
-    return {
-        "scraper": scraper,
-        "status": scraper_manager.get_status(scraper).value,
-        "config": SCRAPER_CONFIGS[scraper].dict(),
-        "health": scraper_manager.health_status.get(scraper, {})
-    }
+        # Database health
+        try:
+            async with self.session_factory() as session:
+                await session.execute(text("SELECT 1"))
+            health_status['database'] = 'healthy'
+        except Exception as e:
+            health_status['database'] = f'unhealthy: {e}'
 
-@app.post("/scrapers/{scraper}/enable")
-async def enable_scraper(scraper: str):
-    """Enable a scraper"""
-    if scraper not in SCRAPER_CONFIGS:
-        raise HTTPException(status_code=404, detail="Scraper not found")
-    
-    SCRAPER_CONFIGS[scraper].enabled = True
-    return {"message": f"Scraper {scraper} enabled"}
+        # Redis health
+        try:
+            # Using sync Redis client, no await needed
+            self.redis_client.ping()
+            health_status['redis'] = 'healthy'
+        except Exception as e:
+            health_status['redis'] = f'unhealthy: {e}'
 
-@app.post("/scrapers/{scraper}/disable")
-async def disable_scraper(scraper: str):
-    """Disable a scraper"""
-    if scraper not in SCRAPER_CONFIGS:
-        raise HTTPException(status_code=404, detail="Scraper not found")
-    
-    SCRAPER_CONFIGS[scraper].enabled = False
-    return {"message": f"Scraper {scraper} disabled"}
+        # HTTP client health
+        try:
+            await self.http_client.get('https://httpbin.org/status/200', timeout=5.0)
+            health_status['http_client'] = 'healthy'
+        except Exception as e:
+            health_status['http_client'] = f'unhealthy: {e}'
 
-@app.post("/tasks/submit")
-async def submit_task(task: ScrapingTask, background_tasks: BackgroundTasks):
-    """Submit a new scraping task"""
-    logger.info(f"Received task submission request: {task}")
-    
+        return health_status
+
+    async def close(self):
+        """Graceful shutdown of all connections"""
+        logger.info("Closing connection manager")
+
+        if self.http_client:
+            await self.http_client.aclose()
+
+        if self.db_engine:
+            await self.db_engine.dispose()
+
+# ===================
+# MIDDLEWARE FOR CORRELATION IDS
+# ===================
+class CorrelationIdMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, request: Request, call_next):
+        # Generate or extract correlation ID
+        correlation_id = request.headers.get('x-correlation-id', str(uuid.uuid4())[:8])
+
+        # Bind to structlog context
+        structlog.contextvars.bind_contextvars(
+            correlation_id=correlation_id,
+            method=request.method,
+            path=request.url.path,
+            service="scraper-orchestrator"
+        )
+
+        # Process request
+        start_time = time.time()
+        response = await call_next(request)
+        execution_time = time.time() - start_time
+
+        # Add correlation ID to response
+        response.headers['x-correlation-id'] = correlation_id
+
+        # Log request completion
+        logger.info(
+            "Request completed",
+            status_code=response.status_code,
+            execution_time=f"{execution_time:.3f}s"
+        )
+
+        return response
+
+# ===================
+# ENHANCED APPLICATION SETUP
+# ===================
+connection_manager = EnhancedConnectionManager()
+scheduler = AsyncIOScheduler()
+target_searcher = None
+search_orchestrator = None
+redis_consumer = None
+consumer_task = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Enhanced application lifespan management"""
+    global target_searcher, search_orchestrator, redis_consumer, consumer_task
+
+    logger.info("Starting SongNodes Scraper Orchestrator 2025")
+
     try:
-        if task.scraper not in SCRAPER_CONFIGS:
-            raise HTTPException(status_code=400, detail="Invalid scraper")
-        
-        if not SCRAPER_CONFIGS[task.scraper].enabled:
-            raise HTTPException(status_code=400, detail="Scraper is disabled")
-        
-        # Simple dedupe: avoid re-submitting the same (scraper,url)
-        if task.url:
-            dedupe_key = f"dedupe:{task.scraper}:{task.url}"
-            if redis_client.sismember("scraping:submitted_urls", dedupe_key) or \
-               redis_client.sismember("scraping:processed_urls", dedupe_key):
-                logger.info(f"Skipping duplicate submission for {dedupe_key}")
-                return {"status": "skipped", "reason": "already_submitted", "dedupe_key": dedupe_key}
-            redis_client.sadd("scraping:submitted_urls", dedupe_key)
+        # Initialize connections
+        await connection_manager.initialize()
 
-        logger.info(f"About to call task_queue.add_task")
-        task_id = task_queue.add_task(task)
-        logger.info(f"Successfully added task: {task_id}")
-        return {"task_id": task_id, "status": "queued"}
+        # Initialize search components
+        target_searcher = TargetTrackSearcher2025(connection_manager.session_factory)
+        search_orchestrator = SearchOrchestrator2025(
+            connection_manager.session_factory,
+            connection_manager.redis_client,
+            None  # Message queue not implemented yet
+        )
+
+        # Initialize and start Redis queue consumer
+        redis_consumer = RedisQueueConsumer()
+        consumer_task = asyncio.create_task(redis_consumer.consume_queue())
+        logger.info("Redis queue consumer started")
+
+        # Start scheduler
+        scheduler.start()
+
+        # Add scheduled tasks
+        scheduler.add_job(
+            scheduled_target_search,
+            trigger=CronTrigger(minute="*/30"),  # Every 30 minutes
+            id="target_track_search",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=300
+        )
+
+        scheduler.add_job(
+            health_monitor,
+            trigger=CronTrigger(minute="*/5"),  # Every 5 minutes
+            id="health_monitor",
+            max_instances=1,
+            coalesce=True
+        )
+
+        logger.info("Scraper Orchestrator started successfully")
+
     except Exception as e:
-        logger.error(f"Error in submit_task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to start application", error=str(e))
+        raise
 
-@app.get("/tasks/{task_id}")
-async def get_task_status(task_id: str):
-    """Get status of a specific task"""
-    task_key = f"scraping:task:{task_id}"
-    task_data = redis_client.hgetall(task_key)
-    
-    if not task_data:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    # Return deserialized task data
-    task = task_queue._deserialize_task_from_redis(task_data)
-    return task.model_dump() if task else task_data
+    yield  # Application running
 
-@app.get("/tasks")
-async def get_tasks(
-    status: Optional[TaskStatus] = None,
-    scraper: Optional[str] = None,
-    limit: int = 100
-):
-    """Get list of tasks"""
-    # Get all task keys
-    task_keys = redis_client.keys("scraping:task:*")
-    tasks = []
-    
-    for key in task_keys[:limit]:
-        task_data = redis_client.hgetall(key)
-        if task_data:
-            task = task_queue._deserialize_task_from_redis(task_data)
-            if not task:
-                continue
-            
-            # Filter by status
-            if status and task.status != status:
-                continue
-            # Filter by scraper
-            if scraper and task.scraper != scraper:
-                continue
-            tasks.append(task.model_dump())
-    
-    return {"tasks": tasks, "count": len(tasks)}
+    # Shutdown
+    logger.info("Shutting down Scraper Orchestrator")
 
-@app.get("/queue/status")
-async def get_queue_status():
-    """Get queue status"""
-    queue_stats = {}
-    for priority in TaskPriority:
-        priority_value = priority.value if hasattr(priority, 'value') else str(priority)
-        queue_key = f"scraping:queue:{priority_value}"
-        size = redis_client.zcard(queue_key)
-        queue_stats[priority_value] = size
-    
-    return {"queue": queue_stats, "total": sum(queue_stats.values())}
+    try:
+        scheduler.shutdown()
 
-@app.post("/queue/clear")
-async def clear_queue(priority: Optional[TaskPriority] = None):
-    """Clear task queue"""
-    if priority:
-        priority_value = priority.value if hasattr(priority, 'value') else str(priority)
-        queue_key = f"scraping:queue:{priority_value}"
-        count = redis_client.zcard(queue_key)
-        redis_client.delete(queue_key)
-        return {"message": f"Cleared {count} tasks from {priority_value} queue"}
-    else:
-        total = 0
-        for p in TaskPriority:
-            priority_value = p.value if hasattr(p, 'value') else str(p)
-            queue_key = f"scraping:queue:{priority_value}"
-            total += redis_client.zcard(queue_key)
-            redis_client.delete(queue_key)
-        return {"message": f"Cleared {total} tasks from all queues"}
+        # Stop Redis consumer
+        if 'redis_consumer' in globals() and redis_consumer:
+            await redis_consumer.shutdown()
+            if 'consumer_task' in globals() and consumer_task:
+                consumer_task.cancel()
+                try:
+                    await consumer_task
+                except asyncio.CancelledError:
+                    pass
+            logger.info("Redis queue consumer stopped")
+
+        if target_searcher:
+            await target_searcher.close()
+
+        await connection_manager.close()
+
+        logger.info("Graceful shutdown completed")
+
+    except Exception as e:
+        logger.error("Error during shutdown", error=str(e))
+
+# Initialize FastAPI with enhanced configuration
+app = FastAPI(
+    title="SongNodes Scraper Orchestrator 2025",
+    description="Enhanced orchestration service with 2025 best practices",
+    version="2.0.0",
+    lifespan=lifespan
+)
+
+# Add enhanced middleware
+app.middleware("http")(CorrelationIdMiddleware(app))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ===================
+# SCHEDULED TASKS WITH ERROR HANDLING
+# ===================
+async def scheduled_target_search():
+    """Scheduled target track search with comprehensive error handling"""
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="scheduled_target_search",
+        correlation_id=correlation_id
+    )
+
+    logger.info("Starting scheduled target track search")
+
+    try:
+        if search_orchestrator:
+            await search_orchestrator.execute_search_pipeline()
+            search_operations.labels(platform="all", status="success").inc()
+        else:
+            logger.error("Search orchestrator not initialized")
+            search_operations.labels(platform="all", status="error").inc()
+
+    except Exception as e:
+        logger.error("Scheduled search failed", error=str(e))
+        search_operations.labels(platform="all", status="error").inc()
+
+async def health_monitor():
+    """Monitor system health and update metrics"""
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="health_monitor",
+        correlation_id=correlation_id
+    )
+
+    try:
+        # Check connection health
+        health_status = await connection_manager.health_check()
+
+        # Update metrics
+        for service, status in health_status.items():
+            if 'healthy' in status:
+                circuit_breaker_state.labels(service=service, state="closed").set(1)
+                circuit_breaker_state.labels(service=service, state="open").set(0)
+            else:
+                circuit_breaker_state.labels(service=service, state="closed").set(0)
+                circuit_breaker_state.labels(service=service, state="open").set(1)
+
+        # Check target searcher health
+        if target_searcher:
+            searcher_health = await target_searcher.health_check()
+
+            for name, cb_status in searcher_health.get('circuit_breakers', {}).items():
+                state = cb_status['state']
+                circuit_breaker_state.labels(service=name, state=state).set(1)
+                # Set other states to 0
+                for other_state in ['closed', 'open', 'half_open']:
+                    if other_state != state:
+                        circuit_breaker_state.labels(service=name, state=other_state).set(0)
+
+        logger.info("Health monitoring completed", health_status=health_status)
+
+    except Exception as e:
+        logger.error("Health monitoring failed", error=str(e))
+
+# ===================
+# ENHANCED API ENDPOINTS
+# ===================
+@app.get("/health")
+async def comprehensive_health_check():
+    """Comprehensive health check with detailed status"""
+    try:
+        health_status = {
+            'service': 'scraper-orchestrator-2025',
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'version': '2.0.0',
+            'connections': await connection_manager.health_check()
+        }
+
+        # Check searcher health
+        if target_searcher:
+            searcher_health = await target_searcher.health_check()
+            health_status['searcher'] = searcher_health
+
+        # Determine overall health
+        connection_health = all(
+            'healthy' in status for status in health_status['connections'].values()
+        )
+
+        if not connection_health:
+            health_status['status'] = 'degraded'
+            return JSONResponse(
+                status_code=503,
+                content=health_status
+            )
+
+        return health_status
+
+    except Exception as e:
+        logger.error("Health check failed", error=str(e))
+        return JSONResponse(
+            status_code=503,
+            content={
+                'service': 'scraper-orchestrator-2025',
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+        )
+
+@app.get("/healthz")
+async def liveness_probe():
+    """Simple liveness probe for Kubernetes"""
+    return {"status": "alive", "timestamp": datetime.now().isoformat()}
+
+@app.get("/readyz")
+async def readiness_probe():
+    """Readiness probe for Kubernetes"""
+    try:
+        health_status = await connection_manager.health_check()
+
+        if all('healthy' in status for status in health_status.values()):
+            return {"status": "ready", "timestamp": datetime.now().isoformat()}
+        else:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "not_ready",
+                    "health_status": health_status,
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
 
 @app.get("/metrics")
-async def get_metrics():
+async def prometheus_metrics():
     """Prometheus metrics endpoint"""
     return PlainTextResponse(generate_latest())
 
-@app.get("/orchestration/status")
-async def get_orchestration_status():
-    """Get overall orchestration status"""
-    scrapers_status = await get_scrapers_status()
-    queue_status = await get_queue_status()
+@app.post("/target-tracks/search")
+async def manual_target_search(background_tasks: BackgroundTasks):
+    """Manually trigger target track search with enhanced error handling"""
+    correlation_id = str(uuid.uuid4())[:8]
 
-    # Count healthy scrapers
-    healthy_count = sum(1 for s in scrapers_status.values() if s["status"] == "idle" or s["status"] == "running")
-    total_count = len(scrapers_status)
+    structlog.contextvars.bind_contextvars(
+        operation="manual_target_search",
+        correlation_id=correlation_id
+    )
+
+    logger.info("Manual target track search triggered")
+
+    if not search_orchestrator:
+        logger.error("Search orchestrator not available")
+        raise HTTPException(
+            status_code=503,
+            detail="Search orchestrator not available"
+        )
+
+    # Execute in background
+    background_tasks.add_task(execute_search_with_metrics)
 
     return {
-        "status": "operational" if healthy_count > 0 else "degraded",
-        "healthy_scrapers": f"{healthy_count}/{total_count}",
-        "queue_size": queue_status["total"],
-        "scrapers": scrapers_status,
-        "queue": queue_status
+        "status": "started",
+        "message": "Target track search pipeline started in background",
+        "correlation_id": correlation_id,
+        "timestamp": datetime.now().isoformat()
     }
 
-@app.post("/target-tracks/search")
-async def trigger_target_track_search(background_tasks: BackgroundTasks):
-    """Manually trigger target track search pipeline"""
-    logger.info("Target track search manually triggered")
+async def execute_search_with_metrics():
+    """Execute search pipeline with metrics tracking"""
+    start_time = time.time()
 
     try:
-        # Run the pipeline in background
-        background_tasks.add_task(target_track_search_pipeline)
+        await search_orchestrator.execute_search_pipeline()
+        execution_time = time.time() - start_time
 
-        return {
-            "status": "started",
-            "message": "Target track search pipeline started in background"
-        }
-    except Exception as e:
-        logger.error(f"Error triggering target track search: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        scraping_duration.labels(scraper="orchestrator").observe(execution_time)
+        scraping_tasks_total.labels(scraper="orchestrator", status="success").inc()
 
-@app.get("/target-tracks/status")
-async def get_target_tracks_status():
-    """Get status of target tracks in database"""
-    try:
-        async with engine.connect() as conn:
-            # Count total target tracks
-            total_query = "SELECT COUNT(*) FROM target_tracks"
-            total_result = await conn.execute(total_query)
-            total_count = total_result.scalar()
-
-            # Count active target tracks
-            active_query = "SELECT COUNT(*) FROM target_tracks WHERE is_active = true"
-            active_result = await conn.execute(active_query)
-            active_count = active_result.scalar()
-
-            # Count target tracks needing search
-            needs_search_query = """
-                SELECT COUNT(*) FROM target_tracks
-                WHERE is_active = true
-                AND (last_searched IS NULL OR last_searched < NOW() - INTERVAL '24 hours')
-            """
-            needs_search_result = await conn.execute(needs_search_query)
-            needs_search_count = needs_search_result.scalar()
-
-            return {
-                "total_tracks": total_count,
-                "active_tracks": active_count,
-                "needs_search": needs_search_count,
-                "searcher_initialized": target_track_searcher is not None
-            }
+        logger.info(
+            "Search pipeline completed successfully",
+            execution_time=f"{execution_time:.3f}s"
+        )
 
     except Exception as e:
-        logger.error(f"Error getting target tracks status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        execution_time = time.time() - start_time
 
-@app.post("/data/import-setlist")
-async def import_setlist_data(background_tasks: BackgroundTasks):
-    """Import setlist data through the database pipeline"""
-    logger.info("Setlist data import manually triggered")
+        scraping_duration.labels(scraper="orchestrator").observe(execution_time)
+        scraping_tasks_total.labels(scraper="orchestrator", status="error").inc()
+
+        logger.error(
+            "Search pipeline failed",
+            error=str(e),
+            execution_time=f"{execution_time:.3f}s"
+        )
+
+@app.get("/scrapers/status")
+async def get_scrapers_status():
+    """Get status of all scrapers with circuit breaker information"""
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="get_scrapers_status",
+        correlation_id=correlation_id
+    )
 
     try:
-        # Execute the import script in the scrapers directory
-        import subprocess
-        import os
+        scrapers_config = [
+            {"name": "1001tracklists", "url": "http://scraper-1001tracklists:8011", "health_endpoint": "/health"},
+            {"name": "mixesdb", "url": "http://scraper-mixesdb:8012", "health_endpoint": "/health"},
+            {"name": "setlistfm", "url": "http://scraper-setlistfm:8013", "health_endpoint": "/health"},
+            {"name": "reddit", "url": "http://scraper-reddit:8014", "health_endpoint": "/health"},
+        ]
 
-        script_path = "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers/import_setlist_data.py"
+        scrapers_status = []
 
-        # Ensure the script exists
-        if not os.path.exists(script_path):
-            raise HTTPException(status_code=404, detail="Import script not found")
-
-        # Run the import script in background
-        def run_import():
+        for scraper in scrapers_config:
             try:
-                logger.info("Starting setlist data import script")
-                result = subprocess.run(
-                    ["python", script_path],
-                    cwd="/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers",
-                    capture_output=True,
-                    text=True,
-                    timeout=300  # 5 minute timeout
-                )
+                async with asyncio.timeout(5.0):
+                    response = await connection_manager.http_client.get(
+                        f"{scraper['url']}{scraper['health_endpoint']}"
+                    )
 
-                if result.returncode == 0:
-                    logger.info("Setlist import completed successfully")
-                    logger.info(f"Import output: {result.stdout}")
+                if response.status_code == 200:
+                    scrapers_status.append({
+                        "name": scraper["name"],
+                        "status": "healthy",
+                        "url": scraper["url"],
+                        "response_time": response.elapsed.total_seconds() if hasattr(response, 'elapsed') else 0,
+                        "last_checked": datetime.now().isoformat()
+                    })
+                    active_scrapers.labels(scraper=scraper["name"]).set(1)
                 else:
-                    logger.error(f"Import failed with code {result.returncode}")
-                    logger.error(f"Import error: {result.stderr}")
+                    scrapers_status.append({
+                        "name": scraper["name"],
+                        "status": "unhealthy",
+                        "url": scraper["url"],
+                        "status_code": response.status_code,
+                        "last_checked": datetime.now().isoformat()
+                    })
+                    active_scrapers.labels(scraper=scraper["name"]).set(0)
 
-            except subprocess.TimeoutExpired:
-                logger.error("Import script timed out after 5 minutes")
             except Exception as e:
-                logger.error(f"Error running import script: {e}")
+                scrapers_status.append({
+                    "name": scraper["name"],
+                    "status": "error",
+                    "url": scraper["url"],
+                    "error": str(e),
+                    "last_checked": datetime.now().isoformat()
+                })
+                active_scrapers.labels(scraper=scraper["name"]).set(0)
 
-        background_tasks.add_task(run_import)
+        # Include circuit breaker status
+        circuit_breaker_status = {}
+        if target_searcher:
+            searcher_health = await target_searcher.health_check()
+            circuit_breaker_status = searcher_health.get('circuit_breakers', {})
+
+        logger.info("Scrapers status check completed", scrapers_count=len(scrapers_status))
 
         return {
-            "status": "started",
-            "message": "Setlist data import started in background"
+            "scrapers": scrapers_status,
+            "circuit_breakers": circuit_breaker_status,
+            "total_scrapers": len(scrapers_status),
+            "healthy_scrapers": len([s for s in scrapers_status if s["status"] == "healthy"]),
+            "timestamp": datetime.now().isoformat(),
+            "correlation_id": correlation_id
         }
 
     except Exception as e:
-        logger.error(f"Error triggering setlist import: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to get scrapers status", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get scrapers status: {str(e)}"
+        )
+
+@app.get("/queue/status")
+async def get_queue_status():
+    """Get queue status with enhanced metrics"""
+    correlation_id = str(uuid.uuid4())[:8]
+
+    try:
+        # Get queue sizes from Redis
+        high_queue_size = await connection_manager.redis_client.llen('scraping:queue:high') or 0
+        medium_queue_size = await connection_manager.redis_client.llen('scraping:queue:medium') or 0
+        low_queue_size = await connection_manager.redis_client.llen('scraping:queue:low') or 0
+
+        # Also check the main scraping_queue that consumer uses (synchronous Redis calls)
+        main_queue_size = connection_manager.redis_client.llen('scraping_queue') or 0
+        failed_queue_size = connection_manager.redis_client.llen('scraping_queue:failed') or 0
+
+        # Get consumer stats if available
+        consumer_stats = {}
+        if redis_consumer:
+            consumer_stats = await redis_consumer.get_stats()
+
+        # Update metrics
+        queue_size.labels(priority='high').set(high_queue_size)
+        queue_size.labels(priority='medium').set(medium_queue_size)
+        queue_size.labels(priority='low').set(low_queue_size)
+
+        return {
+            "queues": {
+                "high_priority": high_queue_size,
+                "medium_priority": medium_queue_size,
+                "low_priority": low_queue_size,
+                "main_queue": main_queue_size,
+                "failed_queue": failed_queue_size,
+                "total": high_queue_size + medium_queue_size + low_queue_size + main_queue_size
+            },
+            "consumer": consumer_stats,
+            "timestamp": datetime.now().isoformat(),
+            "correlation_id": correlation_id
+        }
+
+    except Exception as e:
+        logger.error("Failed to get queue status", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get queue status: {str(e)}"
+        )
+
+# ===================
+# ENHANCED TASK MANAGEMENT
+# ===================
+@app.post("/tasks/add")
+async def add_task_enhanced(task: ScrapingTask):
+    """Add scraping task with enhanced error handling and metrics"""
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="add_task",
+        scraper=task.scraper,
+        correlation_id=correlation_id
+    )
+
+    try:
+        # Generate task ID if not provided
+        if not task.id:
+            task.id = f"{task.scraper}_{int(time.time() * 1000000)}"
+
+        # Set timestamps
+        task.created_at = datetime.now()
+        task.correlation_id = correlation_id
+
+        # Determine queue based on priority
+        queue_key = f"scraping:queue:{task.priority.value}"
+
+        logger.info("Adding task to queue", task_id=task.id, queue=queue_key)
+
+        # Convert to dict for Redis storage
+        task_dict = task.model_dump()
+        task_dict['created_at'] = task_dict['created_at'].isoformat()
+
+        # Add to Redis queue
+        await connection_manager.redis_client.lpush(
+            queue_key,
+            json.dumps(task_dict)
+        )
+
+        # Update metrics
+        scraping_tasks_total.labels(scraper=task.scraper, status="queued").inc()
+
+        logger.info("Task added successfully", task_id=task.id)
+
+        return {
+            "status": "success",
+            "message": "Task added to queue successfully",
+            "task_id": task.id,
+            "queue": queue_key,
+            "correlation_id": correlation_id,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error("Failed to add task", error=str(e), task_id=task.id)
+        scraping_tasks_total.labels(scraper=task.scraper, status="error").inc()
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add task: {str(e)}"
+        )
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+
+    # Enhanced server configuration
+    uvicorn.run(
+        "main_2025:app",
+        host="0.0.0.0",
+        port=8001,
+        reload=False,  # Disable in production
+        log_level="info",
+        access_log=True,
+        server_header=False,  # Don't expose server info
+        date_header=True
+    )

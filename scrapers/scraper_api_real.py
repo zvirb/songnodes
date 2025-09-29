@@ -13,6 +13,8 @@ from datetime import datetime
 
 # Add current directory to path for imports
 sys.path.append('/app')
+# Import the simple database pipeline
+sys.path.append('/app')
 from real_data_scraper import RealDataScraper
 
 # Configure logging
@@ -44,9 +46,31 @@ async def scrape_url(request: Dict[str, Any]):
         # Create real scraper instance
         scraper = RealDataScraper()
 
-        # If we have a specific target track, use it
-        if target_track and target_track.get('title') and target_track.get('primary_artist'):
+        # Extract search query from URL if provided
+        track_name = None
+        if url:
+            # Extract search query from 1001tracklists URL
+            # URL formats:
+            # - https://www.1001tracklists.com/search?q=Artist+Track
+            # - https://www.1001tracklists.com/search/result.php?main_search=Artist+Track
+            from urllib.parse import urlparse, parse_qs, unquote
+
+            parsed = urlparse(url)
+            query_params = parse_qs(parsed.query)
+
+            if 'q' in query_params:
+                track_name = unquote(query_params['q'][0])
+            elif 'main_search' in query_params:
+                track_name = unquote(query_params['main_search'][0])
+            elif 'query' in query_params:
+                track_name = unquote(query_params['query'][0])
+
+        # If we have a specific target track from request, use it
+        if not track_name and target_track and target_track.get('title') and target_track.get('primary_artist'):
             track_name = f"{target_track['primary_artist']} - {target_track['title']}"
+
+        # If we have a track name to search for
+        if track_name:
             logger.info(f"Searching for real playlists containing: {track_name}")
 
             # Execute real search

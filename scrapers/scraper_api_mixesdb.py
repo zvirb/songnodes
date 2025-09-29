@@ -31,7 +31,7 @@ async def health_check():
 async def scrape_url(request: ScrapeRequest):
     """
     Execute scraping task
-    Works in targeted mode using target_tracks_for_scraping.json
+    Works in URL mode when URL is provided, otherwise targeted mode
     """
     task_id = request.task_id or f"mixesdb_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
@@ -43,8 +43,36 @@ async def scrape_url(request: ScrapeRequest):
             "-s", "LOG_ENABLED=1"
         ]
 
-        # Always run in targeted mode (spider design)
-        cmd.extend(["-a", "search_mode=targeted"])
+        # Determine mode based on URL presence
+        if request.url:
+            logger.info(f"Processing URL: {request.url}")
+            # Extract search query from MixesDB URL
+            # URL format: https://www.mixesdb.com/w/Search?search=Artist+Track
+            from urllib.parse import urlparse, parse_qs, unquote
+
+            search_query = ""
+            if "mixesdb.com" in request.url:
+                parsed = urlparse(request.url)
+                query_params = parse_qs(parsed.query)
+                if 'search' in query_params:
+                    search_query = unquote(query_params['search'][0])
+                elif 'q' in query_params:
+                    search_query = unquote(query_params['q'][0])
+
+            if search_query:
+                # Run in URL mode with the search query
+                cmd.extend(["-a", "search_mode=url"])
+                cmd.extend(["-a", f"search_query={search_query}"])
+                logger.info(f"Using search query from URL: {search_query}")
+            else:
+                # If we can't extract query, use the URL as-is
+                cmd.extend(["-a", "search_mode=url"])
+                cmd.extend(["-a", f"start_url={request.url}"])
+                logger.info(f"Using full URL for scraping: {request.url}")
+        else:
+            # Run in targeted mode (spider design)
+            cmd.extend(["-a", "search_mode=targeted"])
+            logger.info("No URL provided, running in targeted mode")
 
         # Add force run to bypass quota checks
         cmd.extend(["-a", "force_run=true"])
@@ -54,8 +82,6 @@ async def scrape_url(request: ScrapeRequest):
         cmd.extend(["-o", output_file])
 
         logger.info(f"Executing command: {' '.join(cmd)}")
-        if request.url:
-            logger.info(f"Received URL request: {request.url}, running in targeted mode")
 
         # Run the spider
         result = subprocess.run(
