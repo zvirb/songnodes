@@ -150,7 +150,7 @@ def connect_to_db():
         port=5433,
         database="musicdb",
         user="musicdb_user",
-        password="musicdb_secure_pass"
+        password=os.environ.get("POSTGRES_PASSWORD", "musicdb_secure_pass")
     )
 
 def generate_track_id(track_name: str, artist: str) -> str:

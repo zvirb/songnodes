@@ -6,6 +6,7 @@ Properly assign artists to songs based on known track-artist mappings.
 import asyncio
 import asyncpg
 import json
+import os
 import re
 
 def normalize_title(title):
@@ -21,7 +22,7 @@ def normalize_title(title):
 async def assign_proper_artists():
     conn = await asyncpg.connect(
         host='localhost', port=5433, database='musicdb',
-        user='musicdb_user', password='musicdb_secure_pass'
+        user='musicdb_user', password=os.environ.get('POSTGRES_PASSWORD', 'musicdb_secure_pass')
     )
 
     print("=== ASSIGNING PROPER ARTISTS TO TRACKS ===\n")

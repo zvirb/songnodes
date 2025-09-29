@@ -10,13 +10,14 @@ Fix artist data in the database:
 import asyncio
 import asyncpg
 import json
+import os
 import re
 import uuid
 
 async def fix_artist_data():
     conn = await asyncpg.connect(
         host='localhost', port=5433, database='musicdb',
-        user='musicdb_user', password='musicdb_secure_pass'
+        user='musicdb_user', password=os.environ.get('POSTGRES_PASSWORD', 'musicdb_secure_pass')
     )
 
     print("=== FIXING ARTIST DATA ===\n")
