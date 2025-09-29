@@ -736,9 +736,9 @@ export const GraphVisualization: React.FC = () => {
         .strength(1.0)  // Strong collision prevention
         .iterations(3)  // More iterations for better separation
       )
-      .velocityDecay(0.4)  // Lower decay for more spreading motion
-      .alphaDecay(0.02)    // Slower stabilization to allow full spread
-      .alphaMin(0.001);    // Lower min for complete stop
+      .velocityDecay(0.6)  // Balanced decay for controlled spreading
+      .alphaDecay(0.05)    // Faster decay to respect 15-second timeout
+      .alphaMin(0.01);     // Higher min threshold for earlier natural stop
 
     simulation.on('tick', handleSimulationTick);
     simulation.on('end', handleSimulationEnd);
@@ -898,9 +898,12 @@ export const GraphVisualization: React.FC = () => {
       uiTimerRef.current = null;
     }
 
-    // Stop the simulation immediately
+    // Stop the simulation immediately and forcefully
     if (simulationRef.current) {
+      // Set alpha to 0 to immediately stop all forces
+      simulationRef.current.alpha(0);
       simulationRef.current.stop();
+      console.log('✅ D3 simulation force-stopped (alpha set to 0)');
     }
   }, []);
 
