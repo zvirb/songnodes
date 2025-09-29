@@ -693,13 +693,17 @@ class UnifiedStreamingClient:
                 )
                 search_tasks.append((platform_name, task))
 
-        # Wait for all searches to complete
+        # Wait for all searches to complete with timeout
         for platform_name, task in search_tasks:
             try:
-                platform_results = await task
+                platform_results = await asyncio.wait_for(task, timeout=30.0)
                 # Limit results per platform
                 results[platform_name] = platform_results[:max_results_per_platform]
                 self.logger.debug(f"{platform_name}: found {len(platform_results)} results")
+            except asyncio.TimeoutError:
+                self.logger.warning(f"Search timeout on {platform_name}")
+                results[platform_name] = []
+                task.cancel()
             except Exception as e:
                 self.logger.warning(f"Search failed on {platform_name}: {e}")
                 results[platform_name] = []
@@ -914,6 +918,7 @@ async def search_track_on_all_platforms(
 ) -> Dict[str, List[SearchResult]]:
     """
     Convenience function to search for a track across all platforms.
+    Includes proper resource cleanup and timeout handling.
 
     Args:
         title: Track title
@@ -925,7 +930,13 @@ async def search_track_on_all_platforms(
     """
     client = UnifiedStreamingClient()
     try:
-        await client.initialize()
-        return await client.search_track_across_platforms(title, artist, isrc)
+        await asyncio.wait_for(client.initialize(), timeout=30.0)
+        return await asyncio.wait_for(
+            client.search_track_across_platforms(title, artist, isrc),
+            timeout=60.0
+        )
+    except asyncio.TimeoutError:
+        logging.getLogger(__name__).error("Search operation timed out")
+        return {}
     finally:
         await client.shutdown()
