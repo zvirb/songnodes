@@ -582,7 +582,7 @@ services:
       - "8084:8084"
     environment:
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
-      REDIS_HOST: redis
+      REDIS_HOST: musicdb-redis
       REDIS_PORT: 6379
       CACHE_TTL: 300
       MAX_CONNECTIONS: 1000

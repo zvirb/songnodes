@@ -46,6 +46,9 @@ loguru>=0.7.2
 # Reddit API
 praw>=7.7.1
 
+# Music service APIs
+tidalapi>=0.8.0
+
 # Testing (optional)
 pytest>=7.4.3
 pytest-asyncio>=0.21.1

@@ -55,39 +55,71 @@ REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 CACHE_TTL = int(os.getenv('CACHE_TTL', 300))  # 5 minutes
 MAX_CONNECTIONS = int(os.getenv('MAX_CONNECTIONS', 1000))
 
-# Database engine with optimized connection pooling
+# Database engine with 2025 best practices for memory leak prevention
 engine = create_async_engine(
     DATABASE_URL,
     poolclass=QueuePool,
-    pool_size=20,
-    max_overflow=30,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    echo=False
+    pool_size=15,  # Reduced from 20 to prevent overflow
+    max_overflow=15,  # Reduced from 30 to prevent excessive connections
+    pool_pre_ping=True,  # Validate connections before use
+    pool_recycle=1800,  # Recycle connections every 30 minutes (reduced from 1 hour)
+    pool_timeout=30,  # 30 second timeout for getting connection from pool
+    pool_reset_on_return='commit',  # Reset connection state on return
+    echo=False,
+    # 2025 best practices: connection-level timeouts and settings
+    connect_args={
+        "command_timeout": 30  # 30 second query timeout
+    }
 )
 
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
-# Redis connection pool
+# Redis connection pool (2025 best practices)
 redis_pool = None
+redis_connection_pool = None
 
-# WebSocket connection manager
+# WebSocket connection manager with 2025 memory leak prevention
 class ConnectionManager:
-    def __init__(self):
+    def __init__(self, max_connections_per_room=100, max_total_connections=1000):
         self.active_connections: Dict[str, set] = {}
         self.connection_metadata: Dict[WebSocket, dict] = {}
+        self.max_connections_per_room = max_connections_per_room
+        self.max_total_connections = max_total_connections
+        self.total_connections = 0
+        self.cleanup_task = None
     
     async def connect(self, websocket: WebSocket, room_id: str):
-        await websocket.accept()
+        # 2025 best practice: enforce connection limits to prevent memory exhaustion
+        if self.total_connections >= self.max_total_connections:
+            await websocket.close(code=1013, reason="Server overloaded")
+            logger.warning(f"Connection rejected: total connections limit reached ({self.max_total_connections})")
+            return False
+
         if room_id not in self.active_connections:
             self.active_connections[room_id] = set()
+
+        if len(self.active_connections[room_id]) >= self.max_connections_per_room:
+            await websocket.close(code=1013, reason="Room capacity exceeded")
+            logger.warning(f"Connection rejected: room {room_id} capacity exceeded ({self.max_connections_per_room})")
+            return False
+
+        await websocket.accept()
         self.active_connections[room_id].add(websocket)
         self.connection_metadata[websocket] = {
             'room_id': room_id,
-            'connected_at': time.time()
+            'connected_at': time.time(),
+            'last_activity': time.time(),
+            'message_count': 0
         }
+        self.total_connections += 1
         ACTIVE_CONNECTIONS.inc()
-        logger.info(f"Client connected to room {room_id}")
+        logger.info(f"Client connected to room {room_id} (total: {self.total_connections})")
+
+        # Start cleanup task if not already running
+        if self.cleanup_task is None:
+            self.cleanup_task = asyncio.create_task(self._periodic_cleanup())
+
+        return True
     
     def disconnect(self, websocket: WebSocket):
         metadata = self.connection_metadata.get(websocket)
@@ -98,8 +130,48 @@ class ConnectionManager:
                 if not self.active_connections[room_id]:
                     del self.active_connections[room_id]
             del self.connection_metadata[websocket]
+            self.total_connections = max(0, self.total_connections - 1)  # Prevent negative values
             ACTIVE_CONNECTIONS.dec()
-            logger.info(f"Client disconnected from room {room_id}")
+            logger.info(f"Client disconnected from room {room_id} (total: {self.total_connections})")
+
+    async def _periodic_cleanup(self):
+        """2025 best practice: periodic cleanup of stale connections to prevent memory leaks"""
+        while True:
+            try:
+                await asyncio.sleep(300)  # Run cleanup every 5 minutes
+                current_time = time.time()
+                stale_connections = []
+
+                # Find stale connections (idle > 30 minutes)
+                for websocket, metadata in self.connection_metadata.items():
+                    if current_time - metadata.get('last_activity', 0) > 1800:  # 30 minutes
+                        stale_connections.append(websocket)
+
+                # Clean up stale connections
+                for websocket in stale_connections:
+                    try:
+                        await websocket.close(code=1001, reason="Connection idle timeout")
+                        self.disconnect(websocket)
+                        logger.info("Cleaned up stale WebSocket connection")
+                    except Exception as e:
+                        logger.error(f"Error cleaning up stale connection: {e}")
+                        # Force cleanup even if close fails
+                        self.disconnect(websocket)
+
+                if stale_connections:
+                    logger.info(f"Cleaned up {len(stale_connections)} stale WebSocket connections")
+
+            except asyncio.CancelledError:
+                logger.info("WebSocket cleanup task cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Error in WebSocket cleanup task: {e}")
+
+    def update_activity(self, websocket: WebSocket):
+        """Update last activity timestamp for connection"""
+        if websocket in self.connection_metadata:
+            self.connection_metadata[websocket]['last_activity'] = time.time()
+            self.connection_metadata[websocket]['message_count'] += 1
     
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         try:
@@ -530,7 +602,6 @@ async def get_graph_edges(
                         JOIN songs s1 ON sa.song_id_1 = s1.song_id
                         JOIN songs s2 ON sa.song_id_2 = s2.song_id
                         WHERE (sa.song_id_1 = ANY(:song_ids) OR sa.song_id_2 = ANY(:song_ids))
-                          AND sa.avg_distance = 1.0  -- Only consecutive tracks in setlists
                           AND sa.occurrence_count >= 1  -- Show all adjacency relationships
                           AND s1.primary_artist_id != s2.primary_artist_id  -- Exclude same-artist consecutive tracks
                         ORDER BY occurrence_count DESC
@@ -558,8 +629,7 @@ async def get_graph_edges(
                         FROM song_adjacency sa
                         JOIN songs s1 ON sa.song_id_1 = s1.song_id
                         JOIN songs s2 ON sa.song_id_2 = s2.song_id
-                        WHERE sa.avg_distance = 1.0  -- Only consecutive tracks in setlists
-                          AND sa.occurrence_count >= 1  -- Show all adjacency relationships
+                        WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
                           AND s1.primary_artist_id != s2.primary_artist_id  -- Exclude same-artist consecutive tracks
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
@@ -668,20 +738,37 @@ async def update_batch_status(batch_id: str, status: str, result: Any):
 # Application lifecycle
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    global redis_pool
-    redis_pool = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
-    
+    # Startup with 2025 best practices
+    global redis_pool, redis_connection_pool
+
+    # Create Redis connection pool (2025 best practice for memory leak prevention)
+    redis_connection_pool = redis.ConnectionPool(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=0,
+        decode_responses=True,
+        max_connections=50,  # Limit connection pool size
+        retry_on_timeout=True,
+        retry_on_error=[redis.ConnectionError, redis.TimeoutError],
+        health_check_interval=30  # Health check every 30 seconds
+    )
+    redis_pool = redis.Redis(connection_pool=redis_connection_pool)
+
     # Test database connection
     async with async_session() as session:
         await session.execute(text("SELECT 1"))
-    
-    logger.info("Graph Visualization API started successfully")
+
+    # Test Redis connection
+    await redis_pool.ping()
+
+    logger.info("Graph Visualization API started successfully with enhanced 2025 configuration")
     yield
-    
-    # Shutdown
+
+    # Shutdown with proper cleanup
     if redis_pool:
         await redis_pool.close()
+    if redis_connection_pool:
+        redis_connection_pool.disconnect()
     await engine.dispose()
     logger.info("Graph Visualization API shutdown complete")
 
@@ -798,8 +885,7 @@ async def get_graph_data():
                 FROM song_adjacency sa
                 JOIN songs s1 ON sa.song_id_1 = s1.song_id
                 JOIN songs s2 ON sa.song_id_2 = s2.song_id
-                WHERE sa.avg_distance = 1.0  -- Only consecutive tracks in setlists
-                  AND sa.occurrence_count >= 1  -- Show all adjacency relationships
+                WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
                   AND s1.primary_artist_id != s2.primary_artist_id  -- Exclude same-artist consecutive tracks
                 ORDER BY occurrence_count DESC
                 LIMIT 1000
@@ -894,8 +980,7 @@ async def test_adjacency():
                 FROM song_adjacency sa
                 JOIN songs s1 ON sa.song_id_1 = s1.song_id
                 JOIN songs s2 ON sa.song_id_2 = s2.song_id
-                WHERE sa.avg_distance = 1.0
-                  AND sa.occurrence_count >= 1
+                WHERE sa.occurrence_count >= 1
                   AND s1.primary_artist_id != s2.primary_artist_id
             """)
             result = await session.execute(query)
@@ -1116,12 +1201,18 @@ async def get_batch_status(batch_id: str):
 # WebSocket endpoint for real-time updates
 @app.websocket("/api/graph/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    """WebSocket endpoint for real-time graph collaboration."""
-    await manager.connect(websocket, room_id)
+    """WebSocket endpoint for real-time graph collaboration with 2025 memory leak prevention."""
+    connection_successful = await manager.connect(websocket, room_id)
+    if not connection_successful:
+        return  # Connection was rejected due to limits
+
     try:
         while True:
             data = await websocket.receive_json()
-            
+
+            # 2025 best practice: update activity tracking for memory leak prevention
+            manager.update_activity(websocket)
+
             # Handle different message types
             if data.get('type') == 'graph_update':
                 # Broadcast graph updates to room
@@ -1138,12 +1229,22 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     'position': data.get('position'),
                     'timestamp': datetime.utcnow().isoformat()
                 })
-                
+            elif data.get('type') == 'ping':
+                # Handle ping for keepalive
+                await manager.send_personal_message({'type': 'pong'}, websocket)
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+        logger.info(f"WebSocket disconnected normally from room {room_id}")
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error(f"WebSocket error in room {room_id}: {e}")
         manager.disconnect(websocket)
+    finally:
+        # 2025 best practice: ensure cleanup in finally block
+        try:
+            manager.disconnect(websocket)
+        except Exception as cleanup_error:
+            logger.error(f"Error during WebSocket cleanup: {cleanup_error}")
 
 @app.get("/api/v1/graph")
 async def get_combined_graph_data():

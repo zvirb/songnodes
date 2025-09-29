@@ -18,6 +18,8 @@ export interface Track {
   spotify_id?: string;
   apple_music_id?: string;
   beatport_id?: string;
+  isrc?: string;
+  title?: string; // Alias for name for compatibility
 }
 
 // Graph visualization types

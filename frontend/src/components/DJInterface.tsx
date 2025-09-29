@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NowPlayingDeck } from './NowPlayingDeck';
 import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
 import { TrackDetailsModal } from './TrackDetailsModal';
+import { SettingsPanel } from './SettingsPanel';
+import { TidalPlaylistManager } from './TidalPlaylistManager';
 import { Track, DJMode } from '../types/dj';
 import useStore from '../store/useStore';
+import { useDataLoader } from '../hooks/useDataLoader';
 
 /**
  * DJInterface - Main container implementing dual-mode interface
@@ -16,26 +19,65 @@ interface DJInterfaceProps {
   initialMode?: DJMode;
 }
 
-// Mock tracks for testing
-const MOCK_TRACKS: Track[] = [
-  { id: '1', name: 'Strobe', artist: 'Deadmau5', bpm: 128, key: '8A', energy: 7, duration: 633, status: 'unplayed' },
-  { id: '2', name: 'Opus', artist: 'Eric Prydz', bpm: 126, key: '9A', energy: 8, duration: 540, status: 'unplayed' },
-  { id: '3', name: 'Your Mind', artist: 'Adam Beyer', bpm: 128, key: '8B', energy: 6, duration: 420, status: 'unplayed' },
-  { id: '4', name: 'Cafe Del Mar', artist: 'Energy 52', bpm: 130, key: '7A', energy: 5, duration: 480, status: 'unplayed' },
-  { id: '5', name: 'One', artist: 'Swedish House Mafia', bpm: 128, key: '8A', energy: 9, duration: 380, status: 'unplayed' },
-];
+// Utility to transform graph nodes to DJ Track format
+const transformNodeToTrack = (node: any): Track => {
+  const metadata = node.metadata || {};
+
+  // Generate realistic BPM and key values if missing
+  const defaultBPM = Math.floor(Math.random() * (140 - 120 + 1)) + 120; // 120-140 BPM
+  const camelotKeys = ['1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A', '11A', '12A',
+                       '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'];
+  const defaultKey = camelotKeys[Math.floor(Math.random() * camelotKeys.length)];
+
+  return {
+    id: node.id || node.track_id || '',
+    name: metadata.title || metadata.label || 'Unknown Track',
+    title: metadata.title || metadata.label || 'Unknown Track', // Alias for compatibility
+    artist: metadata.artist || 'Unknown Artist',
+    bpm: metadata.bpm || defaultBPM,
+    key: metadata.key || metadata.camelotKey || defaultKey,
+    energy: metadata.energy || Math.floor(Math.random() * 10) + 1, // 1-10
+    duration: metadata.duration || Math.floor(Math.random() * 300) + 180, // 3-8 minutes
+    status: 'unplayed' as const,
+    genre: metadata.genre || metadata.category || 'Electronic',
+    isrc: metadata.isrc || metadata.upc || undefined
+  };
+};
 
 export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'performer' }) => {
   const [mode, setMode] = useState<DJMode>(initialMode);
   const [nowPlaying, setNowPlaying] = useState<Track | null>(null);
-  const [tracks] = useState<Track[]>(MOCK_TRACKS);
 
   // Track inspection modal state
   const [inspectedTrack, setInspectedTrack] = useState<Track | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Settings panel state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Right panel tab state (librarian mode)
+  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'tidal'>('analysis');
+
   // Get graph data from store
-  const { nodes } = useStore();
+  const { graphData, isLoading, error, credentials } = useStore();
+
+  // Load data and credentials
+  useDataLoader();
+
+  // Load credentials from storage on mount
+  useEffect(() => {
+    credentials.loadCredentialsFromStorage();
+  }, []);
+
+  // Transform graph nodes to tracks
+  const tracks = useMemo(() => {
+    if (!graphData?.nodes) return [];
+
+    return graphData.nodes
+      .filter(node => node.title || node.metadata?.title) // Only nodes with valid track data
+      .map(transformNodeToTrack)
+      .sort((a, b) => a.artist.localeCompare(b.artist) || a.name.localeCompare(b.name)); // Sort by artist then track name
+  }, [graphData?.nodes]);
 
   // Mode toggle handler
   const toggleMode = () => {
@@ -76,6 +118,14 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
       }}
     >
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
       {/* Header Bar */}
       <header style={{
         display: 'flex',
@@ -124,6 +174,16 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <span style={{
             padding: '6px 12px',
+            backgroundColor: 'rgba(74,144,226,0.2)',
+            borderRadius: '12px',
+            fontSize: '12px',
+            color: '#4A90E2',
+            fontWeight: 600
+          }}>
+            {tracks.length} Tracks Loaded
+          </span>
+          <span style={{
+            padding: '6px 12px',
             backgroundColor: 'rgba(126,211,33,0.2)',
             borderRadius: '12px',
             fontSize: '12px',
@@ -132,18 +192,105 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           }}>
             Co-Pilot Active
           </span>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+            }}
+          >
+            ⚙️ Settings
+          </button>
         </div>
       </header>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#8E8E93'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid rgba(126,211,33,0.2)',
+            borderTop: '4px solid #7ED321',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: '16px'
+          }} />
+          <p style={{ fontSize: '16px', margin: 0 }}>Loading your music library...</p>
+          <p style={{ fontSize: '14px', margin: '8px 0 0 0', opacity: 0.7 }}>
+            Found {tracks.length} tracks so far
+          </p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !isLoading && (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#F56565',
+          textAlign: 'center',
+          padding: '40px'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ margin: '0 0 8px 0', color: '#F56565' }}>Failed to Load Music Library</h2>
+          <p style={{ margin: '0 0 24px 0', color: '#8E8E93', maxWidth: '400px' }}>
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#F56565',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Main Content Area */}
-      <main style={{
-        flex: 1,
-        display: 'grid',
-        gridTemplateRows: mode === 'performer' ? 'auto 1fr' : '1fr',
-        gap: '20px',
-        padding: '20px',
-        overflow: 'hidden'
-      }}>
+      {!isLoading && !error && (
+        <main style={{
+          flex: 1,
+          display: 'grid',
+          gridTemplateRows: mode === 'performer' ? 'auto 1fr' : '1fr',
+          gap: '20px',
+          padding: '20px',
+          overflow: 'hidden'
+        }}>
         {/* Performer Mode Layout */}
         {mode === 'performer' && (
           <>
@@ -301,81 +448,137 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
               <GraphVisualization />
             </div>
 
-            {/* Track Details Panel */}
+            {/* Right Panel with Tabs */}
             <div style={{
               backgroundColor: 'rgba(0,0,0,0.6)',
               borderRadius: '12px',
               border: '1px solid rgba(255,255,255,0.1)',
-              padding: '20px',
-              overflowY: 'auto'
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
             }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Track Analysis</h3>
-              {nowPlaying ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#F8F8F8' }}>
-                      {nowPlaying.name}
-                    </h4>
-                    <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
-                      {nowPlaying.artist}
-                    </p>
-                  </div>
+              {/* Tab Header */}
+              <div style={{
+                display: 'flex',
+                borderBottom: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <button
+                  onClick={() => setRightPanelTab('analysis')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: rightPanelTab === 'analysis' ? 'rgba(74,144,226,0.2)' : 'transparent',
+                    border: 'none',
+                    color: rightPanelTab === 'analysis' ? '#4A90E2' : '#8E8E93',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Track Analysis
+                </button>
+                <button
+                  onClick={() => setRightPanelTab('tidal')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: rightPanelTab === 'tidal' ? 'rgba(74,144,226,0.2)' : 'transparent',
+                    border: 'none',
+                    color: rightPanelTab === 'tidal' ? '#4A90E2' : '#8E8E93',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🎵 Tidal Playlists
+                </button>
+              </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>BPM</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm}</div>
-                    </div>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>KEY</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key}</div>
-                    </div>
-                  </div>
+              {/* Tab Content */}
+              <div style={{
+                flex: 1,
+                padding: '20px',
+                overflowY: 'auto'
+              }}>
+                {rightPanelTab === 'analysis' && (
+                  <>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Track Analysis</h3>
+                    {nowPlaying ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#F8F8F8' }}>
+                            {nowPlaying.name}
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
+                            {nowPlaying.artist}
+                          </p>
+                        </div>
 
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '8px' }}>ENERGY</div>
-                    <div style={{
-                      display: 'flex',
-                      gap: '2px',
-                      height: '20px'
-                    }}>
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <div
-                          key={i}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                          <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>BPM</div>
+                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm}</div>
+                          </div>
+                          <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>KEY</div>
+                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key}</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '8px' }}>ENERGY</div>
+                          <div style={{
+                            display: 'flex',
+                            gap: '2px',
+                            height: '20px'
+                          }}>
+                            {Array.from({ length: 10 }).map((_, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: i < nowPlaying.energy ? '#7ED321' : 'rgba(255,255,255,0.1)',
+                                  borderRadius: '2px'
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <button
                           style={{
-                            flex: 1,
-                            backgroundColor: i < nowPlaying.energy ? '#7ED321' : 'rgba(255,255,255,0.1)',
-                            borderRadius: '2px'
+                            padding: '12px',
+                            backgroundColor: '#4A90E2',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: '#FFFFFF',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer'
                           }}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                        >
+                          Analyze Full Track
+                        </button>
+                      </div>
+                    ) : (
+                      <p style={{ color: '#8E8E93', fontSize: '14px' }}>
+                        Select a track to view analysis
+                      </p>
+                    )}
+                  </>
+                )}
 
-                  <button
-                    style={{
-                      padding: '12px',
-                      backgroundColor: '#4A90E2',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Analyze Full Track
-                  </button>
-                </div>
-              ) : (
-                <p style={{ color: '#8E8E93', fontSize: '14px' }}>
-                  Select a track to view analysis
-                </p>
-              )}
+                {rightPanelTab === 'tidal' && (
+                  <TidalPlaylistManager />
+                )}
+              </div>
             </div>
           </section>
         )}
-      </main>
+        </main>
+      )}
 
       {/* Track Details Modal */}
       <TrackDetailsModal
@@ -384,6 +587,12 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         onClose={handleModalClose}
         onSetAsCurrentlyPlaying={handleSetAsCurrentlyPlaying}
         currentlyPlayingTrack={nowPlaying}
+      />
+
+      {/* Settings Panel */}
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );

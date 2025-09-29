@@ -49,6 +49,14 @@ const COLOR_SCHEMES = {
   },
 } as const;
 
+// Animation control system
+interface AnimationState {
+  isActive: boolean;
+  startTime: number;
+  duration: number; // in milliseconds
+  trigger: 'initial' | 'data_change' | 'manual_refresh';
+}
+
 // Enhanced node interface for PIXI and D3 integration
 interface EnhancedGraphNode extends GraphNode, SimulationNodeDatum {
   pixiNode?: PIXI.Container;
@@ -58,6 +66,7 @@ interface EnhancedGraphNode extends GraphNode, SimulationNodeDatum {
   lastUpdateFrame: number;
   isVisible: boolean;
   screenRadius: number;
+  hitBoxRadius: number; // Extended hit box for zoom-aware clicking
 }
 
 // Enhanced edge interface for PIXI rendering
@@ -336,10 +345,38 @@ export const GraphVisualization: React.FC = () => {
   const spatialIndexRef = useRef<SpatialIndex>(new SpatialIndex());
   const performanceMonitorRef = useRef<PerformanceMonitor>(new PerformanceMonitor());
 
+  // Animation control system
+  const animationStateRef = useRef<AnimationState>({
+    isActive: false,
+    startTime: 0,
+    duration: 15000, // 15 seconds
+    trigger: 'initial'
+  });
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const uiTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastDataHashRef = useRef<string>('');
+
   // Render state
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [animationTimer, setAnimationTimer] = useState<number>(0);
   const frameRef = useRef<number>(0);
   const lastRenderFrame = useRef<number>(0);
+
+  // Memory monitoring (2025 best practice)
+  const memoryStatsRef = useRef({
+    lastCheck: Date.now(),
+    initialMemory: 0,
+    lastMemory: 0,
+    webglMemory: {
+      buffers: 0,
+      textures: 0,
+      programs: 0
+    }
+  });
+
+  // Performance monitoring timer
+  const performanceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // PIXI containers
   const edgesContainerRef = useRef<PIXI.Container | null>(null);
@@ -453,6 +490,13 @@ export const GraphVisualization: React.FC = () => {
         autoDensity: true,
         resolution: window.devicePixelRatio || 1,
         powerPreference: 'high-performance',
+        eventMode: 'static',  // Enable events globally
+        eventFeatures: {
+          move: true,
+          globalMove: false,
+          click: true,
+          wheel: true,
+        },
         preserveDrawingBuffer: true, // Enable for debugging
         hello: true, // Show PIXI greeting in console
       });
@@ -470,6 +514,30 @@ export const GraphVisualization: React.FC = () => {
       canvas.style.width = '100%';
       canvas.style.height = '100%';
       canvas.style.display = 'block';
+      // CRITICAL FIX: Ensure canvas doesn't interfere with D3 zoom events
+      canvas.style.pointerEvents = 'auto';
+      canvas.style.userSelect = 'none';
+
+      // Initialize WebGL memory monitoring (2025 best practice)
+      const gl = app.renderer.gl;
+      if (gl) {
+        console.log('WebGL context initialized', {
+          vendor: gl.getParameter(gl.VENDOR),
+          renderer: gl.getParameter(gl.RENDERER),
+          version: gl.getParameter(gl.VERSION),
+          maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+          maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS)
+        });
+
+        // Monitor initial WebGL memory state
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        if (ext) {
+          console.log('GPU info:', {
+            vendor: gl.getParameter(ext.UNMASKED_VENDOR_WEBGL),
+            renderer: gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
+          });
+        }
+      }
       canvas.style.zIndex = '10';
       canvas.setAttribute('data-testid', 'pixi-canvas');
       canvas.setAttribute('data-pixi-version', PIXI.VERSION);
@@ -614,6 +682,41 @@ export const GraphVisualization: React.FC = () => {
     }
   }, []);
 
+  // Handle D3 simulation tick
+  const handleSimulationTick = useCallback(() => {
+    // CRITICAL FIX: Only allow position updates during active animation window
+    if (!animationStateRef.current.isActive) {
+      // Animation is frozen, don't update positions
+      return;
+    }
+
+    const nodes = enhancedNodesRef.current;
+
+    // Update node positions from simulation
+    const positions: Array<{ id: string; x: number; y: number }> = [];
+
+    nodes.forEach((node, id) => {
+      if (typeof node.x === 'number' && typeof node.y === 'number') {
+        positions.push({ id, x: node.x, y: node.y });
+      }
+    });
+
+    if (positions.length > 0) {
+      graph.updateNodePositions(positions);
+    }
+
+    // Rebuild spatial index
+    spatialIndexRef.current.rebuild(Array.from(nodes.values()));
+
+    // Mark for re-render
+    frameRef.current++;
+  }, [graph]);
+
+  // Handle simulation end
+  const handleSimulationEnd = useCallback(() => {
+    console.log('Force simulation completed');
+  }, []);
+
   // Initialize D3 force simulation
   const initializeSimulation = useCallback(() => {
     const simulation = forceSimulation<EnhancedGraphNode, EnhancedGraphEdge>()
@@ -642,7 +745,7 @@ export const GraphVisualization: React.FC = () => {
 
     simulationRef.current = simulation;
     return simulation;
-  }, []);
+  }, [handleSimulationTick, handleSimulationEnd]);
 
   // Initialize D3 zoom behavior
   // NOTE: We define the zoom handler inline to avoid React hook ordering issues
@@ -686,6 +789,20 @@ export const GraphVisualization: React.FC = () => {
           pixiAppRef.current.stage.y = transform.y;
           pixiAppRef.current.stage.scale.set(transform.k, transform.k);
         }
+
+        // CRITICAL FIX: Update hit box radii for all nodes when zoom changes
+        // This ensures click detection remains accurate at all zoom levels
+        enhancedNodesRef.current.forEach(node => {
+          if (node.pixiNode) {
+            const currentZoom = transform.k;
+            const baseRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
+            const minHitBoxSizeScreen = 20; // minimum 20px hit area in screen coordinates
+            const minHitBoxWorldSize = minHitBoxSizeScreen / currentZoom; // Convert to world coordinates
+            const hitRadius = Math.max(baseRadius + 10, minHitBoxWorldSize);
+            node.hitBoxRadius = hitRadius;
+            node.pixiNode.hitArea = new PIXI.Circle(0, 0, hitRadius);
+          }
+        });
       });
 
     const selection = select(containerRef.current);
@@ -704,44 +821,111 @@ export const GraphVisualization: React.FC = () => {
     // Make sure the container can receive events
     if (containerRef.current) {
       containerRef.current.style.touchAction = 'none'; // Prevents browser zoom on touch devices
+      // CRITICAL FIX: Ensure container is properly set up for event handling
+      containerRef.current.style.position = 'relative';
+      containerRef.current.style.overflow = 'hidden';
+      containerRef.current.style.userSelect = 'none';
     }
 
     zoomBehaviorRef.current = zoomHandler;
   }, []);
 
-  // Handle D3 simulation tick
-  const handleSimulationTick = useCallback(() => {
-    const nodes = enhancedNodesRef.current;
+  // Handle zoom events
 
-    // Update node positions from simulation
-    const positions: Array<{ id: string; x: number; y: number }> = [];
+  // Animation control functions
+  const startAnimation = useCallback((trigger: AnimationState['trigger']) => {
+    console.log(`🎬 Starting ${trigger} animation for 15 seconds`);
 
-    nodes.forEach((node, id) => {
-      if (typeof node.x === 'number' && typeof node.y === 'number') {
-        positions.push({ id, x: node.x, y: node.y });
-      }
-    });
+    const state: AnimationState = {
+      isActive: true,
+      startTime: Date.now(),
+      duration: 15000,
+      trigger
+    };
 
-    if (positions.length > 0) {
-      graph.updateNodePositions(positions);
+    animationStateRef.current = state;
+
+    // Clear any existing timer
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
     }
 
-    // Rebuild spatial index
-    spatialIndexRef.current.rebuild(Array.from(nodes.values()));
+    // Set timer to stop animation after 15 seconds
+    animationTimerRef.current = setTimeout(() => {
+      console.log('⏹️ Animation time limit reached, freezing movement');
+      stopAnimation();
+    }, 15000);
 
-    // Mark for re-render
-    frameRef.current++;
-  }, [graph]);
+    // Update UI timer every second
+    if (uiTimerRef.current) {
+      clearInterval(uiTimerRef.current);
+    }
+    uiTimerRef.current = setInterval(() => {
+      if (animationStateRef.current.isActive) {
+        const elapsed = Date.now() - animationStateRef.current.startTime;
+        const remaining = Math.max(0, Math.ceil((15000 - elapsed) / 1000));
+        setAnimationTimer(remaining);
+        if (remaining <= 0) {
+          clearInterval(uiTimerRef.current!);
+          uiTimerRef.current = null;
+        }
+      } else {
+        // Animation was stopped externally, clean up this timer
+        clearInterval(uiTimerRef.current!);
+        uiTimerRef.current = null;
+      }
+    }, 1000);
 
-  // Handle simulation end
-  const handleSimulationEnd = useCallback(() => {
-    console.log('Force simulation completed');
+    // If simulation exists, restart it with more energy
+    if (simulationRef.current) {
+      simulationRef.current.alpha(0.8).restart();
+    }
   }, []);
 
-  // Handle zoom events
+  const stopAnimation = useCallback(() => {
+    console.log('🛑 Stopping animation and freezing layout');
+
+    animationStateRef.current.isActive = false;
+    setAnimationTimer(0);
+
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
+      animationTimerRef.current = null;
+    }
+
+    if (uiTimerRef.current) {
+      clearInterval(uiTimerRef.current);
+      uiTimerRef.current = null;
+    }
+
+    // Stop the simulation immediately
+    if (simulationRef.current) {
+      simulationRef.current.stop();
+    }
+  }, []);
+
+  const manualRefresh = useCallback(() => {
+    console.log('🔄 Manual refresh triggered');
+    startAnimation('manual_refresh');
+  }, [startAnimation]);
+
+  // Expose manual refresh function globally for debugging/testing
+  useEffect(() => {
+    (window as any).manualRefresh = manualRefresh;
+    return () => {
+      delete (window as any).manualRefresh;
+    };
+  }, [manualRefresh]);
 
   // Create enhanced node from graph node
   const createEnhancedNode = useCallback((node: GraphNode): EnhancedGraphNode => {
+    const baseRadius = node.radius || viewState.nodeSize || DEFAULT_CONFIG.graph.defaultRadius;
+    // Calculate zoom-aware hit box radius (minimum 20px at current zoom level)
+    const currentZoom = viewState.zoom || 1;
+    const minHitBoxSizeScreen = 20; // minimum 20px hit area in screen coordinates
+    const minHitBoxWorldSize = minHitBoxSizeScreen / currentZoom; // Convert to world coordinates
+    const hitBoxRadius = Math.max(baseRadius + 10, minHitBoxWorldSize);
+
     const enhanced: EnhancedGraphNode = {
       ...node,
       x: node.x || 0,
@@ -753,11 +937,12 @@ export const GraphVisualization: React.FC = () => {
       lodLevel: 0,
       lastUpdateFrame: 0,
       isVisible: true,
-      screenRadius: node.radius || viewState.nodeSize,
+      screenRadius: baseRadius,
+      hitBoxRadius: hitBoxRadius,
     };
 
     return enhanced;
-  }, [viewState.nodeSize]);
+  }, [viewState.nodeSize, viewState.zoom]);
 
   // Create enhanced edge from graph edge
   const createEnhancedEdge = useCallback((edge: GraphEdge, nodes: Map<string, EnhancedGraphNode>): EnhancedGraphEdge | null => {
@@ -797,8 +982,27 @@ export const GraphVisualization: React.FC = () => {
     container.eventMode = 'static';
     container.cursor = 'pointer';
 
-    // Main circle
+    // Define EXTENDED hit area for the container (critical for click detection!)
+    // Use the extended hit box radius for easier clicking, especially when zoomed out
+    const visualRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
+    const hitRadius = node.hitBoxRadius || (visualRadius + 10);
+    container.hitArea = new PIXI.Circle(0, 0, hitRadius);
+
+    // Visual debugging for hit areas (optional, can be enabled for testing)
+    if ((window as any).DEBUG_HIT_AREAS) {
+      const hitAreaDebug = new PIXI.Graphics();
+      hitAreaDebug.circle(0, 0, hitRadius);
+      hitAreaDebug.setStrokeStyle({ width: 1, color: 0xff0000, alpha: 0.3 });
+      hitAreaDebug.stroke();
+      container.addChild(hitAreaDebug);
+    }
+
+    // Debug: Log container setup
+    console.log(`[Node Setup] Creating node ${node.id} - eventMode: ${container.eventMode}, cursor: ${container.cursor}, visual radius: ${visualRadius}, hit radius: ${hitRadius}`);
+
+    // Main circle (make it non-interactive so it doesn't block container events)
     const circle = new PIXI.Graphics();
+    circle.eventMode = 'none';  // Important: let events pass through to container
     container.addChild(circle);
 
     // Create artist label (above node)
@@ -814,6 +1018,7 @@ export const GraphVisualization: React.FC = () => {
     });
     artistLabel.anchor.set(0.5, 1);  // Bottom-centered anchor
     artistLabel.visible = false; // Hidden by default
+    artistLabel.eventMode = 'none';  // Don't block events
     container.addChild(artistLabel);
 
     // Create title label (below node)
@@ -829,6 +1034,7 @@ export const GraphVisualization: React.FC = () => {
     });
     titleLabel.anchor.set(0.5, 0);  // Top-centered anchor
     titleLabel.visible = false; // Hidden by default
+    titleLabel.eventMode = 'none';  // Don't block events
     container.addChild(titleLabel);
 
     // Store references (using pixiLabel for title, add new property for artist)
@@ -837,14 +1043,90 @@ export const GraphVisualization: React.FC = () => {
     node.pixiLabel = titleLabel;  // Main label is the title
     (node as any).pixiArtistLabel = artistLabel;  // Store artist label separately
 
-    // Add interaction handlers
-    container.on('pointerover', () => handleNodeHover(node.id, true));
-    container.on('pointerout', () => handleNodeHover(node.id, false));
-    container.on('pointerdown', () => handleNodeClick(node.id));
-    container.on('rightclick', (event) => handleNodeRightClick(node.id, event));
+    // Add interaction handlers with debugging
+    // Note: These will be connected to the actual handlers later when nodes are created
+    const nodeId = node.id;
+
+    // Modern PIXI.js v8 event handling with proper click-to-select
+    // CRITICAL FIX: Use 'pointerenter' and 'pointerleave' instead of 'pointerover'/'pointerout'
+    // This prevents event bubbling issues and provides more stable hover detection
+    container.on('pointerenter', () => {
+      console.log(`[Event Triggered] pointerenter → node ${nodeId}`);
+      if (graph?.setHoveredNode) {
+        graph.setHoveredNode(nodeId);
+      }
+    });
+
+    container.on('pointerleave', () => {
+      console.log(`[Event Triggered] pointerleave → node ${nodeId}`);
+      graph.setHoveredNode(null);
+    });
+
+    container.on('click', (event) => {
+      console.log(`[Event Triggered] click → node ${nodeId}`);
+
+      // CRITICAL FIX: Prevent click events during active animation/movement
+      // This is a major cause of click interference
+      if (animationStateRef.current.isActive) {
+        const timeSinceStart = Date.now() - animationStateRef.current.startTime;
+        if (timeSinceStart < 2000) { // Block clicks for first 2 seconds of animation
+          console.log(`⚠️ Click blocked - animation in progress (${timeSinceStart}ms since start)`);
+          return;
+        }
+      }
+
+      // CRITICAL FIX: Prevent rapid successive clicks (debouncing)
+      const now = Date.now();
+      const lastClickTime = (container as any).lastClickTime || 0;
+      if (now - lastClickTime < 200) { // 200ms debounce
+        console.log(`⚠️ Click blocked - too rapid (${now - lastClickTime}ms since last)`);
+        return;
+      }
+      (container as any).lastClickTime = now;
+
+      // Visual feedback - flash the node
+      const originalTint = circle.tint;
+      circle.tint = 0xFFFFFF;
+      setTimeout(() => {
+        circle.tint = originalTint;
+      }, 150);
+
+      // Handle selection based on current tool
+      switch (viewState.selectedTool) {
+        case 'select':
+          graph.toggleNodeSelection(nodeId);
+          console.log(`Node ${nodeId} selection toggled`);
+          break;
+        case 'path':
+          if (!pathfindingState.startTrackId) {
+            pathfinding.setStartTrack(nodeId);
+            console.log(`Set START track: ${nodeId}`);
+          } else if (!pathfindingState.endTrackId && nodeId !== pathfindingState.startTrackId) {
+            pathfinding.setEndTrack(nodeId);
+            console.log(`Set END track: ${nodeId}`);
+          } else {
+            pathfinding.addWaypoint(nodeId);
+            console.log(`Added waypoint: ${nodeId}`);
+          }
+          break;
+        case 'setlist':
+          // TODO: Add to setlist
+          console.log(`TODO: Add to setlist: ${nodeId}`);
+          break;
+      }
+    });
+
+    container.on('rightclick', (event) => {
+      console.log(`[Event Triggered] rightclick → node ${nodeId}`);
+      event.preventDefault();
+      // TODO: Show context menu
+    });
+
+    // Log that events were attached
+    console.log(`[Events Attached] Node ${node.id} has ${container.listenerCount('pointerdown')} pointerdown listeners`);
 
     return container;
-  }, []);
+  }, [graph, pathfinding, viewState, pathfindingState]);
 
   // Create PIXI edge graphics
   const createPixiEdge = useCallback((edge: EnhancedGraphEdge): PIXI.Graphics => {
@@ -859,6 +1141,16 @@ export const GraphVisualization: React.FC = () => {
 
     // Use fixed radius - let stage scaling handle zoom
     const screenRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
+
+    // Recalculate zoom-aware hit box for current zoom level
+    const currentZoom = viewState.zoom || 1;
+    const minHitBoxSizeScreen = 20; // minimum 20px hit area in screen coordinates
+    const minHitBoxWorldSize = minHitBoxSizeScreen / currentZoom; // Convert to world coordinates
+    const hitRadius = Math.max(screenRadius + 10, minHitBoxWorldSize);
+    node.hitBoxRadius = hitRadius;
+
+    // Update hit area with extended radius (CRITICAL for click detection!)
+    node.pixiNode.hitArea = new PIXI.Circle(0, 0, hitRadius);
 
     const color = getNodeColor(node);
     const alpha = lodLevel > 1 ? 0.5 : node.opacity || 1;
@@ -1041,36 +1333,114 @@ export const GraphVisualization: React.FC = () => {
   const handleNodeClick = useCallback((nodeId: string) => {
     const tool = viewState.selectedTool;
 
+    // Debug logging for click registration
+    console.group(`🎵 Node Click Detected`);
+    console.log('Node ID:', nodeId);
+    console.log('Selected Tool:', tool);
+    console.log('Timestamp:', new Date().toISOString());
+
+    // Get node details for debugging
+    const node = enhancedNodesRef.current.get(nodeId);
+    if (node) {
+      console.log('Node Details:', {
+        id: node.id,
+        title: node.title,
+        artist: node.artist,
+        x: node.x,
+        y: node.y,
+        isSelected: viewState.selectedNodes.has(nodeId),
+        isHovered: viewState.hoveredNode === nodeId
+      });
+
+      // Visual feedback: Flash the node to confirm click registration
+      if (node.pixiCircle) {
+        const originalTint = node.pixiCircle.tint;
+        const originalAlpha = node.pixiCircle.alpha;
+        const originalScale = node.pixiNode?.scale.x || 1;
+
+        // Flash white and scale up briefly
+        node.pixiCircle.tint = 0xFFFFFF;
+        node.pixiCircle.alpha = 1;
+        if (node.pixiNode) {
+          node.pixiNode.scale.set(originalScale * 1.2);
+        }
+
+        // Restore after 200ms
+        setTimeout(() => {
+          if (node.pixiCircle) {
+            node.pixiCircle.tint = originalTint;
+            node.pixiCircle.alpha = originalAlpha;
+          }
+          if (node.pixiNode) {
+            node.pixiNode.scale.set(originalScale);
+          }
+        }, 200);
+      }
+    }
+
     switch (tool) {
       case 'select':
+        console.log('Action: Toggling node selection');
         graph.toggleNodeSelection(nodeId);
+        console.log('Selected nodes after toggle:', Array.from(viewState.selectedNodes));
         break;
       case 'path':
+        console.log('Action: Pathfinding mode');
         if (!pathfindingState.startTrackId) {
+          console.log('Setting as START track');
           pathfinding.setStartTrack(nodeId);
         } else if (!pathfindingState.endTrackId && nodeId !== pathfindingState.startTrackId) {
+          console.log('Setting as END track');
           pathfinding.setEndTrack(nodeId);
         } else {
+          console.log('Adding as WAYPOINT');
           pathfinding.addWaypoint(nodeId);
         }
+        console.log('Pathfinding state:', pathfindingState);
         break;
       case 'setlist':
-        const node = enhancedNodesRef.current.get(nodeId);
+        console.log('Action: Setlist mode');
         if (node?.track) {
+          console.log('Track found, adding to setlist:', node.track);
           // TODO: Add to setlist functionality
+        } else {
+          console.log('⚠️ No track data for this node');
         }
         break;
+      default:
+        console.log('⚠️ Unknown tool:', tool);
     }
-  }, [viewState.selectedTool, pathfindingState, graph, pathfinding]);
+    console.groupEnd();
+  }, [viewState, pathfindingState, graph, pathfinding]);
 
   const handleNodeHover = useCallback((nodeId: string, isHovering: boolean) => {
+    // Debug hover events (less verbose since these fire frequently)
+    if (isHovering) {
+      console.log(`🎯 Hover START on node: ${nodeId}`);
+    } else {
+      console.log(`👋 Hover END on node: ${nodeId}`);
+    }
     graph.setHoveredNode(isHovering ? nodeId : null);
   }, [graph]);
 
   const handleNodeRightClick = useCallback((nodeId: string, event: PIXI.FederatedPointerEvent) => {
     event.preventDefault();
+
+    console.group(`🎵 Node Right-Click Detected`);
+    console.log('Node ID:', nodeId);
+    console.log('Event position:', { x: event.global.x, y: event.global.y });
+
+    const node = enhancedNodesRef.current.get(nodeId);
+    if (node) {
+      console.log('Node Details:', {
+        title: node.title,
+        artist: node.artist
+      });
+    }
+
     // TODO: Show context menu
-    console.log('Right click on node:', nodeId);
+    console.log('TODO: Show context menu for node');
+    console.groupEnd();
   }, []);
 
   // Handle window resize
@@ -1090,15 +1460,50 @@ export const GraphVisualization: React.FC = () => {
     frameRef.current++;
   }, []);
 
+  // Detect data changes to trigger animation
+  const generateDataHash = useCallback((nodes: GraphNode[], edges: GraphEdge[]): string => {
+    const nodeHash = nodes.map(n => `${n.id}:${n.x}:${n.y}`).join('|');
+    const edgeHash = edges.map(e => `${e.id}:${e.source}:${e.target}`).join('|');
+    return `${nodeHash}#${edgeHash}`;
+  }, []);
+
   // Update graph data
   const updateGraphData = useCallback(() => {
     if (!simulationRef.current || !nodesContainerRef.current || !edgesContainerRef.current) return;
 
+    // Check if this is new data (trigger animation)
+    const newDataHash = generateDataHash(graphData.nodes, graphData.edges);
+    const isNewData = newDataHash !== lastDataHashRef.current;
+    const wasEmpty = lastDataHashRef.current === '';
+    lastDataHashRef.current = newDataHash;
+
+    if (isNewData && !wasEmpty) { // Don't trigger on initial empty->data load
+      console.log('🔄 New data detected, triggering animation');
+      startAnimation('data_change');
+    }
+
     const simulation = simulationRef.current;
 
-    // Clear existing PIXI objects
-    nodesContainerRef.current.removeChildren();
-    edgesContainerRef.current.removeChildren();
+    // Clear existing PIXI objects with proper cleanup (2025 best practice)
+    if (nodesContainerRef.current) {
+      nodesContainerRef.current.children.forEach(child => {
+        child.removeAllListeners();
+        if (child.destroy) {
+          child.destroy({ children: true, texture: false, baseTexture: false });
+        }
+      });
+      nodesContainerRef.current.removeChildren();
+    }
+
+    if (edgesContainerRef.current) {
+      edgesContainerRef.current.children.forEach(child => {
+        child.removeAllListeners();
+        if (child.destroy) {
+          child.destroy({ children: true, texture: false, baseTexture: false });
+        }
+      });
+      edgesContainerRef.current.removeChildren();
+    }
 
     // Clear enhanced data
     enhancedNodesRef.current.clear();
@@ -1149,14 +1554,19 @@ export const GraphVisualization: React.FC = () => {
       linkForce.links(Array.from(enhancedEdgesRef.current.values()));
     }
 
-    // Restart simulation
-    simulation.alpha(0.3).restart();
+    // Restart simulation only if animation is active
+    if (animationStateRef.current.isActive) {
+      simulation.alpha(0.3).restart();
+    } else {
+      // If animation is not active, just position nodes without simulation
+      console.log('🔒 Animation frozen, not restarting simulation');
+    }
 
     // Rebuild spatial index
     spatialIndexRef.current.rebuild(Array.from(nodeMap.values()));
 
     frameRef.current++;
-  }, [graphData, createEnhancedNode, createPixiNode, createEnhancedEdge, createPixiEdge]);
+  }, [graphData, createEnhancedNode, createPixiNode, createEnhancedEdge, createPixiEdge, generateDataHash, startAnimation]);
 
 
   // Effects
@@ -1165,6 +1575,8 @@ export const GraphVisualization: React.FC = () => {
   useEffect(() => {
     const initializeAfterMount = () => {
       console.log('Attempting PIXI initialization after component mount');
+      // Start initial animation on first load
+      startAnimation('initial');
       initializePixi();
     };
 
@@ -1173,19 +1585,134 @@ export const GraphVisualization: React.FC = () => {
 
     return () => {
       clearTimeout(timeoutId);
+
+      // Comprehensive PIXI.js v8 cleanup (2025 best practices)
       if (pixiAppRef.current) {
-        console.log('Destroying PIXI application on unmount');
-        pixiAppRef.current.destroy(true);
+        console.log('🧹 Comprehensive PIXI cleanup starting...');
+
+        // Stop ticker first but DON'T destroy it - let app.destroy() handle it
+        // This prevents the "Cannot read properties of null" error
+        if (pixiAppRef.current.ticker) {
+          pixiAppRef.current.ticker.stop();
+          // Remove all ticker listeners instead of destroying
+          pixiAppRef.current.ticker.removeAll();
+        }
+
+        // Clean up all containers and their children
+        [nodesContainerRef, edgesContainerRef, labelsContainerRef, interactionContainerRef].forEach(containerRef => {
+          if (containerRef.current) {
+            // Remove all event listeners from container children
+            containerRef.current.children.forEach(child => {
+              child.removeAllListeners();
+              if (child.destroy) {
+                child.destroy({ children: true, texture: false, baseTexture: false });
+              }
+            });
+            containerRef.current.destroy({ children: true });
+            containerRef.current = null;
+          }
+        });
+
+        // Clear enhanced data maps
+        enhancedNodesRef.current.clear();
+        enhancedEdgesRef.current.clear();
+
+        // Stop D3 simulation
+        if (simulationRef.current) {
+          simulationRef.current.stop();
+          simulationRef.current = null;
+        }
+
+        // Destroy PIXI app with comprehensive options (v8 memory leak fix)
+        // The destroy method will handle ticker cleanup internally
+        pixiAppRef.current.destroy(true, {
+          children: true,
+          texture: true,
+          baseTexture: true
+        });
+
+        // Manual v8 renderGroup cleanup (known issue workaround)
+        // Note: Do this BEFORE nulling pixiAppRef
+        try {
+          if (pixiAppRef.current?.stage?.renderGroup) {
+            pixiAppRef.current.stage.renderGroup.childrenRenderablesToUpdate = {};
+            pixiAppRef.current.stage.renderGroup.childrenToUpdate = {};
+            pixiAppRef.current.stage.renderGroup.instructionSet = null;
+          }
+        } catch (e) {
+          console.warn('Could not clean renderGroup:', e);
+        }
+
         pixiAppRef.current = null;
+        console.log('✅ PIXI cleanup completed');
+      }
+
+      // Clean up performance timer
+      if (performanceTimerRef.current) {
+        clearInterval(performanceTimerRef.current);
+        performanceTimerRef.current = null;
+      }
+
+      // Clean up animation timer
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
+
+      // Clean up UI timer
+      if (uiTimerRef.current) {
+        clearInterval(uiTimerRef.current);
+        uiTimerRef.current = null;
+      }
+
+      // Clean up throttled frame timer
+      if (throttledFrameUpdate.current) {
+        clearTimeout(throttledFrameUpdate.current);
+        throttledFrameUpdate.current = null;
       }
     };
-  }, [initializePixi]);
+  }, [initializePixi, startAnimation]);
 
   // Initialize simulation and zoom after PIXI is ready
   useEffect(() => {
     if (isInitialized) {
       initializeSimulation();
       initializeZoom();
+
+      // Start memory monitoring (2025 best practice)
+      if ('memory' in performance) {
+        memoryStatsRef.current.initialMemory = (performance as any).memory.usedJSHeapSize;
+
+        performanceTimerRef.current = setInterval(() => {
+          if ('memory' in performance) {
+            const memInfo = (performance as any).memory;
+            const currentMemory = memInfo.usedJSHeapSize;
+            const memoryDiff = currentMemory - memoryStatsRef.current.lastMemory;
+
+            // Monitor WebGL resources if available
+            if (pixiAppRef.current?.renderer?.gl) {
+              const gl = pixiAppRef.current.renderer.gl;
+              const webglMemory = {
+                buffers: gl.getParameter(gl.MAX_VERTEX_ATTRIBS),
+                textures: gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
+                programs: gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS)
+              };
+              memoryStatsRef.current.webglMemory = webglMemory;
+            }
+
+            // Log significant memory increases (> 5MB)
+            if (memoryDiff > 5 * 1024 * 1024) {
+              console.warn(`🚨 Memory increase detected: +${(memoryDiff / 1024 / 1024).toFixed(2)}MB`, {
+                current: `${(currentMemory / 1024 / 1024).toFixed(2)}MB`,
+                limit: `${(memInfo.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`,
+                webgl: memoryStatsRef.current.webglMemory
+              });
+            }
+
+            memoryStatsRef.current.lastMemory = currentMemory;
+          }
+        }, 5000); // Check every 5 seconds
+      }
     }
   }, [isInitialized, initializeSimulation, initializeZoom]);
 
@@ -1202,25 +1729,62 @@ export const GraphVisualization: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [handleResize]);
 
-  // Handle view state changes
+  // Handle keyboard shortcuts for debugging
   useEffect(() => {
-    frameRef.current++;
-  }, [viewState.showLabels, viewState.showEdges, viewState.nodeSize, viewState.edgeOpacity]);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Press 'D' to toggle debug mode
+      if (event.key === 'd' || event.key === 'D') {
+        setShowDebugInfo(prev => {
+          const newValue = !prev;
+          console.log(`🐛 Debug mode ${newValue ? 'ENABLED' : 'DISABLED'}`);
+          if (newValue) {
+            console.log('Debug Info:');
+            console.log('- Total nodes:', enhancedNodesRef.current.size);
+            console.log('- Selected nodes:', viewState.selectedNodes.size);
+            console.log('- Hovered node:', viewState.hoveredNode);
+            console.log('- Selected tool:', viewState.selectedTool);
+            console.log('- Zoom level:', viewState.zoom);
+          }
+          return newValue;
+        });
+      }
+    };
 
-  // Handle selected nodes changes
-  useEffect(() => {
-    frameRef.current++;
-  }, [viewState.selectedNodes]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewState]);
 
-  // Handle hovered node changes
-  useEffect(() => {
-    frameRef.current++;
-  }, [viewState.hoveredNode]);
+  // Throttled frame updates (2025 best practice - prevent excessive re-renders)
+  const throttledFrameUpdate = useRef<NodeJS.Timeout | null>(null);
 
-  // Handle pathfinding state changes
+  const scheduleFrameUpdate = useCallback(() => {
+    if (throttledFrameUpdate.current) return; // Already scheduled
+
+    throttledFrameUpdate.current = setTimeout(() => {
+      frameRef.current++;
+      throttledFrameUpdate.current = null;
+    }, 16); // ~60fps max
+  }, []);
+
+  // Handle view state changes with throttling
   useEffect(() => {
-    frameRef.current++;
-  }, [pathfindingState.currentPath, pathfindingState.selectedWaypoints]);
+    scheduleFrameUpdate();
+  }, [viewState.showLabels, viewState.showEdges, viewState.nodeSize, viewState.edgeOpacity, scheduleFrameUpdate]);
+
+  // Handle selected nodes changes with throttling
+  useEffect(() => {
+    scheduleFrameUpdate();
+  }, [viewState.selectedNodes, scheduleFrameUpdate]);
+
+  // Handle hovered node changes with throttling
+  useEffect(() => {
+    scheduleFrameUpdate();
+  }, [viewState.hoveredNode, scheduleFrameUpdate]);
+
+  // Handle pathfinding state changes with throttling
+  useEffect(() => {
+    scheduleFrameUpdate();
+  }, [pathfindingState.currentPath, pathfindingState.selectedWaypoints, scheduleFrameUpdate]);
 
 
   return (
@@ -1243,6 +1807,56 @@ export const GraphVisualization: React.FC = () => {
           <div className="text-center">
             <p className="text-lg mb-2">No graph data available</p>
             <p className="text-sm">Load some tracks to see the visualization</p>
+          </div>
+        </div>
+      )}
+
+      {/* Animation Controls */}
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
+        <button
+          onClick={manualRefresh}
+          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+          title="Restart animation for 15 seconds"
+        >
+          🔄 Refresh Layout
+        </button>
+        {animationStateRef.current.isActive && animationTimer > 0 && (
+          <div className="bg-green-600 text-white px-3 py-1 rounded text-xs text-center">
+            🎬 Animating... {animationTimer}s
+          </div>
+        )}
+      </div>
+
+      {/* Debug overlay */}
+      {showDebugInfo && (
+        <div className="absolute top-4 left-4 bg-black/80 text-green-400 p-4 rounded-lg font-mono text-xs max-w-md">
+          <div className="mb-2 text-yellow-400 font-bold">🐛 DEBUG MODE</div>
+          <div>Press 'D' to toggle</div>
+          <div className="mt-2">
+            <div>Nodes: {enhancedNodesRef.current.size}</div>
+            <div>Selected: {viewState.selectedNodes.size} nodes</div>
+            <div>Hovered: {viewState.hoveredNode || 'none'}</div>
+            <div>Tool: {viewState.selectedTool}</div>
+            <div>Zoom: {viewState.zoom.toFixed(2)}x</div>
+            <div>FPS: {performance?.fps?.toFixed(0) || 'N/A'}</div>
+            {('memory' in window.performance) && (
+              <div className="mt-1 text-yellow-300">
+                <div>Memory: {((window.performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(1)}MB</div>
+                <div>Limit: {((window.performance as any).memory.jsHeapSizeLimit / 1024 / 1024).toFixed(0)}MB</div>
+              </div>
+            )}
+          </div>
+          <div className="mt-2 text-cyan-400">
+            <div>Animation:</div>
+            <div className="text-xs">• Active: {animationStateRef.current.isActive ? 'YES' : 'NO'}</div>
+            <div className="text-xs">• Trigger: {animationStateRef.current.trigger}</div>
+            <div className="text-xs">• Manual: window.manualRefresh()</div>
+          </div>
+          <div className="mt-2 text-orange-400">
+            <div>Click Events:</div>
+            <div className="text-xs">• Extended hit boxes enabled</div>
+            <div className="text-xs">• Zoom-aware hit detection</div>
+            <div className="text-xs">• Animation blocking for first 2s</div>
           </div>
         </div>
       )}

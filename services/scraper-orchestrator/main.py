@@ -1031,6 +1031,57 @@ async def get_target_tracks_status():
         logger.error(f"Error getting target tracks status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/data/import-setlist")
+async def import_setlist_data(background_tasks: BackgroundTasks):
+    """Import setlist data through the database pipeline"""
+    logger.info("Setlist data import manually triggered")
+
+    try:
+        # Execute the import script in the scrapers directory
+        import subprocess
+        import os
+
+        script_path = "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers/import_setlist_data.py"
+
+        # Ensure the script exists
+        if not os.path.exists(script_path):
+            raise HTTPException(status_code=404, detail="Import script not found")
+
+        # Run the import script in background
+        def run_import():
+            try:
+                logger.info("Starting setlist data import script")
+                result = subprocess.run(
+                    ["python", script_path],
+                    cwd="/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers",
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5 minute timeout
+                )
+
+                if result.returncode == 0:
+                    logger.info("Setlist import completed successfully")
+                    logger.info(f"Import output: {result.stdout}")
+                else:
+                    logger.error(f"Import failed with code {result.returncode}")
+                    logger.error(f"Import error: {result.stderr}")
+
+            except subprocess.TimeoutExpired:
+                logger.error("Import script timed out after 5 minutes")
+            except Exception as e:
+                logger.error(f"Error running import script: {e}")
+
+        background_tasks.add_task(run_import)
+
+        return {
+            "status": "started",
+            "message": "Setlist data import started in background"
+        }
+
+    except Exception as e:
+        logger.error(f"Error triggering setlist import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
