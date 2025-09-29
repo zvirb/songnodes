@@ -4,7 +4,7 @@ Provides unified access to multiple music streaming platforms
 """
 
 from .unified_streaming_client import (
-    StreamingTrackMetadata,
+    TrackMetadata,
     SearchResult,
     StreamingPlatformClient,
     UnifiedStreamingClient,
@@ -16,10 +16,11 @@ from .unified_streaming_client import (
     DeezerClient,
     YouTubeMusicClient,
     search_track_on_all_platforms,
+    test_unified_client,
 )
 
 __all__ = [
-    "StreamingTrackMetadata",
+    "TrackMetadata",
     "SearchResult",
     "StreamingPlatformClient",
     "UnifiedStreamingClient",
@@ -31,6 +32,7 @@ __all__ = [
     "DeezerClient",
     "YouTubeMusicClient",
     "search_track_on_all_platforms",
+    "test_unified_client",
 ]
 
 __version__ = "1.0.0"

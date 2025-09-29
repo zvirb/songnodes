@@ -174,8 +174,8 @@ npx claude-flow swarm init --topology mesh --max-agents 8
 
 # With memory persistence
 npx claude-flow swarm init --topology hierarchical \
-  --queen-agent architect \
-  --worker-agents "coder,tester,reviewer" \
+  --queen-agent infrastructure-orchestrator \
+  --worker-agents "general-purpose,test-automation-engineer,code-quality-guardian" \
   --enable-memory
 ```
 
