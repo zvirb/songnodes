@@ -335,7 +335,7 @@ class EnhancedMusicDatabasePipeline:
         # Check if this matches a target track
         if track_key in self.target_tracks:
             self.found_matches[track_key] = data
-            self.logger.info(f"✓ Found target track: {data['track_name']}")
+            self.logger.info(f"✓ Found target track: {data.get('title', 'Unknown')}")
 
             # Enhance with target track metadata
             target_info = self.target_tracks[track_key]
@@ -345,8 +345,8 @@ class EnhancedMusicDatabasePipeline:
                 'target_track_info': json.dumps(target_info)
             })
 
-        # Deduplication
-        if track_key in self.processed_items['tracks']:
+        # Deduplication - Fix: use 'songs' not 'tracks'
+        if track_key in self.processed_items['songs']:
             return
 
         self.processed_items['songs'].add(track_key)
@@ -415,21 +415,43 @@ class EnhancedMusicDatabasePipeline:
         batch = self.item_batches[batch_type].copy()
         self.item_batches[batch_type].clear()
 
+        # Ensure connection pool is initialized
+        if not self.connection_pool:
+            self.logger.warning("Connection pool not initialized, initializing now...")
+            try:
+                connection_string = (
+                    f"postgresql://{self.database_config['user']}:{self.database_config['password']}@"
+                    f"{self.database_config['host']}:{self.database_config['port']}/"
+                    f"{self.database_config['database']}"
+                )
+                self.connection_pool = await asyncpg.create_pool(
+                    connection_string,
+                    min_size=1,
+                    max_size=10,
+                    command_timeout=30
+                )
+                self.logger.info("✓ Connection pool initialized for batch flush")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize connection pool: {e}")
+                # Re-add batch items for retry
+                self.item_batches[batch_type].extend(batch)
+                return
+
         try:
             async with self.connection_pool.acquire() as conn:
                 if batch_type == 'artists':
                     await self.insert_artists_batch(conn, batch)
                 elif batch_type == 'songs':
-                    await self.insert_songs_batch(conn, batch)
+                    await self.insert_tracks_batch(conn, batch)  # Fix: use insert_tracks_batch
                 elif batch_type == 'playlists':
                     await self.insert_playlists_batch(conn, batch)
                 elif batch_type == 'venues':
                     await self.insert_venues_batch(conn, batch)
-                elif batch_type == 'track_artists':
+                elif batch_type == 'song_artists':  # Fix: use correct key
                     await self.insert_track_artists_batch(conn, batch)
-                elif batch_type == 'setlist_tracks':
+                elif batch_type == 'playlist_songs':  # Fix: use correct key
                     await self.insert_setlist_tracks_batch(conn, batch)
-                elif batch_type == 'track_adjacencies':
+                elif batch_type == 'song_adjacency':  # Fix: use correct key
                     await self.insert_track_adjacencies_batch(conn, batch)
 
             self.logger.info(f"✓ Inserted {len(batch)} {batch_type} records")
@@ -464,7 +486,7 @@ class EnhancedMusicDatabasePipeline:
                 updated_at = EXCLUDED.updated_at
         """, [
             (
-                item.get('id'), item.get('artist_name'), item.get('normalized_name'),
+                item.get('artist_id'), item.get('name'), item.get('normalized_name'),
                 item.get('aliases'), item.get('spotify_id'), item.get('apple_music_id'),
                 item.get('youtube_channel_id'), item.get('soundcloud_id'),
                 item.get('genre_preferences'), item.get('country'),
@@ -502,7 +524,7 @@ class EnhancedMusicDatabasePipeline:
                 updated_at = EXCLUDED.updated_at
         """, [
             (
-                item.get('id'), item.get('track_name'), item.get('normalized_title'),
+                item.get('song_id'), item.get('title'), item.get('normalized_title'),
                 item.get('isrc'), item.get('spotify_id'), item.get('apple_music_id'),
                 item.get('youtube_id'), item.get('soundcloud_id'), item.get('bpm'),
                 item.get('musical_key'), item.get('energy'), item.get('danceability'),

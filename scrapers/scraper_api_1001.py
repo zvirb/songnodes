@@ -28,27 +28,49 @@ async def health_check():
 @app.post("/scrape")
 async def scrape_url(request: Dict[str, Any]):
     """
-    Execute API-based data collection instead of web scraping
-    URL parameter is optional and ignored (for orchestrator compatibility)
+    Execute API-based data collection or process URL directly
     """
     task_id = request.get("task_id") or f"1001_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     url = request.get("url")
 
     try:
-        logger.info(f"Starting API-based data collection for task {task_id}")
-        if url:
-            logger.info(f"Received URL request: {url}, using API instead")
+        logger.info(f"Starting data collection for task {task_id}")
 
         # Create API client
         client = OneThousandOneTracklistsAPIClient()
 
-        # Use default queries for testing with mock API
-        # TODO: Load from target_tracks_for_scraping.json when API key is available
-        queries = [
-            "Carl Cox", "Charlotte de Witte", "Amelie Lens",
-            "Tale of Us", "Solomun"
-        ]
-        logger.info(f"Using {len(queries)} default DJ queries for mock data generation")
+        # Extract query from URL if provided
+        queries = []
+        if url:
+            logger.info(f"Processing URL: {url}")
+            # Extract search query from 1001tracklists URL
+            # URL format could be: https://www.1001tracklists.com/search/?q=Artist+Track
+            # or just a search query
+            if "1001tracklists.com" in url:
+                # Extract query parameter
+                from urllib.parse import urlparse, parse_qs
+                parsed = urlparse(url)
+                query_params = parse_qs(parsed.query)
+                if 'q' in query_params:
+                    queries = [query_params['q'][0]]
+                else:
+                    # Try to extract from path or use the full URL as query
+                    path_parts = parsed.path.strip('/').split('/')
+                    if path_parts:
+                        queries = [path_parts[-1].replace('-', ' ')]
+            else:
+                # Treat the URL as a direct search query
+                queries = [url]
+
+        # Fallback to default queries only if no URL provided
+        if not queries:
+            logger.warning("No URL provided, using default DJ queries for testing")
+            queries = [
+                "Carl Cox", "Charlotte de Witte", "Amelie Lens",
+                "Tale of Us", "Solomun"
+            ]
+
+        logger.info(f"Processing {len(queries)} queries: {queries}")
 
         # Process data through API
         items_processed = 0

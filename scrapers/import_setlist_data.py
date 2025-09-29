@@ -531,21 +531,20 @@ class SetlistDataImporter:
             if i < len(setlist['tracks']) - 1:
                 next_track = setlist['tracks'][i + 1]
 
-                # Skip same-artist consecutive tracks as per requirements
-                if track['artist'] != next_track['artist']:
-                    adjacency_item = {
-                        'item_type': 'track_adjacency',
-                        'track1_name': track['title'],
-                        'track1_artist': track['artist'],
-                        'track2_name': next_track['title'],
-                        'track2_artist': next_track['artist'],
-                        'distance': 1,  # Always 1 for consecutive tracks
-                        'occurrence_count': 1,
-                        'source_context': f"{setlist['event_name']}:{setlist['setlist_name']}",
-                        'source_url': setlist['source_url'],
-                        'discovered_at': datetime.now().isoformat()
-                    }
-                    items.append(adjacency_item)
+                # Create adjacency for ALL consecutive tracks (removed same-artist filter)
+                adjacency_item = {
+                    'item_type': 'track_adjacency',
+                    'track1_name': track['title'],
+                    'track1_artist': track['artist'],
+                    'track2_name': next_track['title'],
+                    'track2_artist': next_track['artist'],
+                    'distance': 1,  # Always 1 for consecutive tracks
+                    'occurrence_count': 1,
+                    'source_context': f"{setlist['event_name']}:{setlist['setlist_name']}",
+                    'source_url': setlist['source_url'],
+                    'discovered_at': datetime.now().isoformat()
+                }
+                items.append(adjacency_item)
 
         return items
 
@@ -583,7 +582,7 @@ class SetlistDataImporter:
             total_adjacencies += adjacency_count
 
         # Flush all remaining batches
-        await self.db_pipeline.flush_all_batches_async()
+        await self.db_pipeline.flush_all_batches()
 
         logger.info(f"✓ Import complete: {total_items} total items, {total_adjacencies} adjacencies")
 
