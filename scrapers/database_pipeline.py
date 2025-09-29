@@ -131,7 +131,16 @@ class DatabasePipeline:
             'key': item.get('key'),
             'duration_seconds': item.get('duration_seconds'),
             'release_year': item.get('release_year'),
-            'label': item.get('label')
+            'label': item.get('label'),
+            # Streaming platform IDs
+            'spotify_id': item.get('spotify_id'),
+            'musicbrainz_id': item.get('musicbrainz_id'),
+            'tidal_id': item.get('tidal_id'),
+            'beatport_id': item.get('beatport_id'),
+            'apple_music_id': item.get('apple_music_id'),
+            'soundcloud_id': item.get('soundcloud_id'),
+            'deezer_id': item.get('deezer_id'),
+            'youtube_music_id': item.get('youtube_music_id')
         })
 
         if len(self.item_batches['songs']) >= self.batch_size:
@@ -285,8 +294,9 @@ class DatabasePipeline:
 
         await conn.executemany("""
             INSERT INTO songs (title, primary_artist_id, genre, bpm, key,
-                             duration_seconds, release_year, label)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                             duration_seconds, release_year, label, spotify_id, musicbrainz_id,
+                             tidal_id, beatport_id, apple_music_id, soundcloud_id, deezer_id, youtube_music_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         """, [
             (
                 item['title'],
@@ -296,7 +306,15 @@ class DatabasePipeline:
                 item.get('key'),
                 item.get('duration_seconds', 0),
                 item.get('release_year'),
-                item.get('label')
+                item.get('label'),
+                item.get('spotify_id'),
+                item.get('musicbrainz_id'),
+                item.get('tidal_id'),
+                item.get('beatport_id'),
+                item.get('apple_music_id'),
+                item.get('soundcloud_id'),
+                item.get('deezer_id'),
+                item.get('youtube_music_id')
             ) for item in songs_with_artists
         ])
 
