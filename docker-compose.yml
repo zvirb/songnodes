@@ -1,26 +1,24 @@
 services:
-  # ===========================================
-  # DATABASE LAYER
-  # ===========================================
-
   postgres:
     image: public.ecr.aws/docker/library/postgres:15-alpine
     container_name: musicdb-postgres
     restart: always
     ports:
-      - "5433:5432"  # Non-standard port
+    - 5433:5432
     environment:
       POSTGRES_DB: musicdb
       POSTGRES_USER: musicdb_user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=en_US.UTF-8
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./sql/init:/docker-entrypoint-initdb.d
+    - postgres_data:/var/lib/postgresql/data
+    - ./sql/init:/docker-entrypoint-initdb.d
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U musicdb_user -d musicdb"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U musicdb_user -d musicdb
       interval: 30s
       timeout: 10s
       retries: 5
@@ -33,8 +31,6 @@ services:
         reservations:
           cpus: '2.0'
           memory: 3G
-
-  # Connection pooling service
   db-connection-pool:
     build:
       context: ./services/db-connection-pool
@@ -42,8 +38,8 @@ services:
     container_name: musicdb-connection-pool
     restart: always
     ports:
-      - "6433:6432"  # PgBouncer port (changed to avoid conflict)
-      - "8025:8025"  # Management API port
+    - 6433:6432
+    - 8025:8025
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -53,11 +49,15 @@ services:
       PGBOUNCER_ADMIN_USER: pgbouncer
       PGBOUNCER_ADMIN_PASSWORD: ${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer_admin_pass_2024}
     depends_on:
-      - postgres
+    - postgres
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8025/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8025/health
       interval: 30s
       timeout: 10s
       retries: 5
@@ -70,20 +70,23 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
-
   redis:
     image: public.ecr.aws/docker/library/redis:7-alpine
     container_name: musicdb-redis
     restart: always
     ports:
-      - "6380:6379"  # Non-standard port
-    command: redis-server --appendonly yes --maxmemory 2048mb --maxmemory-policy allkeys-lru --maxclients 10000 --tcp-keepalive 60
+    - 6380:6379
+    command: redis-server --appendonly yes --maxmemory 2048mb --maxmemory-policy allkeys-lru
+      --maxclients 10000 --tcp-keepalive 60
     volumes:
-      - redis_data:/data
+    - redis_data:/data
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - ping
       interval: 30s
       timeout: 10s
       retries: 3
@@ -96,28 +99,26 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-
-  # ===========================================
-  # MESSAGE BROKER
-  # ===========================================
-
   rabbitmq:
     image: public.ecr.aws/docker/library/rabbitmq:3.12-management-alpine
     container_name: musicdb-rabbitmq
     restart: always
     ports:
-      - "5673:5672"    # AMQP non-standard port
-      - "15673:15672"  # Management UI non-standard port
+    - 5673:5672
+    - 15673:15672
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-musicdb}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-musicdb_pass}
       RABBITMQ_DEFAULT_VHOST: musicdb
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+    - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      test:
+      - CMD
+      - rabbitmq-diagnostics
+      - check_running
       interval: 30s
       timeout: 10s
       retries: 5
@@ -130,11 +131,6 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-
-  # ===========================================
-  # SCRAPING SERVICES
-  # ===========================================
-
   scraper-orchestrator:
     build:
       context: ./services/scraper-orchestrator
@@ -142,9 +138,9 @@ services:
     container_name: scraper-orchestrator
     restart: always
     ports:
-      - "8001:8001"
+    - 8001:8001
     volumes:
-      - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
+    - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -152,52 +148,74 @@ services:
       RABBITMQ_PORT: 5672
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+    - postgres
+    - redis
+    - rabbitmq
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8001/health
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   scraper-1001tracklists:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.1001tracklists
     restart: always
-    expose:
-      - "8011"
+    ports:
+    - '8011:8011'
     volumes:
-      - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
+    - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
     environment:
       SCRAPER_NAME: 1001tracklists
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
     depends_on:
-      - scraper-orchestrator
+    - scraper-orchestrator
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8011/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8011/health
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   scraper-mixesdb:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.mixesdb
     restart: always
-    expose:
-      - "8012"
+    ports:
+    - '8012:8012'
     volumes:
-      - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
+    - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
     environment:
       SCRAPER_NAME: mixesdb
       REDIS_HOST: redis
@@ -206,11 +224,15 @@ services:
       CONCURRENT_REQUESTS: 6
       DOWNLOAD_DELAY: 1.5
     depends_on:
-      - scraper-orchestrator
+    - scraper-orchestrator
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8012/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8012/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -223,14 +245,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-
   scraper-setlistfm:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.setlistfm
     restart: always
-    expose:
-      - "8013"
+    ports:
+    - '8013:8013'
     environment:
       SCRAPER_NAME: setlistfm
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
@@ -238,12 +259,17 @@ services:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       RATE_LIMIT: 3600
       REQUEST_DELAY: 1
+      SKIP_ROBOTS_CHECK: 'true'
     depends_on:
-      - scraper-orchestrator
+    - scraper-orchestrator
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8013/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8013/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -256,14 +282,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-
   scraper-reddit:
     build:
       context: ./scrapers
       dockerfile: Dockerfile.reddit
     restart: always
-    expose:
-      - "8014"
+    ports:
+    - '8014:8014'
     environment:
       SCRAPER_NAME: reddit
       REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
@@ -271,12 +296,16 @@ services:
       REDIS_HOST: redis
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
     depends_on:
-      - scraper-orchestrator
-      - nlp-processor
+    - scraper-orchestrator
+    - nlp-processor
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8014/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8014/health
       interval: 60s
       timeout: 15s
       retries: 3
@@ -289,18 +318,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-
-  # ===========================================
-  # DATA PROCESSING SERVICES
-  # ===========================================
-
   data-transformer:
     build:
       context: ./services/data-transformer
       dockerfile: Dockerfile
     restart: always
     expose:
-      - "8002"
+    - '8002'
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -312,12 +336,16 @@ services:
       BATCH_SIZE: 100
       LOG_LEVEL: INFO
     depends_on:
-      - postgres
-      - redis
+    - postgres
+    - redis
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8002/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8002/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -330,7 +358,6 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-
   nlp-processor:
     build:
       context: ./services/nlp-processor
@@ -338,19 +365,22 @@ services:
     container_name: nlp-processor
     restart: always
     ports:
-      - "8021:8021"
+    - 8021:8021
     environment:
       MODEL_PATH: /models
       REDIS_HOST: redis
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
     volumes:
-      - nlp_models:/models
+    - nlp_models:/models
     depends_on:
-      - redis
+    - redis
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8021/health\")' || exit 1"]
+      test:
+      - CMD-SHELL
+      - python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8021/health")'
+        || exit 1
       interval: 60s
       timeout: 15s
       retries: 3
@@ -360,7 +390,6 @@ services:
         limits:
           cpus: '2.0'
           memory: 3G
-
   data-validator:
     build:
       context: ./services/data-validator
@@ -368,7 +397,7 @@ services:
     container_name: data-validator
     restart: always
     ports:
-      - "8003:8003"
+    - 8003:8003
     environment:
       REDIS_HOST: redis
       POSTGRES_HOST: postgres
@@ -380,12 +409,16 @@ services:
       VALIDATION_BATCH_SIZE: 100
       VALIDATION_WORKERS: 4
     depends_on:
-      - postgres
-      - redis
+    - postgres
+    - redis
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8003/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8003/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -398,26 +431,28 @@ services:
         reservations:
           cpus: '0.75'
           memory: 768M
-
-  # AI-powered HTML analysis service with GPU acceleration
   ollama:
     image: ollama/ollama:latest
     container_name: ollama-ai
     restart: always
     runtime: nvidia
     ports:
-      - "11434:11434"
+    - 11434:11434
     environment:
-      - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_ORIGINS=*
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    - OLLAMA_HOST=0.0.0.0
+    - OLLAMA_ORIGINS=*
+    - NVIDIA_VISIBLE_DEVICES=all
+    - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
-      - ollama_data:/root/.ollama
+    - ollama_data:/root/.ollama
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "/bin/sh", "-c", "ollama list > /dev/null 2>&1 || exit 1"]
+      test:
+      - CMD
+      - /bin/sh
+      - -c
+      - ollama list > /dev/null 2>&1 || exit 1
       interval: 60s
       timeout: 30s
       retries: 5
@@ -431,14 +466,10 @@ services:
           cpus: '1.0'
           memory: 2G
           devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  # ===========================================
-  # API LAYER
-  # ===========================================
-
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
   api-gateway:
     build:
       context: ./services/api-gateway
@@ -446,36 +477,49 @@ services:
     container_name: api-gateway
     restart: always
     ports:
-      - "8080:8080"
+    - 8080:8080
     environment:
       JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_here}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_ENABLED: 'true'
       RATE_LIMIT_REQUESTS: 100
       RATE_LIMIT_WINDOW: 60
     depends_on:
-      - rest-api
-      - graphql-api
-      - websocket-api
-      - graph-visualization-api
-      - enhanced-visualization-service
+    - rest-api
+    - graphql-api
+    - websocket-api
+    - graph-visualization-api
+    - enhanced-visualization-service
     networks:
-      - musicdb-backend
-      - musicdb-frontend
+    - musicdb-backend
+    - musicdb-frontend
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      test:
+      - CMD
+      - wget
+      - --no-verbose
+      - --tries=1
+      - --spider
+      - http://127.0.0.1:8080/health
       interval: 30s
       timeout: 10s
       retries: 3
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
   rest-api:
     build:
       context: ./services/rest-api
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "8082:8082"
+    - 8082:8082
     environment:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb
       REDIS_HOST: redis
@@ -484,12 +528,15 @@ services:
       CONNECTION_POOL_SIZE: 50
       MAX_OVERFLOW: 20
     depends_on:
-      - postgres
-      - redis
+    - postgres
+    - redis
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8082/health\")' || exit 1"]
+      test:
+      - CMD-SHELL
+      - python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8082/health")'
+        || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
@@ -502,7 +549,6 @@ services:
         reservations:
           cpus: '0.75'
           memory: 768M
-
   graphql-api:
     build:
       context: ./services/graphql-api
@@ -510,7 +556,7 @@ services:
     container_name: graphql-api
     restart: always
     ports:
-      - "8081:8081"
+    - 8081:8081
     environment:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
@@ -518,12 +564,16 @@ services:
       QUERY_COMPLEXITY_LIMIT: 1000
       QUERY_DEPTH_LIMIT: 15
     depends_on:
-      - postgres
-      - redis
+    - postgres
+    - redis
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8081/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -536,7 +586,6 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-
   websocket-api:
     build:
       context: ./services/websocket-api
@@ -544,7 +593,7 @@ services:
     container_name: websocket-api
     restart: always
     ports:
-      - "8083:8083"
+    - 8083:8083
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -552,13 +601,17 @@ services:
       WS_MAX_CONNECTIONS: 10000
       WS_HEARTBEAT_INTERVAL: 30
     depends_on:
-      - redis
-      - rabbitmq
+    - redis
+    - rabbitmq
     networks:
-      - musicdb-backend
-      - musicdb-frontend
+    - musicdb-backend
+    - musicdb-frontend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8083/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8083/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -571,7 +624,6 @@ services:
         reservations:
           cpus: '0.75'
           memory: 768M
-
   graph-visualization-api:
     build:
       context: ./services/graph-visualization-api
@@ -579,7 +631,7 @@ services:
     container_name: graph-visualization-api
     restart: always
     ports:
-      - "8084:8084"
+    - 8084:8084
     environment:
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       REDIS_HOST: musicdb-redis
@@ -589,13 +641,17 @@ services:
       CONNECTION_POOL_SIZE: 20
       CONNECTION_POOL_MAX_OVERFLOW: 10
     depends_on:
-      - postgres
-      - redis
+    - postgres
+    - redis
     networks:
-      - musicdb-backend
-      - musicdb-frontend
+    - musicdb-backend
+    - musicdb-frontend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8084/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8084/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -608,7 +664,6 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-
   enhanced-visualization-service:
     build:
       context: ./services/enhanced-visualization-service
@@ -616,7 +671,7 @@ services:
     container_name: enhanced-visualization-service
     restart: always
     ports:
-      - "8090:8085"  # Primary API and WebSocket port
+    - 8090:8085
     environment:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
@@ -626,18 +681,22 @@ services:
       CACHE_TTL: 300
       MAX_CONNECTIONS: 1000
       WS_HEARTBEAT_INTERVAL: 30
-      CORS_ORIGIN: "*"
+      CORS_ORIGIN: '*'
       RATE_LIMIT_MAX: 100
       RATE_LIMIT_WINDOW: 60000
     depends_on:
-      - postgres
-      - redis
-      - db-connection-pool
+    - postgres
+    - redis
+    - db-connection-pool
     networks:
-      - musicdb-backend
-      - musicdb-frontend
+    - musicdb-backend
+    - musicdb-frontend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8085/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8085/health
       interval: 30s
       timeout: 10s
       retries: 3
@@ -650,57 +709,50 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-
-  # ===========================================
-  # MONITORING & LOGGING
-  # ===========================================
-
   prometheus:
     image: quay.io/prometheus/prometheus:latest
     container_name: metrics-prometheus
     restart: always
     ports:
-      - "9091:9090"  # Non-standard port
+    - 9091:9090
     volumes:
-      - ./monitoring/prometheus:/etc/prometheus
-      - ./observability/alerting:/etc/prometheus/alerts
-      - prometheus_data:/prometheus
+    - ./monitoring/prometheus:/etc/prometheus
+    - ./observability/alerting:/etc/prometheus/alerts
+    - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
-      - '--storage.tsdb.retention.size=10GB'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.path=/prometheus
+    - --storage.tsdb.retention.time=30d
+    - --storage.tsdb.retention.size=10GB
+    - --web.console.libraries=/usr/share/prometheus/console_libraries
+    - --web.console.templates=/usr/share/prometheus/consoles
+    - --web.enable-lifecycle
     depends_on:
-      - alertmanager
+    - alertmanager
     networks:
-      - musicdb-monitoring
-      - musicdb-backend
+    - musicdb-monitoring
+    - musicdb-backend
     deploy:
       resources:
         limits:
           cpus: '1.0'
           memory: 1G
-
-  # Alertmanager for intelligent alert routing
   alertmanager:
     image: quay.io/prometheus/alertmanager:latest
     container_name: alertmanager
     restart: always
     ports:
-      - "9093:9093"
+    - 9093:9093
     volumes:
-      - ./observability/alerting/alertmanager.yaml:/etc/alertmanager/alertmanager.yml
-      - alertmanager_data:/alertmanager
+    - ./observability/alerting/alertmanager.yaml:/etc/alertmanager/alertmanager.yml
+    - alertmanager_data:/alertmanager
     command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-      - '--web.external-url=http://localhost:9093'
-      - '--cluster.advertise-address=0.0.0.0:9093'
+    - --config.file=/etc/alertmanager/alertmanager.yml
+    - --storage.path=/alertmanager
+    - --web.external-url=http://localhost:9093
+    - --cluster.advertise-address=0.0.0.0:9093
     networks:
-      - musicdb-monitoring
+    - musicdb-monitoring
     deploy:
       resources:
         limits:
@@ -710,19 +762,24 @@ services:
           cpus: '0.25'
           memory: 256M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9093/-/healthy"]
+      test:
+      - CMD
+      - wget
+      - --no-verbose
+      - --tries=1
+      - --spider
+      - http://127.0.0.1:9093/-/healthy
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-
   grafana:
     image: grafana/grafana:10.2.3
     container_name: grafana
     restart: always
-    user: "472:472"  # Standard Grafana user ID for consistent permissions
+    user: 472:472
     ports:
-      - "3001:3000"  # Non-standard port
+    - 3001:3000
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
@@ -730,52 +787,60 @@ services:
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: redis-datasource
       GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
       GF_LOG_LEVEL: info
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
-      # Configure for nginx reverse proxy
       GF_SERVER_ROOT_URL: http://localhost:3001/
       GF_SERVER_DOMAIN: localhost
     volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./observability/grafana-datasources:/etc/grafana/provisioning/datasources:ro
-      - ./observability/grafana-dashboards:/etc/grafana/provisioning/dashboards/observability:ro
+    - grafana_data:/var/lib/grafana
+    - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    - ./observability/grafana-datasources:/etc/grafana/provisioning/datasources:ro
+    - ./observability/grafana-dashboards:/etc/grafana/provisioning/dashboards/observability:ro
     depends_on:
-      - prometheus
-      - loki
-      - tempo
+    - prometheus
+    - loki
+    - tempo
     networks:
-      - musicdb-monitoring
-      - musicdb-backend
+    - musicdb-monitoring
+    - musicdb-backend
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000/api/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - curl -f http://127.0.0.1:3000/api/health || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # OpenTelemetry Collector - Modern observability hub
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.91.0
     container_name: otel-collector
     restart: always
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8889:8889"   # Prometheus metrics endpoint
-      - "13133:13133" # Health check endpoint
-      - "1777:1777"   # Performance profiler
+    - 4317:4317
+    - 4318:4318
+    - 8889:8889
+    - 13133:13133
+    - 1777:1777
     volumes:
-      - ./observability/otel-collector-config.yaml:/etc/otelcol-contrib/otel-collector-config.yaml:ro
-      - /var/log:/var/log:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: ["--config=/etc/otelcol-contrib/otel-collector-config.yaml"]
+    - ./observability/otel-collector-config.yaml:/etc/otelcol-contrib/otel-collector-config.yaml:ro
+    - /var/log:/var/log:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+    - --config=/etc/otelcol-contrib/otel-collector-config.yaml
     networks:
-      - musicdb-monitoring
-      - musicdb-backend
+    - musicdb-monitoring
+    - musicdb-backend
     depends_on:
-      - tempo
-      - loki
+    - tempo
+    - loki
     deploy:
       resources:
         limits:
@@ -785,28 +850,30 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:13133"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:13133
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # Grafana Tempo - Distributed tracing backend
   tempo:
     image: grafana/tempo:2.3.1
     container_name: tempo
     restart: always
     ports:
-      - "3200:3200"   # Tempo HTTP
-      - "14317:4317"  # OTLP gRPC (remapped to avoid conflict)
+    - 3200:3200
+    - 14317:4317
     command:
-      - "-config.file=/etc/tempo/config.yaml"
-      - "-target=all"
+    - -config.file=/etc/tempo/config.yaml
+    - -target=all
     volumes:
-      - ./observability/tempo-config.yaml:/etc/tempo/config.yaml
-      - tempo_data:/var/tempo
+    - ./observability/tempo-config.yaml:/etc/tempo/config.yaml
+    - tempo_data:/var/tempo
     networks:
-      - musicdb-monitoring
+    - musicdb-monitoring
     deploy:
       resources:
         limits:
@@ -816,27 +883,31 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3200/ready"]
+      test:
+      - CMD
+      - wget
+      - --no-verbose
+      - --tries=1
+      - --spider
+      - http://127.0.0.1:3200/ready
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # Grafana Loki - Log aggregation system
   loki:
     image: grafana/loki:2.9.4
     container_name: loki
     restart: always
     ports:
-      - "3100:3100"   # Loki HTTP API
+    - 3100:3100
     command:
-      - "--config.file=/etc/loki/local-config.yaml"
-      - "--target=all"
+    - --config.file=/etc/loki/local-config.yaml
+    - --target=all
     volumes:
-      - loki_data:/loki
-      - ./observability/loki-config.yaml:/etc/loki/local-config.yaml
+    - loki_data:/loki
+    - ./observability/loki-config.yaml:/etc/loki/local-config.yaml
     networks:
-      - musicdb-monitoring
+    - musicdb-monitoring
     deploy:
       resources:
         limits:
@@ -846,27 +917,31 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3100/ready"]
+      test:
+      - CMD
+      - wget
+      - --no-verbose
+      - --tries=1
+      - --spider
+      - http://127.0.0.1:3100/ready
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # Grafana Promtail - Log shipper for Loki
   promtail:
     image: grafana/promtail:2.9.4
     container_name: promtail
     restart: always
     volumes:
-      - /var/log:/var/log:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./observability/promtail-config.yaml:/etc/promtail/config.yml:ro
+    - /var/log:/var/log:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./observability/promtail-config.yaml:/etc/promtail/config.yml:ro
     command:
-      - "--config.file=/etc/promtail/config.yml"
+    - --config.file=/etc/promtail/config.yml
     networks:
-      - musicdb-monitoring
+    - musicdb-monitoring
     depends_on:
-      - loki
+    - loki
     deploy:
       resources:
         limits:
@@ -875,99 +950,86 @@ services:
         reservations:
           cpus: '0.25'
           memory: 128M
-
-  # ===========================================
-  # ADDITIONAL MONITORING SERVICES
-  # ===========================================
-
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node-exporter
     restart: always
     ports:
-      - "9100:9100"
+    - 9100:9100
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/host/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    - --path.procfs=/host/proc
+    - --path.rootfs=/host/rootfs
+    - --path.sysfs=/host/sys
+    - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/host/rootfs:ro
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro
+    - /:/host/rootfs:ro
     networks:
-      - musicdb-monitoring
+    - musicdb-monitoring
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 256M
-
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.0
     container_name: cadvisor
     restart: always
     ports:
-      - "8089:8080"
+    - 8089:8080
     volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /dev/disk:/dev/disk:ro
+    - /:/rootfs:ro
+    - /var/run:/var/run:ro
+    - /sys:/sys:ro
+    - /var/lib/docker:/var/lib/docker:ro
+    - /dev/disk:/dev/disk:ro
     privileged: true
     devices:
-      - /dev/kmsg:/dev/kmsg
+    - /dev/kmsg:/dev/kmsg
     networks:
-      - musicdb-monitoring
+    - musicdb-monitoring
     deploy:
       resources:
         limits:
           cpus: '1.0'
           memory: 512M
-
   postgres-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:latest
     container_name: postgres-exporter
     restart: always
     ports:
-      - "9187:9187"
+    - 9187:9187
     environment:
-      DATA_SOURCE_NAME: "postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb?sslmode=disable"
+      DATA_SOURCE_NAME: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb?sslmode=disable
     depends_on:
-      - postgres
+    - postgres
     networks:
-      - musicdb-backend
-      - musicdb-monitoring
+    - musicdb-backend
+    - musicdb-monitoring
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 256M
-
   redis-exporter:
     image: quay.io/oliver006/redis_exporter:latest
     container_name: redis-exporter
     restart: always
     ports:
-      - "9121:9121"
+    - 9121:9121
     environment:
-      REDIS_ADDR: "redis://redis:6379"
+      REDIS_ADDR: redis://redis:6379
     depends_on:
-      - redis
+    - redis
     networks:
-      - musicdb-backend
-      - musicdb-monitoring
+    - musicdb-backend
+    - musicdb-monitoring
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 256M
-
-  # ===========================================
-  # FRONTEND
-  # ===========================================
-
   frontend:
     build:
       context: ./frontend
@@ -975,19 +1037,23 @@ services:
     container_name: songnodes-frontend
     restart: always
     ports:
-      - "3006:80"
+    - 3006:80
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://api-gateway:8080}
       VITE_VISUALIZATION_API_URL: ${VITE_VISUALIZATION_API_URL:-http://graph-visualization-api:8084}
       VITE_WS_URL: ${VITE_WS_URL:-ws://websocket-api:8083}
       NODE_ENV: production
     depends_on:
-      - api-gateway
-      - enhanced-visualization-service
+    - api-gateway
+    - enhanced-visualization-service
     networks:
-      - musicdb-frontend
+    - musicdb-frontend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:80
       interval: 30s
       timeout: 10s
       retries: 3
@@ -1000,22 +1066,17 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-
-  # ===========================================
-  # SUPPORT SERVICES
-  # ===========================================
-
   nginx:
     image: public.ecr.aws/nginx/nginx:alpine
     container_name: nginx-proxy
     restart: always
     ports:
-      - "8443:443"  # Non-standard HTTPS port
-      - "8088:80"   # Non-standard HTTP port
+    - 8443:443
+    - 8088:80
     volumes:
-      - ./nginx/nginx-simple.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./static:/usr/share/nginx/html:ro
+    - ./nginx/nginx-simple.conf:/etc/nginx/nginx.conf:ro
+    - ./nginx/ssl:/etc/nginx/ssl:ro
+    - ./static:/usr/share/nginx/html:ro
     depends_on:
       api-gateway:
         condition: service_healthy
@@ -1024,61 +1085,72 @@ services:
       websocket-api:
         condition: service_healthy
     networks:
-      - musicdb-frontend
+    - musicdb-frontend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:80/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:80/health
       interval: 30s
       timeout: 10s
       retries: 3
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
   minio:
     image: quay.io/minio/minio:latest
     container_name: object-storage
     restart: always
     ports:
-      - "9000:9000"  # API port
-      - "9001:9001"  # Console port
+    - 9000:9000
+    - 9001:9001
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     command: server /data --console-address ":9001"
     volumes:
-      - minio_data:/data
+    - minio_data:/data
     networks:
-      - musicdb-backend
+    - musicdb-backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:9000/minio/health/live
       interval: 30s
       timeout: 10s
       retries: 3
-
-# ===========================================
-# NETWORKS
-# ===========================================
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 networks:
   musicdb-backend:
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 172.28.0.0/16
-          gateway: 172.28.0.1
+      - subnet: 172.28.0.0/16
+        gateway: 172.28.0.1
     driver_opts:
       com.docker.network.bridge.name: musicdb-backend
       com.docker.network.driver.mtu: 1500
       com.docker.network.bridge.enable_ip_masquerade: 'true'
-
   musicdb-frontend:
     driver: bridge
-
   musicdb-monitoring:
     driver: bridge
-
-# ===========================================
-# VOLUMES
-# ===========================================
-
 volumes:
   postgres_data:
     driver: local
