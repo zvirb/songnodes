@@ -41,11 +41,23 @@ export default defineConfig({
         entryFileNames: 'assets/[name].js',
         chunkFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name].[ext]',
+        manualChunks: {
+          // Split large visualization components
+          'graph-visualization': ['./src/components/GraphVisualization.tsx'],
+          'pixi-vendor': ['pixi.js'],
+          'd3-vendor': ['d3-force', 'd3-quadtree'],
+          'ui-components': [
+            './src/components/DJInterface.tsx',
+            './src/components/SetlistBuilder.tsx',
+            './src/components/StatsPanel.tsx'
+          ]
+        }
       },
     },
     target: 'esnext',
     minify: 'esbuild',
     sourcemap: true,
+    chunkSizeWarningLimit: 1000, // Increase threshold to 1MB for large components
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'pixi.js', 'd3-force', 'd3-quadtree', 'fuse.js', 'zustand'],

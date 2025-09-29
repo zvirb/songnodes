@@ -11,7 +11,7 @@ import asyncio
 import asyncpg
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Set
-from database_pipeline import EnhancedMusicDatabasePipeline
+from onethousandone_database_pipeline import EnhancedMusicDatabasePipeline
 import random
 import time
 
@@ -275,10 +275,10 @@ class RealDataScraper:
             }
             items.append(track_item)
 
-            # Generate adjacency relationships for neighboring tracks
-            # This is the KEY part - building real adjacency from playlist sequences
+            # Generate adjacency relationships ONLY for consecutive tracks
+            # Each setlist with n tracks should produce exactly n-1 adjacencies
 
-            # Sequential adjacency (next track)
+            # Only consecutive tracks (track at position i -> track at position i+1)
             if i < len(tracks) - 1:
                 next_track = tracks[i + 1]['track']
 
@@ -293,40 +293,13 @@ class RealDataScraper:
                         'track1_artist': track_artist,
                         'track2_name': next_track['name'],
                         'track2_artist': next_artist,
-                        'distance': 1,  # Sequential
+                        'distance': 1,  # Always 1 since we only do consecutive tracks
                         'occurrence_count': 1,
-                        'transition_type': 'sequential',
                         'source_context': f"{playlist['type']}:{playlist['name']}",
                         'source_url': playlist['url'],
                         'discovered_at': datetime.now().isoformat()
                     }
                     items.append(adjacency_item)
-
-            # Close proximity adjacencies (tracks within 3 positions)
-            for j in range(i + 2, min(i + 4, len(tracks))):
-                if j < len(tracks):
-                    nearby_track = tracks[j]['track']
-                    distance = j - i
-
-                    # Skip same-artist adjacencies for proximity relationships too
-                    track_artist = track.get('artist', 'Unknown Artist')
-                    nearby_artist = nearby_track.get('artist', 'Unknown Artist')
-
-                    if track_artist != nearby_artist:
-                        adjacency_item = {
-                            'item_type': 'track_adjacency',
-                            'track1_name': track['name'],
-                            'track1_artist': track_artist,
-                            'track2_name': nearby_track['name'],
-                            'track2_artist': nearby_artist,
-                            'distance': distance,
-                            'occurrence_count': 1,
-                            'transition_type': 'close_proximity',
-                            'source_context': f"{playlist['type']}:{playlist['name']}",
-                            'source_url': playlist['url'],
-                            'discovered_at': datetime.now().isoformat()
-                        }
-                        items.append(adjacency_item)
 
         return items
 
@@ -425,14 +398,5 @@ class RealDataScraper:
             logger.error(f"Error closing scraper: {e}")
 
 
-async def main():
-    """Main entry point"""
-    scraper = RealDataScraper()
-
-    # Run scraper for first 10 tracks as a test
-    # Change to None to process all tracks
-    await scraper.run(max_tracks=10)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# NOTE: This scraper should only be executed through the orchestrator service
+# Direct execution is disabled to enforce proper orchestration

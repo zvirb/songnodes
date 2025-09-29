@@ -22,6 +22,31 @@ import {
   AVAILABLE_ALGORITHMS,
 } from '../types/pathfinding';
 
+// Music service credentials interface
+interface MusicServiceCredentials {
+  tidal?: {
+    username: string;
+    password: string;
+    rememberMe: boolean;
+    isConnected?: boolean;
+    lastValidated?: number;
+  };
+  spotify?: {
+    clientId: string;
+    clientSecret: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number;
+  };
+  appleMusic?: {
+    keyId: string;
+    teamId: string;
+    privateKey: string;
+    token?: string;
+    expiresAt?: number;
+  };
+}
+
 // Main application state interface
 interface AppState {
   // Graph data
@@ -46,6 +71,9 @@ interface AppState {
 
   // Path building
   pathfindingState: PathfindingState;
+
+  // Music service credentials
+  musicCredentials: MusicServiceCredentials;
 
   // Loading and error states
   isLoading: boolean;
@@ -90,6 +118,15 @@ interface SearchActions {
   setSearchFilters: (filters: Partial<SearchFilters>) => void;
   clearSearch: () => void;
   applyFilters: (filters: SearchFilters) => void;
+}
+
+interface CredentialActions {
+  updateCredentials: (service: keyof MusicServiceCredentials, credentials: any) => void;
+  clearCredentials: (service?: keyof MusicServiceCredentials) => void;
+  testConnection: (service: keyof MusicServiceCredentials) => Promise<boolean>;
+  loadCredentialsFromStorage: () => void;
+  saveCredentialsToStorage: () => void;
+  setConnectionStatus: (service: keyof MusicServiceCredentials, isConnected: boolean) => void;
 }
 
 interface SetlistActions {
@@ -139,6 +176,7 @@ interface StoreState extends AppState {
   pathfinding: PathfindingActions;
   performance: PerformanceActions;
   general: GeneralActions;
+  credentials: CredentialActions;
 
   // Legacy compatibility properties for components
   viewSettings: ViewState;
@@ -224,6 +262,8 @@ const initialState: AppState = {
     optimizationLevel: 'balanced',
     error: null,
   },
+
+  musicCredentials: {},
 
   isLoading: false,
   error: null,
@@ -854,6 +894,153 @@ export const useStore = create<StoreState>()(
 
           resetState: () => {
             set(initialState, false, 'general/resetState');
+          },
+        },
+
+        // Credential management actions
+        credentials: {
+          updateCredentials: (service, credentials) => {
+            set((state) => ({
+              ...state,
+              musicCredentials: {
+                ...state.musicCredentials,
+                [service]: {
+                  ...state.musicCredentials[service],
+                  ...credentials,
+                },
+              },
+            }), false, `credentials/update${service.charAt(0).toUpperCase() + service.slice(1)}`);
+          },
+
+          clearCredentials: (service) => {
+            set((state) => {
+              if (service) {
+                const newCredentials = { ...state.musicCredentials };
+                delete newCredentials[service];
+                return {
+                  ...state,
+                  musicCredentials: newCredentials,
+                };
+              } else {
+                return {
+                  ...state,
+                  musicCredentials: {},
+                };
+              }
+            }, false, 'credentials/clear');
+          },
+
+          testConnection: async (service) => {
+            const state = get();
+            const credentials = state.musicCredentials[service];
+
+            if (!credentials) {
+              return false;
+            }
+
+            try {
+              // Set loading state
+              set((state) => ({
+                ...state,
+                isLoading: true,
+              }), false, 'credentials/testConnectionStart');
+
+              // Implement actual connection testing based on service
+              switch (service) {
+                case 'tidal':
+                  try {
+                    const response = await fetch('http://localhost:8085/auth/test', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        username: credentials.username,
+                        password: credentials.password,
+                      }),
+                    });
+
+                    if (response.ok) {
+                      const result = await response.json();
+                      const isValid = result.valid;
+                      get().credentials.setConnectionStatus(service, isValid);
+                      return isValid;
+                    } else {
+                      get().credentials.setConnectionStatus(service, false);
+                      return false;
+                    }
+                  } catch (error) {
+                    console.error('Tidal connection test failed:', error);
+                    get().credentials.setConnectionStatus(service, false);
+                    return false;
+                  }
+
+                case 'spotify':
+                  // TODO: Implement Spotify connection test
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  const spotifyValid = credentials.clientId && credentials.clientSecret;
+                  get().credentials.setConnectionStatus(service, spotifyValid);
+                  return spotifyValid;
+
+                case 'appleMusic':
+                  // TODO: Implement Apple Music connection test
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  const appleValid = credentials.keyId && credentials.teamId && credentials.privateKey;
+                  get().credentials.setConnectionStatus(service, appleValid);
+                  return appleValid;
+
+                default:
+                  return false;
+              }
+            } catch (error) {
+              console.error(`Failed to test ${service} connection:`, error);
+              get().credentials.setConnectionStatus(service, false);
+              return false;
+            } finally {
+              set((state) => ({
+                ...state,
+                isLoading: false,
+              }), false, 'credentials/testConnectionEnd');
+            }
+          },
+
+          loadCredentialsFromStorage: () => {
+            try {
+              const stored = localStorage.getItem('songnodes_music_credentials');
+              if (stored) {
+                const decrypted = JSON.parse(atob(stored));
+                set((state) => ({
+                  ...state,
+                  musicCredentials: decrypted,
+                }), false, 'credentials/loadFromStorage');
+              }
+            } catch (error) {
+              console.error('Failed to load credentials from storage:', error);
+            }
+          },
+
+          saveCredentialsToStorage: () => {
+            try {
+              const state = get();
+              const encrypted = btoa(JSON.stringify(state.musicCredentials));
+              localStorage.setItem('songnodes_music_credentials', encrypted);
+            } catch (error) {
+              console.error('Failed to save credentials to storage:', error);
+            }
+          },
+
+          setConnectionStatus: (service, isConnected) => {
+            set((state) => ({
+              ...state,
+              musicCredentials: {
+                ...state.musicCredentials,
+                [service]: {
+                  ...state.musicCredentials[service],
+                  isConnected,
+                  lastValidated: Date.now(),
+                },
+              },
+            }), false, `credentials/setConnectionStatus${service.charAt(0).toUpperCase() + service.slice(1)}`);
           },
         },
 
