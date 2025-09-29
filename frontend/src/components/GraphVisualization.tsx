@@ -14,7 +14,7 @@ import {
 import { zoom, zoomIdentity, ZoomBehavior, ZoomTransform } from 'd3-zoom';
 import { select } from 'd3-selection';
 import useStore from '../store/useStore';
-import { GraphNode, GraphEdge, DEFAULT_CONFIG, Bounds } from '../types';
+import { GraphNode, GraphEdge, DEFAULT_CONFIG, Bounds, Track } from '../types';
 
 // Performance constants - updated for 2025 best practices
 const PERFORMANCE_THRESHOLDS = {
@@ -297,11 +297,20 @@ class SpatialIndex {
 class PerformanceMonitor {
   private frameTime: number = 0;
   private frameCount: number = 0;
-  private lastUpdate: number = performance.now();
+  private lastUpdate: number = 0; // Initialize to 0, will be set on first update
   private targetFPS: number = DEFAULT_CONFIG.performance.targetFPS;
 
   update(): { frameRate: number; renderTime: number; shouldOptimize: boolean } {
-    const now = performance.now();
+    // Safe performance.now() with fallback
+    const now = typeof performance !== 'undefined' && performance.now
+      ? performance.now()
+      : Date.now();
+
+    // Initialize lastUpdate on first call if needed
+    if (this.lastUpdate === 0) {
+      this.lastUpdate = now;
+    }
+
     this.frameTime = now - this.lastUpdate;
     this.lastUpdate = now;
     this.frameCount++;
@@ -318,11 +327,18 @@ class PerformanceMonitor {
 
   reset(): void {
     this.frameCount = 0;
-    this.lastUpdate = performance.now();
+    // Safe performance.now() with fallback
+    this.lastUpdate = typeof performance !== 'undefined' && performance.now
+      ? performance.now()
+      : Date.now();
   }
 }
 
-export const GraphVisualization: React.FC = () => {
+interface GraphVisualizationProps {
+  onTrackSelect?: (track: Track) => void;
+}
+
+export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackSelect }) => {
   // Store hooks
   const {
     graphData,
@@ -345,11 +361,13 @@ export const GraphVisualization: React.FC = () => {
   const spatialIndexRef = useRef<SpatialIndex>(new SpatialIndex());
   const performanceMonitorRef = useRef<PerformanceMonitor>(new PerformanceMonitor());
 
-  // Animation control system
+  // Animation control system with play/pause functionality
+  const [isSimulationPaused, setIsSimulationPaused] = useState(false);
+  const isSimulationPausedRef = useRef(false); // Add ref to avoid closure issues
   const animationStateRef = useRef<AnimationState>({
-    isActive: false,
+    isActive: true, // Start active by default
     startTime: 0,
-    duration: 15000, // 15 seconds
+    duration: Infinity, // Continuous until paused
     trigger: 'initial'
   });
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -684,9 +702,14 @@ export const GraphVisualization: React.FC = () => {
 
   // Handle D3 simulation tick
   const handleSimulationTick = useCallback(() => {
-    // CRITICAL FIX: Only allow position updates during active animation window
+    // CRITICAL FIX: Check ref instead of state to avoid closure issues
+    if (isSimulationPausedRef.current) {
+      // Simulation is paused, don't update positions (but keep rendering current positions)
+      return;
+    }
+
     if (!animationStateRef.current.isActive) {
-      // Animation is frozen, don't update positions
+      // Animation not active, don't update positions
       return;
     }
 
@@ -717,28 +740,28 @@ export const GraphVisualization: React.FC = () => {
     console.log('Force simulation completed');
   }, []);
 
-  // Initialize D3 force simulation
+  // Initialize D3 force simulation with maximum speed parameters
   const initializeSimulation = useCallback(() => {
     const simulation = forceSimulation<EnhancedGraphNode, EnhancedGraphEdge>()
       .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>()
         .id(d => d.id)
         .distance(250) // Much larger distance for better separation
-        .strength(0.3)  // Weaker strength to allow more spread
+        .strength(0.8)  // HIGHER strength for faster movement
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-1500) // Even stronger repulsion for maximum separation
-        .distanceMax(2000) // Much larger influence radius
-        .distanceMin(50)   // Larger minimum distance
+        .strength(-2500) // MUCH stronger repulsion for faster separation
+        .distanceMax(3000) // Larger influence radius
+        .distanceMin(30)   // Smaller minimum distance for tighter packing initially
       )
       .force('center', forceCenter<EnhancedGraphNode>(0, 0))
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 40) // Much larger collision radius
-        .strength(1.0)  // Strong collision prevention
-        .iterations(3)  // More iterations for better separation
+        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 20) // Smaller collision radius for faster settling
+        .strength(1.5)  // STRONGER collision prevention for faster response
+        .iterations(5)  // MORE iterations for faster convergence
       )
-      .velocityDecay(0.8)  // Higher decay for faster settling
-      .alphaDecay(0.1)     // Much faster decay for quick convergence (nodes settle in ~3-5 seconds)
-      .alphaMin(0.005);    // Lower threshold for more complete positioning
+      .velocityDecay(0.1)   // MUCH LOWER friction for MAXIMUM speed (was 0.4)
+      .alphaDecay(0.005)    // MUCH SLOWER decay for longer-lasting movement (was 0.0228)
+      .alphaMin(0.01);      // HIGHER threshold to keep movement active longer (was 0.001)
 
     simulation.on('tick', handleSimulationTick);
     simulation.on('end', handleSimulationEnd);
@@ -746,6 +769,57 @@ export const GraphVisualization: React.FC = () => {
     simulationRef.current = simulation;
     return simulation;
   }, [handleSimulationTick, handleSimulationEnd]);
+
+  // Fast pre-computation method using manual ticks for accurate positioning
+  const preComputeLayout = useCallback((nodes: EnhancedGraphNode[], maxTicks = 300) => {
+    console.log('🚀 Pre-computing accurate layout positions...');
+
+    // Create a separate simulation for pre-computation
+    const preSimulation = forceSimulation<EnhancedGraphNode>(nodes)
+      .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>(enhancedEdgesRef.current)
+        .id(d => d.id)
+        .distance(250)
+        .strength(0.3)
+      )
+      .force('charge', forceManyBody<EnhancedGraphNode>()
+        .strength(-1500)
+        .distanceMax(2000)
+        .distanceMin(50)
+      )
+      .force('center', forceCenter<EnhancedGraphNode>(0, 0))
+      .force('collision', forceCollide<EnhancedGraphNode>()
+        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 40)
+        .strength(1.0)
+        .iterations(3)
+      )
+      .velocityDecay(0.4)   // Quality settings for accurate layout
+      .alphaDecay(0.0228)   // Standard D3 decay rate
+      .alphaMin(0.001)      // Precise threshold
+      .stop(); // Stop automatic ticking
+
+    // Run manual ticks until convergence
+    let tickCount = 0;
+    const startTime = typeof performance !== 'undefined' && performance.now
+      ? performance.now()
+      : Date.now();
+
+    while (preSimulation.alpha() > preSimulation.alphaMin() && tickCount < maxTicks) {
+      preSimulation.tick();
+      tickCount++;
+    }
+
+    const endTime = typeof performance !== 'undefined' && performance.now
+      ? performance.now()
+      : Date.now();
+    console.log(`✅ Layout pre-computed in ${tickCount} ticks (${(endTime - startTime).toFixed(1)}ms)`);
+
+    // Return the computed positions
+    return nodes.map(node => ({
+      id: node.id,
+      x: node.x || 0,
+      y: node.y || 0
+    }));
+  }, []);
 
   // Initialize D3 zoom behavior
   // NOTE: We define the zoom handler inline to avoid React hook ordering issues
@@ -832,66 +906,70 @@ export const GraphVisualization: React.FC = () => {
 
   // Handle zoom events
 
+  // Throttled frame updates (2025 best practice - prevent excessive re-renders)
+  // Define BEFORE animation functions to avoid temporal dead zone
+  const throttledFrameUpdate = useRef<NodeJS.Timeout | null>(null);
+
+  const scheduleFrameUpdate = useCallback(() => {
+    if (throttledFrameUpdate.current) return; // Already scheduled
+
+    throttledFrameUpdate.current = setTimeout(() => {
+      frameRef.current++;
+      throttledFrameUpdate.current = null;
+    }, 16); // ~60fps max
+  }, []);
+
   // Animation control functions
-  const startAnimation = useCallback((trigger: AnimationState['trigger']) => {
-    console.log(`🎬 Starting ${trigger} animation for 15 seconds`);
+  // Define stopAnimation BEFORE startAnimation to avoid hooks dependency issues
+  // Pause/unpause simulation
+  const toggleSimulation = useCallback(() => {
+    setIsSimulationPaused(prev => {
+      const newPaused = !prev;
+      console.log(newPaused ? '⏸️ Pausing simulation' : '▶️ Resuming simulation');
 
-    const state: AnimationState = {
-      isActive: true,
-      startTime: Date.now(),
-      duration: 15000,
-      trigger
-    };
+      // CRITICAL: Update ref immediately to avoid closure issues
+      isSimulationPausedRef.current = newPaused;
 
-    animationStateRef.current = state;
+      if (newPaused) {
+        // Pause: stop D3 simulation but keep rendering
+        console.log('🛑 PAUSING: Stopping D3 simulation only (keeping visuals)');
+        animationStateRef.current.isActive = false;
 
-    // Clear any existing timer
-    if (animationTimerRef.current) {
-      clearTimeout(animationTimerRef.current);
-    }
-
-    // Set timer to stop animation after 15 seconds
-    animationTimerRef.current = setTimeout(() => {
-      console.log('⏹️ Animation time limit reached, freezing movement');
-      stopAnimation();
-    }, 15000);
-
-    // Update UI timer every second
-    if (uiTimerRef.current) {
-      clearInterval(uiTimerRef.current);
-    }
-    uiTimerRef.current = setInterval(() => {
-      if (animationStateRef.current.isActive) {
-        const elapsed = Date.now() - animationStateRef.current.startTime;
-        const remaining = Math.max(0, Math.ceil((15000 - elapsed) / 1000));
-        setAnimationTimer(remaining);
-        if (remaining <= 0) {
-          clearInterval(uiTimerRef.current!);
-          uiTimerRef.current = null;
+        // Stop D3 simulation
+        if (simulationRef.current) {
+          simulationRef.current.stop();
+          console.log('✅ D3 simulation stopped');
         }
+
+        // CORRECTED: Keep PIXI ticker running to show frozen nodes
+        console.log('🖼️ Keeping PIXI ticker active to display frozen positions');
       } else {
-        // Animation was stopped externally, clean up this timer
-        clearInterval(uiTimerRef.current!);
-        uiTimerRef.current = null;
+        // Resume: restart D3 simulation
+        console.log('▶️ RESUMING: Starting D3 simulation');
+        animationStateRef.current.isActive = true;
+
+        // Restart D3 simulation
+        if (simulationRef.current) {
+          simulationRef.current.alpha(0.8).restart(); // Resume with high energy
+          console.log('✅ D3 simulation restarted');
+        }
+
+        // Ensure PIXI ticker is running (should already be)
+        if (pixiAppRef.current?.ticker && !pixiAppRef.current.ticker.started) {
+          pixiAppRef.current.ticker.start();
+          console.log('✅ PIXI ticker ensured active');
+        }
       }
-    }, 1000);
 
-    // Restart PIXI ticker if it was stopped
-    if (pixiAppRef.current?.ticker && !pixiAppRef.current.ticker.started) {
-      pixiAppRef.current.ticker.start();
-      console.log('✅ PIXI ticker restarted for animation');
-    }
-
-    // If simulation exists, restart it with more energy
-    if (simulationRef.current) {
-      simulationRef.current.alpha(0.8).restart();
-    }
+      return newPaused;
+    });
   }, []);
 
   const stopAnimation = useCallback(() => {
     console.log('🛑 Stopping animation and freezing layout');
 
     animationStateRef.current.isActive = false;
+    setIsSimulationPaused(true);
     setAnimationTimer(0);
 
     if (animationTimerRef.current) {
@@ -911,26 +989,61 @@ export const GraphVisualization: React.FC = () => {
       simulationRef.current.stop();
       console.log('✅ D3 simulation force-stopped (alpha set to 0)');
     }
-
-    // Also stop PIXI ticker to prevent visual updates
-    if (pixiAppRef.current?.ticker) {
-      pixiAppRef.current.ticker.stop();
-      console.log('✅ PIXI ticker stopped to freeze animation');
-    }
   }, []);
 
+  const startAnimation = useCallback((trigger: AnimationState['trigger']) => {
+    console.log(`🎬 Starting ${trigger} dynamic simulation with maximum speed`);
+
+    const state: AnimationState = {
+      isActive: true,
+      startTime: Date.now(),
+      duration: Infinity, // Continuous until manually paused
+      trigger
+    };
+
+    animationStateRef.current = state;
+    setIsSimulationPaused(false);
+    isSimulationPausedRef.current = false; // CRITICAL: Update ref too
+
+    // Clear any existing timer
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
+    }
+
+    // NO automatic stopping - simulation runs until manually paused
+
+    // Restart PIXI ticker if it was stopped
+    if (pixiAppRef.current?.ticker && !pixiAppRef.current.ticker.started) {
+      pixiAppRef.current.ticker.start();
+      console.log('✅ PIXI ticker restarted for animation');
+    }
+
+    // Start the D3 simulation with maximum energy for fastest movement
+    if (simulationRef.current) {
+      simulationRef.current.alpha(1.0).restart(); // Maximum alpha for fastest initial movement
+      console.log('🚀 D3 simulation restarted with maximum speed settings');
+    }
+
+    // Update rendering immediately
+    scheduleFrameUpdate();
+  }, [scheduleFrameUpdate]);
+
+  // Manual refresh for debugging/testing - defined after startAnimation to avoid circular dependency
   const manualRefresh = useCallback(() => {
     console.log('🔄 Manual refresh triggered');
     startAnimation('manual_refresh');
   }, [startAnimation]);
 
-  // Expose manual refresh function globally for debugging/testing
+  // Expose simulation controls globally for debugging/testing
   useEffect(() => {
+    (window as any).toggleSimulation = toggleSimulation;
     (window as any).manualRefresh = manualRefresh;
     return () => {
+      delete (window as any).toggleSimulation;
       delete (window as any).manualRefresh;
     };
-  }, [manualRefresh]);
+  }, [toggleSimulation, manualRefresh]);
+
 
   // Create enhanced node from graph node
   const createEnhancedNode = useCallback((node: GraphNode): EnhancedGraphNode => {
@@ -1022,7 +1135,7 @@ export const GraphVisualization: React.FC = () => {
 
     // Create artist label (above node)
     const artistLabel = new PIXI.Text({
-      text: node.artist || 'Unknown Artist',
+      text: node.artist || node.metadata?.artist || 'Unknown Artist',
       style: {
         fontFamily: 'Arial',
         fontSize: 11,
@@ -1038,7 +1151,7 @@ export const GraphVisualization: React.FC = () => {
 
     // Create title label (below node)
     const titleLabel = new PIXI.Text({
-      text: node.title || node.label || 'Unknown',
+      text: node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown',
       style: {
         fontFamily: 'Arial',
         fontSize: 12,
@@ -1058,87 +1171,213 @@ export const GraphVisualization: React.FC = () => {
     node.pixiLabel = titleLabel;  // Main label is the title
     (node as any).pixiArtistLabel = artistLabel;  // Store artist label separately
 
-    // Add interaction handlers with debugging
-    // Note: These will be connected to the actual handlers later when nodes are created
+    // Enhanced interaction handlers with 2025 best practices
     const nodeId = node.id;
 
-    // Modern PIXI.js v8 event handling with proper click-to-select
-    // CRITICAL FIX: Use 'pointerenter' and 'pointerleave' instead of 'pointerover'/'pointerout'
-    // This prevents event bubbling issues and provides more stable hover detection
-    container.on('pointerenter', () => {
+    // Store interaction state
+    let isSelected = false;
+    let isDragging = false;
+    let dragStartPosition = { x: 0, y: 0 };
+    let lastClickTime = 0;
+    let isPointerDown = false;
+
+    // CRITICAL FIX: Use pointerdown/pointerup for reliable click detection
+    // This ensures clicks work even during animations
+    container.on('pointerdown', (event) => {
+      console.log(`[Event Triggered] pointerdown → node ${nodeId}`);
+      isPointerDown = true;
+      const now = Date.now();
+
+      // Store drag start position for drag detection
+      dragStartPosition = { x: event.globalX, y: event.globalY };
+      isDragging = false;
+
+      // Visual feedback - immediate response
+      if (circle) {
+        const originalTint = circle.tint;
+        circle.tint = 0xFFFFFF;
+        setTimeout(() => {
+          if (circle) circle.tint = originalTint;
+        }, 100);
+      }
+
+      event.stopPropagation();
+    });
+
+    container.on('pointerup', (event) => {
+      console.log(`[Event Triggered] pointerup → node ${nodeId}`);
+
+      if (!isPointerDown) return;
+      isPointerDown = false;
+
+      // Calculate drag distance to differentiate click from drag
+      const dragDistance = Math.sqrt(
+        Math.pow(event.globalX - dragStartPosition.x, 2) +
+        Math.pow(event.globalY - dragStartPosition.y, 2)
+      );
+
+      // Only process as click if minimal movement (< 5 pixels)
+      if (dragDistance < 5) {
+        processNodeClick(event, nodeId, node);
+      } else {
+        console.log(`⚠️ Ignored drag (distance: ${dragDistance.toFixed(1)}px)`);
+      }
+
+      isDragging = false;
+    });
+
+    container.on('pointermove', (event) => {
+      if (!isPointerDown) return;
+
+      const dragDistance = Math.sqrt(
+        Math.pow(event.globalX - dragStartPosition.x, 2) +
+        Math.pow(event.globalY - dragStartPosition.y, 2)
+      );
+
+      if (dragDistance > 3) {
+        isDragging = true;
+      }
+    });
+
+    // Enhanced hover handling with visual feedback
+    container.on('pointerenter', (event) => {
       console.log(`[Event Triggered] pointerenter → node ${nodeId}`);
-      if (graph?.setHoveredNode) {
+
+      if (graph?.setHoveredNode && !isDragging) {
         graph.setHoveredNode(nodeId);
+
+        // Visual feedback for hover
+        if (circle && !isSelected) {
+          circle.tint = COLOR_SCHEMES.node.hovered;
+        }
       }
     });
 
     container.on('pointerleave', () => {
       console.log(`[Event Triggered] pointerleave → node ${nodeId}`);
-      graph.setHoveredNode(null);
-    });
 
-    container.on('click', (event) => {
-      console.log(`[Event Triggered] click → node ${nodeId}`);
+      if (graph?.setHoveredNode) {
+        graph.setHoveredNode(null);
 
-      // CRITICAL FIX: Prevent click events during active animation/movement
-      // This is a major cause of click interference
-      if (animationStateRef.current.isActive) {
-        const timeSinceStart = Date.now() - animationStateRef.current.startTime;
-        if (timeSinceStart < 2000) { // Block clicks for first 2 seconds of animation
-          console.log(`⚠️ Click blocked - animation in progress (${timeSinceStart}ms since start)`);
-          return;
+        // Reset visual state
+        if (circle) {
+          circle.tint = isSelected ? COLOR_SCHEMES.node.selected : COLOR_SCHEMES.node.default;
         }
       }
-
-      // CRITICAL FIX: Prevent rapid successive clicks (debouncing)
-      const now = Date.now();
-      const lastClickTime = (container as any).lastClickTime || 0;
-      if (now - lastClickTime < 200) { // 200ms debounce
-        console.log(`⚠️ Click blocked - too rapid (${now - lastClickTime}ms since last)`);
-        return;
-      }
-      (container as any).lastClickTime = now;
-
-      // Visual feedback - flash the node
-      const originalTint = circle.tint;
-      circle.tint = 0xFFFFFF;
-      setTimeout(() => {
-        circle.tint = originalTint;
-      }, 150);
-
-      // Handle selection based on current tool
-      switch (viewState.selectedTool) {
-        case 'select':
-          graph.toggleNodeSelection(nodeId);
-          console.log(`Node ${nodeId} selection toggled`);
-          break;
-        case 'path':
-          if (!pathfindingState.startTrackId) {
-            pathfinding.setStartTrack(nodeId);
-            console.log(`Set START track: ${nodeId}`);
-          } else if (!pathfindingState.endTrackId && nodeId !== pathfindingState.startTrackId) {
-            pathfinding.setEndTrack(nodeId);
-            console.log(`Set END track: ${nodeId}`);
-          } else {
-            pathfinding.addWaypoint(nodeId);
-            console.log(`Added waypoint: ${nodeId}`);
-          }
-          break;
-        case 'setlist':
-          // TODO: Add to setlist
-          console.log(`TODO: Add to setlist: ${nodeId}`);
-          break;
-      }
     });
 
+    // Enhanced right-click context menu
     container.on('rightclick', (event) => {
       console.log(`[Event Triggered] rightclick → node ${nodeId}`);
       event.preventDefault();
-      // TODO: Show context menu
+      event.stopPropagation();
+
+      // Show context menu with node information
+      console.group('🎵 Node Context Menu');
+      console.log('Track:', node.track?.name || 'Unknown');
+      console.log('Artist:', node.track?.artist || 'Unknown');
+      console.log('BPM:', node.track?.bpm || 'Unknown');
+      console.log('Position:', { x: event.globalX, y: event.globalY });
+      console.groupEnd();
+
+      // TODO: Show visual context menu
     });
 
-    // Log that events were attached
-    console.log(`[Events Attached] Node ${node.id} has ${container.listenerCount('pointerdown')} pointerdown listeners`);
+    // Main click processing function
+    const processNodeClick = (event: any, nodeId: string, node: EnhancedGraphNode) => {
+      const now = Date.now();
+
+      // Debounce rapid clicks
+      if (now - lastClickTime < 150) {
+        console.log(`⚠️ Click debounced - too rapid (${now - lastClickTime}ms)`);
+        return;
+      }
+      lastClickTime = now;
+
+      console.log(`✅ Processing click for node ${nodeId}`);
+
+      const isCtrlClick = event.ctrlKey || event.metaKey;
+      const isShiftClick = event.shiftKey;
+
+      // Handle different interaction modes
+      switch (viewState.selectedTool) {
+        case 'select':
+          if (isCtrlClick) {
+            // Multi-select: toggle this node
+            isSelected = !isSelected;
+            graph.toggleNodeSelection(nodeId);
+            console.log(`🔸 Multi-select toggled for node ${nodeId}`);
+          } else if (isShiftClick) {
+            // Range select: select all nodes between last selected and this one
+            console.log(`📏 Range select to node ${nodeId} (TODO)`);
+            // TODO: Implement range selection
+          } else {
+            // Single select: clear others and select this one
+            graph.clearAllSelections?.();
+            isSelected = true;
+            graph.toggleNodeSelection(nodeId);
+            console.log(`🎯 Single select for node ${nodeId}`);
+          }
+
+          // Update visual state
+          if (circle) {
+            circle.tint = isSelected ? COLOR_SCHEMES.node.selected : COLOR_SCHEMES.node.default;
+          }
+
+          // CRITICAL: Trigger track modal if onTrackSelect is provided
+          console.log('🔍 Checking track modal trigger:', {
+            hasNode: !!node,
+            hasTrack: !!(node?.track),
+            hasCallback: !!onTrackSelect,
+            nodeId: nodeId,
+            trackName: node?.track?.name || 'N/A'
+          });
+
+          if (node?.track && onTrackSelect) {
+            console.log('🎵 Opening track modal for:', node.track.name || node.track.id);
+            onTrackSelect(node.track);
+          } else if (!node?.track) {
+            console.log('⚠️ No track data available for node:', nodeId);
+          } else if (!onTrackSelect) {
+            console.log('⚠️ No onTrackSelect callback provided');
+          }
+          break;
+
+        case 'path':
+          if (!pathfindingState.startTrackId) {
+            pathfinding.setStartTrack(nodeId);
+            console.log(`🚩 Set START track: ${nodeId}`);
+          } else if (!pathfindingState.endTrackId && nodeId !== pathfindingState.startTrackId) {
+            pathfinding.setEndTrack(nodeId);
+            console.log(`🏁 Set END track: ${nodeId}`);
+          } else {
+            pathfinding.addWaypoint(nodeId);
+            console.log(`📍 Added waypoint: ${nodeId}`);
+          }
+          break;
+
+        case 'setlist':
+          console.log(`📝 Add to setlist: ${nodeId}`);
+          // TODO: Implement setlist functionality
+          break;
+
+        default:
+          console.log(`⚠️ Unknown tool: ${viewState.selectedTool}`);
+      }
+    };
+
+    // Enhanced debugging - log all attached event listeners
+    console.log(`[Events Attached] Node ${node.id}:`, {
+      pointerdown: container.listenerCount('pointerdown'),
+      pointerup: container.listenerCount('pointerup'),
+      pointermove: container.listenerCount('pointermove'),
+      pointerenter: container.listenerCount('pointerenter'),
+      pointerleave: container.listenerCount('pointerleave'),
+      rightclick: container.listenerCount('rightclick'),
+      eventMode: container.eventMode,
+      cursor: container.cursor,
+      hitArea: container.hitArea ? `Circle(r=${(container.hitArea as PIXI.Circle).radius})` : 'none'
+    });
 
     return container;
   }, [graph, pathfinding, viewState, pathfindingState]);
@@ -1274,10 +1513,8 @@ export const GraphVisualization: React.FC = () => {
   const renderFrame = useCallback(() => {
     if (!lodSystemRef.current || !pixiAppRef.current) return;
 
-    // Skip rendering if animation is not active (optimization for frozen state)
-    if (!animationStateRef.current.isActive) {
-      return;
-    }
+    // CORRECTED: Always render to show nodes, even when paused
+    // Pausing should freeze movement, not hide the graph
 
     const currentFrame = frameRef.current;
     const { frameRate, renderTime, shouldOptimize } = performanceMonitorRef.current.update();
@@ -1364,8 +1601,8 @@ export const GraphVisualization: React.FC = () => {
     if (node) {
       console.log('Node Details:', {
         id: node.id,
-        title: node.title,
-        artist: node.artist,
+        title: node.title || node.metadata?.title || node.metadata?.label || node.label,
+        artist: node.artist || node.metadata?.artist,
         x: node.x,
         y: node.y,
         isSelected: viewState.selectedNodes.has(nodeId),
@@ -1403,6 +1640,14 @@ export const GraphVisualization: React.FC = () => {
         console.log('Action: Toggling node selection');
         graph.toggleNodeSelection(nodeId);
         console.log('Selected nodes after toggle:', Array.from(viewState.selectedNodes));
+
+        // Trigger track modal if track data is available
+        if (node?.track && onTrackSelect) {
+          console.log('🎵 Opening track modal for:', node.track.name || node.track.id);
+          onTrackSelect(node.track);
+        } else if (!node?.track) {
+          console.log('⚠️ No track data available for node:', nodeId);
+        }
         break;
       case 'path':
         console.log('Action: Pathfinding mode');
@@ -1453,8 +1698,8 @@ export const GraphVisualization: React.FC = () => {
     const node = enhancedNodesRef.current.get(nodeId);
     if (node) {
       console.log('Node Details:', {
-        title: node.title,
-        artist: node.artist
+        title: node.title || node.metadata?.title || node.metadata?.label || node.label,
+        artist: node.artist || node.metadata?.artist
       });
     }
 
@@ -1498,8 +1743,8 @@ export const GraphVisualization: React.FC = () => {
     lastDataHashRef.current = newDataHash;
 
     if (isNewData && !wasEmpty) { // Don't trigger on initial empty->data load
-      console.log('🔄 New data detected, triggering animation');
-      startAnimation('data_change');
+      console.log('🔄 New data detected - using instant positioning instead of animation');
+      // NO automatic animation - instant positioning happens in updateGraphData
     }
 
     const simulation = simulationRef.current;
@@ -1565,21 +1810,25 @@ export const GraphVisualization: React.FC = () => {
       enhancedEdgesRef.current.set(edge.id, edge);
     });
 
-    // Update simulation with nodes and edges
-    simulation.nodes(Array.from(nodeMap.values()));
+    // START DYNAMIC SIMULATION: Begin continuous movement
+    const nodes = Array.from(nodeMap.values());
+    console.log('🚀 DYNAMIC: Starting simulation with nodes for continuous movement...');
 
-    // Update the existing link force with new edges data
+    // Update simulation with nodes/edges and START it
+    simulation.nodes(nodes);
     const linkForce = simulation.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
     if (linkForce) {
       linkForce.links(Array.from(enhancedEdgesRef.current.values()));
     }
 
-    // Restart simulation only if animation is active
-    if (animationStateRef.current.isActive) {
-      simulation.alpha(0.3).restart();
+    // START simulation for dynamic movement
+    // CRITICAL FIX: Check the ref, not the state, to avoid closure issues
+    if (!isSimulationPausedRef.current) {
+      simulation.alpha(1.0).restart(); // Start with maximum energy
+      animationStateRef.current.isActive = true;
+      console.log('✅ DYNAMIC: Simulation started with maximum speed for continuous movement');
     } else {
-      // If animation is not active, just position nodes without simulation
-      console.log('🔒 Animation frozen, not restarting simulation');
+      console.log('⏸️ Simulation is paused - NOT restarting on data update');
     }
 
     // Rebuild spatial index
@@ -1595,8 +1844,7 @@ export const GraphVisualization: React.FC = () => {
   useEffect(() => {
     const initializeAfterMount = () => {
       console.log('Attempting PIXI initialization after component mount');
-      // Start initial animation on first load
-      startAnimation('initial');
+      // NO automatic animation - use instant positioning when data loads
       initializePixi();
     };
 
@@ -1762,42 +2010,139 @@ export const GraphVisualization: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [handleResize]);
 
-  // Handle keyboard shortcuts for debugging
+  // Enhanced keyboard navigation and debugging (2025 best practices)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Press 'D' to toggle debug mode
-      if (event.key === 'd' || event.key === 'D') {
-        setShowDebugInfo(prev => {
-          const newValue = !prev;
-          console.log(`🐛 Debug mode ${newValue ? 'ENABLED' : 'DISABLED'}`);
-          if (newValue) {
-            console.log('Debug Info:');
-            console.log('- Total nodes:', enhancedNodesRef.current.size);
-            console.log('- Selected nodes:', viewState.selectedNodes.size);
-            console.log('- Hovered node:', viewState.hoveredNode);
-            console.log('- Selected tool:', viewState.selectedTool);
-            console.log('- Zoom level:', viewState.zoom);
+      // Ignore if user is typing in an input
+      if (event.target && (event.target as any).tagName?.toLowerCase() === 'input') {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'd':
+          // Toggle debug mode
+          setShowDebugInfo(prev => {
+            const newValue = !prev;
+            console.log(`🐛 Debug mode ${newValue ? 'ENABLED' : 'DISABLED'}`);
+            if (newValue) {
+              console.group('🔍 Debug Information');
+              console.log('- Total nodes:', enhancedNodesRef.current.size);
+              console.log('- Selected nodes:', viewState.selectedNodes.size);
+              console.log('- Hovered node:', viewState.hoveredNode);
+              console.log('- Selected tool:', viewState.selectedTool);
+              console.log('- Zoom level:', viewState.zoom);
+              console.log('- Animation active:', animationStateRef.current.isActive);
+              console.log('- Simulation paused:', isSimulationPausedRef.current);
+              console.groupEnd();
+
+              // Enable hit area debugging
+              (window as any).DEBUG_HIT_AREAS = true;
+            } else {
+              (window as any).DEBUG_HIT_AREAS = false;
+            }
+            return newValue;
+          });
+          break;
+
+        case 'h':
+          // Show keyboard shortcuts help
+          console.group('⌨️ Keyboard Shortcuts');
+          console.log('D - Toggle debug mode');
+          console.log('H - Show this help');
+          console.log('Space - Pause/resume animation');
+          console.log('Escape - Clear selection');
+          console.log('A - Select all visible nodes');
+          console.log('Tab - Navigate between selected nodes');
+          console.log('Enter - Open track modal for focused node');
+          console.log('Arrow Keys - Pan viewport');
+          console.log('+ / - - Zoom in/out');
+          console.groupEnd();
+          break;
+
+        case ' ':
+          // Space bar - pause/resume animation
+          event.preventDefault();
+          const wasPaused = isSimulationPausedRef.current;
+          isSimulationPausedRef.current = !wasPaused;
+          console.log(`⏯️ Animation ${wasPaused ? 'RESUMED' : 'PAUSED'}`);
+          break;
+
+        case 'escape':
+          // Clear all selections
+          graph.clearAllSelections?.();
+          console.log('🚫 All selections cleared');
+          break;
+
+        case 'a':
+          if (event.ctrlKey || event.metaKey) {
+            // Ctrl+A - Select all visible nodes
+            event.preventDefault();
+            const visibleNodes = Array.from(enhancedNodesRef.current.values())
+              .filter(node => node.isVisible);
+
+            visibleNodes.forEach(node => {
+              graph.toggleNodeSelection(node.id);
+            });
+            console.log(`📋 Selected ${visibleNodes.length} visible nodes`);
           }
-          return newValue;
-        });
+          break;
+
+        case 'tab':
+          // Tab navigation between selected nodes
+          event.preventDefault();
+          const selectedNodes = Array.from(viewState.selectedNodes);
+          if (selectedNodes.length > 0) {
+            // TODO: Implement focus cycling between selected nodes
+            console.log('🔄 Tab navigation (TODO)');
+          }
+          break;
+
+        case 'enter':
+          // Enter - open track modal for focused node
+          if (viewState.hoveredNode) {
+            const node = enhancedNodesRef.current.get(viewState.hoveredNode);
+            if (node?.track && onTrackSelect) {
+              console.log('⏎ Opening track modal via keyboard');
+              onTrackSelect(node.track);
+            }
+          }
+          break;
+
+        // Viewport navigation with arrow keys
+        case 'arrowup':
+        case 'arrowdown':
+        case 'arrowleft':
+        case 'arrowright':
+          event.preventDefault();
+          // TODO: Implement viewport panning
+          console.log(`🧭 Arrow key navigation: ${event.key} (TODO)`);
+          break;
+
+        case '+':
+        case '=':
+          // Zoom in
+          event.preventDefault();
+          console.log('🔍 Zoom in (TODO)');
+          break;
+
+        case '-':
+        case '_':
+          // Zoom out
+          event.preventDefault();
+          console.log('🔍 Zoom out (TODO)');
+          break;
+
+        default:
+          // Log unhandled keys for debugging
+          if (showDebugInfo) {
+            console.log(`⌨️ Unhandled key: ${event.key}`);
+          }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewState]);
-
-  // Throttled frame updates (2025 best practice - prevent excessive re-renders)
-  const throttledFrameUpdate = useRef<NodeJS.Timeout | null>(null);
-
-  const scheduleFrameUpdate = useCallback(() => {
-    if (throttledFrameUpdate.current) return; // Already scheduled
-
-    throttledFrameUpdate.current = setTimeout(() => {
-      frameRef.current++;
-      throttledFrameUpdate.current = null;
-    }, 16); // ~60fps max
-  }, []);
+  }, [viewState, showDebugInfo, graph, onTrackSelect]);
 
   // Handle view state changes with throttling
   useEffect(() => {
@@ -1844,21 +2189,7 @@ export const GraphVisualization: React.FC = () => {
         </div>
       )}
 
-      {/* Animation Controls */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <button
-          onClick={manualRefresh}
-          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-          title="Restart animation for 15 seconds"
-        >
-          🔄 Refresh Layout
-        </button>
-        {animationStateRef.current.isActive && animationTimer > 0 && (
-          <div className="bg-green-600 text-white px-3 py-1 rounded text-xs text-center">
-            🎬 Animating... {animationTimer}s
-          </div>
-        )}
-      </div>
+      {/* Controls moved to main toolbar - keeping this comment for reference */}
 
       {/* Debug overlay */}
       {showDebugInfo && (
@@ -1882,7 +2213,9 @@ export const GraphVisualization: React.FC = () => {
           <div className="mt-2 text-cyan-400">
             <div>Animation:</div>
             <div className="text-xs">• Active: {animationStateRef.current.isActive ? 'YES' : 'NO'}</div>
+            <div className="text-xs">• Paused: {isSimulationPaused ? 'YES' : 'NO'}</div>
             <div className="text-xs">• Trigger: {animationStateRef.current.trigger}</div>
+            <div className="text-xs">• Alpha: {simulationRef.current?.alpha()?.toFixed(3) || 'N/A'}</div>
             <div className="text-xs">• Manual: window.manualRefresh()</div>
           </div>
           <div className="mt-2 text-orange-400">

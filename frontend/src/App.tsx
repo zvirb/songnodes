@@ -22,6 +22,9 @@ const icons = {
   filter: '🔧',
   stats: '📊',
   targets: '🎯',
+  play: '▶️',
+  pause: '⏸️',
+  restart: '🔄',
   settings: '⚙️',
   help: '❓',
 };
@@ -69,6 +72,7 @@ const App: React.FC = () => {
 
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(false);
   const [djModeEnabled, setDjModeEnabled] = useState(true); // Default to DJ mode for testing
+  const [isAnimationPaused, setIsAnimationPaused] = useState(false);
 
   // Load initial graph data
   const loadGraphData = useCallback(async () => {
@@ -92,9 +96,32 @@ const App: React.FC = () => {
     }
   }, [graph, general]);
 
+  // Animation control handlers
+  const handleToggleAnimation = useCallback(() => {
+    const toggleFn = (window as any).toggleSimulation;
+    if (toggleFn) {
+      toggleFn();
+      setIsAnimationPaused(prev => !prev);
+    } else {
+      console.warn('toggleSimulation function not available');
+    }
+  }, []);
+
+  const handleRestartAnimation = useCallback(() => {
+    const restartFn = (window as any).manualRefresh;
+    if (restartFn) {
+      restartFn();
+      setIsAnimationPaused(false);
+    } else {
+      console.warn('manualRefresh function not available');
+    }
+  }, []);
+
   // Initialize app
   useEffect(() => {
-    loadGraphData();
+    // DJInterface handles its own data loading via useDataLoader hook
+    // No need to load graph data here as it causes loading state conflicts
+    // loadGraphData();
 
     // Performance monitoring in development
     if (process.env.NODE_ENV === 'development') {
@@ -434,6 +461,24 @@ const App: React.FC = () => {
         <div style={{ width: '1px', height: '24px', background: 'var(--color-border-primary)', margin: '0 8px' }} />
 
         <div style={{ display: 'flex', gap: '4px' }}>
+          {/* Animation Controls */}
+          <button
+            className="btn btn-icon-small"
+            onClick={handleToggleAnimation}
+            title={isAnimationPaused ? 'Resume graph animation' : 'Pause graph animation'}
+            data-testid="animation-toggle-button"
+          >
+            {isAnimationPaused ? icons.play : icons.pause}
+          </button>
+          <button
+            className="btn btn-icon-small"
+            onClick={handleRestartAnimation}
+            title="Restart graph animation"
+            data-testid="animation-restart-button"
+          >
+            {icons.restart}
+          </button>
+
           <button
             className="btn btn-icon-small"
             onClick={view.toggleLabels}

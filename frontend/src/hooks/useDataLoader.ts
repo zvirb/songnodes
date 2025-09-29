@@ -20,20 +20,22 @@ export const useDataLoader = () => {
         // Transform nodes
         const nodes: GraphNode[] = nodesData.nodes.map((node: any) => ({
           id: node.id,
-          title: node.metadata?.title || 'Unknown',
-          artist: node.metadata?.artist || 'Unknown',
+          title: node.title || node.metadata?.title || node.metadata?.label || 'Unknown',
+          artist: node.artist || node.metadata?.artist || 'Unknown',
           artistId: node.artist_id,
           bpm: node.metadata?.bpm,
           key: node.metadata?.key,
           genre: node.metadata?.genre || node.metadata?.category || 'Electronic',
           energy: node.metadata?.energy,
           year: node.metadata?.release_year,
-          label: node.metadata?.label || node.metadata?.title || 'Unknown',
+          label: node.metadata?.label || node.metadata?.title || node.title || 'Unknown',
           connections: node.metadata?.appearance_count || 0,
           popularity: node.metadata?.popularity || 0,
           // Use provided positions or random
           x: node.position?.x || Math.random() * 800 - 400,
           y: node.position?.y || Math.random() * 600 - 300,
+          // Include metadata for DJInterface access
+          metadata: node.metadata,
         }));
 
         // Create a set of loaded node IDs for quick lookup
