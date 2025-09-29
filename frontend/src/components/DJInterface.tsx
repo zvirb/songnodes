@@ -6,6 +6,7 @@ import { TrackDetailsModal } from './TrackDetailsModal';
 import { SettingsPanel } from './SettingsPanel';
 import { TidalPlaylistManager } from './TidalPlaylistManager';
 import { KeyMoodPanel } from './KeyMoodPanel';
+import TargetTracksManager from './TargetTracksManager';
 // Import removed - PipelineMonitoringDashboard has missing dependencies
 import { Track, DJMode } from '../types/dj';
 import useStore from '../store/useStore';
@@ -132,10 +133,24 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Right panel tab state (librarian mode)
-  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'keymood' | 'tidal'>('analysis');
+  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'keymood' | 'tidal' | 'targets'>('analysis');
 
   // Monitoring dashboard state
   const [showMonitoringDashboard, setShowMonitoringDashboard] = useState(false);
+  const [monitoringData, setMonitoringData] = useState({
+    isLoading: true,
+    metrics: null,
+    runs: [],
+    error: null
+  });
+
+  // Manual trigger states
+  const [triggerStates, setTriggerStates] = useState({
+    targetSearch: { loading: false, lastTriggered: null },
+    scraperTasks: { loading: false, lastTriggered: null }
+  });
+  // Animation controls state
+  const [isAnimationPaused, setIsAnimationPaused] = useState(false);
 
   // Get graph data from store with selective subscriptions to prevent unnecessary re-renders
   const graphData = useStore(state => state.graphData);
@@ -189,6 +204,156 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     setIsModalOpen(false);
     setInspectedTrack(null);
   }, []);
+
+  // Animation control handlers
+  const handleToggleAnimation = useCallback(() => {
+    const toggleFn = (window as any).toggleSimulation;
+    if (toggleFn) {
+      toggleFn();
+      setIsAnimationPaused(prev => !prev);
+    } else {
+      console.warn('toggleSimulation function not available');
+    }
+  }, []);
+
+  const handleRestartAnimation = useCallback(() => {
+    const restartFn = (window as any).manualRefresh;
+    if (restartFn) {
+      restartFn();
+      setIsAnimationPaused(false);
+    } else {
+      console.warn('manualRefresh function not available');
+    }
+  }, []);
+
+  // Fetch monitoring data when dashboard is opened
+  const fetchMonitoringData = useCallback(async () => {
+    setMonitoringData(prev => ({ ...prev, isLoading: true, error: null }));
+
+    try {
+      const [metricsResponse, runsResponse] = await Promise.all([
+        fetch('/api/v1/observability/metrics/summary'),
+        fetch('/api/v1/observability/runs')
+      ]);
+
+      if (!metricsResponse.ok || !runsResponse.ok) {
+        throw new Error(`API Error: ${metricsResponse.status} / ${runsResponse.status}`);
+      }
+
+      const [metrics, runs] = await Promise.all([
+        metricsResponse.json(),
+        runsResponse.json()
+      ]);
+
+      setMonitoringData({
+        isLoading: false,
+        metrics: metrics.summary || null,
+        runs: runs || [],
+        error: null
+      });
+    } catch (error) {
+      console.error('Failed to fetch monitoring data:', error);
+      setMonitoringData(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }));
+    }
+  }, []);
+
+  // Manual trigger functions
+  const triggerTargetSearch = useCallback(async () => {
+    setTriggerStates(prev => ({
+      ...prev,
+      targetSearch: { ...prev.targetSearch, loading: true }
+    }));
+
+    try {
+      const response = await fetch('/api/v1/scrapers/target-tracks/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to trigger target search: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setTriggerStates(prev => ({
+        ...prev,
+        targetSearch: { loading: false, lastTriggered: new Date().toISOString() }
+      }));
+
+      // Refresh monitoring data after trigger
+      setTimeout(fetchMonitoringData, 2000);
+
+      console.log('Target search triggered successfully:', result);
+    } catch (error) {
+      console.error('Failed to trigger target search:', error);
+      setTriggerStates(prev => ({
+        ...prev,
+        targetSearch: { ...prev.targetSearch, loading: false }
+      }));
+    }
+  }, [fetchMonitoringData]);
+
+  const triggerScraperTasks = useCallback(async () => {
+    setTriggerStates(prev => ({
+      ...prev,
+      scraperTasks: { ...prev.scraperTasks, loading: true }
+    }));
+
+    try {
+      // Submit tasks for each active scraper
+      const scrapers = ['1001tracklists', 'mixesdb', 'setlistfm', 'reddit'];
+      const promises = scrapers.map(scraper =>
+        fetch('/api/v1/scrapers/tasks/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scraper: scraper,
+            priority: 'high',
+            params: {}
+          })
+        })
+      );
+
+      const responses = await Promise.all(promises);
+      const results = await Promise.all(
+        responses.map(async (response, index) => {
+          if (!response.ok) {
+            console.warn(`Failed to trigger ${scrapers[index]}: ${response.status}`);
+            return null;
+          }
+          return await response.json();
+        })
+      );
+
+      const successCount = results.filter(r => r !== null).length;
+      console.log(`Successfully triggered ${successCount}/${scrapers.length} scrapers`);
+
+      setTriggerStates(prev => ({
+        ...prev,
+        scraperTasks: { loading: false, lastTriggered: new Date().toISOString() }
+      }));
+
+      // Refresh monitoring data after trigger
+      setTimeout(fetchMonitoringData, 3000);
+    } catch (error) {
+      console.error('Failed to trigger scraper tasks:', error);
+      setTriggerStates(prev => ({
+        ...prev,
+        scraperTasks: { ...prev.scraperTasks, loading: false }
+      }));
+    }
+  }, [fetchMonitoringData]);
+
+  // Fetch data when dashboard opens
+  useEffect(() => {
+    if (showMonitoringDashboard) {
+      fetchMonitoringData();
+    }
+  }, [showMonitoringDashboard, fetchMonitoringData]);
 
   return (
     <div
@@ -266,6 +431,30 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           }}>
             {tracks.length} Tracks Loaded
           </span>
+
+          {/* TEST: Quick track selector workaround */}
+          <button
+            onClick={() => {
+              if (tracks.length > 0) {
+                const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
+                console.log('🧪 TEST: Manually triggering track modal for:', randomTrack);
+                handleTrackInspect(randomTrack);
+              }
+            }}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: 'rgba(255,165,0,0.2)',
+              border: '1px solid rgba(255,165,0,0.4)',
+              borderRadius: '8px',
+              color: '#FFA500',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+            title="Test track modal with random track"
+          >
+            🧪 Test Modal
+          </button>
           <span style={{
             padding: '6px 12px',
             backgroundColor: 'rgba(126,211,33,0.2)',
@@ -276,6 +465,63 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           }}>
             Co-Pilot Active
           </span>
+          {/* Animation Controls */}
+          <button
+            onClick={handleToggleAnimation}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: isAnimationPaused ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)',
+              border: `1px solid ${isAnimationPaused ? 'rgba(76,175,80,0.4)' : 'rgba(244,67,54,0.4)'}`,
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              marginRight: '8px'
+            }}
+            title={isAnimationPaused ? 'Resume graph animation' : 'Pause graph animation'}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = isAnimationPaused ? 'rgba(76,175,80,0.3)' : 'rgba(244,67,54,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = isAnimationPaused ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)';
+            }}
+          >
+            {isAnimationPaused ? '▶️' : '⏸️'}
+          </button>
+
+          <button
+            onClick={handleRestartAnimation}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(33,150,243,0.2)',
+              border: '1px solid rgba(33,150,243,0.4)',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              marginRight: '8px'
+            }}
+            title="Restart graph animation"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.2)';
+            }}
+          >
+            🔄
+          </button>
+
           <button
             onClick={() => setShowMonitoringDashboard(true)}
             style={{
@@ -438,7 +684,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 overflow: 'hidden',
                 position: 'relative'
               }}>
-                <GraphVisualization />
+                <GraphVisualization onTrackSelect={handleTrackInspect} />
 
                 {/* Graph Legend Overlay */}
                 <div style={{
@@ -528,7 +774,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
               border: '1px solid rgba(255,255,255,0.1)',
               overflow: 'hidden'
             }}>
-              <GraphVisualization />
+              <GraphVisualization onTrackSelect={handleTrackInspect} />
             </div>
 
             {/* Right Panel with Tabs */}
@@ -592,6 +838,22 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                   }}
                 >
                   🎵 Tidal Playlists
+                </button>
+                <button
+                  onClick={() => setRightPanelTab('targets')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: rightPanelTab === 'targets' ? 'rgba(74,144,226,0.2)' : 'transparent',
+                    border: 'none',
+                    color: rightPanelTab === 'targets' ? '#4A90E2' : '#8E8E93',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🎯 Target Tracks
                 </button>
               </div>
 
@@ -679,6 +941,10 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 {rightPanelTab === 'tidal' && (
                   <TidalPlaylistManager />
                 )}
+
+                {rightPanelTab === 'targets' && (
+                  <TargetTracksManager />
+                )}
               </div>
             </div>
           </section>
@@ -760,17 +1026,31 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                   <div style={{ background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '8px', padding: '16px' }}>
                     <h3 style={{ fontSize: '14px', color: '#6c757d', margin: '0 0 8px 0' }}>Total Runs</h3>
-                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#495057' }}>Loading...</p>
+                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#495057' }}>
+                      {monitoringData.isLoading ? 'Loading...' :
+                       monitoringData.error ? 'Error' :
+                       monitoringData.metrics?.total_runs ?? 'N/A'}
+                    </p>
                   </div>
 
                   <div style={{ background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '8px', padding: '16px' }}>
                     <h3 style={{ fontSize: '14px', color: '#155724', margin: '0 0 8px 0' }}>Success Rate</h3>
-                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#155724' }}>Loading...</p>
+                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#155724' }}>
+                      {monitoringData.isLoading ? 'Loading...' :
+                       monitoringData.error ? 'Error' :
+                       monitoringData.metrics?.total_runs > 0 ?
+                         Math.round((monitoringData.metrics.successful_runs / monitoringData.metrics.total_runs) * 100) + '%' :
+                         'N/A'}
+                    </p>
                   </div>
 
                   <div style={{ background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '8px', padding: '16px' }}>
                     <h3 style={{ fontSize: '14px', color: '#856404', margin: '0 0 8px 0' }}>Songs Scraped</h3>
-                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#856404' }}>Loading...</p>
+                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#856404' }}>
+                      {monitoringData.isLoading ? 'Loading...' :
+                       monitoringData.error ? 'Error' :
+                       monitoringData.metrics?.total_songs_scraped ?? 'N/A'}
+                    </p>
                   </div>
                 </div>
 
@@ -780,17 +1060,227 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                     <h3 style={{ margin: 0, fontSize: '16px', color: '#495057' }}>Recent Scraping Runs</h3>
                   </div>
 
-                  <div style={{ padding: '20px', textAlign: 'center', color: '#6c757d' }}>
-                    <p style={{ margin: 0, fontSize: '14px' }}>
-                      🔄 Loading recent scraping activity...
-                    </p>
-                    <p style={{ margin: '10px 0 0 0', fontSize: '12px' }}>
-                      This shows data from the last 24 hours across all scrapers:<br/>
-                      • 1001tracklists<br/>
-                      • MixesDB<br/>
-                      • Setlist.fm<br/>
-                      • Reddit
-                    </p>
+                  <div style={{ padding: '20px' }}>
+                    {monitoringData.isLoading ? (
+                      <div style={{ textAlign: 'center', color: '#6c757d' }}>
+                        <p style={{ margin: 0, fontSize: '14px' }}>
+                          🔄 Loading recent scraping activity...
+                        </p>
+                      </div>
+                    ) : monitoringData.error ? (
+                      <div style={{ textAlign: 'center', color: '#dc3545' }}>
+                        <p style={{ margin: 0, fontSize: '14px' }}>
+                          ⚠️ Error loading data: {monitoringData.error}
+                        </p>
+                        <button
+                          onClick={fetchMonitoringData}
+                          style={{
+                            marginTop: '10px',
+                            padding: '8px 16px',
+                            backgroundColor: '#007bff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : monitoringData.runs.length === 0 ? (
+                      <div style={{ textAlign: 'center', color: '#6c757d' }}>
+                        <p style={{ margin: 0, fontSize: '14px' }}>
+                          📭 No recent scraping runs found
+                        </p>
+                        <p style={{ margin: '10px 0 0 0', fontSize: '12px' }}>
+                          This shows data from the last 24 hours across all scrapers:<br/>
+                          • 1001tracklists<br/>
+                          • MixesDB<br/>
+                          • Setlist.fm<br/>
+                          • Reddit
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                        {monitoringData.runs.slice(0, 10).map((run: any, index: number) => (
+                          <div key={run.id || index} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px',
+                            borderBottom: index < Math.min(monitoringData.runs.length - 1, 9) ? '1px solid #dee2e6' : 'none',
+                            fontSize: '14px'
+                          }}>
+                            <div>
+                              <strong>{run.source || 'Unknown Source'}</strong>
+                              <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '2px' }}>
+                                {run.songs_count || 0} songs • Run ID: {run.id}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{
+                                padding: '4px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                backgroundColor: run.status === 'completed' ? '#d4edda' :
+                                                run.status === 'failed' ? '#f8d7da' :
+                                                run.status === 'running' ? '#fff3cd' : '#e2e3e5',
+                                color: run.status === 'completed' ? '#155724' :
+                                       run.status === 'failed' ? '#721c24' :
+                                       run.status === 'running' ? '#856404' : '#495057'
+                              }}>
+                                {run.status || 'unknown'}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#6c757d', marginTop: '4px' }}>
+                                {run.created_at ? new Date(run.created_at).toLocaleDateString() : 'Unknown date'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Manual Triggers Section */}
+                <div style={{ marginTop: '30px', background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px', borderBottom: '1px solid #dee2e6', background: '#e9ecef' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', color: '#495057', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🚀 Manual Triggers
+                      <span style={{ fontSize: '12px', color: '#6c757d', fontWeight: 'normal' }}>
+                        (Trigger scraping without waiting for scheduled times)
+                      </span>
+                    </h3>
+                  </div>
+
+                  <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    {/* Target Search Trigger */}
+                    <div style={{ padding: '16px', background: '#fff', border: '1px solid #dee2e6', borderRadius: '6px' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#495057', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🎯 Target Track Search
+                      </h4>
+                      <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#6c757d', lineHeight: 1.4 }}>
+                        Search for target tracks across all sources. Runs before scraping to identify what to collect.
+                      </p>
+                      <button
+                        onClick={triggerTargetSearch}
+                        disabled={triggerStates.targetSearch.loading}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: triggerStates.targetSearch.loading ? '#6c757d' : '#28a745',
+                          border: 'none',
+                          borderRadius: '4px',
+                          color: 'white',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: triggerStates.targetSearch.loading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          opacity: triggerStates.targetSearch.loading ? 0.7 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!triggerStates.targetSearch.loading) {
+                            e.currentTarget.style.backgroundColor = '#218838';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!triggerStates.targetSearch.loading) {
+                            e.currentTarget.style.backgroundColor = '#28a745';
+                          }
+                        }}
+                      >
+                        {triggerStates.targetSearch.loading ? (
+                          <>
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              border: '2px solid #fff',
+                              borderTop: '2px solid transparent',
+                              borderRadius: '50%',
+                              animation: 'spin 1s linear infinite'
+                            }} />
+                            Running...
+                          </>
+                        ) : (
+                          'Start Target Search'
+                        )}
+                      </button>
+                      {triggerStates.targetSearch.lastTriggered && (
+                        <div style={{ marginTop: '8px', fontSize: '11px', color: '#28a745' }}>
+                          ✅ Last triggered: {new Date(triggerStates.targetSearch.lastTriggered).toLocaleTimeString()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Scraper Tasks Trigger */}
+                    <div style={{ padding: '16px', background: '#fff', border: '1px solid #dee2e6', borderRadius: '6px' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#495057', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🕷️ Run All Scrapers
+                      </h4>
+                      <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#6c757d', lineHeight: 1.4 }}>
+                        Trigger immediate scraping across 1001tracklists, MixesDB, Setlist.fm, and Reddit sources.
+                      </p>
+                      <button
+                        onClick={triggerScraperTasks}
+                        disabled={triggerStates.scraperTasks.loading}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: triggerStates.scraperTasks.loading ? '#6c757d' : '#007bff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          color: 'white',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: triggerStates.scraperTasks.loading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          opacity: triggerStates.scraperTasks.loading ? 0.7 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!triggerStates.scraperTasks.loading) {
+                            e.currentTarget.style.backgroundColor = '#0056b3';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!triggerStates.scraperTasks.loading) {
+                            e.currentTarget.style.backgroundColor = '#007bff';
+                          }
+                        }}
+                      >
+                        {triggerStates.scraperTasks.loading ? (
+                          <>
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              border: '2px solid #fff',
+                              borderTop: '2px solid transparent',
+                              borderRadius: '50%',
+                              animation: 'spin 1s linear infinite'
+                            }} />
+                            Running...
+                          </>
+                        ) : (
+                          'Start Scraping'
+                        )}
+                      </button>
+                      {triggerStates.scraperTasks.lastTriggered && (
+                        <div style={{ marginTop: '8px', fontSize: '11px', color: '#007bff' }}>
+                          ✅ Last triggered: {new Date(triggerStates.scraperTasks.lastTriggered).toLocaleTimeString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Usage Instructions */}
+                  <div style={{ padding: '12px 20px', background: '#e7f3ff', borderTop: '1px solid #b8daff', fontSize: '11px', color: '#004085' }}>
+                    <strong>Usage:</strong> Use "Target Search" first to identify tracks to scrape, then "Run All Scrapers" to collect data.
+                    Results will appear in the sections above within a few minutes.
                   </div>
                 </div>
 

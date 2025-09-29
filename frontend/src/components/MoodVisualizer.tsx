@@ -103,6 +103,54 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
            null;
   }, []);
 
+  // Order nodes by edge connections (playlist adjacency)
+  const orderNodesByEdges = useCallback((nodes: GraphNode[], edges: GraphEdge[]): GraphNode[] => {
+    const nodeSet = new Set(nodes.map(n => n.id));
+    const adjacencyMap = new Map<string, string[]>();
+
+    // Build adjacency map from edges
+    edges.forEach(edge => {
+      if (nodeSet.has(edge.source) && nodeSet.has(edge.target)) {
+        if (!adjacencyMap.has(edge.source)) adjacencyMap.set(edge.source, []);
+        adjacencyMap.get(edge.source)!.push(edge.target);
+      }
+    });
+
+    // Try to find a connected path
+    const ordered: GraphNode[] = [];
+    const visited = new Set<string>();
+
+    // Start with node with highest degree (most connections)
+    const startNode = nodes.reduce((best, node) => {
+      const degree = (adjacencyMap.get(node.id) || []).length;
+      const bestDegree = (adjacencyMap.get(best.id) || []).length;
+      return degree > bestDegree ? node : best;
+    });
+
+    const traverse = (nodeId: string) => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+
+      const node = nodes.find(n => n.id === nodeId);
+      if (node) ordered.push(node);
+
+      // Continue to connected nodes
+      const connections = adjacencyMap.get(nodeId) || [];
+      connections.forEach(nextId => {
+        if (!visited.has(nextId)) traverse(nextId);
+      });
+    };
+
+    traverse(startNode.id);
+
+    // Add any remaining nodes
+    nodes.forEach(node => {
+      if (!visited.has(node.id)) ordered.push(node);
+    });
+
+    return ordered;
+  }, []);
+
   // Create energy sequence from current data
   const energySequence = useMemo((): EnergyPoint[] => {
     let sequence: EnergyPoint[] = [];
@@ -169,56 +217,9 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
     usePlaylistData,
     getTrackEnergy,
     getTrackKey,
-    classifyMood
+    classifyMood,
+    orderNodesByEdges
   ]);
-
-  // Order nodes by edge connections (playlist adjacency)
-  const orderNodesByEdges = useCallback((nodes: GraphNode[], edges: GraphEdge[]): GraphNode[] => {
-    const nodeSet = new Set(nodes.map(n => n.id));
-    const adjacencyMap = new Map<string, string[]>();
-
-    // Build adjacency map from edges
-    edges.forEach(edge => {
-      if (nodeSet.has(edge.source) && nodeSet.has(edge.target)) {
-        if (!adjacencyMap.has(edge.source)) adjacencyMap.set(edge.source, []);
-        adjacencyMap.get(edge.source)!.push(edge.target);
-      }
-    });
-
-    // Try to find a connected path
-    const ordered: GraphNode[] = [];
-    const visited = new Set<string>();
-
-    // Start with node with highest degree (most connections)
-    const startNode = nodes.reduce((best, node) => {
-      const degree = (adjacencyMap.get(node.id) || []).length;
-      const bestDegree = (adjacencyMap.get(best.id) || []).length;
-      return degree > bestDegree ? node : best;
-    });
-
-    const traverse = (nodeId: string) => {
-      if (visited.has(nodeId)) return;
-      visited.add(nodeId);
-
-      const node = nodes.find(n => n.id === nodeId);
-      if (node) ordered.push(node);
-
-      // Continue to connected nodes
-      const connections = adjacencyMap.get(nodeId) || [];
-      connections.forEach(nextId => {
-        if (!visited.has(nextId)) traverse(nextId);
-      });
-    };
-
-    traverse(startNode.id);
-
-    // Add any remaining nodes
-    nodes.forEach(node => {
-      if (!visited.has(node.id)) ordered.push(node);
-    });
-
-    return ordered;
-  }, []);
 
   // Calculate mood transitions
   const moodTransitions = useMemo((): MoodTransition[] => {

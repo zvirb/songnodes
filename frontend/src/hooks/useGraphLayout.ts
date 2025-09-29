@@ -74,8 +74,8 @@ const DEFAULT_OPTIONS: GraphLayoutOptions = {
   linkStrength: 1,
   collisionRadius: 10,
   alphaTarget: 0,
-  alphaDecay: 0.0228,
-  velocityDecay: 0.4,
+  alphaDecay: 0.0228,   // Standard D3 decay rate for quality layouts
+  velocityDecay: 0.4,   // Moderate friction for stability (D3 best practice)
   enableCollision: true,
   enableCentering: true,
   enableRadial: false,

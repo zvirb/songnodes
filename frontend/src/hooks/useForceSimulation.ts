@@ -30,8 +30,8 @@ export const useForceSimulation = () => {
           .radius((d: any) => 10 + Math.sqrt(d.connections || 1) * 2)
           .strength(0.7)
         )
-        .alphaDecay(0.01)
-        .velocityDecay(0.4);
+        .alphaDecay(0.0228)   // Standard D3 decay rate for quality layouts
+        .velocityDecay(0.4);  // Moderate friction for stability (D3 best practice)
 
       // Update positions on tick
       simulation.on('tick', () => {

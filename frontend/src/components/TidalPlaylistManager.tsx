@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
 
@@ -41,6 +41,9 @@ export const TidalPlaylistManager: React.FC = () => {
 
   const isAuthenticated = authStatus.authenticated;
 
+  // CRITICAL: Add ref to avoid closure issues with polling and setTimeout
+  const authStatusRef = useRef<{authenticated: boolean; message?: string; status?: string}>({authenticated: false});
+
   // Check Tidal authentication status
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -48,6 +51,7 @@ export const TidalPlaylistManager: React.FC = () => {
         const response = await fetch(`${TIDAL_API_BASE}/auth/status`);
         const data = await response.json();
         setAuthStatus(data);
+        authStatusRef.current = data; // Update ref to avoid closure issues
       } catch (error) {
         console.error('Failed to check auth status:', error);
         setAuthStatus({authenticated: false, message: 'Service unavailable'});
@@ -118,7 +122,9 @@ export const TidalPlaylistManager: React.FC = () => {
           clearInterval(pollInterval);
           setIsCheckingAuth(false);
           setOauthData(null);
-          setAuthStatus({authenticated: true, message: result.message});
+          const newAuthStatus = {authenticated: true, message: result.message};
+          setAuthStatus(newAuthStatus);
+          authStatusRef.current = newAuthStatus; // Update ref
           loadPlaylists();
         }
       } catch (error) {
@@ -130,7 +136,8 @@ export const TidalPlaylistManager: React.FC = () => {
     setTimeout(() => {
       clearInterval(pollInterval);
       setIsCheckingAuth(false);
-      if (!authStatus.authenticated) {
+      // CRITICAL FIX: Use ref instead of state to avoid stale closure
+      if (!authStatusRef.current.authenticated) {
         setError('Authentication timed out. Please try again.');
         setOauthData(null);
       }

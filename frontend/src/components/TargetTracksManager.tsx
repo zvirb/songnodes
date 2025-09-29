@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import clsx from 'clsx';
 import { api } from '../services/api';
 
@@ -23,6 +23,9 @@ const TargetTracksManager: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TargetTrack | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
+  const [importData, setImportData] = useState('');
 
   // Form state for add/edit
   const [formData, setFormData] = useState<Partial<TargetTrack>>({
@@ -33,6 +36,10 @@ const TargetTracksManager: React.FC = () => {
     search_terms: [],
     is_active: true
   });
+
+  // Form helper states
+  const [newGenre, setNewGenre] = useState('');
+  const [newSearchTerm, setNewSearchTerm] = useState('');
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -68,12 +75,16 @@ const TargetTracksManager: React.FC = () => {
       search_terms: [],
       is_active: true
     });
+    setNewGenre('');
+    setNewSearchTerm('');
     setEditingTrack(null);
     setIsAddModalOpen(true);
   };
 
   const handleEditTrack = (track: TargetTrack) => {
     setFormData(track);
+    setNewGenre('');
+    setNewSearchTerm('');
     setEditingTrack(track);
     setIsAddModalOpen(true);
   };
@@ -119,6 +130,155 @@ const TargetTracksManager: React.FC = () => {
       showNotification('error', 'Failed to trigger search');
       console.error('Error triggering search:', error);
     }
+  };
+
+  const handleExportTracks = () => {
+    const exportData = tracks.map(track => ({
+      title: track.title,
+      artist: track.artist,
+      priority: track.priority,
+      genres: track.genres || [],
+      search_terms: track.search_terms || [],
+      is_active: track.is_active
+    }));
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `target_tracks_${new Date().toISOString().split('T')[0]}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    showNotification('success', 'Tracks exported successfully');
+  };
+
+  const handleImportTracks = async () => {
+    try {
+      const parsedData = JSON.parse(importData);
+      if (!Array.isArray(parsedData)) {
+        throw new Error('Invalid format: Expected array of tracks');
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const track of parsedData) {
+        try {
+          await api.post('/target-tracks', track);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          console.error('Failed to import track:', track, error);
+        }
+      }
+
+      setIsImportModalOpen(false);
+      setImportData('');
+      loadTracks();
+      showNotification('success', `Imported ${successCount} tracks${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
+    } catch (error) {
+      showNotification('error', 'Failed to parse import data');
+      console.error('Import error:', error);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTracks.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedTracks.size} tracks?`)) return;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const trackId of selectedTracks) {
+      try {
+        await api.delete(`/target-tracks/${trackId}`);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        console.error('Failed to delete track:', trackId, error);
+      }
+    }
+
+    setSelectedTracks(new Set());
+    loadTracks();
+    showNotification('success', `Deleted ${successCount} tracks${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
+  };
+
+  const handleBulkActivate = async (activate: boolean) => {
+    if (selectedTracks.size === 0) return;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const trackId of selectedTracks) {
+      try {
+        const track = tracks.find(t => t.track_id === trackId);
+        if (track) {
+          await api.put(`/target-tracks/${trackId}`, { ...track, is_active: activate });
+          successCount++;
+        }
+      } catch (error) {
+        errorCount++;
+        console.error('Failed to update track:', trackId, error);
+      }
+    }
+
+    setSelectedTracks(new Set());
+    loadTracks();
+    showNotification('success', `${activate ? 'Activated' : 'Deactivated'} ${successCount} tracks${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
+  };
+
+  const toggleTrackSelection = (trackId: string) => {
+    const newSelected = new Set(selectedTracks);
+    if (newSelected.has(trackId)) {
+      newSelected.delete(trackId);
+    } else {
+      newSelected.add(trackId);
+    }
+    setSelectedTracks(newSelected);
+  };
+
+  const selectAllTracks = () => {
+    setSelectedTracks(new Set(filteredTracks.map(t => t.track_id!)));
+  };
+
+  const clearSelection = () => {
+    setSelectedTracks(new Set());
+  };
+
+  const addGenre = () => {
+    if (newGenre.trim() && !formData.genres?.includes(newGenre.trim())) {
+      setFormData({
+        ...formData,
+        genres: [...(formData.genres || []), newGenre.trim()]
+      });
+      setNewGenre('');
+    }
+  };
+
+  const removeGenre = (genre: string) => {
+    setFormData({
+      ...formData,
+      genres: formData.genres?.filter(g => g !== genre) || []
+    });
+  };
+
+  const addSearchTerm = () => {
+    if (newSearchTerm.trim() && !formData.search_terms?.includes(newSearchTerm.trim())) {
+      setFormData({
+        ...formData,
+        search_terms: [...(formData.search_terms || []), newSearchTerm.trim()]
+      });
+      setNewSearchTerm('');
+    }
+  };
+
+  const removeSearchTerm = (term: string) => {
+    setFormData({
+      ...formData,
+      search_terms: formData.search_terms?.filter(t => t !== term) || []
+    });
   };
 
   // Filter tracks based on search and priority
@@ -183,18 +343,73 @@ const TargetTracksManager: React.FC = () => {
           <h2 className="text-xl font-bold flex items-center gap-2">
             <span className="text-2xl">🎯</span>
             Target Tracks Manager
+            {tracks.length > 0 && (
+              <span className="text-sm text-gray-400 font-normal">({tracks.length} tracks)</span>
+            )}
           </h2>
-          <button
-            onClick={handleAddTrack}
-            className="px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all flex items-center gap-2"
-          >
-            <span className="text-lg">+</span>
-            Add Track
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportTracks}
+              className="px-3 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all flex items-center gap-1 text-sm"
+              disabled={tracks.length === 0}
+            >
+              📤 Export
+            </button>
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-3 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all flex items-center gap-1 text-sm"
+            >
+              📥 Import
+            </button>
+            <button
+              onClick={handleAddTrack}
+              className="px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all flex items-center gap-2"
+            >
+              <span className="text-lg">+</span>
+              Add Track
+            </button>
+          </div>
         </div>
 
+        {/* Bulk Operations Bar */}
+        {selectedTracks.size > 0 && (
+          <div className="mb-4 p-3 bg-dj-black border border-dj-accent rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">
+                {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleBulkActivate(true)}
+                  className="px-3 py-1 bg-dj-accent text-black rounded text-sm hover:bg-opacity-90"
+                >
+                  ✅ Activate
+                </button>
+                <button
+                  onClick={() => handleBulkActivate(false)}
+                  className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+                >
+                  ⏸️ Deactivate
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-3 py-1 bg-dj-danger text-white rounded text-sm hover:bg-opacity-90"
+                >
+                  🗑️ Delete
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+                >
+                  ✖️ Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
           <input
             type="text"
             placeholder="Search tracks..."
@@ -212,6 +427,24 @@ const TargetTracksManager: React.FC = () => {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
+          {filteredTracks.length > 0 && (
+            <div className="flex gap-2">
+              <button
+                onClick={selectAllTracks}
+                className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+              >
+                Select All
+              </button>
+              {selectedTracks.size > 0 && (
+                <button
+                  onClick={clearSelection}
+                  className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -230,9 +463,24 @@ const TargetTracksManager: React.FC = () => {
             {filteredTracks.map((track) => (
               <div
                 key={track.track_id}
-                className="bg-dj-black border border-dj-gray rounded-lg p-4 hover:border-dj-accent transition-all"
+                className={clsx(
+                  "bg-dj-black border rounded-lg p-4 transition-all",
+                  selectedTracks.has(track.track_id!)
+                    ? "border-dj-accent bg-dj-accent bg-opacity-10"
+                    : "border-dj-gray hover:border-dj-accent"
+                )}
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  {/* Selection Checkbox */}
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedTracks.has(track.track_id!)}
+                      onChange={() => toggleTrackSelection(track.track_id!)}
+                      className="rounded border-dj-gray"
+                    />
+                  </div>
+
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-lg">{track.title}</h3>
@@ -341,6 +589,92 @@ const TargetTracksManager: React.FC = () => {
                 </select>
               </div>
 
+              {/* Genres */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Genres</label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newGenre}
+                      onChange={(e) => setNewGenre(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
+                      placeholder="Add genre..."
+                      className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+                    />
+                    <button
+                      type="button"
+                      onClick={addGenre}
+                      className="px-3 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {formData.genres && formData.genres.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.genres.map((genre, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-dj-gray rounded text-sm flex items-center gap-1"
+                        >
+                          {genre}
+                          <button
+                            type="button"
+                            onClick={() => removeGenre(genre)}
+                            className="text-dj-danger hover:text-red-400 ml-1"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Search Terms */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Search Terms</label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSearchTerm}
+                      onChange={(e) => setNewSearchTerm(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSearchTerm())}
+                      placeholder="Add search term..."
+                      className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+                    />
+                    <button
+                      type="button"
+                      onClick={addSearchTerm}
+                      className="px-3 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {formData.search_terms && formData.search_terms.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.search_terms.map((term, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-dj-gray rounded text-sm flex items-center gap-1"
+                        >
+                          {term}
+                          <button
+                            type="button"
+                            onClick={() => removeSearchTerm(term)}
+                            className="text-dj-danger hover:text-red-400 ml-1"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="flex items-center gap-2">
                   <input
@@ -373,11 +707,69 @@ const TargetTracksManager: React.FC = () => {
         </div>
       )}
 
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-dj-dark border border-dj-gray rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-lg font-bold mb-4">Import Target Tracks</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  JSON Data
+                  <span className="text-gray-400 ml-2">(Paste JSON array of tracks)</span>
+                </label>
+                <textarea
+                  value={importData}
+                  onChange={(e) => setImportData(e.target.value)}
+                  placeholder={`[
+  {
+    "title": "Track Name",
+    "artist": "Artist Name",
+    "priority": "medium",
+    "genres": ["Electronic", "House"],
+    "search_terms": ["remix", "original mix"],
+    "is_active": true
+  }
+]`}
+                  className="w-full h-64 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent font-mono text-sm"
+                />
+              </div>
+
+              <div className="bg-dj-black p-3 rounded border border-dj-gray">
+                <p className="text-sm text-gray-400">
+                  <strong>Format:</strong> JSON array with fields: title, artist, priority, genres, search_terms, is_active
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <button
+                  onClick={handleImportTracks}
+                  disabled={!importData.trim()}
+                  className="flex-1 px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all disabled:opacity-50"
+                >
+                  Import Tracks
+                </button>
+                <button
+                  onClick={() => {
+                    setIsImportModalOpen(false);
+                    setImportData('');
+                  }}
+                  className="flex-1 px-4 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notification */}
       {notification && (
         <div
           className={clsx(
-            'fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg transition-all',
+            'fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg transition-all z-50',
             notification.type === 'success' ? 'bg-dj-accent text-black' : 'bg-dj-danger text-white'
           )}
         >
