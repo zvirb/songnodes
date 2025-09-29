@@ -962,3 +962,55 @@ async def search_track_on_all_platforms(
         return {}
     finally:
         await client.shutdown()
+
+
+# Test function for development
+async def test_unified_client() -> bool:
+    """
+    Test function for development and CI/CD validation.
+    Tests basic functionality without requiring authentication.
+    """
+    try:
+        client = UnifiedStreamingClient()
+
+        # Test initialization
+        await client.initialize()
+
+        # Test health check
+        health = await client.health_check()
+        print(f"Health status: {health['status']} - {health['message']}")
+
+        # Test memory monitoring
+        memory_stats = await client.get_memory_usage()
+        print(f"Memory usage: {memory_stats['rss_mb']:.1f}MB ({memory_stats['percent']:.1f}%)")
+
+        # Test search with a simple query (will only work if platforms are configured)
+        results = await client.search_track_across_platforms(
+            "Test Track", "Test Artist", max_results_per_platform=1
+        )
+        print(f"Search completed across {len(results)} platforms")
+
+        await client.shutdown()
+        return True
+
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Test failed: {e}")
+        return False
+
+
+# Export main classes and functions
+__all__ = [
+    'TrackMetadata',
+    'SearchResult',
+    'StreamingPlatformClient',
+    'TidalClient',
+    'SpotifyClient',
+    'BeatportClient',
+    'AppleMusicClient',
+    'SoundCloudClient',
+    'DeezerClient',
+    'YouTubeMusicClient',
+    'UnifiedStreamingClient',
+    'search_track_on_all_platforms',
+    'test_unified_client'
+]
