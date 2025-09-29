@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { NowPlayingDeck } from './NowPlayingDeck';
 import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
 import { TrackDetailsModal } from './TrackDetailsModal';
 import { SettingsPanel } from './SettingsPanel';
 import { TidalPlaylistManager } from './TidalPlaylistManager';
+import { KeyMoodPanel } from './KeyMoodPanel';
+// Import removed - PipelineMonitoringDashboard has missing dependencies
 import { Track, DJMode } from '../types/dj';
 import useStore from '../store/useStore';
 import { useDataLoader } from '../hooks/useDataLoader';
@@ -19,30 +21,104 @@ interface DJInterfaceProps {
   initialMode?: DJMode;
 }
 
-// Utility to transform graph nodes to DJ Track format
+// Stable constants and utility functions (moved outside component for performance)
+const CAMELOT_KEYS = ['1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A', '11A', '12A',
+                      '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'];
+
+// Deterministic hash function for stable random values
+const getStableHashValue = (str: string, min: number, max: number): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash) % (max - min + 1) + min;
+};
+
+// Pure function for track transformation - no React.memo needed for regular functions
 const transformNodeToTrack = (node: any): Track => {
   const metadata = node.metadata || {};
+  const trackId = node.id || node.track_id || '';
 
-  // Generate realistic BPM and key values if missing
-  const defaultBPM = Math.floor(Math.random() * (140 - 120 + 1)) + 120; // 120-140 BPM
-  const camelotKeys = ['1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A', '11A', '12A',
-                       '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'];
-  const defaultKey = camelotKeys[Math.floor(Math.random() * camelotKeys.length)];
+  // Stable defaults based on track ID
+  const defaultBPM = metadata.bpm || getStableHashValue(trackId + '_bpm', 120, 140);
+  const defaultKey = metadata.key || metadata.camelotKey ||
+                     CAMELOT_KEYS[getStableHashValue(trackId + '_key', 0, CAMELOT_KEYS.length - 1)];
+
+  // Get track name from multiple potential sources
+  const trackName = node.title || metadata.title || metadata.label || node.label || 'Unknown Track';
+
+  // Get artist name from multiple potential sources
+  const artistName = node.artist || metadata.artist || 'Unknown Artist';
 
   return {
-    id: node.id || node.track_id || '',
-    name: metadata.title || metadata.label || 'Unknown Track',
-    title: metadata.title || metadata.label || 'Unknown Track', // Alias for compatibility
-    artist: metadata.artist || 'Unknown Artist',
-    bpm: metadata.bpm || defaultBPM,
-    key: metadata.key || metadata.camelotKey || defaultKey,
-    energy: metadata.energy || Math.floor(Math.random() * 10) + 1, // 1-10
-    duration: metadata.duration || Math.floor(Math.random() * 300) + 180, // 3-8 minutes
+    id: trackId,
+    name: trackName,
+    title: trackName, // Alias for compatibility
+    artist: artistName,
+    bpm: defaultBPM,
+    key: defaultKey,
+    energy: metadata.energy || getStableHashValue(trackId + '_energy', 1, 10),
+    duration: metadata.duration || getStableHashValue(trackId + '_duration', 180, 480), // 3-8 minutes
     status: 'unplayed' as const,
     genre: metadata.genre || metadata.category || 'Electronic',
     isrc: metadata.isrc || metadata.upc || undefined
   };
 };
+
+// Optimized node validation function
+const isValidTrackNode = (node: any): boolean => {
+  const hasTitle = node.title || node.metadata?.title || node.metadata?.label;
+  const hasArtist = node.artist || node.metadata?.artist;
+  return Boolean(hasTitle && hasArtist);
+};
+
+// Memoized track list item to prevent individual track re-renders
+const TrackListItem = React.memo<{
+  track: Track;
+  isNowPlaying: boolean;
+  onInspect: (track: Track) => void;
+}>(({ track, isNowPlaying, onInspect }) => {
+  const handleClick = useCallback(() => {
+    onInspect(track);
+  }, [track, onInspect]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    onInspect(track);
+  }, [track, onInspect]);
+
+  return (
+    <button
+      key={track.id}
+      onClick={handleClick}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        padding: '12px',
+        backgroundColor: isNowPlaying ? 'rgba(126,211,33,0.2)' : 'transparent',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '8px',
+        color: '#F8F8F8',
+        textAlign: 'left',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        userSelect: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        minHeight: '44px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}
+    >
+      <div style={{ fontSize: '14px', fontWeight: 600 }}>{track.name}</div>
+      <div style={{ fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
+        {track.artist} • {track.bpm} BPM • {track.key}
+      </div>
+    </button>
+  );
+});
 
 export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'performer' }) => {
   const [mode, setMode] = useState<DJMode>(initialMode);
@@ -56,10 +132,16 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Right panel tab state (librarian mode)
-  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'tidal'>('analysis');
+  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'keymood' | 'tidal'>('analysis');
 
-  // Get graph data from store
-  const { graphData, isLoading, error, credentials } = useStore();
+  // Monitoring dashboard state
+  const [showMonitoringDashboard, setShowMonitoringDashboard] = useState(false);
+
+  // Get graph data from store with selective subscriptions to prevent unnecessary re-renders
+  const graphData = useStore(state => state.graphData);
+  const isLoading = useStore(state => state.isLoading);
+  const error = useStore(state => state.error);
+  const credentials = useStore(state => state.credentials);
 
   // Load data and credentials
   useDataLoader();
@@ -69,42 +151,44 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     credentials.loadCredentialsFromStorage();
   }, []);
 
-  // Transform graph nodes to tracks
-  const tracks = useMemo(() => {
+  // Memoize track nodes to prevent recalculation on every render
+  const validNodes = useMemo(() => {
     if (!graphData?.nodes) return [];
-
-    return graphData.nodes
-      .filter(node => node.title || node.metadata?.title) // Only nodes with valid track data
-      .map(transformNodeToTrack)
-      .sort((a, b) => a.artist.localeCompare(b.artist) || a.name.localeCompare(b.name)); // Sort by artist then track name
+    return graphData.nodes.filter(isValidTrackNode);
   }, [graphData?.nodes]);
+
+  // Transform nodes to tracks with stable references
+  const tracks = useMemo(() => {
+    if (validNodes.length === 0) return [];
+
+    const transformedTracks = validNodes
+      .map(transformNodeToTrack)
+      .sort((a, b) => a.artist.localeCompare(b.artist) || a.name.localeCompare(b.name));
+
+    console.log(`DJInterface: Transformed ${transformedTracks.length} tracks (only logs when data actually changes)`);
+    return transformedTracks;
+  }, [validNodes]);
 
   // Mode toggle handler
   const toggleMode = () => {
     setMode(mode === 'performer' ? 'librarian' : 'performer');
   };
 
-  // Track inspection handler (replaces direct selection)
-  const handleTrackInspect = (track: Track) => {
-    console.log('handleTrackInspect called with:', track.name);
+  // Memoized event handlers to prevent child re-renders
+  const handleTrackInspect = useCallback((track: Track) => {
     setInspectedTrack(track);
     setIsModalOpen(true);
-    console.log('Track inspection modal opened for:', track.name);
-  };
+  }, []);
 
-  // Set as currently playing handler (from modal)
-  const handleSetAsCurrentlyPlaying = (track: Track) => {
-    console.log('handleSetAsCurrentlyPlaying called with:', track.name);
+  const handleSetAsCurrentlyPlaying = useCallback((track: Track) => {
     setNowPlaying(track);
     setIsModalOpen(false);
-    console.log('Track set as currently playing:', track.name);
-  };
+  }, []);
 
-  // Modal close handler
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setInspectedTrack(null);
-  };
+  }, []);
 
   return (
     <div
@@ -192,6 +276,33 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           }}>
             Co-Pilot Active
           </span>
+          <button
+            onClick={() => setShowMonitoringDashboard(true)}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(126,211,33,0.2)',
+              border: '1px solid rgba(126,211,33,0.4)',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              marginRight: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(126,211,33,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(126,211,33,0.2)';
+            }}
+          >
+            📊 Recently Scraped Data
+          </button>
+
           <button
             onClick={() => setIsSettingsOpen(true)}
             style={{
@@ -400,40 +511,12 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
               <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Library</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {tracks.map(track => (
-                  <button
+                  <TrackListItem
                     key={track.id}
-                    onClick={() => {
-                      console.log('Library track clicked:', track.name);
-                      handleTrackInspect(track);
-                    }}
-                    onTouchEnd={(e) => {
-                      console.log('Library track touched:', track.name);
-                      e.preventDefault();
-                      handleTrackInspect(track);
-                    }}
-                    style={{
-                      padding: '12px',
-                      backgroundColor: nowPlaying?.id === track.id ? 'rgba(126,211,33,0.2)' : 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      color: '#F8F8F8',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      userSelect: 'none',
-                      WebkitTouchCallout: 'none',
-                      WebkitUserSelect: 'none',
-                      minHeight: '44px', // Ensures good touch target size
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <div style={{ fontSize: '14px', fontWeight: 600 }}>{track.name}</div>
-                    <div style={{ fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
-                      {track.artist} • {track.bpm} BPM • {track.key}
-                    </div>
-                  </button>
+                    track={track}
+                    isNowPlaying={nowPlaying?.id === track.id}
+                    onInspect={handleTrackInspect}
+                  />
                 ))}
               </div>
             </div>
@@ -477,6 +560,22 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                   }}
                 >
                   Track Analysis
+                </button>
+                <button
+                  onClick={() => setRightPanelTab('keymood')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: rightPanelTab === 'keymood' ? 'rgba(74,144,226,0.2)' : 'transparent',
+                    border: 'none',
+                    color: rightPanelTab === 'keymood' ? '#4A90E2' : '#8E8E93',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🎭 Key & Mood
                 </button>
                 <button
                   onClick={() => setRightPanelTab('tidal')}
@@ -570,6 +669,13 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                   </>
                 )}
 
+                {rightPanelTab === 'keymood' && (
+                  <KeyMoodPanel
+                    showInSidePanel={true}
+                    className="h-full"
+                  />
+                )}
+
                 {rightPanelTab === 'tidal' && (
                   <TidalPlaylistManager />
                 )}
@@ -588,6 +694,119 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         onSetAsCurrentlyPlaying={handleSetAsCurrentlyPlaying}
         currentlyPlayingTrack={nowPlaying}
       />
+
+      {/* Pipeline Monitoring Dashboard Modal */}
+      {showMonitoringDashboard && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            width: '95vw',
+            height: '90vh',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowMonitoringDashboard(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                zIndex: 10001,
+                color: '#666',
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Dashboard Content */}
+            <div style={{ width: '100%', height: '100%', overflow: 'auto', padding: '20px' }}>
+              <div style={{ padding: '20px 0' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
+                  Recently Scraped Data
+                </h1>
+
+                {/* Status Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                  <div style={{ background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '8px', padding: '16px' }}>
+                    <h3 style={{ fontSize: '14px', color: '#6c757d', margin: '0 0 8px 0' }}>Total Runs</h3>
+                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#495057' }}>Loading...</p>
+                  </div>
+
+                  <div style={{ background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '8px', padding: '16px' }}>
+                    <h3 style={{ fontSize: '14px', color: '#155724', margin: '0 0 8px 0' }}>Success Rate</h3>
+                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#155724' }}>Loading...</p>
+                  </div>
+
+                  <div style={{ background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '8px', padding: '16px' }}>
+                    <h3 style={{ fontSize: '14px', color: '#856404', margin: '0 0 8px 0' }}>Songs Scraped</h3>
+                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#856404' }}>Loading...</p>
+                  </div>
+                </div>
+
+                {/* Recent Runs */}
+                <div style={{ background: '#fff', border: '1px solid #dee2e6', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px', borderBottom: '1px solid #dee2e6', background: '#f8f9fa' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', color: '#495057' }}>Recent Scraping Runs</h3>
+                  </div>
+
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#6c757d' }}>
+                    <p style={{ margin: 0, fontSize: '14px' }}>
+                      🔄 Loading recent scraping activity...
+                    </p>
+                    <p style={{ margin: '10px 0 0 0', fontSize: '12px' }}>
+                      This shows data from the last 24 hours across all scrapers:<br/>
+                      • 1001tracklists<br/>
+                      • MixesDB<br/>
+                      • Setlist.fm<br/>
+                      • Reddit
+                    </p>
+                  </div>
+                </div>
+
+                {/* API Connection Status */}
+                <div style={{ marginTop: '20px', padding: '16px', background: '#e7f3ff', border: '1px solid #b8daff', borderRadius: '8px' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#004085' }}>📡 API Connection</h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#004085' }}>
+                    To see live scraping data, the monitoring API endpoints need to be connected.
+                    The monitoring service should be running on port 8082.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Settings Panel */}
       <SettingsPanel
