@@ -1590,31 +1590,39 @@ export const GraphVisualization: React.FC = () => {
       if (pixiAppRef.current) {
         console.log('🧹 Comprehensive PIXI cleanup starting...');
 
-        // Stop ticker first but DON'T destroy it - let app.destroy() handle it
-        // This prevents the "Cannot read properties of null" error
+        // Stop ticker safely (PIXI v8 compatibility)
         if (pixiAppRef.current.ticker) {
-          pixiAppRef.current.ticker.stop();
-          // Remove all ticker listeners (PIXI v8 compatibility)
-          if (pixiAppRef.current.ticker.destroy) {
-            // For newer PIXI versions, let app.destroy() handle ticker cleanup
-          } else {
-            // Fallback for older versions
-            pixiAppRef.current.ticker.removeAllListeners?.();
+          try {
+            pixiAppRef.current.ticker.stop();
+            // Don't manually remove ticker listeners - let app.destroy() handle it
+            console.log('✅ Ticker stopped successfully');
+          } catch (error) {
+            console.warn('⚠️ Ticker stop warning:', error);
           }
         }
 
-        // Clean up all containers and their children
-        [nodesContainerRef, edgesContainerRef, labelsContainerRef, interactionContainerRef].forEach(containerRef => {
+        // Clean up all containers and their children safely
+        [nodesContainerRef, edgesContainerRef, labelsContainerRef, interactionContainerRef].forEach((containerRef, index) => {
           if (containerRef.current) {
-            // Remove all event listeners from container children
-            containerRef.current.children.forEach(child => {
-              child.removeAllListeners();
-              if (child.destroy) {
-                child.destroy({ children: true, texture: false, baseTexture: false });
-              }
-            });
-            containerRef.current.destroy({ children: true });
-            containerRef.current = null;
+            try {
+              // Remove all event listeners from container children
+              containerRef.current.children.forEach(child => {
+                try {
+                  child.removeAllListeners?.();
+                  if (child.destroy) {
+                    child.destroy({ children: true, texture: false, baseTexture: false });
+                  }
+                } catch (childError) {
+                  console.warn(`⚠️ Child cleanup warning in container ${index}:`, childError);
+                }
+              });
+              containerRef.current.destroy({ children: true });
+              containerRef.current = null;
+              console.log(`✅ Container ${index} cleaned up successfully`);
+            } catch (containerError) {
+              console.warn(`⚠️ Container ${index} cleanup warning:`, containerError);
+              containerRef.current = null; // Clear reference even if cleanup failed
+            }
           }
         });
 
