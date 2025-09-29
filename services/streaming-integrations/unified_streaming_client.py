@@ -695,18 +695,35 @@ class UnifiedStreamingClient:
 
         # Wait for all searches to complete with timeout
         for platform_name, task in search_tasks:
+            start_time = time.time()
             try:
                 platform_results = await asyncio.wait_for(task, timeout=30.0)
                 # Limit results per platform
                 results[platform_name] = platform_results[:max_results_per_platform]
                 self.logger.debug(f"{platform_name}: found {len(platform_results)} results")
+
+                # Update metrics
+                if self.search_counter:
+                    self.search_counter.labels(platform=platform_name, status='success').inc()
+                if self.search_duration:
+                    self.search_duration.labels(platform=platform_name).observe(time.time() - start_time)
+
             except asyncio.TimeoutError:
                 self.logger.warning(f"Search timeout on {platform_name}")
                 results[platform_name] = []
                 task.cancel()
+
+                # Update metrics
+                if self.search_counter:
+                    self.search_counter.labels(platform=platform_name, status='timeout').inc()
+
             except Exception as e:
                 self.logger.warning(f"Search failed on {platform_name}: {e}")
                 results[platform_name] = []
+
+                # Update metrics
+                if self.search_counter:
+                    self.search_counter.labels(platform=platform_name, status='error').inc()
 
         return results
 
@@ -931,6 +948,11 @@ async def search_track_on_all_platforms(
     client = UnifiedStreamingClient()
     try:
         await asyncio.wait_for(client.initialize(), timeout=30.0)
+        # Update memory metrics
+        if client.memory_usage:
+            memory_stats = await client.get_memory_usage()
+            client.memory_usage.set(memory_stats['rss_mb'] * 1024 * 1024)
+
         return await asyncio.wait_for(
             client.search_track_across_platforms(title, artist, isrc),
             timeout=60.0
