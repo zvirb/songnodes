@@ -42,7 +42,7 @@ export default defineConfig({
 
   use: {
     // Base URL for tests
-    baseURL: 'http://localhost:3006',
+    baseURL: 'http://localhost:3008',
 
     // Browser context options
     viewport: { width: 1280, height: 720 },
@@ -220,7 +220,7 @@ export default defineConfig({
   // Development server
   webServer: {
     command: 'npm run dev',
-    port: 3006,
+    port: 3008,
     timeout: 60000,
     reuseExistingServer: !process.env.CI,
     env: {

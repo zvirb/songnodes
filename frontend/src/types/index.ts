@@ -26,7 +26,7 @@ export interface Track {
 export interface GraphNode {
   id: string;
   label: string;
-  type: 'track' | 'artist' | 'album' | 'genre';
+  type?: 'track' | 'artist' | 'album' | 'genre';
   track?: Track;
   x?: number;
   y?: number;
@@ -44,12 +44,17 @@ export interface GraphNode {
   // Legacy compatibility properties for components
   title?: string;
   artist?: string;
+  artistId?: string;
   bpm?: number;
   key?: string;
   genre?: string;
   name?: string;
   energy?: number;
   year?: number;
+  connections?: number;
+  popularity?: number;
+  // Include raw metadata for transformation functions
+  metadata?: any;
 }
 
 export interface GraphEdge {
