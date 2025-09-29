@@ -349,7 +349,7 @@ export const GraphVisualization: React.FC = () => {
   const animationStateRef = useRef<AnimationState>({
     isActive: false,
     startTime: 0,
-    duration: 5000, // 5 seconds for better UX
+    duration: 15000, // 15 seconds
     trigger: 'initial'
   });
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -736,9 +736,9 @@ export const GraphVisualization: React.FC = () => {
         .strength(1.0)  // Strong collision prevention
         .iterations(3)  // More iterations for better separation
       )
-      .velocityDecay(0.6)  // Balanced decay for controlled spreading
-      .alphaDecay(0.05)    // Faster decay to respect 15-second timeout
-      .alphaMin(0.01);     // Higher min threshold for earlier natural stop
+      .velocityDecay(0.8)  // Higher decay for faster settling
+      .alphaDecay(0.1)     // Much faster decay for quick convergence (nodes settle in ~3-5 seconds)
+      .alphaMin(0.005);    // Lower threshold for more complete positioning
 
     simulation.on('tick', handleSimulationTick);
     simulation.on('end', handleSimulationEnd);
@@ -834,12 +834,12 @@ export const GraphVisualization: React.FC = () => {
 
   // Animation control functions
   const startAnimation = useCallback((trigger: AnimationState['trigger']) => {
-    console.log(`🎬 Starting ${trigger} animation for 5 seconds`);
+    console.log(`🎬 Starting ${trigger} animation for 15 seconds`);
 
     const state: AnimationState = {
       isActive: true,
       startTime: Date.now(),
-      duration: 5000,
+      duration: 15000,
       trigger
     };
 
@@ -850,11 +850,11 @@ export const GraphVisualization: React.FC = () => {
       clearTimeout(animationTimerRef.current);
     }
 
-    // Set timer to stop animation after 5 seconds
+    // Set timer to stop animation after 15 seconds
     animationTimerRef.current = setTimeout(() => {
       console.log('⏹️ Animation time limit reached, freezing movement');
       stopAnimation();
-    }, 5000);
+    }, 15000);
 
     // Update UI timer every second
     if (uiTimerRef.current) {
