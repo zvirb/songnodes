@@ -349,7 +349,7 @@ export const GraphVisualization: React.FC = () => {
   const animationStateRef = useRef<AnimationState>({
     isActive: false,
     startTime: 0,
-    duration: 15000, // 15 seconds
+    duration: 5000, // 5 seconds for better UX
     trigger: 'initial'
   });
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -834,12 +834,12 @@ export const GraphVisualization: React.FC = () => {
 
   // Animation control functions
   const startAnimation = useCallback((trigger: AnimationState['trigger']) => {
-    console.log(`🎬 Starting ${trigger} animation for 15 seconds`);
+    console.log(`🎬 Starting ${trigger} animation for 5 seconds`);
 
     const state: AnimationState = {
       isActive: true,
       startTime: Date.now(),
-      duration: 15000,
+      duration: 5000,
       trigger
     };
 
@@ -850,11 +850,11 @@ export const GraphVisualization: React.FC = () => {
       clearTimeout(animationTimerRef.current);
     }
 
-    // Set timer to stop animation after 15 seconds
+    // Set timer to stop animation after 5 seconds
     animationTimerRef.current = setTimeout(() => {
       console.log('⏹️ Animation time limit reached, freezing movement');
       stopAnimation();
-    }, 15000);
+    }, 5000);
 
     // Update UI timer every second
     if (uiTimerRef.current) {
@@ -875,6 +875,12 @@ export const GraphVisualization: React.FC = () => {
         uiTimerRef.current = null;
       }
     }, 1000);
+
+    // Restart PIXI ticker if it was stopped
+    if (pixiAppRef.current?.ticker && !pixiAppRef.current.ticker.started) {
+      pixiAppRef.current.ticker.start();
+      console.log('✅ PIXI ticker restarted for animation');
+    }
 
     // If simulation exists, restart it with more energy
     if (simulationRef.current) {
@@ -904,6 +910,12 @@ export const GraphVisualization: React.FC = () => {
       simulationRef.current.alpha(0);
       simulationRef.current.stop();
       console.log('✅ D3 simulation force-stopped (alpha set to 0)');
+    }
+
+    // Also stop PIXI ticker to prevent visual updates
+    if (pixiAppRef.current?.ticker) {
+      pixiAppRef.current.ticker.stop();
+      console.log('✅ PIXI ticker stopped to freeze animation');
     }
   }, []);
 
@@ -1261,6 +1273,11 @@ export const GraphVisualization: React.FC = () => {
   // Main render frame function
   const renderFrame = useCallback(() => {
     if (!lodSystemRef.current || !pixiAppRef.current) return;
+
+    // Skip rendering if animation is not active (optimization for frozen state)
+    if (!animationStateRef.current.isActive) {
+      return;
+    }
 
     const currentFrame = frameRef.current;
     const { frameRate, renderTime, shouldOptimize } = performanceMonitorRef.current.update();
