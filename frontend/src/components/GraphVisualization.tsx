@@ -1594,8 +1594,13 @@ export const GraphVisualization: React.FC = () => {
         // This prevents the "Cannot read properties of null" error
         if (pixiAppRef.current.ticker) {
           pixiAppRef.current.ticker.stop();
-          // Remove all ticker listeners instead of destroying
-          pixiAppRef.current.ticker.removeAll();
+          // Remove all ticker listeners (PIXI v8 compatibility)
+          if (pixiAppRef.current.ticker.destroy) {
+            // For newer PIXI versions, let app.destroy() handle ticker cleanup
+          } else {
+            // Fallback for older versions
+            pixiAppRef.current.ticker.removeAllListeners?.();
+          }
         }
 
         // Clean up all containers and their children
