@@ -1,7 +1,7 @@
 """REST API Service for SongNodes"""
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import logging
 import os
@@ -669,6 +669,11 @@ async def get_source_performance_analysis(domain: Optional[str] = None, hours: i
     except Exception as e:
         logger.error(f"Failed to fetch source performance: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/target-tracks")
+async def get_target_tracks():
+    """Get list of target tracks - simple test endpoint"""
+    return [{"message": "Target tracks endpoint working"}]
 
 if __name__ == "__main__":
     import uvicorn
