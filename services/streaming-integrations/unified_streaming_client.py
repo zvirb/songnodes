@@ -14,6 +14,8 @@ from typing import Any, Dict, List, Optional, Union
 from datetime import datetime
 import concurrent.futures
 import tempfile
+import psutil
+from contextlib import asynccontextmanager
 
 import asyncpg
 
@@ -155,12 +157,25 @@ class StreamingPlatformClient(ABC):
         pass
 
     async def shutdown(self) -> None:
-        """Clean up resources."""
+        """Clean up resources with proper memory management."""
         self._initialized = False
+
+        # Shutdown thread pool executor
+        if self._executor:
+            try:
+                self._executor.shutdown(wait=True, timeout=5.0)
+            except Exception as e:
+                self.logger.warning(f"Error shutting down executor: {e}")
+            finally:
+                self._executor = None
+
+        # Clear session to free memory
+        self.session = None
+        self._connection_count = 0
 
 
 class TidalClient(StreamingPlatformClient):
-    """TIDAL streaming platform client."""
+    """TIDAL streaming platform client integrating with existing TidalAPIClient."""
 
     def __init__(self, enabled: bool = None):
         if enabled is None:
@@ -169,6 +184,9 @@ class TidalClient(StreamingPlatformClient):
         super().__init__("tidal", enabled)
         self.session = None
         self.session_file = os.getenv("TIDAL_SESSION_FILE", os.path.expanduser("~/.tidal-session.json"))
+        self._executor = None
+        self._connection_count = 0
+        self._max_connections = 10
 
     async def initialize(self) -> None:
         """Initialize TIDAL client with authentication."""
@@ -179,6 +197,12 @@ class TidalClient(StreamingPlatformClient):
             import tidalapi  # type: ignore
         except ImportError:
             raise RuntimeError("tidalapi package not installed")
+
+        # Create thread pool with limited workers to prevent memory bloat
+        self._executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=2,
+            thread_name_prefix="tidal_client"
+        )
 
         self.session = tidalapi.Session()
         await asyncio.to_thread(self._login)
@@ -217,14 +241,29 @@ class TidalClient(StreamingPlatformClient):
 
         results = []
 
-        # Try ISRC search first if available
-        if isrc:
-            isrc_results = await asyncio.to_thread(self._search_by_isrc, isrc)
-            results.extend(isrc_results)
+        # Enforce connection limits
+        if self._connection_count >= self._max_connections:
+            self.logger.warning(f"Connection limit reached ({self._max_connections}), skipping search")
+            return []
 
-        # Text-based search
-        text_results = await asyncio.to_thread(self._search_by_text, title, artist)
-        results.extend(text_results)
+        try:
+            self._connection_count += 1
+
+            # Try ISRC search first if available
+            if isrc:
+                isrc_results = await asyncio.get_event_loop().run_in_executor(
+                    self._executor, self._search_by_isrc, isrc
+                )
+                results.extend(isrc_results)
+
+            # Text-based search
+            text_results = await asyncio.get_event_loop().run_in_executor(
+                self._executor, self._search_by_text, title, artist
+            )
+            results.extend(text_results)
+
+        finally:
+            self._connection_count -= 1
 
         return results
 
@@ -314,12 +353,22 @@ class TidalClient(StreamingPlatformClient):
         if not self._initialized:
             await self.initialize()
 
+        # Enforce connection limits
+        if self._connection_count >= self._max_connections:
+            self.logger.warning(f"Connection limit reached ({self._max_connections}), skipping track lookup")
+            return None
+
         try:
-            track = await asyncio.to_thread(self.session.track, int(track_id))
+            self._connection_count += 1
+            track = await asyncio.get_event_loop().run_in_executor(
+                self._executor, self.session.track, int(track_id)
+            )
             return self._convert_tidal_track(track)
         except Exception as e:
             self.logger.error(f"Failed to get track {track_id}: {e}")
             return None
+        finally:
+            self._connection_count -= 1
 
 
 class SpotifyClient(StreamingPlatformClient):
@@ -584,6 +633,10 @@ class UnifiedStreamingClient:
             command_timeout=30,
             max_queries=50000,
             max_inactive_connection_lifetime=1800,
+            server_settings={
+                'statement_timeout': '30000',
+                'idle_in_transaction_session_timeout': '300000'
+            }
         )
 
         # Initialize enabled platform clients
@@ -750,7 +803,7 @@ class UnifiedStreamingClient:
             WHERE id = $1
         """
 
-        async with self.db_pool.acquire() as conn:
+        async with self.get_db_connection() as conn:
             await conn.execute(query, *values)
 
         self.logger.info(f"Updated track {track_id} with platform IDs: {list(platform_ids.keys())}")
@@ -774,7 +827,7 @@ class UnifiedStreamingClient:
             FROM tracks
         """
 
-        async with self.db_pool.acquire() as conn:
+        async with self.get_db_connection() as conn:
             record = await conn.fetchrow(query)
 
         stats = dict(record) if record else {}
@@ -792,19 +845,65 @@ class UnifiedStreamingClient:
     async def shutdown(self) -> None:
         """Shutdown all clients and close database connection."""
         # Shutdown platform clients
+        shutdown_tasks = []
         for client in self.clients.values():
-            try:
-                await client.shutdown()
-            except Exception as e:
-                self.logger.warning(f"Error shutting down client: {e}")
+            if hasattr(client, 'shutdown'):
+                shutdown_tasks.append(asyncio.create_task(client.shutdown()))
 
-        # Close database connection
+        if shutdown_tasks:
+            try:
+                await asyncio.wait_for(asyncio.gather(*shutdown_tasks, return_exceptions=True), timeout=10.0)
+            except asyncio.TimeoutError:
+                self.logger.warning("Some clients took too long to shutdown")
+
+        # Close database connection with timeout
         if self.db_pool:
-            await self.db_pool.close()
-            self.db_pool = None
+            try:
+                await asyncio.wait_for(self.db_pool.close(), timeout=5.0)
+            except asyncio.TimeoutError:
+                self.logger.warning("Database pool shutdown timed out")
+            finally:
+                self.db_pool = None
 
         self._initialized = False
         self.logger.info("UnifiedStreamingClient shutdown complete")
+
+    async def get_memory_usage(self) -> Dict[str, Any]:
+        """Get current memory usage metrics."""
+        process = psutil.Process()
+        memory_info = process.memory_info()
+
+        stats = {
+            "rss_mb": memory_info.rss / 1024 / 1024,
+            "vms_mb": memory_info.vms / 1024 / 1024,
+            "percent": process.memory_percent(),
+            "db_pool_size": self.db_pool.get_size() if self.db_pool else 0,
+            "active_clients": sum(1 for client in self.clients.values() if client.enabled)
+        }
+
+        return stats
+
+    @asynccontextmanager
+    async def get_db_connection(self):
+        """Context manager for database connections with timeout."""
+        if not self.db_pool:
+            raise RuntimeError("Database pool not initialized")
+
+        conn = None
+        try:
+            conn = await asyncio.wait_for(self.db_pool.acquire(), timeout=10.0)
+            yield conn
+        except asyncio.TimeoutError:
+            self.logger.error("Database connection acquisition timeout")
+            raise
+        finally:
+            if conn:
+                try:
+                    await asyncio.wait_for(self.db_pool.release(conn), timeout=5.0)
+                except asyncio.TimeoutError:
+                    self.logger.warning("Database connection release timeout")
+                except Exception as e:
+                    self.logger.warning(f"Error releasing database connection: {e}")
 
 
 # Convenience function for quick usage
