@@ -1,0 +1,85 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: songnodes-base
+  namespace: songnodes
+
+# Namespace for all resources
+namespace: songnodes
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/part-of: songnodes
+  app.kubernetes.io/managed-by: kustomize
+
+# Common annotations
+commonAnnotations:
+  deployment.kubernetes.io/revision: "1"
+
+# Resources to deploy (order matters)
+resources:
+  # Base configuration
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+
+  # Core infrastructure (databases)
+  - ../core/postgres-statefulset.yaml
+  - ../core/redis-deployment.yaml
+  - ../core/rabbitmq-statefulset.yaml
+
+  # Application services
+  - ../services/rest-api-deployment.yaml
+  - ../services/graph-visualization-deployment.yaml
+  - ../services/websocket-api-deployment.yaml
+  - ../services/nlp-processor-deployment.yaml
+  - ../services/scraper-orchestrator-deployment.yaml
+  - ../services/frontend-deployment.yaml
+
+  # Monitoring
+  - ../monitoring/prometheus-deployment.yaml
+  - ../monitoring/grafana-deployment.yaml
+
+  # Ingress
+  - ../ingress/ingress.yaml
+
+  # Autoscaling and policies
+  - hpa.yaml
+  - networkpolicy.yaml
+
+# Images (can override with specific tags for versioned deployments)
+images:
+  - name: songnodes/rest-api
+    newTag: latest
+  - name: songnodes/graph-visualization-api
+    newTag: latest
+  - name: songnodes/websocket-api
+    newTag: latest
+  - name: songnodes/nlp-processor
+    newTag: latest
+  - name: songnodes/scraper-orchestrator
+    newTag: latest
+  - name: songnodes/scraper-1001
+    newTag: latest
+  - name: songnodes/frontend
+    newTag: latest
+
+# ConfigMap generator (alternative to manual configmap.yaml)
+# Uncomment to generate from .env file
+# configMapGenerator:
+#   - name: songnodes-config
+#     envs:
+#       - config.env
+
+# Secret generator (alternative to manual secret.yaml)
+# Uncomment to generate from .env file
+# secretGenerator:
+#   - name: songnodes-secrets
+#     envs:
+#       - secrets.env
+
+# Patches for customization
+# patches:
+#   - path: patches/increase-replicas.yaml
+#   - path: patches/resource-limits-prod.yaml

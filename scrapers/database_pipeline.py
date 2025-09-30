@@ -1,6 +1,10 @@
 """
-Database Pipeline for SongNodes Scrapers
-Writes music data directly to PostgreSQL with schema that matches actual database
+Database Pipeline for SongNodes Scrapers with Pydantic Validation (2025)
+
+Writes music data directly to PostgreSQL with comprehensive validation:
+- Pre-insert validation using Pydantic models
+- Type safety and business rule enforcement
+- Data quality assurance before database insertion
 """
 import asyncio
 import asyncpg
@@ -8,6 +12,25 @@ import logging
 import uuid
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
+from pydantic import ValidationError
+
+# Import Pydantic validation functions
+try:
+    from pydantic_adapter import (
+        validate_artist_item,
+        validate_track_item,
+        validate_setlist_item,
+        validate_track_adjacency_item,
+        validate_items_batch
+    )
+    PYDANTIC_AVAILABLE = True
+    logger = logging.getLogger(__name__)
+    logger.info("✅ Pydantic validation enabled for database pipeline")
+except ImportError as e:
+    PYDANTIC_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning(f"⚠️ Pydantic validation not available: {e}")
+    logger.warning("Database pipeline will run without pre-insert validation")
 
 
 class DatabasePipeline:
@@ -38,6 +61,14 @@ class DatabasePipeline:
             'artists': set(),
             'songs': set(),
             'playlists': set()
+        }
+
+        # Validation statistics (2025 best practice: observability)
+        self.validation_stats = {
+            'total_items': 0,
+            'valid_items': 0,
+            'invalid_items': 0,
+            'validation_errors': []
         }
 
     async def open_spider(self, spider):
@@ -91,10 +122,31 @@ class DatabasePipeline:
             raise
 
     async def _process_artist_item(self, item):
-        """Process artist item"""
+        """
+        Process artist item with Pydantic validation (2025 best practice).
+
+        Validates artist data before database insertion to ensure:
+        - No generic artist names ("Various Artists", etc.)
+        - Valid ISO country codes
+        - Popularity scores in 0-100 range
+        """
         artist_name = item.get('artist_name', '').strip()
         if not artist_name or artist_name in self.processed_items['artists']:
             return
+
+        # Pydantic validation (if available)
+        if PYDANTIC_AVAILABLE:
+            self.validation_stats['total_items'] += 1
+            try:
+                # Validate using Pydantic model
+                validated_artist = validate_artist_item(item, data_source=item.get('data_source', 'unknown'))
+                self.validation_stats['valid_items'] += 1
+                self.logger.debug(f"✓ Artist validated: {validated_artist.artist_name}")
+            except ValidationError as e:
+                self.validation_stats['invalid_items'] += 1
+                self.validation_stats['validation_errors'].append(f"Artist '{artist_name}': {str(e)}")
+                self.logger.warning(f"❌ Invalid artist data, skipping: {artist_name} - {e}")
+                return  # Skip invalid artist
 
         self.processed_items['artists'].add(artist_name)
         self.item_batches['artists'].append({
@@ -107,7 +159,16 @@ class DatabasePipeline:
             await self._flush_batch('artists')
 
     async def _process_track_item(self, item):
-        """Process track/song item"""
+        """
+        Process track/song item with Pydantic validation (2025 best practice).
+
+        Validates track data before database insertion to ensure:
+        - Track ID format (16-char hexadecimal)
+        - BPM range (60-200)
+        - No generic track names ("ID - ID", "Unknown Track", etc.)
+        - Energy/danceability in 0.0-1.0 range
+        - Remix consistency (is_remix=True requires remix_type)
+        """
         track_name = item.get('track_name', '').strip()
         if not track_name:
             return
@@ -115,6 +176,20 @@ class DatabasePipeline:
         track_key = f"{track_name}::{item.get('artist_name', '')}"
         if track_key in self.processed_items['songs']:
             return
+
+        # Pydantic validation (if available)
+        if PYDANTIC_AVAILABLE:
+            self.validation_stats['total_items'] += 1
+            try:
+                # Validate using Pydantic model
+                validated_track = validate_track_item(item, data_source=item.get('data_source', 'unknown'))
+                self.validation_stats['valid_items'] += 1
+                self.logger.debug(f"✓ Track validated: {validated_track.track_name}")
+            except ValidationError as e:
+                self.validation_stats['invalid_items'] += 1
+                self.validation_stats['validation_errors'].append(f"Track '{track_name}': {str(e)}")
+                self.logger.warning(f"❌ Invalid track data, skipping: {track_name} - {e}")
+                return  # Skip invalid track
 
         self.processed_items['songs'].add(track_key)
 
@@ -147,10 +222,31 @@ class DatabasePipeline:
             await self._flush_batch('songs')
 
     async def _process_playlist_item(self, item):
-        """Process playlist item"""
+        """
+        Process playlist item with Pydantic validation (2025 best practice).
+
+        Validates playlist/setlist data before database insertion to ensure:
+        - No generic playlist names ("DJ Set", "Untitled", etc.)
+        - Valid date formats (YYYY-MM-DD)
+        - Valid sources (1001tracklists, mixesdb, setlistfm, reddit)
+        """
         playlist_name = item.get('name', '').strip()
         if not playlist_name or playlist_name in self.processed_items['playlists']:
             return
+
+        # Pydantic validation (if available)
+        if PYDANTIC_AVAILABLE:
+            self.validation_stats['total_items'] += 1
+            try:
+                # Validate using Pydantic model
+                validated_playlist = validate_setlist_item(item, data_source=item.get('data_source', 'unknown'))
+                self.validation_stats['valid_items'] += 1
+                self.logger.debug(f"✓ Playlist validated: {validated_playlist.setlist_name}")
+            except ValidationError as e:
+                self.validation_stats['invalid_items'] += 1
+                self.validation_stats['validation_errors'].append(f"Playlist '{playlist_name}': {str(e)}")
+                self.logger.warning(f"❌ Invalid playlist data, skipping: {playlist_name} - {e}")
+                return  # Skip invalid playlist
 
         self.processed_items['playlists'].add(playlist_name)
 
@@ -205,12 +301,34 @@ class DatabasePipeline:
             await self._flush_batch('playlist_tracks')
 
     async def _process_adjacency_item(self, item):
-        """Process track adjacency item"""
+        """
+        Process track adjacency item with Pydantic validation (2025 best practice).
+
+        Validates track adjacency data before database insertion to ensure:
+        - Valid track names (not generic/placeholder names)
+        - Distance >= 1 (tracks must be separate)
+        - track1 != track2 (no self-adjacency)
+        - occurrence_count >= 1
+        """
         track1 = item.get('track1_name', '').strip()
         track2 = item.get('track2_name', '').strip()
 
         if not track1 or not track2 or track1 == track2:
             return
+
+        # Pydantic validation (if available)
+        if PYDANTIC_AVAILABLE:
+            self.validation_stats['total_items'] += 1
+            try:
+                # Validate using Pydantic model
+                validated_adjacency = validate_track_adjacency_item(item, data_source=item.get('data_source', 'unknown'))
+                self.validation_stats['valid_items'] += 1
+                self.logger.debug(f"✓ Adjacency validated: {track1} → {track2}")
+            except ValidationError as e:
+                self.validation_stats['invalid_items'] += 1
+                self.validation_stats['validation_errors'].append(f"Adjacency '{track1}→{track2}': {str(e)}")
+                self.logger.warning(f"❌ Invalid adjacency data, skipping: {track1}→{track2} - {e}")
+                return  # Skip invalid adjacency
 
         self.item_batches['song_adjacency'].append({
             'track1_name': track1,
@@ -449,11 +567,43 @@ class DatabasePipeline:
             await self._flush_batch(batch_type)
 
     async def close_spider(self, spider):
-        """Clean up when spider closes"""
+        """
+        Clean up when spider closes and log validation statistics (2025 best practice).
+
+        Provides comprehensive validation report for data quality monitoring.
+        """
         try:
+            # Flush any remaining batches
             await self.flush_all_batches()
+
+            # Log validation statistics (if Pydantic validation was available)
+            if PYDANTIC_AVAILABLE and self.validation_stats['total_items'] > 0:
+                self.logger.info("=" * 70)
+                self.logger.info("📊 DATABASE PIPELINE VALIDATION STATISTICS")
+                self.logger.info("=" * 70)
+                self.logger.info(f"  Total items processed: {self.validation_stats['total_items']}")
+                self.logger.info(f"  ✅ Valid items inserted: {self.validation_stats['valid_items']}")
+                self.logger.info(f"  ❌ Invalid items rejected: {self.validation_stats['invalid_items']}")
+
+                # Calculate validation rate
+                if self.validation_stats['total_items'] > 0:
+                    validation_rate = (self.validation_stats['valid_items'] / self.validation_stats['total_items']) * 100
+                    self.logger.info(f"  📈 Validation success rate: {validation_rate:.2f}%")
+
+                # Log sample validation errors (first 5)
+                if self.validation_stats['validation_errors']:
+                    self.logger.info(f"  ⚠️ Sample validation errors (showing first 5 of {len(self.validation_stats['validation_errors'])}):")
+                    for i, error in enumerate(self.validation_stats['validation_errors'][:5], 1):
+                        self.logger.info(f"    {i}. {error}")
+
+                self.logger.info("=" * 70)
+
+            # Close connection pool
             if self.connection_pool:
                 await self.connection_pool.close()
+                self.logger.info("✓ Database connection pool closed successfully")
+
             self.logger.info("✓ Database pipeline closed successfully")
+
         except Exception as e:
-            self.logger.error(f"Error closing database pipeline: {e}")
+            self.logger.error(f"❌ Error closing database pipeline: {e}")

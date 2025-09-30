@@ -1,0 +1,46 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: songnodes-config
+  namespace: songnodes
+  labels:
+    app.kubernetes.io/name: songnodes
+    app.kubernetes.io/component: config
+data:
+  # Database Configuration
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "musicdb"
+  POSTGRES_USER: "musicdb_user"
+
+  # Redis Configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+
+  # RabbitMQ Configuration
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: "songnodesuser"
+
+  # API Configuration
+  REST_API_HOST: "rest-api-service"
+  REST_API_PORT: "8082"
+  GRAPH_API_HOST: "graph-visualization-service"
+  GRAPH_API_PORT: "8084"
+  WEBSOCKET_API_HOST: "websocket-api-service"
+  WEBSOCKET_API_PORT: "8083"
+
+  # Application Settings
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  CORS_ORIGINS: "*"
+
+  # Scraper Settings
+  SCRAPER_CONCURRENT_REQUESTS: "16"
+  SCRAPER_DOWNLOAD_DELAY: "2.0"
+  SCRAPER_AUTOTHROTTLE_ENABLED: "True"
+
+  # Monitoring
+  PROMETHEUS_ENABLED: "true"
+  METRICS_PORT: "9090"
