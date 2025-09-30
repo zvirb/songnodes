@@ -422,10 +422,25 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                     tracks_data = []
 
                     for idx, nlp_track in enumerate(nlp_tracks):
+                        # Generate track_id for NLP-extracted track
+                        track_name = nlp_track.get('track_name', 'Unknown Track')
+                        artist_name = nlp_track.get('artist_name', 'Unknown Artist')
+
+                        # Generate track_id if we have valid data
+                        track_id = None
+                        if track_name != 'Unknown Track' and artist_name != 'Unknown Artist':
+                            track_id = generate_track_id(
+                                title=track_name,
+                                primary_artist=artist_name,
+                                is_remix=False,
+                                is_mashup=False
+                            )
+
                         # Build track data structure compatible with existing pipeline
                         track_item = {
-                            'track_name': nlp_track.get('track_name', 'Unknown Track'),
-                            'normalized_title': nlp_track.get('track_name', '').lower().strip(),
+                            'track_id': track_id,  # Deterministic ID for matching across sources
+                            'track_name': track_name,
+                            'normalized_title': track_name.lower().strip(),
                             'is_remix': False,
                             'is_mashup': False,
                             'bpm': None,

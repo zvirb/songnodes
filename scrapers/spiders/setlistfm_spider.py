@@ -17,6 +17,7 @@ from scrapy.exceptions import CloseSpider
 try:
     from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
     from ..nlp_spider_mixin import NLPFallbackSpiderMixin
+    from ..track_id_generator import generate_track_id, extract_remix_type
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -24,6 +25,7 @@ except ImportError:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
     from nlp_spider_mixin import NLPFallbackSpiderMixin
+    from track_id_generator import generate_track_id, extract_remix_type
 
 class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = 'setlistfm'
@@ -294,16 +296,36 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                     for song in set_data.get('song', []):
                         name = song.get('name') or ''
                         track_names.append(name)  # Collect track name for playlist item
+
+                        # Detect remix/mashup properties
+                        is_remix = bool(re.search(r'(remix|edit|mix)\b', name, re.IGNORECASE))
+                        is_mashup = bool(re.search(r'\b(vs\.|mashup)\b', name, re.IGNORECASE))
+                        remix_type = extract_remix_type(name) if is_remix else None
+
+                        # Generate deterministic track_id for cross-source deduplication
+                        artist_name = artist_data.get('name')
+                        track_id = generate_track_id(
+                            title=name,
+                            primary_artist=artist_name,
+                            is_remix=is_remix,
+                            is_mashup=is_mashup,
+                            remix_type=remix_type
+                        )
+
                         track_item = TrackItem()
+                        track_item['track_id'] = track_id  # Deterministic ID for matching across sources
                         track_item['track_name'] = name
-                        track_item['is_remix'] = bool(re.search(r'(remix|edit|mix)\b', name, re.IGNORECASE))
-                        track_item['is_mashup'] = bool(re.search(r'\b(vs\.|mashup)\b', name, re.IGNORECASE))
+                        track_item['is_remix'] = is_remix
+                        track_item['is_mashup'] = is_mashup
                         track_item['mashup_components'] = []
                         track_item['track_type'] = 'Setlist'
+                        track_item['remix_type'] = remix_type
 
                         # Check if it's a cover
                         if song.get('cover'):
                             track_item['is_cover'] = True
+
+                        self.logger.debug(f"Generated track_id {track_id} for: {artist_name} - {name}")
 
                         yield track_item
 
@@ -324,7 +346,7 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
                         # Collect track data for adjacency generation
                         tracks_data.append({
-                            'track': {'track_name': name, 'track_id': None},
+                            'track': {'track_name': name, 'track_id': track_id},
                             'track_order': track_position
                         })
 

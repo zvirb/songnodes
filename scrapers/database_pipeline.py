@@ -293,11 +293,12 @@ class DatabasePipeline:
             })
 
         await conn.executemany("""
-            INSERT INTO songs (title, primary_artist_id, genre, bpm, key,
+            INSERT INTO songs (track_id, title, primary_artist_id, genre, bpm, key,
                              duration_seconds, release_year, label, spotify_id, musicbrainz_id,
                              tidal_id, beatport_id, apple_music_id, soundcloud_id, deezer_id, youtube_music_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
             ON CONFLICT (title, primary_artist_id) DO UPDATE SET
+                track_id = COALESCE(EXCLUDED.track_id, songs.track_id),  -- Update track_id if not set
                 genre = COALESCE(EXCLUDED.genre, songs.genre),
                 bpm = COALESCE(EXCLUDED.bpm, songs.bpm),
                 key = COALESCE(EXCLUDED.key, songs.key),
@@ -315,6 +316,7 @@ class DatabasePipeline:
                 updated_at = CURRENT_TIMESTAMP
         """, [
             (
+                item.get('track_id'),  # Deterministic track ID for cross-source matching
                 item['title'],
                 item.get('primary_artist_id'),
                 item.get('genre'),
