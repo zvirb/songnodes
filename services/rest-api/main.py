@@ -1,18 +1,71 @@
 """REST API Service for SongNodes"""
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from typing import List, Optional, Dict, Any
 import logging
 import os
+import sys
 from datetime import datetime
 import asyncpg
 import json
 from contextlib import asynccontextmanager
 
-# Configure logging
+# Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import comprehensive Pydantic models (copied from scrapers directory during Docker build)
+try:
+    from pydantic_models import (
+        ArtistCreate, ArtistResponse, ArtistBase,
+        TrackCreate, TrackResponse, TrackBase,
+        SetlistCreate, SetlistResponse, SetlistBase,
+        TrackArtistRelationship,
+        TrackAdjacency,
+        TrackSource,
+        DataSource,
+        HealthCheckResponse,
+        ErrorResponse
+    )
+    logger.info("✅ Comprehensive Pydantic models imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import Pydantic models: {e}")
+    logger.warning("Falling back to basic models - validation will be limited")
+    # Define fallback models if import fails
+    class ArtistBase(BaseModel):
+        artist_name: str
+        data_source: str = "unknown"
+    class ArtistCreate(ArtistBase):
+        pass
+    class ArtistResponse(ArtistBase):
+        artist_id: int
+        created_at: datetime
+    class TrackBase(BaseModel):
+        track_name: str
+        data_source: str = "unknown"
+    class TrackCreate(TrackBase):
+        pass
+    class TrackResponse(TrackBase):
+        song_id: int
+        created_at: datetime
+    class SetlistBase(BaseModel):
+        setlist_name: str
+        dj_artist_name: str
+        data_source: str = "unknown"
+    class SetlistCreate(SetlistBase):
+        pass
+    class SetlistResponse(SetlistBase):
+        playlist_id: int
+        created_at: datetime
+    class HealthCheckResponse(BaseModel):
+        status: str
+        database_connected: bool
+        services_available: Dict[str, bool]
+        timestamp: datetime = Field(default_factory=datetime.utcnow)
+    class ErrorResponse(BaseModel):
+        error: str
+        detail: Optional[str] = None
 
 # Database connection
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:musicdb_secure_pass@db:5432/musicdb")
@@ -71,91 +124,348 @@ except Exception as e:
     logger.warning(f"Failed to load API Keys router: {str(e)}")
     logger.warning("API key management endpoints will not be available")
 
-# Models
-class Artist(BaseModel):
-    id: Optional[int] = None
-    name: str
-    genre: Optional[str] = None
-    popularity: Optional[float] = None
-    created_at: Optional[datetime] = None
-
-class Track(BaseModel):
-    id: Optional[int] = None
-    title: str
-    artist_id: int
-    duration: Optional[int] = None
-    bpm: Optional[float] = None
-    key: Optional[str] = None
-
-class Mix(BaseModel):
-    id: Optional[int] = None
-    name: str
-    dj_id: int
-    date: Optional[datetime] = None
-    venue: Optional[str] = None
-
-@app.get("/health")
+@app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "rest-api",
-        "version": "1.0.0",
-        "database": "connected"  # Placeholder
-    }
+    """
+    Health check endpoint with database connectivity verification.
 
-@app.get("/api/v1/artists", response_model=List[Artist])
-async def get_artists(limit: int = 100, offset: int = 0):
-    """Get list of artists"""
+    Returns comprehensive health status using Pydantic validation.
+    """
     try:
-        # Placeholder data
-        return [
-            Artist(id=1, name="Example Artist 1", genre="Electronic"),
-            Artist(id=2, name="Example Artist 2", genre="House")
-        ]
+        # Check database connectivity
+        db_connected = False
+        if db_pool:
+            async with db_pool.acquire() as conn:
+                result = await conn.fetchval("SELECT 1")
+                db_connected = (result == 1)
+
+        return HealthCheckResponse(
+            status="healthy" if db_connected else "degraded",
+            database_connected=db_connected,
+            services_available={
+                "database": db_connected,
+                "api": True
+            }
+        )
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return HealthCheckResponse(
+            status="unhealthy",
+            database_connected=False,
+            services_available={
+                "database": False,
+                "api": True
+            }
+        )
+
+@app.get("/api/v1/artists", response_model=List[ArtistResponse])
+async def get_artists(limit: int = 100, offset: int = 0):
+    """
+    Get list of artists with comprehensive validation.
+
+    Uses Pydantic models to ensure data quality and type safety.
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            query = """
+            SELECT artist_id, artist_name, normalized_name, aliases,
+                   spotify_id, apple_music_id, youtube_channel_id, soundcloud_id,
+                   discogs_id, musicbrainz_id, genre_preferences, country,
+                   is_verified, follower_count, monthly_listeners, popularity_score,
+                   data_source, scrape_timestamp, created_at, updated_at
+            FROM artists
+            ORDER BY artist_name
+            LIMIT $1 OFFSET $2
+            """
+            rows = await conn.fetch(query, limit, offset)
+
+            artists = []
+            for row in rows:
+                try:
+                    # Convert database row to Pydantic model
+                    artist = ArtistResponse(**dict(row))
+                    artists.append(artist)
+                except ValidationError as ve:
+                    logger.warning(f"Artist {row['artist_id']} failed validation: {ve}")
+                    # Skip invalid artists
+                    continue
+
+            return artists
+
     except Exception as e:
         logger.error(f"Failed to fetch artists: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/artists/{artist_id}", response_model=Artist)
+@app.get("/api/v1/artists/{artist_id}", response_model=ArtistResponse)
 async def get_artist(artist_id: int):
-    """Get specific artist by ID"""
+    """
+    Get specific artist by ID with validation.
+
+    Returns comprehensive artist data validated by Pydantic.
+    """
     try:
-        return Artist(
-            id=artist_id,
-            name=f"Artist {artist_id}",
-            genre="Electronic",
-            popularity=0.85
-        )
+        async with db_pool.acquire() as conn:
+            query = """
+            SELECT artist_id, artist_name, normalized_name, aliases,
+                   spotify_id, apple_music_id, youtube_channel_id, soundcloud_id,
+                   discogs_id, musicbrainz_id, genre_preferences, country,
+                   is_verified, follower_count, monthly_listeners, popularity_score,
+                   data_source, scrape_timestamp, created_at, updated_at
+            FROM artists
+            WHERE artist_id = $1
+            """
+            row = await conn.fetchrow(query, artist_id)
+
+            if not row:
+                raise HTTPException(status_code=404, detail="Artist not found")
+
+            try:
+                artist = ArtistResponse(**dict(row))
+                return artist
+            except ValidationError as ve:
+                logger.error(f"Artist {artist_id} validation failed: {ve}")
+                raise HTTPException(status_code=500, detail="Artist data validation failed")
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to fetch artist {artist_id}: {str(e)}")
-        raise HTTPException(status_code=404, detail="Artist not found")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/tracks", response_model=List[Track])
-async def get_tracks(artist_id: Optional[int] = None, limit: int = 100):
-    """Get list of tracks"""
+@app.post("/api/v1/artists", response_model=ArtistResponse, status_code=201)
+async def create_artist(artist: ArtistCreate):
+    """
+    Create new artist with comprehensive validation.
+
+    Pydantic automatically validates:
+    - No generic artist names (e.g., "Various Artists")
+    - Valid ISO country codes
+    - Popularity score 0-100 range
+    - Required fields present
+    """
     try:
-        tracks = [
-            Track(id=1, title="Track 1", artist_id=1, bpm=128),
-            Track(id=2, title="Track 2", artist_id=1, bpm=125)
-        ]
-        if artist_id:
-            tracks = [t for t in tracks if t.artist_id == artist_id]
-        return tracks
+        async with db_pool.acquire() as conn:
+            query = """
+            INSERT INTO artists (
+                artist_name, normalized_name, aliases,
+                spotify_id, apple_music_id, youtube_channel_id, soundcloud_id,
+                discogs_id, musicbrainz_id, genre_preferences, country,
+                is_verified, follower_count, monthly_listeners, popularity_score,
+                data_source, scrape_timestamp
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+            )
+            RETURNING artist_id, created_at, updated_at
+            """
+
+            row = await conn.fetchrow(
+                query,
+                artist.artist_name, artist.normalized_name, artist.aliases,
+                artist.spotify_id, artist.apple_music_id, artist.youtube_channel_id,
+                artist.soundcloud_id, artist.discogs_id, artist.musicbrainz_id,
+                artist.genre_preferences, artist.country, artist.is_verified,
+                artist.follower_count, artist.monthly_listeners, artist.popularity_score,
+                artist.data_source.value, artist.scrape_timestamp
+            )
+
+            # Return created artist with database-generated fields
+            created_artist = ArtistResponse(
+                **artist.dict(),
+                artist_id=row['artist_id'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
+
+            logger.info(f"✅ Created artist: {artist.artist_name} (ID: {row['artist_id']})")
+            return created_artist
+
+    except ValidationError as ve:
+        logger.error(f"Artist validation failed: {ve}")
+        raise HTTPException(status_code=422, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Failed to create artist: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/tracks", response_model=List[TrackResponse])
+async def get_tracks(
+    artist_id: Optional[int] = None,
+    min_bpm: Optional[float] = None,
+    max_bpm: Optional[float] = None,
+    limit: int = 100,
+    offset: int = 0
+):
+    """
+    Get list of tracks with comprehensive validation and filtering.
+
+    Supports filtering by artist, BPM range. All tracks validated by Pydantic.
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Build dynamic query based on filters
+            conditions = []
+            params = []
+            param_num = 1
+
+            if artist_id:
+                conditions.append(f"primary_artist_id = ${param_num}")
+                params.append(artist_id)
+                param_num += 1
+
+            if min_bpm:
+                conditions.append(f"bpm >= ${param_num}")
+                params.append(min_bpm)
+                param_num += 1
+
+            if max_bpm:
+                conditions.append(f"bpm <= ${param_num}")
+                params.append(max_bpm)
+                param_num += 1
+
+            where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+            query = f"""
+            SELECT song_id, track_id, track_name, normalized_title, duration_ms,
+                   isrc, spotify_id, apple_music_id, youtube_id, soundcloud_id, musicbrainz_id,
+                   bpm, musical_key, energy, danceability, valence, acousticness,
+                   instrumentalness, liveness, speechiness, loudness,
+                   release_date, genre, subgenre, record_label,
+                   is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
+                   remix_type, original_artist, remixer, mashup_components,
+                   popularity_score, play_count, track_type, source_context, position_in_source,
+                   data_source, scrape_timestamp, primary_artist_id, created_at, updated_at
+            FROM songs
+            {where_clause}
+            ORDER BY track_name
+            LIMIT ${param_num} OFFSET ${param_num + 1}
+            """
+            params.extend([limit, offset])
+
+            rows = await conn.fetch(query, *params)
+
+            tracks = []
+            for row in rows:
+                try:
+                    track = TrackResponse(**dict(row))
+                    tracks.append(track)
+                except ValidationError as ve:
+                    logger.warning(f"Track {row['song_id']} failed validation: {ve}")
+                    continue
+
+            return tracks
+
     except Exception as e:
         logger.error(f"Failed to fetch tracks: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/mixes", response_model=List[Mix])
-async def get_mixes(dj_id: Optional[int] = None, limit: int = 100):
-    """Get list of DJ mixes"""
+@app.post("/api/v1/tracks", response_model=TrackResponse, status_code=201)
+async def create_track(track: TrackCreate):
+    """
+    Create new track with comprehensive validation.
+
+    Pydantic automatically validates:
+    - Track ID format (16-char hexadecimal)
+    - BPM range (60-200)
+    - Energy, danceability (0.0-1.0)
+    - No generic track names
+    - Remix consistency (is_remix=True requires remix_type)
+    """
     try:
-        return [
-            Mix(id=1, name="Summer Mix 2024", dj_id=1, venue="Club XYZ"),
-            Mix(id=2, name="Festival Set", dj_id=2, venue="Festival ABC")
-        ]
+        async with db_pool.acquire() as conn:
+            query = """
+            INSERT INTO songs (
+                track_id, track_name, normalized_title, duration_ms,
+                isrc, spotify_id, apple_music_id, youtube_id, soundcloud_id, musicbrainz_id,
+                bpm, musical_key, energy, danceability, valence, acousticness,
+                instrumentalness, liveness, speechiness, loudness,
+                release_date, genre, subgenre, record_label,
+                is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
+                remix_type, original_artist, remixer, mashup_components,
+                popularity_score, play_count, track_type, source_context, position_in_source,
+                data_source, scrape_timestamp
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28,
+                $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41
+            )
+            RETURNING song_id, created_at, updated_at
+            """
+
+            row = await conn.fetchrow(
+                query,
+                track.track_id, track.track_name, track.normalized_title, track.duration_ms,
+                track.isrc, track.spotify_id, track.apple_music_id, track.youtube_id,
+                track.soundcloud_id, track.musicbrainz_id, track.bpm, track.musical_key,
+                track.energy, track.danceability, track.valence, track.acousticness,
+                track.instrumentalness, track.liveness, track.speechiness, track.loudness,
+                track.release_date, track.genre, track.subgenre, track.record_label,
+                track.is_remix, track.is_mashup, track.is_live, track.is_cover,
+                track.is_instrumental, track.is_explicit, track.remix_type,
+                track.original_artist, track.remixer, track.mashup_components,
+                track.popularity_score, track.play_count, track.track_type,
+                track.source_context, track.position_in_source,
+                track.data_source.value, track.scrape_timestamp
+            )
+
+            created_track = TrackResponse(
+                **track.dict(),
+                song_id=row['song_id'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
+
+            logger.info(f"✅ Created track: {track.track_name} (ID: {row['song_id']})")
+            return created_track
+
+    except ValidationError as ve:
+        logger.error(f"Track validation failed: {ve}")
+        raise HTTPException(status_code=422, detail=str(ve))
     except Exception as e:
-        logger.error(f"Failed to fetch mixes: {str(e)}")
+        logger.error(f"Failed to create track: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/setlists", response_model=List[SetlistResponse])
+async def get_setlists(dj_id: Optional[int] = None, limit: int = 100, offset: int = 0):
+    """
+    Get list of DJ setlists/playlists with comprehensive validation.
+
+    Supports filtering by DJ. All setlists validated by Pydantic.
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            where_clause = "WHERE dj_artist_id = $3" if dj_id else ""
+            params = [limit, offset]
+            if dj_id:
+                params.append(dj_id)
+
+            query = f"""
+            SELECT playlist_id, setlist_name, normalized_name, description,
+                   dj_artist_name, dj_artist_id, supporting_artists,
+                   event_name, event_type, venue_name, venue_location, venue_capacity,
+                   set_date, set_start_time, set_end_time, duration_minutes,
+                   genre_tags, mood_tags, bpm_range, total_tracks,
+                   spotify_playlist_id, soundcloud_playlist_id, mixcloud_id, youtube_playlist_id,
+                   data_source, scrape_timestamp, created_at, updated_at
+            FROM playlists
+            {where_clause}
+            ORDER BY set_date DESC NULLS LAST, setlist_name
+            LIMIT $1 OFFSET $2
+            """
+
+            rows = await conn.fetch(query, *params)
+
+            setlists = []
+            for row in rows:
+                try:
+                    setlist = SetlistResponse(**dict(row))
+                    setlists.append(setlist)
+                except ValidationError as ve:
+                    logger.warning(f"Setlist {row['playlist_id']} failed validation: {ve}")
+                    continue
+
+            return setlists
+
+    except Exception as e:
+        logger.error(f"Failed to fetch setlists: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/graph/nodes")

@@ -6,7 +6,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code (includes pydantic_models.py copied from scrapers directory)
+# Note: pydantic_models.py is a copy of scrapers/pydantic_models.py for shared validation
 COPY . .
 
 # Expose port
