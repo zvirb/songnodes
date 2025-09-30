@@ -58,7 +58,7 @@ export const PathBuilder: React.FC = () => {
 
   // Create searchable track data from graph nodes
   const trackSearchData: TrackSearchResult[] = useMemo(() => {
-    return graphData.nodes
+    return (graphData.nodes || [])
       .filter(node => node.track)
       .map(node => ({
         id: node.id,

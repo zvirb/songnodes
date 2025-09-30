@@ -282,7 +282,7 @@ const TargetTracksManager: React.FC = () => {
   };
 
   // Filter tracks based on search and priority
-  const filteredTracks = tracks.filter(track => {
+  const filteredTracks = tracks?.filter(track => {
     const matchesSearch = !searchQuery ||
       track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       track.artist.toLowerCase().includes(searchQuery.toLowerCase());
@@ -290,7 +290,7 @@ const TargetTracksManager: React.FC = () => {
     const matchesPriority = selectedPriority === 'all' || track.priority === selectedPriority;
 
     return matchesSearch && matchesPriority;
-  });
+  }) || [];
 
   // Priority badge component
   const PriorityBadge: React.FC<{ priority: string }> = ({ priority }) => {

@@ -39,7 +39,7 @@ const calculateRecommendations = (
 ): TrackRecommendation[] => {
   if (!currentTrack) return [];
 
-  return allTracks
+  return (allTracks || [])
     .filter(track => track.id !== currentTrack.id)
     .map(track => {
       const recommendation: TrackRecommendation = {
