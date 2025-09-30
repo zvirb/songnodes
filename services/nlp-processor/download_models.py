@@ -23,7 +23,13 @@ def download_model(model_name):
 
 def main():
     """Download required spaCy models"""
-    models = ["en_core_web_sm", "en_core_web_md"]
+    # Use specific versions compatible with spaCy 3.7.2
+    models = [
+        "en_core_web_sm-3.7.0",
+        "en_core_web_sm",  # Fallback to latest
+        "en_core_web_md-3.7.0",
+        "en_core_web_md"
+    ]
 
     for model in models:
         success = download_model(model)

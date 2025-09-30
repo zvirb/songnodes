@@ -577,6 +577,12 @@ async def get_scrapers_status():
             {"name": "mixesdb", "url": "http://scraper-mixesdb:8012", "health_endpoint": "/health"},
             {"name": "setlistfm", "url": "http://scraper-setlistfm:8013", "health_endpoint": "/health"},
             {"name": "reddit", "url": "http://scraper-reddit:8014", "health_endpoint": "/health"},
+            {"name": "mixcloud", "url": "http://scraper-mixcloud:8015", "health_endpoint": "/health"},
+            {"name": "soundcloud", "url": "http://scraper-soundcloud:8016", "health_endpoint": "/health"},
+            {"name": "youtube", "url": "http://scraper-youtube:8017", "health_endpoint": "/health"},
+            {"name": "internetarchive", "url": "http://scraper-internetarchive:8018", "health_endpoint": "/health"},
+            {"name": "livetracklist", "url": "http://scraper-livetracklist:8019", "health_endpoint": "/health"},
+            {"name": "residentadvisor", "url": "http://scraper-residentadvisor:8023", "health_endpoint": "/health"},
         ]
 
         scrapers_status = []

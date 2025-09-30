@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "playwright test",
+    "test:e2e": "playwright test",
     "test:graph": "playwright test --project=graph-visualization",
     "test:webgl-stress": "playwright test --project=webgl-stress-test",
     "test:pixi": "playwright test --project=pixi-compatibility",

@@ -158,9 +158,9 @@ services:
       - CMD
       - curl
       - -f
-      - http://127.0.0.1:8001/health
+      - http://127.0.0.1:8001/healthz
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 40s
     deploy:
@@ -185,8 +185,12 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
     depends_on:
     - scraper-orchestrator
+    - nlp-processor
     networks:
     - musicdb-backend
     healthcheck:
@@ -223,8 +227,12 @@ services:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       CONCURRENT_REQUESTS: 6
       DOWNLOAD_DELAY: 1.5
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
     depends_on:
     - scraper-orchestrator
+    - nlp-processor
     networks:
     - musicdb-backend
     healthcheck:
@@ -260,8 +268,12 @@ services:
       RATE_LIMIT: 3600
       REQUEST_DELAY: 1
       SKIP_ROBOTS_CHECK: 'true'
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
     depends_on:
     - scraper-orchestrator
+    - nlp-processor
     networks:
     - musicdb-backend
     healthcheck:
@@ -295,6 +307,9 @@ services:
       REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
       REDIS_HOST: redis
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
     depends_on:
     - scraper-orchestrator
     - nlp-processor
@@ -310,6 +325,235 @@ services:
       timeout: 15s
       retries: 3
       start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  scraper-mixcloud:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.mixcloud
+    restart: always
+    ports:
+    - '8015:8015'
+    environment:
+      SCRAPER_NAME: mixcloud
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      RATE_LIMIT_DELAY: 2.0
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
+    depends_on:
+    - scraper-orchestrator
+    - nlp-processor
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8015/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  scraper-soundcloud:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.soundcloud
+    restart: always
+    ports:
+    - '8016:8016'
+    environment:
+      SCRAPER_NAME: soundcloud
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      RATE_LIMIT_DELAY: 2.5
+    depends_on:
+    - scraper-orchestrator
+    - nlp-processor
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8016/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  scraper-youtube:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.youtube
+    restart: always
+    ports:
+    - '8017:8017'
+    environment:
+      SCRAPER_NAME: youtube
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      DAILY_QUOTA_LIMIT: 10000
+      API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
+    depends_on:
+    - scraper-orchestrator
+    - nlp-processor
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8017/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  scraper-internetarchive:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.internetarchive
+    restart: always
+    ports:
+    - '8018:8018'
+    environment:
+      SCRAPER_NAME: internetarchive
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+    depends_on:
+    - scraper-orchestrator
+    - nlp-processor
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8018/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  scraper-livetracklist:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.livetracklist
+    restart: always
+    ports:
+    - '8019:8019'
+    environment:
+      SCRAPER_NAME: livetracklist
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      RATE_LIMIT_DELAY: 2.0
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
+    depends_on:
+    - scraper-orchestrator
+    - nlp-processor
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8019/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  scraper-residentadvisor:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.residentadvisor
+    restart: always
+    ports:
+    - '8023:8023'
+    environment:
+      SCRAPER_NAME: residentadvisor
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      RATE_LIMIT_DELAY: 2.0
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
+    depends_on:
+    - scraper-orchestrator
+    - nlp-processor
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8023/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     deploy:
       resources:
         limits:
@@ -390,6 +634,9 @@ services:
         limits:
           cpus: '2.0'
           memory: 3G
+        reservations:
+          cpus: '1.0'
+          memory: 1.5G
   data-validator:
     build:
       context: ./services/data-validator
@@ -431,6 +678,95 @@ services:
         reservations:
           cpus: '0.75'
           memory: 768M
+  audio-analysis:
+    build:
+      context: ./services/audio-analysis
+      dockerfile: Dockerfile
+    container_name: audio-analysis
+    restart: always
+    ports:
+    - 8020:8020
+    environment:
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    depends_on:
+    - postgres
+    - db-connection-pool
+    - redis
+    - rabbitmq
+    - minio
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8020/health
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+  metadata-enrichment:
+    build:
+      context: ./services/metadata-enrichment
+      dockerfile: Dockerfile
+    container_name: metadata-enrichment
+    restart: always
+    ports:
+    - 8022:8020
+    environment:
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
+      # Fallback environment variables (will use database keys first)
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      MUSICBRAINZ_USER_AGENT: ${MUSICBRAINZ_USER_AGENT:-SongNodes/1.0 (contact@songnodes.com)}
+      DISCOGS_TOKEN: ${DISCOGS_TOKEN}
+      LASTFM_API_KEY: ${LASTFM_API_KEY}
+      BEATPORT_API_KEY: ${BEATPORT_API_KEY}
+    depends_on:
+    - postgres
+    - db-connection-pool
+    - redis
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8020/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   ollama:
     image: ollama/ollama:latest
     container_name: ollama-ai
@@ -527,6 +863,7 @@ services:
       API_VERSION: v1
       CONNECTION_POOL_SIZE: 50
       MAX_OVERFLOW: 20
+      API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
     depends_on:
     - postgres
     - redis
@@ -598,6 +935,10 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      RABBITMQ_VHOST: musicdb
       WS_MAX_CONNECTIONS: 10000
       WS_HEARTBEAT_INTERVAL: 30
     depends_on:
@@ -849,16 +1190,8 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-    healthcheck:
-      test:
-      - CMD
-      - curl
-      - -f
-      - http://127.0.0.1:13133
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    # Healthcheck disabled - otel-collector uses distroless image without shell
+    # Service is non-critical for core functionality
   tempo:
     image: grafana/tempo:2.3.1
     container_name: tempo

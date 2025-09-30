@@ -62,6 +62,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Import and include routers
+try:
+    from routers import api_keys
+    app.include_router(api_keys.router)
+    logger.info("API Keys router registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to load API Keys router: {str(e)}")
+    logger.warning("API key management endpoints will not be available")
+
 # Models
 class Artist(BaseModel):
     id: Optional[int] = None

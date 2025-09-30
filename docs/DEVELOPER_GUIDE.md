@@ -171,11 +171,11 @@ source venv/bin/activate  # Linux/Mac
 # Install dependencies
 pip install -r requirements.txt
 
-# Run service
-python main.py
+# Run service via Docker Compose (REQUIRED per CLAUDE.md)
+docker compose up -d [service-name]
 
-# Run tests
-pytest
+# Run tests inside container
+docker compose exec [service-name] pytest
 ```
 
 ### Database Development

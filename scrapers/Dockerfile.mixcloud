@@ -1,0 +1,31 @@
+FROM public.ecr.aws/docker/library/python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install FastAPI and additional dependencies
+RUN pip install fastapi uvicorn httpx beautifulsoup4
+
+# Copy scrapy project
+COPY . .
+
+# Create output directory
+RUN mkdir -p /app/output
+
+# Expose port for API
+EXPOSE 8015
+
+# Copy the API server script
+COPY scraper_api_mixcloud.py /app/scraper_api.py
+
+# Start the API server
+CMD ["python", "/app/scraper_api.py"]

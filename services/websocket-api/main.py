@@ -182,9 +182,13 @@ class WebSocketService:
         
         # RabbitMQ connection for message queuing
         rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
+        rabbitmq_port = os.getenv('RABBITMQ_PORT', '5672')
+        rabbitmq_user = os.getenv('RABBITMQ_USER', 'guest')
+        rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'guest')
+        rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', '/')
         try:
             self.rabbitmq_connection = await aio_pika.connect_robust(
-                f"amqp://guest:guest@{rabbitmq_host}/"
+                f"amqp://{rabbitmq_user}:{rabbitmq_pass}@{rabbitmq_host}:{rabbitmq_port}/{rabbitmq_vhost}"
             )
             self.rabbitmq_channel = await self.rabbitmq_connection.channel()
             self.exchange = await self.rabbitmq_channel.declare_exchange(

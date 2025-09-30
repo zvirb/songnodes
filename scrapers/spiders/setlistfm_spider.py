@@ -16,14 +16,16 @@ from urllib import robotparser
 from scrapy.exceptions import CloseSpider
 try:
     from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
+    from ..nlp_spider_mixin import NLPFallbackSpiderMixin
 except ImportError:
     # Fallback for standalone execution
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
+    from nlp_spider_mixin import NLPFallbackSpiderMixin
 
-class SetlistFmSpider(scrapy.Spider):
+class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = 'setlistfm'
     allowed_domains = ['api.setlist.fm']
 

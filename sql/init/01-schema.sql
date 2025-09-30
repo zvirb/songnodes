@@ -452,7 +452,7 @@ FOR EACH ROW EXECUTE FUNCTION update_artist_search_vector();
 -- ===========================================
 
 -- Create read-only user for analytics
-CREATE ROLE musicdb_readonly;
+CREATE USER musicdb_readonly WITH PASSWORD 'readonly_secure_pass_2024' LOGIN;
 GRANT USAGE ON SCHEMA musicdb TO musicdb_readonly;
 GRANT SELECT ON ALL TABLES IN SCHEMA musicdb TO musicdb_readonly;
 GRANT SELECT ON ALL SEQUENCES IN SCHEMA musicdb TO musicdb_readonly;

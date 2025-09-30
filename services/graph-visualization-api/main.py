@@ -1510,7 +1510,7 @@ async def get_combined_graph_data():
     """Get combined nodes and edges data for frontend visualization."""
     try:
         # Get nodes data
-        async with db_session_manager.get_session() as session:
+        async with async_session() as session:
             nodes_query = text("""
                 SELECT
                     node_id as id,

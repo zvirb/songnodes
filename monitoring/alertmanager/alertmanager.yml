@@ -1,9 +1,10 @@
-# Alertmanager Configuration
+# Alertmanager Configuration - Development Environment
 global:
   resolve_timeout: 5m
-  smtp_smarthost: 'localhost:25'
-  smtp_from: 'alertmanager@songnodes.local'
-  smtp_require_tls: false
+  # SMTP disabled for development - no email server available
+  # smtp_smarthost: 'localhost:25'
+  # smtp_from: 'alertmanager@songnodes.local'
+  # smtp_require_tls: false
 
 # Route tree for alert routing
 route:
@@ -42,33 +43,28 @@ route:
       group_wait: 10s
       repeat_interval: 10m
 
-# Receivers configuration
+# Receivers configuration - Development mode (alerts logged but not sent)
 receivers:
   - name: 'default'
-    webhook_configs:
-      - url: 'http://localhost:5001/webhook'
-        send_resolved: true
+    # Development: No webhook receiver configured
+    # Alerts are logged in Alertmanager UI only
+    # For production: Add webhook_configs, email_configs, or slack_configs
 
   - name: 'critical-alerts'
-    webhook_configs:
-      - url: 'http://localhost:5001/webhook'
-        send_resolved: true
-    # Add email/Slack/PagerDuty for production
+    # Development: No notifications configured
+    # For production: Add email/Slack/PagerDuty integration
 
   - name: 'database-team'
-    webhook_configs:
-      - url: 'http://localhost:5001/webhook'
-        send_resolved: true
+    # Development: No notifications configured
+    # For production: Add team-specific notification channels
 
   - name: 'performance-team'
-    webhook_configs:
-      - url: 'http://localhost:5001/webhook'
-        send_resolved: true
+    # Development: No notifications configured
+    # For production: Add performance team channels
 
   - name: 'oncall'
-    webhook_configs:
-      - url: 'http://localhost:5001/webhook'
-        send_resolved: true
+    # Development: No notifications configured
+    # For production: Add on-call rotation integration
 
 # Inhibition rules to suppress certain alerts
 inhibit_rules:

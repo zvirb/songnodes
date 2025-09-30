@@ -175,7 +175,7 @@ class DatabasePipeline:
 
         self.item_batches['playlists'].append({
             'name': playlist_name,
-            'source': item.get('platform', 'unknown') or item.get('source', 'unknown'),
+            'source': item.get('source') or item.get('platform') or 'unknown',
             'source_url': item.get('source_url'),
             'playlist_type': item.get('playlist_type'),
             'event_date': event_date
@@ -297,6 +297,22 @@ class DatabasePipeline:
                              duration_seconds, release_year, label, spotify_id, musicbrainz_id,
                              tidal_id, beatport_id, apple_music_id, soundcloud_id, deezer_id, youtube_music_id)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            ON CONFLICT (title, primary_artist_id) DO UPDATE SET
+                genre = COALESCE(EXCLUDED.genre, songs.genre),
+                bpm = COALESCE(EXCLUDED.bpm, songs.bpm),
+                key = COALESCE(EXCLUDED.key, songs.key),
+                duration_seconds = COALESCE(EXCLUDED.duration_seconds, songs.duration_seconds),
+                release_year = COALESCE(EXCLUDED.release_year, songs.release_year),
+                label = COALESCE(EXCLUDED.label, songs.label),
+                spotify_id = COALESCE(EXCLUDED.spotify_id, songs.spotify_id),
+                musicbrainz_id = COALESCE(EXCLUDED.musicbrainz_id, songs.musicbrainz_id),
+                tidal_id = COALESCE(EXCLUDED.tidal_id, songs.tidal_id),
+                beatport_id = COALESCE(EXCLUDED.beatport_id, songs.beatport_id),
+                apple_music_id = COALESCE(EXCLUDED.apple_music_id, songs.apple_music_id),
+                soundcloud_id = COALESCE(EXCLUDED.soundcloud_id, songs.soundcloud_id),
+                deezer_id = COALESCE(EXCLUDED.deezer_id, songs.deezer_id),
+                youtube_music_id = COALESCE(EXCLUDED.youtube_music_id, songs.youtube_music_id),
+                updated_at = CURRENT_TIMESTAMP
         """, [
             (
                 item['title'],
