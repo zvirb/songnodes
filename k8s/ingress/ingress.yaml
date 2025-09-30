@@ -1,0 +1,161 @@
+---
+# NGINX Ingress Controller (if not already installed)
+# kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: songnodes-ingress
+  namespace: songnodes
+  labels:
+    app.kubernetes.io/name: songnodes
+    app.kubernetes.io/component: ingress
+  annotations:
+    # NGINX Ingress annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # WebSocket support
+    nginx.ingress.kubernetes.io/websocket-services: "websocket-api-service"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+    # CORS headers
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+
+    # SSL/TLS (uncomment when certificate is configured)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # nginx.ingress.kubernetes.io/ssl-certificate: "songnodes-tls"
+
+    # Request size limits
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  # TLS configuration (uncomment when ready)
+  # tls:
+  #   - hosts:
+  #       - songnodes.example.com
+  #       - api.songnodes.example.com
+  #     secretName: songnodes-tls
+  rules:
+    # Main application (frontend)
+    - host: songnodes.example.com  # Replace with your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+
+    # API subdomain
+    - host: api.songnodes.example.com  # Replace with your API domain
+      http:
+        paths:
+          # REST API
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: rest-api-service
+                port:
+                  number: 8082
+
+          # Graph Visualization API
+          - path: /graph
+            pathType: Prefix
+            backend:
+              service:
+                name: graph-visualization-service
+                port:
+                  number: 8084
+
+          # WebSocket API
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: websocket-api-service
+                port:
+                  number: 8083
+
+          # NLP Processor API
+          - path: /nlp
+            pathType: Prefix
+            backend:
+              service:
+                name: nlp-processor-service
+                port:
+                  number: 8086
+
+          # Scraper Orchestrator API
+          - path: /scraper
+            pathType: Prefix
+            backend:
+              service:
+                name: scraper-orchestrator-service
+                port:
+                  number: 8085
+---
+# Alternative: Single-host ingress with path-based routing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: songnodes-ingress-single-host
+  namespace: songnodes
+  labels:
+    app.kubernetes.io/name: songnodes
+    app.kubernetes.io/component: ingress
+    variant: single-host
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/websocket-services: "websocket-api-service"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: songnodes.example.com
+      http:
+        paths:
+          # Frontend (highest priority - last)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+
+          # APIs (higher priority - first)
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: rest-api-service
+                port:
+                  number: 8082
+
+          - path: /graph(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: graph-visualization-service
+                port:
+                  number: 8084
+
+          - path: /ws(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: websocket-api-service
+                port:
+                  number: 8083

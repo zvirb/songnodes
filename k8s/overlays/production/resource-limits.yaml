@@ -1,0 +1,91 @@
+---
+# Production resource limits - higher for performance
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rest-api
+  namespace: songnodes
+spec:
+  template:
+    spec:
+      containers:
+        - name: rest-api
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graph-visualization
+  namespace: songnodes
+spec:
+  template:
+    spec:
+      containers:
+        - name: graph-visualization
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nlp-processor
+  namespace: songnodes
+spec:
+  template:
+    spec:
+      containers:
+        - name: nlp-processor
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "4000m"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: songnodes
+spec:
+  template:
+    spec:
+      containers:
+        - name: postgres
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: songnodes
+spec:
+  template:
+    spec:
+      containers:
+        - name: rabbitmq
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"

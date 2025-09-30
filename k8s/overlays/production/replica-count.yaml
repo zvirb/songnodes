@@ -1,0 +1,41 @@
+---
+# Production replica counts - higher for availability
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rest-api
+  namespace: songnodes
+spec:
+  replicas: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graph-visualization
+  namespace: songnodes
+spec:
+  replicas: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket-api
+  namespace: songnodes
+spec:
+  replicas: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nlp-processor
+  namespace: songnodes
+spec:
+  replicas: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: songnodes
+spec:
+  replicas: 5

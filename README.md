@@ -6,13 +6,22 @@ SongNodes is a comprehensive music data platform that combines intelligent scrap
 
 ## 🚀 Key Features
 
-- **Interactive Graph Visualization**: D3.js force-directed graphs with WebGL acceleration showing track relationships and adjacencies
+### Core Features
+- **Interactive Graph Visualization**: D3.js force-directed graphs with PIXI.js WebGL acceleration showing track relationships
+- **Advanced Audio Analysis**: Timbre, rhythm, mood detection, and genre classification using librosa
+- **Intelligent Harmonic Mixing**: Camelot Wheel integration with weighted transition scoring (harmonic, BPM, energy, genre)
+- **Fuzzy Search with Fuse.js**: Typo-tolerant search with faceted filtering (BPM, key, mood, energy, genre)
+- **Enterprise Proxy Management**: Rotating proxies with health monitoring, 4 selection strategies, automatic failover
 - **Target Tracks Management**: User-driven feedback loop for managing tracks to scrape and analyze
-- **AI-Powered Scraping**: GPU-accelerated Ollama integration for adaptive HTML analysis and selector recovery
-- **Multi-Source Data Collection**: Automated scraping from 1001tracklists, MixesDB, Setlist.fm, Reddit, and more
-- **Real-time Analytics**: RESTful and GraphQL APIs with WebSocket support for live updates
-- **Comprehensive Monitoring**: Prometheus, Grafana, and ELK stack integration
-- **Containerized Architecture**: Full Docker Compose deployment with service isolation and health checks
+- **Multi-Source Data Collection**: Automated scraping from 1001tracklists, MixesDB, Setlist.fm, Reddit, YouTube, SoundCloud
+
+### Technical Features
+- **Real-time Updates**: WebSocket API with RabbitMQ message queue integration
+- **Advanced NLP Processing**: Tracklist extraction with Claude/Anthropic API integration
+- **Production-Ready Kubernetes**: Complete deployment manifests with HPA, NetworkPolicies, Ingress
+- **Comprehensive Monitoring**: Prometheus + Grafana with custom dashboards for all services
+- **Containerized Architecture**: Full Docker Compose + Kubernetes deployment with health checks
+- **JSONB Advanced Features**: PostgreSQL JSONB columns for timbre, rhythm, mood, and genre metadata
 
 ## 📊 Architecture
 
@@ -62,15 +71,34 @@ SongNodes is a comprehensive music data platform that combines intelligent scrap
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 18 + TypeScript + Vite + Redux Toolkit + D3.js
-- **Backend**: Python FastAPI microservices with async/await
-- **AI/LLM**: Ollama with GPU acceleration (RTX 4050) + Llama 3.2 3B
-- **Database**: PostgreSQL 15 with JSONB support and connection pooling
-- **Cache/Queue**: Redis 7 + RabbitMQ for message queuing
-- **APIs**: RESTful APIs, GraphQL, WebSocket real-time connections
-- **Monitoring**: Prometheus + Grafana + Elasticsearch + Kibana
-- **Containerization**: Docker + Docker Compose with health checks
-- **Visualization**: D3.js force simulation with WebGL acceleration
+### Frontend
+- **Framework**: React 18.3.1 + TypeScript 5.5.4 + Vite 5
+- **State Management**: Zustand 4.5.5 for reactive state
+- **Visualization**: D3.js force simulation + PIXI.js v8.5.2 (WebGL rendering)
+- **Search**: Fuse.js 7.0.0 for fuzzy search with typo tolerance
+- **UI**: Tailwind CSS + Custom components (CamelotWheel, AdvancedSearch)
+
+### Backend
+- **API Framework**: Python FastAPI with async/await patterns
+- **Audio Analysis**: librosa, essentia for advanced feature extraction
+- **NLP**: Claude/Anthropic API for tracklist extraction
+- **Web Scraping**: Scrapy with custom proxy middleware
+- **Validation**: Pydantic models for type safety
+
+### Data & Infrastructure
+- **Database**: PostgreSQL 15 with JSONB columns for advanced features
+- **Cache**: Redis 7 with connection pooling (max 50 connections)
+- **Message Queue**: RabbitMQ 3.12 for async processing
+- **Search Engine**: Fuse.js with weighted multi-field indexing
+- **Orchestration**: Kubernetes 1.25+ with StatefulSets, HPA, NetworkPolicies
+- **Monitoring**: Prometheus + Grafana with custom dashboards
+- **Containerization**: Docker + Docker Compose with resource limits
+
+### Deployment
+- **Development**: Docker Compose with hot-reload
+- **Production**: Kubernetes with Kustomize overlays
+- **CI/CD**: Automated testing (unit, integration, E2E with Playwright)
+- **Security**: Sealed Secrets, NetworkPolicies, TLS/SSL with cert-manager
 
 ## 📁 Project Structure
 
@@ -259,26 +287,50 @@ docker-compose exec scraper-orchestrator pytest tests/integration/
 
 ## 🚢 Deployment
 
-### Production Deployment
+### Development (Docker Compose)
 ```bash
-# Use production compose file
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Start all services
+docker compose up -d
 
-# Run database migrations
-docker-compose exec postgres psql -U musicdb_user -d musicdb -f /migrations/latest.sql
+# Start specific services
+docker compose up -d postgres redis rest-api frontend
 
-# Verify deployment
-./scripts/verify-deployment.sh
+# View logs
+docker compose logs -f rest-api
+
+# Rebuild after code changes
+docker compose build rest-api && docker compose up -d rest-api
 ```
 
-### Scaling
+### Production (Kubernetes)
 ```bash
-# Scale scrapers
-docker-compose up -d --scale scraper-1001tracklists=5
+# See k8s/README.md for complete instructions
 
-# Scale API services
-docker-compose up -d --scale rest-api=3
+# 1. Create namespace and secrets
+kubectl apply -f k8s/base/namespace.yaml
+kubectl create secret generic songnodes-secrets --from-env-file=.env -n songnodes
+
+# 2. Deploy with Kustomize
+kubectl apply -k k8s/base/                    # Base deployment
+kubectl apply -k k8s/overlays/production/     # Production overrides
+
+# 3. Verify deployment
+kubectl get pods -n songnodes
+kubectl get svc -n songnodes
+kubectl get ingress -n songnodes
+
+# 4. Access services
+kubectl port-forward svc/frontend-service 3006:80 -n songnodes
+kubectl port-forward svc/grafana-service 3000:3000 -n songnodes
 ```
+
+**Production Features**:
+- StatefulSets for PostgreSQL, Redis, RabbitMQ with persistent volumes
+- HorizontalPodAutoscalers (3-10 replicas) for REST API, Frontend, Graph API
+- NetworkPolicies for security isolation between services
+- Ingress with TLS/SSL support (cert-manager integration)
+- Prometheus + Grafana monitoring with ServiceMonitor CRDs
+- Resource limits: DBs (2-4GB), APIs (512MB-1GB), Frontend (256MB)
 
 ## 📝 Documentation
 
@@ -287,6 +339,11 @@ Comprehensive documentation available in `/docs`:
 - [Container Architecture](docs/architecture/container-architecture.md)
 - [Orchestration Workflow](docs/orchestration/workflow-implementation.md)
 - [Deployment Guide](docs/deployment/deployment-guide.md)
+- **[Kubernetes Deployment](k8s/README.md)** - Production deployment guide ⭐
+- **[Proxy Configuration](docs/PROXY_CONFIGURATION.md)** - Enterprise proxy setup
+- **[Scraper Configuration](docs/SCRAPER_CONFIGURATION.md)** - Multi-platform scraping
+- **[NLP API Usage](services/nlp-processor/API_USAGE.md)** - Tracklist extraction
+- **[Implementation Progress](IMPLEMENTATION_PROGRESS.md)** - Feature roadmap
 
 ## 🤝 Contributing
 

@@ -1,0 +1,57 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: songnodes-production
+
+# Base configuration
+bases:
+  - ../../base
+
+# Production-specific namespace
+namespace: songnodes
+
+# Production labels
+commonLabels:
+  environment: production
+  tier: production
+
+commonAnnotations:
+  deployment.environment: production
+
+# Production image tags (replace with actual versions)
+images:
+  - name: songnodes/rest-api
+    newTag: v1.0.0
+  - name: songnodes/graph-visualization-api
+    newTag: v1.0.0
+  - name: songnodes/websocket-api
+    newTag: v1.0.0
+  - name: songnodes/nlp-processor
+    newTag: v1.0.0
+  - name: songnodes/scraper-orchestrator
+    newTag: v1.0.0
+  - name: songnodes/frontend
+    newTag: v1.0.0
+
+# Production-specific patches
+patchesStrategicMerge:
+  - replica-count.yaml
+  - resource-limits.yaml
+
+# Production replicas
+# Create this file: overlays/production/replica-count.yaml
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: rest-api
+# spec:
+#   replicas: 5
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: frontend
+# spec:
+#   replicas: 5

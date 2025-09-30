@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: songnodes
+  labels:
+    name: songnodes
+    environment: production
+    app.kubernetes.io/name: songnodes
+    app.kubernetes.io/part-of: songnodes-platform
