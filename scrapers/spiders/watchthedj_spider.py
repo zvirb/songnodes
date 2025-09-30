@@ -1,6 +1,7 @@
 import scrapy
 from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
 from .utils import parse_track_string
+from track_id_generator import generate_track_id_from_parsed, extract_remix_type
 import re
 
 class WatchTheDjSpider(scrapy.Spider):
@@ -56,14 +57,24 @@ class WatchTheDjSpider(scrapy.Spider):
                 parsed_track = parse_track_string(track_string_for_parsing)
                 track_order = i + 1
 
+                # Generate deterministic track_id for cross-source deduplication
+                track_id = generate_track_id_from_parsed(parsed_track)
+
                 track_item = TrackItem(
+                    track_id=track_id,  # Deterministic ID for matching across sources
                     track_name=parsed_track['track_name'],
                     is_remix=parsed_track['is_remix'],
                     is_mashup=parsed_track['is_mashup'],
                     mashup_components=parsed_track['mashup_components'],
                     start_time=start_time,
-                    track_type='Setlist'
+                    track_type='Setlist',
+                    remix_type=extract_remix_type(parsed_track['track_name']) if parsed_track['is_remix'] else None
                 )
+
+                # Log track_id generation
+                primary_artist = parsed_track.get('primary_artists', [''])[0] if parsed_track.get('primary_artists') else ''
+                self.logger.debug(f"Generated track_id {track_id} for: {primary_artist} - {parsed_track['track_name']}")
+
                 yield track_item
 
                 # Yield TrackArtistItems for primary, featured, and remixer artists
