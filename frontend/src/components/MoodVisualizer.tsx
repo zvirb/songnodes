@@ -105,6 +105,9 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
 
   // Order nodes by edge connections (playlist adjacency)
   const orderNodesByEdges = useCallback((nodes: GraphNode[], edges: GraphEdge[]): GraphNode[] => {
+    // Handle empty array case
+    if (nodes.length === 0) return [];
+
     const nodeSet = new Set(nodes.map(n => n.id));
     const adjacencyMap = new Map<string, string[]>();
 

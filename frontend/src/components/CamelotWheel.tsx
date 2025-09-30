@@ -135,7 +135,7 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
   const tracksByKey = useMemo(() => {
     const result: Record<string, GraphNode[]> = {};
 
-    graphData.nodes.forEach(node => {
+    (graphData.nodes || []).forEach(node => {
       const key = getTrackKey(node);
       if (key) {
         if (!result[key]) result[key] = [];
@@ -152,9 +152,9 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
     const connectionMap = new Map<string, TrackConnection>();
 
     // PRIORITY 1: Existing playlist edges (proven DJ transitions)
-    graphData.edges.forEach(edge => {
-      const sourceNode = graphData.nodes.find(n => n.id === edge.source);
-      const targetNode = graphData.nodes.find(n => n.id === edge.target);
+    (graphData.edges || []).forEach(edge => {
+      const sourceNode = (graphData.nodes || []).find(n => n.id === edge.source);
+      const targetNode = (graphData.nodes || []).find(n => n.id === edge.target);
 
       if (sourceNode && targetNode) {
         const sourceKey = getTrackKey(sourceNode);

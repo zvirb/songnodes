@@ -72,9 +72,9 @@ export const InfoCard: React.FC<InfoCardProps> = ({
         return data || performanceMetrics;
       case 'stats':
         return {
-          totalNodes: graphData.nodes.length,
-          totalEdges: graphData.edges.length,
-          selectedNodes: graphData.nodes.filter(n => n.selected).length,
+          totalNodes: graphData.nodes?.length || 0,
+          totalEdges: graphData.edges?.length || 0,
+          selectedNodes: (graphData.nodes || []).filter(n => n.selected).length,
           setlistTracks: currentSetlist?.tracks.length || 0,
           ...data
         };

@@ -49,7 +49,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
     if (keys.length > 0) {
       // This would need to be implemented in the store
       // For now, we'll select nodes that match these keys
-      const matchingNodes = graphData.nodes.filter(node => {
+      const matchingNodes = (graphData.nodes || []).filter(node => {
         const nodeKey = node.key || node.metadata?.key;
         return nodeKey && keys.includes(nodeKey);
       });
@@ -62,7 +62,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
   const handleTrackSelect = useCallback((track: Track) => {
     console.log('Selected track:', track);
     // Find the node and select it
-    const node = graphData.nodes.find(n =>
+    const node = (graphData.nodes || []).find(n =>
       n.id === track.id ||
       n.label === track.name ||
       n.track?.id === track.id
@@ -78,12 +78,12 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
     console.log('Planning transition:', fromKey, '→', toKey);
 
     // Find tracks in these keys and suggest transitions
-    const fromTracks = graphData.nodes.filter(node => {
+    const fromTracks = (graphData.nodes || []).filter(node => {
       const nodeKey = node.key || node.metadata?.key;
       return nodeKey === fromKey;
     });
 
-    const toTracks = graphData.nodes.filter(node => {
+    const toTracks = (graphData.nodes || []).filter(node => {
       const nodeKey = node.key || node.metadata?.key;
       return nodeKey === toKey;
     });
