@@ -6,6 +6,7 @@ import json
 import os
 import asyncio
 import asyncpg
+import httpx
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 import logging
@@ -16,10 +17,13 @@ logger = logging.getLogger(__name__)
 class RawDataStore:
     """Stores raw scraped data for recovery and reprocessing"""
 
-    def __init__(self, storage_path: str = "/app/raw_data", db_config: Optional[Dict] = None):
+    def __init__(self, storage_path: str = "/app/raw_data", db_config: Optional[Dict] = None,
+                 transformer_url: str = "http://songnodes-data-transformer-1:8002"):
         self.storage_path = storage_path
         self.db_config = db_config
         self.connection_pool = None
+        self.transformer_url = transformer_url
+        self.http_client = None
 
         # Create storage directory
         os.makedirs(storage_path, exist_ok=True)
@@ -28,6 +32,10 @@ class RawDataStore:
 
     async def initialize_db(self):
         """Initialize database connection and create raw data table if needed"""
+        # Initialize HTTP client for transformer notifications
+        if not self.http_client:
+            self.http_client = httpx.AsyncClient(timeout=30.0)
+
         if not self.db_config:
             return
 
@@ -87,10 +95,15 @@ class RawDataStore:
             # Also store to database if available
             if self.connection_pool:
                 async with self.connection_pool.acquire() as conn:
-                    await conn.execute("""
+                    result = await conn.fetchrow("""
                         INSERT INTO raw_scrape_data (source, scrape_type, raw_data)
                         VALUES ($1, $2, $3)
+                        RETURNING scrape_id
                     """, source, 'playlist', json.dumps(playlist_data))
+
+                    # Trigger transformation asynchronously
+                    if result:
+                        asyncio.create_task(self._trigger_transformation(str(result['scrape_id']), source))
 
             logger.debug(f"Stored raw playlist data: {scrape_id}")
             return scrape_id
@@ -98,6 +111,33 @@ class RawDataStore:
         except Exception as e:
             logger.error(f"Failed to store raw playlist data: {e}")
             return None
+
+    async def _trigger_transformation(self, scrape_id: str, source: str):
+        """Notify data-transformer to process this scrape"""
+        try:
+            if not self.http_client:
+                self.http_client = httpx.AsyncClient(timeout=30.0)
+
+            payload = {
+                "id": f"transform_{scrape_id}",
+                "operation": "normalize_and_enrich",
+                "source_table": "raw_scrape_data",
+                "filters": {"scrape_id": scrape_id},
+                "priority": "medium"
+            }
+
+            response = await self.http_client.post(
+                f"{self.transformer_url}/transform",
+                json=payload
+            )
+
+            if response.status_code == 200:
+                logger.info(f"✓ Transformation triggered for scrape {scrape_id}")
+            else:
+                logger.warning(f"Transformation trigger failed: {response.status_code} - {response.text}")
+
+        except Exception as e:
+            logger.error(f"Failed to trigger transformation: {e}")
 
     async def store_failed_processing(self, data: Dict[str, Any], error: str):
         """Store data that failed processing for later retry"""
@@ -216,3 +256,5 @@ class RawDataStore:
         """Close database connections"""
         if self.connection_pool:
             await self.connection_pool.close()
+        if self.http_client:
+            await self.http_client.aclose()

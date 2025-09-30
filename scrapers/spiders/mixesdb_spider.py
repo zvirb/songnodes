@@ -26,6 +26,7 @@ try:
         PlaylistItem
     )
     from .utils import parse_track_string
+    from ..nlp_spider_mixin import NLPFallbackSpiderMixin
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -41,9 +42,10 @@ except ImportError:
         PlaylistItem
     )
     from spiders.utils import parse_track_string
+    from nlp_spider_mixin import NLPFallbackSpiderMixin
 
 
-class MixesdbSpider(scrapy.Spider):
+class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = 'mixesdb'
     allowed_domains = ['mixesdb.com']
 
@@ -386,6 +388,9 @@ class MixesdbSpider(scrapy.Spider):
     def parse_mix_page(self, response):
         """Parse individual mix page with comprehensive data extraction"""
         try:
+            # Store response for potential NLP fallback
+            self.last_response = response
+
             # Extract comprehensive setlist metadata
             setlist_data = self.extract_enhanced_setlist_data(response)
             if setlist_data:
@@ -398,6 +403,71 @@ class MixesdbSpider(scrapy.Spider):
 
             # Extract tracks with full metadata
             tracks_data = self.extract_enhanced_tracks(response, setlist_data)
+
+            # NLP fallback if structured extraction yielded insufficient tracks
+            if not tracks_data or len(tracks_data) < 3:
+                self.logger.warning(
+                    f"Low track count from structured extraction ({len(tracks_data) if tracks_data else 0} tracks), "
+                    f"trying NLP fallback for {response.url}"
+                )
+
+                # Try NLP extraction
+                result = self.try_nlp_fallback(response, tracks_data)
+
+                if result['extraction_method'] == 'nlp':
+                    # Convert NLP tracks to tracks_data format
+                    nlp_tracks = result['tracks']
+                    tracks_data = []
+
+                    for idx, nlp_track in enumerate(nlp_tracks):
+                        # Build track data structure compatible with existing pipeline
+                        track_item = {
+                            'track_name': nlp_track.get('track_name', 'Unknown Track'),
+                            'normalized_title': nlp_track.get('track_name', '').lower().strip(),
+                            'is_remix': False,
+                            'is_mashup': False,
+                            'bpm': None,
+                            'musical_key': None,
+                            'genre': None,
+                            'start_time': nlp_track.get('start_time'),
+                            'track_type': 'Mix',
+                            'source_context': f"NLP extraction from {response.url}",
+                            'position_in_source': idx + 1,
+                            'metadata': json.dumps({
+                                'extraction_source': 'nlp',
+                                'mix_context': setlist_data.get('setlist_name') if setlist_data else None
+                            }),
+                            'external_urls': json.dumps({'mixesdb_context': response.url}),
+                            'data_source': self.name,
+                            'scrape_timestamp': datetime.utcnow(),
+                            'created_at': datetime.utcnow()
+                        }
+
+                        # Build artist relationships
+                        relationships = []
+                        artist_name = nlp_track.get('artist_name', 'Unknown Artist')
+
+                        if artist_name and artist_name != 'Unknown Artist':
+                            relationships.append({
+                                'track_name': track_item['track_name'],
+                                'artist_name': artist_name,
+                                'artist_role': 'primary',
+                                'position': 0,
+                                'data_source': self.name,
+                                'scrape_timestamp': datetime.utcnow(),
+                                'created_at': datetime.utcnow()
+                            })
+
+                        tracks_data.append({
+                            'track': track_item,
+                            'relationships': relationships,
+                            'track_order': idx + 1
+                        })
+
+                    self.logger.info(f"NLP fallback extracted {len(tracks_data)} tracks")
+
+            # Continue with existing track processing
+            tracks_data = tracks_data or []
 
             # CRITICAL: Create and yield playlist item FIRST, before processing tracks
             if setlist_data and tracks_data:

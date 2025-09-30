@@ -80,8 +80,13 @@ class RedisQueueConsumer:
                 logger.error("Redis connection error", error=str(e))
                 await asyncio.sleep(5)  # Wait before retry
 
+            except redis.TimeoutError:
+                # Expected behavior when queue is empty - not an error
+                await asyncio.sleep(1)
+
             except Exception as e:
-                logger.error("Consumer error", error=str(e))
+                # Only log truly unexpected errors
+                logger.error("Consumer unexpected error", error=str(e), error_type=type(e).__name__)
                 await asyncio.sleep(2)
 
     async def process_task(self, task_json: str):

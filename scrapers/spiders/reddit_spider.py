@@ -14,6 +14,7 @@ try:
         EnhancedSetlistItem,
         EnhancedTrackArtistItem
     )
+    from ..nlp_spider_mixin import NLPFallbackSpiderMixin
 except ImportError:
     import sys
     import os
@@ -23,9 +24,10 @@ except ImportError:
         EnhancedSetlistItem,
         EnhancedTrackArtistItem
     )
+    from nlp_spider_mixin import NLPFallbackSpiderMixin
 
 
-class RedditSpider(scrapy.Spider):
+class RedditSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = 'reddit'
     allowed_domains = ['reddit.com', 'old.reddit.com', 'www.reddit.com']
 
@@ -129,11 +131,40 @@ class RedditSpider(scrapy.Spider):
         if not post_body:
             post_body = ' '.join(response.css('div[data-test-id="post-content"] *::text').getall())
 
-        # Look for track patterns in post
-        tracks_found = self.extract_track_info(title + '\n' + post_body)
+        combined_text = title + '\n' + post_body
+
+        # Try NLP extraction first (better accuracy than regex for Reddit posts)
+        tracks_found = []
+        extraction_method = 'regex'  # Default
+
+        if self.enable_nlp_fallback and len(combined_text) > 100:
+            self.logger.info(f"Trying NLP extraction for Reddit post: {response.url}")
+            nlp_tracks = self.extract_via_nlp_sync(combined_text, response.url)
+
+            if nlp_tracks and len(nlp_tracks) >= 3:
+                # Convert NLP format to expected format
+                tracks_found = []
+                for track in nlp_tracks:
+                    tracks_found.append({
+                        'name': track.get('track_name', 'Unknown'),
+                        'artist': track.get('artist_name'),
+                        'timestamp': track.get('start_time')
+                    })
+                extraction_method = 'nlp'
+                self.logger.info(f"NLP extraction found {len(tracks_found)} tracks")
+
+        # Fallback to regex patterns if NLP didn't work
+        if not tracks_found or len(tracks_found) < 3:
+            self.logger.info(f"Falling back to regex pattern extraction for {response.url}")
+            tracks_found = self.extract_track_info(combined_text)
+            extraction_method = 'regex'
 
         # Extract setlist information if tracks found
         if tracks_found:
+            self.logger.info(
+                f"Extracted {len(tracks_found)} tracks from Reddit post using {extraction_method} method: {response.url}"
+            )
+
             # Create setlist item
             setlist_name = self.extract_setlist_name(title)
             if setlist_name:

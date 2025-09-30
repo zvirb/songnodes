@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
+import { APIKeyManager } from './APIKeyManager';
 
 /**
  * SettingsPanel - User Credential Management
  * Handles secure storage of music service credentials for Tidal integration
+ * Now includes API Key Management for scraper services
  */
 
 interface MusicServiceCredentials {
@@ -37,7 +39,8 @@ interface SettingsPanelProps {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
   const { musicCredentials, credentials, isLoading } = useStore();
-  const [activeTab, setActiveTab] = useState<'tidal' | 'spotify' | 'apple'>('tidal');
+  const [activeTab, setActiveTab] = useState<'tidal' | 'spotify' | 'apple' | 'apikeys'>('tidal');
+  const [showAPIKeyManager, setShowAPIKeyManager] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
@@ -151,11 +154,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           {[
             { key: 'tidal', label: '🎵 Tidal', color: '#1DB954' },
             { key: 'spotify', label: '🎶 Spotify', color: '#1DB954' },
-            { key: 'apple', label: '🍎 Apple Music', color: '#FA243C' }
+            { key: 'apple', label: '🍎 Apple Music', color: '#FA243C' },
+            { key: 'apikeys', label: '🔑 API Keys', color: '#4A90E2' }
           ].map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
+              onClick={() => {
+                setActiveTab(tab.key as any);
+                if (tab.key === 'apikeys') {
+                  setShowAPIKeyManager(true);
+                  onClose();
+                }
+              }}
               style={{
                 flex: 1,
                 padding: '16px',
@@ -501,6 +511,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           For maximum security, consider using environment variables or a secure credential management service in production.
         </div>
       </div>
+
+      {/* API Key Manager Modal */}
+      <APIKeyManager
+        isOpen={showAPIKeyManager}
+        onClose={() => setShowAPIKeyManager(false)}
+      />
     </div>
   );
 };

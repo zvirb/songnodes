@@ -13,6 +13,7 @@ import spacy
 from textblob import TextBlob
 import numpy as np
 from pathlib import Path
+from tracklist_extractor import TracklistExtractor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -218,8 +219,9 @@ class MusicNLPProcessor:
 
         return list(set(keywords))[:8]  # Limit to 8 unique keywords
 
-# Initialize NLP processor
+# Initialize NLP processor and tracklist extractor
 nlp_processor = MusicNLPProcessor()
+tracklist_extractor = TracklistExtractor()
 
 app = FastAPI(
     title="NLP Processor Service",
@@ -246,13 +248,20 @@ class TextAnalysisResponse(BaseModel):
     sentiment: float
     language: str
 
+class TracklistExtractionRequest(BaseModel):
+    text: str
+    source_url: Optional[str] = None
+    extract_timestamps: bool = True
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
         "service": "nlp-processor",
-        "version": "1.0.0"
+        "version": "2.0.0",
+        "spacy_loaded": nlp_processor.nlp is not None,
+        "tracklist_extractor_loaded": tracklist_extractor.nlp is not None
     }
 
 @app.get("/metrics", response_class=PlainTextResponse)
@@ -340,6 +349,83 @@ async def extract_artists(request: TextAnalysisRequest):
     except Exception as e:
         error_count += 1
         logger.error(f"Artist extraction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/extract_tracklist")
+async def extract_tracklist(request: TracklistExtractionRequest):
+    """Extract tracklist from text using spaCy + regex"""
+    global request_count, error_count
+    request_count += 1
+
+    try:
+        logger.info(f"Extracting tracklist from {len(request.text)} characters")
+
+        tracks = tracklist_extractor.extract_tracklist(
+            text=request.text,
+            source_url=request.source_url,
+            extract_timestamps=request.extract_timestamps
+        )
+
+        logger.info(f"Extracted {len(tracks)} tracks")
+
+        return {
+            "tracks": tracks,
+            "count": len(tracks),
+            "methods_used": ["spacy", "regex", "patterns"]
+        }
+
+    except Exception as e:
+        error_count += 1
+        logger.error(f"Extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/analyze_text")
+async def analyze_text_structure(request: TracklistExtractionRequest):
+    """Analyze text structure for debugging"""
+    global request_count
+    request_count += 1
+
+    if not tracklist_extractor.nlp:
+        raise HTTPException(status_code=503, detail="spaCy model not loaded")
+
+    try:
+        doc = tracklist_extractor.nlp(request.text)
+
+        # Get format analysis
+        format_analysis = tracklist_extractor.analyze_tracklist_format(request.text)
+
+        return {
+            "entities": [
+                {"text": ent.text, "label": ent.label_}
+                for ent in doc.ents
+            ],
+            "sentences": len(list(doc.sents)),
+            "tokens": len(doc),
+            "pos_tags": [
+                {"text": token.text, "pos": token.pos_}
+                for token in list(doc)[:50]  # First 50 tokens
+            ],
+            "format_analysis": format_analysis
+        }
+    except Exception as e:
+        logger.error(f"Text analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/extract_timestamps")
+async def extract_timestamps(request: TracklistExtractionRequest):
+    """Extract timestamps from text"""
+    global request_count
+    request_count += 1
+
+    try:
+        timestamps = tracklist_extractor.extract_timestamps(request.text)
+
+        return {
+            "timestamps": timestamps,
+            "count": len(timestamps)
+        }
+    except Exception as e:
+        logger.error(f"Timestamp extraction failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

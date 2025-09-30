@@ -82,6 +82,7 @@ DOWNLOAD_HANDLERS = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
+   'nlp_fallback_pipeline.NLPFallbackPipeline': 200,  # Run before database pipeline
    'simple_twisted_pipeline.SimpleMusicDatabasePipeline': 300,
 }
 
@@ -126,3 +127,9 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429, 403] # HTTP codes to
 # Ollama Integration (Conceptual)
 OLLAMA_HOST = 'http://ollama:11434' # Assuming 'ollama' is resolvable on 'skynet' network
 OLLAMA_MODEL = 'nomad-embed-text:latest'
+
+# NLP Fallback Configuration
+ENABLE_NLP_FALLBACK = True  # Enable NLP fallback for all spiders
+NLP_PROCESSOR_URL = 'http://nlp-processor:8021'  # NLP processor service URL
+NLP_FALLBACK_TIMEOUT = 60  # Timeout for NLP processor requests (seconds)
+NLP_MIN_TRACK_THRESHOLD = 3  # Minimum tracks before triggering NLP enrichment

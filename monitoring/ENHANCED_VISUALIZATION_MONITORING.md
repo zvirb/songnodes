@@ -108,13 +108,12 @@ The Enhanced Visualization Service monitoring provides comprehensive observabili
 ### 1. Start Monitoring Stack
 
 ```bash
-# Start the complete monitoring stack
-cd /home/marku/Documents/programming/songnodes/services/enhanced-visualization-service
-docker-compose -f docker-compose.monitoring.yml up -d
+# Start the complete monitoring stack (all monitoring services are in main docker-compose.yml)
+cd /mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes
+docker compose up -d grafana prometheus loki tempo otel-collector postgres-exporter redis-exporter
 
-# Set up Elasticsearch pipelines and policies
-cd /home/marku/Documents/programming/songnodes/monitoring/elasticsearch
-./setup-elasticsearch.sh
+# Note: Elasticsearch/Kibana are not currently configured in the main stack
+# The monitoring stack now uses Grafana + Prometheus + Loki + Tempo for observability
 ```
 
 ### 2. Validate Setup

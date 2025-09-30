@@ -246,6 +246,8 @@ export default {
   register,
   getMetrics,
   httpMetricsMiddleware,
+  httpRequestsTotal,
+  httpRequestDuration,
   onWebSocketConnection,
   onWebSocketDisconnection,
   onWebSocketMessageSent,
