@@ -27,6 +27,7 @@ try:
     )
     from .utils import parse_track_string
     from ..nlp_spider_mixin import NLPFallbackSpiderMixin
+    from ..track_id_generator import generate_track_id, generate_track_id_from_parsed, extract_remix_type
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -43,6 +44,7 @@ except ImportError:
     )
     from spiders.utils import parse_track_string
     from nlp_spider_mixin import NLPFallbackSpiderMixin
+    from track_id_generator import generate_track_id, generate_track_id_from_parsed, extract_remix_type
 
 
 class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
@@ -703,8 +705,12 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 # Determine genre from context
                 genre = self.infer_genre_from_context(response, parsed_track)
 
+                # Generate deterministic track_id for cross-source deduplication
+                track_id = generate_track_id_from_parsed(parsed_track)
+
                 # Build comprehensive track data
                 track_item = {
+                    'track_id': track_id,  # Deterministic ID for matching across sources
                     'track_name': parsed_track['track_name'],
                     'normalized_title': parsed_track['track_name'].lower().strip(),
                     'is_remix': parsed_track.get('is_remix', False),
@@ -729,6 +735,8 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                     'scrape_timestamp': datetime.utcnow(),
                     'created_at': datetime.utcnow()
                 }
+
+                self.logger.debug(f"Generated track_id {track_id} for: {parsed_track.get('primary_artists', [''])[0]} - {parsed_track['track_name']}")
 
                 # Build artist relationships
                 relationships = []

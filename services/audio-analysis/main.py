@@ -29,6 +29,7 @@ from analysis_modules.vocal_detector import VocalDetector
 from analysis_modules.breakdown_detector import BreakdownDetector
 from analysis_modules.beat_grid_analyzer import BeatGridAnalyzer
 from analysis_modules.audio_fetcher import AudioFetcher
+from analysis_modules.advanced_features import analyze_advanced_features
 
 # Configure logging
 logging.basicConfig(
@@ -65,6 +66,11 @@ class AudioAnalysisResult(BaseModel):
     energy_curve: list
     beat_grid: list
     bpm: Optional[float]
+    # Advanced features (NEW)
+    timbre: Optional[Dict[str, Any]] = None
+    rhythm: Optional[Dict[str, Any]] = None
+    mood: Optional[Dict[str, Any]] = None
+    genre: Optional[Dict[str, Any]] = None
     analysis_version: str
     analyzed_at: datetime
     status: str
@@ -291,6 +297,10 @@ async def process_track_analysis(
     # Calculate energy curve
     energy_curve = intro_outro_detector.calculate_energy_curve(audio_data, sample_rate)
 
+    # Run advanced feature analysis (NEW)
+    logger.info(f"Running advanced feature analysis for track {track_id}")
+    advanced_features = analyze_advanced_features(audio_data, sample_rate, bpm)
+
     # Build result
     result = AudioAnalysisResult(
         track_id=track_id,
@@ -301,7 +311,12 @@ async def process_track_analysis(
         energy_curve=energy_curve,
         beat_grid=beat_grid,
         bpm=bpm,
-        analysis_version="1.0.0",
+        # Add advanced features
+        timbre=advanced_features.get('timbre'),
+        rhythm=advanced_features.get('rhythm'),
+        mood=advanced_features.get('mood'),
+        genre=advanced_features.get('genre'),
+        analysis_version="2.0.0",  # Updated version
         analyzed_at=datetime.utcnow(),
         status="completed"
     )
@@ -344,14 +359,16 @@ async def get_existing_analysis(track_id: str) -> AudioAnalysisResult:
 
 async def store_analysis_result(result: AudioAnalysisResult):
     """Store analysis result in database"""
+    import json
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
             INSERT INTO tracks_audio_analysis (
                 track_id, intro_duration_seconds, outro_duration_seconds,
                 breakdown_timestamps, vocal_segments, energy_curve, beat_grid,
-                bpm, analysis_version, analyzed_at, status
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                bpm, timbre_features, rhythm_features, mood_features, genre_prediction,
+                analysis_version, analyzed_at, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             ON CONFLICT (track_id) DO UPDATE SET
                 intro_duration_seconds = EXCLUDED.intro_duration_seconds,
                 outro_duration_seconds = EXCLUDED.outro_duration_seconds,
@@ -360,6 +377,10 @@ async def store_analysis_result(result: AudioAnalysisResult):
                 energy_curve = EXCLUDED.energy_curve,
                 beat_grid = EXCLUDED.beat_grid,
                 bpm = EXCLUDED.bpm,
+                timbre_features = EXCLUDED.timbre_features,
+                rhythm_features = EXCLUDED.rhythm_features,
+                mood_features = EXCLUDED.mood_features,
+                genre_prediction = EXCLUDED.genre_prediction,
                 analysis_version = EXCLUDED.analysis_version,
                 analyzed_at = EXCLUDED.analyzed_at,
                 status = EXCLUDED.status
@@ -372,6 +393,10 @@ async def store_analysis_result(result: AudioAnalysisResult):
             result.energy_curve,
             result.beat_grid,
             result.bpm,
+            json.dumps(result.timbre) if result.timbre else None,
+            json.dumps(result.rhythm) if result.rhythm else None,
+            json.dumps(result.mood) if result.mood else None,
+            json.dumps(result.genre) if result.genre else None,
             result.analysis_version,
             result.analyzed_at,
             result.status

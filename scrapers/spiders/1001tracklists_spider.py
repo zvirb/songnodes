@@ -29,6 +29,7 @@ try:
         PlaylistItem
     )
     from .utils import parse_track_string
+    from ..track_id_generator import generate_track_id, generate_track_id_from_parsed
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -45,6 +46,7 @@ except ImportError:
         PlaylistItem
     )
     from spiders.utils import parse_track_string
+    from track_id_generator import generate_track_id, generate_track_id_from_parsed
 
 
 class OneThousandOneTracklistsSpider(scrapy.Spider):
@@ -796,8 +798,12 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             'source_element_html': str(track_el.get())[:500]  # First 500 chars for debugging
         }
 
+        # Generate deterministic track_id for cross-source deduplication
+        track_id = generate_track_id_from_parsed(parsed_track)
+
         # Build enhanced track item
         track_item = {
+            'track_id': track_id,  # Deterministic ID for matching across sources
             'track_name': parsed_track['track_name'],
             'normalized_title': parsed_track['track_name'].lower().strip(),
             'is_remix': parsed_track.get('is_remix', False),
@@ -816,6 +822,8 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             'scrape_timestamp': datetime.utcnow(),
             'created_at': datetime.utcnow()
         }
+
+        self.logger.debug(f"Generated track_id {track_id} for: {primary_artist} - {parsed_track['track_name']}")
 
         # Build artist relationships
         relationships = []

@@ -40,6 +40,9 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent / 'spiders'))
     from utils import parse_track_string
 
+# Import track ID generator for cross-source deduplication
+from track_id_generator import generate_track_id, extract_remix_type
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -233,15 +236,32 @@ class RawDataProcessor:
                             logger.warning(f"❌ Track has no artist and name doesn't contain separator: {track_name} - SKIPPING")
                             continue  # Skip tracks with no valid artist
 
+                    # Detect remix type for track_id generation
+                    remix_type = extract_remix_type(track_name) if parsed else None
+                    is_remix = remix_type is not None
+
+                    # Generate deterministic track_id for cross-source deduplication
+                    track_id = generate_track_id(
+                        title=track_name,
+                        primary_artist=artist_name,
+                        is_remix=is_remix,
+                        remix_type=remix_type
+                    )
+
                     # Create song item
                     song_item = {
                         'item_type': 'track',
+                        'track_id': track_id,  # Deterministic ID for cross-source matching
                         'track_name': track_name,  # database_pipeline expects 'track_name'
                         'artist_name': artist_name,  # Now validated - never generic
                         'genre': track_info.get('genre', 'Electronic'),
                         'release_year': track_info.get('year'),
-                        'label': track_info.get('label')
+                        'label': track_info.get('label'),
+                        'is_remix': is_remix,
+                        'remix_type': remix_type
                     }
+
+                    logger.debug(f"Generated track_id {track_id} for: {artist_name} - {track_name}")
 
                     await self.pipeline.process_item(song_item, spider=None)
                     result["tracks"] += 1
