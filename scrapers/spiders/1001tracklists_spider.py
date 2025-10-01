@@ -9,6 +9,7 @@ import json
 import re
 import os
 import hashlib
+import random
 from urllib.parse import quote
 from scrapy.exceptions import DropItem, CloseSpider
 from scrapy.http import Request
@@ -53,25 +54,25 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
     name = '1001tracklists'
     allowed_domains = ['1001tracklists.com']
 
-    # Rate limiting settings for respectful scraping
-    download_delay = 2.0
-    randomize_download_delay = 0.5
+    # Rate limiting settings for respectful scraping - VERY CONSERVATIVE to avoid CAPTCHA
+    download_delay = 90.0
+    randomize_download_delay = 0.3
 
     custom_settings = {
         # Anti-detection settings
         'USER_AGENT': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'ROBOTSTXT_OBEY': False,
         'COOKIES_ENABLED': True,
-        # Conservative request settings to avoid rate limiting
-        'DOWNLOAD_DELAY': 15.0,
-        'RANDOMIZE_DOWNLOAD_DELAY': 0.8,
+        # Conservative request settings to avoid rate limiting and CAPTCHA blocking
+        'DOWNLOAD_DELAY': 90.0,  # 90 seconds between requests
+        'RANDOMIZE_DOWNLOAD_DELAY': 0.3,  # Range: 63-135 seconds
         'CONCURRENT_REQUESTS': 1,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
         # AutoThrottle for dynamic delay adjustment
         'AUTOTHROTTLE_ENABLED': True,
-        'AUTOTHROTTLE_START_DELAY': 20,
-        'AUTOTHROTTLE_MAX_DELAY': 120,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.3,
+        'AUTOTHROTTLE_START_DELAY': 90,  # Match DOWNLOAD_DELAY
+        'AUTOTHROTTLE_MAX_DELAY': 300,  # Up to 5 minutes if needed
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.2,  # Very low concurrency
         'AUTOTHROTTLE_DEBUG': True,
         # Retry settings with rate limiting codes
         'RETRY_TIMES': 5,
@@ -93,11 +94,13 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             'sec-ch-ua-platform': '"Linux"'
         },
         'ITEM_PIPELINES': {
-            'database_pipeline.EnhancedMusicDatabasePipeline': 300,
+            'database_pipeline.DatabasePipeline': 300,
         }
+        # NOTE: Playwright launch options are defined globally in settings.py
+        # to ensure headless mode works in Docker containers without X server
     }
 
-    def __init__(self, search_mode='targeted', *args, **kwargs):
+    def __init__(self, search_mode='targeted', start_urls=None, search_query=None, *args, **kwargs):
         force_run_arg = kwargs.pop('force_run', None)
         super(OneThousandOneTracklistsSpider, self).__init__(*args, **kwargs)
         self.force_run = (
@@ -115,6 +118,30 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         self.run_ttl_seconds = int(os.getenv('SCRAPER_RUN_TTL_HOURS', '24')) * 3600
         self.last_run_key = None
 
+        # Load login credentials from database first, then fall back to environment
+        self.username = None
+        self.password = None
+        self.logged_in = False  # Track login state
+
+        # Try loading from database
+        try:
+            self._load_credentials_from_db()
+        except Exception as e:
+            self.logger.warning(f"Failed to load credentials from database: {e}")
+
+        # Fall back to environment variables if database load failed
+        if not self.username:
+            self.username = os.getenv('TRACKLISTS_1001_USERNAME')
+        if not self.password:
+            self.password = os.getenv('TRACKLISTS_1001_PASSWORD')
+
+        self.use_login = bool(self.username and self.password)
+
+        if self.use_login:
+            self.logger.info(f"Login credentials found for user: {self.username}")
+        else:
+            self.logger.warning("No login credentials found. Scraping without authentication (may trigger CAPTCHA)")
+
         # Load target tracks
         self.load_target_tracks()
 
@@ -122,11 +149,78 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         self.initialize_state_store()
         self.apply_robots_policy()
 
+        # Support for custom start URLs (from orchestrator)
+        if start_urls:
+            # Parse comma-separated URLs if provided as string
+            if isinstance(start_urls, str):
+                self.start_urls = [url.strip() for url in start_urls.split(',')]
+            else:
+                self.start_urls = start_urls
+            self.logger.info(f"Using provided start_urls: {self.start_urls}")
+        # Support for search query (from orchestrator)
+        elif search_query:
+            search_url = f"https://www.1001tracklists.com/search/result.php?main_search={quote(search_query)}"
+            self.start_urls = [search_url]
+            self.logger.info(f"Using search query: {search_query} -> {search_url}")
         # Generate search URLs based on target tracks
-        if self.search_mode == 'targeted':
+        elif self.search_mode == 'targeted':
             self.start_urls = self.generate_target_search_urls()
         else:
             self.start_urls = self.get_discovery_urls()
+
+    def _load_credentials_from_db(self):
+        """Load 1001tracklists credentials from encrypted database storage"""
+        try:
+            import asyncpg
+            import asyncio
+
+            # Get database connection details
+            db_host = os.getenv('DB_HOST', 'db-connection-pool')
+            db_port = int(os.getenv('DB_PORT', '6432'))
+            db_name = os.getenv('DB_NAME', 'musicdb')
+            db_user = os.getenv('DB_USER', 'musicdb_user')
+            db_password = os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_change_me')
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET', 'songnodes_change_in_production_2024')
+
+            # Create connection and fetch credentials
+            async def fetch_credentials():
+                conn = await asyncpg.connect(
+                    host=db_host,
+                    port=db_port,
+                    database=db_name,
+                    user=db_user,
+                    password=db_password,
+                    timeout=5.0
+                )
+                try:
+                    # Fetch username (pass encryption secret explicitly)
+                    username = await conn.fetchval(
+                        "SELECT get_api_key($1, $2, $3)",
+                        '1001tracklists', 'username', encryption_secret
+                    )
+                    # Fetch password (pass encryption secret explicitly)
+                    password = await conn.fetchval(
+                        "SELECT get_api_key($1, $2, $3)",
+                        '1001tracklists', 'password', encryption_secret
+                    )
+                    return username, password
+                finally:
+                    await conn.close()
+
+            # Run async function in event loop
+            loop = asyncio.new_event_loop()
+            try:
+                username, password = loop.run_until_complete(fetch_credentials())
+                if username and password:
+                    self.username = username
+                    self.password = password
+                    self.logger.info("✓ Loaded credentials from database")
+            finally:
+                loop.close()
+
+        except Exception as e:
+            self.logger.debug(f"Database credential load failed (will try environment): {e}")
+            raise
 
     def load_target_tracks(self):
         """Load target tracks from JSON file"""
@@ -318,16 +412,174 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             direct_urls = get_direct_tracklist_urls()
             return [item['url'] for item in direct_urls]
         except ImportError:
-            # Fallback list of direct tracklist URLs
+            # Fallback list of direct tracklist URLs (UPDATED: September 2025)
             return [
-                'https://www.1001tracklists.com/tracklist/2dgqc1y1/tale-of-us-afterlife-presents-tale-of-us-iii-live-from-printworks-london-2024-12-28.html',
-                'https://www.1001tracklists.com/tracklist/2d4kx5y1/anyma-artbat-tale-of-us-afterlife-presents-tale-of-us-iii-live-from-printworks-london-2024-12-28.html',
-                'https://www.1001tracklists.com/tracklist/2dgqc1y2/fred-again-boiler-room-london-2024-12-20.html',
+                'https://www.1001tracklists.com/tracklist/xfux16t/dj-elax-mix-time-hash754-media-fm-105.5-2025-09-30.html',
+                'https://www.1001tracklists.com/tracklist/19k8pgt1/walter-pizzulli-m2o-morning-show-2025-09-29.html',
+                'https://www.1001tracklists.com/tracklist/27by7wuk/hillmer-brave-factory-festival-ukraine-2025-08-23.html',
                 # These direct URLs bypass search page rate limiting
             ]
 
+    async def perform_login(self, page):
+        """
+        Perform login using Playwright page methods
+        This method is called as a coroutine via playwright_page_coroutines
+        """
+        try:
+            self.logger.info("Starting login process...")
+
+            # Wait for login form to load
+            await page.wait_for_selector('input[name="username"], input[name="email"], input#username', timeout=10000)
+
+            # Find and fill username field (try multiple selectors)
+            username_selectors = ['input[name="username"]', 'input[name="email"]', 'input#username', 'input[type="text"]']
+            for selector in username_selectors:
+                try:
+                    username_field = await page.query_selector(selector)
+                    if username_field:
+                        await username_field.fill(self.username)
+                        self.logger.info(f"Username filled using selector: {selector}")
+                        break
+                except Exception as e:
+                    continue
+
+            # Find and fill password field
+            password_selectors = ['input[name="password"]', 'input#password', 'input[type="password"]']
+            for selector in password_selectors:
+                try:
+                    password_field = await page.query_selector(selector)
+                    if password_field:
+                        await password_field.fill(self.password)
+                        self.logger.info(f"Password filled using selector: {selector}")
+                        break
+                except Exception as e:
+                    continue
+
+            # Find and click submit button
+            submit_selectors = [
+                'button[type="submit"]',
+                'input[type="submit"]',
+                'button:has-text("Login")',
+                'button:has-text("Sign in")',
+                'input[value="Login"]'
+            ]
+            for selector in submit_selectors:
+                try:
+                    submit_button = await page.query_selector(selector)
+                    if submit_button:
+                        await submit_button.click()
+                        self.logger.info(f"Submit button clicked using selector: {selector}")
+                        break
+                except Exception as e:
+                    continue
+
+            # Wait for navigation after login (wait for profile/dashboard element)
+            await page.wait_for_load_state('networkidle', timeout=15000)
+
+            # Verify login success by checking for logged-in indicator
+            # Common indicators: user profile link, logout button, username display
+            logged_in = False
+            login_indicators = [
+                'a[href*="logout"]',
+                'a[href*="profile"]',
+                '.user-menu',
+                '.logged-in'
+            ]
+            for indicator in login_indicators:
+                try:
+                    element = await page.query_selector(indicator)
+                    if element:
+                        logged_in = True
+                        self.logger.info(f"Login verified with indicator: {indicator}")
+                        break
+                except:
+                    continue
+
+            if logged_in:
+                self.logged_in = True
+                self.logger.info("✓ Login successful!")
+            else:
+                self.logger.warning("Login submitted but verification unclear - proceeding anyway")
+
+        except Exception as e:
+            self.logger.error(f"Login failed: {e}")
+            raise
+
+    def _extract_search_query_from_url(self, url: str) -> str:
+        """Extract search query from URL parameters"""
+        from urllib.parse import urlparse, parse_qs, unquote
+
+        parsed = urlparse(url)
+        query_params = parse_qs(parsed.query)
+
+        # Try different parameter names used by 1001tracklists
+        for param in ['main_search', 'searchstring', 'q', 'search']:
+            if param in query_params and query_params[param]:
+                return unquote(query_params[param][0])
+
+        # If no query parameter found, log warning and return empty
+        self.logger.warning(f"Could not extract search query from URL: {url}")
+        return ""
+
+    def _submit_search_form(self, search_query: str):
+        """Coroutine to submit search form using Playwright"""
+        async def submit_form(page):
+            try:
+                self.logger.info(f"Submitting search form with query: {search_query}")
+
+                # Wait for page to load
+                await page.wait_for_load_state('networkidle', timeout=10000)
+
+                # Find and fill the search input (try multiple selectors)
+                search_selectors = [
+                    'input[name="main_search"]',
+                    'input#main_search',
+                    'input[type="search"]',
+                    'input.search-input',
+                    'input[placeholder*="Search"]'
+                ]
+
+                search_input = None
+                for selector in search_selectors:
+                    try:
+                        search_input = await page.wait_for_selector(selector, timeout=3000)
+                        if search_input:
+                            self.logger.info(f"Found search input with selector: {selector}")
+                            break
+                    except Exception:
+                        continue
+
+                if not search_input:
+                    self.logger.error("Could not find search input field")
+                    return
+
+                # Fill in the search query
+                await search_input.fill(search_query)
+                await page.wait_for_timeout(500)  # Small delay for human-like behavior
+
+                # Submit the form (try clicking submit button or pressing Enter)
+                try:
+                    # Try to find and click submit button
+                    submit_button = await page.wait_for_selector('button[type="submit"], input[type="submit"], button.search-submit', timeout=2000)
+                    await submit_button.click()
+                    self.logger.info("Clicked search submit button")
+                except Exception:
+                    # Fallback: press Enter key
+                    await search_input.press('Enter')
+                    self.logger.info("Pressed Enter to submit search")
+
+                # Wait for search results to load
+                await page.wait_for_load_state('networkidle', timeout=15000)
+                self.logger.info("Search results loaded successfully")
+
+            except Exception as e:
+                self.logger.error(f"Error submitting search form: {e}")
+                raise
+
+        return submit_form
+
     def start_requests(self):
-        """Generate initial requests with enhanced headers"""
+        """Generate initial requests with enhanced headers and login support"""
         headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -340,15 +592,102 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             'Sec-Fetch-Site': 'none'
         }
 
+        # DISABLED: 1001tracklists login requires account page navigation, not login.php
+        # For now, proceed without login (may trigger CAPTCHA - solve manually)
+        if False:  # self.use_login and not self.logged_in:
+            self.logger.info("Login enabled - redirecting first request to login page")
+            login_url = 'https://www.1001tracklists.com/login.php'
+
+            yield Request(
+                url=login_url,
+                headers=headers,
+                callback=self.after_login,
+                errback=self.handle_error,
+                dont_filter=True,  # Don't filter duplicate requests
+                meta={
+                    'download_timeout': 60,
+                    'playwright': True,
+                    'playwright_page_coroutines': [
+                        self.perform_login
+                    ]
+                }
+            )
+        else:
+            if self.use_login:
+                self.logger.warning("Login credentials found but login flow disabled - proceeding without authentication")
+            # No login required or already logged in - proceed with normal scraping
+            for i, url in enumerate(self.start_urls):
+                # Add progressive delay for large search lists
+                delay = i * 0.5 if i < 20 else 10
+
+                # Determine callback based on URL type
+                if '/tracklist/' in url:
+                    callback = self.parse_tracklist  # Direct tracklist URLs
+                    from scrapy_playwright.page import PageMethod
+
+                    yield Request(
+                        url=url,
+                        headers=headers,
+                        callback=callback,
+                        errback=self.handle_error,
+                        meta={
+                            'download_timeout': 30,
+                            'download_delay': delay,
+                            'playwright': True,
+                            'playwright_page_methods': [
+                                PageMethod('wait_for_selector', 'div.tlLink, a[href*="/tracklist/"], div.search-results, body', timeout=10000)
+                            ]
+                        }
+                    )
+                else:
+                    # Search URLs require form submission (1001tracklists changed to POST-only)
+                    # Extract search query from URL
+                    search_query = self._extract_search_query_from_url(url)
+                    callback = self.parse_search_results
+
+                    yield Request(
+                        url='https://www.1001tracklists.com/',  # Navigate to homepage
+                        headers=headers,
+                        callback=callback,
+                        errback=self.handle_error,
+                        meta={
+                            'download_timeout': 30,
+                            'download_delay': delay,
+                            'playwright': True,
+                            'playwright_page_coroutines': [
+                                self._submit_search_form(search_query)
+                            ],
+                            'search_query': search_query,  # Pass search query to callback
+                            'original_url': url  # For logging purposes
+                        }
+                    )
+
+    def after_login(self, response):
+        """
+        Callback after login is complete
+        Proceeds with normal scraping flow
+        """
+        self.logger.info(f"After login callback - logged_in status: {self.logged_in}")
+
+        # Now generate requests for actual scraping
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
+
         for i, url in enumerate(self.start_urls):
-            # Add progressive delay for large search lists
             delay = i * 0.5 if i < 20 else 10
 
-            # Determine callback based on URL type
             if '/tracklist/' in url:
-                callback = self.parse_tracklist  # Direct tracklist URLs
+                callback = self.parse_tracklist
             else:
-                callback = self.parse_search_results  # Search result pages
+                callback = self.parse_search_results
+
+            from scrapy_playwright.page import PageMethod
 
             yield Request(
                 url=url,
@@ -358,9 +697,9 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
                 meta={
                     'download_timeout': 30,
                     'download_delay': delay,
-                    'playwright': True,  # Enable Playwright for JavaScript rendering
+                    'playwright': True,
                     'playwright_page_methods': [
-                        {'wait_for_selector': 'div.tlLink, a[href*="/tracklist/"], div.search-results', 'timeout': 10000}
+                        PageMethod('wait_for_selector', 'div.tlLink, a[href*="/tracklist/"], div.search-results, body', timeout=10000)
                     ]
                 }
             )
@@ -798,6 +1137,9 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             'source_element_html': str(track_el.get())[:500]  # First 500 chars for debugging
         }
 
+        # Extract primary artist BEFORE using it
+        primary_artist = parsed_track.get('primary_artists', [None])[0]
+
         # Generate deterministic track_id for cross-source deduplication
         track_id = generate_track_id_from_parsed(parsed_track)
 
@@ -827,7 +1169,6 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
 
         # Build artist relationships
         relationships = []
-        primary_artist = parsed_track.get('primary_artists', [None])[0]
 
         # Primary artists
         for artist in parsed_track.get('primary_artists', []):
@@ -1069,7 +1410,21 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
 
     def handle_error(self, failure):
         """Enhanced error handling with retry logic"""
-        self.logger.error(f"Request failed: {failure.request.url} - {failure.value}")
+        from twisted.python.failure import Failure
+
+        # Check if it's a response error (e.g., 404)
+        if hasattr(failure, 'value') and hasattr(failure.value, 'response'):
+            response = failure.value.response
+            if response is not None:
+                status = response.status
+                self.logger.error(f"Request failed with status {status}: {failure.request.url}")
+
+                # Don't retry 404s - the URL is invalid
+                if status == 404:
+                    self.logger.warning(f"Skipping 404 URL: {failure.request.url}")
+                    return
+        else:
+            self.logger.error(f"Request failed: {failure.request.url} - {failure.value if hasattr(failure, 'value') else failure}")
 
         # Don't retry search pages, focus on tracklists
         if '/search/' in failure.request.url:

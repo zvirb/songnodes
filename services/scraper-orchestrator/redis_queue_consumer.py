@@ -53,7 +53,13 @@ class RedisQueueConsumer:
             '1001tracklists': 'http://scraper-1001tracklists:8011/scrape',
             'mixesdb': 'http://scraper-mixesdb:8012/scrape',
             'setlistfm': 'http://scraper-setlistfm:8013/scrape',
-            'reddit': 'http://scraper-reddit:8014/scrape'
+            'reddit': 'http://scraper-reddit:8014/scrape',
+            'mixcloud': 'http://scraper-mixcloud:8015/scrape',
+            'soundcloud': 'http://scraper-soundcloud:8016/scrape',
+            'youtube': 'http://scraper-youtube:8017/scrape',
+            'internetarchive': 'http://scraper-internetarchive:8018/scrape',
+            'livetracklist': 'http://scraper-livetracklist:8019/scrape',
+            'residentadvisor': 'http://scraper-residentadvisor:8023/scrape'
         }
 
         self.running = True

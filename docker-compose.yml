@@ -180,6 +180,7 @@ services:
     - '8011:8011'
     volumes:
     - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
+    - /tmp/.X11-unix:/tmp/.X11-unix:rw
     environment:
       SCRAPER_NAME: 1001tracklists
       REDIS_HOST: redis
@@ -188,6 +189,17 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Database credentials for loading API keys
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
+      # 1001tracklists authentication credentials
+      TRACKLISTS_1001_USERNAME: ${TRACKLISTS_1001_USERNAME}
+      TRACKLISTS_1001_PASSWORD: ${TRACKLISTS_1001_PASSWORD}
+      # Default to headless for automated scraping (set to False for manual CAPTCHA solving)
+      TRACKLISTS_1001_HEADLESS: ${TRACKLISTS_1001_HEADLESS:-True}
+      # X11 forwarding for manual CAPTCHA solving (only needed when HEADLESS=False)
+      DISPLAY: ${DISPLAY:-:1}
     depends_on:
     - scraper-orchestrator
     - nlp-processor
@@ -225,6 +237,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
       CONCURRENT_REQUESTS: 6
       DOWNLOAD_DELAY: 1.5
       NLP_PROCESSOR_URL: http://nlp-processor:8021
@@ -262,9 +275,11 @@ services:
     - '8013:8013'
     environment:
       SCRAPER_NAME: setlistfm
-      SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
+      SETLISTFM_API_KEY: ${SETLISTFM_API_KEY:-}
       REDIS_HOST: redis
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
       RATE_LIMIT: 3600
       REQUEST_DELAY: 1
       SKIP_ROBOTS_CHECK: 'true'
@@ -303,10 +318,12 @@ services:
     - '8014:8014'
     environment:
       SCRAPER_NAME: reddit
-      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
-      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
       REDIS_HOST: redis
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
@@ -345,6 +362,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
       RATE_LIMIT_DELAY: 2.0
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
@@ -460,6 +478,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
       NLP_PROCESSOR_URL: http://nlp-processor:8021
     depends_on:
     - scraper-orchestrator
@@ -736,13 +755,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
-      # Fallback environment variables (will use database keys first)
-      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
-      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
-      MUSICBRAINZ_USER_AGENT: ${MUSICBRAINZ_USER_AGENT:-SongNodes/1.0 (contact@songnodes.com)}
-      DISCOGS_TOKEN: ${DISCOGS_TOKEN}
-      LASTFM_API_KEY: ${LASTFM_API_KEY}
-      BEATPORT_API_KEY: ${BEATPORT_API_KEY}
+      # NOTE: External API keys (Spotify, Discogs, Last.fm, etc.) should be configured
+      # through the frontend Settings panel. They are stored encrypted in the database.
+      # Environment variables are only used as fallback if database keys are not set.
     depends_on:
     - postgres
     - db-connection-pool

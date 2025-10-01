@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
 from pydantic import BaseModel, Field
+from typing import Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -504,9 +505,47 @@ async def prometheus_metrics():
     """Prometheus metrics endpoint"""
     return PlainTextResponse(generate_latest())
 
+class TargetSearchRequest(BaseModel):
+    """Request model for target track search"""
+    force_rescrape: bool = Field(
+        default=False,
+        description="If true, ignores last_searched timestamp and scrapes all active tracks immediately"
+    )
+    clear_last_searched: bool = Field(
+        default=False,
+        description="If true, clears last_searched timestamps before scraping (allows fresh start)"
+    )
+    track_id: Optional[str] = Field(
+        default=None,
+        description="If provided, scrapes only this specific track (UUID format)"
+    )
+    artist: Optional[str] = Field(
+        default=None,
+        description="If provided, scrapes only tracks by this artist"
+    )
+    title: Optional[str] = Field(
+        default=None,
+        description="If provided, scrapes only tracks with this title"
+    )
+    limit: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+        description="Maximum number of tracks to process (1-100, default 20)"
+    )
+
 @app.post("/target-tracks/search")
-async def manual_target_search(background_tasks: BackgroundTasks):
-    """Manually trigger target track search with enhanced error handling"""
+async def manual_target_search(
+    background_tasks: BackgroundTasks,
+    request: TargetSearchRequest = TargetSearchRequest()
+):
+    """Manually trigger target track search with enhanced error handling
+
+    Args:
+        request: Request parameters including:
+            - force_rescrape: Bypass 24-hour rate limit, scrape immediately
+            - clear_last_searched: Reset all timestamps before scraping
+    """
     correlation_id = str(uuid.uuid4())[:8]
 
     structlog.contextvars.bind_contextvars(
@@ -514,7 +553,15 @@ async def manual_target_search(background_tasks: BackgroundTasks):
         correlation_id=correlation_id
     )
 
-    logger.info("Manual target track search triggered")
+    logger.info(
+        "Manual target track search triggered",
+        force_rescrape=request.force_rescrape,
+        clear_last_searched=request.clear_last_searched,
+        track_id=request.track_id,
+        artist=request.artist,
+        title=request.title,
+        limit=request.limit
+    )
 
     if not search_orchestrator:
         logger.error("Search orchestrator not available")
@@ -523,22 +570,66 @@ async def manual_target_search(background_tasks: BackgroundTasks):
             detail="Search orchestrator not available"
         )
 
-    # Execute in background
-    background_tasks.add_task(execute_search_with_metrics)
+    # Execute in background with all parameters
+    background_tasks.add_task(
+        execute_search_with_metrics,
+        force_rescrape=request.force_rescrape,
+        clear_last_searched=request.clear_last_searched,
+        track_id=request.track_id,
+        artist=request.artist,
+        title=request.title,
+        limit=request.limit
+    )
 
-    return {
+    response_data = {
         "status": "started",
         "message": "Target track search pipeline started in background",
         "correlation_id": correlation_id,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "force_rescrape": request.force_rescrape,
+        "clear_last_searched": request.clear_last_searched,
+        "limit": request.limit
     }
 
-async def execute_search_with_metrics():
-    """Execute search pipeline with metrics tracking"""
+    # Add optional fields if provided
+    if request.track_id:
+        response_data["track_id"] = request.track_id
+    if request.artist:
+        response_data["artist"] = request.artist
+    if request.title:
+        response_data["title"] = request.title
+
+    return response_data
+
+async def execute_search_with_metrics(
+    force_rescrape: bool = False,
+    clear_last_searched: bool = False,
+    track_id: Optional[str] = None,
+    artist: Optional[str] = None,
+    title: Optional[str] = None,
+    limit: int = 20
+):
+    """Execute search pipeline with metrics tracking
+
+    Args:
+        force_rescrape: If True, bypass 24-hour rate limit
+        clear_last_searched: If True, clear timestamps before scraping
+        track_id: If provided, scrape only this specific track
+        artist: If provided, filter tracks by artist
+        title: If provided, filter tracks by title
+        limit: Maximum number of tracks to process
+    """
     start_time = time.time()
 
     try:
-        await search_orchestrator.execute_search_pipeline()
+        await search_orchestrator.execute_search_pipeline(
+            force_rescrape=force_rescrape,
+            clear_last_searched=clear_last_searched,
+            track_id=track_id,
+            artist=artist,
+            title=title,
+            limit=limit
+        )
         execution_time = time.time() - start_time
 
         scraping_duration.labels(scraper="orchestrator").observe(execution_time)
@@ -546,7 +637,13 @@ async def execute_search_with_metrics():
 
         logger.info(
             "Search pipeline completed successfully",
-            execution_time=f"{execution_time:.3f}s"
+            execution_time=f"{execution_time:.3f}s",
+            force_rescrape=force_rescrape,
+            clear_last_searched=clear_last_searched,
+            track_id=track_id,
+            artist=artist,
+            title=title,
+            limit=limit
         )
 
     except Exception as e:
@@ -558,7 +655,13 @@ async def execute_search_with_metrics():
         logger.error(
             "Search pipeline failed",
             error=str(e),
-            execution_time=f"{execution_time:.3f}s"
+            execution_time=f"{execution_time:.3f}s",
+            force_rescrape=force_rescrape,
+            clear_last_searched=clear_last_searched,
+            track_id=track_id,
+            artist=artist,
+            title=title,
+            limit=limit
         )
 
 @app.get("/scrapers/status")
@@ -653,12 +756,12 @@ async def get_queue_status():
     correlation_id = str(uuid.uuid4())[:8]
 
     try:
-        # Get queue sizes from Redis
-        high_queue_size = await connection_manager.redis_client.llen('scraping:queue:high') or 0
-        medium_queue_size = await connection_manager.redis_client.llen('scraping:queue:medium') or 0
-        low_queue_size = await connection_manager.redis_client.llen('scraping:queue:low') or 0
+        # Get queue sizes from Redis (synchronous calls - redis-py client is sync)
+        high_queue_size = connection_manager.redis_client.llen('scraping:queue:high') or 0
+        medium_queue_size = connection_manager.redis_client.llen('scraping:queue:medium') or 0
+        low_queue_size = connection_manager.redis_client.llen('scraping:queue:low') or 0
 
-        # Also check the main scraping_queue that consumer uses (synchronous Redis calls)
+        # Also check the main scraping_queue that consumer uses
         main_queue_size = connection_manager.redis_client.llen('scraping_queue') or 0
         failed_queue_size = connection_manager.redis_client.llen('scraping_queue:failed') or 0
 
@@ -725,8 +828,8 @@ async def add_task_enhanced(task: ScrapingTask):
         task_dict = task.model_dump()
         task_dict['created_at'] = task_dict['created_at'].isoformat()
 
-        # Add to Redis queue
-        await connection_manager.redis_client.lpush(
+        # Add to Redis queue (synchronous call - redis-py client is sync)
+        connection_manager.redis_client.lpush(
             queue_key,
             json.dumps(task_dict)
         )

@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/global.css';
 
+// ⚠️ CRITICAL: Check localStorage BEFORE any React code runs
+console.log('🔍 [MAIN.TSX] Checking localStorage at React entry point...');
+const mainTsxStorage = localStorage.getItem('songnodes-store');
+console.log('🔍 [MAIN.TSX] localStorage:', mainTsxStorage ? mainTsxStorage.substring(0, 200) + '...' : 'NULL');
+
 // Disable right-click context menu for cleaner UX
 document.addEventListener('contextmenu', (e) => {
   if (e.target instanceof HTMLCanvasElement) {

@@ -13,6 +13,7 @@ const FilterPanel = React.lazy(() => import('./components/FilterPanel'));
 const StatsPanel = React.lazy(() => import('./components/StatsPanel'));
 const DJInterface = React.lazy(() => import('./components/DJInterface').then(module => ({ default: module.DJInterface })));
 const TargetTracksManager = React.lazy(() => import('./components/TargetTracksManager'));
+const OAuthCallback = React.lazy(() => import('./components/OAuthCallback'));
 
 // Toolbar icons (using text for now - replace with SVG icons in production)
 const icons = {
@@ -57,6 +58,23 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
 );
 
 const App: React.FC = () => {
+  // Check if we're on the OAuth callback route (handles both /oauth/callback and root with code param)
+  if (window.location.pathname === '/oauth/callback' ||
+      (window.location.search.includes('code=') && window.location.search.includes('state='))) {
+    return (
+      <React.Suspense fallback={<div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundColor: '#1a1a1a',
+        color: '#fff'
+      }}>Loading...</div>}>
+        <OAuthCallback />
+      </React.Suspense>
+    );
+  }
+
   const {
     graphData,
     viewState,
@@ -116,6 +134,45 @@ const App: React.FC = () => {
       console.warn('manualRefresh function not available');
     }
   }, []);
+
+  // Migrate legacy OAuth tokens on app load
+  useEffect(() => {
+    const migrateLegacyTokens = () => {
+      try {
+        const legacyTokensStr = localStorage.getItem('tidal_oauth_tokens');
+        if (legacyTokensStr) {
+          console.log('🔄 [App] Found legacy Tidal tokens - migrating to Zustand');
+          const legacyTokens = JSON.parse(legacyTokensStr);
+
+          const store = useStore.getState();
+          const credentials = store.credentials;
+          const musicCredentials = store.musicCredentials;
+
+          // Only migrate if we don't already have tokens in Zustand
+          if (!musicCredentials.tidal?.accessToken && legacyTokens.access_token) {
+            credentials.updateCredentials('tidal', {
+              accessToken: legacyTokens.access_token,
+              refreshToken: legacyTokens.refresh_token,
+              expiresAt: legacyTokens.expires_at,
+              isConnected: true,
+              lastValidated: Date.now(),
+            });
+
+            // Clean up legacy storage after successful migration
+            localStorage.removeItem('tidal_oauth_tokens');
+            console.log('✅ [App] Legacy tokens migrated and cleaned up');
+          } else {
+            console.log('ℹ️ [App] Tokens already in Zustand, removing legacy storage');
+            localStorage.removeItem('tidal_oauth_tokens');
+          }
+        }
+      } catch (error) {
+        console.error('[App] Failed to migrate legacy tokens:', error);
+      }
+    };
+
+    migrateLegacyTokens();
+  }, []); // Run only once on mount
 
   // Initialize app
   useEffect(() => {
@@ -181,6 +238,9 @@ const App: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [view, panels, graph, general, loadGraphData]);
+
+  // ✅ 2025 Best Practice: Zustand persist handles credentials automatically
+  // No manual initialization needed - removed backup loader
 
   // Panel toggle handlers
   const handleToggleLeftPanel = (panel: typeof panelState.leftPanel) => {

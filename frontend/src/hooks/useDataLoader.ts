@@ -1,6 +1,64 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { GraphNode, GraphEdge } from '../types';
+import { GraphNode, GraphEdge, Track } from '../types';
+
+/**
+ * Helper function to transform node data into a Track object
+ * This ensures that each node has the track property populated
+ * for the track modal to display correctly
+ *
+ * ✅ FIX: Provides safe defaults for all required Track fields
+ */
+const nodeToTrack = (node: any): Track => {
+  const metadata = node.metadata || {};
+  const title = node.title || metadata.title || metadata.label || 'Unknown Track';
+  const artist = node.artist || metadata.artist || 'Unknown Artist';
+
+  // ✅ Ensure energy is a valid number between 1-10
+  const rawEnergy = metadata.energy || 5;
+  const energy = Math.min(10, Math.max(1, Math.round(rawEnergy))) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+  // ✅ Ensure BPM is a valid number (default 128 for house music)
+  const bpm = metadata.bpm || 128;
+
+  // ✅ Ensure key is a valid CamelotKey (default 8A)
+  const rawKey = metadata.key || metadata.camelotKey || '8A';
+  const key = rawKey as '1A' | '2A' | '3A' | '4A' | '5A' | '6A' | '7A' | '8A' | '9A' | '10A' | '11A' | '12A' | '1B' | '2B' | '3B' | '4B' | '5B' | '6B' | '7B' | '8B' | '9B' | '10B' | '11B' | '12B';
+
+  // ✅ Ensure duration is a valid number (default 240 seconds = 4 minutes)
+  const duration = metadata.duration || 240;
+
+  return {
+    id: node.id,
+    name: title,
+    artist: artist,
+    album: metadata.album,
+    genre: metadata.genre || metadata.category || 'Electronic',
+
+    // ✅ Required DJ-critical metadata with safe defaults
+    bpm: bpm,
+    key: key,
+    energy: energy,
+
+    // ✅ Required timing
+    duration: duration,
+    intro: metadata.intro,
+    outro: metadata.outro,
+
+    // ✅ Required status field (default to unplayed)
+    status: 'unplayed' as 'unplayed' | 'playing' | 'played' | 'queued',
+
+    // Optional fields
+    waveform: metadata.waveform,
+    beatgrid: metadata.beatgrid,
+    lastPlayed: metadata.lastPlayed,
+    playCount: metadata.playCount || 0,
+    tags: metadata.tags || [],
+    mood: metadata.mood,
+    notes: metadata.notes,
+    cuePoints: metadata.cuePoints || [],
+  };
+};
 
 export const useDataLoader = () => {
   const setGraphData = useStore(state => state.graph.setGraphData);
@@ -36,6 +94,8 @@ export const useDataLoader = () => {
           y: node.position?.y || Math.random() * 600 - 300,
           // Include metadata for DJInterface access
           metadata: node.metadata,
+          // ✅ FIX: Create Track object for modal display
+          track: nodeToTrack(node),
         }));
 
         // Create a set of loaded node IDs for quick lookup
@@ -74,6 +134,8 @@ export const useDataLoader = () => {
             genre: node.type,
             x: node.x || Math.random() * 800 - 400,
             y: node.y || Math.random() * 600 - 300,
+            // ✅ FIX: Create Track object for fallback data too
+            track: nodeToTrack(node),
           }));
 
           const edges: GraphEdge[] = (data.edges || []).map((edge: any, index: number) => ({

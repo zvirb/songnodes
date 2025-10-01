@@ -32,8 +32,18 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     allowed_domains = ['api.setlist.fm']
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 0.1,  # 10 requests per second max
+        'DOWNLOAD_DELAY': 2.0,  # Conservative 2 seconds between requests to avoid rate limits
         'CONCURRENT_REQUESTS': 1,
+        'RETRY_ENABLED': True,
+        'RETRY_TIMES': 8,  # Retry up to 8 times for rate limits with exponential backoff
+        'RETRY_HTTP_CODES': [429, 500, 502, 503, 504, 408],  # Include 429 for rate limiting
+        # Exponential backoff: 5s, 10s, 20s, 40s, 80s, 160s, 320s, 640s
+        'RETRY_BACKOFF_ENABLED': True,
+        'RETRY_BACKOFF_MAX': 640,  # Max backoff time in seconds
+        'AUTOTHROTTLE_ENABLED': True,
+        'AUTOTHROTTLE_START_DELAY': 2.0,
+        'AUTOTHROTTLE_MAX_DELAY': 120.0,  # Max 2 minutes between requests
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.5,
         'DEFAULT_REQUEST_HEADERS': {
             'Accept': 'application/json',
             'x-api-key': os.environ.get('SETLISTFM_API_KEY', '')
@@ -132,7 +142,7 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         if total == 0:
             return []
 
-        batch_size = int(os.getenv('SETLISTFM_ARTIST_BATCH_SIZE', 12))
+        batch_size = int(os.getenv('SETLISTFM_ARTIST_BATCH_SIZE', 3))  # Reduced from 12 to 3 to avoid rate limits
         rotation_seed_raw = os.getenv('SETLISTFM_ARTIST_ROTATION')
 
         if rotation_seed_raw is not None:
@@ -162,7 +172,7 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 self.logger.warning("Invalid SETLISTFM_YEAR_RANGE, defaulting to recent years")
 
         current_year = datetime.utcnow().year
-        span = int(os.getenv('SETLISTFM_YEAR_SPAN', 3))
+        span = int(os.getenv('SETLISTFM_YEAR_SPAN', 1))  # Reduced from 3 to 1 year to avoid rate limits
         return [str(current_year - offset) for offset in range(span)]
 
     def apply_robots_policy(self):
@@ -239,8 +249,35 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
     def parse(self, response):
         """Parse search results"""
+        # Handle rate limiting (HTTP 429)
+        if response.status == 429:
+            retry_after = response.headers.get('Retry-After', '60')
+            try:
+                wait_time = int(retry_after)
+            except ValueError:
+                wait_time = 60
+
+            self.logger.error(
+                f"🚫 RATE LIMITED by Setlist.fm API (HTTP 429). "
+                f"Retry-After: {wait_time} seconds. "
+                f"URL: {response.url}. "
+                f"Scrapy retry middleware will handle this with exponential backoff."
+            )
+            # Return nothing - Scrapy's retry middleware will handle this
+            return
+
         try:
             data = json.loads(response.text)
+
+            # Check if response contains rate limit error in JSON
+            if data.get('message') == 'Limit Exceeded':
+                self.logger.error(
+                    f"🚫 RATE LIMITED by Setlist.fm API (JSON error response). "
+                    f"URL: {response.url}. "
+                    f"The API key may have exceeded its daily/hourly quota."
+                )
+                # This is a hard limit, not a retry situation
+                raise CloseSpider('api_rate_limit_exceeded')
 
             # Process each setlist
             for setlist in data.get('setlist', []):

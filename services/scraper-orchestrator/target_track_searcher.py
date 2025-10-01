@@ -746,8 +746,25 @@ class SearchOrchestrator2025:
         self.db_service = AsyncDatabaseService(session_factory)
         self.timeout_manager = TimeoutManager(default_timeout=60.0)
 
-    async def execute_search_pipeline(self):
-        """Enhanced pipeline with comprehensive error handling and monitoring"""
+    async def execute_search_pipeline(
+        self,
+        force_rescrape: bool = False,
+        clear_last_searched: bool = False,
+        track_id: str = None,
+        artist: str = None,
+        title: str = None,
+        limit: int = 20
+    ):
+        """Enhanced pipeline with comprehensive error handling and monitoring
+
+        Args:
+            force_rescrape: If True, bypass 24-hour rate limit and scrape all active tracks
+            clear_last_searched: If True, clear last_searched timestamps before scraping
+            track_id: If provided, scrape only this specific track
+            artist: If provided, filter tracks by artist
+            title: If provided, filter tracks by title
+            limit: Maximum number of tracks to process
+        """
         correlation_id = str(uuid.uuid4())[:8]
 
         structlog.contextvars.bind_contextvars(
@@ -755,12 +772,27 @@ class SearchOrchestrator2025:
             correlation_id=correlation_id
         )
 
-        logger.info("Starting enhanced target track search pipeline")
+        logger.info(
+            "Starting enhanced target track search pipeline",
+            force_rescrape=force_rescrape,
+            clear_last_searched=clear_last_searched,
+            track_id=track_id,
+            artist=artist,
+            title=title,
+            limit=limit
+        )
 
         try:
             async with self.timeout_manager.timeout(600.0, "complete_pipeline"):  # 10 minute timeout
                 # Step 1: Load active target tracks
-                target_tracks = await self.load_active_targets()
+                target_tracks = await self.load_active_targets(
+                    force_rescrape=force_rescrape,
+                    clear_last_searched=clear_last_searched,
+                    track_id=track_id,
+                    artist=artist,
+                    title=title,
+                    limit=limit
+                )
 
                 if not target_tracks:
                     logger.info("No active target tracks found, pipeline complete")
@@ -793,31 +825,105 @@ class SearchOrchestrator2025:
             )
             raise
 
-    async def load_active_targets(self) -> List[Dict]:
-        """Load target tracks with proper error handling"""
+    async def load_active_targets(
+        self,
+        force_rescrape: bool = False,
+        clear_last_searched: bool = False,
+        track_id: str = None,
+        artist: str = None,
+        title: str = None,
+        limit: int = 20
+    ) -> List[Dict]:
+        """Load target tracks with proper error handling
+
+        Args:
+            force_rescrape: If True, bypass 24-hour rate limit
+            clear_last_searched: If True, clear last_searched timestamps first
+            track_id: If provided, load only this specific track
+            artist: If provided, filter tracks by artist
+            title: If provided, filter tracks by title
+            limit: Maximum number of tracks to load
+        """
         correlation_id = str(uuid.uuid4())[:8]
         structlog.contextvars.bind_contextvars(
             operation="load_active_targets",
             correlation_id=correlation_id
         )
 
-        query = """
-            SELECT track_id, title, artist, priority, last_searched
-            FROM target_tracks
-            WHERE is_active = true
-            AND (last_searched IS NULL OR last_searched < NOW() - INTERVAL '24 hours')
-            ORDER BY
-                CASE priority
-                    WHEN 'high' THEN 1
-                    WHEN 'medium' THEN 2
-                    ELSE 3
-                END,
-                last_searched ASC NULLS FIRST
-            LIMIT 20
-        """
-
         try:
-            rows = await self.db_service.execute_query_with_params(query, {})
+            # Step 1: Optionally clear last_searched timestamps
+            if clear_last_searched:
+                logger.info("Clearing last_searched timestamps for active tracks")
+                clear_conditions = ["is_active = true"]
+                clear_params = {}
+
+                if track_id:
+                    clear_conditions.append("track_id = $1")
+                    clear_params = {"1": track_id}
+                elif artist:
+                    clear_conditions.append("LOWER(artist) = LOWER($1)")
+                    clear_params = {"1": artist}
+                elif title:
+                    clear_conditions.append("LOWER(title) = LOWER($1)")
+                    clear_params = {"1": title}
+
+                clear_query = f"""
+                    UPDATE target_tracks
+                    SET last_searched = NULL
+                    WHERE {' AND '.join(clear_conditions)}
+                """
+                await self.db_service.execute_query_with_params(clear_query, clear_params)
+                logger.info("Timestamps cleared successfully")
+
+            # Step 2: Build query based on filters
+            where_conditions = ["is_active = true"]
+            query_params = {}
+            param_counter = 1
+
+            # Add specific track filter
+            if track_id:
+                where_conditions.append(f"track_id = ${param_counter}")
+                query_params[str(param_counter)] = track_id
+                param_counter += 1
+                logger.info(f"Filtering for specific track_id: {track_id}")
+
+            # Add artist filter
+            if artist:
+                where_conditions.append(f"LOWER(artist) = LOWER(${param_counter})")
+                query_params[str(param_counter)] = artist
+                param_counter += 1
+                logger.info(f"Filtering for artist: {artist}")
+
+            # Add title filter
+            if title:
+                where_conditions.append(f"LOWER(title) = LOWER(${param_counter})")
+                query_params[str(param_counter)] = title
+                param_counter += 1
+                logger.info(f"Filtering for title: {title}")
+
+            # Add time filter (unless force_rescrape is enabled)
+            if not force_rescrape:
+                where_conditions.append("(last_searched IS NULL OR last_searched < NOW() - INTERVAL '24 hours')")
+                logger.info("Applying 24-hour rate limit")
+            else:
+                logger.info("Force rescrape enabled - bypassing 24-hour rate limit")
+
+            # Build final query
+            query = f"""
+                SELECT track_id, title, artist, priority, last_searched
+                FROM target_tracks
+                WHERE {' AND '.join(where_conditions)}
+                ORDER BY
+                    CASE priority
+                        WHEN 'high' THEN 1
+                        WHEN 'medium' THEN 2
+                        ELSE 3
+                    END,
+                    last_searched ASC NULLS FIRST
+                LIMIT {limit}
+            """
+
+            rows = await self.db_service.execute_query_with_params(query, query_params)
 
             target_tracks = [
                 {
@@ -829,7 +935,16 @@ class SearchOrchestrator2025:
                 for row in rows
             ]
 
-            logger.info("Active targets loaded successfully", count=len(target_tracks))
+            logger.info(
+                "Active targets loaded successfully",
+                count=len(target_tracks),
+                force_rescrape=force_rescrape,
+                clear_last_searched=clear_last_searched,
+                track_id=track_id,
+                artist=artist,
+                title=title,
+                limit=limit
+            )
             return target_tracks
 
         except Exception as e:

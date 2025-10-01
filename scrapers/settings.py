@@ -1,6 +1,9 @@
 import sys
 print("SYS_PATH:", sys.path)
 
+# CRITICAL: Enable asyncio reactor for scrapy-playwright support
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
 # Scrapy settings for music_scraper project
 #
 # For simplicity, this file contains only settings considered important or
@@ -24,9 +27,9 @@ ROBOTSTXT_OBEY = False
 # Reduce concurrent requests to avoid triggering rate limits
 CONCURRENT_REQUESTS = 1
 
-# Increase delays significantly to mimic human behavior
-DOWNLOAD_DELAY = 10
-RANDOMIZE_DOWNLOAD_DELAY = 0.8  # 0.5 * to 1.5 * DOWNLOAD_DELAY
+# Increase delays significantly to mimic human behavior and avoid CAPTCHA blocking
+DOWNLOAD_DELAY = 90  # 90 seconds between requests to avoid IP bans
+RANDOMIZE_DOWNLOAD_DELAY = 0.3  # 0.5 * to 1.5 * DOWNLOAD_DELAY (63-135 seconds)
 
 # The download delay setting will honor only one of:
 # CONCURRENT_REQUESTS_PER_DOMAIN = 1
@@ -88,12 +91,12 @@ ITEM_PIPELINES = {
 
 # Enable and configure the AutoThrottle extension with conservative settings
 AUTOTHROTTLE_ENABLED = True
-# Start with longer delays
-AUTOTHROTTLE_START_DELAY = 15
+# Start with longer delays to avoid anti-bot detection
+AUTOTHROTTLE_START_DELAY = 90  # Match DOWNLOAD_DELAY
 # Allow even longer delays if needed
-AUTOTHROTTLE_MAX_DELAY = 120
+AUTOTHROTTLE_MAX_DELAY = 300  # Up to 5 minutes between requests if needed
 # Keep concurrency very low
-AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
+AUTOTHROTTLE_TARGET_CONCURRENCY = 0.2  # Lower concurrency for gentler scraping
 # Enable debugging to monitor throttling
 AUTOTHROTTLE_DEBUG = True
 
@@ -106,14 +109,18 @@ AUTOTHROTTLE_DEBUG = True
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # Playwright settings for JavaScript rendering
+# Set TRACKLISTS_1001_HEADLESS=False in docker-compose.yml for manual CAPTCHA solving
+import os
 PLAYWRIGHT_BROWSER_TYPE = 'chromium'
 PLAYWRIGHT_LAUNCH_OPTIONS = {
-    'headless': True,
+    'headless': os.getenv('TRACKLISTS_1001_HEADLESS', 'True').lower() == 'true',
     'args': [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--single-process',  # Helps in containerized environments
     ]
 }
 

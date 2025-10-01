@@ -1,143 +1,148 @@
 """
-FastAPI wrapper for REAL 1001tracklists scraper
-Uses actual web scraping instead of mock data
+FastAPI wrapper for 1001Tracklists scraper
+Handles both targeted and URL-based scraping modes
 """
 from fastapi import FastAPI, HTTPException
-import asyncio
+from pydantic import BaseModel
+import subprocess
 import json
 import os
 import logging
-import sys
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from datetime import datetime
-
-# Add current directory to path for imports
-sys.path.append('/app')
-# Import the simple database pipeline
-sys.path.append('/app')
-from real_data_scraper import RealDataScraper
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="1001Tracklists Real Scraper", version="1.0.0")
+app = FastAPI(title="1001Tracklists Scraper", version="2.0.0")
+
+class ScrapeRequest(BaseModel):
+    url: Optional[str] = None
+    params: Optional[Dict[str, Any]] = {}
+    task_id: Optional[str] = None
+    target_track: Optional[Dict[str, Any]] = None
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "scraper": "1001tracklists-real", "mode": "web_scraping"}
+    return {"status": "healthy", "scraper": "1001tracklists"}
 
 @app.post("/scrape")
-async def scrape_url(request: Dict[str, Any]):
+async def scrape_url(request: ScrapeRequest):
     """
-    Execute REAL web scraping for actual music data
+    Execute scraping task
+    Works in URL mode when URL is provided, otherwise targeted mode
     """
-    task_id = request.get("task_id") or f"real_1001_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    url = request.get("url")
-    target_track = request.get("target_track", {})
+    task_id = request.task_id or f"1001tl_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     try:
-        logger.info(f"Starting REAL web scraping for task {task_id}")
-        if url:
-            logger.info(f"Scraping URL: {url}")
-        if target_track:
-            logger.info(f"Target track: {target_track.get('title')} by {target_track.get('primary_artist')}")
+        # Build scrapy command
+        cmd = [
+            "scrapy", "crawl", "1001tracklists",
+            "-L", "INFO",
+            "-s", "LOG_ENABLED=1"
+        ]
 
-        # Create real scraper instance
-        scraper = RealDataScraper()
-
-        # Extract search query from URL if provided
-        track_name = None
-        if url:
-            # Extract search query from 1001tracklists URL
-            # URL formats:
-            # - https://www.1001tracklists.com/search?q=Artist+Track
-            # - https://www.1001tracklists.com/search/result.php?main_search=Artist+Track
-            from urllib.parse import urlparse, parse_qs, unquote
-
-            parsed = urlparse(url)
-            query_params = parse_qs(parsed.query)
-
-            if 'q' in query_params:
-                track_name = unquote(query_params['q'][0])
-            elif 'main_search' in query_params:
-                track_name = unquote(query_params['main_search'][0])
-            elif 'query' in query_params:
-                track_name = unquote(query_params['query'][0])
-
-        # If we have a specific target track from request, use it
-        if not track_name and target_track and target_track.get('title') and target_track.get('primary_artist'):
-            track_name = f"{target_track['primary_artist']} - {target_track['title']}"
-
-        # If we have a track name to search for
-        if track_name:
-            logger.info(f"Searching for real playlists containing: {track_name}")
-
-            # Execute real search
-            results = await scraper.search_for_playlists(track_name)
-            items_processed = 0
-
-            # Process each found playlist and save to database
-            for playlist in results:
-                items = await scraper.process_playlist(playlist)
-                if items:
-                    logger.info(f"Saving {len(items)} items from playlist to database")
-                    # Save items to database using the pipeline
-                    class MockSpider:
-                        name = "real_scraper_api"
-
-                    spider = MockSpider()
-                    for item in items:
-                        await scraper.db_pipeline.process_item(item, spider)
-
-                items_processed += len(items) if items else 0
-
+        # Determine mode based on URL presence
+        if request.url:
+            logger.info(f"URL provided: {request.url}")
+            # If it's a search URL, extract the query and use targeted mode
+            # If it's a tracklist URL, pass it as start_urls
+            if '/search' in request.url or 'main_search' in request.url:
+                logger.info("Search URL detected - using targeted mode to scrape search results")
+                cmd.extend(["-a", "search_mode=targeted"])
+                # Extract search query from URL if possible
+                import urllib.parse
+                parsed = urllib.parse.urlparse(request.url)
+                params = urllib.parse.parse_qs(parsed.query)
+                search_query = params.get('main_search', params.get('q', ['']))[0]
+                if search_query:
+                    logger.info(f"Search query extracted: {search_query}")
+                    cmd.extend(["-a", f"search_query={search_query}"])
+            elif '/tracklist/' in request.url:
+                logger.info("Direct tracklist URL - using start_urls parameter")
+                cmd.extend(["-a", f"start_urls={request.url}"])
+                cmd.extend(["-a", "search_mode=targeted"])
+            else:
+                # For DJ profile URLs or other pages, use discovery on that specific page
+                logger.info("Using targeted mode with custom start URL")
+                cmd.extend(["-a", f"start_urls={request.url}"])
+                cmd.extend(["-a", "search_mode=discovery"])
         else:
-            # Process a few target tracks from the scraper's internal list
-            logger.info("Processing real target tracks for playlist discovery")
-            results = []
-            items_processed = 0
+            # Run in targeted mode (spider's default behavior)
+            # This requires target tracks to be in the database
+            cmd.extend(["-a", "search_mode=targeted"])
+            logger.info("No URL provided, running in targeted mode")
 
-            # Process up to 3 target tracks
-            for i, track_name in enumerate(scraper.target_tracks[:3]):
-                logger.info(f"Searching for playlists containing: {track_name}")
-                playlists = await scraper.search_for_playlists(track_name)
-                for playlist in playlists:
-                    items = await scraper.process_playlist(playlist)
-                    if items:
-                        logger.info(f"Saving {len(items)} items from playlist to database")
-                        # Save items to database using the pipeline
-                        class MockSpider:
-                            name = "real_scraper_api"
+        # Add force run to bypass quota checks
+        cmd.extend(["-a", "force_run=true"])
 
-                        spider = MockSpider()
-                        for item in items:
-                            await scraper.db_pipeline.process_item(item, spider)
+        # Set output file
+        output_file = f"/tmp/{task_id}_1001tl.json"
+        cmd.extend(["-o", output_file])
 
-                    items_processed += len(items) if items else 0
-                results.extend(playlists)
+        logger.info(f"Executing command: {' '.join(cmd)}")
 
-        # Close the scraper properly
-        if hasattr(scraper, 'close'):
-            await scraper.close()
+        # Timeout: Use env var for manual CAPTCHA solving (default 30 min for non-headless mode)
+        headless = os.getenv('TRACKLISTS_1001_HEADLESS', 'True').lower() == 'true'
+        default_timeout = 300 if headless else 1800  # 5 min headless, 30 min with GUI
+        timeout_seconds = int(os.getenv('SCRAPER_TIMEOUT', default_timeout))
+
+        # Run the spider
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd="/app",
+            timeout=timeout_seconds
+        )
+
+        # Log output for debugging
+        if result.stdout:
+            logger.info(f"Spider stdout: {result.stdout[:500]}")
+        if result.stderr:
+            logger.warning(f"Spider stderr: {result.stderr[:500]}")
+
+        # Check if spider ran successfully
+        if result.returncode != 0:
+            error_msg = result.stderr or result.stdout or "Unknown error"
+            logger.error(f"Scrapy failed with code {result.returncode}: {error_msg}")
+
+            # Don't raise 500 error, return structured response
+            return {
+                "status": "error",
+                "task_id": task_id,
+                "error": f"Spider execution failed: {error_msg[:200]}",
+                "returncode": result.returncode
+            }
+
+        # Check if output file was created
+        output_exists = os.path.exists(output_file)
+        output_size = os.path.getsize(output_file) if output_exists else 0
 
         return {
             "status": "success",
             "task_id": task_id,
-            "url": url,
-            "mode": "real_web_scraping",
-            "items_processed": items_processed,
-            "target_track": target_track,
-            "message": f"Real web scraping completed. Processed {items_processed} tracks from actual websites"
+            "url": request.url,
+            "mode": "targeted",
+            "output_file": output_file if output_exists else None,
+            "output_size": output_size,
+            "message": "Spider executed successfully with proper artist extraction"
         }
 
+    except subprocess.TimeoutExpired:
+        logger.error(f"Spider timeout for task {task_id}")
+        return {
+            "status": "timeout",
+            "task_id": task_id,
+            "error": "Spider execution timeout after 5 minutes"
+        }
     except Exception as e:
-        logger.error(f"Error in real web scraping: {str(e)}")
+        logger.error(f"Error executing spider: {str(e)}")
         return {
             "status": "error",
             "task_id": task_id,
-            "error": str(e),
-            "mode": "real_web_scraping"
+            "error": str(e)
         }
 
 if __name__ == "__main__":

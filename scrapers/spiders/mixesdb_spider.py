@@ -51,25 +51,26 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = 'mixesdb'
     allowed_domains = ['mixesdb.com']
 
-    download_delay = 2.5
-    randomize_download_delay = 0.5
+    download_delay = 15.0
+    randomize_download_delay = 0.3
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 2.5,
-        'RANDOMIZE_DOWNLOAD_DELAY': 0.5,
+        'DOWNLOAD_DELAY': 15.0,  # 15 seconds between requests - balanced for performance and politeness
+        'RANDOMIZE_DOWNLOAD_DELAY': 0.3,  # Range: 10.5-19.5 seconds
         'CONCURRENT_REQUESTS': 1,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
         'AUTOTHROTTLE_ENABLED': True,
-        'AUTOTHROTTLE_START_DELAY': 3,
-        'AUTOTHROTTLE_MAX_DELAY': 20,
+        'AUTOTHROTTLE_START_DELAY': 15,  # Match DOWNLOAD_DELAY
+        'AUTOTHROTTLE_MAX_DELAY': 60,  # Up to 1 minute if needed
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.2,
         'RETRY_TIMES': 3,
+        'DOWNLOAD_TIMEOUT': 30,  # 30 second timeout per request
         'ITEM_PIPELINES': {
-            'database_pipeline.EnhancedMusicDatabasePipeline': 300,
+            'database_pipeline.DatabasePipeline': 300,
         }
     }
 
-    def __init__(self, search_artists=None, *args, **kwargs):
+    def __init__(self, search_artists=None, start_urls=None, search_query=None, *args, **kwargs):
         force_run_arg = kwargs.pop('force_run', None)
         super().__init__(*args, **kwargs)
         # Use Scrapy's built-in logger instead of reassigning
@@ -91,7 +92,24 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
         self.initialize_state_store()
         self.apply_robots_policy()
-        self.start_urls = self.generate_search_urls()
+
+        # Support for custom start URLs (from orchestrator)
+        if start_urls:
+            # Parse comma-separated URLs if provided as string
+            if isinstance(start_urls, str):
+                self.start_urls = [url.strip() for url in start_urls.split(',')]
+            else:
+                self.start_urls = start_urls
+            self.logger.info(f"Using provided start_urls: {self.start_urls}")
+        # Support for search query (from orchestrator)
+        elif search_query:
+            from urllib.parse import quote
+            # Fixed URL format: MixesDB uses MediaWiki Special:Search syntax
+            search_url = f"https://www.mixesdb.com/w/index.php?title=Special:Search&search={quote(search_query)}"
+            self.start_urls = [search_url]
+            self.logger.info(f"Using search query: {search_query} -> {search_url}")
+        else:
+            self.start_urls = self.generate_search_urls()
 
     def load_target_artists(self):
         """Load prioritized artists from the shared target track list."""
@@ -313,15 +331,22 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         """Parse search results and follow mix links"""
         mix_links = response.css('div.mw-search-result-heading a::attr(href), ul.mw-search-results li a::attr(href)').getall()
 
-        for link in mix_links[:15]:  # Limit per search
+        # Limit to 5 results per search to prevent timeouts
+        # With 15s delay, 5 results = ~75s + processing time
+        max_results = int(os.getenv('MIXESDB_MAX_RESULTS_PER_SEARCH', '5'))
+
+        for link in mix_links[:max_results]:
             full_url = response.urljoin(link)
             if self.is_mix_url(full_url):
                 if self.is_source_processed(full_url):
+                    self.logger.debug(f"Skipping already processed URL: {full_url}")
                     continue
                 yield scrapy.Request(
                     url=full_url,
                     callback=self.parse_mix_page,
-                    errback=self.handle_error
+                    errback=self.handle_error,
+                    dont_filter=False,
+                    meta={'download_timeout': 30}
                 )
 
     def parse_category_page(self, response):
@@ -340,7 +365,7 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
             if llm_links:
                 self.logger.info(f"LLM extraction found {len(llm_links)} mix links")
-                mix_links = llm_links[:20]  # Limit results
+                mix_links = llm_links[:10]  # Reduced limit to prevent timeouts
 
         except Exception as e:
             self.logger.warning(f"LLM extraction failed for MixesDB: {e}, falling back to CSS")
@@ -349,30 +374,40 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         if not mix_links:
             mix_links = response.css('div.mw-category a::attr(href), li a::attr(href)').getall()
 
-        for link in mix_links[:20]:
+        # Limit to 5 results per category page to prevent timeouts
+        max_results = int(os.getenv('MIXESDB_MAX_RESULTS_PER_CATEGORY', '5'))
+
+        for link in mix_links[:max_results]:
             full_url = response.urljoin(link)
             if self.is_mix_url(full_url):
                 if self.is_source_processed(full_url):
+                    self.logger.debug(f"Skipping already processed URL: {full_url}")
                     continue
                 yield scrapy.Request(
                     url=full_url,
                     callback=self.parse_mix_page,
-                    errback=self.handle_error
+                    errback=self.handle_error,
+                    meta={'download_timeout': 30}
                 )
 
     def parse_recent_changes(self, response):
         """Parse recent changes for new mix links"""
         recent_links = response.css('ul.special li a::attr(href)').getall()
 
-        for link in recent_links[:10]:
+        # Limit to 5 results from recent changes
+        max_results = int(os.getenv('MIXESDB_MAX_RESULTS_PER_RECENT', '5'))
+
+        for link in recent_links[:max_results]:
             full_url = response.urljoin(link)
             if self.is_mix_url(full_url):
                 if self.is_source_processed(full_url):
+                    self.logger.debug(f"Skipping already processed URL: {full_url}")
                     continue
                 yield scrapy.Request(
                     url=full_url,
                     callback=self.parse_mix_page,
-                    errback=self.handle_error
+                    errback=self.handle_error,
+                    meta={'download_timeout': 30}
                 )
 
     def is_mix_page(self, response):
@@ -720,6 +755,9 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 # Determine genre from context
                 genre = self.infer_genre_from_context(response, parsed_track)
 
+                # Extract primary artist list BEFORE using it
+                primary_artists = parsed_track.get('primary_artists', [])
+
                 # Generate deterministic track_id for cross-source deduplication
                 track_id = generate_track_id_from_parsed(parsed_track)
 
@@ -751,13 +789,13 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                     'created_at': datetime.utcnow()
                 }
 
-                self.logger.debug(f"Generated track_id {track_id} for: {parsed_track.get('primary_artists', [''])[0]} - {parsed_track['track_name']}")
+                self.logger.debug(f"Generated track_id {track_id} for: {primary_artists[0] if primary_artists else 'Unknown'} - {parsed_track['track_name']}")
 
                 # Build artist relationships
                 relationships = []
 
                 # Primary artists
-                for j, artist in enumerate(parsed_track.get('primary_artists', [])):
+                for j, artist in enumerate(primary_artists):
                     relationships.append({
                         'track_name': parsed_track['track_name'],
                         'artist_name': artist,

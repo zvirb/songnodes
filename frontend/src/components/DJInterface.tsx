@@ -161,10 +161,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   // Load data and credentials
   useDataLoader();
 
-  // Load credentials from storage on mount
-  useEffect(() => {
-    credentials.loadCredentialsFromStorage();
-  }, []);
+  // Credentials are now loaded automatically via Zustand onRehydrateStorage
+  // No need to manually load on mount
 
   // Memoize track nodes to prevent recalculation on every render
   const validNodes = useMemo(() => {
@@ -191,9 +189,19 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
 
   // Memoized event handlers to prevent child re-renders
   const handleTrackInspect = useCallback((track: Track) => {
-    setInspectedTrack(track);
-    setIsModalOpen(true);
-  }, []);
+    console.log('🎵 Track selected:', track.name, 'Mode:', mode);
+
+    // ✅ FIX: In Performer mode, set as now playing instead of opening modal
+    if (mode === 'performer') {
+      setNowPlaying(track);
+      console.log('✅ Set as now playing in Performer mode');
+    } else {
+      // In Librarian mode, open inspection modal
+      setInspectedTrack(track);
+      setIsModalOpen(true);
+      console.log('✅ Opened modal in Librarian mode');
+    }
+  }, [mode]);
 
   const handleSetAsCurrentlyPlaying = useCallback((track: Track) => {
     setNowPlaying(track);
@@ -271,7 +279,11 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     try {
       const response = await fetch('/api/v1/scrapers/target-tracks/search', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          force_rescrape: true,
+          limit: 20
+        })
       });
 
       if (!response.ok) {
@@ -304,33 +316,22 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     }));
 
     try {
-      // Submit tasks for each active scraper
-      const scrapers = ['1001tracklists', 'mixesdb', 'setlistfm', 'reddit'];
-      const promises = scrapers.map(scraper =>
-        fetch('/api/v1/scrapers/tasks/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            scraper: scraper,
-            priority: 'high',
-            params: {}
-          })
+      // Trigger orchestrator to process ALL active target tracks
+      const response = await fetch('/api/v1/scrapers/target-tracks/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          force_rescrape: true,
+          limit: 100  // Process up to 100 tracks
         })
-      );
+      });
 
-      const responses = await Promise.all(promises);
-      const results = await Promise.all(
-        responses.map(async (response, index) => {
-          if (!response.ok) {
-            console.warn(`Failed to trigger ${scrapers[index]}: ${response.status}`);
-            return null;
-          }
-          return await response.json();
-        })
-      );
+      if (!response.ok) {
+        throw new Error(`Failed to trigger scrapers: ${response.status}`);
+      }
 
-      const successCount = results.filter(r => r !== null).length;
-      console.log(`Successfully triggered ${successCount}/${scrapers.length} scrapers`);
+      const result = await response.json();
+      console.log('Scrapers triggered successfully:', result);
 
       setTriggerStates(prev => ({
         ...prev,
@@ -397,27 +398,60 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
             🎵 SongNodes DJ
           </h1>
 
-          {/* Mode Toggle */}
-          <button
-            onClick={toggleMode}
-            aria-label={`Switch to ${mode === 'performer' ? 'Librarian' : 'Performer'} mode`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: mode === 'performer' ? '#7ED321' : '#4A90E2',
-              border: 'none',
-              borderRadius: '20px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            {mode === 'performer' ? '🎤 Performer' : '📚 Librarian'}
-          </button>
+          {/* Mode Toggle - Show both options with active highlight */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            padding: '4px',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <button
+              onClick={() => setMode('performer')}
+              aria-label="Switch to Performer mode"
+              aria-pressed={mode === 'performer'}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: mode === 'performer' ? '#7ED321' : 'transparent',
+                border: 'none',
+                borderRadius: '20px',
+                color: mode === 'performer' ? '#FFFFFF' : '#8E8E93',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                opacity: mode === 'performer' ? 1 : 0.7
+              }}
+            >
+              🎤 Performer
+            </button>
+            <button
+              onClick={() => setMode('librarian')}
+              aria-label="Switch to Librarian mode"
+              aria-pressed={mode === 'librarian'}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: mode === 'librarian' ? '#4A90E2' : 'transparent',
+                border: 'none',
+                borderRadius: '20px',
+                color: mode === 'librarian' ? '#FFFFFF' : '#8E8E93',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                opacity: mode === 'librarian' ? 1 : 0.7
+              }}
+            >
+              📚 Librarian
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -643,21 +677,23 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         <main style={{
           flex: 1,
           display: 'grid',
-          gridTemplateRows: mode === 'performer' ? 'auto 1fr' : '1fr',
-          gap: '20px',
-          padding: '20px',
+          gridTemplateRows: mode === 'performer' ? 'minmax(150px, auto) 1fr' : '1fr',
+          gap: '16px',
+          padding: '16px',
           overflow: 'hidden'
         }}>
         {/* Performer Mode Layout */}
         {mode === 'performer' && (
           <>
-            {/* Now Playing Section - Primary Focus */}
+            {/* Now Playing Section - Compact Primary Focus */}
             <section
               className="now-playing-section"
               style={{
-                maxWidth: '1200px',
+                maxWidth: '100%',
                 width: '100%',
-                margin: '0 auto'
+                minHeight: '150px',
+                maxHeight: '220px',
+                overflow: 'hidden'
               }}
             >
               <NowPlayingDeck
@@ -671,9 +707,10 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
               className="visualization-section"
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 400px',
-                gap: '20px',
-                overflow: 'hidden'
+                gridTemplateColumns: '1fr 480px',
+                gap: '16px',
+                overflow: 'hidden',
+                minHeight: 0
               }}
             >
               {/* Graph Visualization */}
@@ -726,6 +763,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                   currentTrack={nowPlaying}
                   allTracks={tracks}
                   onTrackSelect={handleTrackInspect}
+                  graphEdges={graphData?.edges || []} // ✅ Pass graph edges for adjacency-based recommendations
                   config={{
                     maxRecommendations: 12,
                     showReasons: true,

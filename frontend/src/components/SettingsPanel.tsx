@@ -10,9 +10,11 @@ import { APIKeyManager } from './APIKeyManager';
 
 interface MusicServiceCredentials {
   tidal?: {
-    username: string;
-    password: string;
-    rememberMe: boolean;
+    clientId: string;
+    clientSecret: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number;
     isConnected?: boolean;
     lastValidated?: number;
   };
@@ -38,11 +40,83 @@ interface SettingsPanelProps {
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
-  const { musicCredentials, credentials, isLoading } = useStore();
+  const { musicCredentials, credentials, isLoading, general } = useStore();
   const [activeTab, setActiveTab] = useState<'tidal' | 'spotify' | 'apple' | 'apikeys'>('tidal');
   const [showAPIKeyManager, setShowAPIKeyManager] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // Listen for OAuth callback messages
+  useEffect(() => {
+    const handleOAuthMessage = (event: MessageEvent) => {
+      // Security: Verify the message origin matches our app
+      if (event.origin !== window.location.origin) {
+        console.warn('Ignoring message from untrusted origin:', event.origin);
+        return;
+      }
+
+      const { type, tokens, error } = event.data;
+
+      if (type === 'oauth-success' && tokens) {
+        console.log('✅ OAuth success - storing tokens in Zustand');
+
+        // Store tokens in Zustand (which will auto-persist to localStorage)
+        credentials.updateCredentials('tidal', {
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          expiresAt: tokens.expires_at,
+          isConnected: true,
+          lastValidated: Date.now(),
+        });
+
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+
+        alert('✅ Successfully connected to Tidal!');
+      } else if (type === 'oauth-error') {
+        console.error('❌ OAuth error:', error);
+        alert(`❌ Failed to connect to Tidal: ${error}`);
+      }
+    };
+
+    window.addEventListener('message', handleOAuthMessage);
+    return () => window.removeEventListener('message', handleOAuthMessage);
+  }, [credentials]);
+
+  // Migrate legacy OAuth tokens from separate localStorage key to Zustand
+  useEffect(() => {
+    const migrateLegacyTokens = () => {
+      try {
+        const legacyTokensStr = localStorage.getItem('tidal_oauth_tokens');
+        if (legacyTokensStr) {
+          console.log('🔄 Found legacy Tidal tokens - migrating to Zustand');
+          const legacyTokens = JSON.parse(legacyTokensStr);
+
+          // Only migrate if we don't already have tokens in Zustand
+          if (!musicCredentials.tidal?.accessToken && legacyTokens.access_token) {
+            credentials.updateCredentials('tidal', {
+              accessToken: legacyTokens.access_token,
+              refreshToken: legacyTokens.refresh_token,
+              expiresAt: legacyTokens.expires_at,
+              isConnected: true,
+              lastValidated: Date.now(),
+            });
+
+            // Clean up legacy storage after successful migration
+            localStorage.removeItem('tidal_oauth_tokens');
+            console.log('✅ Legacy tokens migrated and cleaned up');
+          } else {
+            console.log('ℹ️ Tokens already in Zustand, removing legacy storage');
+            localStorage.removeItem('tidal_oauth_tokens');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to migrate legacy tokens:', error);
+      }
+    };
+
+    migrateLegacyTokens();
+  }, [musicCredentials.tidal?.accessToken, credentials]);
 
   // Handle credential updates
   const updateCredentials = (service: keyof MusicServiceCredentials, updates: any) => {
@@ -190,22 +264,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           {activeTab === 'tidal' && (
             <div>
               <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Tidal Account</h3>
-                <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
-                  Enter your Tidal credentials to enable playlist creation and track availability checking.
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Tidal Developer API</h3>
+                <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93', marginBottom: '12px' }}>
+                  Enter your Tidal Developer API credentials. Get your API keys from the <a href="https://developer.tidal.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#1DB954', textDecoration: 'underline' }}>Tidal Developer Portal</a>.
                 </p>
+                <div style={{ padding: '12px', backgroundColor: 'rgba(29, 185, 84, 0.1)', border: '1px solid rgba(29, 185, 84, 0.3)', borderRadius: '8px', fontSize: '13px', color: '#8E8E93' }}>
+                  <strong style={{ color: '#1DB954' }}>ℹ️ Note:</strong> Tidal requires OAuth 2.1 credentials (Client ID & Client Secret). Personal username/password authentication is not supported by their public API.
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Username or Email
+                    Client ID
                   </label>
                   <input
                     type="text"
-                    value={musicCredentials.tidal?.username || ''}
-                    onChange={(e) => updateCredentials('tidal', { username: e.target.value })}
-                    placeholder="Enter your Tidal username or email"
+                    value={musicCredentials.tidal?.clientId || ''}
+                    onChange={(e) => updateCredentials('tidal', { clientId: e.target.value })}
+                    placeholder="Enter your Tidal Client ID"
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -220,14 +297,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Password
+                    Client Secret
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showPasswords ? 'text' : 'password'}
-                      value={musicCredentials.tidal?.password || ''}
-                      onChange={(e) => updateCredentials('tidal', { password: e.target.value })}
-                      placeholder="Enter your Tidal password"
+                      value={musicCredentials.tidal?.clientSecret || ''}
+                      onChange={(e) => updateCredentials('tidal', { clientSecret: e.target.value })}
+                      placeholder="Enter your Tidal Client Secret"
                       style={{
                         width: '100%',
                         padding: '12px',
@@ -259,12 +336,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', visibility: 'hidden' }}>
                   <input
                     type="checkbox"
                     id="tidal-remember"
-                    checked={musicCredentials.tidal?.rememberMe || false}
-                    onChange={(e) => updateCredentials('tidal', { rememberMe: e.target.checked })}
+                    checked={false}
+                    onChange={() => {}}
                     style={{ marginRight: '4px' }}
                   />
                   <label htmlFor="tidal-remember" style={{ fontSize: '14px', color: '#8E8E93' }}>
@@ -272,22 +349,120 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   </label>
                 </div>
 
-                <button
-                  onClick={() => testConnection('tidal')}
-                  disabled={!musicCredentials.tidal?.username || !musicCredentials.tidal?.password || isLoading}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: musicCredentials.tidal?.username && musicCredentials.tidal?.password ? '#4A90E2' : 'rgba(255,255,255,0.1)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#FFFFFF',
+                {/* Connection Status */}
+                {musicCredentials.tidal?.isConnected && (
+                  <div style={{
+                    padding: '12px',
+                    backgroundColor: 'rgba(29, 185, 84, 0.2)',
+                    border: '1px solid rgba(29, 185, 84, 0.4)',
+                    borderRadius: '8px',
                     fontSize: '14px',
-                    cursor: musicCredentials.tidal?.username && musicCredentials.tidal?.password && !isLoading ? 'pointer' : 'not-allowed',
-                    opacity: musicCredentials.tidal?.username && musicCredentials.tidal?.password && !isLoading ? 1 : 0.5
-                  }}
-                >
-                  🔍 Test Connection
-                </button>
+                    color: '#1DB954'
+                  }}>
+                    ✅ Connected to Tidal - You can now create and manage playlists!
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={async () => {
+                      // Authorization Code Flow with OAuth 2.1 Loopback Redirect
+                      // Using 127.0.0.1 (loopback IP literal) as recommended by OAuth 2.1 Section 8.4.2
+                      const clientId = musicCredentials.tidal?.clientId;
+                      const clientSecret = musicCredentials.tidal?.clientSecret;
+
+                      if (!clientId || !clientSecret) {
+                        alert('Please enter your Client ID and Client Secret first');
+                        return;
+                      }
+
+                      try {
+                        general.setLoading(true);
+                        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+                        const REDIRECT_URI = 'http://127.0.0.1:3006/oauth/callback';
+
+                        // Store client secret for callback handler
+                        localStorage.setItem('tidal_client_secret', clientSecret);
+
+                        // Initialize Authorization Code Flow
+                        const initResponse = await fetch(
+                          `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/init`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                              client_id: clientId,
+                              redirect_uri: REDIRECT_URI
+                            })
+                          }
+                        );
+
+                        if (!initResponse.ok) {
+                          const error = await initResponse.json().catch(() => ({ detail: 'Failed to initialize' }));
+                          throw new Error(error.detail || 'Failed to initialize OAuth');
+                        }
+
+                        const authData = await initResponse.json();
+
+                        // Redirect to Tidal authorization page
+                        window.location.href = authData.authorization_url;
+
+                      } catch (err) {
+                        alert(`Failed to connect: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                        general.setLoading(false);
+                      }
+                    }}
+                    disabled={!musicCredentials.tidal?.clientId || !musicCredentials.tidal?.clientSecret || isLoading}
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      backgroundColor: musicCredentials.tidal?.isConnected ? '#1DB954' : (musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret ? '#4A90E2' : 'rgba(255,255,255,0.1)'),
+                      border: 'none',
+                      borderRadius: '6px',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      cursor: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 'pointer' : 'not-allowed',
+                      opacity: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 1 : 0.5,
+                      fontWeight: 600
+                    }}
+                  >
+                    {musicCredentials.tidal?.isConnected ? '✅ Connected' : '🔗 Connect with Tidal'}
+                  </button>
+                  <button
+                    onClick={() => testConnection('tidal')}
+                    disabled={!musicCredentials.tidal?.clientId || !musicCredentials.tidal?.clientSecret || isLoading}
+                    style={{
+                      padding: '10px 16px',
+                      backgroundColor: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret ? 'rgba(74, 144, 226, 0.5)' : 'rgba(255,255,255,0.1)',
+                      border: 'none',
+                      borderRadius: '6px',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      cursor: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 'pointer' : 'not-allowed',
+                      opacity: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 1 : 0.5,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    🔍 Test API
+                  </button>
+                  <button
+                    onClick={() => window.open('https://developer.tidal.com/', '_blank')}
+                    style={{
+                      padding: '10px 16px',
+                      backgroundColor: 'rgba(29, 185, 84, 0.5)',
+                      border: 'none',
+                      borderRadius: '6px',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    🚀 Get Keys
+                  </button>
+                </div>
               </div>
             </div>
           )}
