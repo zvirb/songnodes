@@ -1,0 +1,117 @@
+# Panic Stream Archive Parser Configuration
+# ==========================================
+# Archive for Widespread Panic setlists and show recordings.
+# Community-maintained archive with detailed setlist information.
+
+source_name: "Panic Stream Archive"
+source_type: "artist_archive"
+base_url: "https://www.panicstream.com"
+
+selectors:
+  tracklist_container:
+    - "css:div.setlist"
+    - "css:table.tracklist tbody"
+    - "xpath://div[@class='setlist']"
+
+  track_row:
+    - "css:div.song"
+    - "css:tr.track-row"
+    - "xpath://div[@class='song']"
+
+  track_title:
+    - "css:span.song-name::text"
+    - "css:td.title::text"
+    - "xpath:.//span[@class='song-name']/text()"
+
+  artist_name:
+    - "css:span.featuring::text"  # For guest appearances
+    - "xpath:.//span[@class='featuring']/text()"
+
+  timestamp:
+    - "css:span.duration::text"
+    - "css:td.time::text"
+    - "xpath:.//span[@class='duration']/text()"
+
+  venue:
+    - "css:h2.venue::text"
+    - "css:div.show-venue a::text"
+    - "xpath://h2[@class='venue']/text()"
+
+  date:
+    - "css:h1.show-date::text"
+    - "css:time.date::attr(datetime)"
+    - "xpath://h1[@class='show-date']/text()"
+
+  setlist_name:
+    - "css:h1.show-title::text"
+    - "css:div.header h1::text"
+    - "xpath://h1[@class='show-title']/text()"
+
+  notes:
+    - "css:div.show-notes::text"
+    - "css:div.notes p::text"
+    - "xpath://div[@class='show-notes']/text()"
+
+regex_patterns:
+  clean_track_title:
+    - pattern: "\\s*\\*$"  # Remove trailing asterisks (debut markers)
+      replace: ""
+    - pattern: "\\s*\\^$"  # Remove trailing carets (bust-out markers)
+      replace: ""
+    - pattern: "^\\d+\\.?\\s*"  # Remove track numbers
+      replace: ""
+    - pattern: "\\s{2,}"
+      replace: " "
+
+  clean_artist_name:
+    - pattern: "^with\\s+"  # Remove "with" prefix
+      replace: ""
+      flags: "IGNORECASE"
+    - pattern: "\\(.*?\\)"
+      replace: ""
+
+  extract_timestamp:
+    - pattern: "(\\d{1,2}:\\d{2})"
+      group: 1
+
+  extract_date:
+    - pattern: "(\\d{1,2}/\\d{1,2}/\\d{4})"  # MM/DD/YYYY format
+      group: 1
+    - pattern: "(\\d{4}-\\d{2}-\\d{2})"
+      group: 1
+
+data_mapping:
+  default_artist: "Widespread Panic"
+  default_genre: "Southern Rock"
+  source_identifier: "panic_stream"
+  date_format: "%m/%d/%Y"
+  extract_timestamps: true
+  enable_nlp_fallback: true
+
+pagination:
+  enabled: true
+  next_page:
+    - "css:a.next-show::attr(href)"
+    - "css:div.pagination a.next::attr(href)"
+  max_pages: 30
+
+validation:
+  min_tracks: 8
+  max_tracks: 100
+  require_venue: true
+  require_date: true
+
+rate_limiting:
+  download_delay: 2.5
+  randomize_delay: 0.3
+  concurrent_requests: 1
+
+metadata:
+  created_by: "SongNodes Team"
+  created_at: "2025-10-01"
+  last_updated: "2025-10-01"
+  notes: "Panic Stream is the premier archive for Widespread Panic shows with audio streams"
+  source_url_pattern: "https://www.panicstream.com/shows/{show_date}/"
+  example_urls:
+    - "https://www.panicstream.com/vault/10-31-1998/"
+    - "https://www.panicstream.com/vault/12-31-1999/"

@@ -1,0 +1,114 @@
+# Phish.net Archive Parser Configuration
+# =======================================
+# Phish.net is the definitive archive for Phish setlists and show information.
+# This configuration enables scraping of detailed setlist data from their archive.
+
+source_name: "Phish.net Archive"
+source_type: "artist_archive"
+base_url: "https://phish.net"
+
+selectors:
+  tracklist_container:
+    - "css:div.setlist-songs"
+    - "css:div.pnetset"
+    - "xpath://div[@class='setlist-songs']"
+
+  track_row:
+    - "css:div.set-song"
+    - "css:li.song-entry"
+    - "xpath://div[@class='set-song']"
+
+  track_title:
+    - "css:a.setlist-song::text"
+    - "css:span.song-title::text"
+    - "xpath:.//a[@class='setlist-song']/text()"
+
+  artist_name:
+    - "css:span.artist::text"  # Usually not needed, default to "Phish"
+    - "xpath:.//span[@class='artist']/text()"
+
+  timestamp:
+    - "css:span.song-time::text"
+    - "css:.timestamp::text"
+    - "xpath:.//span[@class='song-time']/text()"
+
+  venue:
+    - "css:h2.venue-name a::text"
+    - "css:span.venue-link::text"
+    - "xpath://h2[@class='venue-name']/a/text()"
+
+  date:
+    - "css:span.setlist-date::text"
+    - "css:time.show-date::attr(datetime)"
+    - "xpath://span[@class='setlist-date']/text()"
+
+  setlist_name:
+    - "css:h1.setlist-header::text"
+    - "css:div.show-title::text"
+    - "xpath://h1[@class='setlist-header']/text()"
+
+  notes:
+    - "css:div.show-notes::text"
+    - "css:div.setlist-notes p::text"
+    - "xpath://div[@class='show-notes']/text()"
+
+regex_patterns:
+  clean_track_title:
+    - pattern: "\\s+\\[.*?\\]"  # Remove bracketed annotations like [1]
+      replace: ""
+    - pattern: "\\s*>\\s*"  # Remove transition markers
+      replace: " → "
+    - pattern: "^\\d+\\.\\s*"  # Remove track numbers
+      replace: ""
+    - pattern: "\\s{2,}"
+      replace: " "
+
+  clean_artist_name:
+    - pattern: "\\(.*?\\)"
+      replace: ""
+
+  extract_timestamp:
+    - pattern: "\\[?(\\d{1,2}:\\d{2})\\]?"
+      group: 1
+
+  extract_date:
+    - pattern: "(\\d{4}-\\d{2}-\\d{2})"
+      group: 1
+    - pattern: "(\\d{1,2}/\\d{1,2}/\\d{4})"
+      group: 1
+
+data_mapping:
+  default_artist: "Phish"
+  default_genre: "Jam Band"
+  source_identifier: "phish_net"
+  date_format: "%Y-%m-%d"
+  extract_timestamps: true
+  enable_nlp_fallback: true
+
+pagination:
+  enabled: true
+  next_page:
+    - "css:a.next::attr(href)"
+    - "css:li.pager-next a::attr(href)"
+  max_pages: 50  # Phish has extensive archive
+
+validation:
+  min_tracks: 5
+  max_tracks: 150  # Phish shows can be very long
+  require_venue: true
+  require_date: true
+
+rate_limiting:
+  download_delay: 2.0
+  randomize_delay: 0.3
+  concurrent_requests: 1
+
+metadata:
+  created_by: "SongNodes Team"
+  created_at: "2025-10-01"
+  last_updated: "2025-10-01"
+  notes: "Phish.net is the most comprehensive Phish setlist archive with detailed show information"
+  source_url_pattern: "https://phish.net/setlists/?d={YYYY-MM-DD}"
+  example_urls:
+    - "https://phish.net/setlists/phish-december-31-1995-madison-square-garden-new-york-ny-usa.html"
+    - "https://phish.net/setlists/phish-august-12-1997-darien-lake-performing-arts-center-darien-center-ny-usa.html"

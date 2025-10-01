@@ -47,11 +47,44 @@ def get_mixesdb_searches() -> List[Dict[str, str]]:
 
 
 def get_reddit_searches() -> List[Dict[str, str]]:
-    """Placeholder for Reddit strategies (kept for completeness)."""
-    return [
-        {"url": "https://www.reddit.com/r/electronicmusic/new/.json", "type": "subreddit", "target": "electronicmusic"},
-        {"url": "https://www.reddit.com/r/Techno/new/.json", "type": "subreddit", "target": "Techno"},
-    ]
+    """
+    Reddit search strategies for Tier 3 community-driven track identification.
+
+    Returns subreddit monitoring targets optimized for early track discovery.
+    Note: reddit_monitor_spider uses PRAW API, not direct HTTP scraping.
+    """
+    # High-value subreddits for track identification (organized by purpose)
+    subreddits = {
+        # Direct track ID requests - highest value for "latency advantage"
+        'id_requests': ['IdentifyThisTrack', 'NameThatSong', 'tipofmytongue'],
+
+        # Genre-specific communities - active tracklist sharing
+        'genre_techno': ['Techno', 'tech_house', 'MelodicTechno'],
+        'genre_trance': ['Trance', 'trance', 'PsyTrance'],
+        'genre_hardstyle': ['hardstyle', 'Hardstyle'],
+        'genre_house': ['House', 'deephouse', 'techhouse'],
+        'genre_dnb': ['DnB', 'jungle', 'neurofunk'],
+
+        # Festival and event communities
+        'festivals': ['electricdaisycarnival', 'Tomorrowland', 'Ultra', 'festivals'],
+
+        # General electronic music
+        'general': ['EDM', 'electronicmusic', 'tracklists', 'DJs']
+    }
+
+    # Flatten into search items
+    search_items = []
+    for category, subreddit_list in subreddits.items():
+        for subreddit in subreddit_list:
+            search_items.append({
+                "url": f"https://www.reddit.com/r/{subreddit}/new/.json",
+                "type": "subreddit",
+                "target": subreddit,
+                "category": category,
+                "priority": "high" if category == 'id_requests' else "medium"
+            })
+
+    return search_items
 
 
 def get_direct_tracklist_urls() -> List[Dict[str, str]]:

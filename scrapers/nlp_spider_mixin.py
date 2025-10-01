@@ -28,6 +28,8 @@ import os
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
 import re
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,29 @@ class NLPFallbackSpiderMixin:
     nlp_processor_url = os.getenv('NLP_PROCESSOR_URL', 'http://nlp-processor:8021')
     nlp_timeout = int(os.getenv('NLP_FALLBACK_TIMEOUT', '60'))
 
+    # Thread pool for running async code (created once, reused)
+    _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="nlp_async")
+
+    def _run_async_in_thread(self, coro):
+        """
+        Run an async coroutine in a separate thread with its own event loop.
+
+        This is necessary because Scrapy runs in Twisted's reactor, which conflicts
+        with asyncio. By running async code in a thread pool, we avoid event loop conflicts.
+        """
+        def run_in_new_loop():
+            # Create new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(coro)
+            finally:
+                loop.close()
+
+        # Submit to thread pool and wait for result
+        future = self._executor.submit(run_in_new_loop)
+        return future.result(timeout=self.nlp_timeout)
+
     def extract_via_nlp_sync(
         self,
         html_or_text: str,
@@ -55,7 +80,7 @@ class NLPFallbackSpiderMixin:
         Synchronous wrapper for NLP extraction.
 
         Extracts clean text from HTML and sends to NLP processor for tracklist extraction.
-        Works in Scrapy's Twisted reactor by running async code in new event loop.
+        Works in Scrapy's Twisted reactor by running async code in separate thread.
 
         Args:
             html_or_text: Raw HTML or plain text content
@@ -70,37 +95,25 @@ class NLPFallbackSpiderMixin:
             return []
 
         try:
-            # Import async functions
-            from nlp_fallback_utils import extract_via_nlp, extract_text_from_html
-            import httpx
-
-            # Create new event loop for async operations
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-            try:
-                # Extract clean text from HTML if needed
-                if '<html' in html_or_text.lower() or '<body' in html_or_text.lower():
-                    text = loop.run_until_complete(
-                        self._extract_text_async(html_or_text)
-                    )
-                else:
-                    text = html_or_text
-
-                if not text or len(text.strip()) < 50:
-                    logger.warning(f"Text too short for NLP processing: {len(text)} chars")
-                    return []
-
-                # Send to NLP processor
-                tracks = loop.run_until_complete(
-                    self._call_nlp_processor_async(text, url, extract_timestamps)
+            # Extract clean text from HTML if needed
+            if '<html' in html_or_text.lower() or '<body' in html_or_text.lower():
+                text = self._run_async_in_thread(
+                    self._extract_text_async(html_or_text)
                 )
+            else:
+                text = html_or_text
 
-                logger.info(f"NLP extracted {len(tracks)} tracks from {url}")
-                return tracks
+            if not text or len(text.strip()) < 50:
+                logger.warning(f"Text too short for NLP processing: {len(text)} chars")
+                return []
 
-            finally:
-                loop.close()
+            # Send to NLP processor (run in separate thread to avoid event loop conflicts)
+            tracks = self._run_async_in_thread(
+                self._call_nlp_processor_async(text, url, extract_timestamps)
+            )
+
+            logger.info(f"NLP extracted {len(tracks)} tracks from {url}")
+            return tracks
 
         except Exception as e:
             logger.error(f"NLP fallback error for {url}: {e}")

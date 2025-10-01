@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 # Import our 2025 best practices components
 from target_track_searcher import TargetTrackSearcher2025, SearchOrchestrator2025, AsyncDatabaseService
 from redis_queue_consumer import RedisQueueConsumer
+from browser_collector_fallback import BrowserCollectorFallback, ScraperWithFallback
 
 # Configure structured logging
 structlog.configure(
@@ -257,17 +258,26 @@ target_searcher = None
 search_orchestrator = None
 redis_consumer = None
 consumer_task = None
+browser_collector_fallback = None  # Browser automation fallback
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Enhanced application lifespan management"""
-    global target_searcher, search_orchestrator, redis_consumer, consumer_task
+    global target_searcher, search_orchestrator, redis_consumer, consumer_task, browser_collector_fallback
 
     logger.info("Starting SongNodes Scraper Orchestrator 2025")
 
     try:
         # Initialize connections
         await connection_manager.initialize()
+
+        # Initialize browser-collector fallback
+        browser_collector_fallback = BrowserCollectorFallback()
+        health = await browser_collector_fallback.health_check()
+        if health.get("status") == "healthy":
+            logger.info("Browser collector fallback initialized successfully")
+        else:
+            logger.warning("Browser collector unavailable - fallback disabled", error=health.get("error"))
 
         # Initialize search components
         target_searcher = TargetTrackSearcher2025(connection_manager.session_factory)
@@ -303,6 +313,16 @@ async def lifespan(app: FastAPI):
             coalesce=True
         )
 
+        # Reddit community monitoring - Tier 3 latency advantage source
+        scheduler.add_job(
+            scheduled_reddit_monitor,
+            trigger=CronTrigger(minute="*/30"),  # Every 30 minutes
+            id="reddit_community_monitor",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=300
+        )
+
         logger.info("Scraper Orchestrator started successfully")
 
     except Exception as e:
@@ -330,6 +350,9 @@ async def lifespan(app: FastAPI):
 
         if target_searcher:
             await target_searcher.close()
+
+        if browser_collector_fallback:
+            await browser_collector_fallback.close()
 
         await connection_manager.close()
 
@@ -382,6 +405,50 @@ async def scheduled_target_search():
     except Exception as e:
         logger.error("Scheduled search failed", error=str(e))
         search_operations.labels(platform="all", status="error").inc()
+
+async def scheduled_reddit_monitor():
+    """
+    Scheduled Reddit community monitoring for Tier 3 track identification.
+    Monitors subreddits for early track discoveries before they hit aggregators.
+    """
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="scheduled_reddit_monitor",
+        correlation_id=correlation_id
+    )
+
+    logger.info("Starting scheduled Reddit community monitoring")
+
+    try:
+        # Trigger reddit_monitor spider via Scrapy command
+        import subprocess
+        import os
+
+        scrapers_dir = os.getenv('SCRAPERS_DIR', '/app/scrapers')
+
+        # Run spider with time filter for recent posts
+        result = subprocess.run(
+            ['scrapy', 'crawl', 'reddit_monitor', '-a', 'time_filter=day'],
+            cwd=scrapers_dir,
+            capture_output=True,
+            text=True,
+            timeout=600  # 10 minute timeout
+        )
+
+        if result.returncode == 0:
+            logger.info("Reddit monitoring completed successfully", output=result.stdout[-500:])
+            search_operations.labels(platform="reddit", status="success").inc()
+        else:
+            logger.error("Reddit monitoring failed", error=result.stderr[-500:])
+            search_operations.labels(platform="reddit", status="error").inc()
+
+    except subprocess.TimeoutExpired:
+        logger.error("Reddit monitoring timed out after 10 minutes")
+        search_operations.labels(platform="reddit", status="timeout").inc()
+    except Exception as e:
+        logger.error("Reddit monitoring failed", error=str(e))
+        search_operations.labels(platform="reddit", status="error").inc()
 
 async def health_monitor():
     """Monitor system health and update metrics"""
@@ -796,6 +863,96 @@ async def get_queue_status():
             detail=f"Failed to get queue status: {str(e)}"
         )
 
+@app.post("/queue/clear")
+async def clear_queue(queue_type: Optional[str] = None):
+    """
+    Clear scraping queue(s)
+
+    Args:
+        queue_type: Optional queue type to clear ('high', 'medium', 'low', 'main', 'failed', 'all')
+                   If not specified, clears all queues
+    """
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="clear_queue",
+        queue_type=queue_type or "all",
+        correlation_id=correlation_id
+    )
+
+    try:
+        cleared_counts = {}
+
+        # Define queue keys
+        queue_keys = {
+            'high': 'scraping:queue:high',
+            'medium': 'scraping:queue:medium',
+            'low': 'scraping:queue:low',
+            'main': 'scraping_queue',
+            'failed': 'scraping_queue:failed'
+        }
+
+        # Determine which queues to clear
+        if queue_type and queue_type != 'all':
+            if queue_type not in queue_keys:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid queue type. Must be one of: {', '.join(queue_keys.keys())}, all"
+                )
+            queues_to_clear = {queue_type: queue_keys[queue_type]}
+        else:
+            queues_to_clear = queue_keys
+
+        # Clear each queue and track counts
+        for queue_name, queue_key in queues_to_clear.items():
+            # Get current size before clearing
+            queue_length = connection_manager.redis_client.llen(queue_key) or 0
+
+            if queue_length > 0:
+                # Delete the queue (this removes all items)
+                connection_manager.redis_client.delete(queue_key)
+                cleared_counts[queue_name] = queue_length
+                logger.info(
+                    "Queue cleared",
+                    queue=queue_name,
+                    items_cleared=queue_length,
+                    correlation_id=correlation_id
+                )
+            else:
+                cleared_counts[queue_name] = 0
+
+        # Reset metrics for cleared queues
+        for queue_name in cleared_counts.keys():
+            if queue_name in ['high', 'medium', 'low']:
+                queue_size.labels(priority=queue_name).set(0)
+
+        total_cleared = sum(cleared_counts.values())
+
+        logger.info(
+            "Queue clearing completed",
+            total_cleared=total_cleared,
+            details=cleared_counts,
+            correlation_id=correlation_id
+        )
+
+        return {
+            "status": "success",
+            "message": f"Cleared {total_cleared} items from queue(s)",
+            "cleared_queues": cleared_counts,
+            "total_items_cleared": total_cleared,
+            "timestamp": datetime.now().isoformat(),
+            "correlation_id": correlation_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to clear queue", error=str(e), correlation_id=correlation_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to clear queue: {str(e)}"
+        )
+
 # ===================
 # ENHANCED TASK MANAGEMENT
 # ===================
@@ -856,6 +1013,25 @@ async def add_task_enhanced(task: ScrapingTask):
             status_code=500,
             detail=f"Failed to add task: {str(e)}"
         )
+
+@app.get("/browser-collector/stats")
+async def get_browser_collector_stats():
+    """Get browser-collector fallback statistics"""
+    if not browser_collector_fallback:
+        return {"status": "not_initialized", "stats": None}
+
+    try:
+        stats = await browser_collector_fallback.get_statistics()
+        health = await browser_collector_fallback.health_check()
+
+        return {
+            "status": "active" if health.get("status") == "healthy" else "unhealthy",
+            "health": health,
+            "statistics": stats
+        }
+    except Exception as e:
+        logger.error("Failed to get browser-collector stats", error=str(e))
+        return {"status": "error", "error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

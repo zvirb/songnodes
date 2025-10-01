@@ -10,6 +10,7 @@ import re
 import os
 import hashlib
 import random
+from typing import Dict
 from urllib.parse import quote
 from scrapy.exceptions import DropItem, CloseSpider
 from scrapy.http import Request
@@ -29,7 +30,14 @@ try:
         TargetTrackSearchItem,
         PlaylistItem
     )
+    from ..item_loaders import (
+        ArtistLoader,
+        TrackLoader,
+        SetlistLoader,
+        PlaylistLoader
+    )
     from .utils import parse_track_string
+    from ..nlp_spider_mixin import NLPFallbackSpiderMixin
     from ..track_id_generator import generate_track_id, generate_track_id_from_parsed
 except ImportError:
     # Fallback for standalone execution
@@ -46,11 +54,18 @@ except ImportError:
         TargetTrackSearchItem,
         PlaylistItem
     )
+    from item_loaders import (
+        ArtistLoader,
+        TrackLoader,
+        SetlistLoader,
+        PlaylistLoader
+    )
     from spiders.utils import parse_track_string
+    from nlp_spider_mixin import NLPFallbackSpiderMixin
     from track_id_generator import generate_track_id, generate_track_id_from_parsed
 
 
-class OneThousandOneTracklistsSpider(scrapy.Spider):
+class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = '1001tracklists'
     allowed_domains = ['1001tracklists.com']
 
@@ -789,6 +804,26 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         self.logger.info(f"Parsing tracklist: {response.url}")
 
         try:
+            # Check if this is an HTML page (not JSON/structured response)
+            content_type = response.headers.get('Content-Type', b'').decode('utf-8').lower()
+            if 'text/html' in content_type or not self._is_json_response(response):
+                self.logger.info(f"📄 Detected HTML page. Using NLP fallback for extraction. URL: {response.url}")
+
+                if self.enable_nlp_fallback:
+                    tracks_data = self.extract_via_nlp_sync(
+                        html_or_text=response.text,
+                        url=response.url,
+                        extract_timestamps=True
+                    )
+
+                    if tracks_data:
+                        self.logger.info(f"✅ NLP extraction: {len(tracks_data)} tracks found")
+                        for track_data in tracks_data:
+                            yield self._create_track_item_from_nlp(track_data, response.url)
+                    else:
+                        self.logger.warning(f"⚠️ NLP extraction returned no tracks: {response.url}")
+                return
+
             # Extract comprehensive setlist metadata
             setlist_data = self.extract_setlist_metadata(response)
             if setlist_data:
@@ -896,98 +931,131 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             self.logger.debug("Redis setex failed for last run tracking: %s", exc)
 
     def extract_setlist_metadata(self, response) -> dict:
-        """Extract comprehensive setlist metadata"""
+        """Extract comprehensive setlist metadata using SetlistLoader"""
         try:
-            # Basic setlist information
+            # Use SetlistLoader for data cleaning
+            loader = SetlistLoader(item=EnhancedSetlistItem(), response=response)
+
+            # Basic setlist information - use add_css for direct CSS extraction
+            loader.add_css('setlist_name', 'h1.spotlightTitle::text, h1.tracklist-header-title::text, #pageTitle::text, h1::text')
+            loader.add_css('setlist_name', 'h1::text')  # Fallback
+
+            # Extract setlist name for normalized_name (loader will auto-lowercase)
             setlist_name = self.extract_text_with_selectors(response, [
                 'h1.spotlightTitle::text',
                 'h1.tracklist-header-title::text',
                 '#pageTitle::text',
                 'h1::text'
             ])
+            if setlist_name:
+                loader.add_value('normalized_name', setlist_name)
 
             # Artist information
             artist_names = response.css('div.spotlight-artists a::text, h1.tracklist-header-title a::text').getall()
-            primary_artist = artist_names[0].strip() if artist_names else None
+            if artist_names:
+                loader.add_value('dj_artist_name', artist_names[0])
+                # Supporting artists (skip first, which is primary)
+                if len(artist_names) > 1:
+                    for artist in artist_names[1:]:
+                        loader.add_value('supporting_artists', artist)
 
             # Event details
-            event_name = self.extract_text_with_selectors(response, [
-                'div.spotlight-event a::text',
-                'a[href*="/event/"]::text'
-            ])
-
-            venue_name = self.extract_text_with_selectors(response, [
-                'div.spotlight-venue a::text',
-                'a[href*="/venue/"]::text'
-            ])
+            loader.add_css('event_name', 'div.spotlight-event a::text, a[href*="/event/"]::text')
+            loader.add_css('venue_name', 'div.spotlight-venue a::text, a[href*="/venue/"]::text')
 
             # Date extraction
-            set_date = self.extract_text_with_selectors(response, [
-                'div.spotlight-date::text',
-                'time::text',
-                '[datetime]::attr(datetime)'
-            ])
+            loader.add_css('set_date', 'div.spotlight-date::text, time::text, [datetime]::attr(datetime)')
 
-            # Enhanced metadata extraction
-            genre_tags = response.css('.genre-tag::text, .tag::text').getall()
+            # Description
+            loader.add_css('description', '.description::text, .event-description::text')
+
+            # Genre tags (list)
+            loader.add_css('genre_tags', '.genre-tag::text, .tag::text')
+
+            # BPM range (keep as dict)
             bpm_info = self.extract_bpm_from_page(response)
+            if bpm_info:
+                loader.add_value('bpm_range', bpm_info)
 
-            # Additional context
-            description = response.css('.description::text, .event-description::text').get()
+            # Total tracks
             total_tracks = len(response.css('div.tlpItem, .tracklist-item, .bItm'))
+            loader.add_value('total_tracks', total_tracks)
 
-            return {
-                'setlist_name': setlist_name,
-                'normalized_name': setlist_name.lower().strip() if setlist_name else None,
-                'dj_artist_name': primary_artist,
-                'supporting_artists': [name.strip() for name in artist_names[1:]] if len(artist_names) > 1 else None,
-                'event_name': event_name,
-                'venue_name': venue_name,
-                'set_date': self.parse_date(set_date),
-                'description': description,
-                'genre_tags': genre_tags if genre_tags else None,
-                'bpm_range': bpm_info,
-                'total_tracks': total_tracks,
-                'external_urls': json.dumps({'1001tracklists': response.url}),
-                'metadata': json.dumps({
-                    'source': '1001tracklists',
-                    'page_title': response.css('title::text').get(),
-                    'scraped_at': datetime.utcnow().isoformat()
-                }),
-                'data_source': self.name,
-                'scrape_timestamp': datetime.utcnow(),
-                'created_at': datetime.utcnow()
-            }
+            # External URLs and metadata (keep as JSON)
+            loader.add_value('external_urls', json.dumps({'1001tracklists': response.url}))
+            loader.add_value('metadata', json.dumps({
+                'source': '1001tracklists',
+                'page_title': response.css('title::text').get(),
+                'scraped_at': datetime.utcnow().isoformat()
+            }))
+
+            # System fields
+            loader.add_value('data_source', self.name)
+            loader.add_value('scrape_timestamp', datetime.utcnow())
+            loader.add_value('created_at', datetime.utcnow())
+
+            setlist_item = loader.load_item()
+            return dict(setlist_item)  # Return as dict for compatibility
 
         except Exception as e:
             self.logger.error(f"Error extracting setlist metadata: {e}")
             return None
 
     def create_playlist_item_from_setlist(self, setlist_data, source_url, track_names=None):
-        """Create a PlaylistItem from setlist metadata for database storage"""
+        """Create a PlaylistItem from setlist metadata using PlaylistLoader"""
         try:
-            playlist_item = PlaylistItem(
-                item_type='playlist',
-                name=setlist_data.get('setlist_name'),
-                source='1001tracklists',
-                source_url=source_url,
-                dj_name=setlist_data.get('dj_artist_name'),
-                artist_name=setlist_data.get('dj_artist_name'),
-                curator=setlist_data.get('dj_artist_name'),
-                event_name=setlist_data.get('event_name'),
-                event_date=setlist_data.get('set_date'),
-                venue_name=setlist_data.get('venue_name'),
-                tracks=track_names,  # List of track names
-                total_tracks=len(track_names) if track_names else setlist_data.get('total_tracks', 0),
-                description=setlist_data.get('description'),
-                genre_tags=setlist_data.get('genre_tags'),
-                duration_minutes=None,  # Could be calculated from track durations if available
-                bpm_range=setlist_data.get('bpm_range'),
-                data_source=self.name,
-                scrape_timestamp=datetime.utcnow(),
-                created_at=datetime.utcnow()
-            )
+            # Use PlaylistLoader for data cleaning
+            loader = PlaylistLoader(item=PlaylistItem())
 
+            # Basic playlist info
+            loader.add_value('item_type', 'playlist')
+            loader.add_value('name', setlist_data.get('setlist_name'))
+            loader.add_value('source', '1001tracklists')
+            loader.add_value('source_url', source_url)
+
+            # DJ/Artist info
+            dj_name = setlist_data.get('dj_artist_name')
+            if dj_name:
+                loader.add_value('dj_name', dj_name)
+                loader.add_value('artist_name', dj_name)
+                loader.add_value('curator', dj_name)
+
+            # Event info
+            if setlist_data.get('event_name'):
+                loader.add_value('event_name', setlist_data.get('event_name'))
+            if setlist_data.get('set_date'):
+                loader.add_value('event_date', setlist_data.get('set_date'))
+            if setlist_data.get('venue_name'):
+                loader.add_value('venue_name', setlist_data.get('venue_name'))
+
+            # Tracks (list)
+            if track_names:
+                for track_name in track_names:
+                    loader.add_value('tracks', track_name)
+                loader.add_value('total_tracks', len(track_names))
+            else:
+                loader.add_value('total_tracks', setlist_data.get('total_tracks', 0))
+
+            # Description
+            if setlist_data.get('description'):
+                loader.add_value('description', setlist_data.get('description'))
+
+            # Genre tags (list)
+            if setlist_data.get('genre_tags'):
+                for tag in setlist_data.get('genre_tags'):
+                    loader.add_value('genre_tags', tag)
+
+            # Duration and BPM range
+            loader.add_value('duration_minutes', None)  # Could be calculated
+            if setlist_data.get('bpm_range'):
+                loader.add_value('bpm_range', setlist_data.get('bpm_range'))
+
+            # System fields
+            loader.add_value('data_source', self.name)
+            loader.add_value('scrape_timestamp', datetime.utcnow())
+            loader.add_value('created_at', datetime.utcnow())
+
+            playlist_item = loader.load_item()
             self.logger.debug(f"Created playlist item: {setlist_data.get('setlist_name')}")
             return playlist_item
 
@@ -996,7 +1064,7 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             return None
 
     def extract_artist_information(self, response) -> list:
-        """Extract comprehensive artist information"""
+        """Extract comprehensive artist information using ArtistLoader"""
         artists = []
         artist_links = response.css('div.spotlight-artists a, h1.tracklist-header-title a')
 
@@ -1005,21 +1073,23 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             artist_url = link.css('::attr(href)').get()
 
             if artist_name:
-                artist_data = {
-                    'artist_name': artist_name.strip(),
-                    'normalized_name': artist_name.lower().strip(),
-                    'external_urls': json.dumps({
-                        '1001tracklists': response.urljoin(artist_url) if artist_url else None
-                    }),
-                    'metadata': json.dumps({
-                        'discovered_in_setlist': response.url,
-                        'scraped_at': datetime.utcnow().isoformat()
-                    }),
-                    'data_source': self.name,
-                    'scrape_timestamp': datetime.utcnow(),
-                    'created_at': datetime.utcnow()
-                }
-                artists.append(artist_data)
+                # Use ArtistLoader for data cleaning
+                loader = ArtistLoader(item=EnhancedArtistItem(), response=response)
+                loader.add_value('artist_name', artist_name)
+                loader.add_value('normalized_name', artist_name)
+                loader.add_value('external_urls', json.dumps({
+                    '1001tracklists': response.urljoin(artist_url) if artist_url else None
+                }))
+                loader.add_value('metadata', json.dumps({
+                    'discovered_in_setlist': response.url,
+                    'scraped_at': datetime.utcnow().isoformat()
+                }))
+                loader.add_value('data_source', self.name)
+                loader.add_value('scrape_timestamp', datetime.utcnow())
+                loader.add_value('created_at', datetime.utcnow())
+
+                artist_item = loader.load_item()
+                artists.append(artist_item)
 
         return artists
 
@@ -1109,7 +1179,7 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         return []
 
     def parse_track_element_enhanced(self, track_el, track_order) -> dict:
-        """Parse track element with enhanced metadata extraction"""
+        """Parse track element with enhanced metadata extraction using TrackLoader"""
         # Extract basic track string
         track_string = self.extract_track_string(track_el)
         if not track_string:
@@ -1143,31 +1213,52 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         # Generate deterministic track_id for cross-source deduplication
         track_id = generate_track_id_from_parsed(parsed_track)
 
-        # Build enhanced track item
-        track_item = {
-            'track_id': track_id,  # Deterministic ID for matching across sources
-            'track_name': parsed_track['track_name'],
-            'normalized_title': parsed_track['track_name'].lower().strip(),
-            'is_remix': parsed_track.get('is_remix', False),
-            'is_mashup': parsed_track.get('is_mashup', False),
-            'mashup_components': parsed_track.get('mashup_components'),
-            'remix_type': self.extract_remix_type(parsed_track['track_name']),
-            'bpm': bpm,
-            'genre': genre,
-            'start_time': start_time,
-            'track_type': 'Setlist',
-            'source_context': track_string,
-            'position_in_source': track_order,
-            'metadata': json.dumps(metadata),
-            'external_urls': json.dumps({'1001tracklists_context': track_string}),
-            'data_source': self.name,
-            'scrape_timestamp': datetime.utcnow(),
-            'created_at': datetime.utcnow()
-        }
+        # Use TrackLoader for data cleaning
+        loader = TrackLoader(item=EnhancedTrackItem())
 
+        # Build enhanced track item using loader
+        loader.add_value('track_id', track_id)  # Deterministic ID
+        loader.add_value('track_name', parsed_track['track_name'])
+        loader.add_value('normalized_title', parsed_track['track_name'])
+        loader.add_value('is_remix', parsed_track.get('is_remix', False))
+        loader.add_value('is_mashup', parsed_track.get('is_mashup', False))
+
+        # Mashup components (list)
+        if parsed_track.get('mashup_components'):
+            for component in parsed_track.get('mashup_components'):
+                loader.add_value('mashup_components', component)
+
+        # Remix type
+        remix_type = self.extract_remix_type(parsed_track['track_name'])
+        if remix_type:
+            loader.add_value('remix_type', remix_type)
+
+        # Audio features
+        if bpm:
+            loader.add_value('bpm', bpm)
+        if genre:
+            loader.add_value('genre', genre)
+        if start_time:
+            loader.add_value('start_time', start_time)
+
+        # Track context
+        loader.add_value('track_type', 'Setlist')
+        loader.add_value('source_context', track_string)
+        loader.add_value('position_in_source', track_order)
+
+        # Metadata and URLs
+        loader.add_value('metadata', json.dumps(metadata))
+        loader.add_value('external_urls', json.dumps({'1001tracklists_context': track_string}))
+
+        # System fields
+        loader.add_value('data_source', self.name)
+        loader.add_value('scrape_timestamp', datetime.utcnow())
+        loader.add_value('created_at', datetime.utcnow())
+
+        track_item = loader.load_item()
         self.logger.debug(f"Generated track_id {track_id} for: {primary_artist} - {parsed_track['track_name']}")
 
-        # Build artist relationships
+        # Build artist relationships (not using loader for relationship items)
         relationships = []
 
         # Primary artists
@@ -1208,7 +1299,7 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             })
 
         return {
-            'track': track_item,
+            'track': dict(track_item),  # Convert to dict for compatibility
             'relationships': relationships,
             'track_order': track_order,
             'primary_artist': primary_artist
@@ -1407,6 +1498,51 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
                 continue
 
         return None
+
+    def _create_track_item_from_nlp(self, nlp_track: Dict, source_url: str):
+        """
+        Convert NLP-extracted track data to Scrapy TrackItem using TrackLoader
+
+        Args:
+            nlp_track: Dict with 'artist', 'title', 'timestamp' keys from NLP processor
+            source_url: URL where track was extracted from
+
+        Returns:
+            TrackItem ready for pipeline processing
+        """
+        try:
+            artist_name = nlp_track.get('artist', 'Unknown Artist')
+            title = nlp_track.get('title', 'Unknown Track')
+
+            # Generate deterministic track_id
+            track_id = generate_track_id(
+                title=title,
+                primary_artist=artist_name,
+                is_remix=False,
+                is_mashup=False,
+                remix_type=None
+            )
+
+            # Use TrackLoader for data cleaning
+            loader = TrackLoader(item=EnhancedTrackItem())
+            loader.add_value('track_id', track_id)
+            loader.add_value('track_name', f"{artist_name} - {title}")  # Combined format
+            loader.add_value('track_url', source_url)
+            loader.add_value('source_platform', '1001tracklists_html_nlp')
+            loader.add_value('data_source', self.name)
+            loader.add_value('scrape_timestamp', datetime.utcnow())
+
+            track_item = loader.load_item()
+
+            self.logger.debug(
+                f"Created track item from NLP: {artist_name} - {title}"
+            )
+
+            return track_item
+
+        except Exception as e:
+            self.logger.error(f"Error creating track item from NLP data: {e}", exc_info=True)
+            return None
 
     def handle_error(self, failure):
         """Enhanced error handling with retry logic"""

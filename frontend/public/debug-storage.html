@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug localStorage - Same Origin</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: monospace;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+        .warning { color: #ffaa00; }
+        h1 { color: #00ff00; }
+        a { color: #00aaff; }
+    </style>
+</head>
+<body>
+    <h1>🔧 SongNodes localStorage Debug</h1>
+    <p>Running on: <span id="origin"></span></p>
+    <pre id="output">Loading...</pre>
+
+    <div>
+        <button onclick="runFullDiagnostics()">🔍 Full Diagnostics</button>
+        <button onclick="migrateToV6()">🔄 Migrate to v6</button>
+        <button onclick="clearAndReload()">🗑️ Clear & Reload</button>
+        <button onclick="testSave()">💾 Test Save Credentials</button>
+    </div>
+
+    <p><a href="/">← Back to SongNodes</a></p>
+
+    <script>
+        const output = document.getElementById('output');
+        document.getElementById('origin').textContent = window.location.origin;
+
+        function log(message, type = 'normal') {
+            const colors = {
+                error: '#ff0000',
+                success: '#00ff00',
+                warning: '#ffaa00',
+                info: '#00aaff',
+                normal: '#00ff00'
+            };
+            const line = document.createElement('div');
+            line.textContent = message;
+            line.style.color = colors[type];
+            output.appendChild(line);
+        }
+
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+
+        function runFullDiagnostics() {
+            clearOutput();
+            log('=== FULL DIAGNOSTICS ===', 'success');
+            log(`Origin: ${window.location.origin}`, 'info');
+            log(`Timestamp: ${new Date().toISOString()}`, 'info');
+            log('');
+
+            // Check all localStorage keys
+            log('=== ALL LOCALSTORAGE KEYS ===', 'success');
+            if (localStorage.length === 0) {
+                log('❌ localStorage is EMPTY!', 'error');
+                log('');
+                log('This means:', 'warning');
+                log('  1. No credentials have been saved yet', 'warning');
+                log('  2. OR localStorage was cleared', 'warning');
+                log('  3. OR you\'re on a different origin than expected', 'warning');
+            } else {
+                log(`Found ${localStorage.length} key(s):`, 'success');
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    log(`  ${i+1}. ${key} (${value.length} chars)`);
+                }
+            }
+
+            log('');
+            log('=== SONGNODES-STORE CHECK ===', 'success');
+            const store = localStorage.getItem('songnodes-store');
+
+            if (!store) {
+                log('❌ songnodes-store NOT FOUND', 'error');
+                log('');
+                log('🔧 What to do:', 'warning');
+                log('  1. Go back to the main app (click link below)', 'info');
+                log('  2. Open Settings > Music Services', 'info');
+                log('  3. Enter your Tidal credentials', 'info');
+                log('  4. Click SAVE button', 'info');
+                log('  5. Come back here and click "Full Diagnostics"', 'info');
+                return;
+            }
+
+            log('✓ songnodes-store EXISTS!', 'success');
+            log(`Size: ${store.length} characters`, 'info');
+            log('');
+
+            try {
+                const parsed = JSON.parse(store);
+
+                log('=== STRUCTURE ===', 'success');
+                log(`Version: ${parsed.version ?? 'MISSING ⚠️'}`, parsed.version === 6 ? 'success' : 'error');
+                log(`Has state: ${!!parsed.state}`, parsed.state ? 'success' : 'error');
+
+                if (parsed.state) {
+                    const stateKeys = Object.keys(parsed.state);
+                    log(`State keys (${stateKeys.length}): ${stateKeys.join(', ')}`);
+                    log('');
+
+                    log('=== MUSIC CREDENTIALS ===', 'success');
+                    if (parsed.state.musicCredentials) {
+                        const services = Object.keys(parsed.state.musicCredentials);
+                        log(`Services found: ${services.length > 0 ? services.join(', ') : 'NONE'}`,
+                            services.length > 0 ? 'success' : 'warning');
+
+                        if (parsed.state.musicCredentials.tidal) {
+                            const tidal = parsed.state.musicCredentials.tidal;
+                            log('');
+                            log('🎵 TIDAL:', 'success');
+                            log(`  Client ID: ${tidal.clientId ? '✓ ' + tidal.clientId.substring(0, 8) + '...' : '✗ MISSING'}`,
+                                tidal.clientId ? 'success' : 'error');
+                            log(`  Client Secret: ${tidal.clientSecret ? '✓ Present (hidden)' : '✗ MISSING'}`,
+                                tidal.clientSecret ? 'success' : 'error');
+                            log(`  Access Token: ${tidal.accessToken ? '✓ Present' : '✗ Not set'}`);
+                            log(`  Is Connected: ${tidal.isConnected ? 'Yes ✓' : 'No'}`);
+                        }
+
+                        if (parsed.state.musicCredentials.spotify) {
+                            const spotify = parsed.state.musicCredentials.spotify;
+                            log('');
+                            log('🎵 SPOTIFY:', 'success');
+                            log(`  Client ID: ${spotify.clientId ? '✓ Present' : '✗ MISSING'}`,
+                                spotify.clientId ? 'success' : 'error');
+                            log(`  Client Secret: ${spotify.clientSecret ? '✓ Present' : '✗ MISSING'}`,
+                                spotify.clientSecret ? 'success' : 'error');
+                        }
+                    } else {
+                        log('❌ musicCredentials field is MISSING from state!', 'error');
+                    }
+                }
+
+                log('');
+                log('=== VERSION CHECK ===', 'success');
+                if (parsed.version === 6) {
+                    log('✅ Version is CORRECT (6)', 'success');
+                    log('Zustand should be able to load this data.', 'success');
+                } else {
+                    log(`❌ VERSION MISMATCH!`, 'error');
+                    log(`  Current: ${parsed.version ?? 'none'}`, 'error');
+                    log(`  Expected: 6`, 'success');
+                    log('');
+                    log('This is why Zustand rehydration fails!', 'error');
+                    log('Click "Migrate to v6" button to fix.', 'warning');
+                }
+
+                log('');
+                log('=== RAW DATA ===', 'info');
+                log(JSON.stringify(parsed, null, 2));
+
+            } catch (e) {
+                log('❌ ERROR PARSING JSON:', 'error');
+                log(e.message, 'error');
+                log('');
+                log('Raw data:', 'warning');
+                log(store.substring(0, 500) + '...');
+            }
+        }
+
+        function migrateToV6() {
+            clearOutput();
+            log('=== MIGRATING TO VERSION 6 ===', 'success');
+
+            const store = localStorage.getItem('songnodes-store');
+            if (!store) {
+                log('❌ No data to migrate - localStorage is empty', 'error');
+                log('');
+                log('Please save credentials first:', 'warning');
+                log('  1. Go back to main app', 'info');
+                log('  2. Enter credentials in Settings', 'info');
+                log('  3. Click Save', 'info');
+                log('  4. Come back here', 'info');
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(store);
+                const oldVersion = parsed.version ?? 'none';
+
+                log(`Current version: ${oldVersion}`, 'warning');
+                log(`Target version: 6`, 'success');
+
+                // Update version
+                parsed.version = 6;
+
+                // Ensure musicCredentials exists
+                if (parsed.state && !parsed.state.musicCredentials) {
+                    log('⚠️  Adding missing musicCredentials field', 'warning');
+                    parsed.state.musicCredentials = {};
+                }
+
+                // Save back
+                localStorage.setItem('songnodes-store', JSON.stringify(parsed));
+
+                log('');
+                log('✅ MIGRATION COMPLETE!', 'success');
+                log(`${oldVersion} → 6`, 'success');
+                log('');
+                log('Now reload the main app to test.', 'warning');
+
+                setTimeout(runFullDiagnostics, 1000);
+
+            } catch (e) {
+                log('❌ Migration failed:', 'error');
+                log(e.message, 'error');
+            }
+        }
+
+        function clearAndReload() {
+            if (confirm('⚠️  This will DELETE all localStorage data!\n\nYou will need to re-enter credentials.\n\nContinue?')) {
+                clearOutput();
+                log('Clearing localStorage...', 'warning');
+                const keyCount = localStorage.length;
+                localStorage.clear();
+                log(`✅ Cleared ${keyCount} key(s)`, 'success');
+                log('Reloading in 2 seconds...', 'warning');
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        }
+
+        function testSave() {
+            clearOutput();
+            log('=== TEST SAVE CREDENTIALS ===', 'success');
+            log('Creating test Tidal credentials...', 'info');
+
+            const testData = {
+                version: 6,
+                state: {
+                    musicCredentials: {
+                        tidal: {
+                            clientId: 'test-client-id-12345',
+                            clientSecret: 'test-secret-abcdef',
+                            isConnected: false,
+                            lastValidated: Date.now()
+                        }
+                    },
+                    panelState: {
+                        leftPanel: null,
+                        rightPanel: null,
+                        bottomPanel: null,
+                        leftPanelWidth: 320,
+                        rightPanelWidth: 320,
+                        bottomPanelHeight: 200
+                    }
+                }
+            };
+
+            try {
+                localStorage.setItem('songnodes-store', JSON.stringify(testData));
+                log('✅ Test data saved!', 'success');
+                log('');
+                log('Verifying...', 'info');
+
+                setTimeout(() => {
+                    const verify = localStorage.getItem('songnodes-store');
+                    if (verify) {
+                        log('✅ Verification successful!', 'success');
+                        log('localStorage is working correctly.', 'success');
+                        log('');
+                        log('Running diagnostics...', 'info');
+                        setTimeout(runFullDiagnostics, 500);
+                    } else {
+                        log('❌ Verification failed!', 'error');
+                        log('localStorage may be disabled or full.', 'error');
+                    }
+                }, 100);
+
+            } catch (e) {
+                log('❌ Failed to save test data:', 'error');
+                log(e.message, 'error');
+                log('');
+                log('Possible causes:', 'warning');
+                log('  - localStorage disabled in browser', 'warning');
+                log('  - Private browsing mode', 'warning');
+                log('  - Storage quota exceeded', 'warning');
+            }
+        }
+
+        // Run diagnostics on load
+        runFullDiagnostics();
+    </script>
+</body>
+</html>

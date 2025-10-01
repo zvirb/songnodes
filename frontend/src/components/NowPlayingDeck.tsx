@@ -114,61 +114,54 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
       maxHeight: '220px',
       overflow: 'hidden'
     }}>
-      {/* Track Info Header - Compact */}
+      {/* Track Info Header - Single Line */}
       <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        minHeight: 0
+        gap: '12px',
+        minHeight: 0,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden'
       }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 style={{
-            color: '#FFFFFF',
-            fontSize: '18px',
-            margin: 0,
-            fontWeight: 700,
-            letterSpacing: '-0.5px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            {track.name}
-          </h2>
-          <p style={{
-            color: '#8E8E93',
-            fontSize: '14px',
-            margin: '2px 0 0 0',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            {track.artist}
-          </p>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          gap: '16px',
-          alignItems: 'center'
+        <span style={{
+          color: '#FFFFFF',
+          fontSize: '18px',
+          fontWeight: 700,
+          letterSpacing: '-0.5px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          flexShrink: 1
         }}>
-          {/* Current Track Status */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            backgroundColor: '#7ED321',
-            borderRadius: '20px'
-          }}>
-            <span style={{
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600
-            }}>
-              🎯 CURRENTLY SELECTED
-            </span>
-          </div>
-        </div>
+          {track.name}
+        </span>
+        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
+        <span style={{
+          color: '#8E8E93',
+          fontSize: '14px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          flexShrink: 1
+        }}>
+          {track.artist}
+        </span>
+        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
+        <span style={{
+          color: '#4A90E2',
+          fontSize: '14px',
+          fontWeight: 600,
+          flexShrink: 0
+        }}>
+          {track.bpm} BPM
+        </span>
+        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
+        <span style={{
+          color: '#7ED321',
+          fontSize: '14px',
+          fontWeight: 600,
+          flexShrink: 0
+        }}>
+          {track.key}
+        </span>
       </div>
 
       {/* Key Metrics Row - Compact and Horizontal */}

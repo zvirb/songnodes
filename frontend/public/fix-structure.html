@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix localStorage Structure</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-family: monospace;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+        .warning { color: #ffaa00; }
+        h1 { color: #00ff00; }
+        a { color: #00aaff; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fix localStorage Structure</h1>
+    <p>This tool will fix the data structure mismatch that prevents Zustand from loading your credentials.</p>
+    <pre id="output">Analyzing...</pre>
+
+    <div>
+        <button onclick="fixStructure()" style="background: #ff6600;">🔥 FIX STRUCTURE NOW</button>
+        <button onclick="showBefore()">👁️ Show Current Structure</button>
+    </div>
+
+    <p><a href="/">← Back to SongNodes</a></p>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'normal') {
+            const colors = {
+                error: '#ff0000',
+                success: '#00ff00',
+                warning: '#ffaa00',
+                info: '#00aaff',
+                normal: '#00ff00'
+            };
+            const line = document.createElement('div');
+            line.textContent = message;
+            line.style.color = colors[type];
+            output.appendChild(line);
+        }
+
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+
+        function showBefore() {
+            clearOutput();
+            log('=== CURRENT STRUCTURE ===', 'info');
+
+            const store = localStorage.getItem('songnodes-store');
+            if (!store) {
+                log('❌ No data found', 'error');
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(store);
+                log(JSON.stringify(parsed, null, 2));
+            } catch (e) {
+                log('Error: ' + e.message, 'error');
+            }
+        }
+
+        function fixStructure() {
+            clearOutput();
+            log('=== FIXING STRUCTURE ===', 'warning');
+            log('');
+
+            const store = localStorage.getItem('songnodes-store');
+            if (!store) {
+                log('❌ No data to fix', 'error');
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(store);
+
+                log('📋 Current structure:', 'info');
+                log(JSON.stringify(parsed, null, 2).substring(0, 300) + '...');
+                log('');
+
+                // Check if it has the wrong structure
+                if (parsed.state && typeof parsed.state === 'object') {
+                    log('🔍 Detected WRAPPED structure (has extra "state" object)', 'warning');
+                    log('');
+                    log('🔄 Unwrapping...', 'info');
+
+                    // Unwrap: move everything from parsed.state to root level
+                    const fixed = {
+                        ...parsed.state,  // Spread all properties from state to root
+                        version: parsed.version || 6  // Keep version at root
+                    };
+
+                    // Save the fixed structure
+                    localStorage.setItem('songnodes-store', JSON.stringify(fixed));
+
+                    log('');
+                    log('✅ STRUCTURE FIXED!', 'success');
+                    log('');
+                    log('📋 New structure:', 'success');
+                    log(JSON.stringify(fixed, null, 2).substring(0, 500) + '...');
+                    log('');
+                    log('🎉 Credits are now at root level!', 'success');
+                    log('');
+                    log('✅ Your Tidal credentials are preserved:', 'success');
+                    if (fixed.musicCredentials?.tidal) {
+                        log(`   Client ID: ${fixed.musicCredentials.tidal.clientId}`, 'success');
+                        log(`   Client Secret: ✓ Present`, 'success');
+                    }
+                    log('');
+                    log('🔄 Now reload the main app:', 'warning');
+                    log('   1. Close this tab', 'info');
+                    log('   2. Go to http://localhost:3006', 'info');
+                    log('   3. Hard reload (Ctrl+Shift+R)', 'info');
+                    log('   4. Check console for success message:', 'info');
+                    log('      "✅ [REHYDRATE] Credentials restored"', 'success');
+
+                } else {
+                    log('✅ Structure is already correct!', 'success');
+                    log('');
+                    log('Data is at root level (no extra "state" wrapper)', 'success');
+                    log('');
+                    log('If Zustand still isn\'t loading:', 'warning');
+                    log('1. Check browser console for errors', 'info');
+                    log('2. Try hard reload (Ctrl+Shift+R)', 'info');
+                    log('3. Check version number matches (should be 6)', 'info');
+                }
+
+            } catch (e) {
+                log('❌ Error fixing structure:', 'error');
+                log(e.message, 'error');
+                log('', 'error');
+                log('Try the debug tool first:', 'warning');
+                log('http://localhost:3006/debug-storage.html', 'info');
+            }
+        }
+
+        // Auto-analyze on load
+        (function() {
+            clearOutput();
+            log('=== STRUCTURE ANALYSIS ===', 'info');
+            log('');
+
+            const store = localStorage.getItem('songnodes-store');
+            if (!store) {
+                log('❌ No data found in localStorage', 'error');
+                log('');
+                log('Go back to the app and save credentials first.', 'warning');
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(store);
+
+                if (parsed.state && typeof parsed.state === 'object') {
+                    log('❌ PROBLEM DETECTED!', 'error');
+                    log('');
+                    log('Your data has an extra "state" wrapper:', 'error');
+                    log('', 'error');
+                    log('  Current (WRONG):', 'error');
+                    log('  {', 'error');
+                    log('    "state": {           ❌ Extra wrapper!', 'error');
+                    log('      "panelState": {...},', 'error');
+                    log('      "musicCredentials": {...}', 'error');
+                    log('    },', 'error');
+                    log('    "version": 6', 'error');
+                    log('  }', 'error');
+                    log('');
+                    log('  Expected (CORRECT):', 'success');
+                    log('  {', 'success');
+                    log('    "panelState": {...},     ✓ At root level', 'success');
+                    log('    "musicCredentials": {...},', 'success');
+                    log('    "version": 6', 'success');
+                    log('  }', 'success');
+                    log('');
+                    log('This is why Zustand returns null!', 'error');
+                    log('');
+                    log('🔥 Click "FIX STRUCTURE NOW" to fix this automatically', 'warning');
+
+                } else if (parsed.panelState || parsed.musicCredentials) {
+                    log('✅ Structure looks CORRECT!', 'success');
+                    log('');
+                    log('Data is at root level (no wrapper)', 'success');
+                    log('');
+                    log('If Zustand still isn\'t loading, try:', 'info');
+                    log('1. Hard reload the app (Ctrl+Shift+R)', 'info');
+                    log('2. Check browser console for other errors', 'info');
+
+                } else {
+                    log('⚠️ Unexpected structure', 'warning');
+                    log('');
+                    log('Click "Show Current Structure" to see what you have', 'info');
+                }
+
+            } catch (e) {
+                log('❌ Error parsing JSON:', 'error');
+                log(e.message, 'error');
+            }
+        })();
+    </script>
+</body>
+</html>

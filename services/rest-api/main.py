@@ -176,13 +176,28 @@ async def get_artists(limit: int = 100, offset: int = 0):
     try:
         async with db_pool.acquire() as conn:
             query = """
-            SELECT artist_id, artist_name, normalized_name, aliases,
-                   spotify_id, apple_music_id, youtube_channel_id, soundcloud_id,
-                   discogs_id, musicbrainz_id, genre_preferences, country,
-                   is_verified, follower_count, monthly_listeners, popularity_score,
-                   data_source, scrape_timestamp, created_at, updated_at
+            SELECT artist_id::text as artist_id,
+                   name as artist_name,
+                   LOWER(TRIM(name)) as normalized_name,
+                   aliases,
+                   spotify_id,
+                   NULL::varchar as apple_music_id,
+                   NULL::varchar as youtube_channel_id,
+                   NULL::varchar as soundcloud_id,
+                   NULL::varchar as discogs_id,
+                   musicbrainz_id,
+                   genres as genre_preferences,
+                   country,
+                   false as is_verified,
+                   0 as follower_count,
+                   0 as monthly_listeners,
+                   0 as popularity_score,
+                   'spotify' as data_source,
+                   created_at as scrape_timestamp,
+                   created_at,
+                   updated_at
             FROM artists
-            ORDER BY artist_name
+            ORDER BY name
             LIMIT $1 OFFSET $2
             """
             rows = await conn.fetch(query, limit, offset)
@@ -205,7 +220,7 @@ async def get_artists(limit: int = 100, offset: int = 0):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/artists/{artist_id}", response_model=ArtistResponse)
-async def get_artist(artist_id: int):
+async def get_artist(artist_id: str):
     """
     Get specific artist by ID with validation.
 
@@ -214,13 +229,28 @@ async def get_artist(artist_id: int):
     try:
         async with db_pool.acquire() as conn:
             query = """
-            SELECT artist_id, artist_name, normalized_name, aliases,
-                   spotify_id, apple_music_id, youtube_channel_id, soundcloud_id,
-                   discogs_id, musicbrainz_id, genre_preferences, country,
-                   is_verified, follower_count, monthly_listeners, popularity_score,
-                   data_source, scrape_timestamp, created_at, updated_at
+            SELECT artist_id::text as artist_id,
+                   name as artist_name,
+                   LOWER(TRIM(name)) as normalized_name,
+                   aliases,
+                   spotify_id,
+                   NULL::varchar as apple_music_id,
+                   NULL::varchar as youtube_channel_id,
+                   NULL::varchar as soundcloud_id,
+                   NULL::varchar as discogs_id,
+                   musicbrainz_id,
+                   genres as genre_preferences,
+                   country,
+                   false as is_verified,
+                   0 as follower_count,
+                   0 as monthly_listeners,
+                   0 as popularity_score,
+                   'spotify' as data_source,
+                   created_at as scrape_timestamp,
+                   created_at,
+                   updated_at
             FROM artists
-            WHERE artist_id = $1
+            WHERE artist_id = $1::uuid
             """
             row = await conn.fetchrow(query, artist_id)
 
@@ -332,7 +362,7 @@ async def get_tracks(
             where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
             query = f"""
-            SELECT song_id, track_id, track_name, normalized_title, duration_ms,
+            SELECT song_id::text, track_id, track_name, normalized_title, duration_ms,
                    isrc, spotify_id, apple_music_id, youtube_id, soundcloud_id, musicbrainz_id,
                    bpm, musical_key, energy, danceability, valence, acousticness,
                    instrumentalness, liveness, speechiness, loudness,
@@ -340,8 +370,8 @@ async def get_tracks(
                    is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
                    remix_type, original_artist, remixer, mashup_components,
                    popularity_score, play_count, track_type, source_context, position_in_source,
-                   data_source, scrape_timestamp, primary_artist_id, created_at, updated_at
-            FROM songs
+                   data_source, scrape_timestamp, primary_artist_id::text, created_at, updated_at
+            FROM tracks
             {where_clause}
             ORDER BY track_name
             LIMIT ${param_num} OFFSET ${param_num + 1}

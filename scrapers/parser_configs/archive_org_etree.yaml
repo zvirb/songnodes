@@ -1,0 +1,117 @@
+# Archive.org etree Collection Parser Configuration
+# ==================================================
+# Internet Archive's etree collection contains thousands of live concert recordings
+# with detailed setlist information for jam bands and live music.
+
+source_name: "Archive.org etree"
+source_type: "multi_artist_archive"
+base_url: "https://archive.org"
+
+selectors:
+  tracklist_container:
+    - "css:div.item-details-metadata"
+    - "css:table.file-list"
+    - "xpath://div[@class='item-details-metadata']"
+
+  track_row:
+    - "css:tr.download-pill"
+    - "css:div.track-row"
+    - "xpath://tr[@class='download-pill']"
+
+  track_title:
+    - "css:a.download-pill-link::text"
+    - "css:td.item-title a::text"
+    - "xpath:.//a[@class='download-pill-link']/text()"
+
+  artist_name:
+    - "css:span.item-creator a::text"
+    - "css:div.creator a::text"
+    - "xpath:.//span[@class='item-creator']/a/text()"
+
+  timestamp:
+    - "css:td.item-runtime::text"
+    - "css:span.length::text"
+    - "xpath:.//td[@class='item-runtime']/text()"
+
+  venue:
+    - "css:div.metadata-row:contains('Venue') div.metadata-value::text"
+    - "xpath://div[contains(text(), 'Venue')]/following-sibling::div/text()"
+
+  date:
+    - "css:div.metadata-row:contains('Date') div.metadata-value::text"
+    - "css:time.item-date::attr(datetime)"
+    - "xpath://div[contains(text(), 'Date')]/following-sibling::div/text()"
+
+  setlist_name:
+    - "css:h1.item-title::text"
+    - "css:div.c-item-title::text"
+    - "xpath://h1[@class='item-title']/text()"
+
+  notes:
+    - "css:div.item-description::text"
+    - "css:div.show-notes p::text"
+    - "xpath://div[@class='item-description']/text()"
+
+regex_patterns:
+  clean_track_title:
+    - pattern: "^\\d+[\\-\\.]\\s*"  # Remove leading "01-" or "01. "
+      replace: ""
+    - pattern: "\\.flac$|\\.mp3$|\\.shn$"  # Remove file extensions
+      replace: ""
+      flags: "IGNORECASE"
+    - pattern: "^[dt]\\d+[\\-\\s]+"  # Remove disc/tape numbers like "d1-" or "t2 "
+      replace: ""
+      flags: "IGNORECASE"
+    - pattern: "\\s{2,}"
+      replace: " "
+
+  clean_artist_name:
+    - pattern: "\\[.*?\\]"  # Remove bracketed content
+      replace: ""
+    - pattern: "\\(.*?\\)"
+      replace: ""
+
+  extract_timestamp:
+    - pattern: "(\\d{1,2}:\\d{2}(?::\\d{2})?)"
+      group: 1
+
+  extract_date:
+    - pattern: "(\\d{4}-\\d{2}-\\d{2})"
+      group: 1
+
+data_mapping:
+  default_artist: "Unknown Artist"
+  default_genre: "Live Recording"
+  source_identifier: "archive_org_etree"
+  date_format: "%Y-%m-%d"
+  extract_timestamps: true
+  enable_nlp_fallback: true
+
+pagination:
+  enabled: false  # Archive.org items are single-page
+
+validation:
+  min_tracks: 3
+  max_tracks: 300  # Some multi-set shows can be very long
+  require_venue: false
+  require_date: false
+
+rate_limiting:
+  download_delay: 1.5
+  randomize_delay: 0.3
+  concurrent_requests: 2  # Archive.org is more permissive
+
+metadata:
+  created_by: "SongNodes Team"
+  created_at: "2025-10-01"
+  last_updated: "2025-10-01"
+  notes: "Internet Archive etree collection contains thousands of live recordings with detailed metadata"
+  source_url_pattern: "https://archive.org/details/{item_id}"
+  example_urls:
+    - "https://archive.org/details/gd1977-05-08.sbd.miller.97187.flac16"
+    - "https://archive.org/details/phish2019-12-31.flac24"
+    - "https://archive.org/details/wsp1997-10-31.sbd.flac16"
+  additional_notes: |
+    Archive.org uses a unique metadata structure. Tracks are often stored as files
+    with descriptive names. The spider should extract both the file list and any
+    structured metadata available on the page.

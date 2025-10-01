@@ -9,6 +9,7 @@ import os
 import re
 import hashlib
 from datetime import datetime
+from typing import Dict
 from urllib.parse import quote
 import redis
 import requests
@@ -50,7 +51,7 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         }
     }
 
-    def __init__(self, artist_name=None, venue=None, city=None, *args, **kwargs):
+    def __init__(self, artist_name=None, venue=None, city=None, start_url=None, search_mode=None, *args, **kwargs):
         force_run_arg = kwargs.pop('force_run', None)
         super().__init__(*args, **kwargs)
 
@@ -69,6 +70,13 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             else os.getenv('SCRAPER_FORCE_RUN', '0').lower() in ('1', 'true', 'yes')
         )
         self.initialize_state_store()
+
+        # If a direct URL is provided (HTML page), use it directly
+        if start_url and ('.html' in start_url or 'setlist/' in start_url):
+            self.start_urls = [start_url]
+            self.logger.info(f"Initialized with direct HTML URL: {start_url}")
+            self.apply_robots_policy()
+            return
 
         if artist_name:
             params.append(f'artistName={quote(artist_name)}')
@@ -248,7 +256,7 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             raise CloseSpider('daily_quota_reached')
 
     def parse(self, response):
-        """Parse search results"""
+        """Parse search results (supports both API JSON and HTML pages via NLP fallback)"""
         # Handle rate limiting (HTTP 429)
         if response.status == 429:
             retry_after = response.headers.get('Retry-After', '60')
@@ -266,6 +274,56 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             # Return nothing - Scrapy's retry middleware will handle this
             return
 
+        # Check if this is an HTML page (not JSON API response)
+        content_type = response.headers.get('Content-Type', b'').decode('utf-8').lower()
+        if 'text/html' in content_type or response.url.endswith('.html'):
+            self.logger.info(
+                f"📄 Detected HTML page (not JSON API). Using NLP fallback for extraction. "
+                f"URL: {response.url}"
+            )
+
+            # Use NLP fallback to extract tracks from HTML
+            if self.enable_nlp_fallback:
+                tracks_data = self.extract_via_nlp_sync(
+                    html_or_text=response.text,
+                    url=response.url,
+                    extract_timestamps=True
+                )
+
+                if tracks_data:
+                    self.logger.info(
+                        f"✅ NLP extraction succeeded: {len(tracks_data)} tracks found from HTML page"
+                    )
+
+                    # Convert NLP tracks to Scrapy items and collect for adjacency
+                    # Use dict to store position since TrackItem doesn't support extra fields
+                    track_items_with_position = []
+                    for i, track_data in enumerate(tracks_data):
+                        track_item = self._create_track_item_from_nlp(track_data, response.url)
+                        if track_item:
+                            yield track_item
+                            # Store item with position info for adjacency generation
+                            track_items_with_position.append({
+                                'item': track_item,
+                                'position': i
+                            })
+
+                    # Generate adjacency relationships between tracks in this setlist
+                    if len(track_items_with_position) > 1:
+                        setlist_name = f"NLP Setlist from {response.url}"
+                        for adjacency in self._generate_nlp_track_adjacencies(track_items_with_position, setlist_name, response.url):
+                            yield adjacency
+                else:
+                    self.logger.warning(
+                        f"⚠️ NLP extraction returned no tracks from HTML page: {response.url}"
+                    )
+            else:
+                self.logger.warning(
+                    f"⚠️ NLP fallback disabled - cannot extract from HTML page: {response.url}"
+                )
+            return
+
+        # Try JSON parsing (API response)
         try:
             data = json.loads(response.text)
 
@@ -499,6 +557,72 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         if adjacency_count > 0:
             self.logger.info(f"Generated {adjacency_count} track adjacency relationships for setlist: {setlist_name}")
 
+    def _generate_nlp_track_adjacencies(self, track_items_with_position, setlist_name, source_url):
+        """
+        Generate track adjacency relationships for NLP-extracted tracks.
+        Creates adjacency items for tracks within 3 positions of each other.
+
+        Args:
+            track_items_with_position: List of dicts with 'item' and 'position' keys
+            setlist_name: Name of the setlist
+            source_url: URL where tracks were extracted from
+        """
+        if not track_items_with_position or len(track_items_with_position) < 2:
+            return
+
+        setlist_id = f"setlistfm_nlp_{hash(source_url)}"
+        adjacency_count = 0
+
+        # Already sorted by position (enumerate order)
+        sorted_tracks = track_items_with_position
+
+        for i in range(len(sorted_tracks)):
+            for j in range(i + 1, min(i + 4, len(sorted_tracks))):  # Within 3 positions
+                track_1_data = sorted_tracks[i]
+                track_2_data = sorted_tracks[j]
+
+                track_1 = track_1_data['item']
+                track_2 = track_2_data['item']
+                pos_1 = track_1_data['position']
+                pos_2 = track_2_data['position']
+
+                distance = abs(pos_1 - pos_2)
+
+                # Determine transition type
+                if distance == 1:
+                    transition_type = "sequential"
+                elif distance <= 3:
+                    transition_type = "close_proximity"
+                else:
+                    continue
+
+                # Create adjacency item
+                adjacency_item = EnhancedTrackAdjacencyItem(
+                    track_1_name=track_1.get('track_name'),
+                    track_1_id=track_1.get('track_id'),
+                    track_2_name=track_2.get('track_name'),
+                    track_2_id=track_2.get('track_id'),
+                    track_1_position=pos_1,
+                    track_2_position=pos_2,
+                    distance=distance,
+                    setlist_name=setlist_name,
+                    setlist_id=setlist_id,
+                    source_context=f"setlistfm_nlp:{setlist_name}",
+                    transition_type=transition_type,
+                    occurrence_count=1,
+                    created_at=datetime.utcnow(),
+                    data_source=self.name,
+                    scrape_timestamp=datetime.utcnow()
+                )
+
+                yield adjacency_item
+                adjacency_count += 1
+
+        if adjacency_count > 0:
+            self.logger.info(
+                f"✅ Generated {adjacency_count} track adjacency edges for NLP-extracted setlist"
+            )
+
     def create_playlist_item_from_setlist(self, setlist_item, track_names):
         """Create a PlaylistItem from setlist metadata for database storage"""
         try:
@@ -529,6 +653,53 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
         except Exception as e:
             self.logger.error(f"Error creating playlist item: {e}")
+            return None
+
+    def _create_track_item_from_nlp(self, nlp_track: Dict, source_url: str):
+        """
+        Convert NLP-extracted track data to Scrapy TrackItem
+
+        Args:
+            nlp_track: Dict with 'artist', 'title', 'timestamp' keys from NLP processor
+            source_url: URL where track was extracted from
+
+        Returns:
+            TrackItem ready for pipeline processing
+        """
+        try:
+            artist_name = nlp_track.get('artist', 'Unknown Artist')
+            title = nlp_track.get('title', 'Unknown Track')
+            timestamp = nlp_track.get('timestamp')
+
+            # Detect remix/mashup properties
+            is_remix = bool(re.search(r'(remix|edit|mix)\b', title, re.IGNORECASE))
+            is_mashup = bool(re.search(r'\b(vs\.|mashup)\b', title, re.IGNORECASE))
+            remix_type = extract_remix_type(title) if is_remix else None
+
+            # Generate deterministic track_id
+            track_id = generate_track_id(
+                title=title,
+                primary_artist=artist_name,
+                is_remix=is_remix,
+                is_mashup=is_mashup,
+                remix_type=remix_type
+            )
+
+            # Create track item (legacy TrackItem only supports: track_id, track_name, track_url, source_platform)
+            track_item = TrackItem()
+            track_item['track_id'] = track_id
+            track_item['track_name'] = f"{artist_name} - {title}"  # Combined format
+            track_item['track_url'] = source_url
+            track_item['source_platform'] = 'setlistfm_html_nlp'
+
+            self.logger.debug(
+                f"Created track item from NLP: {artist_name} - {title}"
+            )
+
+            return track_item
+
+        except Exception as e:
+            self.logger.error(f"Error creating track item from NLP data: {e}", exc_info=True)
             return None
 
     def closed(self, reason):
