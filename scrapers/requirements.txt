@@ -21,6 +21,7 @@ scrapy-playwright>=0.0.33
 # Data processing
 beautifulsoup4>=4.12.2
 lxml>=4.9.3
+PyYAML>=6.0.1
 
 # JSON and data validation
 jsonschema>=4.20.0

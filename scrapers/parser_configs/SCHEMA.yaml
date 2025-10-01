@@ -1,0 +1,200 @@
+# Parser Configuration Schema for SongNodes Generic Archive Spider
+# =================================================================
+# This schema defines the structure for YAML parser configurations that enable
+# rapid onboarding of new artist-specific archives and setlist sources.
+#
+# Usage: Create a new YAML file following this schema to add support for a new source
+#        in minutes rather than hours.
+
+# REQUIRED FIELDS
+# ===============
+
+source_name: "example_archive"
+  # Human-readable name for the archive (e.g., "Phish.net Archive", "Panic Stream Archive")
+
+source_type: "artist_archive"
+  # Type of source. Valid values:
+  # - artist_archive: Single artist/band archive
+  # - venue_archive: Venue-specific setlist archive
+  # - festival_archive: Festival archive with multiple artists
+  # - dj_archive: DJ mix/tracklist archive
+
+base_url: "https://example.com/setlists"
+  # Base URL for the archive (used for relative URL resolution)
+
+# SELECTORS
+# =========
+# CSS and XPath selectors for extracting data from archive pages.
+# Both CSS and XPath formats are supported. Use 'css:' or 'xpath:' prefix.
+
+selectors:
+  # Container that holds all tracks/songs in a setlist
+  tracklist_container:
+    - "css:div.setlist"
+    - "css:.tracklist-wrapper"
+    - "xpath://div[@class='setlist']"
+
+  # Individual track/song rows within the container
+  track_row:
+    - "css:div.track-item"
+    - "css:li.song"
+    - "xpath://li[@class='song']"
+
+  # Track title extraction (from within track_row)
+  track_title:
+    - "css:span.track-title::text"
+    - "css:a.song-link::text"
+    - "xpath:.//span[@class='track-title']/text()"
+
+  # Artist name extraction (from within track_row)
+  artist_name:
+    - "css:span.artist::text"
+    - "css:a.artist-link::text"
+    - "xpath:.//span[@class='artist']/text()"
+
+  # Timestamp/position in setlist (optional)
+  timestamp:
+    - "css:span.timestamp::text"
+    - "css:.time::text"
+    - "xpath:.//span[@class='timestamp']/text()"
+
+  # Venue name (page-level, not per-track)
+  venue:
+    - "css:h2.venue-name::text"
+    - "css:div.event-venue::text"
+    - "xpath://h2[@class='venue-name']/text()"
+
+  # Event/show date (page-level, not per-track)
+  date:
+    - "css:time.event-date::attr(datetime)"
+    - "css:span.date::text"
+    - "xpath://time[@class='event-date']/@datetime"
+
+  # Setlist/playlist name (page-level)
+  setlist_name:
+    - "css:h1.setlist-title::text"
+    - "css:header h1::text"
+    - "xpath://h1[@class='setlist-title']/text()"
+
+  # Notes/description (optional)
+  notes:
+    - "css:div.setlist-notes::text"
+    - "css:.description::text"
+    - "xpath://div[@class='notes']/text()"
+
+# REGEX PATTERNS
+# ==============
+# Regular expressions for text cleanup and extraction.
+# Applied after selector extraction to normalize data.
+
+regex_patterns:
+  # Remove unwanted characters from track titles
+  clean_track_title:
+    - pattern: "\\[.*?\\]"  # Remove bracketed content like [EDIT]
+      replace: ""
+    - pattern: "^\\d+\\.\\s*"  # Remove leading track numbers like "1. "
+      replace: ""
+    - pattern: "\\s{2,}"  # Collapse multiple spaces
+      replace: " "
+
+  # Remove unwanted characters from artist names
+  clean_artist_name:
+    - pattern: "\\(.*?\\)"  # Remove parenthetical content
+      replace: ""
+    - pattern: "^feat\\.?\\s+"  # Remove leading "feat."
+      replace: ""
+      flags: "IGNORECASE"
+
+  # Extract timestamp from text like "[00:12:45]" or "(1:23:45)"
+  extract_timestamp:
+    - pattern: "\\[?(\\d{1,2}:\\d{2}(?::\\d{2})?)\\]?"
+      group: 1  # Capture group to extract
+
+  # Extract date from various formats
+  extract_date:
+    - pattern: "(\\d{4}-\\d{2}-\\d{2})"  # ISO format YYYY-MM-DD
+      group: 1
+    - pattern: "(\\d{1,2}/\\d{1,2}/\\d{4})"  # US format MM/DD/YYYY
+      group: 1
+
+# DATA MAPPING
+# ============
+# Optional field mappings and transformations
+
+data_mapping:
+  # Default artist name if not found per-track (for single-artist archives)
+  default_artist: "Unknown Artist"
+
+  # Genre tag to apply to all tracks from this source
+  default_genre: "Rock"
+
+  # Source identifier for database tracking
+  source_identifier: "example_archive"
+
+  # Date format for parsing (Python strftime format)
+  date_format: "%Y-%m-%d"
+
+  # Whether to extract timestamps
+  extract_timestamps: true
+
+  # Whether to use NLP fallback if selectors fail
+  enable_nlp_fallback: true
+
+# PAGINATION
+# ==========
+# Optional pagination configuration for multi-page archives
+
+pagination:
+  # Enabled pagination
+  enabled: false
+
+  # Next page link selector
+  next_page:
+    - "css:a.next-page::attr(href)"
+    - "css:li.pagination-next a::attr(href)"
+    - "xpath://a[@class='next-page']/@href"
+
+  # Maximum pages to scrape (safety limit)
+  max_pages: 10
+
+# VALIDATION
+# ==========
+# Optional validation rules to ensure data quality
+
+validation:
+  # Minimum number of tracks required for valid setlist
+  min_tracks: 1
+
+  # Maximum number of tracks (safety check)
+  max_tracks: 200
+
+  # Require venue name
+  require_venue: false
+
+  # Require date
+  require_date: false
+
+# RATE LIMITING
+# =============
+# Optional rate limiting settings
+
+rate_limiting:
+  # Delay between requests (seconds)
+  download_delay: 2.0
+
+  # Randomize delay by this factor (0.0-1.0)
+  randomize_delay: 0.3
+
+  # Maximum concurrent requests
+  concurrent_requests: 1
+
+# NOTES
+# =====
+# Additional notes and metadata about this configuration
+
+metadata:
+  created_by: "SongNodes Team"
+  created_at: "2025-10-01"
+  last_updated: "2025-10-01"
+  notes: "Example schema showing all available configuration options"
+  source_url_pattern: "https://example.com/setlists/{show_id}"

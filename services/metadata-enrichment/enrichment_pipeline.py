@@ -102,21 +102,22 @@ class MetadataEnrichmentPipeline:
                     metadata.update(spotify_data)
                     logger.info("Spotify enrichment successful")
 
-                    # Get audio features
-                    audio_features = await self.spotify_client.get_audio_features(
-                        task.existing_spotify_id
-                    )
-                    if audio_features:
-                        metadata['audio_features'] = audio_features
-                        logger.info("Spotify audio features retrieved")
+                    # Get audio features - only if client exists
+                    if self.spotify_client:
+                        audio_features = await self.spotify_client.get_audio_features(
+                            task.existing_spotify_id
+                        )
+                        if audio_features:
+                            metadata['audio_features'] = audio_features
+                            logger.info("Spotify audio features retrieved")
 
             # STEP 2: Enrichment via ISRC (if available or obtained from Spotify)
             isrc = task.existing_isrc or metadata.get('isrc')
             if isrc:
                 logger.info("Step 2: Enriching from ISRC", isrc=isrc)
 
-                # Try Spotify ISRC search if we don't have Spotify data yet
-                if EnrichmentSource.SPOTIFY not in sources_used:
+                # Try Spotify ISRC search if we don't have Spotify data yet - only if client exists
+                if self.spotify_client and EnrichmentSource.SPOTIFY not in sources_used:
                     spotify_isrc_data = await self.spotify_client.search_by_isrc(isrc)
                     if spotify_isrc_data:
                         sources_used.append(EnrichmentSource.SPOTIFY)
@@ -145,23 +146,24 @@ class MetadataEnrichmentPipeline:
                     title=task.track_title
                 )
 
-                # Try Spotify search
-                spotify_search = await self.spotify_client.search_track(
-                    task.artist_name,
-                    task.track_title
-                )
-                if spotify_search:
-                    sources_used.append(EnrichmentSource.SPOTIFY)
-                    metadata.update(spotify_search)
-                    logger.info("Spotify search successful")
+                # Try Spotify search - only if client exists
+                if self.spotify_client:
+                    spotify_search = await self.spotify_client.search_track(
+                        task.artist_name,
+                        task.track_title
+                    )
+                    if spotify_search:
+                        sources_used.append(EnrichmentSource.SPOTIFY)
+                        metadata.update(spotify_search)
+                        logger.info("Spotify search successful")
 
-                    # Get audio features
-                    if spotify_search.get('spotify_id'):
-                        audio_features = await self.spotify_client.get_audio_features(
-                            spotify_search['spotify_id']
-                        )
-                        if audio_features:
-                            metadata['audio_features'] = audio_features
+                        # Get audio features
+                        if spotify_search.get('spotify_id'):
+                            audio_features = await self.spotify_client.get_audio_features(
+                                spotify_search['spotify_id']
+                            )
+                            if audio_features:
+                                metadata['audio_features'] = audio_features
 
                 # Update ISRC if we got it from search
                 if metadata.get('isrc') and not isrc:
@@ -182,25 +184,31 @@ class MetadataEnrichmentPipeline:
 
             # STEP 5: Discogs for release-specific metadata
             logger.info("Step 5: Discogs enrichment")
-            discogs_data = await self.discogs_client.search(
-                task.artist_name,
-                task.track_title
-            )
-            if discogs_data:
-                sources_used.append(EnrichmentSource.DISCOGS)
-                metadata.update(discogs_data)
-                logger.info("Discogs enrichment successful")
+            if self.discogs_client:
+                discogs_data = await self.discogs_client.search(
+                    task.artist_name,
+                    task.track_title
+                )
+                if discogs_data:
+                    sources_used.append(EnrichmentSource.DISCOGS)
+                    metadata.update(discogs_data)
+                    logger.info("Discogs enrichment successful")
+            else:
+                logger.debug("Skipping Discogs enrichment - no client available (missing credentials)")
 
             # STEP 6: Last.fm for tags and popularity
             logger.info("Step 6: Last.fm enrichment")
-            lastfm_data = await self.lastfm_client.get_track_info(
-                task.artist_name,
-                task.track_title
-            )
-            if lastfm_data:
-                sources_used.append(EnrichmentSource.LASTFM)
-                metadata['lastfm'] = lastfm_data
-                logger.info("Last.fm enrichment successful")
+            if self.lastfm_client:
+                lastfm_data = await self.lastfm_client.get_track_info(
+                    task.artist_name,
+                    task.track_title
+                )
+                if lastfm_data:
+                    sources_used.append(EnrichmentSource.LASTFM)
+                    metadata['lastfm'] = lastfm_data
+                    logger.info("Last.fm enrichment successful")
+            else:
+                logger.debug("Skipping Last.fm enrichment - no client available (missing credentials)")
 
             # Derive Camelot key from audio features
             if metadata.get('audio_features'):
@@ -292,7 +300,9 @@ class MetadataEnrichmentPipeline:
             )
 
     async def _enrich_from_spotify_id(self, spotify_id: str) -> Optional[Dict[str, Any]]:
-        """Enrich from Spotify ID"""
+        """Enrich from Spotify ID - only if client exists"""
+        if not self.spotify_client:
+            return None
         try:
             return await self.spotify_client.get_track_by_id(spotify_id)
         except Exception as e:

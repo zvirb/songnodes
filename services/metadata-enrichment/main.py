@@ -235,36 +235,57 @@ async def lifespan(app: FastAPI):
         discogs_keys = await get_service_keys('discogs')
         lastfm_keys = await get_service_keys('lastfm')
 
-        # Initialize API clients with database keys
-        spotify_client = SpotifyClient(
-            client_id=spotify_keys.get('client_id') or os.getenv("SPOTIFY_CLIENT_ID"),
-            client_secret=spotify_keys.get('client_secret') or os.getenv("SPOTIFY_CLIENT_SECRET"),
-            redis_client=connection_manager.redis_client
-        )
-        logger.info("Spotify client initialized", has_credentials=bool(spotify_client.client_id))
+        # Initialize API clients with database keys - only if credentials exist
+        spotify_client_id = spotify_keys.get('client_id') or os.getenv("SPOTIFY_CLIENT_ID")
+        spotify_client_secret = spotify_keys.get('client_secret') or os.getenv("SPOTIFY_CLIENT_SECRET")
 
+        if spotify_client_id and spotify_client_secret:
+            spotify_client = SpotifyClient(
+                client_id=spotify_client_id,
+                client_secret=spotify_client_secret,
+                redis_client=connection_manager.redis_client
+            )
+            logger.info("Spotify client initialized with credentials")
+        else:
+            spotify_client = None
+            logger.warning("Spotify client NOT initialized - no credentials found (this is OK if not using Spotify)")
+
+        # MusicBrainz - always initialize (user_agent has default value)
         musicbrainz_client = MusicBrainzClient(
             user_agent=musicbrainz_keys.get('user_agent') or os.getenv("MUSICBRAINZ_USER_AGENT", "SongNodes/1.0 (contact@songnodes.com)"),
             redis_client=connection_manager.redis_client
         )
         logger.info("MusicBrainz client initialized")
 
-        discogs_client = DiscogsClient(
-            token=discogs_keys.get('token') or os.getenv("DISCOGS_TOKEN"),
-            redis_client=connection_manager.redis_client
-        )
-        logger.info("Discogs client initialized", has_token=bool(discogs_client.token))
+        # Discogs - only initialize if token exists
+        discogs_token = discogs_keys.get('token') or os.getenv("DISCOGS_TOKEN")
+        if discogs_token:
+            discogs_client = DiscogsClient(
+                token=discogs_token,
+                redis_client=connection_manager.redis_client
+            )
+            logger.info("Discogs client initialized with token")
+        else:
+            discogs_client = None
+            logger.warning("Discogs client NOT initialized - no token found (this is OK if not using Discogs)")
 
+        # Beatport - no credentials needed (scraping only)
         beatport_client = BeatportClient(
             redis_client=connection_manager.redis_client
         )
         logger.info("Beatport client initialized")
 
-        lastfm_client = LastFMClient(
-            api_key=lastfm_keys.get('api_key') or os.getenv("LASTFM_API_KEY"),
-            redis_client=connection_manager.redis_client
-        )
-        logger.info("Last.fm client initialized", has_api_key=bool(lastfm_client.api_key))
+        # Last.fm - only initialize if API key exists
+        lastfm_api_key = lastfm_keys.get('api_key') or os.getenv("LASTFM_API_KEY")
+        if lastfm_api_key:
+            lastfm_client = LastFMClient(
+                api_key=lastfm_api_key,
+                redis_client=connection_manager.redis_client
+            )
+            logger.info("Last.fm client initialized with API key")
+        else:
+            lastfm_client = None
+            logger.warning("Last.fm client NOT initialized - no API key found (this is OK if not using Last.fm)")
 
         # Initialize enrichment pipeline
         enrichment_pipeline = MetadataEnrichmentPipeline(
@@ -442,11 +463,11 @@ async def health_check():
         # Check API client health
         if enrichment_pipeline:
             health_status['api_clients'] = {
-                'spotify': 'healthy' if enrichment_pipeline.spotify_client else 'unavailable',
+                'spotify': 'healthy' if enrichment_pipeline.spotify_client else 'no_credentials',
                 'musicbrainz': 'healthy' if enrichment_pipeline.musicbrainz_client else 'unavailable',
-                'discogs': 'healthy' if enrichment_pipeline.discogs_client else 'unavailable',
+                'discogs': 'healthy' if enrichment_pipeline.discogs_client else 'no_credentials',
                 'beatport': 'healthy' if enrichment_pipeline.beatport_client else 'unavailable',
-                'lastfm': 'healthy' if enrichment_pipeline.lastfm_client else 'unavailable'
+                'lastfm': 'healthy' if enrichment_pipeline.lastfm_client else 'no_credentials'
             }
 
         connection_health = all('healthy' in status for status in health_status['connections'].values())

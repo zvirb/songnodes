@@ -513,10 +513,14 @@ class DatabasePipeline:
         await conn.executemany("""
             INSERT INTO songs (track_id, title, primary_artist_id, genre, bpm, key,
                              duration_seconds, release_year, label, spotify_id, musicbrainz_id,
-                             tidal_id, beatport_id, apple_music_id, soundcloud_id, deezer_id, youtube_music_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                             tidal_id, beatport_id, apple_music_id, soundcloud_id, deezer_id, youtube_music_id,
+                             energy, danceability, valence, acousticness, instrumentalness,
+                             liveness, speechiness, loudness, normalized_title, popularity_score,
+                             is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+                    $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
             ON CONFLICT (title, primary_artist_id) DO UPDATE SET
-                track_id = COALESCE(EXCLUDED.track_id, songs.track_id),  -- Update track_id if not set
+                track_id = COALESCE(EXCLUDED.track_id, songs.track_id),
                 genre = COALESCE(EXCLUDED.genre, songs.genre),
                 bpm = COALESCE(EXCLUDED.bpm, songs.bpm),
                 key = COALESCE(EXCLUDED.key, songs.key),
@@ -531,16 +535,27 @@ class DatabasePipeline:
                 soundcloud_id = COALESCE(EXCLUDED.soundcloud_id, songs.soundcloud_id),
                 deezer_id = COALESCE(EXCLUDED.deezer_id, songs.deezer_id),
                 youtube_music_id = COALESCE(EXCLUDED.youtube_music_id, songs.youtube_music_id),
+                energy = COALESCE(EXCLUDED.energy, songs.energy),
+                danceability = COALESCE(EXCLUDED.danceability, songs.danceability),
+                valence = COALESCE(EXCLUDED.valence, songs.valence),
+                acousticness = COALESCE(EXCLUDED.acousticness, songs.acousticness),
+                instrumentalness = COALESCE(EXCLUDED.instrumentalness, songs.instrumentalness),
+                liveness = COALESCE(EXCLUDED.liveness, songs.liveness),
+                speechiness = COALESCE(EXCLUDED.speechiness, songs.speechiness),
+                loudness = COALESCE(EXCLUDED.loudness, songs.loudness),
+                normalized_title = COALESCE(EXCLUDED.normalized_title, songs.normalized_title),
+                popularity_score = COALESCE(EXCLUDED.popularity_score, songs.popularity_score),
                 updated_at = CURRENT_TIMESTAMP
         """, [
             (
-                item.get('track_id'),  # Deterministic track ID for cross-source matching
+                item.get('track_id'),
                 item['title'],
                 item.get('primary_artist_id'),
                 item.get('genre'),
                 item.get('bpm'),
                 item.get('key'),
-                item.get('duration_seconds', 0),
+                # Convert ms to seconds if duration_ms provided, else use duration_seconds
+                (item.get('duration_ms') // 1000) if item.get('duration_ms') else item.get('duration_seconds', 0),
                 item.get('release_year'),
                 item.get('label'),
                 item.get('spotify_id'),
@@ -550,7 +565,25 @@ class DatabasePipeline:
                 item.get('apple_music_id'),
                 item.get('soundcloud_id'),
                 item.get('deezer_id'),
-                item.get('youtube_music_id')
+                item.get('youtube_music_id'),
+                # Audio features
+                item.get('energy'),
+                item.get('danceability'),
+                item.get('valence'),
+                item.get('acousticness'),
+                item.get('instrumentalness'),
+                item.get('liveness'),
+                item.get('speechiness'),
+                item.get('loudness'),
+                # Additional metadata
+                item.get('normalized_title') or item['title'].lower().strip(),
+                item.get('popularity_score'),
+                item.get('is_remix', False),
+                item.get('is_mashup', False),
+                item.get('is_live', False),
+                item.get('is_cover', False),
+                item.get('is_instrumental', False),
+                item.get('is_explicit', False)
             ) for item in songs_with_artists
         ])
 

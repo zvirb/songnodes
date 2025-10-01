@@ -11,6 +11,7 @@ import TargetTracksManager from './TargetTracksManager';
 import { Track, DJMode } from '../types/dj';
 import useStore from '../store/useStore';
 import { useDataLoader } from '../hooks/useDataLoader';
+import { prometheusService, ScraperMetrics, PipelineMetrics, SystemMetrics } from '../services/prometheusService';
 
 /**
  * DJInterface - Main container implementing dual-mode interface
@@ -144,10 +145,26 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     error: null
   });
 
+  // Prometheus metrics state
+  const [prometheusMetrics, setPrometheusMetrics] = useState<{
+    scraper: ScraperMetrics | null;
+    pipeline: PipelineMetrics | null;
+    system: SystemMetrics | null;
+    isLoading: boolean;
+    error: string | null;
+  }>({
+    scraper: null,
+    pipeline: null,
+    system: null,
+    isLoading: false,
+    error: null
+  });
+
   // Manual trigger states
   const [triggerStates, setTriggerStates] = useState({
     targetSearch: { loading: false, lastTriggered: null },
-    scraperTasks: { loading: false, lastTriggered: null }
+    scraperTasks: { loading: false, lastTriggered: null },
+    clearQueue: { loading: false, lastTriggered: null }
   });
   // Animation controls state
   const [isAnimationPaused, setIsAnimationPaused] = useState(false);
@@ -269,6 +286,49 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     }
   }, []);
 
+  // Fetch Prometheus metrics
+  const fetchPrometheusMetrics = useCallback(async () => {
+    setPrometheusMetrics(prev => ({ ...prev, isLoading: true, error: null }));
+
+    try {
+      const [scraperMetrics, pipelineMetrics, systemMetrics] = await Promise.all([
+        prometheusService.getScraperMetrics(),
+        prometheusService.getPipelineMetrics(),
+        prometheusService.getSystemMetrics()
+      ]);
+
+      setPrometheusMetrics({
+        scraper: scraperMetrics,
+        pipeline: pipelineMetrics,
+        system: systemMetrics,
+        isLoading: false,
+        error: null
+      });
+    } catch (error) {
+      console.error('Failed to fetch Prometheus metrics:', error);
+      setPrometheusMetrics(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to connect to Prometheus'
+      }));
+    }
+  }, []);
+
+  // Auto-refresh Prometheus metrics when dashboard is open
+  useEffect(() => {
+    if (showMonitoringDashboard) {
+      fetchMonitoringData();
+      fetchPrometheusMetrics();
+
+      // Refresh every 15 seconds
+      const interval = setInterval(() => {
+        fetchPrometheusMetrics();
+      }, 15000);
+
+      return () => clearInterval(interval);
+    }
+  }, [showMonitoringDashboard, fetchMonitoringData, fetchPrometheusMetrics]);
+
   // Manual trigger functions
   const triggerTargetSearch = useCallback(async () => {
     setTriggerStates(prev => ({
@@ -348,6 +408,70 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
       }));
     }
   }, [fetchMonitoringData]);
+
+  const clearQueue = useCallback(async () => {
+    // Confirm before clearing
+    const confirmed = window.confirm(
+      '⚠️ Are you sure you want to clear all queued scraping tasks?\n\n' +
+      'This will remove all pending tasks from:\n' +
+      '• High priority queue\n' +
+      '• Medium priority queue\n' +
+      '• Low priority queue\n' +
+      '• Main queue\n' +
+      '• Failed queue\n\n' +
+      'This action cannot be undone.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setTriggerStates(prev => ({
+      ...prev,
+      clearQueue: { ...prev.clearQueue, loading: true }
+    }));
+
+    try {
+      const response = await fetch('/api/v1/scrapers/queue/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to clear queue: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Queue cleared successfully:', result);
+
+      alert(
+        `✅ Queue Cleared Successfully!\n\n` +
+        `Total items removed: ${result.total_items_cleared}\n\n` +
+        `Details:\n` +
+        `• High priority: ${result.cleared_queues.high}\n` +
+        `• Medium priority: ${result.cleared_queues.medium}\n` +
+        `• Low priority: ${result.cleared_queues.low}\n` +
+        `• Main queue: ${result.cleared_queues.main}\n` +
+        `• Failed queue: ${result.cleared_queues.failed}`
+      );
+
+      setTriggerStates(prev => ({
+        ...prev,
+        clearQueue: { loading: false, lastTriggered: new Date().toISOString() }
+      }));
+
+      // Refresh monitoring data after clearing
+      setTimeout(fetchMonitoringData, 1000);
+      setTimeout(fetchPrometheusMetrics, 1000);
+    } catch (error) {
+      console.error('Failed to clear queue:', error);
+      alert(`❌ Failed to clear queue: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setTriggerStates(prev => ({
+        ...prev,
+        clearQueue: { ...prev.clearQueue, loading: false }
+      }));
+    }
+  }, [fetchMonitoringData, fetchPrometheusMetrics]);
 
   // Fetch data when dashboard opens
   useEffect(() => {
@@ -465,30 +589,17 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           }}>
             {tracks.length} Tracks Loaded
           </span>
+          <span style={{
+            padding: '6px 12px',
+            backgroundColor: 'rgba(126,211,33,0.2)',
+            borderRadius: '12px',
+            fontSize: '12px',
+            color: '#7ED321',
+            fontWeight: 600
+          }}>
+            {graphData?.edges?.length || 0} Connections
+          </span>
 
-          {/* TEST: Quick track selector workaround */}
-          <button
-            onClick={() => {
-              if (tracks.length > 0) {
-                const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
-                console.log('🧪 TEST: Manually triggering track modal for:', randomTrack);
-                handleTrackInspect(randomTrack);
-              }
-            }}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: 'rgba(255,165,0,0.2)',
-              border: '1px solid rgba(255,165,0,0.4)',
-              borderRadius: '8px',
-              color: '#FFA500',
-              fontSize: '11px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-            title="Test track modal with random track"
-          >
-            🧪 Test Modal
-          </button>
           <span style={{
             padding: '6px 12px',
             backgroundColor: 'rgba(126,211,33,0.2)',
@@ -1060,35 +1171,223 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                   Recently Scraped Data
                 </h1>
 
-                {/* Status Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-                  <div style={{ background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '8px', padding: '16px' }}>
-                    <h3 style={{ fontSize: '14px', color: '#6c757d', margin: '0 0 8px 0' }}>Total Runs</h3>
-                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#495057' }}>
-                      {monitoringData.isLoading ? 'Loading...' :
-                       monitoringData.error ? 'Error' :
-                       monitoringData.metrics?.total_runs ?? 'N/A'}
+                {/* Live Prometheus Metrics - Auto-refreshing every 15s */}
+                <div style={{ marginBottom: '20px', padding: '12px', background: '#e7f3ff', border: '1px solid #2196F3', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: prometheusMetrics.isLoading ? '#ffc107' : prometheusMetrics.error ? '#dc3545' : '#28a745',
+                    animation: prometheusMetrics.isLoading ? 'pulse 1.5s ease-in-out infinite' : 'none'
+                  }} />
+                  <span style={{ fontSize: '13px', color: '#004085', fontWeight: 600 }}>
+                    {prometheusMetrics.isLoading ? 'Refreshing metrics...' :
+                     prometheusMetrics.error ? `⚠️ Prometheus connection error: ${prometheusMetrics.error}` :
+                     '✓ Live data from Prometheus (auto-refresh every 15s)'}
+                  </span>
+                </div>
+
+                {/* Status Cards - Enhanced with Prometheus Data */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '30px' }}>
+                  {/* Total Runs */}
+                  <div style={{ background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <h3 style={{ fontSize: '12px', color: '#6c757d', margin: 0, textTransform: 'uppercase', fontWeight: 600 }}>Total Runs</h3>
+                      <span style={{ fontSize: '18px' }}>📊</span>
+                    </div>
+                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 4px 0', color: '#495057' }}>
+                      {prometheusMetrics.pipeline?.pipelineRuns.total ?? monitoringData.metrics?.total_runs ?? 0}
                     </p>
+                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                      {prometheusMetrics.pipeline && (
+                        <>Running: {prometheusMetrics.pipeline.pipelineRuns.running}</>
+                      )}
+                    </div>
                   </div>
 
-                  <div style={{ background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '8px', padding: '16px' }}>
-                    <h3 style={{ fontSize: '14px', color: '#155724', margin: '0 0 8px 0' }}>Success Rate</h3>
-                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#155724' }}>
-                      {monitoringData.isLoading ? 'Loading...' :
-                       monitoringData.error ? 'Error' :
-                       monitoringData.metrics?.total_runs > 0 ?
-                         Math.round((monitoringData.metrics.successful_runs / monitoringData.metrics.total_runs) * 100) + '%' :
-                         'N/A'}
+                  {/* Success Rate */}
+                  <div style={{ background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <h3 style={{ fontSize: '12px', color: '#155724', margin: 0, textTransform: 'uppercase', fontWeight: 600 }}>Success Rate</h3>
+                      <span style={{ fontSize: '18px' }}>✅</span>
+                    </div>
+                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 4px 0', color: '#155724' }}>
+                      {prometheusMetrics.scraper?.successRate.toFixed(1) ?? 'N/A'}%
                     </p>
+                    <div style={{ fontSize: '11px', color: '#155724' }}>
+                      {prometheusMetrics.scraper && (
+                        <>{prometheusMetrics.scraper.successfulCollections} / {prometheusMetrics.scraper.totalCollections}</>
+                      )}
+                    </div>
                   </div>
 
-                  <div style={{ background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '8px', padding: '16px' }}>
-                    <h3 style={{ fontSize: '14px', color: '#856404', margin: '0 0 8px 0' }}>Songs Scraped</h3>
-                    <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#856404' }}>
-                      {monitoringData.isLoading ? 'Loading...' :
-                       monitoringData.error ? 'Error' :
-                       monitoringData.metrics?.total_songs_scraped ?? 'N/A'}
+                  {/* Songs Scraped (24h) */}
+                  <div style={{ background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <h3 style={{ fontSize: '12px', color: '#856404', margin: 0, textTransform: 'uppercase', fontWeight: 600 }}>Songs (24h)</h3>
+                      <span style={{ fontSize: '18px' }}>🎵</span>
+                    </div>
+                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 4px 0', color: '#856404' }}>
+                      {prometheusMetrics.scraper?.songsScrapedLast24h.toLocaleString() ?? monitoringData.metrics?.total_songs_scraped ?? 0}
                     </p>
+                    <div style={{ fontSize: '11px', color: '#856404' }}>
+                      Last 24 hours
+                    </div>
+                  </div>
+
+                  {/* Active Collections */}
+                  <div style={{ background: '#cfe2ff', border: '1px solid #9ec5fe', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <h3 style={{ fontSize: '12px', color: '#084298', margin: 0, textTransform: 'uppercase', fontWeight: 600 }}>Active Now</h3>
+                      <span style={{ fontSize: '18px' }}>🔄</span>
+                    </div>
+                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 4px 0', color: '#084298' }}>
+                      {prometheusMetrics.scraper?.activeCollections ?? 0}
+                    </p>
+                    <div style={{ fontSize: '11px', color: '#084298' }}>
+                      Queue: {prometheusMetrics.scraper?.queuedCollections ?? 0}
+                    </div>
+                  </div>
+
+                  {/* Average Duration */}
+                  <div style={{ background: '#e2e3e5', border: '1px solid #d3d3d4', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <h3 style={{ fontSize: '12px', color: '#383d41', margin: 0, textTransform: 'uppercase', fontWeight: 600 }}>Avg Time</h3>
+                      <span style={{ fontSize: '18px' }}>⏱️</span>
+                    </div>
+                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 4px 0', color: '#383d41' }}>
+                      {prometheusMetrics.scraper?.avgCollectionDuration.toFixed(1) ?? 0}s
+                    </p>
+                    <div style={{ fontSize: '11px', color: '#383d41' }}>
+                      P95: {prometheusMetrics.scraper?.p95CollectionDuration.toFixed(1) ?? 0}s
+                    </div>
+                  </div>
+
+                  {/* Data Quality Score */}
+                  <div style={{ background: '#d1ecf1', border: '1px solid #bee5eb', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <h3 style={{ fontSize: '12px', color: '#0c5460', margin: 0, textTransform: 'uppercase', fontWeight: 600 }}>Quality</h3>
+                      <span style={{ fontSize: '18px' }}>⭐</span>
+                    </div>
+                    <p style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 4px 0', color: '#0c5460' }}>
+                      {((prometheusMetrics.pipeline?.avgQualityScore ?? 0) * 100).toFixed(0)}%
+                    </p>
+                    <div style={{ fontSize: '11px', color: '#0c5460' }}>
+                      {prometheusMetrics.pipeline?.qualityTrend === 'improving' ? '📈 Improving' :
+                       prometheusMetrics.pipeline?.qualityTrend === 'declining' ? '📉 Declining' : '➡️ Stable'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scraper Health Status */}
+                <div style={{ background: '#fff', border: '1px solid #dee2e6', borderRadius: '8px', overflow: 'hidden', marginBottom: '30px' }}>
+                  <div style={{ padding: '14px', borderBottom: '1px solid #dee2e6', background: '#f8f9fa' }}>
+                    <h3 style={{ margin: 0, fontSize: '15px', color: '#495057', fontWeight: 600 }}>🔍 Scraper Services Health</h3>
+                  </div>
+                  <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                    {prometheusMetrics.scraper?.scraperUp && Object.entries(prometheusMetrics.scraper.scraperUp).map(([service, isUp]) => (
+                      <div key={service} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px',
+                        background: isUp ? '#d4edda' : '#f8d7da',
+                        borderRadius: '6px',
+                        border: `1px solid ${isUp ? '#c3e6cb' : '#f5c6cb'}`
+                      }}>
+                        <div style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: isUp ? '#28a745' : '#dc3545',
+                          boxShadow: isUp ? '0 0 6px #28a745' : '0 0 6px #dc3545'
+                        }} />
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: isUp ? '#155724' : '#721c24' }}>
+                          {service}
+                        </span>
+                        <span style={{ fontSize: '11px', color: isUp ? '#155724' : '#721c24', marginLeft: 'auto' }}>
+                          {isUp ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pipeline Progress */}
+                <div style={{ background: '#fff', border: '1px solid #dee2e6', borderRadius: '8px', overflow: 'hidden', marginBottom: '30px' }}>
+                  <div style={{ padding: '14px', borderBottom: '1px solid #dee2e6', background: '#f8f9fa' }}>
+                    <h3 style={{ margin: 0, fontSize: '15px', color: '#495057', fontWeight: 600 }}>📈 Data Pipeline Progress</h3>
+                  </div>
+                  <div style={{ padding: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      {/* Source Extractions */}
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#6c757d', margin: '0 0 10px 0', textTransform: 'uppercase' }}>Source Extractions</h4>
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                          <div style={{ flex: 1, padding: '10px', background: '#d4edda', borderRadius: '6px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#155724', marginBottom: '4px' }}>Successful</div>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#155724' }}>
+                              {prometheusMetrics.pipeline?.sourceExtractions.successful ?? 0}
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, padding: '10px', background: '#f8d7da', borderRadius: '6px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#721c24', marginBottom: '4px' }}>Failed</div>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#721c24' }}>
+                              {prometheusMetrics.pipeline?.sourceExtractions.failed ?? 0}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                          Avg Response: {prometheusMetrics.pipeline?.sourceExtractions.avgResponseTime.toFixed(0) ?? 0}ms
+                        </div>
+                      </div>
+
+                      {/* Graph Validations */}
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#6c757d', margin: '0 0 10px 0', textTransform: 'uppercase' }}>Graph Validations</h4>
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                          <div style={{ flex: 1, padding: '10px', background: '#d4edda', borderRadius: '6px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#155724', marginBottom: '4px' }}>Passed</div>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#155724' }}>
+                              {prometheusMetrics.pipeline?.graphValidations.passed ?? 0}
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, padding: '10px', background: '#f8d7da', borderRadius: '6px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#721c24', marginBottom: '4px' }}>Failed</div>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#721c24' }}>
+                              {prometheusMetrics.pipeline?.graphValidations.failed ?? 0}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                          Total: {prometheusMetrics.pipeline?.graphValidations.total ?? 0} validations
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Anomalies Detection */}
+                    {prometheusMetrics.pipeline && (prometheusMetrics.pipeline.anomalies.critical > 0 || prometheusMetrics.pipeline.anomalies.warning > 0) && (
+                      <div style={{ marginTop: '16px', padding: '12px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px' }}>
+                        <h4 style={{ fontSize: '13px', color: '#856404', margin: '0 0 8px 0', fontWeight: 600 }}>⚠️ Active Anomalies</h4>
+                        <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+                          {prometheusMetrics.pipeline.anomalies.critical > 0 && (
+                            <div style={{ color: '#721c24' }}>
+                              🔴 Critical: {prometheusMetrics.pipeline.anomalies.critical}
+                            </div>
+                          )}
+                          {prometheusMetrics.pipeline.anomalies.warning > 0 && (
+                            <div style={{ color: '#856404' }}>
+                              🟡 Warning: {prometheusMetrics.pipeline.anomalies.warning}
+                            </div>
+                          )}
+                          {prometheusMetrics.pipeline.anomalies.info > 0 && (
+                            <div style={{ color: '#0c5460' }}>
+                              ℹ️ Info: {prometheusMetrics.pipeline.anomalies.info}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1193,14 +1492,14 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                     </h3>
                   </div>
 
-                  <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    {/* Target Search Trigger */}
+                  <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                    {/* Quick Search - 20 tracks */}
                     <div style={{ padding: '16px', background: '#fff', border: '1px solid #dee2e6', borderRadius: '6px' }}>
                       <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#495057', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        🎯 Target Track Search
+                        🎯 Quick Search (20 tracks)
                       </h4>
                       <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#6c757d', lineHeight: 1.4 }}>
-                        Search for target tracks across all sources. Runs before scraping to identify what to collect.
+                        Quick test: Search and scrape up to 20 target tracks across all sources. Ideal for testing.
                       </p>
                       <button
                         onClick={triggerTargetSearch}
@@ -1244,23 +1543,23 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                             Running...
                           </>
                         ) : (
-                          'Start Target Search'
+                          'Search 20 Tracks'
                         )}
                       </button>
                       {triggerStates.targetSearch.lastTriggered && (
                         <div style={{ marginTop: '8px', fontSize: '11px', color: '#28a745' }}>
-                          ✅ Last triggered: {new Date(triggerStates.targetSearch.lastTriggered).toLocaleTimeString()}
+                          ✅ Last run: {new Date(triggerStates.targetSearch.lastTriggered).toLocaleTimeString()}
                         </div>
                       )}
                     </div>
 
-                    {/* Scraper Tasks Trigger */}
+                    {/* Full Search - 100 tracks */}
                     <div style={{ padding: '16px', background: '#fff', border: '1px solid #dee2e6', borderRadius: '6px' }}>
                       <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#495057', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        🕷️ Run All Scrapers
+                        🕷️ Full Search (100 tracks)
                       </h4>
                       <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#6c757d', lineHeight: 1.4 }}>
-                        Trigger immediate scraping across 1001tracklists, MixesDB, Setlist.fm, and Reddit sources.
+                        Full batch: Search and scrape up to 100 target tracks across 1001tracklists, MixesDB, Setlist.fm, and Reddit.
                       </p>
                       <button
                         onClick={triggerScraperTasks}
@@ -1304,12 +1603,72 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                             Running...
                           </>
                         ) : (
-                          'Start Scraping'
+                          'Search 100 Tracks'
                         )}
                       </button>
                       {triggerStates.scraperTasks.lastTriggered && (
                         <div style={{ marginTop: '8px', fontSize: '11px', color: '#007bff' }}>
-                          ✅ Last triggered: {new Date(triggerStates.scraperTasks.lastTriggered).toLocaleTimeString()}
+                          ✅ Last run: {new Date(triggerStates.scraperTasks.lastTriggered).toLocaleTimeString()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Clear Queue Trigger */}
+                    <div style={{ padding: '16px', background: '#fff', border: '1px solid #dee2e6', borderRadius: '6px' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#495057', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🗑️ Clear Queue
+                      </h4>
+                      <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#6c757d', lineHeight: 1.4 }}>
+                        Remove all pending scraping tasks from all queues. Use this to cancel queued jobs or start fresh.
+                      </p>
+                      <button
+                        onClick={clearQueue}
+                        disabled={triggerStates.clearQueue.loading}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: triggerStates.clearQueue.loading ? '#6c757d' : '#dc3545',
+                          border: 'none',
+                          borderRadius: '4px',
+                          color: 'white',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: triggerStates.clearQueue.loading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          opacity: triggerStates.clearQueue.loading ? 0.7 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!triggerStates.clearQueue.loading) {
+                            e.currentTarget.style.backgroundColor = '#c82333';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!triggerStates.clearQueue.loading) {
+                            e.currentTarget.style.backgroundColor = '#dc3545';
+                          }
+                        }}
+                      >
+                        {triggerStates.clearQueue.loading ? (
+                          <>
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              border: '2px solid #fff',
+                              borderTop: '2px solid transparent',
+                              borderRadius: '50%',
+                              animation: 'spin 1s linear infinite'
+                            }} />
+                            Clearing...
+                          </>
+                        ) : (
+                          'Clear All Queues'
+                        )}
+                      </button>
+                      {triggerStates.clearQueue.lastTriggered && (
+                        <div style={{ marginTop: '8px', fontSize: '11px', color: '#dc3545' }}>
+                          ✅ Last cleared: {new Date(triggerStates.clearQueue.lastTriggered).toLocaleTimeString()}
                         </div>
                       )}
                     </div>
@@ -1317,8 +1676,10 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
 
                   {/* Usage Instructions */}
                   <div style={{ padding: '12px 20px', background: '#e7f3ff', borderTop: '1px solid #b8daff', fontSize: '11px', color: '#004085' }}>
-                    <strong>Usage:</strong> Use "Target Search" first to identify tracks to scrape, then "Run All Scrapers" to collect data.
-                    Results will appear in the sections above within a few minutes.
+                    <strong>How it works:</strong> Both search buttons trigger the same scraping process - they just differ in batch size.
+                    "Quick Search" processes 20 tracks (good for testing), "Full Search" processes 100 tracks (for bulk collection).
+                    Use "Clear Queue" to cancel all pending scraping tasks.
+                    Results appear above within a few minutes.
                   </div>
                 </div>
 

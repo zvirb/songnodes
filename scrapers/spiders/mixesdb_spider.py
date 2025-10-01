@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import hashlib
+from typing import Dict
 from datetime import datetime
 from urllib.parse import quote
 import redis
@@ -425,6 +426,26 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     def parse_mix_page(self, response):
         """Parse individual mix page with comprehensive data extraction"""
         try:
+            # Check if this is an HTML page (not JSON/structured response)
+            content_type = response.headers.get('Content-Type', b'').decode('utf-8').lower()
+            if 'text/html' in content_type or not self._is_json_response(response):
+                self.logger.info(f"📄 Detected HTML page. Using NLP fallback for extraction. URL: {response.url}")
+
+                if self.enable_nlp_fallback:
+                    tracks_data = self.extract_via_nlp_sync(
+                        html_or_text=response.text,
+                        url=response.url,
+                        extract_timestamps=True
+                    )
+
+                    if tracks_data:
+                        self.logger.info(f"✅ NLP extraction: {len(tracks_data)} tracks found")
+                        for track_data in tracks_data:
+                            yield self._create_track_item_from_nlp(track_data, response.url)
+                    else:
+                        self.logger.warning(f"⚠️ NLP extraction returned no tracks: {response.url}")
+                return
+
             # Store response for potential NLP fallback
             self.last_response = response
 
@@ -1071,6 +1092,47 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             return 'Electronic'
 
         return None
+
+    def _create_track_item_from_nlp(self, nlp_track: Dict, source_url: str):
+        """
+        Convert NLP-extracted track data to Scrapy TrackItem
+
+        Args:
+            nlp_track: Dict with 'artist', 'title', 'timestamp' keys from NLP processor
+            source_url: URL where track was extracted from
+
+        Returns:
+            TrackItem ready for pipeline processing (legacy format with 4 fields only)
+        """
+        try:
+            artist_name = nlp_track.get('artist', 'Unknown Artist')
+            title = nlp_track.get('title', 'Unknown Track')
+
+            # Generate deterministic track_id
+            track_id = generate_track_id(
+                title=title,
+                primary_artist=artist_name,
+                is_remix=False,
+                is_mashup=False,
+                remix_type=None
+            )
+
+            # Create track item (legacy TrackItem only supports: track_id, track_name, track_url, source_platform)
+            track_item = EnhancedTrackItem()
+            track_item['track_id'] = track_id
+            track_item['track_name'] = f"{artist_name} - {title}"  # Combined format
+            track_item['track_url'] = source_url
+            track_item['source_platform'] = 'mixesdb_html_nlp'
+
+            self.logger.debug(
+                f"Created track item from NLP: {artist_name} - {title}"
+            )
+
+            return track_item
+
+        except Exception as e:
+            self.logger.error(f"Error creating track item from NLP data: {e}", exc_info=True)
+            return None
 
     def handle_error(self, failure):
         """Handle request failures"""

@@ -161,7 +161,7 @@ class ArtistCreate(ArtistBase):
 
 class ArtistResponse(ArtistBase):
     """Artist response model with database ID"""
-    artist_id: int
+    artist_id: str  # Changed from int to str to support UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -300,8 +300,8 @@ class TrackCreate(TrackBase):
 
 class TrackResponse(TrackBase):
     """Track response model with database ID"""
-    song_id: int
-    primary_artist_id: Optional[int] = None
+    song_id: str  # Changed from int to str to support UUID
+    primary_artist_id: Optional[str] = None  # Changed from int to str to support UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 

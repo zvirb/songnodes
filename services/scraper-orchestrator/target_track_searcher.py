@@ -167,11 +167,32 @@ class AsyncDatabaseService:
             await session.close()
 
     async def execute_query_with_params(self, query: str, params: Dict[str, Any]) -> List[Dict]:
-        """Execute parameterized query with proper error handling"""
+        """Execute parameterized query with proper error handling
+
+        Note: Handles both positional ($1, $2) and named (:param_name) placeholders
+        """
         async with self.get_session() as session:
             try:
                 start_time = time.time()
-                result = await session.execute(text(query), params)
+
+                # Detect if params are positional (numeric keys like "1", "2") or named (string keys like "title", "artist")
+                if params and all(key.isdigit() for key in params.keys()):
+                    # Convert PostgreSQL-style positional params ($1, $2) to SQLAlchemy named params (:param_1, :param_2)
+                    # This is needed because SQLAlchemy with asyncpg doesn't support $1 style with dict params
+                    converted_query = query
+                    converted_params = {}
+
+                    # Sort params by key (numeric) to ensure correct order
+                    for param_key, param_value in sorted(params.items(), key=lambda x: int(x[0])):
+                        # Replace $N with :param_N
+                        converted_query = converted_query.replace(f"${param_key}", f":param_{param_key}")
+                        converted_params[f"param_{param_key}"] = param_value
+                else:
+                    # Already using named parameters - use directly
+                    converted_query = query
+                    converted_params = params
+
+                result = await session.execute(text(converted_query), converted_params)
                 execution_time = time.time() - start_time
 
                 # Check if this is a SELECT query by looking at the query string
@@ -189,7 +210,8 @@ class AsyncDatabaseService:
                     "Query executed successfully",
                     query_hash=hash(query),
                     execution_time=f"{execution_time:.3f}s",
-                    rows_returned=len(rows) if is_select else 0
+                    rows_returned=len(rows) if is_select else 0,
+                    params_used=list(converted_params.keys())
                 )
 
                 return rows
@@ -389,17 +411,39 @@ class TargetTrackSearcher2025:
         """Search track across all platforms with circuit breaker protection"""
         all_urls = []
 
-        # Search tasks with circuit breaker protection
-        search_tasks = [
-            self.circuit_breakers['1001tracklists'].call(self._search_1001tracklists, track),
-            self.circuit_breakers['mixesdb'].call(self._search_mixesdb, track),
-            self.circuit_breakers['setlistfm'].call(self._search_setlistfm, track)
-        ]
+        # Dynamically build search tasks from all available circuit breakers
+        # Exclude 'database' (internal) and 'setlistfm' (not suitable for electronic music)
+        excluded_sources = {'database', 'setlistfm'}
+
+        search_tasks = []
+        active_platforms = []
+
+        for platform_name, circuit_breaker in self.circuit_breakers.items():
+            if platform_name in excluded_sources:
+                continue
+
+            # Map circuit breaker name to search method
+            search_method = getattr(self, f'_search_{platform_name}', None)
+            if search_method:
+                search_tasks.append(circuit_breaker.call(search_method, track))
+                active_platforms.append(platform_name)
+                logger.debug(
+                    "Added platform to search",
+                    platform=platform_name,
+                    total_platforms=len(active_platforms)
+                )
+
+        logger.info(
+            "Initiating multi-platform search",
+            platforms=active_platforms,
+            track_artist=track.get('artist'),
+            track_title=track.get('title')
+        )
 
         # Execute searches concurrently with individual error handling
         results = await asyncio.gather(*search_tasks, return_exceptions=True)
 
-        for platform, result in zip(['1001tracklists', 'mixesdb', 'setlistfm'], results):
+        for platform, result in zip(active_platforms, results):
             if isinstance(result, Exception):
                 logger.warning(
                     "Platform search failed",
@@ -416,70 +460,232 @@ class TargetTrackSearcher2025:
 
         return all_urls
 
+    def _validate_urls_for_track(self, urls: List[str], track: Dict) -> List[str]:
+        """
+        Validate URLs to filter out non-tracklist content (2025 best practice: post-LLM validation)
+
+        IMPORTANT: We do NOT filter by artist name because:
+        - DJ name in tracklist URL ≠ track artist name
+        - A DJ (e.g., "Tiesto") can play tracks by other artists (e.g., "Calvin Harris")
+        - We need to scrape the tracklist to verify it contains our target track
+
+        We only filter out obvious non-tracklist URLs like navigation, search, homepage.
+        This solves the LLM hallucination issue without requiring a larger model.
+        """
+        validated_urls = []
+
+        # Patterns that indicate VALID tracklist/setlist URLs
+        valid_patterns = [
+            '/tracklist/',
+            '/setlist/',
+            '/db/mix/',
+            '/db/index.php',
+            '/playlist/',
+            '/mix/',
+            '/show/',
+            '/w/',  # MixesDB wiki-style tracklist pages
+        ]
+
+        # Patterns that indicate INVALID URLs (navigation, etc.)
+        invalid_patterns = [
+            '/search',
+            '?query=',
+            '/about',
+            '/contact',
+            '/artists',
+            '/home',
+            '/login',
+            '/register',
+            'facebook.com',
+            'twitter.com',
+            'instagram.com',
+            'youtube.com',
+        ]
+
+        for url in urls:
+            url_lower = url.lower()
+
+            # Check if it's an invalid URL type
+            if any(pattern in url_lower for pattern in invalid_patterns):
+                logger.warning(
+                    "URL rejected - navigation/search/social link",
+                    url=url,
+                    reason="invalid_url_type"
+                )
+                continue
+
+            # Check if it matches valid tracklist patterns
+            if any(pattern in url_lower for pattern in valid_patterns):
+                validated_urls.append(url)
+                logger.debug(
+                    "URL validated - valid tracklist/setlist pattern",
+                    url=url
+                )
+            else:
+                logger.warning(
+                    "URL rejected - does not match tracklist URL patterns",
+                    url=url,
+                    reason="not_tracklist_url"
+                )
+
+        return validated_urls
+
     async def _search_1001tracklists(self, track: Dict) -> List[str]:
-        """Search 1001tracklists with proper async patterns"""
+        """
+        Search 1001tracklists using DJ/Artist page strategy (2025 best practice)
+
+        Instead of searching (which returns no results or navigation content),
+        we browse the artist's DJ page directly and extract all their tracklist URLs.
+        This gives guaranteed real URLs that actually exist on the site.
+
+        Strategy: https://www.1001tracklists.com/dj/{artist-slug}/ → extract tracklist links
+        """
         correlation_id = str(uuid.uuid4())[:8]
         structlog.contextvars.bind_contextvars(
             platform="1001tracklists",
-            correlation_id=correlation_id
+            correlation_id=correlation_id,
+            strategy="dj_page_scraping"
         )
 
         try:
-            search_query = f"{track['artist']} {track['title']}"
-            encoded_query = quote(search_query)
+            # Convert artist name to URL slug format
+            # Example: "Calvin Harris" → "calvin-harris"
+            # Example: "deadmau5" → "deadmau5"
+            # Example: "Above & Beyond" → "above-beyond"
+            artist_slug = (
+                track['artist']
+                .lower()
+                .replace(' & ', '-')
+                .replace(' ', '-')
+                .replace('.', '')
+                .replace("'", '')
+                .replace(',', '')
+            )
 
-            logger.info("Searching platform", search_query=search_query)
-
-            # Build REAL search URL for 1001tracklists
-            search_url = f"https://www.1001tracklists.com/search/result.php?main_search={encoded_query}"
-
-            # Start with the search URL itself
-            urls = [search_url]
-
-            # For high priority tracks, add direct artist/DJ pages
-            if track.get('priority') == 'high':
-                artist_slug = track['artist'].lower().replace(' ', '-').replace('&', 'and')
-                urls.extend([
-                    f"https://www.1001tracklists.com/dj/{artist_slug}/index.html",
-                    f"https://www.1001tracklists.com/search?q={encoded_query}"
-                ])
+            artist_page_url = f"https://www.1001tracklists.com/dj/{artist_slug}/"
 
             logger.info(
-                "Platform search completed",
-                urls_found=len(urls)
+                "Browsing artist/DJ page directly",
+                artist=track['artist'],
+                artist_slug=artist_slug,
+                artist_page_url=artist_page_url
             )
-            return urls
+
+            # Use direct CSS selector scraping (no AI, no browser)
+            try:
+                from direct_scrapers import DirectScrapers
+
+                direct_scraper = DirectScrapers()
+                normalized_urls = await direct_scraper.scrape_1001tracklists_artist_page(artist_slug)
+
+                # Validate URLs to filter out navigation/social links
+                validated_urls = self._validate_urls_for_track(normalized_urls, track)
+
+                if validated_urls:
+                    logger.info(
+                        "Artist page scraping completed via CSS selectors",
+                        urls_found=len(validated_urls),
+                        urls_extracted=len(normalized_urls),
+                        extraction_method="direct_css"
+                    )
+                    await direct_scraper.close()
+                    return validated_urls
+                else:
+                    logger.warning(
+                        "Artist page found but no valid tracklist URLs after filtering",
+                        urls_extracted=len(normalized_urls)
+                    )
+                    await direct_scraper.close()
+                    return []
+
+            except Exception as scrape_error:
+                logger.warning("Direct CSS scraping failed", error=str(scrape_error))
+                return []
 
         except Exception as e:
-            logger.error("Platform search error", error=str(e))
+            logger.error("Artist page scraping error", error=str(e))
             raise
 
     async def _search_mixesdb(self, track: Dict) -> List[str]:
-        """Search MixesDB with error handling"""
+        """
+        Search MixesDB using insource: targeted queries (2025 best practice)
+
+        MixesDB is a MediaWiki installation that supports advanced search operators.
+        Using insource:"Artist - Track" performs a surgical lookup for that exact track
+        in page content, which is much more precise than generic text searches.
+
+        Strategy: insource:"Artist - Track" → extract page URLs containing that track
+        """
         correlation_id = str(uuid.uuid4())[:8]
         structlog.contextvars.bind_contextvars(
             platform="mixesdb",
-            correlation_id=correlation_id
+            correlation_id=correlation_id,
+            strategy="insource_targeted_query"
         )
 
         try:
-            search_query = f"{track['title']} {track['artist']}"
-            logger.info("Searching platform", search_query=search_query)
+            # Build insource: query for surgical track lookup
+            # Format: insource:"Artist - Track"
+            # Example: insource:"Calvin Harris - Summer"
+            insource_query = f'insource:"{track["artist"]} - {track["title"]}"'
+            encoded_query = quote(insource_query)
 
-            # Build REAL MixesDB search URL
-            encoded_query = quote(search_query)
-            search_url = f"https://www.mixesdb.com/w/Search:{encoded_query}"
+            # MixesDB MediaWiki search URL with insource: operator
+            search_url = f"https://www.mixesdb.com/w/index.php?search={encoded_query}"
 
-            urls = [search_url]
-            logger.info("Platform search completed", urls_found=len(urls))
-            return urls
+            logger.info(
+                "Searching MixesDB with insource: operator",
+                artist=track['artist'],
+                title=track['title'],
+                insource_query=insource_query,
+                search_url=search_url
+            )
+
+            # Use browser-collector to fetch search results and extract page URLs
+            try:
+                from direct_scrapers import DirectScrapers
+
+                direct_scraper = DirectScrapers()
+                normalized_urls = await direct_scraper.scrape_mixesdb_search(
+                    artist=track['artist'],
+                    title=track['title']
+                )
+
+                # Validate URLs to filter out navigation/special pages
+                validated_urls = self._validate_urls_for_track(normalized_urls, track)
+
+                if validated_urls:
+                    logger.info(
+                        "MixesDB insource: search completed via CSS selectors",
+                        urls_found=len(validated_urls),
+                        urls_extracted=len(normalized_urls),
+                        extraction_method="direct_css"
+                    )
+                    await direct_scraper.close()
+                    return validated_urls
+                else:
+                    logger.warning(
+                        "insource: search found results but no valid URLs after filtering",
+                        urls_extracted=len(normalized_urls)
+                    )
+                    await direct_scraper.close()
+                    return []
+
+            except Exception as scrape_error:
+                logger.warning("Direct CSS scraping failed for MixesDB", error=str(scrape_error))
+                return []
 
         except Exception as e:
-            logger.error("Platform search error", error=str(e))
+            logger.error("MixesDB insource: search error", error=str(e))
             raise
 
     async def _search_setlistfm(self, track: Dict) -> List[str]:
-        """Search Setlist.fm with proper API integration"""
+        """
+        Search Setlist.fm using REST API (2025 best practice: API-first approach)
+
+        Uses official setlist.fm API instead of browser scraping.
+        Free tier: 1000 requests/day, structured JSON responses, no LLM needed.
+        """
         correlation_id = str(uuid.uuid4())[:8]
         structlog.contextvars.bind_contextvars(
             platform="setlistfm",
@@ -487,20 +693,79 @@ class TargetTrackSearcher2025:
         )
 
         try:
+            # Get API key from environment
+            import os
+            api_key = os.getenv('SETLISTFM_API_KEY')
+
+            if not api_key:
+                logger.error("SETLISTFM_API_KEY not configured")
+                return []
+
             logger.info(
-                "Searching platform",
+                "Searching platform via REST API",
                 song_name=track['title'],
                 artist_name=track['artist']
             )
 
-            # Build REAL Setlist.fm search URL
-            artist_encoded = quote(track['artist'])
-            song_encoded = quote(track['title'])
-            search_url = f"https://www.setlist.fm/search?query={artist_encoded}+{song_encoded}"
+            # Use official setlist.fm REST API
+            try:
+                import httpx
 
-            urls = [search_url]
-            logger.info("Platform search completed", urls_found=len(urls))
-            return urls
+                # Search for setlists containing this track
+                # API: https://api.setlist.fm/docs/1.0/resource__search_setlists.html
+                search_url = "https://api.setlist.fm/rest/1.0/search/setlists"
+                params = {
+                    'songName': track['title'],
+                    'artistName': track['artist'],
+                    'p': 1  # First page
+                }
+
+                headers = {
+                    'x-api-key': api_key,
+                    'Accept': 'application/json'
+                }
+
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.get(search_url, params=params, headers=headers)
+                    response.raise_for_status()
+
+                    data = response.json()
+                    setlists = data.get('setlist', [])
+
+                    if not setlists:
+                        logger.info("No setlists found via API")
+                        return []
+
+                    # Extract URLs directly from API response (API provides correct URL format)
+                    urls = []
+                    for setlist in setlists[:10]:  # Limit to 10 results
+                        # API response includes pre-formatted URL - use it directly!
+                        # Format: https://www.setlist.fm/setlist/{artist}/{year}/{venue-slug}-{id}.html
+                        url = setlist.get('url')
+                        if url:
+                            urls.append(url)
+
+                            logger.debug(
+                                "Found setlist via API",
+                                setlist_id=setlist.get('id'),
+                                artist=setlist.get('artist', {}).get('name'),
+                                venue=setlist.get('venue', {}).get('name'),
+                                date=setlist.get('eventDate'),
+                                url=url
+                            )
+
+                    logger.info(
+                        "Platform search completed via API",
+                        urls_found=len(urls),
+                        method="rest_api",
+                        total_setlists=len(setlists)
+                    )
+
+                    return urls
+
+            except httpx.HTTPError as api_error:
+                logger.error("Setlist.fm API call failed", error=str(api_error))
+                return []
 
         except Exception as e:
             logger.error("Platform search error", error=str(e))
@@ -902,11 +1167,16 @@ class SearchOrchestrator2025:
                 logger.info(f"Filtering for title: {title}")
 
             # Add time filter (unless force_rescrape is enabled)
+            # Use randomized interval between 50-70 minutes to prevent overwhelming the system
+            # This allows approximately 10 tracks per hour (60 minutes / 6 minutes average)
             if not force_rescrape:
-                where_conditions.append("(last_searched IS NULL OR last_searched < NOW() - INTERVAL '24 hours')")
-                logger.info("Applying 24-hour rate limit")
+                # Random interval between 50-70 minutes per track
+                import random
+                random_minutes = random.randint(50, 70)
+                where_conditions.append(f"(last_searched IS NULL OR last_searched < NOW() - INTERVAL '{random_minutes} minutes')")
+                logger.info(f"Applying randomized rate limit: {random_minutes} minutes between scrapes")
             else:
-                logger.info("Force rescrape enabled - bypassing 24-hour rate limit")
+                logger.info("Force rescrape enabled - bypassing rate limit")
 
             # Build final query
             query = f"""

@@ -13,6 +13,7 @@ rule_files:
   - "alert_rules.yml"
   - "alerts/enhanced-visualization-alerts.yml"
   - "alerts/alert-rules.yaml"  # Modern observability alerts
+  - "browser-collector-alerts.yml"  # Browser automation service alerts
 
 # Scrape configuration
 scrape_configs:
@@ -81,6 +82,12 @@ scrape_configs:
   - job_name: 'scraper-orchestrator'
     static_configs:
       - targets: ['scraper-orchestrator:8001']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'browser-collector'
+    static_configs:
+      - targets: ['browser-collector:8030']
     scrape_interval: 30s
     metrics_path: /metrics
 

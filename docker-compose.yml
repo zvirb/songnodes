@@ -147,6 +147,7 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
     depends_on:
     - postgres
     - redis
@@ -821,6 +822,55 @@ services:
             count: 1
             capabilities:
             - gpu
+  browser-collector:
+    build:
+      context: ./services/browser-collector
+      dockerfile: Dockerfile
+    container_name: browser-collector
+    restart: always
+    ports:
+    - 8030:8030
+    environment:
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      OLLAMA_URL: http://ollama:11434
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      POSTGRES_USER: musicdb_user
+      POSTGRES_DB: musicdb
+      POSTGRES_HOST: db-connection-pool
+      POSTGRES_PORT: 6432
+      # Production tuning settings
+      MAX_CONCURRENT_BROWSERS: ${MAX_CONCURRENT_BROWSERS:-3}
+      COLLECTION_TIMEOUT_SECONDS: ${COLLECTION_TIMEOUT_SECONDS:-300}
+      SCREENSHOT_RETENTION_DAYS: ${SCREENSHOT_RETENTION_DAYS:-7}
+    volumes:
+    - browser_screenshots:/app/screenshots
+    depends_on:
+    - postgres
+    - db-connection-pool
+    - redis
+    - ollama
+    networks:
+    - musicdb-backend
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8030/health')"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
   api-gateway:
     build:
       context: ./services/api-gateway
@@ -1396,6 +1446,7 @@ services:
     - enhanced-visualization-service
     networks:
     - musicdb-frontend
+    - musicdb-monitoring
     healthcheck:
       test:
       - CMD
@@ -1568,3 +1619,9 @@ volumes:
       type: none
       o: bind
       device: ./logs/nginx
+  browser_screenshots:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/browser-screenshots
