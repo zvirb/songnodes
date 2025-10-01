@@ -46,32 +46,13 @@ async def scrape_url(request: ScrapeRequest):
         # Determine mode based on URL presence
         if request.url:
             logger.info(f"Processing URL: {request.url}")
-            # Extract search query from MixesDB URL
-            # URL format: https://www.mixesdb.com/w/Search?search=Artist+Track
-            from urllib.parse import urlparse, parse_qs, unquote
 
-            search_query = ""
-            if "mixesdb.com" in request.url:
-                parsed = urlparse(request.url)
-                query_params = parse_qs(parsed.query)
-                if 'search' in query_params:
-                    search_query = unquote(query_params['search'][0])
-                elif 'q' in query_params:
-                    search_query = unquote(query_params['q'][0])
-
-            if search_query:
-                # Run in URL mode with the search query
-                cmd.extend(["-a", "search_mode=url"])
-                cmd.extend(["-a", f"search_query={search_query}"])
-                logger.info(f"Using search query from URL: {search_query}")
-            else:
-                # If we can't extract query, use the URL as-is
-                cmd.extend(["-a", "search_mode=url"])
-                cmd.extend(["-a", f"start_url={request.url}"])
-                logger.info(f"Using full URL for scraping: {request.url}")
+            # For MixesDB, URLs come in format: https://www.mixesdb.com/w/Search:Artist
+            # Just pass the URL directly to the spider as start_urls
+            cmd.extend(["-a", f"start_urls={request.url}"])
+            logger.info(f"Using provided URL for scraping: {request.url}")
         else:
             # Run in targeted mode (spider design)
-            cmd.extend(["-a", "search_mode=targeted"])
             logger.info("No URL provided, running in targeted mode")
 
         # Add force run to bypass quota checks
@@ -83,13 +64,14 @@ async def scrape_url(request: ScrapeRequest):
 
         logger.info(f"Executing command: {' '.join(cmd)}")
 
-        # Run the spider
+        # Run the spider with extended timeout
+        # MixesDB has 15s download delay + parsing time, so we need longer timeout
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             cwd="/app",
-            timeout=300  # 5 minute timeout
+            timeout=900  # 15 minute timeout to accommodate download delays and parsing
         )
 
         # Log output for debugging
@@ -130,7 +112,7 @@ async def scrape_url(request: ScrapeRequest):
         return {
             "status": "timeout",
             "task_id": task_id,
-            "error": "Spider execution timeout after 5 minutes"
+            "error": "Spider execution timeout after 15 minutes"
         }
     except Exception as e:
         logger.error(f"Error executing spider: {str(e)}")

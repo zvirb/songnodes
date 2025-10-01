@@ -198,19 +198,49 @@ SELECT
     FALSE, 'https://www.last.fm/api/account/create', 4
 UNION ALL
 SELECT
+    'lastfm', 'shared_secret', 'Last.fm Shared Secret',
+    'Shared secret from Last.fm API account (required for authenticated calls)',
+    FALSE, 'https://www.last.fm/api/account/create', 5
+UNION ALL
+SELECT
     'beatport', 'api_key', 'Beatport API Key',
     'API key for Beatport access (if available)',
-    FALSE, 'https://www.beatport.com/', 5
+    FALSE, 'https://www.beatport.com/', 6
 UNION ALL
 SELECT
     'musicbrainz', 'user_agent', 'MusicBrainz User-Agent',
     'User-Agent string for MusicBrainz API (format: AppName/Version)',
-    TRUE, 'https://musicbrainz.org/doc/MusicBrainz_API', 6
+    TRUE, 'https://musicbrainz.org/doc/MusicBrainz_API', 7
 UNION ALL
 SELECT
     'youtube', 'api_key', 'YouTube Data API Key',
     'API key from Google Cloud Console for YouTube Data API',
-    TRUE, 'https://console.cloud.google.com/apis/credentials', 7;
+    TRUE, 'https://console.cloud.google.com/apis/credentials', 8
+UNION ALL
+SELECT
+    'setlistfm', 'api_key', 'Setlist.fm API Key',
+    'API key for Setlist.fm scraper access',
+    FALSE, 'https://api.setlist.fm/docs/1.0/index.html', 9
+UNION ALL
+SELECT
+    'reddit', 'client_id', 'Reddit Client ID',
+    'OAuth client ID from Reddit app settings',
+    FALSE, 'https://www.reddit.com/prefs/apps', 10
+UNION ALL
+SELECT
+    'reddit', 'client_secret', 'Reddit Client Secret',
+    'OAuth client secret from Reddit app settings',
+    FALSE, 'https://www.reddit.com/prefs/apps', 11
+UNION ALL
+SELECT
+    '1001tracklists', 'username', '1001Tracklists Username',
+    'Your 1001tracklists.com account username for authenticated scraping',
+    TRUE, 'https://www.1001tracklists.com/register.php', 12
+UNION ALL
+SELECT
+    '1001tracklists', 'password', '1001Tracklists Password',
+    'Your 1001tracklists.com account password for authenticated scraping',
+    TRUE, 'https://www.1001tracklists.com/register.php', 13;
 
 -- ===========================================
 -- AUDIT LOG

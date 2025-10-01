@@ -20,6 +20,7 @@ interface IntelligentBrowserProps {
   allTracks: Track[];
   onTrackSelect: (track: Track) => void;
   config?: Partial<IntelligentBrowserConfig>;
+  graphEdges?: Array<{ source: string; target: string; weight: number; type: string }>; // ✅ Add graph edges
 }
 
 // Default configuration following Hick's Law
@@ -32,12 +33,27 @@ const DEFAULT_CONFIG: IntelligentBrowserConfig = {
   updateInterval: 5000
 };
 
-// Intelligent recommendation engine
+// ✅ Intelligent recommendation engine - PRIORITIZE GRAPH ADJACENCIES
 const calculateRecommendations = (
   currentTrack: Track | null,
-  allTracks: Track[]
+  allTracks: Track[],
+  graphEdges?: Array<{ source: string; target: string; weight: number; type: string }>
 ): TrackRecommendation[] => {
   if (!currentTrack) return [];
+
+  // ✅ Build adjacency map from graph edges
+  const adjacencyMap = new Map<string, { weight: number; type: string }>();
+  if (graphEdges && graphEdges.length > 0) {
+    graphEdges.forEach(edge => {
+      if (edge.source === currentTrack.id) {
+        adjacencyMap.set(edge.target, { weight: edge.weight, type: edge.type });
+      } else if (edge.target === currentTrack.id) {
+        adjacencyMap.set(edge.source, { weight: edge.weight, type: edge.type });
+      }
+    });
+  }
+
+  console.log(`🎯 Found ${adjacencyMap.size} adjacent tracks for ${currentTrack.name}`);
 
   return (allTracks || [])
     .filter(track => track.id !== currentTrack.id)
@@ -53,22 +69,35 @@ const calculateRecommendations = (
         }
       };
 
+      // ✅ PRIORITY #1: Graph Adjacency (HIGHEST WEIGHT)
+      const adjacency = adjacencyMap.get(track.id);
+      if (adjacency) {
+        const adjacencyScore = 60 + (adjacency.weight * 20); // 60-80 points
+        recommendation.score += adjacencyScore;
+        recommendation.reasons.push({
+          type: 'history',
+          description: `Mixed together in real DJ sets (${adjacency.type})`,
+          weight: adjacencyScore
+        });
+        console.log(`  ✅ Adjacent track: ${track.name} (score: ${adjacencyScore})`);
+      }
+
       // Harmonic compatibility scoring
       const keyCompat = getKeyCompatibility(currentTrack.key, track.key);
       if (keyCompat === 'perfect') {
-        recommendation.score += 40;
+        recommendation.score += 25;
         recommendation.reasons.push({
           type: 'harmonic',
           description: 'Perfect harmonic match',
-          weight: 40
+          weight: 25
         });
         recommendation.compatibility.harmonic = 'perfect';
       } else if (keyCompat === 'compatible') {
-        recommendation.score += 30;
+        recommendation.score += 15;
         recommendation.reasons.push({
           type: 'harmonic',
           description: 'Harmonically compatible',
-          weight: 30
+          weight: 15
         });
         recommendation.compatibility.harmonic = 'compatible';
       }
@@ -76,19 +105,19 @@ const calculateRecommendations = (
       // Energy flow scoring
       const energyDiff = Math.abs(track.energy - currentTrack.energy);
       if (energyDiff <= 1) {
-        recommendation.score += 30;
+        recommendation.score += 15;
         recommendation.reasons.push({
           type: 'energy',
           description: energyDiff === 0 ? 'Same energy level' : 'Smooth energy transition',
-          weight: 30
+          weight: 15
         });
         recommendation.compatibility.energy = 'perfect';
       } else if (energyDiff <= 2) {
-        recommendation.score += 20;
+        recommendation.score += 10;
         recommendation.reasons.push({
           type: 'energy',
           description: 'Manageable energy change',
-          weight: 20
+          weight: 10
         });
         recommendation.compatibility.energy = 'good';
       }
@@ -97,19 +126,19 @@ const calculateRecommendations = (
       const bpmDiff = Math.abs(track.bpm - currentTrack.bpm);
       const bpmPercent = (bpmDiff / currentTrack.bpm) * 100;
       if (bpmPercent <= 2) {
-        recommendation.score += 30;
+        recommendation.score += 15;
         recommendation.reasons.push({
           type: 'bpm',
           description: 'Perfect tempo match',
-          weight: 30
+          weight: 15
         });
         recommendation.compatibility.bpm = 'perfect';
       } else if (bpmPercent <= 6) {
-        recommendation.score += 20;
+        recommendation.score += 10;
         recommendation.reasons.push({
           type: 'bpm',
           description: 'Close tempo (pitch adjust)',
-          weight: 20
+          weight: 10
         });
         recommendation.compatibility.bpm = 'close';
       }
@@ -335,16 +364,17 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
   currentTrack,
   allTracks,
   onTrackSelect,
-  config = {}
+  config = {},
+  graphEdges = [] // ✅ Accept graph edges
 }) => {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
   const [sortBy, setSortBy] = useState(finalConfig.sortBy);
 
-  // Calculate recommendations
+  // Calculate recommendations with graph edges
   const recommendations = useMemo(() => {
-    const recs = calculateRecommendations(currentTrack, allTracks);
+    const recs = calculateRecommendations(currentTrack, allTracks, graphEdges);
     return recs.slice(0, finalConfig.maxRecommendations);
-  }, [currentTrack, allTracks, finalConfig.maxRecommendations]);
+  }, [currentTrack, allTracks, graphEdges, finalConfig.maxRecommendations]);
 
   // Group recommendations by compatibility if requested
   const groupedRecommendations = useMemo(() => {
@@ -470,22 +500,25 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         </button>
       </div>
 
-      {/* Recommendations */}
+      {/* Recommendations - Hide empty groups */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         gap: '12px'
       }}>
-        {Object.entries(groupedRecommendations).map(([group, recs]) => (
+        {Object.entries(groupedRecommendations)
+          .filter(([group, recs]) => recs.length > 0) // ✅ Hide empty groups
+          .map(([group, recs]) => (
           <div key={group}>
             {finalConfig.groupBy !== 'none' && (
               <h4 style={{
                 color: group === 'excellent' ? '#7ED321' :
                        group === 'good' ? '#F5A623' : '#8E8E93',
-                fontSize: '14px',
+                fontSize: '12px',
                 margin: '0 0 8px 0',
                 textTransform: 'uppercase',
-                letterSpacing: '1px'
+                letterSpacing: '1px',
+                fontWeight: 700
               }}>
                 {group} ({recs.length})
               </h4>

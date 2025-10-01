@@ -100,7 +100,8 @@ const serviceProxies = {
   },
   '/api/v1/scrapers': {
     target: 'http://scraper-orchestrator:8001',
-    pathRewrite: { '^/api/v1/scrapers': '' }
+    pathRewrite: { '^/api/v1/scrapers': '' },
+    timeout: 120000  // 2 minutes for background task initiation
   },
   '/api/v1/scraping': {
     target: 'http://scraper-orchestrator:8001',

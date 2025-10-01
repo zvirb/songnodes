@@ -124,6 +124,14 @@ except Exception as e:
     logger.warning(f"Failed to load API Keys router: {str(e)}")
     logger.warning("API key management endpoints will not be available")
 
+try:
+    from routers import music_auth
+    app.include_router(music_auth.router)
+    logger.info("Music Authentication router registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to load Music Authentication router: {str(e)}")
+    logger.warning("Music service authentication endpoints will not be available")
+
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     """

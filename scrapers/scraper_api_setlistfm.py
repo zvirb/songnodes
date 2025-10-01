@@ -92,10 +92,10 @@ async def scrape_url(request: ScrapeRequest):
         )
 
         try:
-            # Wait for up to 10 minutes
+            # Wait for up to 15 minutes (increased from 10 to handle rate limiting delays)
             stdout, stderr = await asyncio.wait_for(
                 process.communicate(),
-                timeout=600
+                timeout=900
             )
 
             # Decode output
@@ -149,7 +149,7 @@ async def scrape_url(request: ScrapeRequest):
             return {
                 "status": "timeout",
                 "task_id": task_id,
-                "error": "Spider execution timeout after 10 minutes"
+                "error": "Spider execution timeout after 15 minutes"
             }
     except Exception as e:
         logger.error(f"Error executing spider: {str(e)}")

@@ -35,12 +35,12 @@ export default defineConfig({
     },
   },
   build: {
-    // No cache busting - let browser handle it
+    // Cache busting with content hashes to force browser updates
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]',
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: {
           // Split large visualization components
           'graph-visualization': ['./src/components/GraphVisualization.tsx'],

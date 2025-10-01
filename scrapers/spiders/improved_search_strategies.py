@@ -57,10 +57,13 @@ def get_reddit_searches() -> List[Dict[str, str]]:
 def get_direct_tracklist_urls() -> List[Dict[str, str]]:
     """Return curated list of direct tracklist URLs that bypass rate limiting."""
     # These are known working tracklist URLs that don't require search
+    # UPDATED: September 2025 - use current URLs from homepage
     direct_urls = [
-        "https://www.1001tracklists.com/tracklist/2dgqc1y1/tale-of-us-afterlife-presents-tale-of-us-iii-live-from-printworks-london-2024-12-28.html",
-        "https://www.1001tracklists.com/tracklist/2d4kx5y1/anyma-artbat-tale-of-us-afterlife-presents-tale-of-us-iii-live-from-printworks-london-2024-12-28.html",
-        "https://www.1001tracklists.com/tracklist/2dgqc1y2/fred-again-boiler-room-london-2024-12-20.html",
+        "https://www.1001tracklists.com/tracklist/xfux16t/dj-elax-mix-time-hash754-media-fm-105.5-2025-09-30.html",
+        "https://www.1001tracklists.com/tracklist/19k8pgt1/walter-pizzulli-m2o-morning-show-2025-09-29.html",
+        "https://www.1001tracklists.com/tracklist/27by7wuk/hillmer-brave-factory-festival-ukraine-2025-08-23.html",
+        "https://www.1001tracklists.com/tracklist/l86txc9/chester-young-young-nation-show-264-2025-09-30.html",
+        "https://www.1001tracklists.com/tracklist/xfuwtdt/robert-burian-stagezone-41-2025-09-30.html",
         # Add more as discovered - these URLs can be collected from social media, forums, etc.
     ]
 

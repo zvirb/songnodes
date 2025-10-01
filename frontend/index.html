@@ -92,6 +92,11 @@
     <script>
       // Kill ALL service workers and caches on load
       (async function() {
+        // ⚠️ CRITICAL: Check localStorage BEFORE any cleanup
+        console.log('🔍 [INIT] Checking localStorage BEFORE cleanup...');
+        const beforeCleanup = localStorage.getItem('songnodes-store');
+        console.log('🔍 [INIT] localStorage BEFORE cleanup:', beforeCleanup ? beforeCleanup.substring(0, 200) + '...' : 'NULL');
+
         // Unregister all service workers
         if ('serviceWorker' in navigator) {
           const registrations = await navigator.serviceWorker.getRegistrations();
@@ -108,11 +113,14 @@
           }
         }
 
-        // Clear storage
-        try {
-          localStorage.clear();
-          sessionStorage.clear();
-        } catch (e) {}
+        // ⚠️ CRITICAL: Check localStorage AFTER cleanup
+        console.log('🔍 [INIT] Checking localStorage AFTER cleanup...');
+        const afterCleanup = localStorage.getItem('songnodes-store');
+        console.log('🔍 [INIT] localStorage AFTER cleanup:', afterCleanup ? afterCleanup.substring(0, 200) + '...' : 'NULL');
+
+        if (beforeCleanup && !afterCleanup) {
+          console.error('❌❌❌ CACHE CLEANUP DELETED LOCALSTORAGE! ❌❌❌');
+        }
 
         // Hide loading screen once app loads
         window.addEventListener('DOMContentLoaded', () => {

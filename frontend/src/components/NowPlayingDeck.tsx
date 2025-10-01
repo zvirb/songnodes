@@ -104,33 +104,43 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
     <div className="now-playing-deck" style={{
       display: 'flex',
       flexDirection: 'column',
-      gap: '20px',
-      padding: '24px',
+      gap: '12px',
+      padding: '16px 20px',
       backgroundColor: 'rgba(0,0,0,0.9)',
       borderRadius: '12px',
       border: '2px solid rgba(255,255,255,0.2)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      height: '100%',
+      maxHeight: '220px',
+      overflow: 'hidden'
     }}>
-      {/* Track Info Header */}
+      {/* Track Info Header - Compact */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'flex-start'
+        alignItems: 'center',
+        minHeight: 0
       }}>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{
             color: '#FFFFFF',
-            fontSize: '24px',
+            fontSize: '18px',
             margin: 0,
             fontWeight: 700,
-            letterSpacing: '-0.5px'
+            letterSpacing: '-0.5px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}>
             {track.name}
           </h2>
           <p style={{
             color: '#8E8E93',
-            fontSize: '16px',
-            margin: '4px 0 0 0'
+            fontSize: '14px',
+            margin: '2px 0 0 0',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}>
             {track.artist}
           </p>
@@ -161,34 +171,34 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
         </div>
       </div>
 
-      {/* Key Metrics Row - Large and Glanceable */}
+      {/* Key Metrics Row - Compact and Horizontal */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '20px'
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '12px'
       }}>
         {/* BPM */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '16px',
+          padding: '8px 12px',
           backgroundColor: 'rgba(74,144,226,0.1)',
           borderRadius: '8px',
           border: '1px solid rgba(74,144,226,0.3)'
         }}>
           <span style={{
             color: '#8E8E93',
-            fontSize: '12px',
+            fontSize: '10px',
             textTransform: 'uppercase',
-            letterSpacing: '1px',
-            marginBottom: '8px'
+            letterSpacing: '0.5px',
+            marginBottom: '4px'
           }}>
             BPM
           </span>
           <span style={{
             color: '#4A90E2',
-            fontSize: '36px',
+            fontSize: '20px',
             fontWeight: 700,
             fontVariantNumeric: 'tabular-nums'
           }}>
@@ -201,23 +211,23 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '16px',
+          padding: '8px 12px',
           backgroundColor: 'rgba(126,211,33,0.1)',
           borderRadius: '8px',
           border: '1px solid rgba(126,211,33,0.3)'
         }}>
           <span style={{
             color: '#8E8E93',
-            fontSize: '12px',
+            fontSize: '10px',
             textTransform: 'uppercase',
-            letterSpacing: '1px',
-            marginBottom: '8px'
+            letterSpacing: '0.5px',
+            marginBottom: '4px'
           }}>
             KEY
           </span>
           <span style={{
             color: '#7ED321',
-            fontSize: '36px',
+            fontSize: '20px',
             fontWeight: 700
           }}>
             {track.key}
@@ -229,100 +239,48 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '16px',
+          padding: '8px 12px',
           backgroundColor: 'rgba(255,107,53,0.1)',
           borderRadius: '8px',
           border: '1px solid rgba(255,107,53,0.3)'
         }}>
           <span style={{
             color: '#8E8E93',
-            fontSize: '12px',
+            fontSize: '10px',
             textTransform: 'uppercase',
-            letterSpacing: '1px',
-            marginBottom: '12px'
+            letterSpacing: '0.5px',
+            marginBottom: '4px'
           }}>
             ENERGY
           </span>
-          <EnergyMeter level={track.energy} size="medium" />
+          <EnergyMeter level={track.energy} size="small" />
         </div>
-      </div>
 
-      {/* Waveform Display */}
-      <div>
-        <WaveformDisplay
-          waveformData={track.waveform}
-          height={80}
-        />
-      </div>
-
-      {/* Track Metadata */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        padding: '16px',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: '8px',
-        border: '1px solid rgba(255,255,255,0.1)'
-      }}>
+        {/* Duration */}
         <div style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '8px 12px',
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.1)'
         }}>
           <span style={{
             color: '#8E8E93',
-            fontSize: '12px',
+            fontSize: '10px',
             textTransform: 'uppercase',
-            letterSpacing: '1px'
+            letterSpacing: '0.5px',
+            marginBottom: '4px'
           }}>
-            Genre
+            TIME
           </span>
           <span style={{
             color: '#FFFFFF',
-            fontSize: '14px',
+            fontSize: '16px',
             fontWeight: 600
           }}>
-            {track.genre || 'Electronic'}
-          </span>
-        </div>
-        {track.duration && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <span style={{
-              color: '#8E8E93',
-              fontSize: '12px',
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>
-              Duration
-            </span>
-            <span style={{
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600
-            }}>
-              {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
-            </span>
-          </div>
-        )}
-        <div style={{
-          marginTop: '8px',
-          padding: '12px',
-          backgroundColor: 'rgba(126,211,33,0.1)',
-          border: '1px solid rgba(126,211,33,0.3)',
-          borderRadius: '6px',
-          textAlign: 'center'
-        }}>
-          <span style={{
-            color: '#7ED321',
-            fontSize: '13px',
-            fontWeight: 600
-          }}>
-            💡 Tip: Check the recommendations below for harmonically compatible tracks
+            {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
           </span>
         </div>
       </div>

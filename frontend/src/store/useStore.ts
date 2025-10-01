@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
+import { devtools, persist, subscribeWithSelector, createJSONStorage } from 'zustand/middleware';
 import {
   GraphData,
   GraphNode,
@@ -25,9 +25,11 @@ import {
 // Music service credentials interface
 interface MusicServiceCredentials {
   tidal?: {
-    username: string;
-    password: string;
-    rememberMe: boolean;
+    clientId: string;
+    clientSecret: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number;
     isConnected?: boolean;
     lastValidated?: number;
   };
@@ -900,33 +902,38 @@ export const useStore = create<StoreState>()(
         // Credential management actions
         credentials: {
           updateCredentials: (service, credentials) => {
+            const currentServiceCreds = get().musicCredentials[service] || {};
+            const newCredentials = {
+              ...get().musicCredentials,
+              [service]: {
+                ...currentServiceCreds,
+                ...credentials,
+              },
+            };
+
+            // ✅ 2025 Best Practice: Zustand persist auto-saves to localStorage
             set((state) => ({
               ...state,
-              musicCredentials: {
-                ...state.musicCredentials,
-                [service]: {
-                  ...state.musicCredentials[service],
-                  ...credentials,
-                },
-              },
+              musicCredentials: newCredentials,
             }), false, `credentials/update${service.charAt(0).toUpperCase() + service.slice(1)}`);
+
+            console.log(`✅ Updated ${service} credentials`);
           },
 
           clearCredentials: (service) => {
-            set((state) => {
-              if (service) {
-                const newCredentials = { ...state.musicCredentials };
-                delete newCredentials[service];
-                return {
-                  ...state,
-                  musicCredentials: newCredentials,
-                };
-              } else {
-                return {
-                  ...state,
-                  musicCredentials: {},
-                };
-              }
+            const state = get();
+            let newCredentials;
+
+            if (service) {
+              newCredentials = { ...state.musicCredentials };
+              delete newCredentials[service];
+            } else {
+              newCredentials = {};
+            }
+
+            // ✅ 2025 Best Practice: Zustand persist auto-handles localStorage
+            set({
+              musicCredentials: newCredentials,
             }, false, 'credentials/clear');
           },
 
@@ -946,17 +953,49 @@ export const useStore = create<StoreState>()(
               }), false, 'credentials/testConnectionStart');
 
               // Implement actual connection testing based on service
+              const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+
               switch (service) {
                 case 'tidal':
                   try {
-                    const response = await fetch('http://localhost:8085/auth/test', {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/music-auth/test/tidal`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
                       },
                       body: JSON.stringify({
-                        username: credentials.username,
-                        password: credentials.password,
+                        client_id: credentials.clientId,
+                        client_secret: credentials.clientSecret,
+                      }),
+                    });
+
+                    if (response.ok) {
+                      const result = await response.json();
+                      const isValid = result.valid;
+                      get().credentials.setConnectionStatus(service, isValid);
+                      return isValid;
+                    } else {
+                      const errorResult = await response.json();
+                      console.error('Tidal connection test failed:', errorResult);
+                      get().credentials.setConnectionStatus(service, false);
+                      return false;
+                    }
+                  } catch (error) {
+                    console.error('Tidal connection test failed:', error);
+                    get().credentials.setConnectionStatus(service, false);
+                    return false;
+                  }
+
+                case 'spotify':
+                  try {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/music-auth/test/spotify`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        client_id: credentials.clientId,
+                        client_secret: credentials.clientSecret,
                       }),
                     });
 
@@ -970,24 +1009,39 @@ export const useStore = create<StoreState>()(
                       return false;
                     }
                   } catch (error) {
-                    console.error('Tidal connection test failed:', error);
+                    console.error('Spotify connection test failed:', error);
                     get().credentials.setConnectionStatus(service, false);
                     return false;
                   }
 
-                case 'spotify':
-                  // TODO: Implement Spotify connection test
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                  const spotifyValid = credentials.clientId && credentials.clientSecret;
-                  get().credentials.setConnectionStatus(service, spotifyValid);
-                  return spotifyValid;
-
                 case 'appleMusic':
-                  // TODO: Implement Apple Music connection test
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                  const appleValid = credentials.keyId && credentials.teamId && credentials.privateKey;
-                  get().credentials.setConnectionStatus(service, appleValid);
-                  return appleValid;
+                  try {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/music-auth/test/apple-music`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        key_id: credentials.keyId,
+                        team_id: credentials.teamId,
+                        private_key: credentials.privateKey,
+                      }),
+                    });
+
+                    if (response.ok) {
+                      const result = await response.json();
+                      const isValid = result.valid;
+                      get().credentials.setConnectionStatus(service, isValid);
+                      return isValid;
+                    } else {
+                      get().credentials.setConnectionStatus(service, false);
+                      return false;
+                    }
+                  } catch (error) {
+                    console.error('Apple Music connection test failed:', error);
+                    get().credentials.setConnectionStatus(service, false);
+                    return false;
+                  }
 
                 default:
                   return false;
@@ -1005,42 +1059,48 @@ export const useStore = create<StoreState>()(
           },
 
           loadCredentialsFromStorage: () => {
-            try {
-              const stored = localStorage.getItem('songnodes_music_credentials');
-              if (stored) {
-                const decrypted = JSON.parse(atob(stored));
-                set((state) => ({
-                  ...state,
-                  musicCredentials: decrypted,
-                }), false, 'credentials/loadFromStorage');
-              }
-            } catch (error) {
-              console.error('Failed to load credentials from storage:', error);
-            }
+            // ✅ 2025 Best Practice: Zustand persist automatically loads on hydration
+            // This function is kept for backward compatibility but does nothing
+            console.log('ℹ️ loadCredentialsFromStorage called - Zustand persist handles this automatically');
           },
 
           saveCredentialsToStorage: () => {
-            try {
-              const state = get();
-              const encrypted = btoa(JSON.stringify(state.musicCredentials));
-              localStorage.setItem('songnodes_music_credentials', encrypted);
-            } catch (error) {
-              console.error('Failed to save credentials to storage:', error);
-            }
+            // ✅ 2025 Best Practice: Zustand persist automatically saves on state changes
+            // This function is kept for backward compatibility but does nothing
+            console.log('ℹ️ saveCredentialsToStorage called - Zustand persist handles this automatically');
           },
 
           setConnectionStatus: (service, isConnected) => {
+            console.log(`🔧 [setConnectionStatus] ${service} = ${isConnected}`);
+
+            const newCredentials = {
+              ...get().musicCredentials,
+              [service]: {
+                ...get().musicCredentials[service],
+                isConnected,
+                lastValidated: Date.now(),
+              },
+            };
+
+            // ✅ 2025 Best Practice: Zustand persist auto-handles localStorage
             set((state) => ({
               ...state,
-              musicCredentials: {
-                ...state.musicCredentials,
-                [service]: {
-                  ...state.musicCredentials[service],
-                  isConnected,
-                  lastValidated: Date.now(),
-                },
-              },
+              musicCredentials: newCredentials,
             }), false, `credentials/setConnectionStatus${service.charAt(0).toUpperCase() + service.slice(1)}`);
+
+            // Verify persistence worked
+            setTimeout(() => {
+              const stored = localStorage.getItem('songnodes-store');
+              if (stored) {
+                try {
+                  const parsed = JSON.parse(stored);
+                  const hasCreds = parsed?.state?.musicCredentials?.[service]?.isConnected;
+                  console.log(`✅ [setConnectionStatus] Verified persistence:`, { hasCreds, service });
+                } catch (e) {
+                  console.error('❌ Failed to verify persistence:', e);
+                }
+              }
+            }, 100);
           },
         },
 
@@ -1142,26 +1202,60 @@ export const useStore = create<StoreState>()(
       })),
       {
         name: 'songnodes-store',
-        version: 1,
-        partialize: (state) => ({
-          // Only persist certain parts of state
-          panelState: state.panelState,
-          viewState: {
-            ...state.viewState,
-            selectedNodes: new Set(), // Don't persist selected nodes
-            hoveredNode: null, // Don't persist hover state
-          },
-          searchFilters: state.searchFilters,
-          savedSetlists: state.savedSetlists,
-          pathfindingState: {
-            ...state.pathfindingState,
-            isCalculating: false, // Don't persist calculating state
-            currentPath: null, // Don't persist current path
-            alternatives: [],
-            previewPath: [],
-            error: null,
-          },
-        }),
+        version: 6, // v6: 2025 best practice - include musicCredentials in Zustand persist
+        storage: createJSONStorage(() => localStorage), // ✅ 2025 Required: Explicit storage adapter
+        skipHydration: false, // Ensure we hydrate from storage
+        partialize: (state) => {
+          const partialState = {
+            // Only persist certain parts of state
+            panelState: state.panelState,
+            viewState: {
+              ...state.viewState,
+              selectedNodes: [], // Convert Set to Array for JSON serialization
+              hoveredNode: null, // Don't persist hover state
+            },
+            searchFilters: state.searchFilters,
+            savedSetlists: state.savedSetlists,
+            pathfindingState: {
+              ...state.pathfindingState,
+              selectedWaypoints: [], // Convert Set to Array for JSON serialization
+              isCalculating: false, // Don't persist calculating state
+              currentPath: null, // Don't persist current path
+              alternatives: [],
+              previewPath: [],
+              error: null,
+            },
+            // ✅ 2025 Best Practice: Let Zustand persist handle credentials
+            musicCredentials: { ...state.musicCredentials }, // Create new object reference
+          };
+
+          return partialState;
+        },
+        // ✅ CRITICAL: Zustand v4+ persist needs a merge function
+        // Use Object.assign to merge persisted data into currentState without triggering getters
+        merge: (persistedState, currentState) => {
+          // Object.assign mutates currentState with persistedState properties
+          // This avoids spreading currentState (which would trigger getters)
+          return Object.assign(currentState, persistedState || {});
+        },
+        onRehydrateStorage: () => {
+          return (state) => {
+            // Convert arrays back to Sets after rehydration
+            if (state) {
+              if (Array.isArray(state.viewState?.selectedNodes)) {
+                state.viewState.selectedNodes = new Set(state.viewState.selectedNodes);
+              }
+              if (Array.isArray(state.pathfindingState?.selectedWaypoints)) {
+                state.pathfindingState.selectedWaypoints = new Set(state.pathfindingState.selectedWaypoints);
+              }
+
+              // Log successful credential restoration
+              if (state.musicCredentials && Object.keys(state.musicCredentials).length > 0) {
+                console.log('✅ Credentials restored:', Object.keys(state.musicCredentials));
+              }
+            }
+          };
+        },
       }
     ),
     {
@@ -1181,3 +1275,44 @@ export const usePerformanceMetrics = () => useStore(state => state.performanceMe
 
 // Export store for external access (useful for debugging)
 export default useStore;
+
+// Debugging utility - exposed to window for console access
+if (typeof window !== 'undefined') {
+  (window as any).debugZustand = {
+    getState: () => useStore.getState(),
+    getMusicCredentials: () => useStore.getState().musicCredentials,
+    getLocalStorage: () => {
+      const stored = localStorage.getItem('songnodes-store');
+      return stored ? JSON.parse(stored) : null;
+    },
+    injectTestCredentials: () => {
+      useStore.getState().credentials.updateCredentials('tidal', {
+        clientId: 'console-test-client',
+        clientSecret: 'console-test-secret'
+      });
+      console.log('✅ Test credentials injected via Zustand');
+    },
+    verifyPersistence: () => {
+      const state = useStore.getState().musicCredentials;
+      const stored = localStorage.getItem('songnodes-store');
+      const parsed = stored ? JSON.parse(stored) : null;
+
+      console.log('🔍 Persistence Verification:');
+      console.log('  Zustand state:', state);
+      console.log('  localStorage:', parsed?.state?.musicCredentials);
+      console.log('  Match:', JSON.stringify(state) === JSON.stringify(parsed?.state?.musicCredentials));
+
+      return {
+        zustandState: state,
+        localStorageState: parsed?.state?.musicCredentials,
+        match: JSON.stringify(state) === JSON.stringify(parsed?.state?.musicCredentials)
+      };
+    }
+  };
+  console.log('🛠️ Debugging utilities available: window.debugZustand');
+  console.log('  - debugZustand.getState()');
+  console.log('  - debugZustand.getMusicCredentials()');
+  console.log('  - debugZustand.getLocalStorage()');
+  console.log('  - debugZustand.injectTestCredentials()');
+  console.log('  - debugZustand.verifyPersistence()');
+}

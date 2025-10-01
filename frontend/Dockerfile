@@ -20,18 +20,32 @@ FROM nginx:alpine
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
+# Copy nginx configuration - 2025 best practices for cache control
 RUN echo 'server { \
     listen 80; \
     server_name localhost; \
     root /usr/share/nginx/html; \
     index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
+    \
+    # No cache for HTML - always check for updates \
+    location ~ \.html$ { \
+        try_files $uri /index.html; \
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"; \
         add_header Pragma "no-cache"; \
         add_header Expires "0"; \
     } \
+    \
+    # Long-term cache for hashed assets (JS, CSS with [hash] in filename) \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+    } \
+    \
+    # Fallback for other files and SPA routing \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+    \
     location /api { \
         proxy_pass http://api-gateway:8080; \
         proxy_http_version 1.1; \

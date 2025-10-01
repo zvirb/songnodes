@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { HarmonicCompatibility } from './HarmonicCompatibility';
 import { EnergyMeter } from './EnergyMeter';
 import { Track } from '../types/dj';
-import { api } from '../services/api';
+import { useGraphNodes, useGraphEdges } from '../store/useStore';
 
 /**
  * TrackDetailsModal - Detailed track inspection interface
  * Shows track metadata, relationships, and edges with option to set as currently playing
+ *
+ * ✅ FIX: Uses edges from Zustand store instead of making API calls
  */
 
 interface TrackDetailsModalProps {
@@ -39,67 +41,60 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
   onSetAsCurrentlyPlaying,
   currentlyPlayingTrack
 }) => {
-  const [edges, setEdges] = useState<TrackEdge[]>([]);
-  const [loading, setLoading] = useState(false);
+  // ✅ FIX: Get edges and nodes from Zustand store instead of API
+  const graphNodes = useGraphNodes();
+  const graphEdges = useGraphEdges();
 
-  // Fetch track edges when modal opens
-  useEffect(() => {
+  // Compute connected tracks from store data
+  const edges = useMemo(() => {
     if (!track || !isOpen) {
-      setEdges([]);
-      return;
+      return [];
     }
 
-    const fetchTrackEdges = async () => {
-      setLoading(true);
-      try {
-        console.log('Fetching edges for track:', track.id);
+    console.log('🔍 Computing edges for track:', track.id, track.name);
+    console.log('📊 Available edges in store:', graphEdges.length);
+    console.log('📊 Available nodes in store:', graphNodes.length);
 
-        // Get neighborhood data from the graph API
-        const response = await api.graph.getNodeNeighborhood(track.id, 1);
+    // Find all edges connected to this track
+    const connectedEdges = graphEdges.filter(
+      edge => edge.source === track.id || edge.target === track.id
+    );
 
-        if (response.status === 'success' && response.data.edges) {
-          // Transform edges and add related track info
-          const trackEdges: TrackEdge[] = response.data.edges.map(edge => ({
-            id: edge.id,
-            source: edge.source,
-            target: edge.target,
-            weight: edge.weight || 1,
-            type: edge.type || 'adjacency',
-            relatedTrack: {
-              id: edge.source === track.id ? edge.target : edge.source,
-              name: 'Unknown Track', // Will be populated from nodes data
-              artist: 'Unknown Artist'
+    console.log(`✅ Found ${connectedEdges.length} connected edges for ${track.name}`);
+
+    // Transform edges and add related track info from nodes
+    const trackEdges: TrackEdge[] = connectedEdges.map((edge, index) => {
+      const relatedNodeId = edge.source === track.id ? edge.target : edge.source;
+      const relatedNode = graphNodes.find(node => node.id === relatedNodeId);
+
+      const trackEdge: TrackEdge = {
+        id: edge.id || `edge-${index}`,
+        source: edge.source,
+        target: edge.target,
+        weight: edge.weight || 1,
+        type: edge.type || 'adjacency',
+        relatedTrack: relatedNode
+          ? {
+              id: relatedNode.id,
+              name: relatedNode.track?.name || relatedNode.title || relatedNode.label || 'Unknown Track',
+              artist: relatedNode.track?.artist || relatedNode.artist || 'Unknown Artist',
+              bpm: relatedNode.track?.bpm || relatedNode.bpm,
+              key: relatedNode.track?.key || relatedNode.key,
             }
-          }));
+          : {
+              id: relatedNodeId,
+              name: 'Unknown Track',
+              artist: 'Unknown Artist',
+            },
+      };
 
-          // Enhance with node metadata if available
-          if (response.data.nodes) {
-            trackEdges.forEach(edge => {
-              const relatedNode = response.data.nodes?.find(
-                node => node.id === edge.relatedTrack?.id
-              );
-              if (relatedNode && edge.relatedTrack) {
-                edge.relatedTrack.name = relatedNode.name || relatedNode.label || 'Unknown Track';
-                edge.relatedTrack.artist = relatedNode.artist || 'Unknown Artist';
-                edge.relatedTrack.bpm = relatedNode.track?.bpm;
-                edge.relatedTrack.key = relatedNode.track?.key;
-              }
-            });
-          }
+      console.log(`  → Edge to: ${trackEdge.relatedTrack?.name} (${trackEdge.type}, weight: ${trackEdge.weight})`);
 
-          setEdges(trackEdges);
-          console.log(`Found ${trackEdges.length} edges for track ${track.name}`);
-        }
-      } catch (error) {
-        console.error('Failed to fetch track edges:', error);
-        setEdges([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      return trackEdge;
+    });
 
-    fetchTrackEdges();
-  }, [track, isOpen]);
+    return trackEdges;
+  }, [track, isOpen, graphEdges, graphNodes]);
 
   if (!isOpen || !track) return null;
 
@@ -365,15 +360,7 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
               🔗 Connected Tracks ({edges.length})
             </h3>
 
-            {loading ? (
-              <div style={{
-                padding: '40px',
-                textAlign: 'center',
-                color: '#8E8E93'
-              }}>
-                Loading connections...
-              </div>
-            ) : edges.length > 0 ? (
+            {edges.length > 0 ? (
               <div style={{
                 display: 'flex',
                 flexDirection: 'column',

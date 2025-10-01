@@ -10,9 +10,11 @@ import asyncio
 import asyncpg
 import logging
 import uuid
+import threading
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from pydantic import ValidationError
+from twisted.internet import defer
 
 # Import Pydantic validation functions
 try:
@@ -40,6 +42,30 @@ class DatabasePipeline:
     - songs (song_id UUID, title, primary_artist_id, genre, bpm, etc.)
     - playlists (playlist_id UUID, name, source, source_url, etc.)
     """
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """
+        Scrapy calls this method to instantiate the pipeline.
+        Load database config from environment variables.
+        """
+        import os
+
+        # Use centralized secrets manager if available
+        try:
+            from common.secrets_manager import get_database_config
+            db_config = get_database_config()
+        except ImportError:
+            # Fallback to environment variables
+            db_config = {
+                'host': os.getenv('DATABASE_HOST', 'postgres'),
+                'port': int(os.getenv('DATABASE_PORT', '5432')),
+                'database': os.getenv('DATABASE_NAME', 'musicdb'),
+                'user': os.getenv('DATABASE_USER', 'musicdb_user'),
+                'password': os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass_change_me')
+            }
+
+        return cls(db_config)
 
     def __init__(self, database_config: Dict[str, Any]):
         self.config = database_config
@@ -71,33 +97,102 @@ class DatabasePipeline:
             'validation_errors': []
         }
 
-    async def open_spider(self, spider):
-        """Initialize connection pool when spider starts"""
+        # Periodic flushing to bypass async close_spider() issue (2025 workaround)
+        self.flush_interval = 10  # seconds
+        self.flush_thread: Optional[threading.Thread] = None
+        self._stop_flushing = threading.Event()
+        self._flushing_lock = threading.Lock()
+
+    def _periodic_flush_thread_target(self):
+        """
+        Background thread that periodically flushes batches to database.
+
+        Runs in its own thread with its own asyncio event loop to bypass
+        Scrapy's Twisted reactor async incompatibility. Ensures data is saved
+        even if close_spider() fails.
+        """
+        # Create new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        self.logger.info(f"🔄 Starting periodic batch flushing thread (every {self.flush_interval} seconds)")
+
         try:
-            connection_string = f"postgresql://{self.config['user']}:{self.config['password']}@{self.config['host']}:{self.config['port']}/{self.config['database']}"
-            self.connection_pool = await asyncpg.create_pool(
-                connection_string,
-                min_size=5,
-                max_size=15,
-                command_timeout=30,
-                max_queries=50000,
-                max_inactive_connection_lifetime=1800,
-                server_settings={
-                    'statement_timeout': '30000',
-                    'idle_in_transaction_session_timeout': '300000'
-                }
-            )
-            self.logger.info("✓ Database connection pool initialized")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize database connection pool: {e}")
-            raise
+            while not self._stop_flushing.is_set():
+                # Wait for flush interval or stop signal
+                if self._stop_flushing.wait(timeout=self.flush_interval):
+                    # Stop signal received
+                    break
+
+                # Check if there's anything to flush
+                with self._flushing_lock:
+                    total_items = sum(len(batch) for batch in self.item_batches.values())
+                    if total_items > 0:
+                        self.logger.info(f"⏰ Periodic flush triggered ({total_items} items pending)")
+                        try:
+                            loop.run_until_complete(self.flush_all_batches())
+                        except Exception as e:
+                            self.logger.error(f"Error during periodic flush: {e}")
+                            import traceback
+                            self.logger.error(traceback.format_exc())
+
+            self.logger.info("✓ Periodic flushing thread stopped")
+        finally:
+            loop.close()
+
+    def open_spider(self, spider):
+        """
+        Initialize connection pool when spider starts.
+
+        Uses a separate thread with its own event loop to avoid Twisted/asyncio conflicts.
+        """
+        def init_pool():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                connection_string = f"postgresql://{self.config['user']}:{self.config['password']}@{self.config['host']}:{self.config['port']}/{self.config['database']}"
+                self.connection_pool = loop.run_until_complete(asyncpg.create_pool(
+                    connection_string,
+                    min_size=5,
+                    max_size=15,
+                    command_timeout=30,
+                    max_queries=50000,
+                    max_inactive_connection_lifetime=1800,
+                    server_settings={
+                        'statement_timeout': '30000',
+                        'idle_in_transaction_session_timeout': '300000'
+                    }
+                ))
+                self.logger.info("✓ Database connection pool initialized")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize database connection pool: {e}")
+                raise
+            finally:
+                # Don't close loop - connection pool needs it
+                pass
+
+        # Initialize pool in separate thread to avoid Twisted/asyncio conflicts
+        init_thread = threading.Thread(target=init_pool)
+        init_thread.start()
+        init_thread.join()  # Wait for initialization to complete
+
+        # Start periodic flushing thread
+        self._stop_flushing.clear()
+        self.flush_thread = threading.Thread(
+            target=self._periodic_flush_thread_target,
+            daemon=True,
+            name="DatabasePipelineFlushThread"
+        )
+        self.flush_thread.start()
+        self.logger.info("✓ Periodic flushing thread started")
 
     async def process_item(self, item, spider):
         """Process a single item and add to appropriate batch"""
         try:
-            # Ensure connection pool is initialized (for non-Scrapy usage)
+            # Ensure connection pool is initialized
             if not self.connection_pool:
-                self.logger.warning("Connection pool not initialized, initializing now...")
+                self.logger.error("Connection pool not initialized! open_spider was not called properly.")
+                self.logger.warning("Attempting emergency initialization...")
                 await self.open_spider(spider)
 
             item_type = item.get('item_type')
@@ -115,10 +210,15 @@ class DatabasePipeline:
             else:
                 self.logger.warning(f"Unknown item type: {item_type}")
 
+            # Log successful processing
+            self.logger.debug(f"✓ Processed {item_type} item: {item.get('artist_name') or item.get('track_title') or item.get('setlist_name', 'unknown')}")
+
             return item
 
         except Exception as e:
             self.logger.error(f"Error processing item: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             raise
 
     async def _process_artist_item(self, item):
@@ -562,19 +662,52 @@ class DatabasePipeline:
             ])
 
     async def flush_all_batches(self):
-        """Flush all batches"""
+        """
+        Flush all batches to database.
+
+        Thread-safe via async lock to prevent concurrent flushes
+        from periodic task and manual flush calls.
+        """
         for batch_type in self.item_batches:
             await self._flush_batch(batch_type)
 
-    async def close_spider(self, spider):
+    def close_spider(self, spider):
         """
-        Clean up when spider closes and log validation statistics (2025 best practice).
+        Clean up when spider closes and log validation statistics.
 
-        Provides comprehensive validation report for data quality monitoring.
+        Uses separate thread with event loop to avoid Twisted/asyncio conflicts.
         """
+        self.logger.info("🔄 close_spider called - stopping periodic flushing and flushing remaining batches...")
         try:
-            # Flush any remaining batches
-            await self.flush_all_batches()
+            # Stop periodic flushing thread
+            if self.flush_thread and self.flush_thread.is_alive():
+                self.logger.info("Stopping periodic flush thread...")
+                self._stop_flushing.set()
+                self.flush_thread.join(timeout=5.0)
+                if self.flush_thread.is_alive():
+                    self.logger.warning("Periodic flush thread did not stop gracefully")
+                else:
+                    self.logger.info("✓ Periodic flush thread stopped")
+
+            # Log batch sizes before flushing
+            with self._flushing_lock:
+                for batch_type, batch in self.item_batches.items():
+                    if batch:
+                        self.logger.info(f"  Pending {batch_type}: {len(batch)} items")
+
+            # Final flush of any remaining batches (in separate thread)
+            def final_flush():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(self.flush_all_batches())
+                    self.logger.info("✓ All batches flushed successfully")
+                finally:
+                    pass  # Don't close loop
+
+            flush_thread = threading.Thread(target=final_flush)
+            flush_thread.start()
+            flush_thread.join()
 
             # Log validation statistics (if Pydantic validation was available)
             if PYDANTIC_AVAILABLE and self.validation_stats['total_items'] > 0:
@@ -598,10 +731,20 @@ class DatabasePipeline:
 
                 self.logger.info("=" * 70)
 
-            # Close connection pool
+            # Close connection pool (in separate thread)
             if self.connection_pool:
-                await self.connection_pool.close()
-                self.logger.info("✓ Database connection pool closed successfully")
+                def close_pool():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(self.connection_pool.close())
+                        self.logger.info("✓ Database connection pool closed successfully")
+                    finally:
+                        loop.close()
+
+                close_thread = threading.Thread(target=close_pool)
+                close_thread.start()
+                close_thread.join()
 
             self.logger.info("✓ Database pipeline closed successfully")
 

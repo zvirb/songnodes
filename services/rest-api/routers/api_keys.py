@@ -68,7 +68,8 @@ class APIKeyCreate(BaseModel):
     def validate_service_name(cls, v):
         allowed_services = [
             'spotify', 'discogs', 'lastfm', 'beatport',
-            'musicbrainz', 'youtube'
+            'musicbrainz', 'youtube', 'setlistfm', 'reddit',
+            '1001tracklists'
         ]
         if v.lower() not in allowed_services:
             raise ValueError(f'Service must be one of: {", ".join(allowed_services)}')
@@ -370,7 +371,7 @@ async def _test_api_key_by_service(
     elif service_name == 'discogs':
         return await _test_discogs_key(key_value)
     elif service_name == 'lastfm':
-        return await _test_lastfm_key(key_value)
+        return await _test_lastfm_key(key_value, key_name)
     elif service_name == 'musicbrainz':
         return await _test_musicbrainz_user_agent(key_value)
     elif service_name == 'beatport':
@@ -379,6 +380,10 @@ async def _test_api_key_by_service(
             'message': 'Beatport API key saved (testing not available)',
             'details': {'note': 'Beatport does not have a public API for testing'}
         }
+    elif service_name == 'setlistfm':
+        return await _test_setlistfm_key(key_value)
+    elif service_name == 'reddit':
+        return await _test_reddit_key(key_value, key_name, conn)
     else:
         return {
             'valid': False,
@@ -555,12 +560,39 @@ async def _test_discogs_key(token: str) -> Dict[str, Any]:
             'error': str(e)
         }
 
-async def _test_lastfm_key(api_key: str) -> Dict[str, Any]:
-    """Test Last.fm API key"""
+async def _test_lastfm_key(key_value: str, key_name: str) -> Dict[str, Any]:
+    """Test Last.fm API key or validate shared secret"""
     try:
+        # If testing shared_secret, just validate format (32 hex characters)
+        if key_name == 'shared_secret':
+            # Shared secret is a 32-character hexadecimal string
+            if not key_value or len(key_value) != 32:
+                return {
+                    'valid': False,
+                    'message': 'Invalid shared secret format (should be 32 characters)',
+                    'error': 'Incorrect length'
+                }
+
+            # Check if it's hexadecimal
+            try:
+                int(key_value, 16)
+            except ValueError:
+                return {
+                    'valid': False,
+                    'message': 'Invalid shared secret format (should be hexadecimal)',
+                    'error': 'Not a valid hex string'
+                }
+
+            return {
+                'valid': True,
+                'message': 'Last.fm shared secret format is valid',
+                'details': {'note': 'Shared secret is used for signing authenticated requests'}
+            }
+
+        # Test API key with actual API call
         params = {
             'method': 'chart.getTopTracks',
-            'api_key': api_key,
+            'api_key': key_value,
             'format': 'json',
             'limit': 1
         }
@@ -598,22 +630,60 @@ async def _test_lastfm_key(api_key: str) -> Dict[str, Any]:
         }
 
 async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
-    """Validate MusicBrainz User-Agent format"""
-    # MusicBrainz requires format: AppName/Version (Contact)
-    # Example: SongNodes/1.0 (contact@example.com)
+    """
+    Validate MusicBrainz User-Agent format
 
-    if not user_agent or len(user_agent) < 5:
+    MusicBrainz requires meaningful User-Agent strings with contact info:
+    - Format: AppName/Version (contact-info)
+    - Examples:
+      - SongNodes/1.0 (contact@example.com)
+      - SongNodes/1.0 +http://example.com (contact@example.com)
+    - See: https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
+    """
+
+    if not user_agent or len(user_agent) < 10:
         return {
             'valid': False,
-            'message': 'Invalid User-Agent format',
-            'error': 'User-Agent too short'
+            'message': 'User-Agent too short (minimum 10 characters)',
+            'error': 'User-Agent must include app name, version, and contact info'
         }
 
     if '/' not in user_agent:
         return {
             'valid': False,
-            'message': 'Invalid User-Agent format. Expected: AppName/Version',
-            'error': 'Missing version separator'
+            'message': 'Invalid User-Agent format. Expected: AppName/Version (contact)',
+            'error': 'Missing version separator (/)'
+        }
+
+    # Check for contact information (email or URL in parentheses)
+    if '(' not in user_agent or ')' not in user_agent:
+        return {
+            'valid': False,
+            'message': 'User-Agent must include contact info in parentheses',
+            'error': 'Missing contact information. Format: AppName/Version (email or URL)'
+        }
+
+    # Extract contact info
+    contact_start = user_agent.find('(')
+    contact_end = user_agent.find(')')
+    if contact_start >= contact_end:
+        return {
+            'valid': False,
+            'message': 'Invalid contact info format',
+            'error': 'Parentheses not properly closed'
+        }
+
+    contact_info = user_agent[contact_start+1:contact_end].strip()
+
+    # Validate contact info contains email or URL
+    has_email = '@' in contact_info and '.' in contact_info
+    has_url = 'http://' in contact_info or 'https://' in contact_info or contact_info.startswith('+http')
+
+    if not (has_email or has_url):
+        return {
+            'valid': False,
+            'message': 'Contact info must include email or URL',
+            'error': 'No valid email or URL found in contact info'
         }
 
     # Test with actual MusicBrainz API
@@ -654,4 +724,131 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
             'valid': True,
             'message': 'MusicBrainz User-Agent format appears valid',
             'details': {'note': 'Could not test with API, format validation only'}
+        }
+
+async def _test_setlistfm_key(api_key: str) -> Dict[str, Any]:
+    """Test Setlist.fm API key"""
+    try:
+        headers = {
+            'x-api-key': api_key,
+            'Accept': 'application/json'
+        }
+
+        async with aiohttp.ClientSession() as session:
+            # Test with a simple artist search
+            async with session.get(
+                'https://api.setlist.fm/rest/1.0/search/artists?artistName=Coldplay&p=1&sort=relevance',
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    return {
+                        'valid': True,
+                        'message': 'Setlist.fm API key is valid'
+                    }
+                elif response.status == 401:
+                    return {
+                        'valid': False,
+                        'message': 'Invalid Setlist.fm API key',
+                        'error': 'Authentication failed'
+                    }
+                elif response.status == 403:
+                    return {
+                        'valid': False,
+                        'message': 'Setlist.fm API key forbidden',
+                        'error': 'API key lacks required permissions'
+                    }
+                else:
+                    return {
+                        'valid': False,
+                        'message': f'Setlist.fm API error: {response.status}',
+                        'error': await response.text()
+                    }
+
+    except Exception as e:
+        return {
+            'valid': False,
+            'message': f'Setlist.fm test failed: {str(e)}',
+            'error': str(e)
+        }
+
+async def _test_reddit_key(client_id: str, key_name: str, conn: asyncpg.Connection) -> Dict[str, Any]:
+    """Test Reddit OAuth credentials"""
+    try:
+        # Need both client_id and client_secret
+        if key_name == 'client_id':
+            # Get the client_secret
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET')
+            query = "SELECT get_api_key('reddit', 'client_secret', $1) as secret"
+            result = await conn.fetchrow(query, encryption_secret)
+
+            if not result or not result['secret']:
+                return {
+                    'valid': False,
+                    'message': 'Reddit client_secret not configured',
+                    'error': 'Missing client_secret'
+                }
+
+            client_secret = result['secret']
+        else:
+            # key_name is client_secret, get client_id
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET')
+            query = "SELECT get_api_key('reddit', 'client_id', $1) as client_id"
+            result = await conn.fetchrow(query, encryption_secret)
+
+            if not result or not result['client_id']:
+                return {
+                    'valid': False,
+                    'message': 'Reddit client_id not configured',
+                    'error': 'Missing client_id'
+                }
+
+            client_secret = client_id
+            client_id = result['client_id']
+
+        # Test OAuth token endpoint
+        auth = aiohttp.BasicAuth(client_id, client_secret)
+        data = {
+            'grant_type': 'client_credentials',
+            'device_id': 'songnodes-test'
+        }
+        headers = {'User-Agent': 'SongNodes/1.0'}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                'https://www.reddit.com/api/v1/access_token',
+                auth=auth,
+                data=data,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    token_data = await response.json()
+                    return {
+                        'valid': True,
+                        'message': 'Reddit credentials valid',
+                        'details': {
+                            'token_type': token_data.get('token_type'),
+                            'expires_in': token_data.get('expires_in')
+                        }
+                    }
+                elif response.status == 401:
+                    return {
+                        'valid': False,
+                        'message': 'Invalid Reddit credentials',
+                        'error': 'Authentication failed'
+                    }
+                else:
+                    error_text = await response.text()
+                    return {
+                        'valid': False,
+                        'message': f'Reddit API error: {response.status}',
+                        'error': error_text
+                    }
+
+    except Exception as e:
+        return {
+            'valid': False,
+            'message': f'Reddit test failed: {str(e)}',
+            'error': str(e)
         }
