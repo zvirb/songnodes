@@ -309,7 +309,7 @@ class BeatportSpider(scrapy.Spider):
             'https://www.beatport.com/genre/progressive-house/15/tracks',
         ]
 
-    def start_requests(self):
+    def start(self):
         """Generate initial requests with Playwright for JavaScript rendering."""
         from scrapy_playwright.page import PageMethod
 

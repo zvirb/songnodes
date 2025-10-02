@@ -97,8 +97,15 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         # Support for custom start URLs (from orchestrator)
         if start_urls:
             # Parse comma-separated URLs if provided as string
+            # BUT: Only split on comma if we detect multiple URLs (contains "http" after a comma)
             if isinstance(start_urls, str):
-                self.start_urls = [url.strip() for url in start_urls.split(',')]
+                # Check if it's truly multiple URLs or just one URL with commas in it
+                if ', http' in start_urls or ',http' in start_urls:
+                    # Multiple URLs separated by commas
+                    self.start_urls = [url.strip() for url in start_urls.split(',')]
+                else:
+                    # Single URL that may contain commas (e.g., city names)
+                    self.start_urls = [start_urls.strip()]
             else:
                 self.start_urls = start_urls
             self.logger.info(f"Using provided start_urls: {self.start_urls}")
@@ -309,6 +316,14 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
     def parse(self, response):
         """Parse MixesDB pages with enhanced data extraction"""
+        # Check if response is text (guard against brotli decompression failures)
+        try:
+            _ = response.text
+        except Exception as e:
+            self.logger.warning(f"Response encoding error for {response.url}: {e}")
+            self.logger.warning(f"Content-Encoding: {response.headers.get('Content-Encoding', b'none').decode()}")
+            return
+
         # Handle search results
         if 'Special:Search' in response.url:
             yield from self.parse_search_results(response)
@@ -674,11 +689,27 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 if not track_string:
                     continue
 
+                # FRAMEWORK SECTION 2.2: Extract Label and Catalog Number FIRST
+                # Pattern: \[([^\]]+?)\s+-\s+([^\]]+?)\]
+                # Format: "Artist - Track [Label - CatNum]"
+                label_pattern = r'\[([^\]]+?)\s+-\s+([^\]]+?)\]'
+                label_match = re.search(label_pattern, track_string)
+
+                label_name = None
+                catalog_number = None
+
+                if label_match:
+                    label_name = label_match.group(1).strip()
+                    catalog_number = label_match.group(2).strip()
+                    # Remove label/catalog from track string before parsing
+                    track_string = track_string[:label_match.start()].strip()
+                    self.logger.debug(f"Extracted label: {label_name}, catalog: {catalog_number}")
+
                 # Parse track information
                 parsed_track = parse_track_string(track_string)
 
                 # Skip unknown tracks instead of creating "Unknown Artist" entries
-                if parsed_track['track_name'].lower() in ['id', '?', 'unknown'] or not parsed_track['primary_artists']:
+                if parsed_track is None or parsed_track['track_name'].lower() in ['id', '?', 'unknown'] or not parsed_track['primary_artists']:
                     continue
 
                 # Extract timing information
@@ -699,27 +730,38 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 # Generate deterministic track_id for cross-source deduplication
                 track_id = generate_track_id_from_parsed(parsed_track)
 
-                # Build comprehensive track data
+                # Build comprehensive track data (with label/catalog for Discogs linking)
+                is_remix = parsed_track.get('is_remix', False)
+                remix_type = self.extract_remix_type(parsed_track['track_name'])
+
+                # Pydantic validation requires remix_type when is_remix=True
+                if is_remix and not remix_type:
+                    remix_type = "Unknown Remix"
+
                 track_item = {
                     'track_id': track_id,  # Deterministic ID for matching across sources
                     'track_name': parsed_track['track_name'],
                     'normalized_title': parsed_track['track_name'].lower().strip(),
-                    'is_remix': parsed_track.get('is_remix', False),
+                    'is_remix': is_remix,
                     'is_mashup': parsed_track.get('is_mashup', False),
                     'mashup_components': parsed_track.get('mashup_components'),
                     'bpm': bpm,
                     'musical_key': musical_key,
                     'genre': genre,
+                    'record_label': label_name,  # For Discogs linking
+                    'catalog_number': catalog_number,  # For Discogs linking
                     'start_time': start_time,
                     'track_type': 'Mix',
                     'source_context': track_string,
                     'position_in_source': i + 1,
-                    'remix_type': self.extract_remix_type(parsed_track['track_name']),
+                    'remix_type': remix_type,
                     'metadata': json.dumps({
                         'original_string': track_string,
                         'extraction_source': 'mixesdb',
                         'mix_context': setlist_data.get('setlist_name') if setlist_data else None,
-                        'is_identified': parsed_track['track_name'] != "Unknown Track"
+                        'is_identified': parsed_track['track_name'] != "Unknown Track",
+                        'label': label_name,
+                        'catalog': catalog_number
                     }),
                     'external_urls': json.dumps({'mixesdb_context': response.url}),
                     'data_source': self.name,

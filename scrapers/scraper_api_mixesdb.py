@@ -58,9 +58,10 @@ async def scrape_url(request: ScrapeRequest):
         # Add force run to bypass quota checks
         cmd.extend(["-a", "force_run=true"])
 
-        # Set output file
-        output_file = f"/tmp/{task_id}_mixesdb.json"
-        cmd.extend(["-o", output_file])
+        # DON'T use -o flag - it bypasses the database pipeline!
+        # The database pipeline will insert items directly to Postgres
+        # We'll create a stats file instead for tracking
+        stats_file = f"/tmp/{task_id}_stats.json"
 
         logger.info(f"Executing command: {' '.join(cmd)}")
 
@@ -93,18 +94,29 @@ async def scrape_url(request: ScrapeRequest):
                 "returncode": result.returncode
             }
 
-        # Check if output file was created
-        output_exists = os.path.exists(output_file)
-        output_size = os.path.getsize(output_file) if output_exists else 0
+        # Parse Scrapy stats from output
+        tracks_count = 0
+        items_scraped = 0
+
+        # Look for stats in stdout (Scrapy prints stats at the end)
+        if result.stdout:
+            # Extract item_scraped_count from Scrapy stats
+            for line in result.stdout.split('\n'):
+                if 'item_scraped_count' in line:
+                    try:
+                        # Format: 'item_scraped_count': 123,
+                        items_scraped = int(line.split(':')[1].strip().rstrip(','))
+                    except:
+                        pass
 
         return {
             "status": "success",
             "task_id": task_id,
             "url": request.url,
-            "mode": "targeted",
-            "output_file": output_file if output_exists else None,
-            "output_size": output_size,
-            "message": "Spider executed in targeted mode using target_tracks_for_scraping.json"
+            "mode": "url" if request.url else "targeted",
+            "items_processed": items_scraped,
+            "tracks_count": items_scraped,  # For backward compatibility
+            "message": f"Spider executed, {items_scraped} items processed through database pipeline"
         }
 
     except subprocess.TimeoutExpired:

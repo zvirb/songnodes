@@ -44,7 +44,7 @@ Usage Examples:
         auth_type = 'bearer'  # or 'api_key', 'oauth2'
         auth_token_env_var = 'MY_API_TOKEN'
 
-        def start_requests(self):
+        def start(self):
             yield self.create_authenticated_request(
                 url=f'{self.api_base_url}/tracks',
                 callback=self.parse_tracks
@@ -339,7 +339,7 @@ class BaseJsonApiSpider(scrapy.Spider):
                 "Must be 'offset', 'next_url', or 'page_number'"
             )
 
-    def start_requests(self):
+    def start(self):
         """
         Generate initial API request.
 
@@ -589,7 +589,7 @@ class BaseOfficialApiSpider(scrapy.Spider):
             auth_token_env_var = 'SPOTIFY_ACCESS_TOKEN'
             rate_limit_requests_per_second = 10
 
-            def start_requests(self):
+            def start(self):
                 yield self.create_authenticated_request(
                     url=f'{self.api_base_url}/me/playlists',
                     callback=self.parse_playlists

@@ -216,7 +216,7 @@ class DiscogsAPISpider(scrapy.Spider):
             self.logger.debug(f"Database token load failed: {e}")
             raise
 
-    def start_requests(self):
+    def start(self):
         """Generate initial API requests based on spider arguments"""
         headers = self._get_api_headers()
 

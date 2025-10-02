@@ -13,6 +13,7 @@ redis>=5.0.1
 requests>=2.31.0
 httpx>=0.25.0
 urllib3>=2.1.0
+brotli>=1.1.0  # For brotli compression support
 
 # Playwright for JavaScript rendering
 playwright>=1.40.0
@@ -22,6 +23,11 @@ scrapy-playwright>=0.0.33
 beautifulsoup4>=4.12.2
 lxml>=4.9.3
 PyYAML>=6.0.1
+
+# Fuzzy matching (Framework Section 3.1 - Table 3.1)
+jellyfish>=0.11.0  # Jaro-Winkler, Levenshtein distance
+fuzzywuzzy>=0.18.0  # Token Set Ratio for word reordering
+python-Levenshtein>=0.21.0  # Fast C implementation for Levenshtein
 
 # JSON and data validation
 jsonschema>=4.20.0

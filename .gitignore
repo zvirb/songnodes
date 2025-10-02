@@ -66,6 +66,9 @@ frontend/tests/screenshots/
 # Scrapy projects (external)
 musicdb_scrapy/
 
+# Scrapy cache files
+scrapers/.scrapy/
+
 # Deployment artifacts
 deployment/
 
