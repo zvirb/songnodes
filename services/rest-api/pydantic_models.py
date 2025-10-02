@@ -9,9 +9,9 @@ Provides comprehensive validation for:
 
 Ensures data quality at every layer of the application.
 """
-from pydantic import BaseModel, Field, field_validator, model_validator, constr, confloat, conint
+from pydantic import BaseModel, Field, field_validator, model_validator, constr, confloat, conint, ConfigDict
 from typing import List, Optional, Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from enum import Enum
 import re
 
@@ -72,6 +72,7 @@ class RemixType(str, Enum):
     REWORK = "rework"
     BOOTLEG = "bootleg"
     MASHUP = "mashup"
+    UNKNOWN = "unknown"  # For remixes where type cannot be determined
 
 
 # ============================================================================
@@ -112,7 +113,7 @@ class ArtistBase(BaseModel):
 
     # System fields
     data_source: DataSource
-    scrape_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    scrape_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Validators
     @field_validator('country')
@@ -148,10 +149,7 @@ class ArtistBase(BaseModel):
             raise ValueError(f'Generic artist name "{v}" not allowed - must have specific artist attribution')
         return v
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
 
 
 class ArtistCreate(ArtistBase):
@@ -165,8 +163,7 @@ class ArtistResponse(ArtistBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -231,7 +228,7 @@ class TrackBase(BaseModel):
 
     # System fields
     data_source: DataSource
-    scrape_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    scrape_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Validators
     @field_validator('track_id')
@@ -286,11 +283,7 @@ class TrackBase(BaseModel):
 
         return self
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
 
 
 class TrackCreate(TrackBase):
@@ -305,8 +298,7 @@ class TrackResponse(TrackBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -332,7 +324,7 @@ class TrackArtistRelationship(BaseModel):
 
     # System fields
     data_source: DataSource
-    scrape_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    scrape_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Validators
     @field_validator('track_id')
@@ -395,7 +387,7 @@ class SetlistBase(BaseModel):
 
     # System fields
     data_source: DataSource
-    scrape_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    scrape_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator('normalized_name')
     @classmethod
@@ -421,11 +413,7 @@ class SetlistBase(BaseModel):
             raise ValueError('set_start_time must be before set_end_time')
         return self
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
 
 
 class SetlistCreate(SetlistBase):
@@ -439,8 +427,7 @@ class SetlistResponse(SetlistBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -467,7 +454,7 @@ class TrackAdjacency(BaseModel):
 
     # System fields
     data_source: DataSource
-    scrape_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    scrape_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Validators
     @field_validator('track_1_id', 'track_2_id')
@@ -497,8 +484,8 @@ class TrackSource(BaseModel):
     source_track_id: Optional[str] = None
     source_url: Optional[str] = None
 
-    discovered_at: datetime = Field(default_factory=datetime.utcnow)
-    last_seen_at: datetime = Field(default_factory=datetime.utcnow)
+    discovered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_seen_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Metadata from source
     play_count: Optional[conint(ge=0)] = None
@@ -506,10 +493,7 @@ class TrackSource(BaseModel):
     chart_position: Optional[conint(ge=1)] = None
     source_metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
 
 
 # ============================================================================
@@ -519,23 +503,17 @@ class TrackSource(BaseModel):
 class HealthCheckResponse(BaseModel):
     """Health check response"""
     status: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     database_connected: bool
     services_available: Dict[str, bool]
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
 
 
 class ErrorResponse(BaseModel):
     """Standard error response"""
     error: str
     detail: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()

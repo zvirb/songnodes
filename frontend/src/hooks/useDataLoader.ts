@@ -63,9 +63,14 @@ const nodeToTrack = (node: any): Track => {
 export const useDataLoader = () => {
   const setGraphData = useStore(state => state.graph.setGraphData);
   const applyFilters = useStore(state => state.search.applyFilters);
+  const setLoading = useStore(state => state.general.setLoading);
+  const setError = useStore(state => state.general.setError);
 
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
         // Load nodes
         const nodesResponse = await fetch('/api/graph/nodes?limit=500');
@@ -117,10 +122,12 @@ export const useDataLoader = () => {
 
         setGraphData({ nodes, edges });
         applyFilters({});
+        setLoading(false);
 
-        console.log(`Loaded ${nodes.length} nodes and ${edges.length} edges`);
+        console.log(`✅ Loaded ${nodes.length} nodes and ${edges.length} edges`);
       } catch (error) {
-        console.error('Failed to load graph data:', error);
+        console.error('❌ Failed to load graph data:', error);
+        setError('Failed to load graph data. Please try again.');
 
         // Fallback: try loading from legacy endpoints
         try {
@@ -149,12 +156,15 @@ export const useDataLoader = () => {
 
           setGraphData({ nodes, edges });
           applyFilters({});
+          setLoading(false);
+          console.log(`✅ Loaded ${nodes.length} nodes and ${edges.length} edges from fallback`);
         } catch (fallbackError) {
-          console.error('Failed to load from fallback:', fallbackError);
+          console.error('❌ Failed to load from fallback:', fallbackError);
+          setLoading(false);
         }
       }
     };
 
     loadData();
-  }, [setGraphData, applyFilters]);
+  }, [setGraphData, applyFilters, setLoading, setError]);
 };

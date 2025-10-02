@@ -132,6 +132,14 @@ except Exception as e:
     logger.warning(f"Failed to load Music Authentication router: {str(e)}")
     logger.warning("Music service authentication endpoints will not be available")
 
+try:
+    from routers import youtube_api
+    app.include_router(youtube_api.router)
+    logger.info("YouTube API router registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to load YouTube API router: {str(e)}")
+    logger.warning("YouTube API endpoints will not be available")
+
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     """
@@ -461,6 +469,115 @@ async def create_track(track: TrackCreate):
         logger.error(f"Failed to create track: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/search/tracks", response_model=List[TrackResponse])
+async def search_tracks(
+    query: str,
+    limit: int = 20,
+    offset: int = 0
+):
+    """
+    Search tracks by name with fuzzy matching.
+
+    Uses PostgreSQL's trigram similarity for fuzzy text search.
+    Results ordered by similarity score (most relevant first).
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Use ILIKE pattern matching for fuzzy search
+            # Note: Database uses 'title' but Pydantic models use 'track_name'
+            search_query = """
+            SELECT song_id::text, track_id, title as track_name, normalized_title,
+                   duration_seconds as duration_ms,
+                   isrc, spotify_id, apple_music_id, youtube_music_id as youtube_id,
+                   soundcloud_id, musicbrainz_id,
+                   bpm, key as musical_key, energy, danceability, valence, acousticness,
+                   instrumentalness, liveness, speechiness, loudness,
+                   release_year as release_date, genre, NULL as subgenre, label as record_label,
+                   is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
+                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
+                   NULL as popularity_score, NULL as play_count, NULL as track_type,
+                   NULL as source_context, NULL as position_in_source,
+                   'mixesdb' as data_source, created_at as scrape_timestamp,
+                   primary_artist_id::text, created_at, updated_at
+            FROM songs
+            WHERE title ILIKE $1 OR normalized_title ILIKE $1
+            ORDER BY
+                CASE
+                    WHEN title ILIKE $2 THEN 1
+                    WHEN title ILIKE $1 THEN 2
+                    ELSE 3
+                END, title
+            LIMIT $3 OFFSET $4
+            """
+
+            search_pattern = f"%{query}%"
+            exact_pattern = query
+            rows = await conn.fetch(search_query, search_pattern, exact_pattern, limit, offset)
+
+            tracks = []
+            for row in rows:
+                try:
+                    track = TrackResponse(**dict(row))
+                    tracks.append(track)
+                except ValidationError as ve:
+                    logger.warning(f"Track {row['song_id']} failed validation: {ve}")
+                    continue
+
+            logger.info(f"Search for '{query}' returned {len(tracks)} tracks")
+            return tracks
+
+    except Exception as e:
+        logger.error(f"Failed to search tracks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/tracks/{track_id}", response_model=TrackResponse)
+async def get_track_by_id(track_id: str):
+    """
+    Get a single track by its song_id or track_id.
+
+    Supports both UUID-based song_id and deterministic track_id lookups.
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Try to find by song_id (UUID) or track_id (deterministic hash)
+            # Note: Database uses 'title' but Pydantic models use 'track_name'
+            query = """
+            SELECT song_id::text, track_id, title as track_name, normalized_title,
+                   duration_seconds as duration_ms,
+                   isrc, spotify_id, apple_music_id, youtube_music_id as youtube_id,
+                   soundcloud_id, musicbrainz_id,
+                   bpm, key as musical_key, energy, danceability, valence, acousticness,
+                   instrumentalness, liveness, speechiness, loudness,
+                   release_year as release_date, genre, NULL as subgenre, label as record_label,
+                   is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
+                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
+                   NULL as popularity_score, NULL as play_count, NULL as track_type,
+                   NULL as source_context, NULL as position_in_source,
+                   'mixesdb' as data_source, created_at as scrape_timestamp,
+                   primary_artist_id::text, created_at, updated_at
+            FROM songs
+            WHERE song_id::text = $1 OR track_id = $1
+            LIMIT 1
+            """
+
+            row = await conn.fetchrow(query, track_id)
+
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Track with ID '{track_id}' not found")
+
+            try:
+                track = TrackResponse(**dict(row))
+                return track
+            except ValidationError as ve:
+                logger.error(f"Track {track_id} failed validation: {ve}")
+                raise HTTPException(status_code=500, detail="Track data validation failed")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch track {track_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/setlists", response_model=List[SetlistResponse])
 async def get_setlists(dj_id: Optional[int] = None, limit: int = 100, offset: int = 0):
     """
@@ -532,17 +649,24 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
             nodes = []
             for row in rows:
                 nodes.append({
-                    "id": str(row['song_id']),
-                    "label": row['title'],
-                    "artist": row['artist_name'] or "Unknown Artist",
-                    "type": "track",
-                    "bpm": row['bpm'],
-                    "key": row['key'],
-                    "size": min(30, 10 + row['connection_count'] * 2),  # Size based on connections
-                    "connections": row['connection_count']
+                    "id": f"song_{row['song_id']}",
+                    "track_id": f"song_{row['song_id']}",
+                    "position": {"x": 0.0, "y": 0.0},
+                    "metadata": {
+                        "title": row['title'],
+                        "artist": row['artist_name'],
+                        "node_type": "song",
+                        "category": None,
+                        "genre": None,
+                        "release_year": None,
+                        "appearance_count": row['connection_count'],
+                        "label": row['title'],
+                        "bpm": row['bpm'],
+                        "key": row['key']
+                    }
                 })
 
-            return nodes
+            return {"nodes": nodes, "total": len(nodes), "limit": limit, "offset": 0}
     except Exception as e:
         logger.error(f"Failed to fetch graph nodes: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -566,15 +690,22 @@ async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
 
             edges = []
             for row in rows:
+                # Create IDs with song_ prefix to match node IDs
+                source_id = f"song_{row['song_id_1']}"
+                target_id = f"song_{row['song_id_2']}"
+                edge_id = f"{source_id}__{target_id}"
                 edges.append({
-                    "source": str(row['song_id_1']),
-                    "target": str(row['song_id_2']),
+                    "id": edge_id,
+                    "source": source_id,
+                    "target": target_id,
                     "weight": row['weight'],
+                    "type": "adjacency",
+                    "edge_type": "adjacency",
                     "source_label": row['source_title'],
                     "target_label": row['target_title']
                 })
 
-            return edges
+            return {"edges": edges, "total": len(edges), "limit": limit, "offset": 0}
     except Exception as e:
         logger.error(f"Failed to fetch graph edges: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
