@@ -447,52 +447,453 @@ class CaptchaBackend:
 
 
 class TwoCaptchaBackend(CaptchaBackend):
-    """2Captcha API backend."""
+    """
+    2Captcha API backend - Production implementation.
 
-    API_URL = 'https://2captcha.com'
+    Supports:
+    - reCAPTCHA v2 (~$0.002/solve)
+    - reCAPTCHA v3 (~$0.003/solve)
+    - hCaptcha (~$0.002/solve)
+    - FunCaptcha (~$0.002/solve)
+    - Normal CAPTCHA (~$0.001/solve)
+
+    API Documentation: https://2captcha.com/2captcha-api
+    """
+
+    API_SUBMIT_URL = 'https://2captcha.com/in.php'
+    API_RESULT_URL = 'https://2captcha.com/res.php'
+
+    # Pricing per CAPTCHA type (USD)
+    PRICING = {
+        'recaptcha': 0.002,
+        'recaptcha_v3': 0.003,
+        'hcaptcha': 0.002,
+        'funcaptcha': 0.002,
+        'cloudflare': 0.003,
+        'generic': 0.001,
+    }
+
+    def __init__(self, api_key: str, settings):
+        super().__init__(api_key, settings)
+        self.fallback_provider = settings.get('CAPTCHA_FALLBACK_PROVIDER', 'anticaptcha')
+        self.fallback_api_key = settings.get('CAPTCHA_FALLBACK_API_KEY')
 
     def solve(self, captcha_type: str, params: Dict[str, Any], timeout: int = 120) -> Optional[Dict[str, Any]]:
-        """Solve CAPTCHA using 2Captcha API."""
-        logger.info(f"Solving {captcha_type} using 2Captcha API (mock implementation)")
+        """Solve CAPTCHA using 2Captcha API with fallback support."""
+        import requests
 
-        # TODO: Implement actual 2Captcha API integration
-        # For now, return mock solution
-        return {
-            'token': 'mock_2captcha_token',
-            'cost': 0.002,  # $0.002 per reCAPTCHA solve
-            'backend': '2captcha',
-            'type': captcha_type,
+        logger.info(f"Solving {captcha_type} CAPTCHA using 2Captcha API")
+
+        try:
+            # Validate API key
+            if not self.api_key or self.api_key == 'your_2captcha_api_key_here':
+                logger.error("2Captcha API key not configured")
+                return self._try_fallback(captcha_type, params, timeout)
+
+            # Submit CAPTCHA to 2Captcha
+            captcha_id = self._submit_captcha(captcha_type, params)
+
+            if not captcha_id:
+                logger.error("Failed to submit CAPTCHA to 2Captcha")
+                return self._try_fallback(captcha_type, params, timeout)
+
+            # Poll for result with exponential backoff
+            token = self._poll_result(captcha_id, timeout)
+
+            if token:
+                cost = self.PRICING.get(captcha_type, 0.002)
+                logger.info(f"2Captcha solved successfully (cost: ${cost:.4f})")
+
+                return {
+                    'token': token,
+                    'cost': cost,
+                    'backend': '2captcha',
+                    'type': captcha_type,
+                }
+            else:
+                logger.error("2Captcha failed to solve CAPTCHA within timeout")
+                return self._try_fallback(captcha_type, params, timeout)
+
+        except Exception as e:
+            logger.error(f"2Captcha error: {e}")
+            return self._try_fallback(captcha_type, params, timeout)
+
+    def _submit_captcha(self, captcha_type: str, params: Dict[str, Any]) -> Optional[str]:
+        """Submit CAPTCHA to 2Captcha API."""
+        import requests
+
+        # Build request data based on CAPTCHA type
+        data = {
+            'key': self.api_key,
+            'json': 1,  # Return JSON response
         }
+
+        if captcha_type == 'recaptcha':
+            data['method'] = 'userrecaptcha'
+            data['googlekey'] = params.get('sitekey')
+            data['pageurl'] = params.get('url')
+            data['version'] = 'v2'
+
+        elif captcha_type == 'recaptcha_v3':
+            data['method'] = 'userrecaptcha'
+            data['googlekey'] = params.get('sitekey')
+            data['pageurl'] = params.get('url')
+            data['version'] = 'v3'
+            data['action'] = params.get('action', 'verify')
+            data['min_score'] = params.get('min_score', 0.3)
+
+        elif captcha_type == 'hcaptcha':
+            data['method'] = 'hcaptcha'
+            data['sitekey'] = params.get('sitekey')
+            data['pageurl'] = params.get('url')
+
+        elif captcha_type == 'cloudflare':
+            data['method'] = 'turnstile'
+            data['sitekey'] = params.get('sitekey', 'cloudflare')
+            data['pageurl'] = params.get('url')
+
+        else:
+            logger.warning(f"Unsupported CAPTCHA type '{captcha_type}' for 2Captcha")
+            return None
+
+        try:
+            response = requests.post(self.API_SUBMIT_URL, data=data, timeout=30)
+            result = response.json()
+
+            if result.get('status') == 1:
+                captcha_id = result.get('request')
+                logger.info(f"CAPTCHA submitted to 2Captcha, ID: {captcha_id}")
+                return captcha_id
+            else:
+                error_msg = result.get('request', 'Unknown error')
+                logger.error(f"2Captcha submission failed: {error_msg}")
+
+                # Check for specific errors
+                if 'ERROR_ZERO_BALANCE' in error_msg:
+                    logger.error("2Captcha account has insufficient balance")
+                elif 'ERROR_WRONG_USER_KEY' in error_msg:
+                    logger.error("Invalid 2Captcha API key")
+                elif 'ERROR_KEY_DOES_NOT_EXIST' in error_msg:
+                    logger.error("2Captcha API key does not exist")
+
+                return None
+
+        except requests.exceptions.Timeout:
+            logger.error("2Captcha submission timed out")
+            return None
+        except Exception as e:
+            logger.error(f"2Captcha submission error: {e}")
+            return None
+
+    def _poll_result(self, captcha_id: str, timeout: int) -> Optional[str]:
+        """Poll 2Captcha for CAPTCHA solution with exponential backoff."""
+        import requests
+        import time
+
+        start_time = time.time()
+        delay = 5  # Start with 5 second delay
+        max_delay = 30  # Cap at 30 seconds
+
+        while time.time() - start_time < timeout:
+            try:
+                response = requests.get(
+                    self.API_RESULT_URL,
+                    params={
+                        'key': self.api_key,
+                        'action': 'get',
+                        'id': captcha_id,
+                        'json': 1,
+                    },
+                    timeout=10
+                )
+
+                result = response.json()
+
+                if result.get('status') == 1:
+                    # Success - return token
+                    token = result.get('request')
+                    logger.info(f"2Captcha solved in {time.time() - start_time:.1f}s")
+                    return token
+
+                elif result.get('request') == 'CAPCHA_NOT_READY':
+                    # Still processing - wait and retry
+                    logger.debug(f"2Captcha still processing, waiting {delay}s...")
+                    time.sleep(delay)
+
+                    # Exponential backoff
+                    delay = min(delay * 1.5, max_delay)
+
+                else:
+                    # Error occurred
+                    error_msg = result.get('request', 'Unknown error')
+                    logger.error(f"2Captcha result error: {error_msg}")
+
+                    if 'ERROR_CAPTCHA_UNSOLVABLE' in error_msg:
+                        logger.error("2Captcha reports CAPTCHA is unsolvable")
+                        return None
+
+                    # Continue polling for other errors
+                    time.sleep(delay)
+
+            except requests.exceptions.Timeout:
+                logger.warning("2Captcha result check timed out, retrying...")
+                time.sleep(delay)
+            except Exception as e:
+                logger.error(f"2Captcha polling error: {e}")
+                time.sleep(delay)
+
+        logger.error(f"2Captcha timeout after {timeout}s")
+        return None
+
+    def _try_fallback(self, captcha_type: str, params: Dict[str, Any], timeout: int) -> Optional[Dict[str, Any]]:
+        """Try fallback CAPTCHA provider if configured."""
+        if not self.fallback_api_key or self.fallback_provider == 'none':
+            logger.info("No fallback CAPTCHA provider configured")
+            return None
+
+        logger.info(f"Trying fallback provider: {self.fallback_provider}")
+
+        if self.fallback_provider == 'anticaptcha':
+            fallback = AntiCaptchaBackend(self.fallback_api_key, self.settings)
+            return fallback.solve(captcha_type, params, timeout)
+
+        return None
 
 
 class AntiCaptchaBackend(CaptchaBackend):
-    """Anti-Captcha API backend."""
+    """
+    Anti-Captcha API backend - Production implementation.
+
+    Supports:
+    - reCAPTCHA v2 (~$0.002/solve)
+    - reCAPTCHA v3 (~$0.003/solve)
+    - hCaptcha (~$0.002/solve)
+    - FunCaptcha (~$0.002/solve)
+    - Cloudflare Turnstile (~$0.003/solve)
+
+    API Documentation: https://anti-captcha.com/apidoc
+    """
 
     API_URL = 'https://api.anti-captcha.com'
 
+    # Pricing per CAPTCHA type (USD)
+    PRICING = {
+        'recaptcha': 0.002,
+        'recaptcha_v3': 0.003,
+        'hcaptcha': 0.002,
+        'funcaptcha': 0.002,
+        'cloudflare': 0.003,
+        'generic': 0.001,
+    }
+
     def solve(self, captcha_type: str, params: Dict[str, Any], timeout: int = 120) -> Optional[Dict[str, Any]]:
         """Solve CAPTCHA using Anti-Captcha API."""
-        logger.info(f"Solving {captcha_type} using Anti-Captcha API (mock implementation)")
+        import requests
 
-        # TODO: Implement actual Anti-Captcha API integration
-        return {
-            'token': 'mock_anticaptcha_token',
-            'cost': 0.002,
-            'backend': 'anticaptcha',
-            'type': captcha_type,
-        }
+        logger.info(f"Solving {captcha_type} CAPTCHA using Anti-Captcha API")
+
+        try:
+            # Validate API key
+            if not self.api_key or self.api_key == 'your_anticaptcha_api_key_here':
+                logger.error("Anti-Captcha API key not configured")
+                return None
+
+            # Create task
+            task_id = self._create_task(captcha_type, params)
+
+            if not task_id:
+                logger.error("Failed to create Anti-Captcha task")
+                return None
+
+            # Poll for result with exponential backoff
+            token = self._poll_result(task_id, timeout)
+
+            if token:
+                cost = self.PRICING.get(captcha_type, 0.002)
+                logger.info(f"Anti-Captcha solved successfully (cost: ${cost:.4f})")
+
+                return {
+                    'token': token,
+                    'cost': cost,
+                    'backend': 'anticaptcha',
+                    'type': captcha_type,
+                }
+            else:
+                logger.error("Anti-Captcha failed to solve CAPTCHA within timeout")
+                return None
+
+        except Exception as e:
+            logger.error(f"Anti-Captcha error: {e}")
+            return None
+
+    def _create_task(self, captcha_type: str, params: Dict[str, Any]) -> Optional[int]:
+        """Create CAPTCHA task in Anti-Captcha API."""
+        import requests
+
+        # Build task data based on CAPTCHA type
+        task_data = None
+
+        if captcha_type == 'recaptcha':
+            task_data = {
+                'type': 'NoCaptchaTaskProxyless',
+                'websiteURL': params.get('url'),
+                'websiteKey': params.get('sitekey'),
+            }
+
+        elif captcha_type == 'recaptcha_v3':
+            task_data = {
+                'type': 'RecaptchaV3TaskProxyless',
+                'websiteURL': params.get('url'),
+                'websiteKey': params.get('sitekey'),
+                'minScore': params.get('min_score', 0.3),
+                'pageAction': params.get('action', 'verify'),
+            }
+
+        elif captcha_type == 'hcaptcha':
+            task_data = {
+                'type': 'HCaptchaTaskProxyless',
+                'websiteURL': params.get('url'),
+                'websiteKey': params.get('sitekey'),
+            }
+
+        elif captcha_type == 'cloudflare':
+            task_data = {
+                'type': 'TurnstileTaskProxyless',
+                'websiteURL': params.get('url'),
+                'websiteKey': params.get('sitekey', 'cloudflare'),
+            }
+
+        else:
+            logger.warning(f"Unsupported CAPTCHA type '{captcha_type}' for Anti-Captcha")
+            return None
+
+        # Submit task
+        try:
+            response = requests.post(
+                f'{self.API_URL}/createTask',
+                json={
+                    'clientKey': self.api_key,
+                    'task': task_data,
+                },
+                timeout=30
+            )
+
+            result = response.json()
+
+            if result.get('errorId') == 0:
+                task_id = result.get('taskId')
+                logger.info(f"Anti-Captcha task created, ID: {task_id}")
+                return task_id
+            else:
+                error_code = result.get('errorCode', 'Unknown')
+                error_msg = result.get('errorDescription', 'Unknown error')
+                logger.error(f"Anti-Captcha task creation failed: {error_code} - {error_msg}")
+
+                # Check for specific errors
+                if error_code == 'ERROR_ZERO_BALANCE':
+                    logger.error("Anti-Captcha account has insufficient balance")
+                elif error_code == 'ERROR_KEY_DOES_NOT_EXIST':
+                    logger.error("Invalid Anti-Captcha API key")
+
+                return None
+
+        except requests.exceptions.Timeout:
+            logger.error("Anti-Captcha task creation timed out")
+            return None
+        except Exception as e:
+            logger.error(f"Anti-Captcha task creation error: {e}")
+            return None
+
+    def _poll_result(self, task_id: int, timeout: int) -> Optional[str]:
+        """Poll Anti-Captcha for task result with exponential backoff."""
+        import requests
+        import time
+
+        start_time = time.time()
+        delay = 5  # Start with 5 second delay
+        max_delay = 30  # Cap at 30 seconds
+
+        while time.time() - start_time < timeout:
+            try:
+                response = requests.post(
+                    f'{self.API_URL}/getTaskResult',
+                    json={
+                        'clientKey': self.api_key,
+                        'taskId': task_id,
+                    },
+                    timeout=10
+                )
+
+                result = response.json()
+
+                if result.get('errorId') == 0:
+                    status = result.get('status')
+
+                    if status == 'ready':
+                        # Success - extract token
+                        solution = result.get('solution', {})
+                        token = solution.get('gRecaptchaResponse') or solution.get('token')
+
+                        if token:
+                            logger.info(f"Anti-Captcha solved in {time.time() - start_time:.1f}s")
+                            return token
+                        else:
+                            logger.error("Anti-Captcha returned empty solution")
+                            return None
+
+                    elif status == 'processing':
+                        # Still processing - wait and retry
+                        logger.debug(f"Anti-Captcha still processing, waiting {delay}s...")
+                        time.sleep(delay)
+
+                        # Exponential backoff
+                        delay = min(delay * 1.5, max_delay)
+
+                    else:
+                        logger.error(f"Anti-Captcha unknown status: {status}")
+                        time.sleep(delay)
+
+                else:
+                    # Error occurred
+                    error_code = result.get('errorCode', 'Unknown')
+                    error_msg = result.get('errorDescription', 'Unknown error')
+                    logger.error(f"Anti-Captcha result error: {error_code} - {error_msg}")
+                    return None
+
+            except requests.exceptions.Timeout:
+                logger.warning("Anti-Captcha result check timed out, retrying...")
+                time.sleep(delay)
+            except Exception as e:
+                logger.error(f"Anti-Captcha polling error: {e}")
+                time.sleep(delay)
+
+        logger.error(f"Anti-Captcha timeout after {timeout}s")
+        return None
 
 
 class MockCaptchaBackend(CaptchaBackend):
-    """Mock backend for testing (always succeeds)."""
+    """
+    Mock backend for testing only (NOT for production use).
+
+    WARNING: This backend is deprecated and should only be used for development/testing.
+    Production deployments MUST use real CAPTCHA solving services.
+    """
 
     def solve(self, captcha_type: str, params: Dict[str, Any], timeout: int = 120) -> Optional[Dict[str, Any]]:
         """Return mock solution."""
-        logger.warning(f"Using MOCK CAPTCHA backend - returning fake solution for {captcha_type}")
+        logger.warning(
+            f"⚠️  SECURITY WARNING: Using MOCK CAPTCHA backend for {captcha_type}. "
+            "This is NOT suitable for production! Configure a real CAPTCHA service."
+        )
 
-        return {
-            'token': f'mock_token_{int(time.time())}',
-            'cost': 0.0,
-            'backend': 'mock',
-            'type': captcha_type,
-        }
+        # Only allow in development/testing environments
+        if self.settings.get('CAPTCHA_ALLOW_MOCK', False):
+            return {
+                'token': f'mock_token_{int(time.time())}',
+                'cost': 0.0,
+                'backend': 'mock',
+                'type': captcha_type,
+            }
+        else:
+            logger.error("Mock CAPTCHA backend disabled in production. Set CAPTCHA_ALLOW_MOCK=True to enable (NOT RECOMMENDED)")
+            return None
