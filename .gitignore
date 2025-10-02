@@ -183,3 +183,14 @@ frontend/tests/reports/
 frontend-tests/
 test-*.js
 
+
+# Test reports
+frontend/tests/reports/
+
+# Temporary debug files
+debug-*.js
+verify-*.js
+simple-*.js
+*-screenshot*.png
+debug-layers.png
+final-working-graph.png
