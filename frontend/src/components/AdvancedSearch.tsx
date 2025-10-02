@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, X, Filter, ChevronDown, ChevronUp, Sliders } from 'lucide-react';
+import { Search, X, Filter, ChevronDown, ChevronUp, Sliders, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { TrackSearchEngine, SearchFilters, SearchFacets, createSearchEngine } from '../utils/fuzzySearch';
 
@@ -21,6 +21,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
   const [results, setResults] = useState<any[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilterGroups, setActiveFilterGroups] = useState<Set<string>>(new Set());
+  const [isSearching, setIsSearching] = useState(false);
 
   // Initialize search engine
   useEffect(() => {
@@ -35,14 +36,20 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
   useEffect(() => {
     if (!searchEngine) return;
 
+    setIsSearching(true);
+
     const performSearch = () => {
       const searchResults = searchEngine.search(query, filters, 100);
       setResults(searchResults.map(r => r.item));
+      setIsSearching(false);
     };
 
     // Debounce search
     const timeoutId = setTimeout(performSearch, 300);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      setIsSearching(false);
+    };
   }, [query, filters, searchEngine]);
 
   // Update facets when filters change
@@ -125,9 +132,16 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tracks, artists, genres... (supports fuzzy matching)"
-            className="w-full pl-10 pr-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+            className="w-full pl-10 pr-12 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
           />
-          {query && (
+          {isSearching && (
+            <Loader2
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 animate-spin"
+              size={18}
+              aria-label="Searching..."
+            />
+          )}
+          {query && !isSearching && (
             <button
               onClick={() => setQuery('')}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
@@ -401,11 +415,33 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
             </button>
           ))}
 
-          {results.length === 0 && query && (
+          {results.length === 0 && query && !isSearching && (
             <div className="text-center py-8 text-gray-500">
               <Search size={48} className="mx-auto mb-3 opacity-50" />
-              <p>No results found for "{query}"</p>
-              <p className="text-sm mt-1">Try different keywords or adjust your filters</p>
+              <p className="text-white mb-2">No results found for "{query}"</p>
+
+              {/* Specific suggestions based on active filters */}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="text-blue-400 hover:text-blue-300 underline mb-3 inline-block"
+                >
+                  Try clearing {activeFilterCount} active filter{activeFilterCount > 1 ? 's' : ''}
+                </button>
+              )}
+
+              {/* General suggestions */}
+              {activeFilterCount === 0 && (
+                <div className="text-sm mt-3 space-y-1">
+                  <p>Suggestions:</p>
+                  <ul className="list-disc list-inside text-gray-400">
+                    <li>Check for typos in your search</li>
+                    <li>Try broader search terms</li>
+                    <li>Use fewer words in your search</li>
+                    <li>Search by BPM, key, or genre instead</li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
