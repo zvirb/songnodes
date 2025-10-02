@@ -92,6 +92,16 @@ class MetadataEnrichmentPipeline:
                 )
 
         try:
+            # STEP 0: Check ISRC availability (CRITICAL for deduplication)
+            isrc = task.existing_isrc or metadata.get('isrc')
+            if not isrc:
+                logger.warning(
+                    "Track missing ISRC - will attempt to populate from Spotify/MusicBrainz",
+                    track_id=task.track_id,
+                    artist=task.artist_name,
+                    title=task.track_title
+                )
+
             # STEP 1: Primary enrichment via Spotify (if spotify_id available)
             if task.existing_spotify_id:
                 logger.info("Step 1: Enriching from Spotify ID", spotify_id=task.existing_spotify_id)
@@ -101,6 +111,11 @@ class MetadataEnrichmentPipeline:
                     sources_used.append(EnrichmentSource.SPOTIFY)
                     metadata.update(spotify_data)
                     logger.info("Spotify enrichment successful")
+
+                    # CRITICAL: Check if ISRC was obtained from Spotify
+                    if spotify_data.get('isrc') and not isrc:
+                        isrc = spotify_data['isrc']
+                        logger.info("✓ ISRC populated from Spotify", isrc=isrc)
 
                     # Get audio features - only if client exists
                     if self.spotify_client:
@@ -112,7 +127,9 @@ class MetadataEnrichmentPipeline:
                             logger.info("Spotify audio features retrieved")
 
             # STEP 2: Enrichment via ISRC (if available or obtained from Spotify)
-            isrc = task.existing_isrc or metadata.get('isrc')
+            if not isrc:
+                isrc = metadata.get('isrc')  # Check again in case Spotify provided it
+
             if isrc:
                 logger.info("Step 2: Enriching from ISRC", isrc=isrc)
 
@@ -182,6 +199,11 @@ class MetadataEnrichmentPipeline:
                     metadata.update(mb_search)
                     logger.info("MusicBrainz search successful")
 
+                    # CRITICAL: Check if ISRC was obtained from MusicBrainz
+                    if mb_search.get('isrc') and not isrc:
+                        isrc = mb_search['isrc']
+                        logger.info("✓ ISRC populated from MusicBrainz", isrc=isrc)
+
             # STEP 5: Discogs for release-specific metadata
             logger.info("Step 5: Discogs enrichment")
             if self.discogs_client:
@@ -218,6 +240,23 @@ class MetadataEnrichmentPipeline:
                 )
                 if camelot_key:
                     metadata['camelot_key'] = camelot_key
+
+            # FINAL ISRC CHECK: Log warning if still missing
+            final_isrc = metadata.get('isrc')
+            if not final_isrc:
+                logger.warning(
+                    "⚠️ Track enrichment completed WITHOUT ISRC - deduplication may fail",
+                    track_id=task.track_id,
+                    artist=task.artist_name,
+                    title=task.track_title,
+                    sources_used=[s.value for s in sources_used]
+                )
+            else:
+                logger.info(
+                    "✓ ISRC confirmed for track",
+                    track_id=task.track_id,
+                    isrc=final_isrc
+                )
 
             # Update database with enriched metadata
             await self._update_track_in_database(task.track_id, metadata, sources_used)
@@ -393,7 +432,8 @@ class MetadataEnrichmentPipeline:
                     'enriched_at': datetime.now().isoformat()
                 }
 
-                updates.append("metadata = COALESCE(metadata, '{}'::jsonb) || :enrichment_data::jsonb")
+                # Use named parameters for SQLAlchemy text()
+                updates.append("metadata = COALESCE(metadata, '{}'::jsonb) || CAST(:enrichment_data AS jsonb)")
                 params['enrichment_data'] = json.dumps(enrichment_data)
 
                 updates.append("updated_at = CURRENT_TIMESTAMP")
