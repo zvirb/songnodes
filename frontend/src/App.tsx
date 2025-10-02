@@ -443,6 +443,11 @@ const App: React.FC = () => {
   // Classic interface
   return (
     <div className="app-container">
+      {/* Skip link for keyboard users */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* Header */}
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -581,7 +586,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <main className="app-main">
+      <main id="main-content" className="app-main" tabIndex={-1}>
         {/* Graph Canvas */}
         <div className="app-content">
           <React.Suspense
