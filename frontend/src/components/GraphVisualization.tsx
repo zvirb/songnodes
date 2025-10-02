@@ -114,8 +114,9 @@ class LODSystem {
 
     // Calculate screen bounds for proper viewport culling (2025 best practice)
     // Transform world coordinates to screen coordinates
-    const screenX = (node.x * this.viewport.zoom) + this.viewport.x;
-    const screenY = (node.y * this.viewport.zoom) + this.viewport.y;
+    // Account for stage centering: world (0,0) is at screen (width/2, height/2)
+    const screenX = (node.x * this.viewport.zoom) + (this.viewport.width / 2);
+    const screenY = (node.y * this.viewport.zoom) + (this.viewport.height / 2);
 
     // Define screen bounds with buffer for smooth transitions
     const buffer = 200; // pixels buffer for smooth appearing/disappearing
@@ -619,6 +620,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const interactionContainer = new PIXI.Container();
     interactionContainer.label = 'interaction';
 
+    // Center the stage so world coordinate (0,0) appears at canvas center
+    app.stage.position.set(rect.width / 2, rect.height / 2);
+    console.log(`Centered stage at (${rect.width / 2}, ${rect.height / 2})`);
+
     // Add containers in rendering order (bottom to top)
     app.stage.addChild(edgesContainer);
     app.stage.addChild(nodesContainer);
@@ -636,11 +641,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // app.stage.addChild(testVisual);
 
     // Also add a background to verify the canvas is visible
+    // Offset background to compensate for stage centering transform
     const background = new PIXI.Graphics();
-    background.rect(0, 0, rect.width, rect.height);
+    background.rect(-rect.width / 2, -rect.height / 2, rect.width, rect.height);
     background.fill(0x1a1a1a); // Darker background for better contrast
     app.stage.addChildAt(background, 0); // Add as first child (bottom layer)
-    console.log('Added background visual to PIXI stage');
+    console.log('Added background visual to PIXI stage (offset for centered stage)');
 
     // Update viewport dimensions
     viewportRef.current.width = rect.width;
@@ -1715,6 +1721,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const rect = containerRef.current.getBoundingClientRect();
     pixiAppRef.current.renderer.resize(rect.width, rect.height);
 
+    // Re-center the stage when canvas size changes
+    pixiAppRef.current.stage.position.set(rect.width / 2, rect.height / 2);
+
     viewportRef.current.width = rect.width;
     viewportRef.current.height = rect.height;
 
@@ -2002,7 +2011,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (isInitialized && graphData.nodes.length > 0) {
       updateGraphData();
     }
-  }, [isInitialized, graphData, updateGraphData]);
+  }, [isInitialized, graphData.nodes.length, graphData.edges.length]); // Only depend on data length, not the full function
 
   // Handle window resize
   useEffect(() => {
