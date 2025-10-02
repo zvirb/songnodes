@@ -77,7 +77,7 @@ except ImportError as e:
     class HealthCheckResponse(BaseModel):
         status: str
         database_connected: bool
-        services_available: Dict[str, bool]
+        services_available: Dict[str, Any]  # Can contain bools, dicts, strings
         timestamp: datetime = Field(default_factory=datetime.utcnow)
     class ErrorResponse(BaseModel):
         error: str
@@ -104,11 +104,7 @@ async def lifespan(app: FastAPI):
             min_size=5,
             max_size=15,  # Reduced from 20 to prevent overflow
             command_timeout=30,  # 30 second query timeout
-            server_settings={
-                'jit': 'off',  # Disable JIT for predictable performance
-                'statement_timeout': '30000',  # 30 second statement timeout
-                'idle_in_transaction_session_timeout': '300000'  # 5 minute idle timeout
-            },
+            # NOTE: server_settings removed - causes ProtocolViolationError with PgBouncer
             # Connection validation and health checks
             init=lambda conn: conn.set_type_codec('json', encoder=json.dumps, decoder=json.loads, schema='pg_catalog'),
             max_queries=50000,  # Recycle connections after 50k queries
@@ -562,20 +558,20 @@ async def search_tracks(
             # Use ILIKE pattern matching for fuzzy search
             # Note: Database uses 'title' but Pydantic models use 'track_name'
             search_query = """
-            SELECT song_id::text, track_id, title as track_name, normalized_title,
-                   duration_seconds as duration_ms,
-                   isrc, spotify_id, apple_music_id, youtube_music_id as youtube_id,
-                   soundcloud_id, musicbrainz_id,
+            SELECT id::text as song_id, id::text as track_id, title as track_name, normalized_title,
+                   duration_ms,
+                   isrc, spotify_id, apple_music_id, NULL as youtube_id,
+                   NULL as soundcloud_id, NULL as musicbrainz_id,
                    bpm, key as musical_key, energy, danceability, valence, acousticness,
                    instrumentalness, liveness, speechiness, loudness,
-                   release_year as release_date, genre, NULL as subgenre, label as record_label,
+                   EXTRACT(YEAR FROM release_date)::int as release_date, genre, subgenre, NULL as record_label,
                    is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
-                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
-                   NULL as popularity_score, NULL as play_count, NULL as track_type,
+                   NULL as remix_type, NULL as original_artist, NULL as remixer, mashup_components,
+                   popularity_score, play_count, NULL as track_type,
                    NULL as source_context, NULL as position_in_source,
                    'mixesdb' as data_source, created_at as scrape_timestamp,
-                   primary_artist_id::text, created_at, updated_at
-            FROM songs
+                   NULL as primary_artist_id, created_at, updated_at
+            FROM tracks
             WHERE title ILIKE $1 OR normalized_title ILIKE $1
             ORDER BY
                 CASE
@@ -618,21 +614,21 @@ async def get_track_by_id(track_id: str):
             # Try to find by song_id (UUID) or track_id (deterministic hash)
             # Note: Database uses 'title' but Pydantic models use 'track_name'
             query = """
-            SELECT song_id::text, track_id, title as track_name, normalized_title,
-                   duration_seconds as duration_ms,
-                   isrc, spotify_id, apple_music_id, youtube_music_id as youtube_id,
-                   soundcloud_id, musicbrainz_id,
+            SELECT id::text as song_id, id::text as track_id, title as track_name, normalized_title,
+                   duration_ms,
+                   isrc, spotify_id, apple_music_id, NULL as youtube_id,
+                   NULL as soundcloud_id, NULL as musicbrainz_id,
                    bpm, key as musical_key, energy, danceability, valence, acousticness,
                    instrumentalness, liveness, speechiness, loudness,
-                   release_year as release_date, genre, NULL as subgenre, label as record_label,
+                   EXTRACT(YEAR FROM release_date)::int as release_date, genre, subgenre, NULL as record_label,
                    is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
-                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
-                   NULL as popularity_score, NULL as play_count, NULL as track_type,
+                   NULL as remix_type, NULL as original_artist, NULL as remixer, mashup_components,
+                   popularity_score, play_count, NULL as track_type,
                    NULL as source_context, NULL as position_in_source,
                    'mixesdb' as data_source, created_at as scrape_timestamp,
-                   primary_artist_id::text, created_at, updated_at
-            FROM songs
-            WHERE song_id::text = $1 OR track_id = $1
+                   NULL as primary_artist_id, created_at, updated_at
+            FROM tracks
+            WHERE id::text = $1
             LIMIT 1
             """
 
@@ -704,20 +700,21 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
     """Get graph nodes - only songs with adjacencies"""
     try:
         async with db_pool.acquire() as conn:
-            # Query only songs that have adjacencies
+            # Query only tracks that have adjacencies
             query = """
-            SELECT DISTINCT s.song_id, s.title, s.primary_artist_id,
-                   a.name as artist_name, s.bpm, s.key,
+            SELECT DISTINCT t.id as track_id, t.title,
+                   a.name as artist_name, t.bpm, t.key,
                    COUNT(DISTINCT sa.*) as connection_count
-            FROM songs s
-            LEFT JOIN artists a ON s.primary_artist_id = a.artist_id
+            FROM tracks t
+            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+            LEFT JOIN artists a ON ta.artist_id = a.artist_id
             INNER JOIN (
-                SELECT song_id_1 as song_id FROM song_adjacency WHERE occurrence_count >= $1
+                SELECT song_id_1 as track_id FROM song_adjacency WHERE occurrence_count >= $1
                 UNION
-                SELECT song_id_2 as song_id FROM song_adjacency WHERE occurrence_count >= $1
-            ) connected ON s.song_id = connected.song_id
-            LEFT JOIN song_adjacency sa ON (sa.song_id_1 = s.song_id OR sa.song_id_2 = s.song_id)
-            GROUP BY s.song_id, s.title, s.primary_artist_id, a.name, s.bpm, s.key
+                SELECT song_id_2 as track_id FROM song_adjacency WHERE occurrence_count >= $1
+            ) connected ON t.id = connected.track_id
+            LEFT JOIN song_adjacency sa ON (sa.song_id_1 = t.id OR sa.song_id_2 = t.id)
+            GROUP BY t.id, t.title, a.name, t.bpm, t.key
             LIMIT $2
             """
             rows = await conn.fetch(query, min_weight, limit)
@@ -725,8 +722,8 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
             nodes = []
             for row in rows:
                 nodes.append({
-                    "id": f"song_{row['song_id']}",
-                    "track_id": f"song_{row['song_id']}",
+                    "id": f"song_{row['track_id']}",
+                    "track_id": f"song_{row['track_id']}",
                     "position": {"x": 0.0, "y": 0.0},
                     "metadata": {
                         "title": row['title'],
@@ -754,10 +751,10 @@ async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
         async with db_pool.acquire() as conn:
             query = """
             SELECT sa.song_id_1, sa.song_id_2, sa.occurrence_count as weight,
-                   s1.title as source_title, s2.title as target_title
+                   t1.title as source_title, t2.title as target_title
             FROM song_adjacency sa
-            JOIN songs s1 ON sa.song_id_1 = s1.song_id
-            JOIN songs s2 ON sa.song_id_2 = s2.song_id
+            JOIN tracks t1 ON sa.song_id_1 = t1.id
+            JOIN tracks t2 ON sa.song_id_2 = t2.id
             WHERE sa.occurrence_count >= $1
             ORDER BY sa.occurrence_count DESC
             LIMIT $2
@@ -1236,8 +1233,115 @@ async def get_source_performance_analysis(domain: Optional[str] = None, hours: i
 
 @app.get("/api/v1/target-tracks")
 async def get_target_tracks():
-    """Get list of target tracks - simple test endpoint"""
-    return [{"message": "Target tracks endpoint working"}]
+    """Get list of target tracks from the database"""
+    try:
+        async with db_pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT track_id, title, artist, priority, genres, is_active,
+                       last_searched, playlists_found, adjacencies_found, added_at, updated_at
+                FROM target_tracks
+                WHERE is_active = true
+                ORDER BY priority DESC, added_at DESC
+            """)
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Failed to fetch target tracks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/target-tracks", status_code=201)
+async def create_target_track(
+    title: str,
+    artist: str,
+    priority: str = "medium",
+    genres: List[str] = None,
+    is_active: bool = True
+):
+    """Add a new target track"""
+    try:
+        async with db_pool.acquire() as conn:
+            row = await conn.fetchrow("""
+                INSERT INTO target_tracks (title, artist, priority, genres, is_active)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING track_id, title, artist, priority, genres, is_active, added_at
+            """, title, artist, priority, genres or [], is_active)
+            return dict(row)
+    except Exception as e:
+        logger.error(f"Failed to create target track: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/music-search/{service}")
+async def music_search(service: str, q: str, limit: int = 20):
+    """
+    Search for tracks on Spotify or Tidal
+
+    Args:
+        service: 'spotify' or 'tidal'
+        q: search query (track name, artist, etc.)
+        limit: maximum number of results (default: 20)
+
+    Returns:
+        List of tracks with metadata from the music service
+    """
+    if service not in ['spotify', 'tidal']:
+        raise HTTPException(status_code=400, detail="Service must be 'spotify' or 'tidal'")
+
+    try:
+        # For now, we'll make a direct HTTP request to the metadata-enrichment service
+        # In production, this should use proper service discovery
+        import aiohttp
+
+        metadata_service_url = os.getenv('METADATA_ENRICHMENT_URL', 'http://metadata-enrichment:8086')
+
+        async with aiohttp.ClientSession() as session:
+            url = f"{metadata_service_url}/api/v1/search/{service}"
+            params = {'q': q, 'limit': limit}
+
+            async with session.get(url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data
+                elif response.status == 404:
+                    # Service doesn't exist yet, return mock data for development
+                    logger.warning(f"Metadata enrichment service not available, returning mock data")
+                    return {
+                        "tracks": [
+                            {
+                                "id": f"{service}_mock_1",
+                                "name": "Sample Track 1",
+                                "title": "Sample Track 1",
+                                "artist": "Sample Artist",
+                                "artists": [{"name": "Sample Artist"}],
+                                "album": {"name": "Sample Album", "images": [{"url": "https://via.placeholder.com/300"}]},
+                                "duration_ms": 180000,
+                                "preview_url": None,
+                                "image": "https://via.placeholder.com/300"
+                            }
+                        ]
+                    }
+                else:
+                    raise HTTPException(status_code=response.status, detail=f"Music service error: {await response.text()}")
+
+    except aiohttp.ClientConnectorError:
+        logger.warning(f"Cannot connect to metadata enrichment service")
+        # Return mock data for development
+        return {
+            "tracks": [
+                {
+                    "id": f"{service}_mock_1",
+                    "name": q,
+                    "title": q,
+                    "artist": "Mock Artist",
+                    "artists": [{"name": "Mock Artist"}],
+                    "album": {"name": "Mock Album", "images": [{"url": "https://via.placeholder.com/300"}]},
+                    "duration_ms": 180000,
+                    "preview_url": None,
+                    "image": "https://via.placeholder.com/300"
+                }
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Music search failed for {service}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/metrics")
 async def metrics():

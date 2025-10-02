@@ -384,6 +384,8 @@ async def _test_api_key_by_service(
         return await _test_setlistfm_key(key_value)
     elif service_name == 'reddit':
         return await _test_reddit_key(key_value, key_name, conn)
+    elif service_name == '1001tracklists':
+        return await _test_1001tracklists_key(key_value, key_name, conn)
     else:
         return {
             'valid': False,
@@ -850,5 +852,141 @@ async def _test_reddit_key(client_id: str, key_name: str, conn: asyncpg.Connecti
         return {
             'valid': False,
             'message': f'Reddit test failed: {str(e)}',
+            'error': str(e)
+        }
+
+async def _test_1001tracklists_key(username: str, key_name: str, conn: asyncpg.Connection) -> Dict[str, Any]:
+    """Test 1001tracklists login credentials"""
+    try:
+        # Need both username and password
+        if key_name == 'username':
+            # Get the password
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET')
+            query = "SELECT get_api_key('1001tracklists', 'password', $1) as password"
+            result = await conn.fetchrow(query, encryption_secret)
+
+            if not result or not result['password']:
+                return {
+                    'valid': False,
+                    'message': '1001tracklists password not configured',
+                    'error': 'Missing password'
+                }
+
+            password = result['password']
+        else:
+            # key_name is password, get username
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET')
+            query = "SELECT get_api_key('1001tracklists', 'username', $1) as username"
+            result = await conn.fetchrow(query, encryption_secret)
+
+            if not result or not result['username']:
+                return {
+                    'valid': False,
+                    'message': '1001tracklists username not configured',
+                    'error': 'Missing username'
+                }
+
+            password = username
+            username = result['username']
+
+        # Test login endpoint
+        login_data = {
+            'username': username,
+            'password': password
+        }
+
+        async with aiohttp.ClientSession() as session:
+            # First, get the login page to get any CSRF tokens if needed
+            async with session.get(
+                'https://www.1001tracklists.com/login.php',
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                if response.status != 200:
+                    return {
+                        'valid': False,
+                        'message': f'1001tracklists login page error: {response.status}',
+                        'error': 'Could not access login page'
+                    }
+
+            # Attempt login
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+                'Referer': 'https://www.1001tracklists.com/login.php'
+            }
+
+            async with session.post(
+                'https://www.1001tracklists.com/login.php',
+                data=login_data,
+                headers=headers,
+                allow_redirects=False,
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                # Successful login typically redirects (302/303) or returns 200
+                # Failed login usually returns 200 with error message or stays on same page
+
+                # Check if we got redirected (successful login)
+                if response.status in [302, 303, 301]:
+                    location = response.headers.get('Location', '')
+                    if 'login' not in location.lower():
+                        return {
+                            'valid': True,
+                            'message': '1001tracklists credentials valid',
+                            'details': {'username': username}
+                        }
+
+                # Check response content for error messages
+                text = await response.text()
+
+                # Common error indicators
+                error_indicators = [
+                    'invalid username',
+                    'invalid password',
+                    'incorrect password',
+                    'login failed',
+                    'authentication failed'
+                ]
+
+                if any(indicator in text.lower() for indicator in error_indicators):
+                    return {
+                        'valid': False,
+                        'message': 'Invalid 1001tracklists credentials',
+                        'error': 'Username or password incorrect'
+                    }
+
+                # If we're still on the login page, credentials are likely invalid
+                if 'login' in text.lower() and 'password' in text.lower():
+                    return {
+                        'valid': False,
+                        'message': 'Invalid 1001tracklists credentials',
+                        'error': 'Login failed - remained on login page'
+                    }
+
+                # If we got here and status is 200, assume success
+                if response.status == 200:
+                    return {
+                        'valid': True,
+                        'message': '1001tracklists credentials appear valid',
+                        'details': {
+                            'username': username,
+                            'note': 'Login succeeded but validation inconclusive'
+                        }
+                    }
+
+                return {
+                    'valid': False,
+                    'message': f'1001tracklists test returned status {response.status}',
+                    'error': 'Unexpected response'
+                }
+
+    except aiohttp.ClientError as e:
+        return {
+            'valid': False,
+            'message': f'Network error testing 1001tracklists: {str(e)}',
+            'error': str(e)
+        }
+    except Exception as e:
+        return {
+            'valid': False,
+            'message': f'1001tracklists test failed: {str(e)}',
             'error': str(e)
         }

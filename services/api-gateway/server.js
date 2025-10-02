@@ -164,8 +164,23 @@ const io = new Server(server, {
 // Redis adapter for Socket.io clustering
 const redisHost = process.env.REDIS_HOST || 'redis';
 const redisPort = process.env.REDIS_PORT || 6379;
+const redisPassword = process.env.REDIS_PASSWORD;
+
 const redisClient = createClient({
-  url: `redis://${redisHost}:${redisPort}`
+  url: `redis://${redisHost}:${redisPort}`,
+  password: redisPassword,
+  socket: {
+    connectTimeout: 60000,
+    reconnectStrategy: (retries) => {
+      if (retries >= 5) {
+        logger.error('Max Redis reconnection attempts reached for Socket.io adapter');
+        return false;
+      }
+      const delay = Math.min(1000 * Math.pow(2, retries), 30000);
+      logger.warn(`Socket.io Redis adapter reconnection attempt ${retries + 1} in ${delay}ms`);
+      return delay;
+    }
+  }
 });
 
 const subClient = redisClient.duplicate();

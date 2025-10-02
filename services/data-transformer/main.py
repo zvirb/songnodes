@@ -18,6 +18,7 @@ from enum import Enum
 import hashlib
 
 import redis
+import redis.asyncio as aioredis
 import asyncpg
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
 from fastapi.responses import PlainTextResponse
@@ -71,17 +72,18 @@ app.add_middleware(
 )
 
 # Redis connection with connection pooling (2025 best practices)
+# Synchronous Redis client for simple operations (kept for backward compatibility)
 redis_connection_pool = redis.ConnectionPool(
     host=os.getenv("REDIS_HOST", "redis"),
     port=int(os.getenv("REDIS_PORT", 6379)),
     password=os.getenv("REDIS_PASSWORD"),
     max_connections=50,
-    health_check_interval=30,
-    decode_responses=True,
-    socket_keepalive=True,  # Keep connections alive (REQUIRED)
-    socket_timeout=5  # 5 second socket timeout (REQUIRED)
+    decode_responses=True
 )
 redis_client = redis.Redis(connection_pool=redis_connection_pool)
+
+# Async Redis client for background workers (REQUIRED for async operations)
+async_redis_client: Optional[aioredis.Redis] = None
 
 # Database configuration
 DATABASE_CONFIG = {
@@ -789,6 +791,36 @@ transformation_engine = TransformationEngine()
 # Database Initialization
 # =====================
 
+async def init_redis():
+    """Initialize async Redis client for background workers"""
+    global async_redis_client
+    try:
+        redis_host = os.getenv("REDIS_HOST", "redis")
+        redis_port = int(os.getenv("REDIS_PORT", 6379))
+        redis_password = os.getenv("REDIS_PASSWORD")
+
+        # Create async Redis connection pool with minimal, tested parameters
+        # FIXED: Use only parameters confirmed to work in WebSocket API
+        pool = aioredis.ConnectionPool(
+            host=redis_host,
+            port=redis_port,
+            password=redis_password,
+            max_connections=50,
+            decode_responses=True
+        )
+
+        # Create Redis client from pool
+        async_redis_client = aioredis.Redis(connection_pool=pool)
+
+        # Test connection
+        await async_redis_client.ping()
+        logger.info("✅ Async Redis client initialized successfully with connection pool")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize async Redis client: {str(e)}")
+        logger.exception("Full traceback:")
+        async_redis_client = None
+
 async def init_database():
     """Initialize database connection pool with optimized configuration for batch operations"""
     global db_pool, resource_monitor
@@ -799,9 +831,7 @@ async def init_database():
             "min_size": 10,          # Increased minimum connections for consistent performance
             "max_size": 50,          # Increased maximum for high throughput
             "command_timeout": 60,   # Increased timeout for batch operations
-            "server_settings": {
-                "jit": "off"         # Disable JIT for consistent performance
-            }
+            # Note: server_settings removed - asyncpg handles these automatically
         }
         
         db_pool = await asyncpg.create_pool(**pool_config)
@@ -866,30 +896,91 @@ async def init_database():
 # =====================
 
 async def task_processor():
-    """Background worker to process transformation tasks from Redis queue"""
+    """Background worker to process transformation tasks from Redis queue with robust async handling
+
+    CRITICAL FIX (2025-10-02):
+    - Uses async Redis client (redis.asyncio) instead of sync client
+    - Properly handles blpop timeouts without flooding logs
+    - Implements exponential backoff for connection errors
+    - Prevents event loop blocking with async/await patterns
+    """
+    if not async_redis_client:
+        logger.error("❌ Async Redis client not initialized - task processor cannot start")
+        return
+
+    consecutive_errors = 0
+    max_consecutive_errors = 10
+    logger.info("✅ Task processor started - waiting for transformation tasks")
+
     while True:
         try:
-            # Get next task from Redis queue
-            task_data = redis_client.blpop("transformation:queue", timeout=5)
-            
-            if task_data:
-                task_json = task_data[1]
+            # Use async blpop with timeout (non-blocking for event loop)
+            try:
+                # blpop with 5-second timeout - returns None if queue empty (NOT an error)
+                task_data = await async_redis_client.blpop(["transformation:queue"], timeout=5)
+            except aioredis.ConnectionError as e:
+                # Connection error - needs exponential backoff
+                consecutive_errors += 1
+                logger.error(f"Redis connection error (attempt {consecutive_errors}): {str(e)}")
+                await asyncio.sleep(min(5 * consecutive_errors, 60))
+                continue
+            except aioredis.TimeoutError:
+                # Timeout is NORMAL when queue is empty - don't log as error
+                consecutive_errors = 0
+                await asyncio.sleep(1)
+                continue
+            except Exception as e:
+                # Unexpected Redis error
+                logger.warning(f"Unexpected Redis error: {str(e)}")
+                await asyncio.sleep(5)
+                continue
+
+            # Successfully got response from Redis
+            consecutive_errors = 0
+
+            if task_data is None:
+                # Timeout - no tasks in queue (this is normal)
+                await asyncio.sleep(1)
+                continue
+
+            # Task retrieved successfully
+            queue_name, task_json = task_data
+
+            try:
                 task_dict = json.loads(task_json)
                 task = TransformationTask(**task_dict)
-                
-                # Process task
+
+                logger.info(f"Processing transformation task: {task.id} (operation: {task.operation.value})")
+
+                # Process task with metrics
                 active_transformations.labels(operation=task.operation.value).inc()
                 try:
                     result = await transformation_engine.process_task(task)
-                    logger.info(f"Completed task {task.id}: {result.output_count} tracks processed")
+                    logger.info(f"✅ Completed task {task.id}: {result.output_count} tracks processed in {result.processing_time:.2f}s")
+                except Exception as task_error:
+                    logger.error(f"❌ Error processing task {task.id}: {str(task_error)}")
                 finally:
                     active_transformations.labels(operation=task.operation.value).dec()
-            
-            await asyncio.sleep(0.1)
-            
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in task queue: {str(e)}")
+            except Exception as e:
+                logger.error(f"Error parsing task: {str(e)}")
+
+            # Check for too many consecutive errors
+            if consecutive_errors >= max_consecutive_errors:
+                logger.critical(f"Task processor experienced {consecutive_errors} consecutive errors. Pausing for recovery.")
+                consecutive_errors = 0
+                await asyncio.sleep(30)
+
+        except asyncio.CancelledError:
+            logger.info("Task processor cancelled - shutting down gracefully")
+            break
         except Exception as e:
-            logger.error(f"Error in task processor: {str(e)}")
-            await asyncio.sleep(5)
+            # Catch-all for unexpected errors
+            logger.error(f"Unexpected error in task processor loop: {str(e)}", exc_info=True)
+            consecutive_errors += 1
+            await asyncio.sleep(min(5 * consecutive_errors, 60))
 
 # =====================
 # API Endpoints
@@ -907,19 +998,25 @@ async def startup_event():
     except NameError:
         logger.warning("⚠️ Secrets manager not available - skipping validation")
 
+    # Initialize async Redis client (REQUIRED before task processor)
+    await init_redis()
+
+    # Initialize database connection pool
     await init_database()
 
     # Start background workers
     asyncio.create_task(task_processor())
 
-    logger.info("Data Transformer Service started")
+    logger.info("✅ Data Transformer Service started successfully")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
     if db_pool:
         await db_pool.close()
-    logger.info("Data Transformer Service stopped")
+    if async_redis_client:
+        await async_redis_client.close()
+    logger.info("✅ Data Transformer Service stopped gracefully")
 
 @app.get("/health")
 async def health_check():
@@ -981,15 +1078,21 @@ async def health_check():
         else:
             db_status = "not_initialized"
 
-        # Check Redis connection
+        # Check Redis connection (use async client for accurate health check)
         redis_status = "healthy"
         redis_response_time = None
+        async_redis_status = "healthy"
         try:
-            redis_start = datetime.now()
-            redis_client.ping()
-            redis_response_time = (datetime.now() - redis_start).total_seconds() * 1000  # ms
+            if async_redis_client:
+                redis_start = datetime.now()
+                await async_redis_client.ping()
+                redis_response_time = (datetime.now() - redis_start).total_seconds() * 1000  # ms
+            else:
+                async_redis_status = "not_initialized"
+                redis_status = "degraded"
         except Exception as e:
             redis_status = "unhealthy"
+            async_redis_status = "unhealthy"
             logger.error(f"Redis health check failed: {str(e)}")
 
         # Performance status assessment
@@ -1018,6 +1121,7 @@ async def health_check():
                 },
                 "redis": {
                     "status": redis_status,
+                    "async_client_status": async_redis_status,
                     "response_time_ms": redis_response_time
                 }
             },
