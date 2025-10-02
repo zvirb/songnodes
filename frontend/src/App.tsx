@@ -58,25 +58,9 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
 );
 
 const App: React.FC = () => {
-  // Check if we're on the Spotify OAuth callback route
-  if (window.location.pathname === '/callback/spotify') {
-    const SpotifyCallback = React.lazy(() => import('./pages/SpotifyCallback'));
-    return (
-      <React.Suspense fallback={<div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        backgroundColor: '#191414',
-        color: '#fff'
-      }}>Loading Spotify...</div>}>
-        <SpotifyCallback />
-      </React.Suspense>
-    );
-  }
-
-  // Check if we're on the OAuth callback route (handles both /oauth/callback and root with code param for other services)
-  if (window.location.pathname === '/oauth/callback' ||
+  // Check if we're on the OAuth callback route (handles Spotify and all other OAuth providers)
+  if (window.location.pathname === '/callback/spotify' ||
+      window.location.pathname === '/oauth/callback' ||
       (window.location.search.includes('code=') && window.location.search.includes('state='))) {
     return (
       <React.Suspense fallback={<div style={{
