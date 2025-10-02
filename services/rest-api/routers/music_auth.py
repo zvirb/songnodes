@@ -1,6 +1,6 @@
 """
 Music Service Authentication Router
-Handles authentication testing for Tidal, Spotify, and Apple Music
+Handles authentication testing for Tidal and Spotify
 Includes OAuth 2.1 Authorization Code flow with PKCE for Tidal
 """
 
@@ -17,6 +17,9 @@ import jwt
 import hashlib
 import secrets
 import urllib.parse
+import json
+import os
+import redis.asyncio as redis
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -24,10 +27,36 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/music-auth", tags=["Music Authentication"])
 
 # ===========================================
-# OAUTH STATE STORAGE (In-memory for demo)
-# Production should use Redis or database
+# MUSIC SERVICE CREDENTIALS FROM ENVIRONMENT
 # ===========================================
+TIDAL_CLIENT_ID = os.getenv("TIDAL_CLIENT_ID", "")
+TIDAL_CLIENT_SECRET = os.getenv("TIDAL_CLIENT_SECRET", "")
+
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
+
+# ===========================================
+# OAUTH STATE STORAGE (In-memory for development)
+# ===========================================
+# In-memory storage for OAuth state/PKCE parameters
+# TODO: Replace with Redis for production (distributed systems)
 oauth_state_store: Dict[str, Dict[str, Any]] = {}
+
+# ===========================================
+# REDIS CONNECTION FOR OAUTH STATE STORAGE
+# ===========================================
+redis_client: Optional[redis.Redis] = None
+
+async def get_redis() -> redis.Redis:
+    """Get or create Redis connection for OAuth state storage"""
+    global redis_client
+    if redis_client is None:
+        redis_client = await redis.from_url(
+            "redis://redis:6379",
+            encoding="utf-8",
+            decode_responses=True
+        )
+    return redis_client
 
 # ===========================================
 # OAUTH HELPER FUNCTIONS
@@ -54,8 +83,7 @@ def generate_state() -> str:
 # ===========================================
 
 class TidalOAuthInitRequest(BaseModel):
-    """Request to initiate Tidal OAuth flow"""
-    client_id: str = Field(..., min_length=1)
+    """Request to initiate Tidal OAuth flow - credentials come from backend env vars"""
     redirect_uri: str = Field(..., min_length=1)
 
 class TidalOAuthInitResponse(BaseModel):
@@ -81,12 +109,6 @@ class SpotifyAuthRequest(BaseModel):
     """Spotify OAuth credentials"""
     client_id: str = Field(..., min_length=1)
     client_secret: str = Field(..., min_length=1)
-
-class AppleMusicAuthRequest(BaseModel):
-    """Apple Music JWT authentication"""
-    key_id: str = Field(..., min_length=1)
-    team_id: str = Field(..., min_length=1)
-    private_key: str = Field(..., min_length=1)
 
 class AuthTestResponse(BaseModel):
     """Authentication test response"""
@@ -308,118 +330,549 @@ async def test_spotify_auth(auth: SpotifyAuthRequest):
         )
 
 # ===========================================
-# APPLE MUSIC AUTHENTICATION
+# SPOTIFY OAUTH AUTHORIZATION CODE FLOW
 # ===========================================
 
-@router.post("/test/apple-music", response_model=AuthTestResponse)
-async def test_apple_music_auth(auth: AppleMusicAuthRequest):
+@router.get("/spotify/authorize")
+async def spotify_authorize(
+    redirect_uri: str = Query(..., description="Redirect URI configured in Spotify Dashboard"),
+    state: Optional[str] = Query(None, description="Optional state parameter for CSRF protection")
+):
     """
-    Test Apple Music authentication by generating and validating a developer token
-    """
-    try:
-        # Validate private key format
-        if not auth.private_key.startswith('-----BEGIN PRIVATE KEY-----'):
-            return AuthTestResponse(
-                valid=False,
-                message="Invalid private key format",
-                service="apple_music",
-                tested_at=datetime.utcnow(),
-                error="Private key must be in PEM format"
-            )
+    Step 1: Redirect user to Spotify authorization page
 
-        # Generate JWT token
-        time_now = int(time.time())
-        time_expired = time_now + 15777000  # 6 months
+    Credentials are loaded from environment variables (SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+
+    Redirect URI options for local development (Spotify requirement as of April 2025):
+    - http://127.0.0.1:8082/api/v1/music-auth/spotify/callback (NOT localhost!)
+    - http://127.0.0.1:3006/callback/spotify (if handling in frontend)
+
+    IMPORTANT: Spotify no longer allows 'localhost' as redirect URI.
+    Use loopback IP literals: 127.0.0.1 (IPv4) or [::1] (IPv6)
+
+    Scopes requested:
+    - user-read-email: Read user email
+    - user-read-private: Read user profile
+    - playlist-read-private: Read private playlists
+    - playlist-read-collaborative: Read collaborative playlists
+    - user-library-read: Read saved tracks
+    - user-top-read: Read top artists and tracks
+    """
+    # Validate credentials are configured
+    if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Spotify credentials not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables."
+        )
+
+    # Generate state if not provided (CSRF protection)
+    if not state:
+        state = secrets.token_urlsafe(32)
+
+    # Store state for validation in callback
+    oauth_state_store[state] = {
+        'client_id': SPOTIFY_CLIENT_ID,
+        'redirect_uri': redirect_uri,
+        'created_at': time.time(),
+        'service': 'spotify'
+    }
+
+    # Spotify authorization scopes
+    scopes = [
+        # User Profile & Library (Read-only)
+        'user-read-email',
+        'user-read-private',
+        'user-library-read',
+        'user-top-read',
+
+        # Playlists (Read)
+        'playlist-read-private',
+        'playlist-read-collaborative',
+
+        # Playlists (Write - for exporting DJ sets)
+        'playlist-modify-public',
+        'playlist-modify-private',
+
+        # Playback Control (for DJ interface preview)
+        'user-modify-playback-state',
+        'user-read-playback-state',
+        'user-read-currently-playing',
+
+        # Recently Played (for recommendations)
+        'user-read-recently-played'
+    ]
+
+    # Build authorization URL
+    auth_params = {
+        'client_id': SPOTIFY_CLIENT_ID,
+        'response_type': 'code',
+        'redirect_uri': redirect_uri,
+        'state': state,
+        'scope': ' '.join(scopes),
+        'show_dialog': 'false'  # Set to 'true' to force re-approval
+    }
+
+    auth_url = f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(auth_params)}"
+
+    logger.info(f"🎵 [SPOTIFY] Redirecting to authorization with client_id: {SPOTIFY_CLIENT_ID[:10]}...")
+    return RedirectResponse(url=auth_url)
+
+@router.get("/spotify/callback")
+async def spotify_callback(
+    code: str = Query(..., description="Authorization code from Spotify"),
+    state: str = Query(..., description="State parameter for validation"),
+    error: Optional[str] = Query(None, description="Error from Spotify if authorization failed")
+):
+    """
+    Step 2: Handle Spotify OAuth callback
+
+    This endpoint receives the authorization code from Spotify and exchanges it for access tokens.
+    """
+    # Handle authorization errors
+    if error:
+        logger.error(f"Spotify authorization error: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Spotify authorization failed: {error}"
+        )
+
+    # Validate state parameter (CSRF protection)
+    if state not in oauth_state_store:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired state parameter"
+        )
+
+    stored_data = oauth_state_store[state]
+    client_id = stored_data['client_id']
+    redirect_uri = stored_data['redirect_uri']
+
+    # Clean up state
+    del oauth_state_store[state]
+
+    # Note: For production, you need to store client_secret securely
+    # This is a simplified example - client_secret should come from environment or database
+    logger.warning("SECURITY: Client secret should be retrieved from secure storage, not hardcoded")
+
+    return JSONResponse({
+        "success": True,
+        "message": "Authorization code received. Exchange this code for access token using your client secret.",
+        "authorization_code": code,
+        "next_step": "POST /api/v1/music-auth/spotify/token with authorization_code and client_secret"
+    })
+
+@router.post("/spotify/token")
+async def spotify_exchange_token(
+    authorization_code: str = Query(..., description="Authorization code from callback"),
+    redirect_uri: str = Query(..., description="Same redirect URI used in authorization")
+):
+    """
+    Step 3: Exchange authorization code for access and refresh tokens
+
+    Credentials are loaded from environment variables (SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+    Call this endpoint with the authorization code received in the callback.
+    """
+    # Validate credentials are configured
+    if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Spotify credentials not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables."
+        )
+
+    try:
+        logger.info(f"🎵 [SPOTIFY] Exchanging authorization code for tokens...")
+
+        # Prepare token exchange request
+        token_url = 'https://accounts.spotify.com/api/token'
+
+        auth_str = f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}"
+        auth_bytes = auth_str.encode('utf-8')
+        auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
 
         headers = {
-            'alg': 'ES256',
-            'kid': auth.key_id
+            'Authorization': f'Basic {auth_base64}',
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        payload = {
-            'iss': auth.team_id,
-            'iat': time_now,
-            'exp': time_expired
+        data = {
+            'grant_type': 'authorization_code',
+            'code': authorization_code,
+            'redirect_uri': redirect_uri
         }
 
-        try:
-            # Generate developer token
-            token = jwt.encode(
-                payload,
-                auth.private_key,
-                algorithm='ES256',
-                headers=headers
-            )
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                token_url,
+                headers=headers,
+                data=data,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                result = await response.json()
 
-            # Test the token with Apple Music API
-            test_url = "https://api.music.apple.com/v1/catalog/us/songs/203709340"
-            headers = {
-                'Authorization': f'Bearer {token}',
-                'Music-User-Token': ''  # Not required for catalog access
-            }
+                if response.status == 200:
+                    # Successfully obtained tokens
+                    logger.info("🎵 [SPOTIFY] Successfully exchanged authorization code for tokens")
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    test_url,
-                    headers=headers,
-                    timeout=aiohttp.ClientTimeout(total=10)
-                ) as response:
-                    if response.status == 200:
-                        return AuthTestResponse(
-                            valid=True,
-                            message="Apple Music credentials are valid and working",
-                            service="apple_music",
-                            tested_at=datetime.utcnow(),
-                            details={
-                                'token_generated': True,
-                                'api_access': 'confirmed',
-                                'expires_at': datetime.fromtimestamp(time_expired).isoformat(),
-                                'team_id': auth.team_id,
-                                'key_id': auth.key_id
-                            }
-                        )
-                    elif response.status == 401:
-                        return AuthTestResponse(
-                            valid=False,
-                            message="Apple Music token rejected by API",
-                            service="apple_music",
-                            tested_at=datetime.utcnow(),
-                            error="Invalid credentials or expired key"
-                        )
-                    else:
-                        return AuthTestResponse(
-                            valid=False,
-                            message=f"Apple Music API returned status {response.status}",
-                            service="apple_music",
-                            tested_at=datetime.utcnow(),
-                            error=await response.text()
-                        )
+                    return JSONResponse({
+                        "success": True,
+                        "access_token": result['access_token'],
+                        "token_type": result['token_type'],
+                        "expires_in": result['expires_in'],
+                        "refresh_token": result.get('refresh_token'),
+                        "scope": result.get('scope'),
+                        "message": "Tokens obtained successfully. Store refresh_token securely for long-term access."
+                    })
+                else:
+                    error_msg = result.get('error_description', result.get('error', 'Unknown error'))
+                    logger.error(f"🎵 [SPOTIFY] Token exchange failed: {error_msg}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Token exchange failed: {error_msg}"
+                    )
 
-        except jwt.exceptions.InvalidKeyError:
-            return AuthTestResponse(
-                valid=False,
-                message="Invalid Apple Music private key",
-                service="apple_music",
-                tested_at=datetime.utcnow(),
-                error="Private key format is invalid or corrupted"
-            )
-        except Exception as jwt_error:
-            return AuthTestResponse(
-                valid=False,
-                message=f"Failed to generate Apple Music token: {str(jwt_error)}",
-                service="apple_music",
-                tested_at=datetime.utcnow(),
-                error=str(jwt_error)
-            )
+    except aiohttp.ClientError as e:
+        logger.error(f"Network error during token exchange: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Network error: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error during token exchange: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}"
+        )
+
+@router.post("/spotify/refresh")
+async def spotify_refresh_token(
+    refresh_token: str = Query(..., description="Spotify refresh token"),
+    client_id: str = Query(..., description="Spotify Client ID"),
+    client_secret: str = Query(..., description="Spotify Client Secret")
+):
+    """
+    Refresh Spotify access token using refresh token
+
+    Access tokens expire after 1 hour. Use this endpoint to get a new access token.
+    """
+    try:
+        token_url = 'https://accounts.spotify.com/api/token'
+
+        auth_str = f"{client_id}:{client_secret}"
+        auth_bytes = auth_str.encode('utf-8')
+        auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
+
+        headers = {
+            'Authorization': f'Basic {auth_base64}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+
+        data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                token_url,
+                headers=headers,
+                data=data,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                result = await response.json()
+
+                if response.status == 200:
+                    logger.info("Successfully refreshed Spotify access token")
+
+                    return JSONResponse({
+                        "success": True,
+                        "access_token": result['access_token'],
+                        "token_type": result['token_type'],
+                        "expires_in": result['expires_in'],
+                        "scope": result.get('scope')
+                    })
+                else:
+                    error_msg = result.get('error_description', result.get('error', 'Unknown error'))
+                    logger.error(f"Token refresh failed: {error_msg}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Token refresh failed: {error_msg}"
+                    )
 
     except Exception as e:
-        logger.error(f"Apple Music authentication test failed: {str(e)}")
-        return AuthTestResponse(
-            valid=False,
-            message=f"Apple Music test failed: {str(e)}",
-            service="apple_music",
-            tested_at=datetime.utcnow(),
-            error=str(e)
+        logger.error(f"Error refreshing Spotify token: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}"
+        )
+
+# ===========================================
+# SPOTIFY AUDIO FEATURES (DJ Mixing Features)
+# ===========================================
+
+def convert_to_camelot(key: int, mode: int) -> str:
+    """
+    Convert Spotify's pitch class (0-11) and mode (0=minor, 1=major) to Camelot notation
+
+    Spotify format:
+    - Key: 0 = C, 1 = C#, 2 = D, ..., 11 = B
+    - Mode: 0 = Minor, 1 = Major
+
+    Camelot Wheel:
+    - Major keys: 1B-12B (outer wheel)
+    - Minor keys: 1A-12A (inner wheel)
+    """
+    # Camelot wheel mapping (clockwise starting at 8B = C Major)
+    camelot_map = {
+        # Major keys (mode = 1)
+        1: {0: '8B', 1: '3B', 2: '10B', 3: '5B', 4: '12B', 5: '7B',
+            6: '2B', 7: '9B', 8: '4B', 9: '11B', 10: '6B', 11: '1B'},
+        # Minor keys (mode = 0)
+        0: {0: '5A', 1: '12A', 2: '7A', 3: '2A', 4: '9A', 5: '4A',
+            6: '11A', 7: '6A', 8: '1A', 9: '8A', 10: '3A', 11: '10A'}
+    }
+
+    return camelot_map[mode][key]
+
+def key_to_string(key: int, mode: int) -> str:
+    """Convert Spotify key (0-11) and mode (0-1) to readable key name"""
+    key_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    mode_name = 'major' if mode == 1 else 'minor'
+    return f"{key_names[key]} {mode_name}"
+
+@router.get("/spotify/track/{track_id}/audio-features")
+async def get_spotify_audio_features(
+    track_id: str,
+    access_token: str = Query(..., description="Spotify access token")
+):
+    """
+    Get audio features for DJ mixing (tempo, key, energy, etc.)
+
+    This endpoint is critical for SongNodes DJ functionality:
+    - BPM/Tempo: For beatmatching
+    - Key: For harmonic mixing (converted to Camelot notation)
+    - Energy: For energy flow matching
+    - Danceability: For track selection
+    - Valence: For mood matching
+
+    No additional scopes required - works with any valid access token!
+    """
+    try:
+        logger.info(f"🎵 [SPOTIFY AUDIO FEATURES] Fetching for track: {track_id}")
+
+        async with aiohttp.ClientSession() as session:
+            headers = {'Authorization': f'Bearer {access_token}'}
+
+            # Fetch audio features
+            async with session.get(
+                f'https://api.spotify.com/v1/audio-features/{track_id}',
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    features = await response.json()
+
+                    # Convert Spotify key to Camelot notation for DJ mixing
+                    camelot_key = convert_to_camelot(features['key'], features['mode'])
+                    key_string = key_to_string(features['key'], features['mode'])
+
+                    logger.info(f"🎵 [SPOTIFY] Audio features retrieved: BPM={features['tempo']:.1f}, Key={camelot_key}")
+
+                    return JSONResponse({
+                        "success": True,
+                        "track_id": track_id,
+                        "audio_features": {
+                            # DJ Mixing Essentials
+                            "bpm": round(features['tempo'], 2),
+                            "key": features['key'],
+                            "key_string": key_string,
+                            "mode": 'major' if features['mode'] == 1 else 'minor',
+                            "camelot_key": camelot_key,
+                            "time_signature": features['time_signature'],
+
+                            # Energy & Mood
+                            "energy": round(features['energy'], 3),
+                            "danceability": round(features['danceability'], 3),
+                            "valence": round(features['valence'], 3),
+
+                            # Additional Features
+                            "acousticness": round(features['acousticness'], 3),
+                            "instrumentalness": round(features['instrumentalness'], 3),
+                            "liveness": round(features['liveness'], 3),
+                            "loudness": round(features['loudness'], 2),
+                            "speechiness": round(features['speechiness'], 3)
+                        }
+                    })
+                elif response.status == 401:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Invalid or expired Spotify access token. Please reconnect Spotify."
+                    )
+                elif response.status == 404:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Audio features not found for track: {track_id}"
+                    )
+                else:
+                    error_data = await response.json()
+                    error_msg = error_data.get('error', {}).get('message', 'Unknown error')
+                    logger.error(f"🎵 [SPOTIFY] Audio features failed: {error_msg}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Spotify API error: {error_msg}"
+                    )
+
+    except aiohttp.ClientError as e:
+        logger.error(f"Network error fetching audio features: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Spotify API is currently unavailable. Please try again later."
+        )
+    except Exception as e:
+        logger.error(f"Error fetching audio features: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}"
+        )
+
+@router.post("/spotify/tracks/audio-features/batch")
+async def get_batch_audio_features(
+    track_ids: list[str] = Query(..., description="List of Spotify track IDs (max 100)"),
+    access_token: str = Query(..., description="Spotify access token")
+):
+    """
+    Batch fetch audio features for multiple tracks (up to 100 at once)
+    More efficient than individual requests for large libraries
+    """
+    if len(track_ids) > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 100 track IDs allowed per request"
+        )
+
+    try:
+        logger.info(f"🎵 [SPOTIFY BATCH] Fetching audio features for {len(track_ids)} tracks")
+
+        async with aiohttp.ClientSession() as session:
+            headers = {'Authorization': f'Bearer {access_token}'}
+
+            # Spotify batch endpoint
+            ids_param = ','.join(track_ids)
+            async with session.get(
+                f'https://api.spotify.com/v1/audio-features?ids={ids_param}',
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+
+                    # Process each track's features
+                    processed_features = []
+                    for features in data['audio_features']:
+                        if features:  # Some tracks may not have features
+                            camelot_key = convert_to_camelot(features['key'], features['mode'])
+                            key_string = key_to_string(features['key'], features['mode'])
+
+                            processed_features.append({
+                                "track_id": features['id'],
+                                "bpm": round(features['tempo'], 2),
+                                "key": features['key'],
+                                "key_string": key_string,
+                                "mode": 'major' if features['mode'] == 1 else 'minor',
+                                "camelot_key": camelot_key,
+                                "time_signature": features['time_signature'],
+                                "energy": round(features['energy'], 3),
+                                "danceability": round(features['danceability'], 3),
+                                "valence": round(features['valence'], 3),
+                                "acousticness": round(features['acousticness'], 3),
+                                "instrumentalness": round(features['instrumentalness'], 3),
+                                "liveness": round(features['liveness'], 3),
+                                "loudness": round(features['loudness'], 2),
+                                "speechiness": round(features['speechiness'], 3)
+                            })
+
+                    logger.info(f"🎵 [SPOTIFY BATCH] Successfully processed {len(processed_features)}/{len(track_ids)} tracks")
+
+                    return JSONResponse({
+                        "success": True,
+                        "total_requested": len(track_ids),
+                        "total_processed": len(processed_features),
+                        "audio_features": processed_features
+                    })
+                else:
+                    error_data = await response.json()
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=error_data.get('error', {}).get('message', 'Batch request failed')
+                    )
+
+    except Exception as e:
+        logger.error(f"Error in batch audio features: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}"
+        )
+
+@router.get("/spotify/search")
+async def search_spotify_tracks(
+    query: str = Query(..., description="Search query (track name, artist, etc.)"),
+    access_token: str = Query(..., description="Spotify access token"),
+    limit: int = Query(20, ge=1, le=50, description="Number of results (1-50)")
+):
+    """
+    Search Spotify catalog - useful for matching Tidal tracks to Spotify
+    Can search by track name, artist, ISRC, or combination
+    """
+    try:
+        logger.info(f"🎵 [SPOTIFY SEARCH] Query: {query}")
+
+        async with aiohttp.ClientSession() as session:
+            headers = {'Authorization': f'Bearer {access_token}'}
+
+            params = {
+                'q': query,
+                'type': 'track',
+                'limit': limit
+            }
+
+            async with session.get(
+                'https://api.spotify.com/v1/search',
+                headers=headers,
+                params=params,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+
+                    tracks = []
+                    for item in data['tracks']['items']:
+                        tracks.append({
+                            "id": item['id'],
+                            "name": item['name'],
+                            "artists": [artist['name'] for artist in item['artists']],
+                            "album": item['album']['name'],
+                            "isrc": item['external_ids'].get('isrc'),
+                            "duration_ms": item['duration_ms'],
+                            "popularity": item['popularity'],
+                            "preview_url": item['preview_url']
+                        })
+
+                    return JSONResponse({
+                        "success": True,
+                        "total": data['tracks']['total'],
+                        "tracks": tracks
+                    })
+                else:
+                    error_data = await response.json()
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=error_data.get('error', {}).get('message', 'Search failed')
+                    )
+
+    except Exception as e:
+        logger.error(f"Error searching Spotify: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}"
         )
 
 # ===========================================
@@ -558,21 +1011,36 @@ async def init_tidal_oauth(request: TidalOAuthInitRequest):
     Initiate Tidal OAuth Authorization Code flow with PKCE
     Returns the authorization URL for the user to visit
 
-    Note: For local development, Tidal's Device Code flow may work better
-    as it doesn't require a publicly accessible redirect URI
+    SECURITY: Client credentials are read from backend environment variables,
+    never exposed to frontend. This follows OAuth 2.1 best practices.
     """
     try:
+        # Validate backend has Tidal credentials configured
+        if not TIDAL_CLIENT_ID or not TIDAL_CLIENT_SECRET:
+            raise HTTPException(
+                status_code=500,
+                detail="Tidal OAuth not configured. Please set TIDAL_CLIENT_ID and TIDAL_CLIENT_SECRET environment variables."
+            )
+
         # Generate PKCE pair and state
         code_verifier, code_challenge = generate_pkce_pair()
         state = generate_state()
 
-        # Store PKCE verifier and client info for callback
-        oauth_state_store[state] = {
+        # Store PKCE verifier, client secret, and redirect URI in Redis (expires in 10 minutes)
+        # SECURITY: Client secret stored server-side in Redis, never sent to frontend
+        r = await get_redis()
+        oauth_data = {
             'code_verifier': code_verifier,
-            'client_id': request.client_id,
+            'client_id': TIDAL_CLIENT_ID,
+            'client_secret': TIDAL_CLIENT_SECRET,  # Stored securely server-side
             'redirect_uri': request.redirect_uri,
             'created_at': time.time()
         }
+        await r.setex(
+            f"oauth:tidal:{state}",
+            600,  # 10 minutes TTL
+            json.dumps(oauth_data)
+        )
 
         # Build authorization URL
         # Scopes from Tidal Developer Portal configuration
@@ -587,7 +1055,7 @@ async def init_tidal_oauth(request: TidalOAuthInitRequest):
 
         auth_params = {
             'response_type': 'code',
-            'client_id': request.client_id,
+            'client_id': TIDAL_CLIENT_ID,
             'redirect_uri': request.redirect_uri,
             'scope': ' '.join(scopes),
             'code_challenge': code_challenge,
@@ -600,7 +1068,7 @@ async def init_tidal_oauth(request: TidalOAuthInitRequest):
         authorization_url = f"https://login.tidal.com/authorize?{urllib.parse.urlencode(auth_params)}"
 
         # Debug logging to help diagnose Tidal OAuth issues
-        logger.info(f"Generated OAuth URL for client {request.client_id[:8]}... with scopes: {', '.join(scopes)}")
+        logger.info(f"Generated OAuth URL for client {TIDAL_CLIENT_ID[:8]}... with scopes: {', '.join(scopes)}")
         logger.info(f"OAuth Parameters: response_type={auth_params['response_type']}, "
                    f"redirect_uri={auth_params['redirect_uri']}, "
                    f"code_challenge_method={auth_params['code_challenge_method']}, "
@@ -619,34 +1087,38 @@ async def init_tidal_oauth(request: TidalOAuthInitRequest):
 @router.get("/tidal/oauth/callback")
 async def tidal_oauth_callback(
     code: str = Query(..., description="Authorization code from Tidal"),
-    state: str = Query(..., description="State parameter for CSRF protection"),
-    client_secret: str = Query(..., description="Client secret for token exchange")
+    state: str = Query(..., description="State parameter for CSRF protection")
 ):
     """
     OAuth callback endpoint - exchanges authorization code for access token
+
+    SECURITY: Client secret retrieved from Redis (stored during init),
+    never exposed to frontend or URL parameters.
     """
     try:
-        # Validate state and retrieve stored data
-        if state not in oauth_state_store:
-            raise HTTPException(status_code=400, detail="Invalid or expired state parameter")
+        # Validate state and retrieve stored data from Redis
+        r = await get_redis()
+        oauth_data_json = await r.get(f"oauth:tidal:{state}")
 
-        oauth_data = oauth_state_store[state]
+        if not oauth_data_json:
+            logger.error(f"OAuth state not found or expired for state: {state[:8]}...")
+            raise HTTPException(status_code=400, detail="Invalid or expired state parameter. Please try connecting again.")
 
-        # Check if state is not too old (10 minutes max)
-        if time.time() - oauth_data['created_at'] > 600:
-            del oauth_state_store[state]
-            raise HTTPException(status_code=400, detail="OAuth state expired")
+        oauth_data = json.loads(oauth_data_json)
 
         # Exchange authorization code for access token
+        # SECURITY: client_secret comes from Redis, not from URL parameters
         token_url = "https://auth.tidal.com/v1/oauth2/token"
         token_data = {
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': oauth_data['redirect_uri'],
             'client_id': oauth_data['client_id'],
-            'client_secret': client_secret,
+            'client_secret': oauth_data['client_secret'],  # Retrieved from Redis
             'code_verifier': oauth_data['code_verifier']
         }
+
+        logger.info(f"Exchanging authorization code for tokens (state: {state[:8]}...)")
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -658,8 +1130,8 @@ async def tidal_oauth_callback(
                 if response.status == 200:
                     token_result = await response.json()
 
-                    # Clean up state
-                    del oauth_state_store[state]
+                    # Clean up state from Redis
+                    await r.delete(f"oauth:tidal:{state}")
 
                     # Return tokens to frontend
                     return JSONResponse(content={

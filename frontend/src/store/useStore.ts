@@ -40,13 +40,6 @@ interface MusicServiceCredentials {
     refreshToken?: string;
     expiresAt?: number;
   };
-  appleMusic?: {
-    keyId: string;
-    teamId: string;
-    privateKey: string;
-    token?: string;
-    expiresAt?: number;
-  };
 }
 
 // Main application state interface
@@ -1010,35 +1003,6 @@ export const useStore = create<StoreState>()(
                     }
                   } catch (error) {
                     console.error('Spotify connection test failed:', error);
-                    get().credentials.setConnectionStatus(service, false);
-                    return false;
-                  }
-
-                case 'appleMusic':
-                  try {
-                    const response = await fetch(`${API_BASE_URL}/api/v1/music-auth/test/apple-music`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        key_id: credentials.keyId,
-                        team_id: credentials.teamId,
-                        private_key: credentials.privateKey,
-                      }),
-                    });
-
-                    if (response.ok) {
-                      const result = await response.json();
-                      const isValid = result.valid;
-                      get().credentials.setConnectionStatus(service, isValid);
-                      return isValid;
-                    } else {
-                      get().credentials.setConnectionStatus(service, false);
-                      return false;
-                    }
-                  } catch (error) {
-                    console.error('Apple Music connection test failed:', error);
                     get().credentials.setConnectionStatus(service, false);
                     return false;
                   }

@@ -440,6 +440,11 @@ services:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       DAILY_QUOTA_LIMIT: 10000
@@ -927,6 +932,11 @@ services:
       REDIS_PORT: 6379
       API_VERSION: v1
       CONNECTION_POOL_SIZE: 50
+      # Music Service OAuth Credentials
+      TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID:-}
+      TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET:-}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
       MAX_OVERFLOW: 20
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
     depends_on:
