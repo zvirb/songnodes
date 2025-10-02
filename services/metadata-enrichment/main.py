@@ -45,9 +45,9 @@ try:
     import sys
     sys.path.insert(0, '/app/common')
     from health_monitor import ResourceMonitor
-    logger.info("✅ Health monitor imported successfully")
+    print("✅ Health monitor imported successfully")
 except ImportError as e:
-    logger.error(f"❌ Failed to import health_monitor: {e}")
+    print(f"⚠️ Failed to import health_monitor: {e}")
     ResourceMonitor = None
 
 # Configure structured logging
@@ -156,14 +156,11 @@ class EnrichmentConnectionManager:
         # Redis connection for caching
         redis_host = os.getenv("REDIS_HOST", "redis")
         redis_port = int(os.getenv("REDIS_PORT", 6379))
+        redis_password = os.getenv("REDIS_PASSWORD", "")
 
         self.redis_client = await aioredis.from_url(
-            f"redis://{redis_host}:{redis_port}",
+            f"redis://:{redis_password}@{redis_host}:{redis_port}",
             decode_responses=False,  # We'll handle encoding
-            socket_connect_timeout=5,
-            socket_timeout=5,
-            retry_on_timeout=True,
-            health_check_interval=30,
             max_connections=50
         )
 

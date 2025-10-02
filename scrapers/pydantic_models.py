@@ -505,7 +505,7 @@ class HealthCheckResponse(BaseModel):
     status: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     database_connected: bool
-    services_available: Dict[str, bool]
+    services_available: Dict[str, Any]  # Changed from Dict[str, bool] to support nested structures and error messages
 
     model_config = ConfigDict()
 

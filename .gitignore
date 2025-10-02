@@ -199,3 +199,7 @@ simple-*.js
 *-screenshot*.png
 debug-layers.png
 final-working-graph.png
+
+# Docker Secrets (sensitive data)
+secrets/
+!secrets/.gitkeep

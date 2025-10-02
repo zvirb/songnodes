@@ -191,6 +191,7 @@ class WebSocketService:
         
     async def startup(self):
         """Initialize connections"""
+        logger.info("🚀 Starting WebSocket service initialization...")
         # Redis connection - use secrets_manager if available
         try:
             redis_config = get_redis_config()
@@ -211,19 +212,17 @@ class WebSocketService:
                 port=redis_port,
                 password=redis_password,
                 max_connections=50,
-                decode_responses=True,
-                socket_keepalive=True,  # Keep connections alive
-                socket_timeout=5  # 5 second socket timeout
+                decode_responses=True
             )
-            self.redis_client = redis.from_url(
-                f"redis://{redis_host}:{redis_port}",
-                decode_responses=True,
-                connection_pool=pool
-            )
-            await self.redis_client.ping()
-            logger.info("Redis connection established with pooling")
+            # Create Redis client from connection pool
+            self.redis_client = redis.Redis(connection_pool=pool)
+            ping_result = await self.redis_client.ping()
+            if ping_result:
+                logger.info("✅ Redis connection established with password authentication and pooling")
+            else:
+                logger.warning("⚠️ Redis ping returned False")
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+            logger.error(f"❌ Failed to connect to Redis: {e}")
         
         # RabbitMQ connection - use secrets_manager if available
         try:
@@ -319,7 +318,14 @@ async def lifespan(app: FastAPI):
     except NameError:
         logger.warning("⚠️ Secrets validation not available")
 
-    await websocket_service.startup()
+    try:
+        await websocket_service.startup()
+        logger.info("✅ WebSocket service startup completed successfully")
+    except Exception as e:
+        logger.error(f"❌ WebSocket service startup failed: {e}")
+        import traceback
+        traceback.print_exc()
+
     yield
     # Shutdown
     await websocket_service.shutdown()

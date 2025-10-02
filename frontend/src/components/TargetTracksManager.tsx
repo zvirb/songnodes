@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import clsx from 'clsx';
 import { api } from '../services/api';
+import MusicServiceSearch from './MusicServiceSearch';
 
 interface TargetTrack {
   track_id?: string;
@@ -26,6 +27,7 @@ const TargetTracksManager: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const [importData, setImportData] = useState('');
+  const [activeTab, setActiveTab] = useState<'manage' | 'search'>('manage');
 
   // Form state for add/edit
   const [formData, setFormData] = useState<Partial<TargetTrack>>({
@@ -247,6 +249,31 @@ const TargetTracksManager: React.FC = () => {
     setSelectedTracks(new Set());
   };
 
+  const handleAddFromMusicService = async (musicTracks: any[]) => {
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const track of musicTracks) {
+      try {
+        await api.post('/target-tracks', {
+          title: track.title,
+          artist: track.artist,
+          priority: 'medium',
+          genres: [],
+          is_active: true
+        });
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        console.error('Failed to add track from music service:', track, error);
+      }
+    }
+
+    loadTracks();
+    showNotification('success', `Added ${successCount} track${successCount !== 1 ? 's' : ''} to targets${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
+    setActiveTab('manage');
+  };
+
   const addGenre = () => {
     if (newGenre.trim() && !formData.genres?.includes(newGenre.trim())) {
       setFormData({
@@ -371,9 +398,38 @@ const TargetTracksManager: React.FC = () => {
           </div>
         </div>
 
-        {/* Bulk Operations Bar */}
-        {selectedTracks.size > 0 && (
-          <div className="mb-4 p-3 bg-dj-black border border-dj-accent rounded-lg">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 border-b border-dj-gray mb-4">
+          <button
+            onClick={() => setActiveTab('manage')}
+            className={clsx(
+              'px-4 py-2 font-semibold transition-all',
+              activeTab === 'manage'
+                ? 'text-dj-accent border-b-2 border-dj-accent'
+                : 'text-gray-400 hover:text-gray-300'
+            )}
+          >
+            📋 Manage Tracks
+          </button>
+          <button
+            onClick={() => setActiveTab('search')}
+            className={clsx(
+              'px-4 py-2 font-semibold transition-all',
+              activeTab === 'search'
+                ? 'text-dj-accent border-b-2 border-dj-accent'
+                : 'text-gray-400 hover:text-gray-300'
+            )}
+          >
+            🔍 Search Services
+          </button>
+        </div>
+
+        {/* Tab Content: Manage Tracks */}
+        {activeTab === 'manage' && (
+          <>
+            {/* Bulk Operations Bar */}
+            {selectedTracks.size > 0 && (
+              <div className="mb-4 p-3 bg-dj-black border border-dj-accent rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-300">
                 {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
@@ -405,142 +461,151 @@ const TargetTracksManager: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Filters */}
-        <div className="flex gap-4 items-center">
-          <input
-            type="text"
-            placeholder="Search tracks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-          />
-          <select
-            value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value as any)}
-            className="px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-          >
-            <option value="all">All Priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-          {filteredTracks.length > 0 && (
-            <div className="flex gap-2">
-              <button
-                onClick={selectAllTracks}
-                className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+            {/* Filters */}
+            <div className="flex gap-4 items-center">
+              <input
+                type="text"
+                placeholder="Search tracks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+              />
+              <select
+                value={selectedPriority}
+                onChange={(e) => setSelectedPriority(e.target.value as any)}
+                className="px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
               >
-                Select All
-              </button>
-              {selectedTracks.size > 0 && (
-                <button
-                  onClick={clearSelection}
-                  className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                >
-                  Clear
-                </button>
+                <option value="all">All Priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              {filteredTracks.length > 0 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllTracks}
+                    className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+                  >
+                    Select All
+                  </button>
+                  {selectedTracks.size > 0 && (
+                    <button
+                      onClick={clearSelection}
+                      className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Track List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-        {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dj-accent"></div>
-          </div>
-        ) : filteredTracks.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            No target tracks found. Add some tracks to get started!
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredTracks.map((track) => (
-              <div
-                key={track.track_id}
-                className={clsx(
-                  "bg-dj-black border rounded-lg p-4 transition-all",
-                  selectedTracks.has(track.track_id!)
-                    ? "border-dj-accent bg-dj-accent bg-opacity-10"
-                    : "border-dj-gray hover:border-dj-accent"
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  {/* Selection Checkbox */}
-                  <div className="pt-1">
-                    <input
-                      type="checkbox"
-                      checked={selectedTracks.has(track.track_id!)}
-                      onChange={() => toggleTrackSelection(track.track_id!)}
-                      className="rounded border-dj-gray"
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-lg">{track.title}</h3>
-                      <PriorityBadge priority={track.priority} />
-                      {!track.is_active && (
-                        <span className="px-2 py-1 bg-dj-gray text-gray-500 rounded text-xs">
-                          Inactive
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-gray-400 mb-2">by {track.artist}</p>
-
-                    {/* Stats */}
-                    <div className="flex gap-4 text-sm text-gray-500">
-                      <span>📋 {track.playlists_found || 0} playlists</span>
-                      <span>🔗 {track.adjacencies_found || 0} adjacencies</span>
-                      {track.last_searched && (
-                        <span>🔍 Last searched: {new Date(track.last_searched).toLocaleDateString()}</span>
-                      )}
-                    </div>
-
-                    {/* Genres and Search Terms */}
-                    {track.genres && track.genres.length > 0 && (
-                      <div className="mt-2 flex gap-2">
-                        {track.genres.map((genre, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-dj-gray rounded text-xs">
-                            {genre}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleSearchNow(track.track_id!)}
-                      className="p-2 text-dj-accent hover:bg-dj-gray rounded transition-all"
-                      title="Search now"
-                    >
-                      🔍
-                    </button>
-                    <button
-                      onClick={() => handleEditTrack(track)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-dj-gray rounded transition-all"
-                      title="Edit"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTrack(track.track_id!)}
-                      className="p-2 text-dj-danger hover:bg-dj-gray rounded transition-all"
-                      title="Delete"
-                    >
-                      🗑️
-                    </button>
-                  </div>
+            {/* Track List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+              {loading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dj-accent"></div>
                 </div>
-              </div>
-            ))}
+              ) : filteredTracks.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  No target tracks found. Add some tracks to get started!
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredTracks.map((track) => (
+                    <div
+                      key={track.track_id}
+                      className={clsx(
+                        "bg-dj-black border rounded-lg p-4 transition-all",
+                        selectedTracks.has(track.track_id!)
+                          ? "border-dj-accent bg-dj-accent bg-opacity-10"
+                          : "border-dj-gray hover:border-dj-accent"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Selection Checkbox */}
+                        <div className="pt-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedTracks.has(track.track_id!)}
+                            onChange={() => toggleTrackSelection(track.track_id!)}
+                            className="rounded border-dj-gray"
+                          />
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">{track.title}</h3>
+                            <PriorityBadge priority={track.priority} />
+                            {!track.is_active && (
+                              <span className="px-2 py-1 bg-dj-gray text-gray-500 rounded text-xs">
+                                Inactive
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-400 mb-2">by {track.artist}</p>
+
+                          {/* Stats */}
+                          <div className="flex gap-4 text-sm text-gray-500">
+                            <span>📋 {track.playlists_found || 0} playlists</span>
+                            <span>🔗 {track.adjacencies_found || 0} adjacencies</span>
+                            {track.last_searched && (
+                              <span>🔍 Last searched: {new Date(track.last_searched).toLocaleDateString()}</span>
+                            )}
+                          </div>
+
+                          {/* Genres and Search Terms */}
+                          {track.genres && track.genres.length > 0 && (
+                            <div className="mt-2 flex gap-2">
+                              {track.genres.map((genre, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-dj-gray rounded text-xs">
+                                  {genre}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleSearchNow(track.track_id!)}
+                            className="p-2 text-dj-accent hover:bg-dj-gray rounded transition-all"
+                            title="Search now"
+                          >
+                            🔍
+                          </button>
+                          <button
+                            onClick={() => handleEditTrack(track)}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-dj-gray rounded transition-all"
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTrack(track.track_id!)}
+                            className="p-2 text-dj-danger hover:bg-dj-gray rounded transition-all"
+                            title="Delete"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Tab Content: Search Services */}
+        {activeTab === 'search' && (
+          <div className="flex-1 overflow-hidden">
+            <MusicServiceSearch onAddToTargets={handleAddFromMusicService} />
           </div>
         )}
       </div>

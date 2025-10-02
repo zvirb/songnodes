@@ -25,8 +25,9 @@ from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# Docker Secrets directory
-SECRETS_DIR = Path("/run/secrets")
+# Docker Secrets directories (in priority order)
+DOCKER_SECRETS_DIR = Path("/run/secrets")
+LOCAL_SECRETS_DIR = Path(__file__).parent.parent.parent / "secrets"  # Project root secrets/
 
 
 def get_secret(
@@ -59,12 +60,11 @@ def get_secret(
     if secret_file_name is None:
         secret_file_name = key.lower()
 
-    secret_path = SECRETS_DIR / secret_file_name
-
-    # 1. Try Docker Secret
-    if secret_path.exists():
+    # 1. Try Docker Secret (/run/secrets/)
+    docker_secret_path = DOCKER_SECRETS_DIR / secret_file_name
+    if docker_secret_path.exists():
         try:
-            with open(secret_path, 'r') as f:
+            with open(docker_secret_path, 'r') as f:
                 value = f.read().strip()
                 if value:
                     logger.debug(f"Loaded secret '{key}' from Docker Secret")
@@ -72,18 +72,30 @@ def get_secret(
         except Exception as e:
             logger.warning(f"Failed to read Docker Secret '{key}': {e}")
 
-    # 2. Try environment variable
+    # 2. Try Local Secrets (./secrets/ - for development)
+    local_secret_path = LOCAL_SECRETS_DIR / secret_file_name
+    if local_secret_path.exists():
+        try:
+            with open(local_secret_path, 'r') as f:
+                value = f.read().strip()
+                if value:
+                    logger.debug(f"Loaded secret '{key}' from local secrets directory")
+                    return value
+        except Exception as e:
+            logger.warning(f"Failed to read local secret '{key}': {e}")
+
+    # 3. Try environment variable
     value = os.getenv(key)
     if value:
         logger.debug(f"Loaded secret '{key}' from environment variable")
         return value
 
-    # 3. Use default
+    # 4. Use default
     if default is not None:
         logger.debug(f"Using default value for secret '{key}'")
         return default
 
-    # 4. Handle required secrets
+    # 5. Handle required secrets
     if required:
         raise ValueError(
             f"Required secret '{key}' not found in Docker Secrets or environment variables. "
@@ -183,6 +195,30 @@ def get_rabbitmq_url() -> str:
     )
 
 
+def get_api_keys() -> Dict[str, str]:
+    """Get all API keys for external services."""
+    return {
+        "setlistfm": get_secret("SETLISTFM_API_KEY", ""),
+        "spotify_client_id": get_secret("SPOTIFY_CLIENT_ID", ""),
+        "spotify_client_secret": get_secret("SPOTIFY_CLIENT_SECRET", ""),
+        "reddit_client_id": get_secret("REDDIT_CLIENT_ID", ""),
+        "reddit_client_secret": get_secret("REDDIT_CLIENT_SECRET", ""),
+        "tidal_client_id": get_secret("TIDAL_CLIENT_ID", ""),
+        "tidal_client_secret": get_secret("TIDAL_CLIENT_SECRET", ""),
+        "jwt_secret": get_secret("JWT_SECRET", ""),
+        "api_key": get_secret("API_KEY", "")
+    }
+
+
+def get_infrastructure_passwords() -> Dict[str, str]:
+    """Get infrastructure service passwords."""
+    return {
+        "grafana": get_secret("GRAFANA_PASSWORD", "admin"),
+        "minio": get_secret("MINIO_ROOT_PASSWORD", ""),
+        "pgbouncer": get_secret("PGBOUNCER_ADMIN_PASSWORD", "")
+    }
+
+
 def mask_secret(value: str, show_chars: int = 4) -> str:
     """
     Mask secret for safe logging.
@@ -238,6 +274,8 @@ __all__ = [
     'get_redis_config',
     'get_rabbitmq_config',
     'get_rabbitmq_url',
+    'get_api_keys',
+    'get_infrastructure_passwords',
     'mask_secret',
     'validate_secrets'
 ]

@@ -1468,20 +1468,33 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         return None
 
     def extract_remix_type(self, track_name):
-        """Extract remix type from track name"""
+        """Extract remix type from track name - returns lowercase enum values"""
+        # Specific remix patterns (check these first)
         remix_patterns = {
-            r'\(Original Mix\)': 'Original Mix',
-            r'\(Radio Edit\)': 'Radio Edit',
-            r'\(Extended Mix\)': 'Extended Mix',
-            r'\(Club Mix\)': 'Club Mix',
-            r'\(VIP Mix\)': 'VIP Mix',
-            r'\(Remix\)': 'Remix',
-            r'\(Edit\)': 'Edit'
+            r'\(Original Mix\)': 'original',
+            r'\(Extended Mix\)': 'extended',
+            r'\(Radio Edit\)': 'radio',
+            r'\(Club Mix\)': 'club',
+            r'\(Dub Mix\)': 'club',  # Map dub to club
+            r'\(Vocal Mix\)': 'remix',  # Map vocal to generic remix
+            r'\(Instrumental\)': 'instrumental',
+            r'\(VIP\)': 'vip',
+            r'\(VIP Mix\)': 'vip',
+            r'\(Edit\)': 'edit',
+            r'\(Rework\)': 'rework',
+            r'\(Bootleg\)': 'bootleg',
+            r'\(Acappella\)': 'acappella'
         }
 
         for pattern, remix_type in remix_patterns.items():
             if re.search(pattern, track_name, re.IGNORECASE):
                 return remix_type
+
+        # Check for artist-based remixes like "(Skrillex Remix)" or "(Calvin Harris Remix)"
+        # This pattern matches any text followed by "Remix" in parentheses
+        if re.search(r'\([^)]+\s+Remix\)', track_name, re.IGNORECASE):
+            return 'remix'
+
         return None
 
     def calculate_extraction_confidence(self, parsed_track):

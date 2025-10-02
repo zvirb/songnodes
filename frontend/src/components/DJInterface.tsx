@@ -1430,12 +1430,12 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                         <p style={{ margin: 0, fontSize: '14px' }}>
                           📭 No recent scraping runs found
                         </p>
-                        <p style={{ margin: '10px 0 0 0', fontSize: '12px' }}>
+                        <p style={{ margin: '10px 0 0 0', fontSize: '12px', lineHeight: '1.6' }}>
                           This shows data from the last 24 hours across all scrapers:<br/>
-                          • 1001tracklists<br/>
-                          • MixesDB<br/>
-                          • Setlist.fm<br/>
-                          • Reddit
+                          • 1001tracklists &nbsp; • MixesDB &nbsp; • Setlist.fm<br/>
+                          • Reddit &nbsp; • Mixcloud &nbsp; • SoundCloud<br/>
+                          • YouTube &nbsp; • Internet Archive<br/>
+                          • LiveTracklist &nbsp; • Resident Advisor
                         </p>
                       </div>
                     ) : (
@@ -1559,7 +1559,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                         🕷️ Full Search (100 tracks)
                       </h4>
                       <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#6c757d', lineHeight: 1.4 }}>
-                        Full batch: Search and scrape up to 100 target tracks across 1001tracklists, MixesDB, Setlist.fm, and Reddit.
+                        Full batch: Search and scrape up to 100 target tracks across all 10 sources (1001tracklists, MixesDB, Setlist.fm, Reddit, Mixcloud, SoundCloud, YouTube, Internet Archive, LiveTracklist, Resident Advisor).
                       </p>
                       <button
                         onClick={triggerScraperTasks}

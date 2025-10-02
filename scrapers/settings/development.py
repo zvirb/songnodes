@@ -82,8 +82,8 @@ EXTENSIONS = {
     'scrapy.extensions.memusage.MemoryUsage': 500,
 }
 
-TELNETCONSOLE_ENABLED = True
-TELNETCONSOLE_PORT = [6023, 6024, 6025, 6026]  # Auto-select available port
+TELNETCONSOLE_ENABLED = False  # Disabled to avoid port range errors in containers
+# TELNETCONSOLE_PORT = 6023  # Use single port if re-enabling
 
 # ============================================================================
 # DEVELOPMENT DOWNLOADER MIDDLEWARES (Disable missing middlewares)

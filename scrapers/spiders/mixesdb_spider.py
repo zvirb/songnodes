@@ -332,14 +332,18 @@ class MixesdbSpider(scrapy.Spider):
             yield from self.parse_category_page(response)
             return
 
-        # Handle individual mix pages
-        if self.is_mix_page(response):
-            yield from self.parse_mix_page(response)
-            return
-
         # Handle recent changes
         if 'RecentChanges' in response.url:
             yield from self.parse_recent_changes(response)
+            return
+
+        # Default: Handle individual mix pages (including direct URLs from start_urls)
+        # This handles direct playlist URLs like /w/2015-03-28_-_Martin_Garrix_@_...
+        if self.is_mix_page(response) or '/w/' in response.url:
+            yield from self.parse_mix_page(response)
+            return
+
+        self.logger.warning(f"No parser matched for URL: {response.url}")
 
     def parse_search_results(self, response):
         """Parse search results and follow mix links"""
@@ -734,7 +738,7 @@ class MixesdbSpider(scrapy.Spider):
 
                 # Pydantic validation requires remix_type when is_remix=True
                 if is_remix and not remix_type:
-                    remix_type = "Unknown Remix"
+                    remix_type = "unknown"
 
                 track_item = {
                     'track_id': track_id,  # Deterministic ID for matching across sources
@@ -956,20 +960,32 @@ class MixesdbSpider(scrapy.Spider):
         return None
 
     def extract_remix_type(self, track_name):
-        """Extract remix type from track name"""
+        """Extract remix type from track name - returns lowercase enum values"""
+        # Specific remix patterns (check these first)
         remix_patterns = {
-            r'\(Original Mix\)': 'Original Mix',
-            r'\(Extended Mix\)': 'Extended Mix',
-            r'\(Radio Edit\)': 'Radio Edit',
-            r'\(Club Mix\)': 'Club Mix',
-            r'\(Dub Mix\)': 'Dub Mix',
-            r'\(Vocal Mix\)': 'Vocal Mix',
-            r'\(Instrumental\)': 'Instrumental'
+            r'\(Original Mix\)': 'original',
+            r'\(Extended Mix\)': 'extended',
+            r'\(Radio Edit\)': 'radio',
+            r'\(Club Mix\)': 'club',
+            r'\(Dub Mix\)': 'club',  # Map dub to club
+            r'\(Vocal Mix\)': 'remix',  # Map vocal to generic remix
+            r'\(Instrumental\)': 'instrumental',
+            r'\(VIP\)': 'vip',
+            r'\(Edit\)': 'edit',
+            r'\(Rework\)': 'rework',
+            r'\(Bootleg\)': 'bootleg',
+            r'\(Acappella\)': 'acappella'
         }
 
         for pattern, remix_type in remix_patterns.items():
             if re.search(pattern, track_name, re.IGNORECASE):
                 return remix_type
+
+        # Check for artist-based remixes like "(Skrillex Remix)" or "(Calvin Harris Remix)"
+        # This pattern matches any text followed by "Remix" in parentheses
+        if re.search(r'\([^)]+\s+Remix\)', track_name, re.IGNORECASE):
+            return 'remix'
+
         return None
 
     def generate_track_adjacencies(self, tracks_data, setlist_data):
