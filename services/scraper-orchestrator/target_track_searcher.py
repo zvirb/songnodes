@@ -467,12 +467,18 @@ class TargetTrackSearcher2025:
         return results
 
     async def _search_track_across_platforms(self, track: Dict) -> List[str]:
-        """Search track across all platforms with circuit breaker protection"""
+        """Search track across all TRACKLIST platforms with circuit breaker protection
+
+        Strategy:
+        - Tier 1: Tracklist Search Platforms (1001tracklists, mixesdb, livetracklist, residentadvisor)
+        - Tier 2: Media Platforms (youtube, soundcloud, mixcloud) - only if URL-based search
+        - Excluded: database (internal), setlistfm (rock/pop not electronic), reddit (discussion not tracklists)
+        - Enrichment APIs (spotify, musicbrainz, beatport) handled AFTER scraping, not during search
+        """
         all_urls = []
 
-        # Dynamically build search tasks from all available circuit breakers
-        # Exclude 'database' (internal) and 'setlistfm' (not suitable for electronic music)
-        excluded_sources = {'database', 'setlistfm'}
+        # Only exclude: internal DB and sources not suitable for tracklist search
+        excluded_sources = {'database', 'setlistfm', 'reddit', 'internetarchive'}
 
         search_tasks = []
         active_platforms = []
@@ -829,6 +835,99 @@ class TargetTrackSearcher2025:
         except Exception as e:
             logger.error("Platform search error", error=str(e))
             raise
+
+    async def _search_livetracklist(self, track: Dict) -> List[str]:
+        """Search LiveTrackList - Real-time DJ set tracklists"""
+        logger.info("Searching LiveTrackList (via scraper service)",
+                   artist=track['artist'], title=track['title'])
+        # Delegate to livetracklist scraper service
+        try:
+            response = await self.http_client.post(
+                "http://scraper-livetracklist:8019/search",
+                json={"artist": track['artist'], "title": track['title']},
+                timeout=15.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('urls', [])
+            return []
+        except Exception as e:
+            logger.warning("LiveTrackList search failed", error=str(e))
+            return []
+
+    async def _search_residentadvisor(self, track: Dict) -> List[str]:
+        """Search Resident Advisor - Electronic music events and DJ sets"""
+        logger.info("Searching Resident Advisor (via scraper service)",
+                   artist=track['artist'], title=track['title'])
+        # Delegate to residentadvisor scraper service
+        try:
+            response = await self.http_client.post(
+                "http://scraper-residentadvisor:8023/search",
+                json={"artist": track['artist'], "title": track['title']},
+                timeout=15.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('urls', [])
+            return []
+        except Exception as e:
+            logger.warning("Resident Advisor search failed", error=str(e))
+            return []
+
+    async def _search_youtube(self, track: Dict) -> List[str]:
+        """Search YouTube - Only searches if track has a known YouTube URL"""
+        logger.info("Searching YouTube (via scraper service)",
+                   artist=track['artist'], title=track['title'])
+        # YouTube search returns video URLs that may contain tracklists in description
+        try:
+            response = await self.http_client.post(
+                "http://scraper-youtube:8017/search",
+                json={"query": f"{track['artist']} {track['title']} tracklist"},
+                timeout=15.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('video_urls', [])[:5]  # Limit to 5 videos
+            return []
+        except Exception as e:
+            logger.warning("YouTube search failed", error=str(e))
+            return []
+
+    async def _search_soundcloud(self, track: Dict) -> List[str]:
+        """Search SoundCloud - DJ mixes and track metadata"""
+        logger.info("Searching SoundCloud (via scraper service)",
+                   artist=track['artist'], title=track['title'])
+        try:
+            response = await self.http_client.post(
+                "http://scraper-soundcloud:8016/search",
+                json={"query": f"{track['artist']} {track['title']}"},
+                timeout=15.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('track_urls', [])[:10]  # Limit to 10 tracks
+            return []
+        except Exception as e:
+            logger.warning("SoundCloud search failed", error=str(e))
+            return []
+
+    async def _search_mixcloud(self, track: Dict) -> List[str]:
+        """Search Mixcloud - DJ mixes with tracklists"""
+        logger.info("Searching Mixcloud (via scraper service)",
+                   artist=track['artist'], title=track['title'])
+        try:
+            response = await self.http_client.post(
+                "http://scraper-mixcloud:8015/search",
+                json={"query": f"{track['artist']} {track['title']}"},
+                timeout=15.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('mix_urls', [])[:10]  # Limit to 10 mixes
+            return []
+        except Exception as e:
+            logger.warning("Mixcloud search failed", error=str(e))
+            return []
 
     async def _update_search_results(self, track: Dict, urls: List[str]):
         """Update database with search results using 2025 async patterns"""
