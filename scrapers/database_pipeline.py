@@ -349,18 +349,9 @@ class DatabasePipeline:
         if not track_name or not artist_name:
             return
 
-        # Pydantic validation
-        if PYDANTIC_AVAILABLE:
-            self.validation_stats['total_items'] += 1
-            try:
-                data_source = item.get('data_source') or item.get('source')
-                # Use track validation as fallback (no specific track_artist validation yet)
-                validated_relationship = validate_track_item(item, data_source=data_source)
-                self.validation_stats['valid_items'] += 1
-            except ValidationError as e:
-                self.validation_stats['invalid_items'] += 1
-                self.logger.warning(f"❌ Invalid track-artist relationship, skipping: {track_name} - {artist_name} ({artist_role}) - {e}")
-                return
+        # Skip Pydantic validation for track-artist items as they have different schema than tracks
+        # Basic validation is sufficient: we have track_name, artist_name, and artist_role
+        self.logger.debug(f"✓ Processing track-artist: {artist_name} ({artist_role}) - {track_name}")
 
         self.item_batches['track_artists'].append({
             'track_name': track_name,
@@ -466,7 +457,16 @@ class DatabasePipeline:
         ])
 
     def _insert_songs_batch(self, txn, batch: List[Dict[str, Any]]):
-        """Insert tracks batch with proper track_artists relationships using psycopg2"""
+        """
+        Insert tracks batch with ISRC/Spotify ID based upsert logic.
+
+        Priority order for conflict resolution:
+        1. ISRC (most reliable natural key)
+        2. Spotify ID (platform-specific but unique)
+        3. Fallback to (title, normalized_title) for old data
+
+        Uses COALESCE for smart merging - prefer new non-null values.
+        """
         tracks_data = []
         track_artist_relationships = []
 
@@ -502,50 +502,46 @@ class DatabasePipeline:
                 except Exception:
                     pass
 
+            # Preserve ALL raw scraper data in metadata field for future enrichment
+            raw_metadata = {
+                'scraper_source': item.get('source', 'unknown'),
+                'original_data': {
+                    'artist_name': item.get('artist_name'),  # Preserve even if no artist found
+                    'raw_title': item.get('raw_title', item['title']),
+                    'url': item.get('url'),
+                    'scraped_at': item.get('scraped_at'),
+                },
+                'needs_enrichment': primary_artist_id is None  # Flag for enrichment pipeline
+            }
+            # Include any additional fields from scraper
+            for key in item:
+                if key not in ['title', 'artist_name', 'genre', 'bpm', 'key', 'duration_seconds', 'release_year', 'spotify_id', 'tidal_id', 'apple_music_id', 'isrc']:
+                    raw_metadata['original_data'][key] = item[key]
+
             tracks_data.append({
                 'title': item['title'],
                 'normalized_title': normalized_title,
+                'isrc': item.get('isrc'),  # NEW: ISRC support
                 'genre': item.get('genre'),
                 'bpm': item.get('bpm'),
                 'key': item.get('key'),
                 'duration_ms': duration_ms,
                 'release_date': release_date,
                 'spotify_id': item.get('spotify_id'),
-                'musicbrainz_id': item.get('musicbrainz_id'),
                 'tidal_id': item.get('tidal_id'),
                 'apple_music_id': item.get('apple_music_id'),
-                'primary_artist_id': primary_artist_id  # Store for relationship creation
+                'metadata': raw_metadata,
+                'primary_artist_id': primary_artist_id
             })
 
-        # Insert tracks using RETURNING to get IDs
+        # Insert tracks using ISRC/Spotify ID upsert strategy
         for track in tracks_data:
             try:
-                txn.execute("""
-                    INSERT INTO tracks (
-                        title, normalized_title, genre, bpm, key,
-                        duration_ms, release_date,
-                        spotify_id, tidal_id, apple_music_id
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (id) DO NOTHING
-                    RETURNING id
-                """, (
-                    track['title'],
-                    track['normalized_title'],
-                    track['genre'],
-                    track['bpm'],
-                    track['key'],
-                    track['duration_ms'],
-                    track['release_date'],
-                    track['spotify_id'],
-                    track['tidal_id'],
-                    track['apple_music_id']
-                ))
+                import json
+                track_id = self._upsert_track(txn, track)
 
-                result = txn.fetchone()
-                if result and track['primary_artist_id']:
-                    track_id = result[0]
-                    # Create track_artists relationship for primary artist
+                # Create track_artists relationship if we have both track and artist
+                if track_id and track['primary_artist_id']:
                     track_artist_relationships.append((
                         track_id,
                         track['primary_artist_id'],
@@ -553,24 +549,7 @@ class DatabasePipeline:
                         0
                     ))
             except Exception as e:
-                self.logger.warning(f"Error inserting track '{track['title']}': {e}")
-                # Try to find existing track
-                try:
-                    txn.execute(
-                        "SELECT id FROM tracks WHERE normalized_title = %s LIMIT 1",
-                        (track['normalized_title'],)
-                    )
-                    result = txn.fetchone()
-                    if result and track['primary_artist_id']:
-                        track_id = result[0]
-                        track_artist_relationships.append((
-                            track_id,
-                            track['primary_artist_id'],
-                            'primary',
-                            0
-                        ))
-                except Exception as e2:
-                    self.logger.warning(f"Could not create relationship for '{track['title']}': {e2}")
+                self.logger.warning(f"Error upserting track '{track['title']}': {e}")
 
         # Insert track_artists relationships
         if track_artist_relationships:
@@ -580,25 +559,251 @@ class DatabasePipeline:
                 ON CONFLICT (track_id, artist_id, role) DO NOTHING
             """, track_artist_relationships)
 
-    def _insert_playlists_batch(self, txn, batch: List[Dict[str, Any]]):
-        """Insert playlists batch using psycopg2"""
-        for item in batch:
+    def _upsert_track(self, txn, track: Dict[str, Any]) -> Optional[str]:
+        """
+        Upsert track using ISRC/Spotify ID priority strategy.
+
+        Conflict resolution priority:
+        1. ISRC (if available) - most reliable
+        2. Spotify ID (if available) - platform unique
+        3. (title, normalized_title) - fallback for legacy data
+
+        Returns: track_id (UUID as string) or None on failure
+        """
+        import json
+
+        # STRATEGY 1: Try ISRC-based upsert (highest priority)
+        if track.get('isrc'):
+            try:
+                txn.execute("""
+                    INSERT INTO tracks (
+                        title, normalized_title, isrc, genre, bpm, key,
+                        duration_ms, release_date,
+                        spotify_id, tidal_id, apple_music_id, metadata
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (isrc) WHERE isrc IS NOT NULL
+                    DO UPDATE SET
+                        title = COALESCE(EXCLUDED.title, tracks.title),
+                        normalized_title = COALESCE(EXCLUDED.normalized_title, tracks.normalized_title),
+                        genre = COALESCE(EXCLUDED.genre, tracks.genre),
+                        bpm = COALESCE(EXCLUDED.bpm, tracks.bpm),
+                        key = COALESCE(EXCLUDED.key, tracks.key),
+                        duration_ms = COALESCE(EXCLUDED.duration_ms, tracks.duration_ms),
+                        release_date = COALESCE(EXCLUDED.release_date, tracks.release_date),
+                        spotify_id = COALESCE(EXCLUDED.spotify_id, tracks.spotify_id),
+                        tidal_id = COALESCE(EXCLUDED.tidal_id, tracks.tidal_id),
+                        apple_music_id = COALESCE(EXCLUDED.apple_music_id, tracks.apple_music_id),
+                        metadata = COALESCE(tracks.metadata, '{}'::jsonb) || COALESCE(EXCLUDED.metadata, '{}'::jsonb),
+                        updated_at = CURRENT_TIMESTAMP
+                    RETURNING id
+                """, (
+                    track['title'],
+                    track['normalized_title'],
+                    track['isrc'],
+                    track['genre'],
+                    track['bpm'],
+                    track['key'],
+                    track['duration_ms'],
+                    track['release_date'],
+                    track['spotify_id'],
+                    track['tidal_id'],
+                    track['apple_music_id'],
+                    json.dumps(track['metadata'])
+                ))
+                result = txn.fetchone()
+                if result:
+                    self.logger.debug(f"✓ Upserted track via ISRC: {track['isrc']}")
+                    return result[0]
+            except Exception as e:
+                self.logger.warning(f"ISRC upsert failed for {track.get('isrc')}: {e}")
+
+        # STRATEGY 2: Try Spotify ID-based upsert (second priority)
+        if track.get('spotify_id'):
+            try:
+                txn.execute("""
+                    INSERT INTO tracks (
+                        title, normalized_title, isrc, genre, bpm, key,
+                        duration_ms, release_date,
+                        spotify_id, tidal_id, apple_music_id, metadata
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (spotify_id) WHERE spotify_id IS NOT NULL
+                    DO UPDATE SET
+                        title = COALESCE(EXCLUDED.title, tracks.title),
+                        normalized_title = COALESCE(EXCLUDED.normalized_title, tracks.normalized_title),
+                        isrc = COALESCE(EXCLUDED.isrc, tracks.isrc),  -- Backfill ISRC if available
+                        genre = COALESCE(EXCLUDED.genre, tracks.genre),
+                        bpm = COALESCE(EXCLUDED.bpm, tracks.bpm),
+                        key = COALESCE(EXCLUDED.key, tracks.key),
+                        duration_ms = COALESCE(EXCLUDED.duration_ms, tracks.duration_ms),
+                        release_date = COALESCE(EXCLUDED.release_date, tracks.release_date),
+                        tidal_id = COALESCE(EXCLUDED.tidal_id, tracks.tidal_id),
+                        apple_music_id = COALESCE(EXCLUDED.apple_music_id, tracks.apple_music_id),
+                        metadata = COALESCE(tracks.metadata, '{}'::jsonb) || COALESCE(EXCLUDED.metadata, '{}'::jsonb),
+                        updated_at = CURRENT_TIMESTAMP
+                    RETURNING id
+                """, (
+                    track['title'],
+                    track['normalized_title'],
+                    track['isrc'],
+                    track['genre'],
+                    track['bpm'],
+                    track['key'],
+                    track['duration_ms'],
+                    track['release_date'],
+                    track['spotify_id'],
+                    track['tidal_id'],
+                    track['apple_music_id'],
+                    json.dumps(track['metadata'])
+                ))
+                result = txn.fetchone()
+                if result:
+                    self.logger.debug(f"✓ Upserted track via Spotify ID: {track['spotify_id']}")
+                    return result[0]
+            except Exception as e:
+                self.logger.warning(f"Spotify ID upsert failed for {track.get('spotify_id')}: {e}")
+
+        # STRATEGY 3: Fallback to title-based lookup (legacy compatibility)
+        try:
+            # First, check if track exists by normalized title
             txn.execute(
-                "SELECT playlist_id FROM playlists WHERE name = %s AND source = %s",
-                (item['name'], item.get('source', 'scraped_data'))
+                "SELECT id FROM tracks WHERE normalized_title = %s LIMIT 1",
+                (track['normalized_title'],)
             )
             existing = txn.fetchone()
-            if not existing:
+
+            if existing:
+                # Update existing track with new data (backfill ISRC/Spotify ID if available)
+                track_id = existing[0]
                 txn.execute("""
-                    INSERT INTO playlists (name, source, source_url, playlist_type, event_date)
-                    VALUES (%s, %s, %s, %s, %s)
-                """,
-                    (item['name'],
-                    item.get('source', 'scraped_data'),
-                    item.get('source_url'),
-                    item.get('playlist_type'),
-                    item.get('event_date'))
+                    UPDATE tracks SET
+                        title = COALESCE(%s, title),
+                        isrc = COALESCE(%s, isrc),
+                        genre = COALESCE(%s, genre),
+                        bpm = COALESCE(%s, bpm),
+                        key = COALESCE(%s, key),
+                        duration_ms = COALESCE(%s, duration_ms),
+                        release_date = COALESCE(%s, release_date),
+                        spotify_id = COALESCE(%s, spotify_id),
+                        tidal_id = COALESCE(%s, tidal_id),
+                        apple_music_id = COALESCE(%s, apple_music_id),
+                        metadata = COALESCE(metadata, '{}'::jsonb) || COALESCE(%s::jsonb, '{}'::jsonb),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                """, (
+                    track['title'],
+                    track['isrc'],
+                    track['genre'],
+                    track['bpm'],
+                    track['key'],
+                    track['duration_ms'],
+                    track['release_date'],
+                    track['spotify_id'],
+                    track['tidal_id'],
+                    track['apple_music_id'],
+                    json.dumps(track['metadata']),
+                    track_id
+                ))
+                self.logger.debug(f"✓ Updated existing track via title: {track['title']}")
+                return track_id
+            else:
+                # Insert new track (no identifiers, no existing match)
+                txn.execute("""
+                    INSERT INTO tracks (
+                        title, normalized_title, isrc, genre, bpm, key,
+                        duration_ms, release_date,
+                        spotify_id, tidal_id, apple_music_id, metadata
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    track['title'],
+                    track['normalized_title'],
+                    track['isrc'],
+                    track['genre'],
+                    track['bpm'],
+                    track['key'],
+                    track['duration_ms'],
+                    track['release_date'],
+                    track['spotify_id'],
+                    track['tidal_id'],
+                    track['apple_music_id'],
+                    json.dumps(track['metadata'])
+                ))
+                result = txn.fetchone()
+                if result:
+                    self.logger.debug(f"✓ Inserted new track: {track['title']}")
+                    return result[0]
+
+        except Exception as e:
+            self.logger.error(f"Title-based fallback failed for '{track['title']}': {e}")
+
+        return None
+
+    def _insert_playlists_batch(self, txn, batch: List[Dict[str, Any]]):
+        """Insert playlists batch with URL-based deduplication to prevent inflated edge weights"""
+        import hashlib
+        import json
+
+        for item in batch:
+            source_url = item.get('source_url')
+
+            # Generate content hash from tracklist if available
+            # This prevents duplicates even when URLs change (dynamic URLs, pagination, etc.)
+            content_hash = None
+            if 'tracklist' in item and item['tracklist']:
+                # Sort track names to ensure consistent hash regardless of order
+                tracklist_normalized = sorted([
+                    t.get('track_name', '').lower().strip()
+                    for t in item['tracklist']
+                ])
+                content_str = json.dumps(tracklist_normalized, sort_keys=True)
+                content_hash = hashlib.sha256(content_str.encode()).hexdigest()[:16]  # 16 chars sufficient
+
+                # Check content hash first (most reliable)
+                txn.execute(
+                    "SELECT playlist_id FROM playlists WHERE content_hash = %s",
+                    (content_hash,)
                 )
+                existing = txn.fetchone()
+                if existing:
+                    self.logger.info(f"Skipping duplicate playlist (same tracklist, different URL): {item['name']}")
+                    continue
+
+            # CRITICAL: Deduplicate by source_url to prevent same setlist being scraped multiple times
+            if source_url:
+                txn.execute(
+                    "SELECT playlist_id FROM playlists WHERE source_url = %s",
+                    (source_url,)
+                )
+                existing = txn.fetchone()
+                if existing:
+                    self.logger.info(f"Skipping duplicate playlist URL: {source_url}")
+                    continue  # Skip - this playlist already scraped
+            else:
+                # Fallback to name+source if no URL (less reliable)
+                txn.execute(
+                    "SELECT playlist_id FROM playlists WHERE name = %s AND source = %s",
+                    (item['name'], item.get('source', 'scraped_data'))
+                )
+                existing = txn.fetchone()
+                if existing:
+                    self.logger.info(f"Skipping duplicate playlist: {item['name']}")
+                    continue
+
+            # Insert new playlist
+            txn.execute("""
+                INSERT INTO playlists (name, source, source_url, playlist_type, event_date, content_hash)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+                (item['name'],
+                item.get('source', 'scraped_data'),
+                source_url,
+                item.get('playlist_type'),
+                item.get('event_date'),
+                content_hash)
+            )
 
     def _insert_playlist_tracks_batch(self, txn, batch: List[Dict[str, Any]]):
         """Insert playlist tracks batch using psycopg2 (now uses tracks table)"""
