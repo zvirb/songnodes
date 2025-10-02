@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from human_browser_navigator import HumanBrowserNavigator, BrowserConfig, CollectionResult
 from ollama_extractor import OllamaExtractor, OllamaConfig, ExtractionResult
 from common.secrets_manager import get_database_url, validate_secrets
+from common.health_monitor import ResourceMonitor
 
 # Configure structured logging
 structlog.configure(
@@ -299,6 +300,12 @@ async def lifespan(app: FastAPI):
     db_url = get_database_url(async_driver=True, use_connection_pool=True)
     app.state.db = DatabaseManager(db_url)
 
+    # Initialize resource monitor (memory-only for SQLAlchemy)
+    app.state.resource_monitor = ResourceMonitor(
+        service_name="browser-collector"
+    )
+    logger.info("✅ Resource monitor initialized")
+
     # Initialize Ollama extractor
     ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
     app.state.ollama = OllamaExtractor(OllamaConfig(base_url=ollama_url))
@@ -341,14 +348,67 @@ app.add_middleware(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    ollama_health = await app.state.ollama.health_check()
+    """Health check endpoint with resource monitoring"""
+    from fastapi import HTTPException
+    from fastapi.responses import JSONResponse
 
-    return {
-        "status": "healthy",
-        "service": "browser-collector",
-        "ollama": ollama_health
-    }
+    try:
+        # Check resource thresholds first (memory only)
+        resource_monitor = app.state.resource_monitor
+        if resource_monitor:
+            try:
+                # Check system memory
+                memory_check = resource_monitor.check_memory()
+
+                # If memory threshold exceeded, return 503
+                if memory_check.get("status") == "critical":
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            'service': 'browser-collector',
+                            'status': 'unhealthy',
+                            'error': 'Resource thresholds exceeded',
+                            'checks': {
+                                'memory': memory_check
+                            },
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    )
+            except HTTPException as he:
+                # Resource threshold exceeded - return 503
+                raise he
+
+        ollama_health = await app.state.ollama.health_check()
+
+        health_response = {
+            "status": "healthy",
+            "service": "browser-collector",
+            "ollama": ollama_health,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        # Add resource monitoring checks
+        if resource_monitor:
+            health_response['resources'] = {
+                'memory': resource_monitor.check_memory()
+            }
+
+        return health_response
+
+    except HTTPException:
+        # Re-raise 503 errors from resource checks
+        raise
+    except Exception as e:
+        logger.error("Health check failed", error=str(e))
+        return JSONResponse(
+            status_code=503,
+            content={
+                'service': 'browser-collector',
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+        )
 
 
 @app.post("/collect", response_model=CollectionResponse)

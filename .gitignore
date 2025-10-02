@@ -104,7 +104,6 @@ storage/knowledge_graph/
 
 # Claude AI configuration and workflow
 .claude/
-CLAUDE.md
 
 # Git submodules and nested repositories
 **/.git/
@@ -142,22 +141,25 @@ hive-mind-prompt-*.txt
 
 # Generated reports and documentation (from orchestration)
 COMPREHENSIVE_*.md
-# ORCHESTRATION_*.md  # Temporarily allowing for integration
 SONGNODES_*_REPORT.md
-SECURITY_VALIDATION_REPORT_*.md
 *_SUMMARY.md
 *_DOCUMENTATION.md
 *_ENHANCEMENT_SUMMARY.md
+*_AUDIT*.md
+*_REPORT*.md
+*_VALIDATION_REPORT*.md
+BACKEND_TEST_COVERAGE_EXPANSION.md
+GIT_WORKFLOW_*.md
+README_COMPLIANCE_COMPLETE.md
 
 # Test and validation scripts (generated)
-# *-test.js  # Temporarily allowing for integration
-# *-validation.js  # Temporarily allowing for integration
 test_*.py
-# comprehensive-*.js  # Temporarily allowing for integration
-# meta-*.js  # Temporarily allowing for integration
-# production-*.js  # Temporarily allowing for integration
-# qa-*.js  # Temporarily allowing for integration
-# user-experience-*.js  # Temporarily allowing for integration
+verify_*.py
+validate_*.py
+*_validation.py
+verify_*.sh
+validate_*.sh
+run_*_tests.sh
 
 # Runtime data directories
 data/

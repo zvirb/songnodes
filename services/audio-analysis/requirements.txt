@@ -17,3 +17,4 @@ soundfile==0.12.1
 numba==0.58.1
 resampy==0.4.2
 audioread==3.0.1
+psutil==5.9.6

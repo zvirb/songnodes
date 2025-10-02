@@ -58,7 +58,7 @@ RETRY_TIMES = 2  # Fewer retries for faster failure feedback
 
 # Override headless mode for visual debugging
 PLAYWRIGHT_LAUNCH_OPTIONS = {
-    'headless': False,  # Show browser window
+    'headless': True,  # Must be True for Docker containers (no display available)
     'args': [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -101,10 +101,9 @@ DOWNLOADER_MIDDLEWARES = {
     # 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750,
 }
 
-# Override pipelines to use simple twisted pipeline
-ITEM_PIPELINES = {
-    'simple_twisted_pipeline.SimpleTwistedPipeline': 300,
-}
+# Use the same pipeline as production (single source of truth per CLAUDE.md)
+# Development uses base.py settings - no override needed
+# ITEM_PIPELINES defined in base.py
 
 # ============================================================================
 # DEVELOPMENT ITEM PIPELINES (Optional: Disable persistence for testing)

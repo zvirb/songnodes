@@ -7,11 +7,19 @@ It uses the OAuth 1.0a flow which requires manual browser authorization.
 """
 
 import sys
+import os
 from requests_oauthlib import OAuth1Session
 
-# Your Discogs OAuth credentials
-CONSUMER_KEY = 'leyuFrvvlUoIFSiXirSN'
-CONSUMER_SECRET = 'VwkfRrXkIRCLbdtHVJBCQnnZJqvfNlpC'
+# Get Discogs OAuth credentials from environment variables
+CONSUMER_KEY = os.getenv('DISCOGS_CONSUMER_KEY')
+CONSUMER_SECRET = os.getenv('DISCOGS_CONSUMER_SECRET')
+
+if not CONSUMER_KEY or not CONSUMER_SECRET:
+    print("❌ ERROR: Discogs OAuth credentials not set")
+    print("Please set the following environment variables in your .env file:")
+    print("  DISCOGS_CONSUMER_KEY=your_consumer_key")
+    print("  DISCOGS_CONSUMER_SECRET=your_consumer_secret")
+    sys.exit(1)
 
 # Discogs OAuth endpoints
 REQUEST_TOKEN_URL = 'https://api.discogs.com/oauth/request_token'

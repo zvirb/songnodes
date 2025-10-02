@@ -10,10 +10,26 @@ from datetime import datetime
 import asyncpg
 import json
 from contextlib import asynccontextmanager
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 # Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import secrets manager for unified credential management
+try:
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_url, validate_secrets
+    logger.info("✅ Secrets manager imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import secrets_manager: {e}")
+    logger.warning("Falling back to environment variables")
+
+# Prometheus metrics
+REQUEST_COUNT = Counter('api_requests_total', 'Total requests', ['method', 'endpoint', 'status'])
+REQUEST_DURATION = Histogram('api_request_duration_seconds', 'Request duration')
+DB_POOL_CONNECTIONS = Gauge('db_pool_connections', 'Database pool connections', ['state'])
+REDIS_MEMORY = Gauge('redis_memory_usage_bytes', 'Redis memory usage')
 
 # Import comprehensive Pydantic models (copied from scrapers directory during Docker build)
 try:
@@ -67,8 +83,14 @@ except ImportError as e:
         error: str
         detail: Optional[str] = None
 
-# Database connection
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:musicdb_secure_pass@db:5432/musicdb")
+# Database connection - use secrets_manager if available
+try:
+    DATABASE_URL = get_database_url(async_driver=True, use_connection_pool=True)
+    logger.info("✅ Using secrets_manager for database connection")
+except NameError:
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb")
+    logger.warning("⚠️ Using fallback DATABASE_URL from environment")
+
 db_pool = None
 
 @asynccontextmanager
@@ -92,6 +114,8 @@ async def lifespan(app: FastAPI):
             max_queries=50000,  # Recycle connections after 50k queries
             max_inactive_connection_lifetime=1800  # 30 minute max idle time
         )
+        # Note: asyncpg does not support pool_recycle and pool_pre_ping directly
+        # These are handled via max_queries and max_inactive_connection_lifetime above
         logger.info("Database connection pool created with enhanced 2025 configuration")
         yield
     finally:
@@ -106,10 +130,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware - configurable for security
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -143,11 +168,45 @@ except Exception as e:
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     """
-    Health check endpoint with database connectivity verification.
+    Health check endpoint with comprehensive resource monitoring per CLAUDE.md Section 5.3.4.
+
+    Monitors:
+    - Database pool usage (503 if > 80%)
+    - System memory (503 if > 85%)
+    - Database connectivity
 
     Returns comprehensive health status using Pydantic validation.
+    Raises 503 Service Unavailable if resource thresholds exceeded.
     """
     try:
+        import psutil
+
+        # Check database pool usage
+        if db_pool:
+            try:
+                pool_size = db_pool.get_size()
+                pool_max = db_pool.get_max_size()
+                pool_usage = pool_size / pool_max if pool_max > 0 else 0
+
+                if pool_usage > 0.8:
+                    raise HTTPException(
+                        status_code=503,
+                        detail=f"Database pool exhausted: {pool_usage:.1%} usage (threshold: 80%)"
+                    )
+            except AttributeError:
+                # Pool doesn't have these methods, skip check
+                pool_usage = 0
+        else:
+            pool_usage = 0
+
+        # Check system memory
+        memory_percent = psutil.virtual_memory().percent
+        if memory_percent > 85:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Memory usage critical: {memory_percent:.1f}% (threshold: 85%)"
+            )
+
         # Check database connectivity
         db_connected = False
         if db_pool:
@@ -155,14 +214,30 @@ async def health_check():
                 result = await conn.fetchval("SELECT 1")
                 db_connected = (result == 1)
 
+        # All checks passed
         return HealthCheckResponse(
             status="healthy" if db_connected else "degraded",
             database_connected=db_connected,
             services_available={
                 "database": db_connected,
-                "api": True
+                "api": True,
+                "checks": {
+                    "database_pool": {
+                        "status": "ok",
+                        "usage": pool_usage,
+                        "threshold": 0.8
+                    },
+                    "memory": {
+                        "status": "ok",
+                        "usage": memory_percent,
+                        "threshold": 85
+                    }
+                }
             }
         )
+    except HTTPException:
+        # Re-raise 503 errors
+        raise
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return HealthCheckResponse(
@@ -170,7 +245,8 @@ async def health_check():
             database_connected=False,
             services_available={
                 "database": False,
-                "api": True
+                "api": True,
+                "error": str(e)
             }
         )
 
@@ -1163,6 +1239,29 @@ async def get_target_tracks():
     """Get list of target tracks - simple test endpoint"""
     return [{"message": "Target tracks endpoint working"}]
 
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    # Update pool connection metrics if available
+    if db_pool:
+        try:
+            pool_size = db_pool.get_size()
+            free_size = db_pool.get_idle_size()
+            DB_POOL_CONNECTIONS.labels(state='active').set(pool_size - free_size)
+            DB_POOL_CONNECTIONS.labels(state='idle').set(free_size)
+        except Exception as e:
+            logger.warning(f"Failed to get pool metrics: {e}")
+
+    from fastapi.responses import Response
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 if __name__ == "__main__":
+    import sys
+
+    # Validate secrets before starting service
+    if not validate_secrets():
+        logger.error("❌ Required secrets missing - exiting")
+        sys.exit(1)
+
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8082)

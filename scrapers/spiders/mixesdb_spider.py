@@ -27,7 +27,6 @@ try:
         PlaylistItem
     )
     from .utils import parse_track_string
-    from ..nlp_spider_mixin import NLPFallbackSpiderMixin
     from ..track_id_generator import generate_track_id, generate_track_id_from_parsed, extract_remix_type
 except ImportError:
     # Fallback for standalone execution
@@ -44,11 +43,10 @@ except ImportError:
         PlaylistItem
     )
     from spiders.utils import parse_track_string
-    from nlp_spider_mixin import NLPFallbackSpiderMixin
     from track_id_generator import generate_track_id, generate_track_id_from_parsed, extract_remix_type
 
 
-class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
+class MixesdbSpider(scrapy.Spider):
     name = 'mixesdb'
     allowed_domains = ['mixesdb.com']
 
@@ -1052,46 +1050,6 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
         return None
 
-    def _create_track_item_from_nlp(self, nlp_track: Dict, source_url: str):
-        """
-        Convert NLP-extracted track data to Scrapy TrackItem
-
-        Args:
-            nlp_track: Dict with 'artist', 'title', 'timestamp' keys from NLP processor
-            source_url: URL where track was extracted from
-
-        Returns:
-            TrackItem ready for pipeline processing (legacy format with 4 fields only)
-        """
-        try:
-            artist_name = nlp_track.get('artist', 'Unknown Artist')
-            title = nlp_track.get('title', 'Unknown Track')
-
-            # Generate deterministic track_id
-            track_id = generate_track_id(
-                title=title,
-                primary_artist=artist_name,
-                is_remix=False,
-                is_mashup=False,
-                remix_type=None
-            )
-
-            # Create track item (legacy TrackItem only supports: track_id, track_name, track_url, source_platform)
-            track_item = EnhancedTrackItem()
-            track_item['track_id'] = track_id
-            track_item['track_name'] = f"{artist_name} - {title}"  # Combined format
-            track_item['track_url'] = source_url
-            track_item['source_platform'] = 'mixesdb_html_nlp'
-
-            self.logger.debug(
-                f"Created track item from NLP: {artist_name} - {title}"
-            )
-
-            return track_item
-
-        except Exception as e:
-            self.logger.error(f"Error creating track item from NLP data: {e}", exc_info=True)
-            return None
 
     def handle_error(self, failure):
         """Handle request failures"""

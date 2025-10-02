@@ -30,6 +30,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import secrets manager for unified credential management
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_url, get_redis_config, validate_secrets
+    from health_monitor import ResourceMonitor
+    logger.info("✅ Secrets manager and health monitor imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import common modules: {e}")
+    logger.warning("Falling back to environment variables")
+    ResourceMonitor = None
+
 # Prometheus metrics
 transformation_tasks_total = Counter('transformation_tasks_total', 'Total transformation tasks', ['operation', 'status'])
 active_transformations = Gauge('active_transformations', 'Number of active transformations', ['operation'])
@@ -58,24 +70,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Redis connection
-redis_client = redis.Redis(
+# Redis connection with connection pooling (2025 best practices)
+redis_connection_pool = redis.ConnectionPool(
     host=os.getenv("REDIS_HOST", "redis"),
     port=int(os.getenv("REDIS_PORT", 6379)),
-    decode_responses=True
+    password=os.getenv("REDIS_PASSWORD"),
+    max_connections=50,
+    health_check_interval=30,
+    decode_responses=True,
+    socket_keepalive=True,  # Keep connections alive (REQUIRED)
+    socket_timeout=5  # 5 second socket timeout (REQUIRED)
 )
+redis_client = redis.Redis(connection_pool=redis_connection_pool)
 
 # Database configuration
 DATABASE_CONFIG = {
-    "host": os.getenv("POSTGRES_HOST", "musicdb-postgres"),
-    "port": int(os.getenv("POSTGRES_PORT", 5432)),
+    "host": os.getenv("POSTGRES_HOST", "db-connection-pool"),
+    "port": int(os.getenv("POSTGRES_PORT", 6432)),
     "database": os.getenv("POSTGRES_DB", "musicdb"),
-    "user": os.getenv("POSTGRES_USER", "postgres"),
-    "password": os.getenv("POSTGRES_PASSWORD", "password")
+    "user": os.getenv("POSTGRES_USER", "musicdb_user"),
+    "password": os.getenv("POSTGRES_PASSWORD", "musicdb_secure_pass_2024")
 }
 
 # Database connection pool
 db_pool = None
+resource_monitor = None
 
 # =====================
 # Data Models
@@ -772,7 +791,7 @@ transformation_engine = TransformationEngine()
 
 async def init_database():
     """Initialize database connection pool with optimized configuration for batch operations"""
-    global db_pool
+    global db_pool, resource_monitor
     try:
         # Optimized pool configuration for batch operations
         pool_config = {
@@ -788,7 +807,15 @@ async def init_database():
         db_pool = await asyncpg.create_pool(**pool_config)
         logger.info("Optimized database connection pool initialized with batch operation support")
         logger.info(f"Pool configuration: min_size=10, max_size=50, command_timeout=60s")
-        
+
+        # Initialize resource monitor
+        if ResourceMonitor:
+            resource_monitor = ResourceMonitor(
+                service_name="data-transformer",
+                db_pool=db_pool
+            )
+            logger.info("✅ Resource monitor initialized")
+
         # Create tables if they don't exist
         async with db_pool.acquire() as conn:
             await conn.execute("""
@@ -871,11 +898,20 @@ async def task_processor():
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
+    # Validate secrets on startup
+    try:
+        if not validate_secrets():
+            logger.error("❌ Required secrets missing - exiting")
+            import sys
+            sys.exit(1)
+    except NameError:
+        logger.warning("⚠️ Secrets manager not available - skipping validation")
+
     await init_database()
-    
+
     # Start background workers
     asyncio.create_task(task_processor())
-    
+
     logger.info("Data Transformer Service started")
 
 @app.on_event("shutdown")
@@ -887,80 +923,138 @@ async def shutdown_event():
 
 @app.get("/health")
 async def health_check():
-    """Enhanced health check endpoint with performance metrics"""
-    # Check database connection
-    db_status = "healthy"
-    db_response_time = None
-    pool_stats = {}
-    
-    if db_pool:
-        try:
-            db_start = datetime.now()
-            async with db_pool.acquire() as conn:
-                await conn.fetchval("SELECT 1")
-            db_response_time = (datetime.now() - db_start).total_seconds() * 1000  # ms
-            
-            # Get connection pool statistics
-            if hasattr(db_pool, '_holders') and hasattr(db_pool, '_maxsize'):
-                pool_stats = {
-                    "active_connections": len(db_pool._holders),
-                    "max_connections": db_pool._maxsize,
-                    "utilization_percent": round((len(db_pool._holders) / db_pool._maxsize) * 100, 1) if db_pool._maxsize > 0 else 0
-                }
-                
-        except Exception as e:
-            db_status = "unhealthy"
-            logger.error(f"Database health check failed: {str(e)}")
-    else:
-        db_status = "not_initialized"
-    
-    # Check Redis connection
-    redis_status = "healthy"
-    redis_response_time = None
+    """Enhanced health check endpoint with resource monitoring"""
+    from fastapi import HTTPException
+
     try:
-        redis_start = datetime.now()
-        redis_client.ping()
-        redis_response_time = (datetime.now() - redis_start).total_seconds() * 1000  # ms
-    except Exception as e:
-        redis_status = "unhealthy"
-        logger.error(f"Redis health check failed: {str(e)}")
-    
-    # Performance status assessment
-    performance_status = "optimal"
-    performance_issues = []
-    
-    if db_response_time and db_response_time > 100:  # > 100ms is concerning
-        performance_status = "degraded"
-        performance_issues.append(f"Database response time: {db_response_time:.1f}ms")
-    
-    if pool_stats.get("utilization_percent", 0) > 80:
-        performance_status = "degraded"
-        performance_issues.append(f"High connection pool utilization: {pool_stats['utilization_percent']}%")
-    
-    overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
-    
-    return {
-        "status": overall_status,
-        "performance_status": performance_status,
-        "timestamp": datetime.now().isoformat(),
-        "components": {
-            "database": {
-                "status": db_status,
-                "response_time_ms": db_response_time,
-                "connection_pool": pool_stats
+        # Check resource thresholds first (memory, DB pool)
+        if resource_monitor and ResourceMonitor:
+            try:
+                # Check system memory
+                memory_check = resource_monitor.check_memory()
+
+                # Check database pool
+                pool_check = resource_monitor.check_database_pool()
+
+                # If any critical threshold exceeded, return 503
+                if memory_check.get("status") == "critical" or pool_check.get("status") == "critical":
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            'service': 'data-transformer',
+                            'status': 'unhealthy',
+                            'error': 'Resource thresholds exceeded',
+                            'checks': {
+                                'memory': memory_check,
+                                'database_pool': pool_check
+                            },
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    )
+            except HTTPException as he:
+                # Resource threshold exceeded - return 503
+                raise he
+
+        # Check database connection
+        db_status = "healthy"
+        db_response_time = None
+        pool_stats = {}
+
+        if db_pool:
+            try:
+                db_start = datetime.now()
+                async with db_pool.acquire() as conn:
+                    await conn.fetchval("SELECT 1")
+                db_response_time = (datetime.now() - db_start).total_seconds() * 1000  # ms
+
+                # Get connection pool statistics
+                if hasattr(db_pool, '_holders') and hasattr(db_pool, '_maxsize'):
+                    pool_stats = {
+                        "active_connections": len(db_pool._holders),
+                        "max_connections": db_pool._maxsize,
+                        "utilization_percent": round((len(db_pool._holders) / db_pool._maxsize) * 100, 1) if db_pool._maxsize > 0 else 0
+                    }
+
+            except Exception as e:
+                db_status = "unhealthy"
+                logger.error(f"Database health check failed: {str(e)}")
+        else:
+            db_status = "not_initialized"
+
+        # Check Redis connection
+        redis_status = "healthy"
+        redis_response_time = None
+        try:
+            redis_start = datetime.now()
+            redis_client.ping()
+            redis_response_time = (datetime.now() - redis_start).total_seconds() * 1000  # ms
+        except Exception as e:
+            redis_status = "unhealthy"
+            logger.error(f"Redis health check failed: {str(e)}")
+
+        # Performance status assessment
+        performance_status = "optimal"
+        performance_issues = []
+
+        if db_response_time and db_response_time > 100:  # > 100ms is concerning
+            performance_status = "degraded"
+            performance_issues.append(f"Database response time: {db_response_time:.1f}ms")
+
+        if pool_stats.get("utilization_percent", 0) > 80:
+            performance_status = "degraded"
+            performance_issues.append(f"High connection pool utilization: {pool_stats['utilization_percent']}%")
+
+        overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
+
+        health_response = {
+            "status": overall_status,
+            "performance_status": performance_status,
+            "timestamp": datetime.now().isoformat(),
+            "components": {
+                "database": {
+                    "status": db_status,
+                    "response_time_ms": db_response_time,
+                    "connection_pool": pool_stats
+                },
+                "redis": {
+                    "status": redis_status,
+                    "response_time_ms": redis_response_time
+                }
             },
-            "redis": {
-                "status": redis_status,
-                "response_time_ms": redis_response_time
+            "performance_issues": performance_issues if performance_issues else None,
+            "optimization_info": {
+                "batch_operations": "enabled",
+                "connection_pooling": "optimized",
+                "performance_monitoring": "active"
             }
-        },
-        "performance_issues": performance_issues if performance_issues else None,
-        "optimization_info": {
-            "batch_operations": "enabled",
-            "connection_pooling": "optimized",
-            "performance_monitoring": "active"
         }
-    }
+
+        # Add resource monitoring checks
+        if resource_monitor:
+            health_response['resources'] = {
+                'memory': resource_monitor.check_memory(),
+                'database_pool': resource_monitor.check_database_pool()
+            }
+
+        if overall_status == "unhealthy":
+            return JSONResponse(status_code=503, content=health_response)
+
+        return health_response
+
+    except HTTPException:
+        # Re-raise 503 errors from resource checks
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                'service': 'data-transformer',
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+        )
 
 @app.post("/transform")
 async def submit_transformation_task(task: TransformationTask):

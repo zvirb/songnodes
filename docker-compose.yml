@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: musicdb
       POSTGRES_USER: musicdb_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=en_US.UTF-8
     volumes:
     - postgres_data:/var/lib/postgresql/data
@@ -26,11 +26,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 6G
-        reservations:
           cpus: '2.0'
-          memory: 3G
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
   db-connection-pool:
     build:
       context: ./services/db-connection-pool
@@ -44,7 +44,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: musicdb_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       POSTGRES_DB: musicdb
       PGBOUNCER_ADMIN_USER: pgbouncer
       PGBOUNCER_ADMIN_PASSWORD: ${PGBOUNCER_ADMIN_PASSWORD:-pgbouncer_admin_pass_2024}
@@ -108,7 +108,7 @@ services:
     - 15673:15672
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-musicdb}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-rabbitmq_secure_pass_2024}
       RABBITMQ_DEFAULT_VHOST: musicdb
     volumes:
     - rabbitmq_data:/var/lib/rabbitmq
@@ -146,7 +146,7 @@ services:
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
     depends_on:
     - postgres
@@ -186,13 +186,13 @@ services:
       SCRAPER_NAME: 1001tracklists
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
       # Database credentials for loading API keys
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
       # 1001tracklists authentication credentials
       TRACKLISTS_1001_USERNAME: ${TRACKLISTS_1001_USERNAME}
@@ -237,8 +237,8 @@ services:
       SCRAPER_NAME: mixesdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       CONCURRENT_REQUESTS: 6
       DOWNLOAD_DELAY: 1.5
       NLP_PROCESSOR_URL: http://nlp-processor:8021
@@ -278,8 +278,8 @@ services:
       SCRAPER_NAME: setlistfm
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY:-}
       REDIS_HOST: redis
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
       RATE_LIMIT: 3600
       REQUEST_DELAY: 1
@@ -322,8 +322,8 @@ services:
       REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
       REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
       REDIS_HOST: redis
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
@@ -362,8 +362,8 @@ services:
       SCRAPER_NAME: mixcloud
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       RATE_LIMIT_DELAY: 2.0
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
@@ -402,7 +402,7 @@ services:
       SCRAPER_NAME: soundcloud
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       RATE_LIMIT_DELAY: 2.5
     depends_on:
@@ -445,7 +445,7 @@ services:
       POSTGRES_DB: musicdb
       POSTGRES_USER: musicdb_user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       DAILY_QUOTA_LIMIT: 10000
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
@@ -483,8 +483,8 @@ services:
       SCRAPER_NAME: internetarchive
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7D82_xqNs55tGyk}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       NLP_PROCESSOR_URL: http://nlp-processor:8021
     depends_on:
     - scraper-orchestrator
@@ -520,7 +520,7 @@ services:
       SCRAPER_NAME: livetracklist
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       RATE_LIMIT_DELAY: 2.0
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
@@ -559,7 +559,7 @@ services:
       SCRAPER_NAME: residentadvisor
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       RATE_LIMIT_DELAY: 2.0
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
@@ -597,11 +597,11 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
+      POSTGRES_HOST: db-connection-pool
+      POSTGRES_PORT: 6432
       POSTGRES_DB: musicdb
       POSTGRES_USER: musicdb_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       BATCH_SIZE: 100
       LOG_LEVEL: INFO
     depends_on:
@@ -638,7 +638,7 @@ services:
     environment:
       MODEL_PATH: /models
       REDIS_HOST: redis
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
     volumes:
     - nlp_models:/models
     depends_on:
@@ -672,12 +672,12 @@ services:
     - 8003:8003
     environment:
       REDIS_HOST: redis
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
+      POSTGRES_HOST: db-connection-pool
+      POSTGRES_PORT: 6432
       POSTGRES_DB: musicdb
       POSTGRES_USER: musicdb_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       VALIDATION_BATCH_SIZE: 100
       VALIDATION_WORKERS: 4
     depends_on:
@@ -712,13 +712,13 @@ services:
     ports:
     - 8020:8020
     environment:
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
-      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-rabbitmq_secure_pass_2024}
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -757,10 +757,13 @@ services:
     ports:
     - 8022:8020
     environment:
-      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
+      # Spotify API credentials from .env
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
       # NOTE: External API keys (Spotify, Discogs, Last.fm, etc.) should be configured
       # through the frontend Settings panel. They are stored encrypted in the database.
       # Environment variables are only used as fallback if database keys are not set.
@@ -817,11 +820,11 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
           cpus: '2.0'
           memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G
           devices:
           - driver: nvidia
             count: 1
@@ -836,11 +839,11 @@ services:
     ports:
     - 8030:8030
     environment:
-      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       OLLAMA_URL: http://ollama:11434
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       POSTGRES_USER: musicdb_user
       POSTGRES_DB: musicdb
       POSTGRES_HOST: db-connection-pool
@@ -927,7 +930,7 @@ services:
     ports:
     - 8082:8082
     environment:
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
       API_VERSION: v1
@@ -970,7 +973,7 @@ services:
     ports:
     - 8081:8081
     environment:
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
       ENABLE_PLAYGROUND: ${ENABLE_PLAYGROUND:-false}
       QUERY_COMPLEXITY_LIMIT: 1000
@@ -1012,7 +1015,7 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
-      RABBITMQ_PASS: ${RABBITMQ_PASS:-musicdb_pass}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-rabbitmq_secure_pass_2024}
       RABBITMQ_VHOST: musicdb
       WS_MAX_CONNECTIONS: 10000
       WS_HEARTBEAT_INTERVAL: 30
@@ -1049,7 +1052,7 @@ services:
     ports:
     - 8084:8084
     environment:
-      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: musicdb-redis
       REDIS_PORT: 6379
       CACHE_TTL: 300
@@ -1089,7 +1092,7 @@ services:
     ports:
     - 8090:8085
     environment:
-      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@db-connection-pool:6432/musicdb
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
       NODE_ENV: production
@@ -1153,6 +1156,9 @@ services:
         limits:
           cpus: '1.0'
           memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   alertmanager:
     image: quay.io/prometheus/alertmanager:latest
     container_name: alertmanager
@@ -1380,6 +1386,9 @@ services:
         limits:
           cpus: '0.5'
           memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.0
     container_name: cadvisor
@@ -1402,6 +1411,9 @@ services:
         limits:
           cpus: '1.0'
           memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
   postgres-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:latest
     container_name: postgres-exporter
@@ -1409,7 +1421,7 @@ services:
     ports:
     - 9187:9187
     environment:
-      DATA_SOURCE_NAME: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass}@postgres:5432/musicdb?sslmode=disable
+      DATA_SOURCE_NAME: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@postgres:5432/musicdb?sslmode=disable
     depends_on:
     - postgres
     networks:
@@ -1420,6 +1432,9 @@ services:
         limits:
           cpus: '0.5'
           memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
   redis-exporter:
     image: quay.io/oliver006/redis_exporter:latest
     container_name: redis-exporter
@@ -1438,6 +1453,9 @@ services:
         limits:
           cpus: '0.5'
           memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
   frontend:
     build:
       context: ./frontend

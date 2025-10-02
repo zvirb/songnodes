@@ -1,0 +1,324 @@
+name: Commit Message Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+
+jobs:
+  # Validate PR title follows Conventional Commits
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Validate PR Title Format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          scopes: |
+            frontend
+            ui
+            graph
+            pixi
+            components
+            api
+            rest-api
+            graph-api
+            websocket
+            nlp
+            scraper
+            scrapers
+            orchestrator
+            1001tracklists
+            mixesdb
+            setlistfm
+            database
+            db
+            redis
+            rabbitmq
+            docker
+            k8s
+            kubernetes
+            pipeline
+            enrichment
+            validation
+            transformer
+            auth
+            oauth
+            search
+            audio
+            camelot
+            fuzzy-search
+            test
+            tests
+            e2e
+            performance
+            security
+            a11y
+            accessibility
+            docs
+            build
+            ci
+            cd
+            lint
+            format
+            release
+            deps
+            dependencies
+            audit
+            compliance
+            monitoring
+            metrics
+            config
+            env
+            secrets
+            captcha
+            proxy
+            headers
+          requireScope: false  # Scope is recommended but not required
+          subjectPattern: ^(?![A-Z]).+$  # Subject must not start with uppercase
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. Please ensure that the subject
+            doesn't start with an uppercase character.
+
+  # Validate individual commit messages
+  validate-commits:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install commitlint
+        run: |
+          npm install --save-dev @commitlint/{cli,config-conventional}
+          npm install --save-dev commitlint-config-conventional
+
+      - name: Validate commit messages
+        run: |
+          # For PRs, validate commits in the PR
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+          else
+            # For pushes, validate the pushed commits
+            npx commitlint --from ${{ github.event.before }} --to ${{ github.event.after }} --verbose
+          fi
+
+  # Validate branch naming convention
+  validate-branch-name:
+    name: Validate Branch Name
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+
+          # Allow develop, main, and properly formatted feature/fix/hotfix branches
+          if [[ "$BRANCH_NAME" =~ ^(main|develop)$ ]]; then
+            echo "✅ Branch name '$BRANCH_NAME' is a main branch"
+            exit 0
+          elif [[ "$BRANCH_NAME" =~ ^(feature|fix|bugfix|hotfix)\/[a-z0-9\-]+$ ]]; then
+            echo "✅ Branch name '$BRANCH_NAME' follows naming convention"
+            exit 0
+          else
+            echo "❌ Branch name '$BRANCH_NAME' does not follow naming convention"
+            echo ""
+            echo "Branch names must follow one of these patterns:"
+            echo "  - feature/<description>   (e.g., feature/fuzzy-search)"
+            echo "  - fix/<description>        (e.g., fix/memory-leak)"
+            echo "  - bugfix/<description>     (e.g., bugfix/graph-rendering)"
+            echo "  - hotfix/<description>     (e.g., hotfix/security-patch)"
+            echo ""
+            echo "Or use ticket-based naming:"
+            echo "  - feature/SN-123-<description>"
+            echo "  - fix/SN-456-<description>"
+            echo ""
+            echo "Current branch: $BRANCH_NAME"
+            exit 1
+          fi
+
+  # Check for scope usage (warning only)
+  check-scope-usage:
+    name: Check Scope Usage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check scope in commits
+        run: |
+          COMMITS=$(git log --format="%s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          TOTAL_COMMITS=$(echo "$COMMITS" | wc -l)
+          SCOPED_COMMITS=$(echo "$COMMITS" | grep -E '^[a-z]+\([a-z0-9\-]+\):' | wc -l)
+
+          if [ $TOTAL_COMMITS -gt 0 ]; then
+            SCOPE_PERCENTAGE=$((SCOPED_COMMITS * 100 / TOTAL_COMMITS))
+
+            echo "📊 Scope Usage Statistics:"
+            echo "  Total commits: $TOTAL_COMMITS"
+            echo "  Scoped commits: $SCOPED_COMMITS"
+            echo "  Scope usage: $SCOPE_PERCENTAGE%"
+            echo ""
+
+            if [ $SCOPE_PERCENTAGE -lt 50 ]; then
+              echo "⚠️ Warning: Low scope usage ($SCOPE_PERCENTAGE%)"
+              echo "   Consider adding scopes to your commits for better traceability"
+              echo "   Example: feat(api): add new endpoint"
+              echo ""
+              echo "   Common scopes:"
+              echo "   - frontend, api, scraper, database, docker"
+              echo "   - auth, search, graph, test, docs"
+            else
+              echo "✅ Good scope usage ($SCOPE_PERCENTAGE%)"
+            fi
+          fi
+
+  # Enforce conventional commits on main/develop (strict)
+  enforce-conventional-commits:
+    name: Enforce Conventional Commits (Strict)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install commitlint
+        run: |
+          npm install --save-dev @commitlint/{cli,config-conventional}
+
+      - name: Validate last commit (strict)
+        run: |
+          # For main/develop, enforce strict validation
+          npx commitlint --from HEAD~1 --to HEAD --verbose
+
+          # Check for scope (required on main/develop)
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if ! echo "$COMMIT_MSG" | grep -qE '^[a-z]+\([a-z0-9\-]+\):'; then
+            echo "❌ Error: Commits to main/develop MUST include a scope"
+            echo "   Current commit: $COMMIT_MSG"
+            echo "   Expected format: type(scope): description"
+            exit 1
+          fi
+
+          echo "✅ Commit message validation passed"
+
+  # Summary comment on PR
+  post-validation-summary:
+    name: Post Validation Summary
+    runs-on: ubuntu-latest
+    needs: [validate-pr-title, validate-commits, validate-branch-name, check-scope-usage]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Post summary comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prTitle = '${{ needs.validate-pr-title.result }}';
+            const commits = '${{ needs.validate-commits.result }}';
+            const branch = '${{ needs.validate-branch-name.result }}';
+            const scope = '${{ needs.check-scope-usage.result }}';
+
+            const statusEmoji = (result) => {
+              if (result === 'success') return '✅';
+              if (result === 'failure') return '❌';
+              return '⚠️';
+            };
+
+            const summary = `## 📋 Git Workflow Validation Summary
+
+            | Check | Status |
+            |-------|--------|
+            | PR Title | ${statusEmoji(prTitle)} ${prTitle} |
+            | Commit Messages | ${statusEmoji(commits)} ${commits} |
+            | Branch Name | ${statusEmoji(branch)} ${branch} |
+            | Scope Usage | ${statusEmoji(scope)} ${scope} |
+
+            ${prTitle === 'failure' || commits === 'failure' || branch === 'failure' ? `
+            ### ❌ Validation Failed
+
+            Please fix the validation errors above. See [CLAUDE.md](../blob/main/CLAUDE.md#3-development-workflow--git-best-practices) for guidelines.
+            ` : `
+            ### ✅ All Validations Passed
+
+            Your PR follows the project's Git workflow standards!
+            `}
+
+            ---
+
+            <details>
+            <summary>📚 Commit Message Guidelines</summary>
+
+            **Format:** \`type(scope): description\`
+
+            **Types:**
+            - \`feat\`: New feature
+            - \`fix\`: Bug fix
+            - \`docs\`: Documentation
+            - \`style\`: Code style
+            - \`refactor\`: Code refactoring
+            - \`perf\`: Performance
+            - \`test\`: Tests
+            - \`chore\`: Maintenance
+
+            **Scopes (recommended):**
+            - \`frontend, api, scraper, database, docker, k8s\`
+            - \`auth, search, graph, test, docs\`
+
+            **Examples:**
+            - ✅ \`feat(api): add fuzzy search endpoint\`
+            - ✅ \`fix(frontend): resolve memory leak in graph\`
+            - ❌ \`Updated stuff\`
+            - ❌ \`Fixed bug\`
+
+            </details>
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

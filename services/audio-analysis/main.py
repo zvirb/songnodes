@@ -38,6 +38,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import secrets manager for unified credential management
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_url, get_rabbitmq_config, validate_secrets
+    from health_monitor import ResourceMonitor
+    logger.info("✅ Secrets manager and health monitor imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import common modules: {e}")
+    logger.warning("Falling back to environment variables")
+    ResourceMonitor = None
+
 # Prometheus metrics
 TRACKS_ANALYZED = Counter('audio_analysis_tracks_analyzed_total', 'Total tracks analyzed')
 TRACKS_FAILED = Counter('audio_analysis_tracks_failed_total', 'Total tracks failed')
@@ -49,6 +61,7 @@ ACTIVE_ANALYSES = Gauge('audio_analysis_active_count', 'Active analysis tasks')
 db_pool: Optional[asyncpg.Pool] = None
 rabbitmq_connection: Optional[aio_pika.Connection] = None
 rabbitmq_channel: Optional[aio_pika.Channel] = None
+resource_monitor: Optional[ResourceMonitor] = None
 
 
 class AudioAnalysisRequest(BaseModel):
@@ -80,27 +93,58 @@ class AudioAnalysisResult(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and cleanup resources"""
-    global db_pool, rabbitmq_connection, rabbitmq_channel
+    global db_pool, rabbitmq_connection, rabbitmq_channel, resource_monitor
+
+    # Validate secrets on startup
+    try:
+        if not validate_secrets():
+            logger.error("❌ Required secrets missing - exiting")
+            raise RuntimeError("Required secrets missing")
+    except NameError:
+        logger.warning("⚠️ Secrets manager not available - skipping validation")
 
     # Initialize database connection pool
     database_url = os.getenv('DATABASE_URL')
     try:
+        # Memory leak prevention per CLAUDE.md Section 5.3.1:
+        # - max_queries: Recycle connections after 50,000 queries (equivalent to SQLAlchemy pool_recycle)
+        # - max_inactive_connection_lifetime: Close idle connections after 30 minutes
         db_pool = await asyncpg.create_pool(
             database_url,
             min_size=5,
             max_size=15,
-            command_timeout=30
+            command_timeout=30,
+            max_queries=50000,  # Recycle connections after 50k queries
+            max_inactive_connection_lifetime=1800  # Close idle connections after 30 min
         )
         logger.info("Database connection pool created")
+
+        # Initialize resource monitor
+        if ResourceMonitor:
+            resource_monitor = ResourceMonitor(
+                service_name="audio-analysis",
+                db_pool=db_pool
+            )
+            logger.info("✅ Resource monitor initialized")
+
     except Exception as e:
         logger.error(f"Failed to create database pool: {e}")
         raise
 
-    # Initialize RabbitMQ
-    rabbitmq_host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
-    rabbitmq_port = int(os.getenv('RABBITMQ_PORT', '5672'))
-    rabbitmq_user = os.getenv('RABBITMQ_USER', 'musicdb')
-    rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'musicdb_pass')
+    # Initialize RabbitMQ - use secrets_manager if available
+    try:
+        rabbitmq_config = get_rabbitmq_config()
+        rabbitmq_host = rabbitmq_config['host']
+        rabbitmq_port = rabbitmq_config['port']
+        rabbitmq_user = rabbitmq_config['username']
+        rabbitmq_pass = rabbitmq_config['password']
+        logger.info("✅ Using secrets_manager for RabbitMQ connection")
+    except NameError:
+        rabbitmq_host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
+        rabbitmq_port = int(os.getenv('RABBITMQ_PORT', '5672'))
+        rabbitmq_user = os.getenv('RABBITMQ_USER', 'musicdb')
+        rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'rabbitmq_secure_pass_2024')
+        logger.warning("⚠️ Using fallback RabbitMQ config from environment")
 
     try:
         rabbitmq_connection = await aio_pika.connect_robust(
@@ -147,33 +191,90 @@ app = FastAPI(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    health = {
-        "status": "healthy",
-        "service": "audio-analysis",
-        "timestamp": datetime.utcnow().isoformat(),
-        "database": "unknown",
-        "rabbitmq": "unknown"
-    }
+    """Health check endpoint with resource monitoring"""
+    from fastapi import HTTPException
+    from fastapi.responses import JSONResponse
 
-    # Check database
-    if db_pool:
-        try:
-            async with db_pool.acquire() as conn:
-                await conn.fetchval("SELECT 1")
-            health["database"] = "healthy"
-        except Exception as e:
-            health["database"] = f"unhealthy: {str(e)}"
+    try:
+        # Check resource thresholds first (memory, DB pool)
+        if resource_monitor and ResourceMonitor:
+            try:
+                # Check system memory
+                memory_check = resource_monitor.check_memory()
+
+                # Check database pool
+                pool_check = resource_monitor.check_database_pool()
+
+                # If any critical threshold exceeded, return 503
+                if memory_check.get("status") == "critical" or pool_check.get("status") == "critical":
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            'service': 'audio-analysis',
+                            'status': 'unhealthy',
+                            'error': 'Resource thresholds exceeded',
+                            'checks': {
+                                'memory': memory_check,
+                                'database_pool': pool_check
+                            },
+                            'timestamp': datetime.utcnow().isoformat()
+                        }
+                    )
+            except HTTPException as he:
+                # Resource threshold exceeded - return 503
+                raise he
+
+        health = {
+            "status": "healthy",
+            "service": "audio-analysis",
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": "unknown",
+            "rabbitmq": "unknown"
+        }
+
+        # Check database
+        if db_pool:
+            try:
+                async with db_pool.acquire() as conn:
+                    await conn.fetchval("SELECT 1")
+                health["database"] = "healthy"
+            except Exception as e:
+                health["database"] = f"unhealthy: {str(e)}"
+                health["status"] = "degraded"
+
+        # Check RabbitMQ
+        if rabbitmq_connection and not rabbitmq_connection.is_closed:
+            health["rabbitmq"] = "healthy"
+        else:
+            health["rabbitmq"] = "unhealthy"
             health["status"] = "degraded"
 
-    # Check RabbitMQ
-    if rabbitmq_connection and not rabbitmq_connection.is_closed:
-        health["rabbitmq"] = "healthy"
-    else:
-        health["rabbitmq"] = "unhealthy"
-        health["status"] = "degraded"
+        # Add resource monitoring checks
+        if resource_monitor:
+            health['resources'] = {
+                'memory': resource_monitor.check_memory(),
+                'database_pool': resource_monitor.check_database_pool()
+            }
 
-    return health
+        if health["status"] == "degraded":
+            return JSONResponse(status_code=503, content=health)
+
+        return health
+
+    except HTTPException:
+        # Re-raise 503 errors from resource checks
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                'service': 'audio-analysis',
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
 
 
 @app.get("/metrics")
