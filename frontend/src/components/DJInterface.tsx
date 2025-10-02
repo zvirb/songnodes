@@ -185,7 +185,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   const validNodes = useMemo(() => {
     if (!graphData?.nodes) return [];
     return graphData.nodes.filter(isValidTrackNode);
-  }, [graphData?.nodes]);
+  }, [graphData?.nodes?.length]);
 
   // Transform nodes to tracks with stable references
   const tracks = useMemo(() => {
