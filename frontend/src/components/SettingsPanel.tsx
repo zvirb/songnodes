@@ -25,13 +25,6 @@ interface MusicServiceCredentials {
     refreshToken?: string;
     expiresAt?: number;
   };
-  appleMusic?: {
-    keyId: string;
-    teamId: string;
-    privateKey: string;
-    token?: string;
-    expiresAt?: number;
-  };
 }
 
 interface SettingsPanelProps {
@@ -41,9 +34,7 @@ interface SettingsPanelProps {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
   const { musicCredentials, credentials, isLoading, general } = useStore();
-  const [activeTab, setActiveTab] = useState<'tidal' | 'spotify' | 'apple' | 'apikeys'>('tidal');
   const [showAPIKeyManager, setShowAPIKeyManager] = useState(false);
-  const [showPasswords, setShowPasswords] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Listen for OAuth callback messages
@@ -217,390 +208,219 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div
-          style={{
-            display: 'flex',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)'
-          }}
-        >
-          {[
-            { key: 'tidal', label: '🎵 Tidal', color: '#1DB954' },
-            { key: 'spotify', label: '🎶 Spotify', color: '#1DB954' },
-            { key: 'apple', label: '🍎 Apple Music', color: '#FA243C' },
-            { key: 'apikeys', label: '🔑 API Keys', color: '#4A90E2' }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setActiveTab(tab.key as any);
-                if (tab.key === 'apikeys') {
-                  setShowAPIKeyManager(true);
-                  onClose();
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: '16px',
-                backgroundColor: activeTab === tab.key ? 'rgba(255,255,255,0.1)' : 'transparent',
-                border: 'none',
-                color: activeTab === tab.key ? '#FFFFFF' : '#8E8E93',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                borderBottom: activeTab === tab.key ? `2px solid ${tab.color}` : '2px solid transparent',
-                transition: 'all 0.2s'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        <div style={{ padding: '24px', maxHeight: '60vh', overflowY: 'auto' }}>
-          {/* Tidal Settings */}
-          {activeTab === 'tidal' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Tidal Developer API</h3>
-                <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93', marginBottom: '12px' }}>
-                  Enter your Tidal Developer API credentials. Get your API keys from the <a href="https://developer.tidal.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#1DB954', textDecoration: 'underline' }}>Tidal Developer Portal</a>.
+        {/* Content - Unified Music Services Page */}
+        <div style={{ padding: '32px', maxHeight: '60vh', overflowY: 'auto' }}>
+          <div>
+              <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '24px', fontWeight: 600 }}>Connect Music Services</h3>
+                <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
+                  Click the buttons below to connect your music streaming accounts.
+                  Credentials are securely managed by the backend.
                 </p>
-                <div style={{ padding: '12px', backgroundColor: 'rgba(29, 185, 84, 0.1)', border: '1px solid rgba(29, 185, 84, 0.3)', borderRadius: '8px', fontSize: '13px', color: '#8E8E93' }}>
-                  <strong style={{ color: '#1DB954' }}>ℹ️ Note:</strong> Tidal requires OAuth 2.1 credentials (Client ID & Client Secret). Personal username/password authentication is not supported by their public API.
-                </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Client ID
-                  </label>
-                  <input
-                    type="text"
-                    value={musicCredentials.tidal?.clientId || ''}
-                    onChange={(e) => updateCredentials('tidal', { clientId: e.target.value })}
-                    placeholder="Enter your Tidal Client ID"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Client Secret
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showPasswords ? 'text' : 'password'}
-                      value={musicCredentials.tidal?.clientSecret || ''}
-                      onChange={(e) => updateCredentials('tidal', { clientSecret: e.target.value })}
-                      placeholder="Enter your Tidal Client Secret"
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        paddingRight: '40px',
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '8px',
-                        color: '#FFFFFF',
-                        fontSize: '14px'
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswords(!showPasswords)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: '#8E8E93',
-                        cursor: 'pointer',
-                        fontSize: '14px'
-                      }}
-                    >
-                      {showPasswords ? '👁️' : '🙈'}
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', visibility: 'hidden' }}>
-                  <input
-                    type="checkbox"
-                    id="tidal-remember"
-                    checked={false}
-                    onChange={() => {}}
-                    style={{ marginRight: '4px' }}
-                  />
-                  <label htmlFor="tidal-remember" style={{ fontSize: '14px', color: '#8E8E93' }}>
-                    Keep me logged in
-                  </label>
-                </div>
-
-                {/* Connection Status */}
+              {/* Connection Status Banner */}
+              <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {musicCredentials.tidal?.isConnected && (
                   <div style={{
-                    padding: '12px',
+                    padding: '12px 16px',
                     backgroundColor: 'rgba(29, 185, 84, 0.2)',
                     border: '1px solid rgba(29, 185, 84, 0.4)',
                     borderRadius: '8px',
-                    fontSize: '14px',
-                    color: '#1DB954'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}>
-                    ✅ Connected to Tidal - You can now create and manage playlists!
+                    <span style={{ fontSize: '18px' }}>✅</span>
+                    <span style={{ color: '#1DB954', fontWeight: 600 }}>Tidal Connected</span>
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={async () => {
-                      // Authorization Code Flow with OAuth 2.1 Loopback Redirect
-                      // Using 127.0.0.1 (loopback IP literal) as recommended by OAuth 2.1 Section 8.4.2
-                      const clientId = musicCredentials.tidal?.clientId;
-                      const clientSecret = musicCredentials.tidal?.clientSecret;
+                {musicCredentials.spotify?.accessToken && (
+                  <div style={{
+                    padding: '12px 16px',
+                    backgroundColor: 'rgba(29, 185, 84, 0.2)',
+                    border: '1px solid rgba(29, 185, 84, 0.4)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontSize: '18px' }}>✅</span>
+                    <span style={{ color: '#1DB954', fontWeight: 600 }}>Spotify Connected</span>
+                  </div>
+                )}
+              </div>
 
-                      if (!clientId || !clientSecret) {
-                        alert('Please enter your Client ID and Client Secret first');
-                        return;
-                      }
+              {/* Service Connection Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-                      try {
-                        general.setLoading(true);
-                        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
-                        const REDIRECT_URI = 'http://127.0.0.1:3006/oauth/callback';
+                {/* Tidal Button */}
+                <button
+                  onClick={async () => {
+                    try {
+                      general.setLoading(true);
+                      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+                      const REDIRECT_URI = 'http://127.0.0.1:3006/oauth/callback';
 
-                        // Store client secret for callback handler
-                        localStorage.setItem('tidal_client_secret', clientSecret);
-
-                        // Initialize Authorization Code Flow
-                        const initResponse = await fetch(
-                          `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/init`,
-                          {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                              client_id: clientId,
-                              redirect_uri: REDIRECT_URI
-                            })
-                          }
-                        );
-
-                        if (!initResponse.ok) {
-                          const error = await initResponse.json().catch(() => ({ detail: 'Failed to initialize' }));
-                          throw new Error(error.detail || 'Failed to initialize OAuth');
+                      const initResponse = await fetch(
+                        `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/init`,
+                        {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ redirect_uri: REDIRECT_URI })
                         }
+                      );
 
-                        const authData = await initResponse.json();
-
-                        // Redirect to Tidal authorization page
-                        window.location.href = authData.authorization_url;
-
-                      } catch (err) {
-                        alert(`Failed to connect: ${err instanceof Error ? err.message : 'Unknown error'}`);
-                        general.setLoading(false);
+                      if (!initResponse.ok) {
+                        const error = await initResponse.json().catch(() => ({ detail: 'Failed to initialize' }));
+                        throw new Error(error.detail || 'Failed to initialize OAuth');
                       }
-                    }}
-                    disabled={!musicCredentials.tidal?.clientId || !musicCredentials.tidal?.clientSecret || isLoading}
-                    style={{
-                      flex: 1,
-                      padding: '10px 16px',
-                      backgroundColor: musicCredentials.tidal?.isConnected ? '#1DB954' : (musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret ? '#4A90E2' : 'rgba(255,255,255,0.1)'),
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#FFFFFF',
-                      fontSize: '14px',
-                      cursor: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 'pointer' : 'not-allowed',
-                      opacity: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 1 : 0.5,
-                      fontWeight: 600
-                    }}
-                  >
-                    {musicCredentials.tidal?.isConnected ? '✅ Connected' : '🔗 Connect with Tidal'}
-                  </button>
-                  <button
-                    onClick={() => testConnection('tidal')}
-                    disabled={!musicCredentials.tidal?.clientId || !musicCredentials.tidal?.clientSecret || isLoading}
-                    style={{
-                      padding: '10px 16px',
-                      backgroundColor: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret ? 'rgba(74, 144, 226, 0.5)' : 'rgba(255,255,255,0.1)',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#FFFFFF',
-                      fontSize: '14px',
-                      cursor: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 'pointer' : 'not-allowed',
-                      opacity: musicCredentials.tidal?.clientId && musicCredentials.tidal?.clientSecret && !isLoading ? 1 : 0.5,
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    🔍 Test API
-                  </button>
-                  <button
-                    onClick={() => window.open('https://developer.tidal.com/', '_blank')}
-                    style={{
-                      padding: '10px 16px',
-                      backgroundColor: 'rgba(29, 185, 84, 0.5)',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#FFFFFF',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    🚀 Get Keys
-                  </button>
-                </div>
+
+                      const authData = await initResponse.json();
+                      window.location.href = authData.authorization_url;
+
+                    } catch (err) {
+                      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+                      alert(`Failed to connect to Tidal: ${errorMessage}`);
+                      general.setLoading(false);
+                    }
+                  }}
+                  disabled={isLoading}
+                  style={{
+                    width: '100%',
+                    padding: '20px',
+                    backgroundColor: musicCredentials.tidal?.isConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000',
+                    border: '2px solid #FFFFFF',
+                    borderRadius: '12px',
+                    color: '#FFFFFF',
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    cursor: !isLoading ? 'pointer' : 'not-allowed',
+                    opacity: !isLoading ? 1 : 0.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    transition: 'all 0.3s ease',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.backgroundColor = musicCredentials.tidal?.isConnected ? '#1DB954' : '#1A1A1A';
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = musicCredentials.tidal?.isConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <span style={{ fontSize: '24px' }}>🎵</span>
+                  {musicCredentials.tidal?.isConnected ? 'TIDAL - CONNECTED ✓' : 'CONNECT TIDAL'}
+                </button>
+
+                {/* Spotify Button */}
+                <button
+                  onClick={() => {
+                    const state = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                      .map(b => b.toString(16).padStart(2, '0')).join('');
+                    sessionStorage.setItem('spotify_auth_state', state);
+
+                    const redirectUri = 'http://127.0.0.1:3006/callback/spotify';
+                    const authorizeUrl = `http://127.0.0.1:8082/api/v1/music-auth/spotify/authorize?` + new URLSearchParams({
+                      redirect_uri: redirectUri,
+                      state: state
+                    });
+
+                    console.log('🎵 [SPOTIFY LOGIN] Redirecting to backend authorize endpoint...');
+                    window.location.href = authorizeUrl;
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '20px',
+                    backgroundColor: musicCredentials.spotify?.accessToken ? '#1ed760' : '#1DB954',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#FFFFFF',
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    transition: 'all 0.3s ease',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#1fdf64';
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = musicCredentials.spotify?.accessToken ? '#1ed760' : '#1DB954';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                  </svg>
+                  {musicCredentials.spotify?.accessToken ? 'SPOTIFY - CONNECTED ✓' : 'CONNECT SPOTIFY'}
+                </button>
+              </div>
+
+              {/* API Keys Button */}
+              <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <button
+                  onClick={() => {
+                    setShowAPIKeyManager(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    backgroundColor: 'rgba(74, 144, 226, 0.2)',
+                    border: '1px solid rgba(74, 144, 226, 0.4)',
+                    borderRadius: '12px',
+                    color: '#FFFFFF',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(74, 144, 226, 0.3)';
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(74, 144, 226, 0.2)';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>🔑</span>
+                  MANAGE API KEYS
+                </button>
+              </div>
+
+              {/* Info Note */}
+              <div style={{
+                marginTop: '24px',
+                padding: '16px',
+                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                border: '1px solid rgba(74, 144, 226, 0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: '#8E8E93'
+              }}>
+                <strong style={{ color: '#4A90E2' }}>🔐 Secure OAuth:</strong> Your music service credentials are securely stored in the backend environment.
+                Client secrets are never exposed to the browser. Each connection uses industry-standard OAuth 2.1 with PKCE for maximum security.
               </div>
             </div>
-          )}
-
-          {/* Spotify Settings */}
-          {activeTab === 'spotify' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Spotify API</h3>
-                <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
-                  Configure Spotify API credentials for playlist management and track lookups.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Client ID
-                  </label>
-                  <input
-                    type="text"
-                    value={musicCredentials.spotify?.clientId || ''}
-                    onChange={(e) => updateCredentials('spotify', { clientId: e.target.value })}
-                    placeholder="Your Spotify Client ID"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Client Secret
-                  </label>
-                  <input
-                    type={showPasswords ? 'text' : 'password'}
-                    value={musicCredentials.spotify?.clientSecret || ''}
-                    onChange={(e) => updateCredentials('spotify', { clientSecret: e.target.value })}
-                    placeholder="Your Spotify Client Secret"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Apple Music Settings */}
-          {activeTab === 'apple' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Apple Music API</h3>
-                <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
-                  Configure Apple Music API credentials for catalog access and playlist management.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Key ID
-                  </label>
-                  <input
-                    type="text"
-                    value={musicCredentials.appleMusic?.keyId || ''}
-                    onChange={(e) => updateCredentials('appleMusic', { keyId: e.target.value })}
-                    placeholder="Your Apple Music Key ID"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Team ID
-                  </label>
-                  <input
-                    type="text"
-                    value={musicCredentials.appleMusic?.teamId || ''}
-                    onChange={(e) => updateCredentials('appleMusic', { teamId: e.target.value })}
-                    placeholder="Your Apple Developer Team ID"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600 }}>
-                    Private Key
-                  </label>
-                  <textarea
-                    value={musicCredentials.appleMusic?.privateKey || ''}
-                    onChange={(e) => updateCredentials('appleMusic', { privateKey: e.target.value })}
-                    placeholder="-----BEGIN PRIVATE KEY-----..."
-                    rows={4}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '14px',
-                      fontFamily: 'monospace',
-                      resize: 'vertical'
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}

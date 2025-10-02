@@ -95,7 +95,7 @@ const serviceProxies = {
     pathRewrite: { '^/api/v1/visualization': '/api/v1/visualization' }
   },
   '/api/graph': {
-    target: 'http://graph-visualization-api:8084',
+    target: 'http://rest-api:8082',
     pathRewrite: { '^/api/graph': '/api/graph' }
   },
   '/api/v1/scrapers': {
