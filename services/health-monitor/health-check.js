@@ -81,7 +81,7 @@ class HealthCheckService {
     try {
       // Initialize PostgreSQL connection pool
       this.dbPool = new Pool({
-        connectionString: process.env.DATABASE_URL || 'postgresql://musicdb_user:musicdb_prod_secure_2024_v1@postgres:5432/musicdb',
+        connectionString: process.env.DATABASE_URL || 'postgresql://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb',
         max: 5,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,

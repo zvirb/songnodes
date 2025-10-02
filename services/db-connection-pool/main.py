@@ -39,6 +39,18 @@ structlog.configure(
 
 logger = structlog.get_logger()
 
+# Import secrets manager for unified credential management
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_config, validate_secrets
+    from health_monitor import ResourceMonitor
+    logger.info("✅ Secrets manager and health monitor imported successfully")
+except ImportError as e:
+    logger.error("❌ Failed to import common modules", error=str(e))
+    logger.warning("Falling back to environment variables")
+    ResourceMonitor = None
+
 # Prometheus metrics
 CONNECTION_POOL_ACTIVE = Gauge('pgbouncer_active_connections_total', 'Active connections in pool', ['database'])
 CONNECTION_POOL_WAITING = Gauge('pgbouncer_waiting_connections_total', 'Waiting connections in pool', ['database'])
@@ -70,11 +82,12 @@ class PoolManager:
         self.postgres_host = os.getenv('POSTGRES_HOST', 'musicdb-postgres')
         self.postgres_port = int(os.getenv('POSTGRES_PORT', '5432'))
         self.postgres_user = os.getenv('POSTGRES_USER', 'musicdb_user')
-        self.postgres_password = os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass')
+        self.postgres_password = os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024')
         self.postgres_db = os.getenv('POSTGRES_DB', 'musicdb')
-        
+
         self._admin_pool: Optional[asyncpg.Pool] = None
         self._app_pool: Optional[asyncpg.Pool] = None
+        self._resource_monitor: Optional[ResourceMonitor] = None
 
     async def initialize(self):
         """Initialize connection pools"""
@@ -105,7 +118,15 @@ class PoolManager:
                 max_size=10,
                 command_timeout=30
             )
-            
+
+            # Initialize resource monitor
+            if ResourceMonitor:
+                self._resource_monitor = ResourceMonitor(
+                    service_name="db-connection-pool",
+                    db_pool=self._app_pool
+                )
+                logger.info("✅ Resource monitor initialized")
+
             logger.info("Connection pools initialized successfully")
             
         except Exception as e:
@@ -240,6 +261,14 @@ pool_manager = PoolManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    # Validate secrets on startup
+    try:
+        if not validate_secrets():
+            logger.error("❌ Required secrets missing - exiting")
+            raise RuntimeError("Required secrets missing")
+    except NameError:
+        logger.warning("⚠️ Secrets manager not available - skipping validation")
+
     await pool_manager.initialize()
     yield
     # Shutdown
@@ -264,8 +293,69 @@ app.add_middleware(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return await pool_manager.health_check()
+    """Health check endpoint with resource monitoring"""
+    from fastapi import HTTPException
+    from fastapi.responses import JSONResponse
+
+    try:
+        # Check resource thresholds first (memory, DB pool)
+        if pool_manager._resource_monitor and ResourceMonitor:
+            try:
+                # Check system memory
+                memory_check = pool_manager._resource_monitor.check_memory()
+
+                # Check database pool
+                pool_check = pool_manager._resource_monitor.check_database_pool()
+
+                # If any critical threshold exceeded, return 503
+                if memory_check.get("status") == "critical" or pool_check.get("status") == "critical":
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            'service': 'db-connection-pool',
+                            'status': 'unhealthy',
+                            'error': 'Resource thresholds exceeded',
+                            'checks': {
+                                'memory': memory_check,
+                                'database_pool': pool_check
+                            },
+                            'timestamp': time.time()
+                        }
+                    )
+            except HTTPException as he:
+                # Resource threshold exceeded - return 503
+                raise he
+
+        # Get base health check
+        health_response = await pool_manager.health_check()
+
+        # Add resource monitoring checks
+        if pool_manager._resource_monitor:
+            health_response['resources'] = {
+                'memory': pool_manager._resource_monitor.check_memory(),
+                'database_pool': pool_manager._resource_monitor.check_database_pool()
+            }
+
+        # Return 503 if unhealthy
+        if health_response.get("status") == "unhealthy":
+            return JSONResponse(status_code=503, content=health_response)
+
+        return health_response
+
+    except HTTPException:
+        # Re-raise 503 errors from resource checks
+        raise
+    except Exception as e:
+        logger.error("Health check failed", error=str(e))
+        return JSONResponse(
+            status_code=503,
+            content={
+                'service': 'db-connection-pool',
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': time.time()
+            }
+        )
 
 @app.get("/stats")
 async def get_pool_stats():

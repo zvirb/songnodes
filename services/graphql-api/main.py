@@ -5,10 +5,21 @@ import strawberry
 from strawberry.asgi import GraphQL
 from typing import List, Optional
 import logging
+import sys
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import secrets manager for unified credential management
+try:
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_config, get_redis_config, get_rabbitmq_config, validate_secrets
+    logger.info("✅ Secrets manager imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import secrets_manager: {e}")
+    logger.warning("Falling back to environment variables")
 
 # GraphQL Schema
 @strawberry.type
@@ -114,10 +125,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware
+# CORS middleware - configurable for security
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -126,12 +138,48 @@ app.add_middleware(
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "graphql-api",
-        "version": "1.0.0"
-    }
+    """
+    Health check endpoint with comprehensive resource monitoring per CLAUDE.md Section 5.3.4.
+
+    Monitors:
+    - System memory (503 if > 85%)
+
+    Returns health status with resource metrics.
+    Raises 503 Service Unavailable if resource thresholds exceeded.
+    """
+    try:
+        import psutil
+        from fastapi import HTTPException
+
+        # Check system memory
+        memory_percent = psutil.virtual_memory().percent
+        if memory_percent > 85:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Memory usage critical: {memory_percent:.1f}% (threshold: 85%)"
+            )
+
+        return {
+            "status": "healthy",
+            "service": "graphql-api",
+            "version": "1.0.0",
+            "checks": {
+                "memory": {
+                    "status": "ok",
+                    "usage": memory_percent,
+                    "threshold": 85
+                }
+            }
+        }
+    except HTTPException:
+        # Re-raise 503 errors
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Health check failed: {str(e)}"
+        )
 
 # Mount GraphQL app
 graphql_app = GraphQL(schema)
@@ -139,5 +187,10 @@ app.add_route("/graphql", graphql_app)
 app.add_websocket_route("/graphql", graphql_app)
 
 if __name__ == "__main__":
+    # Validate secrets before starting service
+    if not validate_secrets():
+        logger.error("❌ Required secrets missing - exiting")
+        sys.exit(1)
+
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8081)

@@ -1,0 +1,73 @@
+# Type: feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert
+# Scope: frontend|api|scraper|database|docker|k8s|auth|search|etc.
+# Example: feat(api): add fuzzy search endpoint
+#
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# --- COMMIT GUIDELINES ---
+# Type (REQUIRED):
+#   feat:     New feature
+#   fix:      Bug fix
+#   docs:     Documentation changes
+#   style:    Code style (formatting, no logic changes)
+#   refactor: Code refactoring (no feature/bug changes)
+#   perf:     Performance improvements
+#   test:     Adding or correcting tests
+#   build:    Build system or external dependencies
+#   ci:       CI configuration changes
+#   chore:    Other changes (tooling, etc.)
+#   revert:   Revert previous commit
+#
+# Scope (RECOMMENDED):
+#   Frontend:     frontend, ui, graph, pixi, components
+#   Backend:      api, rest-api, graph-api, websocket, nlp
+#   Scraping:     scraper, scrapers, orchestrator, 1001tracklists, mixesdb, setlistfm
+#   Infrastructure: database, db, redis, rabbitmq, docker, k8s
+#   Features:     auth, oauth, search, audio, camelot
+#   Testing:      test, tests, e2e, performance, security, a11y
+#   Tooling:      docs, build, ci, lint, format
+#
+# Subject (REQUIRED):
+#   - Use imperative mood ("add" not "added" or "adds")
+#   - Don't capitalize first letter
+#   - No period at the end
+#   - Max 50 characters
+#
+# Body (OPTIONAL):
+#   - Explain WHAT changed and WHY (not HOW)
+#   - Wrap at 72 characters
+#   - Separate from subject with blank line
+#
+# Footer (OPTIONAL):
+#   - Reference issues: "Closes #123", "Fixes #456"
+#   - Breaking changes: "BREAKING CHANGE: description"
+#   - Co-authors: "Co-Authored-By: Name <email>"
+#
+# --- EXAMPLES ---
+# Good:
+#   feat(api): add fuzzy search endpoint
+#   fix(frontend): resolve memory leak in graph component
+#   docs(readme): update Docker setup instructions
+#   perf(database): add index to tracks.spotify_id
+#
+# Bad:
+#   Updated stuff
+#   Fixed bug
+#   WIP
+#   asdf
+#
+# --- BREAKING CHANGES ---
+# Use ! after type/scope:
+#   feat(api)!: change search response format
+#
+#   BREAKING CHANGE: Search API now returns pagination object
+#   instead of flat array. Update clients to use response.data
+#   instead of response directly.
+#
+# --- REFERENCES ---
+# Conventional Commits: https://www.conventionalcommits.org/
+# Project Guidelines: See CLAUDE.md Section 3

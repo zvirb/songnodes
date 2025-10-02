@@ -40,6 +40,16 @@ from enrichment_pipeline import MetadataEnrichmentPipeline
 from circuit_breaker import CircuitBreaker, CircuitBreakerState
 from db_api_keys import initialize_api_key_helper, get_service_keys, close_api_key_helper
 
+# Import health monitoring module
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from health_monitor import ResourceMonitor
+    logger.info("✅ Health monitor imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import health_monitor: {e}")
+    ResourceMonitor = None
+
 # Configure structured logging
 structlog.configure(
     processors=[
@@ -123,7 +133,7 @@ class EnrichmentConnectionManager:
         # Database connection
         database_url = os.getenv(
             "DATABASE_URL",
-            "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@db-connection-pool:6432/musicdb"
+            "postgresql+asyncpg://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb"
         )
 
         self.db_engine = create_async_engine(
@@ -209,24 +219,36 @@ class EnrichmentConnectionManager:
 connection_manager = EnrichmentConnectionManager()
 scheduler = AsyncIOScheduler()
 enrichment_pipeline = None
+resource_monitor = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
-    global enrichment_pipeline
+    global enrichment_pipeline, resource_monitor
 
     logger.info("Starting Metadata Enrichment Service")
 
     try:
+        # Validate secrets on startup (if available)
+        try:
+            from common.secrets_manager import validate_secrets
+            if not validate_secrets():
+                logger.error("❌ Required secrets missing - exiting")
+                raise RuntimeError("Required secrets missing")
+        except ImportError:
+            logger.warning("⚠️ Secrets manager not available - skipping validation")
+
         # Initialize connections
         await connection_manager.initialize()
 
         # Initialize database API key helper
         database_url = os.getenv(
             "DATABASE_URL",
-            "postgresql://musicdb_user:musicdb_secure_pass@db:5432/musicdb"
+            "postgresql://musicdb_user:musicdb_secure_pass_2024@db:5432/musicdb"
         )
-        await initialize_api_key_helper(database_url)
+        # asyncpg needs plain postgresql:// URL (strip +asyncpg if present)
+        asyncpg_url = database_url.replace('+asyncpg', '')
+        await initialize_api_key_helper(asyncpg_url)
         logger.info("Database API key helper initialized")
 
         # Retrieve API keys from database (with fallback to environment variables)
@@ -298,6 +320,14 @@ async def lifespan(app: FastAPI):
             redis_client=connection_manager.redis_client
         )
 
+        # Initialize resource monitor (memory and Redis monitoring, no DB pool for SQLAlchemy)
+        if ResourceMonitor:
+            resource_monitor = ResourceMonitor(
+                service_name="metadata-enrichment",
+                redis_client=connection_manager.redis_client
+            )
+            logger.info("✅ Resource monitor initialized")
+
         # Start scheduler
         scheduler.start()
 
@@ -345,9 +375,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -379,7 +410,7 @@ async def process_pending_enrichments():
                 LEFT JOIN (
                     SELECT ta.track_id, STRING_AGG(a.name, ', ') as artist_names
                     FROM track_artists ta
-                    JOIN artists a ON ta.artist_id = a.id
+                    JOIN artists a ON ta.artist_id = a.artist_id
                     WHERE ta.role = 'primary'
                     GROUP BY ta.track_id
                 ) ta ON t.id = ta.track_id
@@ -421,7 +452,28 @@ async def process_pending_enrichments():
                 results = await asyncio.gather(*tasks, return_exceptions=True)
 
                 # Log results
-                success_count = sum(1 for r in results if isinstance(r, EnrichmentResult) and r.status == EnrichmentStatus.COMPLETED)
+                success_count = 0
+                for idx, r in enumerate(results):
+                    if isinstance(r, EnrichmentResult):
+                        if r.status == EnrichmentStatus.COMPLETED:
+                            success_count += 1
+                        elif r.status == EnrichmentStatus.FAILED:
+                            logger.warning(
+                                "Track enrichment failed",
+                                track_id=r.track_id,
+                                errors=r.errors
+                            )
+                    elif isinstance(r, Exception):
+                        track = batch[idx]
+                        logger.error(
+                            "Track enrichment raised exception",
+                            track_id=str(track.id),
+                            artist=track.artist_name,
+                            title=track.title,
+                            error=str(r),
+                            error_type=type(r).__name__
+                        )
+
                 logger.info(f"Batch processed: {success_count}/{len(batch)} successful")
 
                 # Add delay between batches to respect rate limits
@@ -450,8 +502,36 @@ async def update_circuit_breaker_metrics():
 # ===================
 @app.get("/health")
 async def health_check():
-    """Comprehensive health check"""
+    """Comprehensive health check with resource monitoring"""
     try:
+        # Check resource thresholds first (memory, Redis)
+        if resource_monitor and ResourceMonitor:
+            try:
+                # Check system memory
+                memory_check = resource_monitor.check_memory()
+
+                # Check Redis
+                redis_check = resource_monitor.check_redis()
+
+                # If any critical threshold exceeded, return 503
+                if memory_check.get("status") == "critical" or redis_check.get("status") == "critical":
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            'service': 'metadata-enrichment',
+                            'status': 'unhealthy',
+                            'error': 'Resource thresholds exceeded',
+                            'checks': {
+                                'memory': memory_check,
+                                'redis': redis_check
+                            },
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    )
+            except HTTPException as he:
+                # Resource threshold exceeded - return 503
+                raise he
+
         health_status = {
             'service': 'metadata-enrichment',
             'status': 'healthy',
@@ -459,6 +539,13 @@ async def health_check():
             'version': '1.0.0',
             'connections': await connection_manager.health_check()
         }
+
+        # Add resource monitoring checks
+        if resource_monitor:
+            health_status['resources'] = {
+                'memory': resource_monitor.check_memory(),
+                'redis': resource_monitor.check_redis()
+            }
 
         # Check API client health
         if enrichment_pipeline:
@@ -478,6 +565,9 @@ async def health_check():
 
         return health_status
 
+    except HTTPException:
+        # Re-raise 503 errors from resource checks
+        raise
     except Exception as e:
         logger.error("Health check failed", error=str(e))
         return JSONResponse(

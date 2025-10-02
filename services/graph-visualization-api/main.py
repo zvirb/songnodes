@@ -40,6 +40,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import secrets manager for unified credential management
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_url, get_redis_config, validate_secrets
+    logger.info("✅ Secrets manager imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import secrets_manager: {e}")
+    logger.warning("Falling back to environment variables")
+
 # Prometheus metrics
 REQUEST_COUNT = Counter('graph_api_requests_total', 'Total API requests', ['method', 'endpoint', 'status'])
 REQUEST_DURATION = Histogram('graph_api_request_duration_seconds', 'Request duration', ['endpoint'])
@@ -48,10 +58,18 @@ CACHE_HITS = Counter('graph_api_cache_hits_total', 'Cache hits')
 CACHE_MISSES = Counter('graph_api_cache_misses_total', 'Cache misses')
 DATABASE_QUERY_DURATION = Histogram('graph_api_db_query_duration_seconds', 'Database query duration', ['query_type'])
 
-# Configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql+asyncpg://musicdb_user:musicdb_dev_password_2024@musicdb-postgres:5432/musicdb')
-REDIS_HOST = os.getenv('REDIS_HOST', 'musicdb-redis')
-REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+# Configuration - use secrets_manager if available
+try:
+    DATABASE_URL = get_database_url(async_driver=True, use_connection_pool=True)
+    redis_config = get_redis_config()
+    REDIS_HOST = redis_config['host']
+    REDIS_PORT = redis_config['port']
+    logger.info("✅ Using secrets_manager for database and Redis connection")
+except NameError:
+    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql+asyncpg://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb')
+    REDIS_HOST = os.getenv('REDIS_HOST', 'musicdb-redis')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+    logger.warning("⚠️ Using fallback config from environment")
 CACHE_TTL = int(os.getenv('CACHE_TTL', 300))  # 5 minutes
 MAX_CONNECTIONS = int(os.getenv('MAX_CONNECTIONS', 1000))
 
@@ -61,8 +79,8 @@ engine = create_async_engine(
     poolclass=QueuePool,
     pool_size=15,  # Reduced from 20 to prevent overflow
     max_overflow=15,  # Reduced from 30 to prevent excessive connections
-    pool_pre_ping=True,  # Validate connections before use
-    pool_recycle=1800,  # Recycle connections every 30 minutes (reduced from 1 hour)
+    pool_pre_ping=True,  # Validate connections before use (REQUIRED)
+    pool_recycle=3600,  # Recycle connections after 1 hour (REQUIRED)
     pool_timeout=30,  # 30 second timeout for getting connection from pool
     pool_reset_on_return='commit',  # Reset connection state on return
     echo=False,
@@ -750,7 +768,9 @@ async def lifespan(app: FastAPI):
         max_connections=50,  # Limit connection pool size
         retry_on_timeout=True,
         retry_on_error=[redis.ConnectionError, redis.TimeoutError],
-        health_check_interval=30  # Health check every 30 seconds
+        health_check_interval=30,  # Health check every 30 seconds
+        socket_keepalive=True,  # Keep connections alive (REQUIRED)
+        socket_timeout=5  # 5 second socket timeout (REQUIRED)
     )
     redis_pool = redis.Redis(connection_pool=redis_connection_pool)
 
@@ -780,10 +800,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Middleware
+# Middleware - CORS configurable for security
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for non-security-conscious app
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -870,6 +891,7 @@ async def get_graph_data():
         logger.info("Fetching adjacency relationships from database")
         async with async_session() as session:
             # Get all edges (adjacencies)
+            # NOTE: Using LEFT JOINs to include edges even when songs don't exist yet
             edges_query = text("""
                 SELECT
                        ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
@@ -879,12 +901,9 @@ async def get_graph_data():
                        'sequential' as edge_type,
                        COUNT(*) OVER() as total_count
                 FROM song_adjacency sa
-                JOIN songs s1 ON sa.song_id_1 = s1.song_id
-                JOIN songs s2 ON sa.song_id_2 = s2.song_id
                 WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
-                  AND s1.primary_artist_id != s2.primary_artist_id  -- Exclude same-artist consecutive tracks
                 ORDER BY occurrence_count DESC
-                LIMIT 1000
+                LIMIT 5000  -- Increased limit to show more connections
             """)
             edges_result = await session.execute(edges_query)
 
@@ -915,49 +934,54 @@ async def get_graph_data():
             # Now get nodes - prioritize nodes that have edges, then add more up to limit
             if referenced_node_ids:
                 # Get all nodes that are referenced by edges PLUS additional nodes
+                # IMPORTANT: Only include tracks with artist relationships (unusable otherwise)
                 nodes_query = text("""
                     WITH edge_nodes AS (
-                        -- First priority: nodes that have edges
+                        -- First priority: nodes that have edges AND have artists
                         SELECT
-                            node_id as id,
-                            node_id as track_id,
+                            'song_' || t.id::text as id,
+                            t.id::text as track_id,
                             0 as x_position,
                             0 as y_position,
                             json_build_object(
-                                'title', label,
-                                'artist', artist_name,
-                                'node_type', node_type,
-                                'category', category,
-                                'genre', category,
-                                'release_year', release_year,
-                                'appearance_count', appearance_count
+                                'title', t.title,
+                                'artist', a.name,
+                                'node_type', 'song',
+                                'category', t.genre,
+                                'genre', t.genre,
+                                'release_year', EXTRACT(YEAR FROM t.release_date),
+                                'bpm', t.bpm,
+                                'musical_key', t.key
                             ) as metadata,
                             1 as priority
-                        FROM graph_nodes
-                        WHERE node_id = ANY(:node_ids)
-                          AND node_type = 'song'
+                        FROM tracks t
+                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                        INNER JOIN artists a ON ta.artist_id = a.artist_id
+                        WHERE ('song_' || t.id::text) = ANY(:node_ids)
                     ),
                     other_nodes AS (
-                        -- Second priority: other nodes to fill up to limit
+                        -- Second priority: other nodes to fill up to limit (with artists only)
                         SELECT
-                            node_id as id,
-                            node_id as track_id,
+                            'song_' || t.id::text as id,
+                            t.id::text as track_id,
                             0 as x_position,
                             0 as y_position,
                             json_build_object(
-                                'title', label,
-                                'artist', artist_name,
-                                'node_type', node_type,
-                                'category', category,
-                                'genre', category,
-                                'release_year', release_year,
-                                'appearance_count', appearance_count
+                                'title', t.title,
+                                'artist', a.name,
+                                'node_type', 'song',
+                                'category', t.genre,
+                                'genre', t.genre,
+                                'release_year', EXTRACT(YEAR FROM t.release_date),
+                                'bpm', t.bpm,
+                                'musical_key', t.key
                             ) as metadata,
                             2 as priority
-                        FROM graph_nodes
-                        WHERE node_id != ALL(:node_ids)
-                          AND node_type = 'song'
-                        ORDER BY appearance_count DESC
+                        FROM tracks t
+                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                        INNER JOIN artists a ON ta.artist_id = a.artist_id
+                        WHERE ('song_' || t.id::text) NOT IN (SELECT unnest(:node_ids))
+                        ORDER BY t.created_at DESC
                         LIMIT :remaining_limit
                     )
                     SELECT * FROM (
@@ -965,7 +989,7 @@ async def get_graph_data():
                         UNION ALL
                         SELECT * FROM other_nodes
                     ) combined
-                    ORDER BY priority, appearance_count DESC
+                    ORDER BY priority
                 """)
 
                 # Calculate how many additional nodes to fetch
@@ -976,25 +1000,27 @@ async def get_graph_data():
                     "remaining_limit": remaining_limit
                 })
             else:
-                # No edges, just get top nodes
+                # No edges, just get top nodes (with artists only)
                 nodes_query = text("""
                     SELECT
-                        node_id as id,
-                        node_id as track_id,
+                        'song_' || t.id::text as id,
+                        t.id::text as track_id,
                         0 as x_position,
                         0 as y_position,
                         json_build_object(
-                            'title', label,
-                            'artist', artist_name,
-                            'node_type', node_type,
-                            'category', category,
-                            'genre', category,
-                            'release_year', release_year,
-                            'appearance_count', appearance_count
+                            'title', t.title,
+                            'artist', a.name,
+                            'node_type', 'song',
+                            'category', t.genre,
+                            'genre', t.genre,
+                            'release_year', EXTRACT(YEAR FROM t.release_date),
+                            'bpm', t.bpm,
+                            'musical_key', t.key
                         ) as metadata
-                    FROM graph_nodes
-                    WHERE node_type = 'song'
-                    ORDER BY appearance_count DESC
+                    FROM tracks t
+                    INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                    INNER JOIN artists a ON ta.artist_id = a.artist_id
+                    ORDER BY t.created_at DESC
                     LIMIT 1000
                 """)
                 nodes_result = await session.execute(nodes_query)
@@ -1135,23 +1161,96 @@ async def test_nodes():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """
+    Health check endpoint with comprehensive resource monitoring per CLAUDE.md Section 5.3.4.
+
+    Monitors:
+    - Database pool usage (503 if > 80%)
+    - System memory (503 if > 85%)
+    - Database connectivity
+    - Redis connectivity
+
+    Returns health status with resource metrics.
+    Raises 503 Service Unavailable if resource thresholds exceeded.
+    """
     try:
-        # Test database
-        async with async_session() as session:
-            await session.execute(text("SELECT 1"))
-        
-        # Test Redis
-        await redis_pool.ping()
-        
+        import psutil
+
+        # Check database pool usage
+        try:
+            pool = engine.pool
+            pool_size = pool.size()
+            pool_max = pool.size() + pool._max_overflow
+            pool_usage = pool_size / pool_max if pool_max > 0 else 0
+
+            if pool_usage > 0.8:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database pool exhausted: {pool_usage:.1%} usage (threshold: 80%)"
+                )
+        except AttributeError:
+            # Pool doesn't have expected attributes
+            pool_usage = 0
+
+        # Check system memory
+        memory_percent = psutil.virtual_memory().percent
+        if memory_percent > 85:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Memory usage critical: {memory_percent:.1f}% (threshold: 85%)"
+            )
+
+        # Test database connectivity
+        db_connected = False
+        try:
+            async with async_session() as session:
+                await session.execute(text("SELECT 1"))
+            db_connected = True
+        except Exception as db_error:
+            logger.error(f"Database health check failed: {db_error}")
+
+        # Test Redis connectivity
+        redis_connected = False
+        try:
+            await redis_pool.ping()
+            redis_connected = True
+        except Exception as redis_error:
+            logger.error(f"Redis health check failed: {redis_error}")
+
         return {
-            "status": "healthy",
+            "status": "healthy" if (db_connected and redis_connected) else "degraded",
             "timestamp": datetime.utcnow().isoformat(),
-            "service": "graph-visualization-api"
+            "service": "graph-visualization-api",
+            "checks": {
+                "database_pool": {
+                    "status": "ok",
+                    "usage": pool_usage,
+                    "threshold": 0.8
+                },
+                "memory": {
+                    "status": "ok",
+                    "usage": memory_percent,
+                    "threshold": 85
+                },
+                "database": {
+                    "status": "ok" if db_connected else "degraded",
+                    "connected": db_connected
+                },
+                "redis": {
+                    "status": "ok" if redis_connected else "degraded",
+                    "connected": redis_connected
+                }
+            }
         }
+    except HTTPException:
+        # Re-raise 503 errors
+        raise
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        raise HTTPException(status_code=503, detail="Service unhealthy")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Service unhealthy: {str(e)}"
+        )
 
 @app.get("/metrics")
 async def metrics():
@@ -1369,24 +1468,26 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
     try:
         # First, let's get the target node information
         async with async_session() as session:
-            # Get the target node info
+            # Get the target node info (only if it has an artist)
             node_query = text("""
                 SELECT
-                    node_id as id,
-                    node_id as track_id,
+                    'song_' || t.id::text as id,
+                    'song_' || t.id::text as track_id,
                     0 as x_position,
                     0 as y_position,
                     json_build_object(
-                        'title', label,
-                        'artist', artist_name,
-                        'node_type', node_type,
-                        'category', category,
-                        'genre', category,
-                        'release_year', release_year,
-                        'appearance_count', appearance_count
+                        'title', t.title,
+                        'artist', a.name,
+                        'node_type', 'song',
+                        'category', t.genre,
+                        'genre', t.genre,
+                        'release_year', EXTRACT(YEAR FROM t.release_date),
+                        'appearance_count', 0
                     ) as metadata
-                FROM graph_nodes
-                WHERE node_id = :node_id AND node_type = 'song'
+                FROM tracks t
+                INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                INNER JOIN artists a ON ta.artist_id = a.artist_id
+                WHERE 'song_' || t.id::text = :node_id
             """)
 
             node_result = await session.execute(node_query, {"node_id": node_id})
@@ -1420,29 +1521,30 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                     'adjacency' as edge_type,
                     -- Get connected track info
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN gn2.label
-                        ELSE gn1.label
+                        WHEN sa.song_id_1::text = :clean_node_id THEN t2.title
+                        ELSE t1.title
                     END as connected_title,
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN gn2.artist_name
-                        ELSE gn1.artist_name
+                        WHEN sa.song_id_1::text = :clean_node_id THEN COALESCE(a2.name, 'Unknown')
+                        ELSE COALESCE(a1.name, 'Unknown')
                     END as connected_artist,
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN gn2.category
-                        ELSE gn1.category
+                        WHEN sa.song_id_1::text = :clean_node_id THEN t2.genre
+                        ELSE t1.genre
                     END as connected_genre,
                     CASE
                         WHEN sa.song_id_1::text = :clean_node_id THEN sa.song_id_2::text
                         ELSE sa.song_id_1::text
                     END as connected_id
                 FROM song_adjacency sa
-                JOIN songs s1 ON sa.song_id_1 = s1.song_id
-                JOIN songs s2 ON sa.song_id_2 = s2.song_id
-                LEFT JOIN graph_nodes gn1 ON gn1.node_id = 'song_' || sa.song_id_1::text
-                LEFT JOIN graph_nodes gn2 ON gn2.node_id = 'song_' || sa.song_id_2::text
+                LEFT JOIN tracks t1 ON sa.song_id_1 = t1.id
+                LEFT JOIN tracks t2 ON sa.song_id_2 = t2.id
+                LEFT JOIN track_artists ta1 ON t1.id = ta1.track_id AND ta1.role = 'primary'
+                LEFT JOIN track_artists ta2 ON t2.id = ta2.track_id AND ta2.role = 'primary'
+                LEFT JOIN artists a1 ON ta1.artist_id = a1.artist_id
+                LEFT JOIN artists a2 ON ta2.artist_id = a2.artist_id
                 WHERE (sa.song_id_1::text = :clean_node_id OR sa.song_id_2::text = :clean_node_id)
                   AND sa.occurrence_count >= 1
-                  AND s1.primary_artist_id != s2.primary_artist_id
                 ORDER BY sa.occurrence_count DESC
                 LIMIT 20
             """)
@@ -1513,21 +1615,22 @@ async def get_combined_graph_data():
         async with async_session() as session:
             nodes_query = text("""
                 SELECT
-                    node_id as id,
-                    node_id as track_id,
+                    'song_' || t.id::text as id,
+                    'song_' || t.id::text as track_id,
                     0 as x_position,
                     0 as y_position,
                     json_build_object(
-                        'label', label,
-                        'node_type', node_type,
-                        'category', category,
-                        'release_year', release_year,
-                        'appearance_count', appearance_count
+                        'label', t.title,
+                        'node_type', 'song',
+                        'category', t.genre,
+                        'release_year', EXTRACT(YEAR FROM t.release_date),
+                        'appearance_count', 0
                     ) as metadata,
                     CURRENT_TIMESTAMP as created_at
-                FROM graph_nodes
-                WHERE node_type = 'song'
-                ORDER BY appearance_count DESC
+                FROM tracks t
+                INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                INNER JOIN artists a ON ta.artist_id = a.artist_id
+                ORDER BY t.created_at DESC
                 LIMIT 1000
             """)
             nodes_result = await session.execute(nodes_query)
@@ -1587,6 +1690,13 @@ async def get_combined_graph_data():
         raise HTTPException(status_code=500, detail="Failed to retrieve graph data")
 
 if __name__ == "__main__":
+    import sys
+
+    # Validate secrets before starting service
+    if not validate_secrets():
+        logger.error("❌ Required secrets missing - exiting")
+        sys.exit(1)
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

@@ -48,6 +48,16 @@ structlog.configure(
 
 logger = structlog.get_logger(__name__)
 
+# Import secrets manager for unified credential management
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_url, get_redis_config, validate_secrets
+    logger.info("✅ Secrets manager imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import secrets_manager: {e}")
+    logger.warning("Falling back to environment variables")
+
 # ===================
 # 2025 METRICS & MONITORING
 # ===================
@@ -121,11 +131,16 @@ class EnhancedConnectionManager:
 
         logger.info("Initializing enhanced connection manager")
 
-        # Database connection with optimized pool settings
-        database_url = os.getenv(
-            "DATABASE_URL",
-            "postgresql+asyncpg://musicdb_user:musicdb_secure_pass@db:5432/musicdb"
-        )
+        # Database connection - use secrets_manager if available
+        try:
+            database_url = get_database_url(async_driver=True, use_connection_pool=True)
+            logger.info("✅ Using secrets_manager for database connection")
+        except NameError:
+            database_url = os.getenv(
+                "DATABASE_URL",
+                "postgresql+asyncpg://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb"
+            )
+            logger.warning("⚠️ Using fallback DATABASE_URL from environment")
 
         self.db_engine = create_async_engine(
             database_url,
@@ -148,19 +163,33 @@ class EnhancedConnectionManager:
             expire_on_commit=False
         )
 
-        # Redis connection with enhanced error handling
-        redis_host = os.getenv("REDIS_HOST", "redis")
-        redis_port = int(os.getenv("REDIS_PORT", 6379))
+        # Redis connection - use secrets_manager if available
+        try:
+            redis_config = get_redis_config()
+            redis_host = redis_config['host']
+            redis_port = redis_config['port']
+            redis_password = redis_config.get('password')
+            logger.info("✅ Using secrets_manager for Redis connection")
+        except NameError:
+            redis_host = os.getenv("REDIS_HOST", "redis")
+            redis_port = int(os.getenv("REDIS_PORT", 6379))
+            redis_password = os.getenv("REDIS_PASSWORD")
+            logger.warning("⚠️ Using fallback Redis config from environment")
 
-        self.redis_client = redis.Redis(
+        redis_pool = redis.ConnectionPool(
             host=redis_host,
             port=redis_port,
+            password=redis_password,
+            max_connections=50,
+            health_check_interval=30,
             decode_responses=True,
             socket_connect_timeout=5,
             socket_timeout=5,
-            retry_on_timeout=True,
-            health_check_interval=30
+            socket_keepalive=True,  # Keep connections alive (REQUIRED)
+            retry_on_timeout=True
         )
+
+        self.redis_client = redis.Redis(connection_pool=redis_pool)
 
         # HTTP client for external API calls
         self.http_client = httpx.AsyncClient(
@@ -372,9 +401,10 @@ app = FastAPI(
 # Add enhanced middleware
 app.middleware("http")(CorrelationIdMiddleware(app))
 
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -494,14 +524,78 @@ async def health_monitor():
 # ===================
 @app.get("/health")
 async def comprehensive_health_check():
-    """Comprehensive health check with detailed status"""
+    """
+    Comprehensive health check with resource monitoring per CLAUDE.md Section 5.3.4.
+
+    Monitors:
+    - Database pool usage (503 if > 80%)
+    - System memory (503 if > 85%)
+    - Database connectivity
+    - Redis connectivity
+    - HTTP client status
+
+    Returns health status with resource metrics.
+    Raises 503 Service Unavailable if resource thresholds exceeded.
+    """
     try:
+        import psutil
+
+        # Check database pool usage
+        pool_usage = 0
+        if connection_manager.db_engine:
+            try:
+                pool = connection_manager.db_engine.pool
+                pool_size = pool.size()
+                pool_max = pool.size() + pool._max_overflow
+                pool_usage = pool_size / pool_max if pool_max > 0 else 0
+
+                if pool_usage > 0.8:
+                    logger.error(f"Database pool exhausted: {pool_usage:.1%}")
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            'service': 'scraper-orchestrator-2025',
+                            'status': 'unhealthy',
+                            'error': f'Database pool exhausted: {pool_usage:.1%} usage (threshold: 80%)',
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    )
+            except AttributeError:
+                # Pool doesn't have expected attributes
+                pass
+
+        # Check system memory
+        memory_percent = psutil.virtual_memory().percent
+        if memory_percent > 85:
+            logger.error(f"Memory usage critical: {memory_percent:.1f}%")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    'service': 'scraper-orchestrator-2025',
+                    'status': 'unhealthy',
+                    'error': f'Memory usage critical: {memory_percent:.1f}% (threshold: 85%)',
+                    'timestamp': datetime.now().isoformat()
+                }
+            )
+
         health_status = {
             'service': 'scraper-orchestrator-2025',
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
             'version': '2.0.0',
-            'connections': await connection_manager.health_check()
+            'connections': await connection_manager.health_check(),
+            'checks': {
+                'database_pool': {
+                    'status': 'ok',
+                    'usage': pool_usage,
+                    'threshold': 0.8
+                },
+                'memory': {
+                    'status': 'ok',
+                    'usage': memory_percent,
+                    'threshold': 85
+                }
+            }
         }
 
         # Check searcher health
@@ -1035,6 +1129,12 @@ async def get_browser_collector_stats():
 
 if __name__ == "__main__":
     import uvicorn
+    import sys
+
+    # Validate secrets before starting service
+    if not validate_secrets():
+        logger.error("❌ Required secrets missing - exiting")
+        sys.exit(1)
 
     # Enhanced server configuration
     uvicorn.run(

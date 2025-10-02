@@ -17,6 +17,7 @@ import uvicorn
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 import aio_pika
 from aio_pika import Connection, Channel, Exchange
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 # Import UnifiedWorkflow authentication dependencies
 try:
@@ -43,6 +44,30 @@ except ImportError as e:
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import secrets manager for unified credential management
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_redis_config, get_rabbitmq_config, validate_secrets
+    logger.info("✅ Secrets manager imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import secrets_manager: {e}")
+    logger.warning("Falling back to environment variables")
+    # Define fallback functions if secrets_manager not available
+    def get_redis_config():
+        raise NameError("secrets_manager not available")
+    def get_rabbitmq_config():
+        raise NameError("secrets_manager not available")
+    def validate_secrets():
+        logger.warning("validate_secrets not available - skipping validation")
+        return True
+
+# Prometheus metrics
+WS_CONNECTIONS = Gauge('websocket_connections', 'Active WebSocket connections')
+WS_MESSAGES = Counter('websocket_messages_total', 'Total WebSocket messages', ['type', 'direction'])
+WS_ERRORS = Counter('websocket_errors_total', 'WebSocket errors', ['error_type'])
+REDIS_OPERATIONS = Counter('redis_operations_total', 'Redis operations', ['operation', 'status'])
 
 # Data Models
 class WebSocketMessage(BaseModel):
@@ -166,26 +191,56 @@ class WebSocketService:
         
     async def startup(self):
         """Initialize connections"""
-        # Redis connection for caching and pub/sub
-        redis_host = os.getenv('REDIS_HOST', 'localhost')
-        redis_port = int(os.getenv('REDIS_PORT', '6379'))
-        
+        # Redis connection - use secrets_manager if available
         try:
+            redis_config = get_redis_config()
+            redis_host = redis_config['host']
+            redis_port = redis_config['port']
+            redis_password = redis_config.get('password')
+            logger.info("✅ Using secrets_manager for Redis connection")
+        except NameError:
+            redis_host = os.getenv('REDIS_HOST', 'localhost')
+            redis_port = int(os.getenv('REDIS_PORT', '6379'))
+            redis_password = os.getenv('REDIS_PASSWORD')
+            logger.warning("⚠️ Using fallback Redis config from environment")
+
+        try:
+            # Create connection pool for Redis with 2025 best practices
+            pool = redis.ConnectionPool(
+                host=redis_host,
+                port=redis_port,
+                password=redis_password,
+                max_connections=50,
+                decode_responses=True,
+                socket_keepalive=True,  # Keep connections alive
+                socket_timeout=5  # 5 second socket timeout
+            )
             self.redis_client = redis.from_url(
                 f"redis://{redis_host}:{redis_port}",
-                decode_responses=True
+                decode_responses=True,
+                connection_pool=pool
             )
             await self.redis_client.ping()
-            logger.info("Redis connection established")
+            logger.info("Redis connection established with pooling")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {e}")
         
-        # RabbitMQ connection for message queuing
-        rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
-        rabbitmq_port = os.getenv('RABBITMQ_PORT', '5672')
-        rabbitmq_user = os.getenv('RABBITMQ_USER', 'guest')
-        rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'guest')
-        rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', '/')
+        # RabbitMQ connection - use secrets_manager if available
+        try:
+            rabbitmq_config = get_rabbitmq_config()
+            rabbitmq_host = rabbitmq_config['host']
+            rabbitmq_port = str(rabbitmq_config['port'])
+            rabbitmq_user = rabbitmq_config['username']
+            rabbitmq_pass = rabbitmq_config['password']
+            rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', '/')
+            logger.info("✅ Using secrets_manager for RabbitMQ connection")
+        except NameError:
+            rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
+            rabbitmq_port = os.getenv('RABBITMQ_PORT', '5672')
+            rabbitmq_user = os.getenv('RABBITMQ_USER', 'guest')
+            rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'rabbitmq_secure_pass_2024')
+            rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', '/')
+            logger.warning("⚠️ Using fallback RabbitMQ config from environment")
         try:
             self.rabbitmq_connection = await aio_pika.connect_robust(
                 f"amqp://{rabbitmq_user}:{rabbitmq_pass}@{rabbitmq_host}:{rabbitmq_port}/{rabbitmq_vhost}"
@@ -257,6 +312,13 @@ websocket_service = WebSocketService()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    # Validate secrets on startup
+    try:
+        if not validate_secrets():
+            logger.error("❌ Required secrets missing - service may not function correctly")
+    except NameError:
+        logger.warning("⚠️ Secrets validation not available")
+
     await websocket_service.startup()
     yield
     # Shutdown
@@ -270,10 +332,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware - configurable for security
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -281,38 +344,108 @@ app.add_middleware(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    redis_status = "connected" if websocket_service.redis_client else "disconnected"
-    rabbitmq_status = "connected" if websocket_service.rabbitmq_connection else "disconnected"
-    
-    # Check if UnifiedWorkflow authentication is available
-    auth_status = "enabled" if 'get_current_user_ws' in globals() else "fallback"
-    
-    return {
-        "status": "healthy",
-        "service": "websocket-api",
-        "version": "1.0.0",
-        "security": {
-            "authentication": auth_status,
-            "jwt_enabled": auth_status == "enabled"
-        },
-        "connections": len(websocket_service.manager.active_connections),
-        "redis": redis_status,
-        "rabbitmq": rabbitmq_status,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
+    """
+    Health check endpoint with comprehensive resource monitoring per CLAUDE.md Section 5.3.4.
+
+    Monitors:
+    - System memory (503 if > 85%)
+    - Redis connectivity
+    - RabbitMQ connectivity
+    - WebSocket connections (warning if > 900/1000 limit)
+
+    Returns health status with resource metrics.
+    Raises 503 Service Unavailable if resource thresholds exceeded.
+    """
+    try:
+        import psutil
+
+        # Check system memory
+        memory_percent = psutil.virtual_memory().percent
+        if memory_percent > 85:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Memory usage critical: {memory_percent:.1f}% (threshold: 85%)"
+            )
+
+        # Check Redis status
+        redis_status = "connected" if websocket_service.redis_client else "disconnected"
+        rabbitmq_status = "connected" if websocket_service.rabbitmq_connection else "disconnected"
+
+        # Check if UnifiedWorkflow authentication is available
+        auth_status = "enabled" if 'get_current_user_ws' in globals() else "fallback"
+
+        # Check WebSocket connection count (warn if approaching limit)
+        ws_connections = len(websocket_service.manager.active_connections)
+        ws_max_connections = 1000  # From CLAUDE.md memory leak prevention
+        ws_usage = ws_connections / ws_max_connections
+
+        return {
+            "status": "healthy",
+            "service": "websocket-api",
+            "version": "1.0.0",
+            "security": {
+                "authentication": auth_status,
+                "jwt_enabled": auth_status == "enabled"
+            },
+            "connections": ws_connections,
+            "redis": redis_status,
+            "rabbitmq": rabbitmq_status,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "checks": {
+                "memory": {
+                    "status": "ok",
+                    "usage": memory_percent,
+                    "threshold": 85
+                },
+                "websocket_connections": {
+                    "status": "warning" if ws_usage > 0.9 else "ok",
+                    "count": ws_connections,
+                    "max": ws_max_connections,
+                    "usage": ws_usage
+                },
+                "redis": {
+                    "status": "ok" if redis_status == "connected" else "degraded",
+                    "connected": redis_status == "connected"
+                },
+                "rabbitmq": {
+                    "status": "ok" if rabbitmq_status == "connected" else "degraded",
+                    "connected": rabbitmq_status == "connected"
+                }
+            }
+        }
+    except HTTPException:
+        # Re-raise 503 errors
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Health check failed: {str(e)}"
+        )
 
 @app.get("/stats")
 async def get_stats():
     """Get WebSocket connection statistics"""
+    active_conns = len(websocket_service.manager.active_connections)
+    WS_CONNECTIONS.set(active_conns)
+
     return {
-        "active_connections": len(websocket_service.manager.active_connections),
+        "active_connections": active_conns,
         "rooms": len(websocket_service.manager.room_users),
         "users": len(websocket_service.manager.user_rooms),
         "room_details": {
             room: len(users) for room, users in websocket_service.manager.room_users.items()
         }
     }
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    # Update connection count
+    WS_CONNECTIONS.set(len(websocket_service.manager.active_connections))
+
+    from fastapi.responses import Response
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.websocket("/ws/public")
 async def public_websocket_endpoint(websocket: WebSocket):

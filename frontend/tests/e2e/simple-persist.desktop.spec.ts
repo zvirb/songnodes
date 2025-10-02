@@ -81,6 +81,7 @@ test.describe('Simple Persistence Test', () => {
       localStorage.setItem('songnodes-store', JSON.stringify(wrapped));
       console.log('✅ Test data injected:', testData);
     });
+    */
 
     // Verify injection worked
     const injectedData = await page.evaluate(() => {

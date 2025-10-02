@@ -30,6 +30,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import secrets manager for unified credential management
+try:
+    import sys
+    sys.path.insert(0, '/app/common')
+    from secrets_manager import get_database_url, get_redis_config, validate_secrets
+    from health_monitor import ResourceMonitor
+    logger.info("✅ Secrets manager and health monitor imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import common modules: {e}")
+    logger.warning("Falling back to environment variables")
+    ResourceMonitor = None
+
 # Prometheus metrics
 validation_tasks_total = Counter('validation_tasks_total', 'Total validation tasks', ['validation_type', 'status'])
 active_validations = Gauge('active_validations', 'Number of active validations', ['validation_type'])
@@ -52,15 +64,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Redis connection
-redis_client = redis.Redis(
+# Redis connection with connection pooling (2025 best practices)
+redis_connection_pool = redis.ConnectionPool(
     host=os.getenv("REDIS_HOST", "redis"),
     port=int(os.getenv("REDIS_PORT", 6379)),
-    decode_responses=True
+    password=os.getenv("REDIS_PASSWORD"),
+    max_connections=50,
+    health_check_interval=30,
+    decode_responses=True,
+    socket_keepalive=True,  # Keep connections alive (REQUIRED)
+    socket_timeout=5  # 5 second socket timeout (REQUIRED)
 )
+redis_client = redis.Redis(connection_pool=redis_connection_pool)
 
 # Database configuration - use DATABASE_URL for connection pooling
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:password@musicdb-postgres:5432/musicdb")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb")
 
 # Parse DATABASE_URL for asyncpg connection
 import urllib.parse
@@ -75,6 +93,7 @@ DATABASE_CONFIG = {
 
 # Database connection pool
 db_pool = None
+resource_monitor = None
 
 # =====================
 # Data Models
@@ -1084,12 +1103,26 @@ validation_engine = ValidationEngine()
 
 async def init_database():
     """Initialize database connection pool"""
-    global db_pool
+    global db_pool, resource_monitor
     try:
         # Set statement_cache_size=0 for PgBouncer compatibility
-        db_pool = await asyncpg.create_pool(**DATABASE_CONFIG, min_size=5, max_size=20, statement_cache_size=0)
+        db_pool = await asyncpg.create_pool(
+            **DATABASE_CONFIG,
+            min_size=5,
+            max_size=20,
+            command_timeout=30,  # Prevent connection hanging
+            statement_cache_size=0
+        )
         logger.info("Database connection pool initialized")
-        
+
+        # Initialize resource monitor
+        if ResourceMonitor:
+            resource_monitor = ResourceMonitor(
+                service_name="data-validator",
+                db_pool=db_pool
+            )
+            logger.info("✅ Resource monitor initialized")
+
         # Create tables if they don't exist
         async with db_pool.acquire() as conn:
             await conn.execute("""
@@ -1164,11 +1197,20 @@ async def task_processor():
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
+    # Validate secrets on startup
+    try:
+        if not validate_secrets():
+            logger.error("❌ Required secrets missing - exiting")
+            import sys
+            sys.exit(1)
+    except NameError:
+        logger.warning("⚠️ Secrets manager not available - skipping validation")
+
     await init_database()
-    
+
     # Start background workers
     asyncio.create_task(task_processor())
-    
+
     logger.info("Data Validator Service started")
 
 @app.on_event("shutdown")
@@ -1180,54 +1222,112 @@ async def shutdown_event():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with resource monitoring"""
     import time
-    start_time = time.time()
-    
-    # Check database connection
-    db_status = "healthy"
-    db_time = 0
-    if db_pool:
-        try:
-            db_start = time.time()
-            async with db_pool.acquire() as conn:
-                await conn.fetchval("SELECT 1")
-            db_time = time.time() - db_start
-        except Exception as e:
-            db_status = "unhealthy"
-            logger.error(f"Database health check failed: {str(e)}")
-    else:
-        db_status = "not_initialized"
-    
-    # Check Redis connection
-    redis_status = "healthy"
-    redis_time = 0
+    from fastapi import HTTPException
+
     try:
-        redis_start = time.time()
-        redis_client.ping()
-        redis_time = time.time() - redis_start
-    except Exception as e:
-        redis_status = "unhealthy"
-        logger.error(f"Redis health check failed: {str(e)}")
-    
-    overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
-    total_time = time.time() - start_time
-    
-    logger.info(f"Health check completed in {total_time:.3f}s (db: {db_time:.3f}s, redis: {redis_time:.3f}s)")
-    
-    return {
-        "status": overall_status,
-        "timestamp": datetime.now().isoformat(),
-        "components": {
-            "database": db_status,
-            "redis": redis_status
-        },
-        "timing": {
-            "total": round(total_time, 3),
-            "database": round(db_time, 3),
-            "redis": round(redis_time, 3)
+        # Check resource thresholds first (memory, DB pool)
+        if resource_monitor and ResourceMonitor:
+            try:
+                # Check system memory
+                memory_check = resource_monitor.check_memory()
+
+                # Check database pool
+                pool_check = resource_monitor.check_database_pool()
+
+                # If any critical threshold exceeded, return 503
+                if memory_check.get("status") == "critical" or pool_check.get("status") == "critical":
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            'service': 'data-validator',
+                            'status': 'unhealthy',
+                            'error': 'Resource thresholds exceeded',
+                            'checks': {
+                                'memory': memory_check,
+                                'database_pool': pool_check
+                            },
+                            'timestamp': datetime.now().isoformat()
+                        }
+                    )
+            except HTTPException as he:
+                # Resource threshold exceeded - return 503
+                raise he
+
+        start_time = time.time()
+
+        # Check database connection
+        db_status = "healthy"
+        db_time = 0
+        if db_pool:
+            try:
+                db_start = time.time()
+                async with db_pool.acquire() as conn:
+                    await conn.fetchval("SELECT 1")
+                db_time = time.time() - db_start
+            except Exception as e:
+                db_status = "unhealthy"
+                logger.error(f"Database health check failed: {str(e)}")
+        else:
+            db_status = "not_initialized"
+
+        # Check Redis connection
+        redis_status = "healthy"
+        redis_time = 0
+        try:
+            redis_start = time.time()
+            redis_client.ping()
+            redis_time = time.time() - redis_start
+        except Exception as e:
+            redis_status = "unhealthy"
+            logger.error(f"Redis health check failed: {str(e)}")
+
+        overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
+        total_time = time.time() - start_time
+
+        logger.info(f"Health check completed in {total_time:.3f}s (db: {db_time:.3f}s, redis: {redis_time:.3f}s)")
+
+        health_response = {
+            "status": overall_status,
+            "timestamp": datetime.now().isoformat(),
+            "components": {
+                "database": db_status,
+                "redis": redis_status
+            },
+            "timing": {
+                "total": round(total_time, 3),
+                "database": round(db_time, 3),
+                "redis": round(redis_time, 3)
+            }
         }
-    }
+
+        # Add resource monitoring checks
+        if resource_monitor:
+            health_response['resources'] = {
+                'memory': resource_monitor.check_memory(),
+                'database_pool': resource_monitor.check_database_pool()
+            }
+
+        if overall_status == "unhealthy":
+            return JSONResponse(status_code=503, content=health_response)
+
+        return health_response
+
+    except HTTPException:
+        # Re-raise 503 errors from resource checks
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                'service': 'data-validator',
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+        )
 
 @app.post("/validate")
 async def submit_validation_task(task: ValidationTask):
