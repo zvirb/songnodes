@@ -424,29 +424,9 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         return not any(pattern in url for pattern in exclude_patterns)
 
     def parse_mix_page(self, response):
-        """Parse individual mix page with comprehensive data extraction"""
+        """Parse individual mix page with CSS selector-based extraction"""
         try:
-            # Check if this is an HTML page (not JSON/structured response)
-            content_type = response.headers.get('Content-Type', b'').decode('utf-8').lower()
-            if 'text/html' in content_type or not self._is_json_response(response):
-                self.logger.info(f"📄 Detected HTML page. Using NLP fallback for extraction. URL: {response.url}")
-
-                if self.enable_nlp_fallback:
-                    tracks_data = self.extract_via_nlp_sync(
-                        html_or_text=response.text,
-                        url=response.url,
-                        extract_timestamps=True
-                    )
-
-                    if tracks_data:
-                        self.logger.info(f"✅ NLP extraction: {len(tracks_data)} tracks found")
-                        for track_data in tracks_data:
-                            yield self._create_track_item_from_nlp(track_data, response.url)
-                    else:
-                        self.logger.warning(f"⚠️ NLP extraction returned no tracks: {response.url}")
-                return
-
-            # Store response for potential NLP fallback
+            # Store response for debugging
             self.last_response = response
 
             # Extract comprehensive setlist metadata
@@ -459,88 +439,16 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             if artist_data:
                 yield EnhancedArtistItem(**artist_data)
 
-            # Extract tracks with full metadata
+            # Extract tracks with full metadata using CSS selectors
             tracks_data = self.extract_enhanced_tracks(response, setlist_data)
 
-            # NLP fallback if structured extraction yielded insufficient tracks
-            if not tracks_data or len(tracks_data) < 3:
+            if not tracks_data:
                 self.logger.warning(
-                    f"Low track count from structured extraction ({len(tracks_data) if tracks_data else 0} tracks), "
-                    f"trying NLP fallback for {response.url}"
+                    f"No tracks extracted from {response.url} using CSS selectors"
                 )
+                return
 
-                # Try NLP extraction
-                result = self.try_nlp_fallback(response, tracks_data)
-
-                if result['extraction_method'] == 'nlp':
-                    # Convert NLP tracks to tracks_data format
-                    nlp_tracks = result['tracks']
-                    tracks_data = []
-
-                    for idx, nlp_track in enumerate(nlp_tracks):
-                        # Generate track_id for NLP-extracted track
-                        track_name = nlp_track.get('track_name', 'Unknown Track')
-                        artist_name = nlp_track.get('artist_name', 'Unknown Artist')
-
-                        # Generate track_id if we have valid data
-                        track_id = None
-                        if track_name != 'Unknown Track' and artist_name != 'Unknown Artist':
-                            track_id = generate_track_id(
-                                title=track_name,
-                                primary_artist=artist_name,
-                                is_remix=False,
-                                is_mashup=False
-                            )
-
-                        # Build track data structure compatible with existing pipeline
-                        track_item = {
-                            'track_id': track_id,  # Deterministic ID for matching across sources
-                            'track_name': track_name,
-                            'normalized_title': track_name.lower().strip(),
-                            'is_remix': False,
-                            'is_mashup': False,
-                            'bpm': None,
-                            'musical_key': None,
-                            'genre': None,
-                            'start_time': nlp_track.get('start_time'),
-                            'track_type': 'Mix',
-                            'source_context': f"NLP extraction from {response.url}",
-                            'position_in_source': idx + 1,
-                            'metadata': json.dumps({
-                                'extraction_source': 'nlp',
-                                'mix_context': setlist_data.get('setlist_name') if setlist_data else None
-                            }),
-                            'external_urls': json.dumps({'mixesdb_context': response.url}),
-                            'data_source': self.name,
-                            'scrape_timestamp': datetime.utcnow(),
-                            'created_at': datetime.utcnow()
-                        }
-
-                        # Build artist relationships
-                        relationships = []
-                        artist_name = nlp_track.get('artist_name', 'Unknown Artist')
-
-                        if artist_name and artist_name != 'Unknown Artist':
-                            relationships.append({
-                                'track_name': track_item['track_name'],
-                                'artist_name': artist_name,
-                                'artist_role': 'primary',
-                                'position': 0,
-                                'data_source': self.name,
-                                'scrape_timestamp': datetime.utcnow(),
-                                'created_at': datetime.utcnow()
-                            })
-
-                        tracks_data.append({
-                            'track': track_item,
-                            'relationships': relationships,
-                            'track_order': idx + 1
-                        })
-
-                    self.logger.info(f"NLP fallback extracted {len(tracks_data)} tracks")
-
-            # Continue with existing track processing
-            tracks_data = tracks_data or []
+            self.logger.info(f"✅ CSS extraction: {len(tracks_data)} tracks found from {response.url}")
 
             # CRITICAL: Create and yield playlist item FIRST, before processing tracks
             if setlist_data and tracks_data:
@@ -744,9 +652,18 @@ class MixesdbSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             return None
 
     def extract_enhanced_tracks(self, response, setlist_data):
-        """Extract tracks with comprehensive metadata"""
+        """Extract tracks with comprehensive metadata using CSS selectors"""
         tracks_data = []
-        track_elements = response.css('ol.tracklist li, div.tracklist-section ul li')
+
+        # MixesDB structure: <h2>Tracklist</h2> followed by <ol><li>...</li></ol>
+        # Find the tracklist <ol> that comes after the "Tracklist" heading
+        tracklist_heading = response.xpath('//h2[contains(., "Tracklist")]').get()
+        if tracklist_heading:
+            # Get the <ol> element that immediately follows the tracklist heading
+            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
+        else:
+            # Fallback: try finding any <ol> or <ul> with tracks
+            track_elements = response.css('ol li, ul.tracklist li, div.tracklist-section ul li')
 
         for i, track_el in enumerate(track_elements):
             try:
