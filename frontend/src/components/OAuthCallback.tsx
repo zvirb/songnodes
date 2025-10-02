@@ -51,21 +51,14 @@ const OAuthCallback: React.FC = () => {
           return;
         }
 
-        // Get client secret from localStorage (stored during OAuth init)
-        const clientSecret = localStorage.getItem('tidal_client_secret');
-        if (!clientSecret) {
-          setStatus('error');
-          setMessage('Client secret not found. Please reconnect from Settings.');
-          setTimeout(() => window.location.href = '/', 3000);
-          return;
-        }
-
         setMessage('Exchanging authorization code for access token...');
+        console.log('[OAuth] Exchanging code for tokens...', { state: state.substring(0, 8) + '...' });
 
         // Exchange authorization code for tokens
+        // SECURITY: Client secret handled entirely by backend, never exposed to frontend
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
         const response = await fetch(
-          `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&client_secret=${encodeURIComponent(clientSecret)}`,
+          `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
           {
             method: 'GET'
           }
@@ -73,10 +66,23 @@ const OAuthCallback: React.FC = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-          throw new Error(errorData.detail || `HTTP ${response.status}`);
+          console.error('[OAuth] Token exchange failed:', errorData);
+
+          // Provide user-friendly error messages
+          let userMessage = errorData.detail || `HTTP ${response.status}`;
+          if (userMessage.includes('Invalid or expired state')) {
+            userMessage = 'OAuth session expired. This can happen if you took too long to authorize or if the backend restarted. Please try connecting again.';
+          }
+          throw new Error(userMessage);
         }
 
         const tokenData = await response.json();
+        console.log('[OAuth] Token exchange successful:', {
+          hasAccessToken: !!tokenData.access_token,
+          hasRefreshToken: !!tokenData.refresh_token,
+          expiresIn: tokenData.expires_in,
+          scope: tokenData.scope
+        });
 
         if (!tokenData.success || !tokenData.access_token) {
           throw new Error('Invalid token response from server');
@@ -96,9 +102,7 @@ const OAuthCallback: React.FC = () => {
         };
 
         localStorage.setItem('tidal_oauth_tokens', JSON.stringify(tokens));
-
-        // Clean up client secret
-        localStorage.removeItem('tidal_client_secret');
+        console.log('[OAuth] Tokens stored in localStorage');
 
         // Notify parent window (if opened as popup)
         if (window.opener) {
