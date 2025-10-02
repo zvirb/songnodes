@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import os
 import time
 from typing import Any, Dict, Optional
 from urllib.parse import quote
@@ -15,8 +16,16 @@ import redis.asyncio as aioredis
 import structlog
 
 from circuit_breaker import CircuitBreaker
+from retry_handler import fetch_with_exponential_backoff, RetryExhausted
 
 logger = structlog.get_logger(__name__)
+
+# ===================
+# RETRY CONFIGURATION
+# ===================
+API_MAX_RETRIES = int(os.getenv('API_MAX_RETRIES', '5'))
+API_INITIAL_DELAY = float(os.getenv('API_INITIAL_DELAY', '1.0'))
+API_MAX_DELAY = float(os.getenv('API_MAX_DELAY', '60.0'))
 
 # ===================
 # SPOTIFY CLIENT
@@ -107,9 +116,10 @@ class SpotifyClient:
 
             url = f"{self.base_url}/search?q={quote(query)}&type=track&limit=1"
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
                         data = await response.json()
                         if data['tracks']['items']:
                             track = data['tracks']['items'][0]
@@ -124,18 +134,19 @@ class SpotifyClient:
 
                             return result
                         return None
-                    elif response.status == 429:
-                        retry_after = int(response.headers.get('Retry-After', 60))
-                        logger.warning(f"Spotify rate limit hit, retry after {retry_after}s")
-                        await asyncio.sleep(retry_after)
-                        raise Exception("Rate limited")
-                    else:
-                        raise Exception(f"Spotify search failed: {response.status}")
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'spotify', 'method': 'search_track', 'query': query}
+            )
 
         try:
             return await self.circuit_breaker.call(_search)
-        except Exception as e:
-            logger.error("Spotify search failed", error=str(e))
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Spotify search failed", error=str(e), query=query)
             return None
 
     async def get_track_by_id(self, spotify_id: str) -> Optional[Dict[str, Any]]:
@@ -156,9 +167,10 @@ class SpotifyClient:
 
             url = f"{self.base_url}/tracks/{spotify_id}"
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
                         track = await response.json()
                         result = self._extract_track_metadata(track)
 
@@ -170,16 +182,18 @@ class SpotifyClient:
                         )
 
                         return result
-                    elif response.status == 429:
-                        retry_after = int(response.headers.get('Retry-After', 60))
-                        await asyncio.sleep(retry_after)
-                        raise Exception("Rate limited")
-                    else:
-                        raise Exception(f"Spotify get track failed: {response.status}")
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'spotify', 'method': 'get_track_by_id', 'spotify_id': spotify_id}
+            )
 
         try:
             return await self.circuit_breaker.call(_get_track)
-        except Exception as e:
+        except (RetryExhausted, aiohttp.ClientError) as e:
             logger.error("Spotify get track failed", error=str(e), spotify_id=spotify_id)
             return None
 
@@ -200,9 +214,10 @@ class SpotifyClient:
 
             url = f"{self.base_url}/audio-features/{spotify_id}"
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
                         features = await response.json()
 
                         # Cache for 90 days (audio features don't change)
@@ -213,17 +228,19 @@ class SpotifyClient:
                         )
 
                         return features
-                    elif response.status == 429:
-                        retry_after = int(response.headers.get('Retry-After', 60))
-                        await asyncio.sleep(retry_after)
-                        raise Exception("Rate limited")
-                    else:
-                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'spotify', 'method': 'get_audio_features', 'spotify_id': spotify_id}
+            )
 
         try:
             return await self.circuit_breaker.call(_get_features)
-        except Exception as e:
-            logger.error("Spotify audio features failed", error=str(e))
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Spotify audio features failed", error=str(e), spotify_id=spotify_id)
             return None
 
     async def search_by_isrc(self, isrc: str) -> Optional[Dict[str, Any]]:
@@ -243,9 +260,10 @@ class SpotifyClient:
 
             url = f"{self.base_url}/search?q=isrc:{isrc}&type=track&limit=1"
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
                         data = await response.json()
                         if data['tracks']['items']:
                             track = data['tracks']['items'][0]
@@ -260,13 +278,19 @@ class SpotifyClient:
 
                             return result
                         return None
-                    else:
-                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'spotify', 'method': 'search_by_isrc', 'isrc': isrc}
+            )
 
         try:
             return await self.circuit_breaker.call(_search_isrc)
-        except Exception as e:
-            logger.error("Spotify ISRC search failed", error=str(e))
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Spotify ISRC search failed", error=str(e), isrc=isrc)
             return None
 
     def _extract_track_metadata(self, track: Dict) -> Dict[str, Any]:
@@ -318,9 +342,10 @@ class MusicBrainzClient:
             headers = {'User-Agent': self.user_agent, 'Accept': 'application/json'}
             url = f"{self.base_url}/isrc/{isrc}?inc=artists+releases+isrcs"
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
                         data = await response.json()
                         if data.get('recordings'):
                             recording = data['recordings'][0]
@@ -335,16 +360,19 @@ class MusicBrainzClient:
 
                             return result
                         return None
-                    elif response.status == 503:
-                        await asyncio.sleep(5)
-                        raise Exception("MusicBrainz unavailable")
-                    else:
-                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'musicbrainz', 'method': 'search_by_isrc', 'isrc': isrc}
+            )
 
         try:
             return await self.circuit_breaker.call(_search)
-        except Exception as e:
-            logger.error("MusicBrainz ISRC search failed", error=str(e))
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("MusicBrainz ISRC search failed", error=str(e), isrc=isrc)
             return None
 
     async def search_recording(self, artist: str, title: str) -> Optional[Dict[str, Any]]:
@@ -363,9 +391,10 @@ class MusicBrainzClient:
             headers = {'User-Agent': self.user_agent, 'Accept': 'application/json'}
             url = f"{self.base_url}/recording?query={quote(query)}&limit=1&fmt=json"
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
                         data = await response.json()
                         if data['recordings']:
                             recording = data['recordings'][0]
@@ -380,13 +409,19 @@ class MusicBrainzClient:
 
                             return result
                         return None
-                    else:
-                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'musicbrainz', 'method': 'search_recording', 'query': query}
+            )
 
         try:
             return await self.circuit_breaker.call(_search)
-        except Exception as e:
-            logger.error("MusicBrainz recording search failed", error=str(e))
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("MusicBrainz recording search failed", error=str(e), query=query)
             return None
 
     def _extract_recording_metadata(self, recording: Dict) -> Dict[str, Any]:
@@ -450,9 +485,10 @@ class DiscogsClient:
             }
             url = f"{self.base_url}/database/search?q={quote(query)}&type=release&per_page=1"
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
                         data = await response.json()
                         if data['results']:
                             release = data['results'][0]
@@ -475,17 +511,19 @@ class DiscogsClient:
 
                             return result
                         return None
-                    elif response.status == 429:
-                        retry_after = int(response.headers.get('X-Discogs-Ratelimit-Used', 60))
-                        await asyncio.sleep(retry_after)
-                        raise Exception("Rate limited")
-                    else:
-                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'discogs', 'method': 'search', 'query': query}
+            )
 
         try:
             return await self.circuit_breaker.call(_search)
-        except Exception as e:
-            logger.error("Discogs search failed", error=str(e))
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Discogs search failed", error=str(e), query=query)
             return None
 
 # ===================
@@ -548,9 +586,10 @@ class LastFMClient:
                 'format': 'json'
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(self.base_url, params=params) as response:
-                    if response.status == 200:
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(self.base_url, params=params) as response:
+                        response.raise_for_status()
                         data = await response.json()
                         if 'track' in data:
                             track_data = data['track']
@@ -569,13 +608,19 @@ class LastFMClient:
 
                             return result
                         return None
-                    else:
-                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'lastfm', 'method': 'get_track_info', 'artist': artist, 'track': track}
+            )
 
         try:
             return await self.circuit_breaker.call(_get_info)
-        except Exception as e:
-            logger.error("Last.fm track info failed", error=str(e))
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Last.fm track info failed", error=str(e), artist=artist, track=track)
             return None
 
 # ===================
