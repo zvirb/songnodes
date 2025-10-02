@@ -36,6 +36,7 @@ import re
 import logging
 import os
 import hashlib
+import psutil
 from typing import Dict, Optional, List
 from datetime import datetime
 from urllib.parse import urljoin, urlparse
@@ -53,6 +54,7 @@ try:
     )
     from ...item_loaders import TrackLoader, ArtistLoader
     from ...track_id_generator import generate_track_id, extract_remix_type
+    from ...utils.memory_monitor import MemoryMonitor
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -64,6 +66,7 @@ except ImportError:
     )
     from item_loaders import TrackLoader, ArtistLoader
     from track_id_generator import generate_track_id, extract_remix_type
+    from utils.memory_monitor import MemoryMonitor
 
 
 class BeatportSpider(scrapy.Spider):
@@ -157,6 +160,9 @@ class BeatportSpider(scrapy.Spider):
         self.source_ttl_seconds = int(os.getenv('SCRAPER_SOURCE_TTL_DAYS', '30')) * 86400
         self.run_ttl_seconds = int(os.getenv('SCRAPER_RUN_TTL_HOURS', '24')) * 3600
         self.last_run_key = None
+
+        # Initialize memory monitor for Playwright page leak detection
+        self.memory_monitor = MemoryMonitor(spider_name=self.name, logger=self.logger)
 
         # Load target tracks
         self.load_target_tracks()
@@ -309,6 +315,37 @@ class BeatportSpider(scrapy.Spider):
             'https://www.beatport.com/genre/progressive-house/15/tracks',
         ]
 
+    async def abort_non_essential_requests(self, route):
+        """
+        Block non-essential resources (images, CSS, fonts) to improve performance.
+        This reduces memory usage and speeds up page loads.
+        """
+        resource_type = route.request.resource_type
+        if resource_type in ["image", "stylesheet", "font", "media"]:
+            await route.abort()
+        else:
+            await route.continue_()
+
+    def errback_close_page(self, failure):
+        """
+        Error callback to ensure Playwright pages are closed even on failure.
+        This prevents memory leaks when requests fail.
+        """
+        page = failure.request.meta.get("playwright_page")
+        if page:
+            try:
+                # Close page asynchronously - Scrapy will handle the coroutine
+                import asyncio
+                asyncio.create_task(page.close())
+                self.memory_monitor.page_closed()
+                self.logger.debug(f"Closed page on error: {failure.request.url}")
+            except Exception as e:
+                self.logger.error(f"Error closing page in errback: {e}")
+                self.memory_monitor.page_errored()
+
+        # Call original error handler
+        return self.handle_error(failure)
+
     def start(self):
         """Generate initial requests with Playwright for JavaScript rendering."""
         from scrapy_playwright.page import PageMethod
@@ -337,10 +374,11 @@ class BeatportSpider(scrapy.Spider):
                 url=url,
                 headers=headers,
                 callback=callback,
-                errback=self.handle_error,
+                errback=self.errback_close_page,
                 meta={
                     'playwright': True,
                     'playwright_page_methods': [
+                        PageMethod('route', '**/*', self.abort_non_essential_requests),
                         PageMethod('wait_for_load_state', 'networkidle', timeout=15000),
                     ],
                     'download_timeout': 30,
@@ -352,6 +390,27 @@ class BeatportSpider(scrapy.Spider):
         """Parse search results and extract track links."""
         self.logger.info(f"Parsing search results: {response.url}")
 
+        # Track Playwright page for memory monitoring
+        page = response.meta.get("playwright_page")
+        if page:
+            self.memory_monitor.page_opened()
+
+        try:
+            self._parse_search_results_impl(response)
+        finally:
+            # Ensure Playwright page is always closed
+            if page:
+                try:
+                    import asyncio
+                    asyncio.create_task(page.close())
+                    self.memory_monitor.page_closed()
+                    self.logger.debug(f"Closed Playwright page: {response.url}")
+                except Exception as e:
+                    self.logger.error(f"Error closing Playwright page: {e}")
+                    self.memory_monitor.page_errored()
+
+    def _parse_search_results_impl(self, response):
+        """Implementation of parse_search_results (separated for try/finally pattern)"""
         # Extract track links from search results
         track_links = []
 
@@ -397,10 +456,11 @@ class BeatportSpider(scrapy.Spider):
             yield Request(
                 url=full_url,
                 callback=self.parse_track,
-                errback=self.handle_error,
+                errback=self.errback_close_page,
                 meta={
                     'playwright': True,
                     'playwright_page_methods': [
+                        PageMethod('route', '**/*', self.abort_non_essential_requests),
                         PageMethod('wait_for_load_state', 'networkidle', timeout=15000),
                     ],
                 }
@@ -421,6 +481,27 @@ class BeatportSpider(scrapy.Spider):
         """
         self.logger.info(f"Parsing track: {response.url}")
 
+        # Track Playwright page for memory monitoring
+        page = response.meta.get("playwright_page")
+        if page:
+            self.memory_monitor.page_opened()
+
+        try:
+            self._parse_track_impl(response)
+        finally:
+            # Ensure Playwright page is always closed
+            if page:
+                try:
+                    import asyncio
+                    asyncio.create_task(page.close())
+                    self.memory_monitor.page_closed()
+                    self.logger.debug(f"Closed Playwright page: {response.url}")
+                except Exception as e:
+                    self.logger.error(f"Error closing Playwright page: {e}")
+                    self.memory_monitor.page_errored()
+
+    def _parse_track_impl(self, response):
+        """Implementation of parse_track (separated for try/finally pattern)"""
         try:
             # Try JSON-LD structured data first (most reliable)
             json_ld_data = self.extract_json_ld(response)
@@ -853,6 +934,9 @@ class BeatportSpider(scrapy.Spider):
         completion_rate = (len(self.found_target_tracks) / len(self.target_tracks)) * 100 if self.target_tracks else 0
         self.logger.info(f"\nTarget track completion rate: {completion_rate:.1f}%")
         self.logger.info(f"{'='*60}")
+
+        # Log final memory statistics
+        self.memory_monitor.log_final_stats()
 
         # Record run timestamp
         if self.redis_client and self.last_run_key:

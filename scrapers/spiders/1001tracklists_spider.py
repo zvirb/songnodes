@@ -10,6 +10,7 @@ import re
 import os
 import hashlib
 import random
+import psutil
 from typing import Dict
 from urllib.parse import quote
 from scrapy.exceptions import DropItem, CloseSpider
@@ -37,8 +38,8 @@ try:
         PlaylistLoader
     )
     from .utils import parse_track_string
-    from ..nlp_spider_mixin import NLPFallbackSpiderMixin
     from ..track_id_generator import generate_track_id, generate_track_id_from_parsed
+    from ..utils.memory_monitor import MemoryMonitor
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -61,11 +62,11 @@ except ImportError:
         PlaylistLoader
     )
     from spiders.utils import parse_track_string
-    from nlp_spider_mixin import NLPFallbackSpiderMixin
     from track_id_generator import generate_track_id, generate_track_id_from_parsed
+    from utils.memory_monitor import MemoryMonitor
 
 
-class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
+class OneThousandOneTracklistsSpider(scrapy.Spider):
     name = '1001tracklists'
     allowed_domains = ['1001tracklists.com']
 
@@ -156,6 +157,9 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             self.logger.info(f"Login credentials found for user: {self.username}")
         else:
             self.logger.warning("No login credentials found. Scraping without authentication (may trigger CAPTCHA)")
+
+        # Initialize memory monitor for Playwright page leak detection
+        self.memory_monitor = MemoryMonitor(spider_name=self.name, logger=self.logger)
 
         # Load target tracks
         self.load_target_tracks()
@@ -435,6 +439,37 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 # These direct URLs bypass search page rate limiting
             ]
 
+    async def abort_non_essential_requests(self, route):
+        """
+        Block non-essential resources (images, CSS, fonts) to improve performance.
+        This reduces memory usage and speeds up page loads.
+        """
+        resource_type = route.request.resource_type
+        if resource_type in ["image", "stylesheet", "font", "media"]:
+            await route.abort()
+        else:
+            await route.continue_()
+
+    def errback_close_page(self, failure):
+        """
+        Error callback to ensure Playwright pages are closed even on failure.
+        This prevents memory leaks when requests fail.
+        """
+        page = failure.request.meta.get("playwright_page")
+        if page:
+            try:
+                # Close page asynchronously - Scrapy will handle the coroutine
+                import asyncio
+                asyncio.create_task(page.close())
+                self.memory_monitor.page_closed()
+                self.logger.debug(f"Closed page on error: {failure.request.url}")
+            except Exception as e:
+                self.logger.error(f"Error closing page in errback: {e}")
+                self.memory_monitor.page_errored()
+
+        # Call original error handler
+        return self.handle_error(failure)
+
     async def perform_login(self, page):
         """
         Perform login using Playwright page methods
@@ -644,12 +679,13 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                         url=url,
                         headers=headers,
                         callback=callback,
-                        errback=self.handle_error,
+                        errback=self.errback_close_page,
                         meta={
                             'download_timeout': 30,
                             'download_delay': delay,
                             'playwright': True,
                             'playwright_page_methods': [
+                                PageMethod('route', '**/*', self.abort_non_essential_requests),
                                 PageMethod('wait_for_selector', 'div.tlLink, a[href*="/tracklist/"], div.search-results, body', timeout=10000)
                             ]
                         }
@@ -660,15 +696,20 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                     search_query = self._extract_search_query_from_url(url)
                     callback = self.parse_search_results
 
+                    from scrapy_playwright.page import PageMethod
+
                     yield Request(
                         url='https://www.1001tracklists.com/',  # Navigate to homepage
                         headers=headers,
                         callback=callback,
-                        errback=self.handle_error,
+                        errback=self.errback_close_page,
                         meta={
                             'download_timeout': 30,
                             'download_delay': delay,
                             'playwright': True,
+                            'playwright_page_methods': [
+                                PageMethod('route', '**/*', self.abort_non_essential_requests),
+                            ],
                             'playwright_page_coroutines': [
                                 self._submit_search_form(search_query)
                             ],
@@ -708,12 +749,13 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 url=url,
                 headers=headers,
                 callback=callback,
-                errback=self.handle_error,
+                errback=self.errback_close_page,
                 meta={
                     'download_timeout': 30,
                     'download_delay': delay,
                     'playwright': True,
                     'playwright_page_methods': [
+                        PageMethod('route', '**/*', self.abort_non_essential_requests),
                         PageMethod('wait_for_selector', 'div.tlLink, a[href*="/tracklist/"], div.search-results, body', timeout=10000)
                     ]
                 }
@@ -723,6 +765,28 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         """Parse search results and extract tracklist links using intelligent adaptation"""
         self.logger.info(f"Parsing search results: {response.url}")
 
+        # Track Playwright page for memory monitoring
+        page = response.meta.get("playwright_page")
+        if page:
+            self.memory_monitor.page_opened()
+
+        try:
+            # Initialize LLM scraper engine
+            self._parse_search_results_impl(response)
+        finally:
+            # Ensure Playwright page is always closed
+            if page:
+                try:
+                    import asyncio
+                    asyncio.create_task(page.close())
+                    self.memory_monitor.page_closed()
+                    self.logger.debug(f"Closed Playwright page: {response.url}")
+                except Exception as e:
+                    self.logger.error(f"Error closing Playwright page: {e}")
+                    self.memory_monitor.page_errored()
+
+    def _parse_search_results_impl(self, response):
+        """Implementation of parse_search_results (separated for try/finally pattern)"""
         # Initialize LLM scraper engine
         try:
             import sys
@@ -803,6 +867,27 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         """Parse individual tracklist page with comprehensive data extraction"""
         self.logger.info(f"Parsing tracklist: {response.url}")
 
+        # Track Playwright page for memory monitoring
+        page = response.meta.get("playwright_page")
+        if page:
+            self.memory_monitor.page_opened()
+
+        try:
+            self._parse_tracklist_impl(response)
+        finally:
+            # Ensure Playwright page is always closed
+            if page:
+                try:
+                    import asyncio
+                    asyncio.create_task(page.close())
+                    self.memory_monitor.page_closed()
+                    self.logger.debug(f"Closed Playwright page: {response.url}")
+                except Exception as e:
+                    self.logger.error(f"Error closing Playwright page: {e}")
+                    self.memory_monitor.page_errored()
+
+    def _parse_tracklist_impl(self, response):
+        """Implementation of parse_tracklist (separated for try/finally pattern)"""
         try:
             # Check if this is an HTML page (not JSON/structured response)
             content_type = response.headers.get('Content-Type', b'').decode('utf-8').lower()
@@ -1604,3 +1689,9 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         completion_rate = (len(self.found_target_tracks) / len(self.target_tracks)) * 100 if self.target_tracks else 0
         self.logger.info(f"\nTarget track completion rate: {completion_rate:.1f}%")
         self.logger.info(f"{'='*60}")
+
+        # Log final memory statistics
+        self.memory_monitor.log_final_stats()
+
+        # Record run timestamp
+        self.record_run_timestamp()
