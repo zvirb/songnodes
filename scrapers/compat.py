@@ -254,13 +254,15 @@ class BackwardCompatibilityMiddleware:
         """Create middleware from crawler."""
         return cls(crawler.settings)
 
-    def process_spider_output(self, response, result, spider):
+    async def process_spider_output(self, response, result, spider):
         """
         Process spider output and apply compatibility fixes.
 
+        Supports both sync and async spider output generators.
+
         Args:
             response: Response object
-            result: Generator of items/requests from spider
+            result: Generator or async generator of items/requests from spider
             spider: Spider instance
 
         Yields:
@@ -268,11 +270,11 @@ class BackwardCompatibilityMiddleware:
         """
         if not self.enabled:
             # Pass through if middleware is disabled
-            for item in result:
+            async for item in result:
                 yield item
             return
 
-        for item_or_request in result:
+        async for item_or_request in result:
             # Only process items (not requests)
             if self._is_supported_item(item_or_request):
                 self.stats['items_processed'] += 1

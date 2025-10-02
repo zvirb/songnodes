@@ -712,3 +712,6 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             self.redis_client.setex(self.last_run_key, self.run_ttl_seconds, datetime.utcnow().isoformat())
         except Exception as exc:
             self.logger.debug("Redis setex failed for Setlist.fm last run tracking: %s", exc)
+
+# Alias for backwards compatibility with imports expecting lowercase 'm'
+SetlistfmSpider = SetlistFmSpider

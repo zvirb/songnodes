@@ -39,7 +39,7 @@ RANDOMIZE_DOWNLOAD_DELAY = 0.3  # 0.5 * to 1.5 * DOWNLOAD_DELAY (63-135 seconds)
 COOKIES_ENABLED = True
 
 # Disable Telnet Console (enabled by default)
-# TELNETCONSOLE_ENABLED = False
+TELNETCONSOLE_ENABLED = False
 
 # Override the default request headers to mimic browser behavior:
 DEFAULT_REQUEST_HEADERS = {
@@ -87,6 +87,8 @@ DOWNLOAD_HANDLERS = {
 ITEM_PIPELINES = {
    'nlp_fallback_pipeline.NLPFallbackPipeline': 200,  # Run before database pipeline
    'simple_twisted_pipeline.SimpleMusicDatabasePipeline': 300,
+   'pipelines.discogs_enrichment_pipeline.DiscogsEnrichmentPipeline': 400,  # Framework Section 2.2: MixesDB→Discogs bridge
+   'pipelines.reddit_validation_pipeline.RedditValidationPipeline': 450,  # Framework Section 2.4: Reddit→Spotify validation
 }
 
 # Enable and configure the AutoThrottle extension with conservative settings

@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import httpx
 import asyncio
-import redis.asyncio as aioredis
+import asyncpg
 import json
 import os
 import logging
@@ -33,10 +33,10 @@ class ScrapeRequest(BaseModel):
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
 
-# Rate limiting and quota management
-DAILY_QUOTA_LIMIT = 10000  # YouTube API daily quota
-REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
-REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
+# YouTube API quota costs (matching REST API router)
+SEARCH_COST = 100  # Each search query costs 100 units
+VIDEO_DETAILS_COST = 1  # Each video details request costs 1 unit
+COMMENTS_COST = 1  # Each comments request costs 1 unit
 
 # Database configuration
 DATABASE_CONFIG = {
@@ -44,39 +44,87 @@ DATABASE_CONFIG = {
     'port': int(os.getenv('POSTGRES_PORT', '5432')),
     'database': os.getenv('POSTGRES_DB', 'musicdb'),
     'user': os.getenv('POSTGRES_USER', 'musicdb_user'),
-    'password': os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass')
+    'password': os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024')
 }
 
 # NLP processor URL
 NLP_PROCESSOR_URL = os.getenv('NLP_PROCESSOR_URL', 'http://nlp-processor:8021')
 
-async def get_redis_client():
-    """Get Redis client for quota tracking"""
-    return await aioredis.from_url(f"redis://{REDIS_HOST}:{REDIS_PORT}", decode_responses=True)
+# PostgreSQL connection pool (shared with REST API quota system)
+db_pool = None
 
-async def check_quota() -> bool:
-    """Check if daily quota is available"""
-    redis = await get_redis_client()
-    try:
-        quota_key = f"youtube:quota:{date.today().isoformat()}"
-        current_usage = await redis.get(quota_key)
+async def get_db_pool():
+    """Get or create PostgreSQL connection pool"""
+    global db_pool
+    if db_pool is None:
+        db_pool = await asyncpg.create_pool(
+            host=DATABASE_CONFIG['host'],
+            port=DATABASE_CONFIG['port'],
+            database=DATABASE_CONFIG['database'],
+            user=DATABASE_CONFIG['user'],
+            password=DATABASE_CONFIG['password'],
+            min_size=2,
+            max_size=10
+        )
+    return db_pool
 
-        if current_usage is None:
-            return True
+async def check_and_increment_quota(cost: int) -> dict:
+    """
+    Check if quota available and increment usage (matches REST API implementation)
+    Raises HTTPException if quota exceeded
+    """
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        today = date.today()
 
-        return int(current_usage) < DAILY_QUOTA_LIMIT
-    finally:
-        await redis.close()
+        # Get today's quota
+        quota = await conn.fetchrow("""
+            SELECT units_used, max_units
+            FROM api_quota_tracking
+            WHERE service_name = 'youtube' AND quota_date = $1
+        """, today)
 
-async def increment_quota(cost: int):
-    """Increment quota usage"""
-    redis = await get_redis_client()
-    try:
-        quota_key = f"youtube:quota:{date.today().isoformat()}"
-        await redis.incrby(quota_key, cost)
-        await redis.expire(quota_key, 86400)  # Expire after 24 hours
-    finally:
-        await redis.close()
+        if not quota:
+            # Create today's quota entry (9900 units = 99 searches max)
+            await conn.execute("""
+                INSERT INTO api_quota_tracking (service_name, quota_date, units_used, max_units)
+                VALUES ('youtube', $1, 0, 9900)
+            """, today)
+            quota = {'units_used': 0, 'max_units': 9900}
+
+        units_used = quota['units_used']
+        max_units = quota['max_units']
+
+        # Check if request would exceed quota
+        if units_used + cost > max_units:
+            remaining = max_units - units_used
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "Daily YouTube API quota exceeded",
+                    "quota_limit": max_units,
+                    "quota_used": units_used,
+                    "quota_remaining": remaining,
+                    "request_cost": cost,
+                    "reset_time": "Midnight Pacific Time"
+                }
+            )
+
+        # Update quota usage
+        new_usage = await conn.fetchval("""
+            UPDATE api_quota_tracking
+            SET units_used = units_used + $1, updated_at = NOW()
+            WHERE service_name = 'youtube' AND quota_date = $2
+            RETURNING units_used
+        """, cost, today)
+
+        logger.info(f"🎥 [YOUTUBE QUOTA] Used {cost} units. Total: {new_usage}/{max_units}")
+
+        return {
+            'units_used': new_usage,
+            'max_units': max_units,
+            'remaining': max_units - new_usage
+        }
 
 def extract_video_id(url: str) -> Optional[str]:
     """Extract video ID from YouTube URL"""
@@ -98,9 +146,8 @@ async def get_video_details(video_id: str) -> Dict[str, Any]:
     if not YOUTUBE_API_KEY:
         raise HTTPException(status_code=500, detail="YouTube API key not configured")
 
-    # Check quota
-    if not await check_quota():
-        raise HTTPException(status_code=429, detail="Daily YouTube API quota exceeded")
+    # Check and increment quota (videos.list costs 1 unit)
+    await check_and_increment_quota(VIDEO_DETAILS_COST)
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         url = f"{YOUTUBE_API_BASE}/videos"
@@ -112,9 +159,6 @@ async def get_video_details(video_id: str) -> Dict[str, Any]:
 
         response = await client.get(url, params=params)
         response.raise_for_status()
-
-        # Increment quota (videos.list costs 1 unit)
-        await increment_quota(1)
 
         data = response.json()
 
@@ -128,10 +172,14 @@ async def get_video_comments(video_id: str, max_results: int = 100) -> List[Dict
     if not YOUTUBE_API_KEY:
         return []
 
-    # Check quota
-    if not await check_quota():
-        logger.warning("Quota exceeded, skipping comment extraction")
-        return []
+    try:
+        # Check and increment quota (commentThreads.list costs 1 unit)
+        await check_and_increment_quota(COMMENTS_COST)
+    except HTTPException as e:
+        if e.status_code == 429:
+            logger.warning("Quota exceeded, skipping comment extraction")
+            return []
+        raise
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         url = f"{YOUTUBE_API_BASE}/commentThreads"
@@ -146,9 +194,6 @@ async def get_video_comments(video_id: str, max_results: int = 100) -> List[Dict
         try:
             response = await client.get(url, params=params)
             response.raise_for_status()
-
-            # Increment quota (commentThreads.list costs 1 unit)
-            await increment_quota(1)
 
             data = response.json()
             comments = []
@@ -340,21 +385,38 @@ async def health_check():
 @app.get("/quota")
 async def get_quota_status():
     """Get current quota usage"""
-    redis = await get_redis_client()
-    try:
-        quota_key = f"youtube:quota:{date.today().isoformat()}"
-        current_usage = await redis.get(quota_key)
-        usage = int(current_usage) if current_usage else 0
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        today = date.today()
+
+        quota = await conn.fetchrow("""
+            SELECT units_used, max_units
+            FROM api_quota_tracking
+            WHERE service_name = 'youtube' AND quota_date = $1
+        """, today)
+
+        if not quota:
+            # Create today's entry
+            await conn.execute("""
+                INSERT INTO api_quota_tracking (service_name, quota_date, units_used, max_units)
+                VALUES ('youtube', $1, 0, 9900)
+            """, today)
+            units_used = 0
+            max_units = 9900
+        else:
+            units_used = quota['units_used']
+            max_units = quota['max_units']
+
+        remaining = max_units - units_used
+        percentage = (units_used / max_units * 100) if max_units > 0 else 0
 
         return {
-            "date": date.today().isoformat(),
-            "used": usage,
-            "limit": DAILY_QUOTA_LIMIT,
-            "remaining": DAILY_QUOTA_LIMIT - usage,
-            "percentage": round((usage / DAILY_QUOTA_LIMIT) * 100, 2)
+            "date": str(today),
+            "used": units_used,
+            "limit": max_units,
+            "remaining": remaining,
+            "percentage": round(percentage, 2)
         }
-    finally:
-        await redis.close()
 
 @app.post("/scrape")
 async def scrape_url(request: ScrapeRequest):

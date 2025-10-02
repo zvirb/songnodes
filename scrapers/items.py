@@ -48,6 +48,7 @@ class EnhancedArtistItem(scrapy.Item):
 class EnhancedTrackItem(scrapy.Item):
     """Enhanced track item with complete audio features and metadata"""
     # Basic track info
+    track_id = scrapy.Field()  # Deterministic ID for cross-source deduplication
     track_name = scrapy.Field()
     normalized_title = scrapy.Field()
     duration_ms = scrapy.Field()
@@ -78,6 +79,7 @@ class EnhancedTrackItem(scrapy.Item):
     genre = scrapy.Field()
     subgenre = scrapy.Field()
     record_label = scrapy.Field()
+    catalog_number = scrapy.Field()  # Label catalog number (for Discogs linking)
 
     # Track characteristics
     is_remix = scrapy.Field()
@@ -198,6 +200,7 @@ class EnhancedTrackArtistItem(scrapy.Item):
 
     # System fields
     created_at = scrapy.Field()
+    updated_at = scrapy.Field()
     data_source = scrapy.Field()
     scrape_timestamp = scrapy.Field()
 
@@ -233,6 +236,7 @@ class EnhancedSetlistTrackItem(scrapy.Item):
 
     # System fields
     created_at = scrapy.Field()
+    updated_at = scrapy.Field()
     data_source = scrapy.Field()
     scrape_timestamp = scrapy.Field()
 
@@ -317,6 +321,7 @@ class EnhancedTrackAdjacencyItem(scrapy.Item):
 
     # System fields
     created_at = scrapy.Field()
+    updated_at = scrapy.Field()
     data_source = scrapy.Field()
     scrape_timestamp = scrapy.Field()
 
@@ -389,3 +394,132 @@ class PlaylistItem(scrapy.Item):
     data_source = scrapy.Field()  # Which scraper collected this
     scrape_timestamp = scrapy.Field()  # When it was scraped
     created_at = scrapy.Field()  # Creation timestamp
+
+
+# Framework Section 5.2: Missing Schema Tables
+
+
+class SetlistSegmentItem(scrapy.Item):
+    """
+    Setlist segment for performance structure (Framework Section 5.2)
+
+    Models different phases of a performance:
+    - Main set
+    - Encore
+    - Warmup
+    - B2B guest set
+    """
+    # Relationship identifiers
+    setlist_id = scrapy.Field()  # Foreign key to setlists
+    setlist_name = scrapy.Field()  # Alternative identifier
+
+    # Segment metadata
+    segment_order = scrapy.Field()  # Position (1, 2, 3...)
+    segment_type = scrapy.Field()  # 'main', 'encore', 'warmup', 'b2b', 'closing'
+    segment_name = scrapy.Field()  # Optional name (e.g., "B2B with Chris Lake")
+
+    # Timing
+    start_time = scrapy.Field()  # Timestamp in performance
+    end_time = scrapy.Field()
+    duration_minutes = scrapy.Field()
+
+    # Artists (for B2B segments)
+    guest_artists = scrapy.Field()  # List of guest DJs/artists
+
+    # Metadata
+    description = scrapy.Field()
+    metadata = scrapy.Field()  # JSON metadata
+
+    # System fields
+    created_at = scrapy.Field()
+    data_source = scrapy.Field()
+    scrape_timestamp = scrapy.Field()
+
+
+class TrackAliasItem(scrapy.Item):
+    """
+    Track alias for string variations (Framework Section 5.2)
+
+    Stores raw scraped strings that resolve to canonical tracks.
+    Enables tracking of how different sources represent the same track.
+    """
+    # Canonical track reference
+    canonical_track_id = scrapy.Field()  # Links to canonical track
+    spotify_id = scrapy.Field()  # Alternative canonical ID
+
+    # Alias data
+    raw_string = scrapy.Field()  # Original scraped string
+    normalized_string = scrapy.Field()  # Normalized version
+    source = scrapy.Field()  # Which source this came from (1001tracklists, mixesdb, etc.)
+    source_url = scrapy.Field()  # URL where found
+
+    # Parsing metadata
+    parsed_artist = scrapy.Field()  # How artist was parsed from string
+    parsed_title = scrapy.Field()  # How title was parsed
+    parsing_confidence = scrapy.Field()  # Confidence score (0.0-1.0)
+
+    # Frequency tracking
+    occurrence_count = scrapy.Field()  # How many times seen
+    first_seen = scrapy.Field()  # First occurrence timestamp
+    last_seen = scrapy.Field()  # Most recent occurrence
+
+    # System fields
+    created_at = scrapy.Field()
+    updated_at = scrapy.Field()
+    data_source = scrapy.Field()
+
+
+class TrackMentionItem(scrapy.Item):
+    """
+    Social track mention (Framework Section 2.4 & 5.2)
+
+    Links canonical tracks to social media discussions (Reddit, Twitter, etc.)
+    Enables social analytics and trend tracking.
+    """
+    # Canonical track reference
+    track_id = scrapy.Field()  # Canonical track ID
+    spotify_id = scrapy.Field()  # Alternative ID
+    track_name = scrapy.Field()  # For reference
+    artist_name = scrapy.Field()  # For reference
+
+    # Social context
+    platform = scrapy.Field()  # 'reddit', 'twitter', etc.
+    post_id = scrapy.Field()  # Reddit post ID, tweet ID, etc.
+    comment_id = scrapy.Field()  # For comment-level mentions
+    thread_id = scrapy.Field()  # Reddit thread, Twitter conversation
+
+    # Content
+    mention_text = scrapy.Field()  # Raw text containing mention
+    context = scrapy.Field()  # Surrounding context (paragraph)
+
+    # URLs
+    post_url = scrapy.Field()  # Direct link to post/comment
+    thread_url = scrapy.Field()  # Link to full thread
+
+    # Social metrics
+    upvotes = scrapy.Field()  # Reddit upvotes, likes, etc.
+    comment_count = scrapy.Field()  # Number of replies
+    share_count = scrapy.Field()  # Shares/retweets
+
+    # Author info
+    author_username = scrapy.Field()
+    author_id = scrapy.Field()
+
+    # Temporal data
+    mention_timestamp = scrapy.Field()  # When posted
+    subreddit = scrapy.Field()  # For Reddit
+    hashtags = scrapy.Field()  # For Twitter
+
+    # Validation (Framework Stage 2-3)
+    validated = scrapy.Field()  # Boolean - validated against Spotify
+    validation_confidence = scrapy.Field()  # Confidence score
+    validation_timestamp = scrapy.Field()
+
+    # Sentiment analysis (optional future enhancement)
+    sentiment_score = scrapy.Field()  # -1.0 to 1.0
+    sentiment_label = scrapy.Field()  # 'positive', 'negative', 'neutral'
+
+    # System fields
+    created_at = scrapy.Field()
+    data_source = scrapy.Field()
+    scrape_timestamp = scrapy.Field()

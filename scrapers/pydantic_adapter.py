@@ -163,6 +163,19 @@ def validate_setlist_item(item, data_source: str = None) -> SetlistCreate:
     try:
         data = scrapy_item_to_dict(item)
 
+        # Map legacy PlaylistItem fields to Pydantic SetlistCreate fields
+        if 'name' in data and 'setlist_name' not in data:
+            data['setlist_name'] = data.pop('name')
+
+        # Map dj_artist_name from legacy fields (dj_name, artist_name, curator)
+        if 'dj_artist_name' not in data:
+            data['dj_artist_name'] = (
+                data.get('dj_name') or
+                data.get('artist_name') or
+                data.get('curator') or
+                'Unknown Artist'  # Fallback
+            )
+
         # Set data_source if not provided
         if data_source:
             data['data_source'] = data_source

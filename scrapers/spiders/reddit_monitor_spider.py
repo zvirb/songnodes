@@ -54,7 +54,13 @@ Rate Limiting: 60 requests/minute (Reddit API standard)
 """
 
 import scrapy
-import praw
+try:
+    import praw
+    PRAW_AVAILABLE = True
+except ImportError:
+    PRAW_AVAILABLE = False
+    print("⚠️ Warning: praw not installed - reddit_monitor_spider will not be functional")
+
 import redis
 import json
 import os
@@ -232,7 +238,7 @@ class RedditMonitorSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             self.logger.warning(f"Redis unavailable: {e}. Continuing without deduplication.")
             self.redis_client = None
 
-    def start_requests(self):
+    def start(self):
         """
         Override start_requests to use PRAW instead of traditional scraping.
         This is more efficient and respects Reddit's API design.

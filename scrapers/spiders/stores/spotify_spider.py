@@ -246,7 +246,7 @@ class SpotifySpider(scrapy.Spider):
         except Exception as e:
             self.logger.debug(f"Failed to cache token: {e}")
 
-    def start_requests(self):
+    def start(self):
         """Generate initial requests - authenticate first, then search playlists"""
         # First, get access token
         yield scrapy.Request(

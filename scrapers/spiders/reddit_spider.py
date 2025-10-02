@@ -4,7 +4,13 @@ Focuses on electronic music subreddits and track discussions
 """
 import scrapy
 import re
-import praw
+try:
+    import praw
+    PRAW_AVAILABLE = True
+except ImportError:
+    PRAW_AVAILABLE = False
+    print("⚠️ Warning: praw not installed - reddit_spider will not be functional")
+
 from datetime import datetime
 from urllib.parse import quote
 
