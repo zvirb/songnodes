@@ -280,8 +280,9 @@ class TargetTrackSearcher2025:
             limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
         )
 
-        # Circuit breakers for different services
+        # Circuit breakers for ALL data sources (2025 comprehensive configuration)
         self.circuit_breakers = {
+            # Web scraping sources
             '1001tracklists': AsyncCircuitBreaker(
                 "1001tracklists",
                 CircuitBreakerConfig(
@@ -306,6 +307,64 @@ class TargetTrackSearcher2025:
                     expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
                 )
             ),
+            # API-based scraper services
+            'youtube': AsyncCircuitBreaker(
+                "youtube",
+                CircuitBreakerConfig(
+                    failure_threshold=2,
+                    recovery_timeout=30.0,
+                    expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
+                )
+            ),
+            'soundcloud': AsyncCircuitBreaker(
+                "soundcloud",
+                CircuitBreakerConfig(
+                    failure_threshold=2,
+                    recovery_timeout=30.0,
+                    expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
+                )
+            ),
+            'mixcloud': AsyncCircuitBreaker(
+                "mixcloud",
+                CircuitBreakerConfig(
+                    failure_threshold=2,
+                    recovery_timeout=30.0,
+                    expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
+                )
+            ),
+            'reddit': AsyncCircuitBreaker(
+                "reddit",
+                CircuitBreakerConfig(
+                    failure_threshold=2,
+                    recovery_timeout=30.0,
+                    expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
+                )
+            ),
+            'internetarchive': AsyncCircuitBreaker(
+                "internetarchive",
+                CircuitBreakerConfig(
+                    failure_threshold=2,
+                    recovery_timeout=30.0,
+                    expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
+                )
+            ),
+            'livetracklist': AsyncCircuitBreaker(
+                "livetracklist",
+                CircuitBreakerConfig(
+                    failure_threshold=2,
+                    recovery_timeout=30.0,
+                    expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
+                )
+            ),
+            'residentadvisor': AsyncCircuitBreaker(
+                "residentadvisor",
+                CircuitBreakerConfig(
+                    failure_threshold=2,
+                    recovery_timeout=30.0,
+                    expected_exception=(httpx.RequestError, httpx.HTTPStatusError, asyncio.TimeoutError)
+                )
+            ),
+            # Internal
             'database': AsyncCircuitBreaker(
                 "database",
                 CircuitBreakerConfig(
