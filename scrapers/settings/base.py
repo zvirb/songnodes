@@ -202,6 +202,34 @@ HTTPCACHE_IGNORE_HTTP_CODES = [500, 502, 503, 504]
 HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # ============================================================================
+# CAPTCHA SOLVING CONFIGURATION (Spec Section IV.2)
+# ============================================================================
+
+# Enable CAPTCHA solving middleware
+CAPTCHA_ENABLED = os.getenv('CAPTCHA_ENABLED', 'false').lower() == 'true'
+
+# Primary CAPTCHA provider (2captcha, anticaptcha)
+CAPTCHA_BACKEND = os.getenv('CAPTCHA_BACKEND', '2captcha')
+
+# API keys for CAPTCHA services
+CAPTCHA_API_KEY = os.getenv('CAPTCHA_API_KEY', os.getenv('CAPTCHA_2CAPTCHA_API_KEY'))
+
+# Fallback provider configuration
+CAPTCHA_FALLBACK_PROVIDER = os.getenv('CAPTCHA_FALLBACK_PROVIDER', 'anticaptcha')
+CAPTCHA_FALLBACK_API_KEY = os.getenv('CAPTCHA_ANTICAPTCHA_API_KEY')
+
+# Budget control (USD) - prevents excessive spending
+CAPTCHA_BUDGET_LIMIT = float(os.getenv('CAPTCHA_BUDGET_LIMIT', '100.0'))
+CAPTCHA_MAX_DAILY_BUDGET = float(os.getenv('CAPTCHA_MAX_DAILY_BUDGET', '100.0'))
+
+# Retry and timeout settings
+CAPTCHA_MAX_RETRIES = int(os.getenv('CAPTCHA_MAX_RETRIES', '3'))
+CAPTCHA_TIMEOUT = int(os.getenv('CAPTCHA_TIMEOUT', '120'))  # seconds
+
+# Mock backend (development/testing only)
+CAPTCHA_ALLOW_MOCK = os.getenv('CAPTCHA_ALLOW_MOCK', 'false').lower() == 'true'
+
+# ============================================================================
 # OLLAMA INTEGRATION (Conceptual - for future AI-based parsing)
 # ============================================================================
 
