@@ -76,17 +76,20 @@ services:
     restart: always
     ports:
     - 6380:6379
-    command: redis-server --appendonly yes --maxmemory 2048mb --maxmemory-policy allkeys-lru
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --maxmemory 2048mb --maxmemory-policy allkeys-lru
       --maxclients 10000 --tcp-keepalive 60
     volumes:
     - redis_data:/data
     networks:
     - musicdb-backend
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     healthcheck:
       test:
       - CMD
-      - redis-cli
-      - ping
+      - sh
+      - -c
+      - redis-cli -a $$REDIS_PASSWORD ping | grep PONG
       interval: 30s
       timeout: 10s
       retries: 3
@@ -144,6 +147,7 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secure_pass_2024}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
@@ -589,14 +593,15 @@ services:
           memory: 512M
   data-transformer:
     build:
-      context: ./services/data-transformer
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: data-transformer/Dockerfile
     restart: always
     expose:
     - '8002'
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secure_pass_2024}
       POSTGRES_HOST: db-connection-pool
       POSTGRES_PORT: 6432
       POSTGRES_DB: musicdb
@@ -664,14 +669,15 @@ services:
           memory: 1.5G
   data-validator:
     build:
-      context: ./services/data-validator
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: data-validator/Dockerfile
     container_name: data-validator
     restart: always
     ports:
     - 8003:8003
     environment:
       REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secure_pass_2024}
       POSTGRES_HOST: db-connection-pool
       POSTGRES_PORT: 6432
       POSTGRES_DB: musicdb
@@ -891,6 +897,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_here}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       RATE_LIMIT_ENABLED: 'true'
       RATE_LIMIT_REQUESTS: 100
       RATE_LIMIT_WINDOW: 60
@@ -1003,8 +1010,8 @@ services:
           memory: 1G
   websocket-api:
     build:
-      context: ./services/websocket-api
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: websocket-api/Dockerfile
     container_name: websocket-api
     restart: always
     ports:
@@ -1012,6 +1019,7 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secure_pass_2024}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
@@ -1055,6 +1063,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: musicdb-redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secure_pass_2024}
       CACHE_TTL: 300
       MAX_CONNECTIONS: 1000
       CONNECTION_POOL_SIZE: 20
@@ -1095,6 +1104,7 @@ services:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secure_pass_2024}
       NODE_ENV: production
       LOG_LEVEL: info
       CACHE_TTL: 300
@@ -1375,6 +1385,7 @@ services:
     - --path.rootfs=/host/rootfs
     - --path.sysfs=/host/sys
     - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    - --no-collector.hwmon
     volumes:
     - /proc:/host/proc:ro
     - /sys:/host/sys:ro
@@ -1422,11 +1433,34 @@ services:
     - 9187:9187
     environment:
       DATA_SOURCE_NAME: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@postgres:5432/musicdb?sslmode=disable
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
+      # Disable config file to use default comprehensive metrics
+      PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
+      PG_EXPORTER_DISABLE_SETTINGS_METRICS: "false"
+    volumes:
+    - ./monitoring/postgres_exporter.yml:/postgres_exporter.yml:ro
+    command:
+    - --no-collector.stat_statements
+    - --no-collector.long_running_transactions
+    - --collector.statio_user_tables
+    - --collector.database_wraparound
     depends_on:
     - postgres
     networks:
     - musicdb-backend
     - musicdb-monitoring
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - --no-verbose
+      - --tries=1
+      - --spider
+      - http://127.0.0.1:9187/metrics
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:

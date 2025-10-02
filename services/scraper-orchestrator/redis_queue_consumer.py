@@ -38,11 +38,8 @@ class RedisQueueConsumer:
         self.redis_client = redis.Redis(
             host=os.getenv("REDIS_HOST", "redis"),
             port=int(os.getenv("REDIS_PORT", 6379)),
-            decode_responses=True,
-            socket_connect_timeout=5,
-            socket_timeout=5,
-            retry_on_timeout=True,
-            health_check_interval=30
+            password=os.getenv("REDIS_PASSWORD"),
+            decode_responses=True
         )
 
         # HTTP client for calling scraper APIs

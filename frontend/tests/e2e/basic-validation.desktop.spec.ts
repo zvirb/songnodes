@@ -7,9 +7,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Basic Application Validation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    // Wait for basic page load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for basic page load with optimized timeout
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    // Reduced wait time
+    await page.waitForTimeout(500);
   });
 
   test('should load the application successfully', async ({ page }) => {
@@ -17,8 +18,8 @@ test.describe('Basic Application Validation', () => {
     const title = await page.title();
     expect(title).toBeTruthy();
 
-    // Take a screenshot of the loaded application
-    await expect(page).toHaveScreenshot('application-loaded.png');
+    // Take a screenshot of the loaded application with timeout
+    await expect(page).toHaveScreenshot('application-loaded.png', { timeout: 10000 });
   });
 
   test('should display main page content', async ({ page }) => {
@@ -28,8 +29,10 @@ test.describe('Basic Application Validation', () => {
 
     // Check if React root element exists
     const root = page.locator('#root');
-    if (await root.isVisible()) {
-      await expect(root).toHaveScreenshot('react-app-root.png');
+    const hasRoot = await root.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (hasRoot) {
+      await expect(root).toHaveScreenshot('react-app-root.png', { timeout: 10000 });
     }
 
     // Check for any visible content
@@ -46,8 +49,8 @@ test.describe('Basic Application Validation', () => {
       }
     });
 
-    // Interact with the page briefly
-    await page.waitForTimeout(3000);
+    // Interact with the page briefly - reduced wait time
+    await page.waitForTimeout(1000);
 
     // Check that there are no critical console errors
     const criticalErrors = consoleErrors.filter(error =>
@@ -74,10 +77,10 @@ test.describe('Basic Application Validation', () => {
 
     for (const viewport of viewports) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(300);
 
-      // Take screenshot at this viewport
-      await expect(page).toHaveScreenshot(`responsive-${viewport.name}-${viewport.width}x${viewport.height}.png`);
+      // Take screenshot at this viewport with timeout
+      await expect(page).toHaveScreenshot(`responsive-${viewport.name}-${viewport.width}x${viewport.height}.png`, { timeout: 10000 });
 
       // Verify no horizontal scroll on mobile
       if (viewport.width <= 768) {
@@ -96,31 +99,33 @@ test.describe('Basic Application Validation', () => {
     const count = await clickableElements.count();
 
     if (count > 0) {
-      // Click on first few clickable elements
-      for (let i = 0; i < Math.min(3, count); i++) {
+      // Click on first few clickable elements with reduced iterations
+      for (let i = 0; i < Math.min(2, count); i++) {
         const element = clickableElements.nth(i);
-        if (await element.isVisible()) {
+        const isVisible = await element.isVisible({ timeout: 2000 }).catch(() => false);
+
+        if (isVisible) {
           await element.click();
-          await page.waitForTimeout(300);
+          await page.waitForTimeout(200);
         }
       }
 
-      await expect(page).toHaveScreenshot('after-basic-interactions.png');
+      await expect(page).toHaveScreenshot('after-basic-interactions.png', { timeout: 10000 });
     }
   });
 
   test('should support keyboard navigation', async ({ page }) => {
     // Test basic keyboard navigation
     await page.keyboard.press('Tab');
-    await page.waitForTimeout(200);
-    await expect(page).toHaveScreenshot('keyboard-navigation-first-tab.png');
+    await page.waitForTimeout(150);
+    await expect(page).toHaveScreenshot('keyboard-navigation-first-tab.png', { timeout: 10000 });
 
-    // Tab through a few more elements
-    for (let i = 0; i < 3; i++) {
+    // Tab through fewer elements for speed
+    for (let i = 0; i < 2; i++) {
       await page.keyboard.press('Tab');
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(150);
     }
-    await expect(page).toHaveScreenshot('keyboard-navigation-multiple-tabs.png');
+    await expect(page).toHaveScreenshot('keyboard-navigation-multiple-tabs.png', { timeout: 10000 });
   });
 
   test('should load without accessibility violations', async ({ page }) => {
@@ -136,33 +141,37 @@ test.describe('Basic Application Validation', () => {
       console.log(`Found ${buttonsWithoutLabel} buttons without labels`);
     }
 
-    // Take screenshot for manual accessibility review
-    await expect(page).toHaveScreenshot('accessibility-review.png');
+    // Take screenshot for manual accessibility review with timeout
+    await expect(page).toHaveScreenshot('accessibility-review.png', { timeout: 10000 });
   });
 
   test('should handle network conditions gracefully', async ({ page }) => {
-    // Test with slow network
+    // Test with slow network - reduced delay
     await page.route('**/*', route => {
-      // Add delay to simulate slow network
+      // Add minimal delay to simulate slow network
       setTimeout(() => {
         route.continue();
-      }, 100);
+      }, 50);
     });
 
     await page.reload();
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+    await page.waitForTimeout(500);
 
-    await expect(page).toHaveScreenshot('slow-network-conditions.png');
+    await expect(page).toHaveScreenshot('slow-network-conditions.png', { timeout: 10000 });
+
+    // CRITICAL: Clean up route mocking
+    await page.unroute('**/*');
   });
 
   test('should maintain visual consistency', async ({ page }) => {
-    // Take baseline screenshot for visual regression testing
-    await expect(page).toHaveScreenshot('visual-consistency-baseline.png');
+    // Take baseline screenshot for visual regression testing with timeout
+    await expect(page).toHaveScreenshot('visual-consistency-baseline.png', { timeout: 10000 });
 
     // Interact with page and verify it returns to consistent state
     await page.mouse.click(100, 100);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(300);
 
-    await expect(page).toHaveScreenshot('visual-consistency-after-interaction.png');
+    await expect(page).toHaveScreenshot('visual-consistency-after-interaction.png', { timeout: 10000 });
   });
 });

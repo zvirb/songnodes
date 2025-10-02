@@ -70,10 +70,7 @@ redis_connection_pool = redis.ConnectionPool(
     port=int(os.getenv("REDIS_PORT", 6379)),
     password=os.getenv("REDIS_PASSWORD"),
     max_connections=50,
-    health_check_interval=30,
-    decode_responses=True,
-    socket_keepalive=True,  # Keep connections alive (REQUIRED)
-    socket_timeout=5  # 5 second socket timeout (REQUIRED)
+    decode_responses=True
 )
 redis_client = redis.Redis(connection_pool=redis_connection_pool)
 

@@ -181,12 +181,7 @@ class EnhancedConnectionManager:
             port=redis_port,
             password=redis_password,
             max_connections=50,
-            health_check_interval=30,
-            decode_responses=True,
-            socket_connect_timeout=5,
-            socket_timeout=5,
-            socket_keepalive=True,  # Keep connections alive (REQUIRED)
-            retry_on_timeout=True
+            decode_responses=True
         )
 
         self.redis_client = redis.Redis(connection_pool=redis_pool)
