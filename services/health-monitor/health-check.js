@@ -88,8 +88,11 @@ class HealthCheckService {
       });
 
       // Initialize Redis connection
+      const redisPassword = process.env.REDIS_PASSWORD || 'redis_secure_pass_2024';
+      const redisUrl = process.env.REDIS_URL || `redis://:${redisPassword}@redis:6379`;
+
       this.redisClient = redis.createClient({
-        url: process.env.REDIS_URL || 'redis://redis:6379',
+        url: redisUrl,
         retry_strategy: (options) => {
           if (options.error && options.error.code === 'ECONNREFUSED') {
             return new Error('Redis server connection refused');
