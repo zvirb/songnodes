@@ -2,13 +2,18 @@ FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /app
 
+# Copy requirements first for better caching
+COPY rest-api/requirements.txt .
+
 # Install dependencies
-COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy shared common directory with secrets_manager
+COPY common /app/common
 
 # Copy application code (includes pydantic_models.py copied from scrapers directory)
 # Note: pydantic_models.py is a copy of scrapers/pydantic_models.py for shared validation
-COPY . .
+COPY rest-api/ .
 
 # Expose port
 EXPOSE 8082
