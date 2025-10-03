@@ -399,7 +399,7 @@ async def get_graph_nodes(
                             FROM tracks t
                             LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
                             LEFT JOIN artists a ON ta.artist_id = a.artist_id
-                            WHERE t.song_id::text = :center_id
+                            WHERE t.id::text = :center_id
 
                             UNION ALL
 
@@ -423,10 +423,10 @@ async def get_graph_nodes(
                             FROM tracks t
                             LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
                             LEFT JOIN artists a ON ta.artist_id = a.artist_id
-                            JOIN playlist_tracks pt1 ON pt1.song_id = t.song_id
+                            JOIN playlist_tracks pt1 ON pt1.song_id = t.id
                             JOIN playlist_tracks pt2 ON pt2.playlist_id = pt1.playlist_id
                             JOIN connected_nodes cn ON cn.id = pt2.song_id
-                            WHERE cn.depth < :max_depth AND t.song_id != cn.id
+                            WHERE cn.depth < :max_depth AND t.id != cn.id
                         )
                         SELECT DISTINCT
                             'song_' || id::text as id,
@@ -597,13 +597,13 @@ async def search_tracks(
                 # Simple search query with basic ILIKE matching (exclude tracks without artists)
                 search_query = text("""
                     SELECT
-                        t.song_id as id,
+                        t.id as id,
                         t.title,
                         a.name as artist,
                         1.0 as relevance_score,
                         COUNT(*) OVER() as total_count
                     FROM tracks t
-                    JOIN song_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
+                    JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
                     JOIN artists a ON ta.artist_id = a.artist_id
                     WHERE (t.title ILIKE :query
                            OR a.name ILIKE :query)
@@ -1128,7 +1128,7 @@ async def get_graph_data():
                             'musical_key', t.key
                         ) as metadata
                     FROM tracks t
-                    INNER JOIN track_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
+                    INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
                     INNER JOIN artists a ON ta.artist_id = a.artist_id
                     WHERE a.name IS NOT NULL
                       AND a.name != ''
