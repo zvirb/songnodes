@@ -931,22 +931,28 @@ services:
           memory: 256M
   rest-api:
     build:
-      context: ./services/rest-api
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: rest-api/Dockerfile
     restart: always
     ports:
     - 8082:8082
     environment:
+      # Database configuration for secrets_manager
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
+      POSTGRES_DB: musicdb
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       REDIS_HOST: redis
       REDIS_PORT: 6379
       API_VERSION: v1
       CONNECTION_POOL_SIZE: 50
       # Music Service OAuth Credentials
-      TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID:-}
-      TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET:-}
-      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
-      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID}
+      TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
       MAX_OVERFLOW: 20
       API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-songnodes_change_in_production_2024}
     depends_on:
@@ -1477,6 +1483,7 @@ services:
     - 9121:9121
     environment:
       REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secure_pass_2024}
     depends_on:
     - redis
     networks:
