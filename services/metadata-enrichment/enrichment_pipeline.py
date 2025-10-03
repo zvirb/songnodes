@@ -9,11 +9,15 @@ import json
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 import redis.asyncio as aioredis
 import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+
+from fuzzy_matcher import LabelAwareFuzzyMatcher
+from artist_populator import ArtistPopulator
 
 logger = structlog.get_logger(__name__)
 
@@ -45,6 +49,20 @@ class MetadataEnrichmentPipeline:
         self.lastfm_client = lastfm_client
         self.db_session_factory = db_session_factory
         self.redis_client = redis_client
+
+        # Initialize fuzzy matcher for Unknown artist detection
+        self.fuzzy_matcher = LabelAwareFuzzyMatcher(
+            spotify_client=spotify_client,
+            musicbrainz_client=musicbrainz_client,
+            discogs_client=discogs_client,
+            tidal_client=None  # Not currently using Tidal
+        )
+
+        # Initialize artist populator
+        self.artist_populator = ArtistPopulator(
+            db_session_factory=db_session_factory,
+            spotify_client=spotify_client
+        )
 
     async def enrich_track(self, task) -> Any:
         """Execute the waterfall enrichment pipeline for a track"""
@@ -101,6 +119,74 @@ class MetadataEnrichmentPipeline:
                     artist=task.artist_name,
                     title=task.track_title
                 )
+
+            # STEP 0.5: Fuzzy match for tracks with Unknown/missing artists
+            unknown_artist_indicators = ['unknown', 'various artists', 'various', 'unknown artist', None, '']
+            artist_is_unknown = (
+                not task.artist_name or
+                task.artist_name.lower().strip() in unknown_artist_indicators
+            )
+
+            if artist_is_unknown:
+                logger.info(
+                    "Step 0.5: Fuzzy matching for Unknown artist",
+                    title=task.track_title
+                )
+
+                try:
+                    # Run fuzzy matcher
+                    match = await self.fuzzy_matcher.match_track(
+                        scraped_title=task.track_title,
+                        scraped_artist=task.artist_name,
+                        duration_ms=task.duration_ms if hasattr(task, 'duration_ms') else None,
+                        release_year=task.release_year if hasattr(task, 'release_year') else None
+                    )
+
+                    if match:
+                        logger.info(
+                            "✓ Fuzzy match found",
+                            title=match.title,
+                            artists=match.artists,
+                            label=match.label,
+                            confidence=f"{match.confidence_score}%",
+                            service=match.service
+                        )
+
+                        # Populate artists from the matched track
+                        if match.service == 'spotify' and match.service_id:
+                            populated = await self.artist_populator.populate_artists_from_spotify(
+                                track_id=UUID(task.track_id),
+                                spotify_track_id=match.service_id
+                            )
+
+                            if populated:
+                                logger.info(
+                                    "✓ Artists populated from fuzzy match",
+                                    track_id=task.track_id,
+                                    artists=match.artists
+                                )
+                                # Update metadata with fuzzy match results
+                                metadata['fuzzy_matched'] = True
+                                metadata['fuzzy_match_confidence'] = match.confidence_score
+                                metadata['fuzzy_match_service'] = match.service
+
+                                # Use the spotify_id for enrichment
+                                if not task.existing_spotify_id:
+                                    task.existing_spotify_id = match.service_id
+                                    logger.info("Using fuzzy-matched spotify_id for enrichment")
+                    else:
+                        logger.info(
+                            "✗ No fuzzy match found above threshold",
+                            title=task.track_title
+                        )
+
+                except Exception as e:
+                    logger.error(
+                        "Fuzzy matching failed",
+                        error=str(e),
+                        exc_info=True
+                    )
+                    errors.append(f"Fuzzy matching error: {str(e)}")
 
             # STEP 1: Primary enrichment via Spotify (if spotify_id available)
             if task.existing_spotify_id:
