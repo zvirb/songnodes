@@ -60,7 +60,7 @@ class LabelAwareFuzzyMatcher:
         self.TITLE_SIMILARITY_WEIGHT = 30
         self.YEAR_MATCH_WEIGHT = 20
         self.DURATION_MATCH_WEIGHT = 10
-        self.CONFIDENCE_THRESHOLD = 80  # Increased to prevent false positives
+        self.CONFIDENCE_THRESHOLD = 70  # Label match (40) + exact title (30) = 70%
         self.MIN_LABEL_SIMILARITY = 0.5  # Require at least 50% label match
 
     def extract_label_hint(self, title: str) -> tuple[str, Optional[str]]:
@@ -300,18 +300,27 @@ class LabelAwareFuzzyMatcher:
         """
         Search Spotify API with label context.
 
-        Uses search_track_multiple() to get top 10 results with label information.
+        Uses search_track_multiple() to get top 10-20 results with label information.
         Returns all as MatchCandidates for confidence scoring and label filtering.
+
+        Search Strategy:
+        - If label_hint exists: search for "{title} {label_hint}" to improve ranking
+        - Otherwise: search for just title with artist (if available)
         """
         if not self.spotify:
             return []
 
         try:
-            # Get multiple results (top 10) with label information
+            # OPTIMIZATION: Include label hint in search query to improve Spotify ranking
+            # Example: "Control [Viper]" → search "Control Viper"
+            # This brings tracks on Viper label to the top of results
+            search_title = f"{title} {label_hint}" if label_hint else title
+
+            # Get multiple results (limit=20 is usually sufficient with optimized query)
             results = await self.spotify.search_track_multiple(
                 artist=artist,  # May be None/Unknown
-                title=title,
-                limit=10
+                title=search_title,
+                limit=20
             )
 
             if not results:
@@ -345,11 +354,12 @@ class LabelAwareFuzzyMatcher:
 
                 candidates.append(candidate)
 
-            logger.debug(
+            logger.info(
                 "Spotify search returned candidates",
                 count=len(candidates),
                 title=title,
-                labels=[c.label for c in candidates if c.label]
+                sample_labels=[c.label for c in candidates[:10] if c.label],
+                all_labels_count=len([c for c in candidates if c.label])
             )
 
             return candidates
