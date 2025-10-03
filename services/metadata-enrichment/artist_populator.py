@@ -16,7 +16,9 @@ import asyncio
 import structlog
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-import asyncpg
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 logger = structlog.get_logger(__name__)
 
@@ -32,8 +34,8 @@ class ArtistPopulator:
     - Track-artist linkage
     """
 
-    def __init__(self, db_pool: asyncpg.Pool, spotify_client):
-        self.db = db_pool
+    def __init__(self, db_session_factory: async_sessionmaker, spotify_client):
+        self.db_session_factory = db_session_factory
         self.spotify = spotify_client
 
     def normalize_artist_name(self, name: str) -> str:
@@ -89,101 +91,112 @@ class ArtistPopulator:
             )
             return None
 
-        try:
-            # 1. Try to find by spotify_id
-            if spotify_id:
-                result = await self.db.fetchrow(
-                    "SELECT artist_id FROM artists WHERE spotify_id = $1",
-                    spotify_id
+        async with self.db_session_factory() as session:
+            try:
+                # 1. Try to find by spotify_id
+                if spotify_id:
+                    result = await session.execute(
+                        text("SELECT artist_id FROM artists WHERE spotify_id = :spotify_id"),
+                        {"spotify_id": spotify_id}
+                    )
+                    row = result.first()
+                    if row:
+                        logger.debug(
+                            "Artist found by spotify_id",
+                            name=name,
+                            spotify_id=spotify_id,
+                            artist_id=str(row.artist_id)
+                        )
+                        return row.artist_id
+
+                # 2. Try to find by normalized_name
+                result = await session.execute(
+                    text("SELECT artist_id, spotify_id FROM artists WHERE normalized_name = :normalized_name"),
+                    {"normalized_name": normalized_name}
                 )
-                if result:
-                    logger.debug(
-                        "Artist found by spotify_id",
-                        name=name,
-                        spotify_id=spotify_id,
-                        artist_id=str(result['artist_id'])
-                    )
-                    return result['artist_id']
+                row = result.first()
+                if row:
+                    # Found by name - update spotify_id if we have a new one
+                    if spotify_id and not row.spotify_id:
+                        await session.execute(
+                            text("UPDATE artists SET spotify_id = :spotify_id WHERE artist_id = :artist_id"),
+                            {"spotify_id": spotify_id, "artist_id": row.artist_id}
+                        )
+                        await session.commit()
+                        logger.info(
+                            "Updated existing artist with spotify_id",
+                            name=name,
+                            artist_id=str(row.artist_id),
+                            spotify_id=spotify_id
+                        )
 
-            # 2. Try to find by normalized_name
-            result = await self.db.fetchrow(
-                "SELECT artist_id, spotify_id FROM artists WHERE normalized_name = $1",
-                normalized_name
-            )
-            if result:
-                # Found by name - update spotify_id if we have a new one
-                if spotify_id and not result['spotify_id']:
-                    await self.db.execute(
-                        "UPDATE artists SET spotify_id = $1 WHERE artist_id = $2",
-                        spotify_id,
-                        result['artist_id']
-                    )
-                    logger.info(
-                        "Updated existing artist with spotify_id",
-                        name=name,
-                        artist_id=str(result['artist_id']),
-                        spotify_id=spotify_id
-                    )
+                    return row.artist_id
 
-                return result['artist_id']
-
-            # 3. Create new artist
-            artist_id = await self.db.fetchval(
-                """
-                INSERT INTO artists (name, spotify_id, normalized_name, genres)
-                VALUES ($1, $2, $3, $4)
-                RETURNING artist_id
-                """,
-                name,
-                spotify_id,
-                normalized_name,
-                genres or []
-            )
-
-            logger.info(
-                "Created new artist",
-                name=name,
-                artist_id=str(artist_id),
-                spotify_id=spotify_id,
-                genres=genres or []
-            )
-
-            return artist_id
-
-        except asyncpg.UniqueViolationError as e:
-            # Race condition - another process created this artist
-            logger.warning(
-                "Artist created by another process - retrying lookup",
-                name=name,
-                error=str(e)
-            )
-            # Retry lookup
-            if spotify_id:
-                result = await self.db.fetchrow(
-                    "SELECT artist_id FROM artists WHERE spotify_id = $1",
-                    spotify_id
+                # 3. Create new artist
+                result = await session.execute(
+                    text("""
+                        INSERT INTO artists (name, spotify_id, normalized_name, genres)
+                        VALUES (:name, :spotify_id, :normalized_name, :genres)
+                        RETURNING artist_id
+                    """),
+                    {
+                        "name": name,
+                        "spotify_id": spotify_id,
+                        "normalized_name": normalized_name,
+                        "genres": genres or []
+                    }
                 )
-                if result:
-                    return result['artist_id']
+                row = result.first()
+                await session.commit()
 
-            result = await self.db.fetchrow(
-                "SELECT artist_id FROM artists WHERE normalized_name = $1",
-                normalized_name
-            )
-            if result:
-                return result['artist_id']
+                logger.info(
+                    "Created new artist",
+                    name=name,
+                    artist_id=str(row.artist_id),
+                    spotify_id=spotify_id,
+                    genres=genres or []
+                )
 
-            logger.error("Failed to create or find artist after retry", name=name)
-            return None
+                return row.artist_id
 
-        except Exception as e:
-            logger.error(
-                "Failed to get/create artist",
-                name=name,
-                error=str(e),
-                exc_info=True
-            )
-            return None
+            except IntegrityError as e:
+                # Race condition - another process created this artist
+                await session.rollback()
+                logger.warning(
+                    "Artist created by another process - retrying lookup",
+                    name=name,
+                    error=str(e)
+                )
+                # Retry lookup
+                if spotify_id:
+                    result = await session.execute(
+                        text("SELECT artist_id FROM artists WHERE spotify_id = :spotify_id"),
+                        {"spotify_id": spotify_id}
+                    )
+                    row = result.first()
+                    if row:
+                        return row.artist_id
+
+                result = await session.execute(
+                    text("SELECT artist_id FROM artists WHERE normalized_name = :normalized_name"),
+                    {"normalized_name": normalized_name}
+                )
+                row = result.first()
+                if row:
+                    return row.artist_id
+
+                logger.error("Failed to create or find artist after retry", name=name)
+                return None
+
+            except Exception as e:
+                await session.rollback()
+                logger.error(
+                    "Failed to get/create artist",
+                    name=name,
+                    error=str(e),
+                    exc_info=True
+                )
+                return None
 
     async def link_artist_to_track(
         self,
@@ -204,38 +217,43 @@ class ArtistPopulator:
         Returns:
             True if successful, False otherwise
         """
-        try:
-            await self.db.execute(
-                """
-                INSERT INTO track_artists (track_id, artist_id, role, position)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (track_id, artist_id, role) DO NOTHING
-                """,
-                track_id,
-                artist_id,
-                role,
-                position
-            )
+        async with self.db_session_factory() as session:
+            try:
+                await session.execute(
+                    text("""
+                        INSERT INTO track_artists (track_id, artist_id, role, position)
+                        VALUES (:track_id, :artist_id, :role, :position)
+                        ON CONFLICT (track_id, artist_id, role) DO NOTHING
+                    """),
+                    {
+                        "track_id": track_id,
+                        "artist_id": artist_id,
+                        "role": role,
+                        "position": position
+                    }
+                )
+                await session.commit()
 
-            logger.debug(
-                "Linked artist to track",
-                track_id=str(track_id),
-                artist_id=str(artist_id),
-                role=role,
-                position=position
-            )
+                logger.debug(
+                    "Linked artist to track",
+                    track_id=str(track_id),
+                    artist_id=str(artist_id),
+                    role=role,
+                    position=position
+                )
 
-            return True
+                return True
 
-        except Exception as e:
-            logger.error(
-                "Failed to link artist to track",
-                track_id=str(track_id),
-                artist_id=str(artist_id),
-                error=str(e),
-                exc_info=True
-            )
-            return False
+            except Exception as e:
+                await session.rollback()
+                logger.error(
+                    "Failed to link artist to track",
+                    track_id=str(track_id),
+                    artist_id=str(artist_id),
+                    error=str(e),
+                    exc_info=True
+                )
+                return False
 
     async def populate_artists_from_spotify(
         self,
