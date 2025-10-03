@@ -130,7 +130,8 @@ app = FastAPI(
 )
 
 # CORS middleware - configurable for security
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
+# Allow both localhost and 127.0.0.1 for local development
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006,http://127.0.0.1:3006').split(',')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,
@@ -163,6 +164,30 @@ try:
 except Exception as e:
     logger.warning(f"Failed to load YouTube API router: {str(e)}")
     logger.warning("YouTube API endpoints will not be available")
+
+try:
+    from routers import tidal_playlists
+    app.include_router(tidal_playlists.router)
+    logger.info("Tidal Playlists router registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to load Tidal Playlists router: {str(e)}")
+    logger.warning("Tidal playlist management endpoints will not be available")
+
+try:
+    from routers import spotify_playlists
+    app.include_router(spotify_playlists.router)
+    logger.info("Spotify Playlists router registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to load Spotify Playlists router: {str(e)}")
+    logger.warning("Spotify playlist management endpoints will not be available")
+
+try:
+    from routers import pathfinder
+    app.include_router(pathfinder.router)
+    logger.info("Pathfinder router registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to load Pathfinder router: {str(e)}")
+    logger.warning("Pathfinding endpoints will not be available")
 
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():

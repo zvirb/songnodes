@@ -2,81 +2,72 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
 
-interface TidalPlaylist {
+interface SpotifyPlaylist {
   id: string;
   name: string;
   description: string;
   track_count: number;
-  duration: number;
   public: boolean;
+  collaborative: boolean;
   url?: string;
-  created_at?: string;
+  snapshot_id?: string;
 }
 
-interface TidalTrackResponse {
-  id: number;
+interface SpotifyTrackResponse {
+  id: string;
   name: string;
   artist: string;
   album: string;
-  duration: number;
+  duration_ms: number;
   isrc?: string;
   explicit: boolean;
-  available: boolean;
+  uri: string;
   url?: string;
 }
 
 const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
-export const TidalPlaylistManager: React.FC = () => {
+export const SpotifyPlaylistManager: React.FC = () => {
   const { currentSetlist, musicCredentials } = useStore();
-  const [playlists, setPlaylists] = useState<TidalPlaylist[]>([]);
+  const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playlistName, setPlaylistName] = useState('');
   const [playlistDescription, setPlaylistDescription] = useState('');
-  const [trackAvailability, setTrackAvailability] = useState<Map<string, TidalTrackResponse | null>>(new Map());
-  const [oauthData, setOauthData] = useState<{auth_url?: string; user_code?: string; instructions?: string} | null>(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const [playlistPublic, setPlaylistPublic] = useState(true);
+  const [trackAvailability, setTrackAvailability] = useState<Map<string, SpotifyTrackResponse | null>>(new Map());
 
-  // Use existing Tidal authentication from Zustand (Settings Panel)
-  const isAuthenticated = !!(musicCredentials.tidal?.accessToken && musicCredentials.tidal?.isConnected);
+  // Use existing Spotify authentication from Zustand (Settings Panel)
+  const isAuthenticated = !!(musicCredentials.spotify?.accessToken);
 
-  // CRITICAL: Add ref to avoid closure issues with polling and setTimeout
-  const authStatusRef = useRef<{authenticated: boolean; message?: string; status?: string}>({authenticated: false});
+  // CRITICAL: Add ref to avoid closure issues
+  const authStatusRef = useRef<{authenticated: boolean}>({authenticated: false});
 
-  // Check Tidal authentication status from Zustand
+  // Check Spotify authentication status from Zustand
   useEffect(() => {
-    // Update auth status based on Zustand credentials
-    const authenticated = !!(musicCredentials.tidal?.accessToken && musicCredentials.tidal?.isConnected);
-    const status = {
-      authenticated,
-      message: authenticated
-        ? 'Connected via Settings Panel'
-        : 'Connect Tidal in Settings to use playlists'
-    };
-    authStatusRef.current = status;
+    const authenticated = !!musicCredentials.spotify?.accessToken;
+    authStatusRef.current = { authenticated };
 
     // Auto-load playlists when authenticated
     if (authenticated) {
       loadPlaylists();
     }
-  }, [musicCredentials.tidal]);
+  }, [musicCredentials.spotify]);
 
   // Redirect to Settings Panel for authentication
   const openSettings = () => {
-    // Emit event to open Settings Panel (parent component handles this)
     window.dispatchEvent(new CustomEvent('openSettings'));
   };
 
   // Load user playlists
   const loadPlaylists = async () => {
-    if (!isAuthenticated || !musicCredentials.tidal?.accessToken) return;
+    if (!isAuthenticated || !musicCredentials.spotify?.accessToken) return;
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${REST_API_BASE}/api/v1/tidal/playlists/list`, {
+      const response = await fetch(`${REST_API_BASE}/api/v1/spotify/playlists/list`, {
         headers: {
-          'Authorization': `Bearer ${musicCredentials.tidal.accessToken}`,
+          'Authorization': `Bearer ${musicCredentials.spotify.accessToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -99,22 +90,22 @@ export const TidalPlaylistManager: React.FC = () => {
   // Check track availability for current setlist
   useEffect(() => {
     const checkTrackAvailability = async () => {
-      if (!currentSetlist || !isAuthenticated || !musicCredentials.tidal?.accessToken) return;
+      if (!currentSetlist || !isAuthenticated || !musicCredentials.spotify?.accessToken) return;
 
-      const availabilityMap = new Map<string, TidalTrackResponse | null>();
+      const availabilityMap = new Map<string, SpotifyTrackResponse | null>();
 
       for (const setlistTrack of currentSetlist.tracks) {
         const track = setlistTrack.track;
         try {
-          const response = await fetch(`${REST_API_BASE}/api/v1/tidal/tracks/check-availability`, {
+          const response = await fetch(`${REST_API_BASE}/api/v1/spotify/tracks/check-availability`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${musicCredentials.tidal.accessToken}`,
+              'Authorization': `Bearer ${musicCredentials.spotify.accessToken}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               artist: track.artist,
-              title: track.title || track.name, // Support both title and name
+              title: track.title || track.name,
               isrc: track.isrc,
             }),
           });
@@ -137,11 +128,11 @@ export const TidalPlaylistManager: React.FC = () => {
     if (currentSetlist && isAuthenticated) {
       checkTrackAvailability();
     }
-  }, [currentSetlist, isAuthenticated, musicCredentials.tidal?.accessToken]);
+  }, [currentSetlist, isAuthenticated, musicCredentials.spotify?.accessToken]);
 
   // Create playlist from current setlist
   const createPlaylistFromSetlist = async () => {
-    if (!currentSetlist || !isAuthenticated || !musicCredentials.tidal?.accessToken) {
+    if (!currentSetlist || !isAuthenticated || !musicCredentials.spotify?.accessToken) {
       setError('No setlist selected or not authenticated');
       return;
     }
@@ -151,15 +142,17 @@ export const TidalPlaylistManager: React.FC = () => {
       const name = playlistName || `${currentSetlist.name} - SongNodes`;
 
       // Step 1: Create the playlist
-      const createResponse = await fetch(`${REST_API_BASE}/api/v1/tidal/playlists/create`, {
+      const createResponse = await fetch(`${REST_API_BASE}/api/v1/spotify/playlists/create`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${musicCredentials.tidal.accessToken}`,
+          'Authorization': `Bearer ${musicCredentials.spotify.accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: name,
           description: playlistDescription || `Created from ${currentSetlist.name}`,
+          public: playlistPublic,
+          collaborative: false,
         }),
       });
 
@@ -170,14 +163,14 @@ export const TidalPlaylistManager: React.FC = () => {
 
       const newPlaylist = await createResponse.json();
 
-      // Step 2: Search for tracks and collect Tidal IDs
-      const tidalTrackIds: string[] = [];
+      // Step 2: Search for tracks and collect Spotify IDs
+      const spotifyTrackIds: string[] = [];
       for (const setlistTrack of currentSetlist.tracks) {
         const track = setlistTrack.track;
-        const searchResponse = await fetch(`${REST_API_BASE}/api/v1/tidal/tracks/search`, {
+        const searchResponse = await fetch(`${REST_API_BASE}/api/v1/spotify/tracks/search`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${musicCredentials.tidal.accessToken}`,
+            'Authorization': `Bearer ${musicCredentials.spotify.accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -188,34 +181,36 @@ export const TidalPlaylistManager: React.FC = () => {
         });
 
         if (searchResponse.ok) {
-          const tidalTrack = await searchResponse.json();
-          if (tidalTrack?.id) {
-            tidalTrackIds.push(tidalTrack.id.toString());
+          const spotifyTrack = await searchResponse.json();
+          if (spotifyTrack?.id) {
+            spotifyTrackIds.push(spotifyTrack.id);
           }
         }
       }
 
-      // Step 3: Add tracks to playlist
-      if (tidalTrackIds.length > 0) {
-        await fetch(`${REST_API_BASE}/api/v1/tidal/playlists/${newPlaylist.id}/tracks`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${musicCredentials.tidal.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            track_ids: tidalTrackIds,
-            position: 0,
-            allow_duplicates: false,
-          }),
-        });
+      // Step 3: Add tracks to playlist (max 100 at a time)
+      if (spotifyTrackIds.length > 0) {
+        // Split into chunks of 100
+        for (let i = 0; i < spotifyTrackIds.length; i += 100) {
+          const chunk = spotifyTrackIds.slice(i, i + 100);
+          await fetch(`${REST_API_BASE}/api/v1/spotify/playlists/${newPlaylist.id}/tracks`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${musicCredentials.spotify.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              track_ids: chunk,
+            }),
+          });
+        }
       }
 
       setPlaylists(prev => [...prev, newPlaylist]);
       setPlaylistName('');
       setPlaylistDescription('');
       setError(null);
-      alert(`✅ Created playlist "${name}" with ${tidalTrackIds.length} tracks!`);
+      alert(`✅ Created playlist "${name}" with ${spotifyTrackIds.length} tracks!`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create playlist';
       setError(message);
@@ -227,22 +222,24 @@ export const TidalPlaylistManager: React.FC = () => {
 
   // Create empty playlist
   const createEmptyPlaylist = async () => {
-    if (!isAuthenticated || !playlistName.trim() || !musicCredentials.tidal?.accessToken) {
+    if (!isAuthenticated || !playlistName.trim() || !musicCredentials.spotify?.accessToken) {
       setError('Please enter a playlist name');
       return;
     }
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${REST_API_BASE}/api/v1/tidal/playlists/create`, {
+      const response = await fetch(`${REST_API_BASE}/api/v1/spotify/playlists/create`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${musicCredentials.tidal.accessToken}`,
+          'Authorization': `Bearer ${musicCredentials.spotify.accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: playlistName.trim(),
           description: playlistDescription.trim(),
+          public: playlistPublic,
+          collaborative: false,
         }),
       });
 
@@ -286,8 +283,6 @@ export const TidalPlaylistManager: React.FC = () => {
 
   const stats = getAvailabilityStats();
 
-  // No need to check for credentials since we use OAuth now
-
   return (
     <div className="space-y-6">
       {/* Authentication Status */}
@@ -295,22 +290,22 @@ export const TidalPlaylistManager: React.FC = () => {
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-yellow-500'}`} />
           <span className={`text-sm font-medium ${isAuthenticated ? 'text-green-800' : 'text-yellow-800'}`}>
-            {isAuthenticated ? 'Connected to Tidal' : 'Not connected to Tidal'}
+            {isAuthenticated ? 'Connected to Spotify' : 'Not connected to Spotify'}
           </span>
         </div>
         <p className={`mt-1 text-xs ${isAuthenticated ? 'text-green-600' : 'text-yellow-600'}`}>
           {isAuthenticated
             ? 'Authentication managed via Settings Panel'
-            : 'Connect Tidal in Settings to use playlist features'}
+            : 'Connect Spotify in Settings to use playlist features'}
         </p>
 
         {/* Link to Settings Panel */}
         {!isAuthenticated && (
           <button
             onClick={openSettings}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
           >
-            Open Settings to Connect Tidal
+            Open Settings to Connect Spotify
           </button>
         )}
       </div>
@@ -329,7 +324,7 @@ export const TidalPlaylistManager: React.FC = () => {
             <p>Total tracks: {stats.total}</p>
             {isAuthenticated && trackAvailability.size > 0 && (
               <>
-                <p className="text-green-600">Available on Tidal: {stats.available}</p>
+                <p className="text-green-600">Available on Spotify: {stats.available}</p>
                 <p className="text-red-600">Not available: {stats.unavailable}</p>
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                   <div
@@ -357,7 +352,7 @@ export const TidalPlaylistManager: React.FC = () => {
                 type="text"
                 value={playlistName}
                 onChange={(e) => setPlaylistName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 placeholder="My Awesome Playlist"
               />
             </div>
@@ -369,17 +364,30 @@ export const TidalPlaylistManager: React.FC = () => {
               <textarea
                 value={playlistDescription}
                 onChange={(e) => setPlaylistDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 rows={2}
                 placeholder="Created with SongNodes"
               />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="playlist-public"
+                checked={playlistPublic}
+                onChange={(e) => setPlaylistPublic(e.target.checked)}
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              <label htmlFor="playlist-public" className="text-sm text-gray-700">
+                Make playlist public
+              </label>
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={createEmptyPlaylist}
                 disabled={isLoading || !playlistName.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Creating...' : 'Create Empty Playlist'}
               </button>
@@ -388,7 +396,7 @@ export const TidalPlaylistManager: React.FC = () => {
                 <button
                   onClick={createPlaylistFromSetlist}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? 'Creating...' : 'Create from Setlist'}
                 </button>
@@ -402,7 +410,7 @@ export const TidalPlaylistManager: React.FC = () => {
       {isAuthenticated && (
         <div className="border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-gray-900">Your Tidal Playlists</h3>
+            <h3 className="font-medium text-gray-900">Your Spotify Playlists</h3>
             <button
               onClick={loadPlaylists}
               disabled={isLoading}
@@ -419,9 +427,17 @@ export const TidalPlaylistManager: React.FC = () => {
               {playlists.map((playlist) => (
                 <div key={playlist.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{playlist.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-gray-900">{playlist.name}</h4>
+                      {!playlist.public && (
+                        <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">Private</span>
+                      )}
+                      {playlist.collaborative && (
+                        <span className="px-2 py-0.5 text-xs bg-blue-200 text-blue-600 rounded">Collaborative</span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">
-                      {playlist.track_count} tracks • {Math.floor(playlist.duration / 60)}:{(playlist.duration % 60).toString().padStart(2, '0')}
+                      {playlist.track_count} tracks
                     </p>
                     {playlist.description && (
                       <p className="text-xs text-gray-500 mt-1">{playlist.description}</p>
@@ -432,9 +448,9 @@ export const TidalPlaylistManager: React.FC = () => {
                       href={playlist.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
                     >
-                      Open in Tidal
+                      Open in Spotify
                     </a>
                   )}
                 </div>
@@ -447,4 +463,4 @@ export const TidalPlaylistManager: React.FC = () => {
   );
 };
 
-export default TidalPlaylistManager;
+export default SpotifyPlaylistManager;

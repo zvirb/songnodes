@@ -2,15 +2,21 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { NowPlayingDeck } from './NowPlayingDeck';
 import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
+import MobileTrackExplorer from './MobileTrackExplorer';
 import { TrackDetailsModal } from './TrackDetailsModal';
+import { TrackContextMenu } from './TrackContextMenu';
 import { SettingsPanel } from './SettingsPanel';
 import { TidalPlaylistManager } from './TidalPlaylistManager';
+import { SpotifyPlaylistManager } from './SpotifyPlaylistManager';
+import { PathfinderPanel } from './PathfinderPanel';
 import { KeyMoodPanel } from './KeyMoodPanel';
 import TargetTracksManager from './TargetTracksManager';
+import GraphFilterPanel from './GraphFilterPanel';
 // Import removed - PipelineMonitoringDashboard has missing dependencies
 import { Track, DJMode } from '../types/dj';
 import useStore from '../store/useStore';
 import { useDataLoader } from '../hooks/useDataLoader';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { prometheusService, ScraperMetrics, PipelineMetrics, SystemMetrics } from '../services/prometheusService';
 
 /**
@@ -81,7 +87,8 @@ const TrackListItem = React.memo<{
   track: Track;
   isNowPlaying: boolean;
   onInspect: (track: Track) => void;
-}>(({ track, isNowPlaying, onInspect }) => {
+  onRightClick?: (track: Track, position: { x: number; y: number }) => void;
+}>(({ track, isNowPlaying, onInspect, onRightClick }) => {
   const handleClick = useCallback(() => {
     onInspect(track);
   }, [track, onInspect]);
@@ -91,11 +98,20 @@ const TrackListItem = React.memo<{
     onInspect(track);
   }, [track, onInspect]);
 
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onRightClick) {
+      onRightClick(track, { x: e.clientX, y: e.clientY });
+    }
+  }, [track, onRightClick]);
+
   return (
     <button
       key={track.id}
       onClick={handleClick}
       onTouchEnd={handleTouchEnd}
+      onContextMenu={handleContextMenu}
       style={{
         padding: '12px',
         backgroundColor: isNowPlaying ? 'rgba(126,211,33,0.2)' : 'transparent',
@@ -123,6 +139,9 @@ const TrackListItem = React.memo<{
 });
 
 export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'performer' }) => {
+  // Detect if we're on a mobile device
+  const isMobile = useIsMobile();
+
   const [mode, setMode] = useState<DJMode>(initialMode);
   const [nowPlaying, setNowPlaying] = useState<Track | null>(null);
 
@@ -133,8 +152,15 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   // Settings panel state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Graph filter panel state
+  const [showGraphFilters, setShowGraphFilters] = useState(false);
+
+  // Context menu state for pathfinder
+  const [contextMenuTrack, setContextMenuTrack] = useState<Track | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+
   // Right panel tab state (librarian mode)
-  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'keymood' | 'tidal' | 'targets'>('analysis');
+  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'keymood' | 'pathfinder' | 'tidal' | 'spotify' | 'targets'>('analysis');
 
   // Monitoring dashboard state
   const [showMonitoringDashboard, setShowMonitoringDashboard] = useState(false);
@@ -177,6 +203,16 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
 
   // Load data and credentials
   useDataLoader();
+
+  // Listen for openSettings event from child components (e.g., TidalPlaylistManager)
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      setIsSettingsOpen(true);
+    };
+
+    window.addEventListener('openSettings', handleOpenSettings);
+    return () => window.removeEventListener('openSettings', handleOpenSettings);
+  }, []);
 
   // Credentials are now loaded automatically via Zustand onRehydrateStorage
   // No need to manually load on mount
@@ -228,6 +264,17 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setInspectedTrack(null);
+  }, []);
+
+  const handleTrackRightClick = useCallback((track: Track, position: { x: number; y: number }) => {
+    console.log('🎵 Track right-clicked:', track.name, 'at', position);
+    setContextMenuTrack(track);
+    setContextMenuPosition(position);
+  }, []);
+
+  const handleContextMenuClose = useCallback(() => {
+    setContextMenuTrack(null);
+    setContextMenuPosition(null);
   }, []);
 
   // Animation control handlers
@@ -695,6 +742,33 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           </button>
 
           <button
+            onClick={() => setShowGraphFilters(true)}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              marginRight: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+            }}
+          >
+            🔧 Filters
+          </button>
+
+          <button
             onClick={() => setIsSettingsOpen(true)}
             style={{
               padding: '8px 12px',
@@ -821,7 +895,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 gridTemplateColumns: '1fr 480px',
                 gap: '16px',
                 overflow: 'hidden',
-                minHeight: 0
+                minHeight: 0,
+                height: '100%'
               }}
             >
               {/* Graph Visualization */}
@@ -830,39 +905,51 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 borderRadius: '12px',
                 border: '1px solid rgba(255,255,255,0.1)',
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
+                height: '100%',
+                width: '100%',
+                minHeight: 0
               }}>
-                <GraphVisualization onTrackSelect={handleTrackInspect} />
+                {isMobile ? (
+                  <MobileTrackExplorer />
+                ) : (
+                  <>
+                    <GraphVisualization
+                      onTrackSelect={handleTrackInspect}
+                      onTrackRightClick={handleTrackRightClick}
+                    />
 
-                {/* Graph Legend Overlay */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '20px',
-                  left: '20px',
-                  padding: '12px',
-                  backgroundColor: 'rgba(0,0,0,0.8)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#8E8E93' }}>
-                    Node Colors
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '12px', height: '12px', backgroundColor: '#7ED321', borderRadius: '50%' }} />
-                      <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Perfect Match</span>
+                    {/* Graph Legend Overlay */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      left: '20px',
+                      padding: '12px',
+                      backgroundColor: 'rgba(0,0,0,0.8)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      backdropFilter: 'blur(10px)'
+                    }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#8E8E93' }}>
+                        Node Colors
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#7ED321', borderRadius: '50%' }} />
+                          <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Perfect Match</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#F5A623', borderRadius: '50%' }} />
+                          <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Compatible</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#4A90E2', borderRadius: '50%' }} />
+                          <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Default</span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '12px', height: '12px', backgroundColor: '#F5A623', borderRadius: '50%' }} />
-                      <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Compatible</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '12px', height: '12px', backgroundColor: '#4A90E2', borderRadius: '50%' }} />
-                      <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Default</span>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
 
               {/* Intelligent Browser */}
@@ -911,6 +998,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                     track={track}
                     isNowPlaying={nowPlaying?.id === track.id}
                     onInspect={handleTrackInspect}
+                    onRightClick={handleTrackRightClick}
                   />
                 ))}
               </div>
@@ -921,9 +1009,19 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
               backgroundColor: 'rgba(0,0,0,0.6)',
               borderRadius: '12px',
               border: '1px solid rgba(255,255,255,0.1)',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              height: '100%',
+              width: '100%',
+              minHeight: 0
             }}>
-              <GraphVisualization onTrackSelect={handleTrackInspect} />
+              {isMobile ? (
+                <MobileTrackExplorer />
+              ) : (
+                <GraphVisualization
+                  onTrackSelect={handleTrackInspect}
+                  onTrackRightClick={handleTrackRightClick}
+                />
+              )}
             </div>
 
             {/* Right Panel with Tabs */}
@@ -973,6 +1071,22 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                   🎭 Key & Mood
                 </button>
                 <button
+                  onClick={() => setRightPanelTab('pathfinder')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: rightPanelTab === 'pathfinder' ? 'rgba(138,43,226,0.2)' : 'transparent',
+                    border: 'none',
+                    color: rightPanelTab === 'pathfinder' ? '#8A2BE2' : '#8E8E93',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🗺️ Pathfinder
+                </button>
+                <button
                   onClick={() => setRightPanelTab('tidal')}
                   style={{
                     flex: 1,
@@ -986,7 +1100,23 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                     transition: 'all 0.2s'
                   }}
                 >
-                  🎵 Tidal Playlists
+                  🎵 Tidal
+                </button>
+                <button
+                  onClick={() => setRightPanelTab('spotify')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: rightPanelTab === 'spotify' ? 'rgba(29,185,84,0.2)' : 'transparent',
+                    border: 'none',
+                    color: rightPanelTab === 'spotify' ? '#1DB954' : '#8E8E93',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🎧 Spotify
                 </button>
                 <button
                   onClick={() => setRightPanelTab('targets')}
@@ -1002,7 +1132,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                     transition: 'all 0.2s'
                   }}
                 >
-                  🎯 Target Tracks
+                  🎯 Targets
                 </button>
               </div>
 
@@ -1087,8 +1217,16 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                   />
                 )}
 
+                {rightPanelTab === 'pathfinder' && (
+                  <PathfinderPanel />
+                )}
+
                 {rightPanelTab === 'tidal' && (
                   <TidalPlaylistManager />
+                )}
+
+                {rightPanelTab === 'spotify' && (
+                  <SpotifyPlaylistManager />
                 )}
 
                 {rightPanelTab === 'targets' && (
@@ -1109,6 +1247,15 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         onSetAsCurrentlyPlaying={handleSetAsCurrentlyPlaying}
         currentlyPlayingTrack={nowPlaying}
       />
+
+      {/* Track Context Menu for Pathfinder */}
+      {contextMenuTrack && contextMenuPosition && (
+        <TrackContextMenu
+          track={contextMenuTrack}
+          position={contextMenuPosition}
+          onClose={handleContextMenuClose}
+        />
+      )}
 
       {/* Pipeline Monitoring Dashboard Modal */}
       {showMonitoringDashboard && (
@@ -1701,6 +1848,12 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
       <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Graph Filter Panel */}
+      <GraphFilterPanel
+        isOpen={showGraphFilters}
+        onClose={() => setShowGraphFilters(false)}
       />
     </div>
   );
