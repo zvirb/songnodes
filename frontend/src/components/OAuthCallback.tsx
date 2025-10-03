@@ -1,17 +1,36 @@
 /**
- * OAuth Callback Handler for Tidal Authentication
- * Handles the OAuth redirect from Tidal and exchanges authorization code for tokens
+ * OAuth Callback Handler for Music Service Authentication
+ * Handles OAuth redirects from Tidal, Spotify, and other services
+ * Dynamically routes to the correct backend endpoint based on URL path
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('Processing authentication...');
+  const [service, setService] = useState<'tidal' | 'spotify'>('tidal');
+
+  // Prevent duplicate requests in React Strict Mode (development)
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
+      // Guard against React Strict Mode double-rendering
+      if (hasProcessed.current) {
+        console.log('[OAuth] Skipping duplicate callback (React Strict Mode)');
+        return;
+      }
+      hasProcessed.current = true;
       try {
+        // Detect which service from URL path
+        const pathname = window.location.pathname;
+        const detectedService = pathname.includes('spotify') ? 'spotify' : 'tidal';
+        setService(detectedService);
+
+        const serviceName = detectedService.charAt(0).toUpperCase() + detectedService.slice(1);
+        console.log(`[OAuth] Detected service: ${serviceName}`);
+
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
@@ -28,6 +47,7 @@ const OAuthCallback: React.FC = () => {
           if (window.opener) {
             window.opener.postMessage({
               type: 'oauth-error',
+              service: detectedService,
               error: error,
               error_description: errorDescription
             }, window.location.origin);
@@ -51,14 +71,22 @@ const OAuthCallback: React.FC = () => {
           return;
         }
 
-        setMessage('Exchanging authorization code for access token...');
-        console.log('[OAuth] Exchanging code for tokens...', { state: state.substring(0, 8) + '...' });
+        setMessage(`Exchanging authorization code for ${serviceName} access token...`);
+        console.log(`[OAuth] Exchanging code for ${serviceName} tokens...`, { state: state.substring(0, 8) + '...' });
 
         // Exchange authorization code for tokens
         // SECURITY: Client secret handled entirely by backend, never exposed to frontend
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+
+        // Route to correct backend endpoint based on service
+        const callbackEndpoint = detectedService === 'spotify'
+          ? `${API_BASE_URL}/api/v1/music-auth/spotify/callback`
+          : `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/callback`;
+
+        console.log(`[OAuth] Calling ${serviceName} callback endpoint:`, callbackEndpoint);
+
         const response = await fetch(
-          `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
+          `${callbackEndpoint}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
           {
             method: 'GET'
           }
@@ -89,7 +117,7 @@ const OAuthCallback: React.FC = () => {
         }
 
         setStatus('success');
-        setMessage('Authentication successful! Closing window...');
+        setMessage(`${serviceName} authentication successful! Closing window...`);
 
         // Store tokens in localStorage (temporary - should be in secure state)
         const tokens = {
@@ -101,13 +129,16 @@ const OAuthCallback: React.FC = () => {
           scope: tokenData.scope
         };
 
-        localStorage.setItem('tidal_oauth_tokens', JSON.stringify(tokens));
-        console.log('[OAuth] Tokens stored in localStorage');
+        // Use service-specific storage key
+        const storageKey = `${detectedService}_oauth_tokens`;
+        localStorage.setItem(storageKey, JSON.stringify(tokens));
+        console.log(`[OAuth] ${serviceName} tokens stored in localStorage as '${storageKey}'`);
 
         // Notify parent window (if opened as popup)
         if (window.opener) {
           window.opener.postMessage({
             type: 'oauth-success',
+            service: detectedService,
             tokens: tokens
           }, window.location.origin);
 
@@ -173,7 +204,7 @@ const OAuthCallback: React.FC = () => {
 
         {/* Title */}
         <h1 style={{ margin: '0 0 16px 0', fontSize: '24px' }}>
-          {status === 'processing' && 'Authenticating with Tidal'}
+          {status === 'processing' && `Authenticating with ${service.charAt(0).toUpperCase() + service.slice(1)}`}
           {status === 'success' && 'Authentication Successful!'}
           {status === 'error' && 'Authentication Failed'}
         </h1>

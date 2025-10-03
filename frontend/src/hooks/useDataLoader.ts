@@ -74,14 +74,27 @@ export const useDataLoader = () => {
       try {
         // Load nodes
         const nodesResponse = await fetch('/api/graph/nodes?limit=500');
+
+        // Check if nodes request was successful
+        if (!nodesResponse.ok) {
+          throw new Error(`Nodes API returned ${nodesResponse.status}`);
+        }
+
         const nodesData = await nodesResponse.json();
 
         // Load edges
         const edgesResponse = await fetch('/api/graph/edges?limit=5000');
-        const edgesData = await edgesResponse.json();
 
-        // Transform nodes
-        const nodes: GraphNode[] = nodesData.nodes.map((node: any) => ({
+        // Check if edges request was successful (but don't throw - edges are optional)
+        let edgesData = { edges: [] };
+        if (edgesResponse.ok) {
+          edgesData = await edgesResponse.json();
+        } else {
+          console.warn(`⚠️  Edges API returned ${edgesResponse.status}, continuing with nodes only`);
+        }
+
+        // Transform nodes with safety check
+        const nodes: GraphNode[] = (nodesData.nodes || []).map((node: any) => ({
           id: node.id,
           title: node.title || node.metadata?.title || node.metadata?.label || 'Unknown',
           artist: node.artist || node.metadata?.artist || 'Unknown',
@@ -107,7 +120,9 @@ export const useDataLoader = () => {
         const nodeIds = new Set(nodes.map(n => n.id));
 
         // Transform edges - only include edges where both nodes are in our loaded set
-        const edges: GraphEdge[] = edgesData.edges
+        // Safety check: ensure edgesData.edges is an array
+        const rawEdges = Array.isArray(edgesData.edges) ? edgesData.edges : [];
+        const edges: GraphEdge[] = rawEdges
           .filter((edge: any) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
           .map((edge: any, index: number) => ({
             id: edge.id || `edge-${index}`,
@@ -118,7 +133,7 @@ export const useDataLoader = () => {
             type: edge.type || edge.edge_type || 'adjacency',
           }));
 
-        console.log(`Filtered ${edges.length} edges from ${edgesData.edges.length} total edges`);
+        console.log(`Filtered ${edges.length} edges from ${rawEdges.length} total edges`);
 
         setGraphData({ nodes, edges });
         applyFilters({});
