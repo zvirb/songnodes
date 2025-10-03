@@ -228,7 +228,7 @@ The framework includes a coordinated suite of downloader middlewares:
 - **Intelligent Proxy Rotation**: Manages a health-aware pool of proxies, superior to simple random selection.
 - **Dynamic Header Management**: Generates realistic, browser-like headers to avoid simple bot detection.
 - **Adaptive Rate Limiting**: Automatically adjusts request rates based on server responses (429, 503 status codes).
-- **Pluggable CAPTCHA Solving**: Integrates with third-party services to solve CAPTCHAs when evasion fails.
+- **FREE Ollama CAPTCHA Solving**: Self-hosted AI vision model for CAPTCHA solving (no external costs, privacy-preserving). Legacy paid services (2Captcha, Anti-Captcha) deprecated but available.
 - **Retry Logic**: Exponential backoff with jitter for failed requests.
 
 #### 5.1.3. Dynamic Content Handling
