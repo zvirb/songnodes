@@ -10,6 +10,7 @@ const TrackSearch = React.lazy(() => import('./components/TrackSearch'));
 const PathBuilder = React.lazy(() => import('./components/PathBuilder').then(module => ({ default: module.PathBuilder })));
 const SetlistBuilder = React.lazy(() => import('./components/SetlistBuilder'));
 const FilterPanel = React.lazy(() => import('./components/FilterPanel'));
+const GraphFilterPanel = React.lazy(() => import('./components/GraphFilterPanel'));
 const StatsPanel = React.lazy(() => import('./components/StatsPanel'));
 const DJInterface = React.lazy(() => import('./components/DJInterface').then(module => ({ default: module.DJInterface })));
 const TargetTracksManager = React.lazy(() => import('./components/TargetTracksManager'));
@@ -92,6 +93,7 @@ const App: React.FC = () => {
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(false);
   const [djModeEnabled, setDjModeEnabled] = useState(true); // Default to DJ mode for testing
   const [isAnimationPaused, setIsAnimationPaused] = useState(false);
+  const [showGraphFilters, setShowGraphFilters] = useState(false);
 
   // Load initial graph data
   const loadGraphData = useCallback(async () => {
@@ -262,14 +264,15 @@ const App: React.FC = () => {
         if (panelState.leftPanel === 'path') panels.toggleLeftPanel(null);
         if (panelState.leftPanel === 'setlist') panels.toggleLeftPanel(null);
         break;
+      case 'filter':
+        // Open the graph filter modal
+        setShowGraphFilters(true);
+        break;
       case 'path':
         panels.toggleLeftPanel('path');
         break;
       case 'setlist':
         panels.toggleLeftPanel('setlist');
-        break;
-      case 'filter':
-        panels.toggleLeftPanel('filters');
         break;
     }
   };
@@ -616,6 +619,14 @@ const App: React.FC = () => {
       <div style={{ display: 'none' }} aria-hidden="true">
         Keyboard shortcuts: 1-4 (tools), Escape (clear), Ctrl+R (refresh), Ctrl+F (search), Ctrl+P (path)
       </div>
+
+      {/* Graph Filter Modal */}
+      <React.Suspense fallback={null}>
+        <GraphFilterPanel
+          isOpen={showGraphFilters}
+          onClose={() => setShowGraphFilters(false)}
+        />
+      </React.Suspense>
     </div>
   );
 };

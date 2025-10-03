@@ -381,8 +381,8 @@ async def get_graph_nodes(
                         WITH RECURSIVE connected_nodes AS (
                             -- Start with the center node
                             SELECT
-                                t.song_id as id,
-                                t.song_id as track_id,
+                                t.id as id,
+                                t.id as track_id,
                                 0 as x_position,
                                 0 as y_position,
                                 json_build_object(
@@ -397,15 +397,16 @@ async def get_graph_nodes(
                                 ) as metadata,
                                 0 as depth
                             FROM tracks t
-                            LEFT JOIN artists a ON t.primary_artist_id = a.artist_id
+                            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                            LEFT JOIN artists a ON ta.artist_id = a.artist_id
                             WHERE t.song_id::text = :center_id
 
                             UNION ALL
 
                             -- Recursively get connected nodes via playlist_tracks
                             SELECT DISTINCT
-                                t.song_id as id,
-                                t.song_id as track_id,
+                                t.id as id,
+                                t.id as track_id,
                                 0 as x_position,
                                 0 as y_position,
                                 json_build_object(
@@ -420,7 +421,8 @@ async def get_graph_nodes(
                                 ) as metadata,
                                 cn.depth + 1
                             FROM tracks t
-                            LEFT JOIN artists a ON t.primary_artist_id = a.artist_id
+                            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                            LEFT JOIN artists a ON ta.artist_id = a.artist_id
                             JOIN playlist_tracks pt1 ON pt1.song_id = t.song_id
                             JOIN playlist_tracks pt2 ON pt2.playlist_id = pt1.playlist_id
                             JOIN connected_nodes cn ON cn.id = pt2.song_id
@@ -450,26 +452,52 @@ async def get_graph_nodes(
                     songs_count = count_result.scalar()
 
                     if songs_count > 0:
-                        # Use tracks table with graph_nodes view structure
+                        # EDGE-FIRST APPROACH: Only include nodes that participate in fully-valid edges
+                        # This ensures we show connected graphs where BOTH endpoints have artists
                         query = text("""
+                            WITH valid_edges AS (
+                                -- Get edges where BOTH endpoints have valid artists
+                                SELECT DISTINCT
+                                    sa.song_id_1,
+                                    sa.song_id_2,
+                                    sa.occurrence_count
+                                FROM song_adjacency sa
+                                INNER JOIN graph_nodes n1 ON 'song_' || sa.song_id_1::text = n1.node_id
+                                INNER JOIN graph_nodes n2 ON 'song_' || sa.song_id_2::text = n2.node_id
+                                WHERE n1.node_type = 'song'
+                                  AND n1.artist_name IS NOT NULL
+                                  AND n1.artist_name != ''
+                                  AND n1.artist_name != 'Unknown'
+                                  AND n2.node_type = 'song'
+                                  AND n2.artist_name IS NOT NULL
+                                  AND n2.artist_name != ''
+                                  AND n2.artist_name != 'Unknown'
+                                  AND sa.occurrence_count >= 1
+                            ),
+                            valid_node_ids AS (
+                                -- Get all unique node IDs that appear in valid edges
+                                SELECT DISTINCT song_id_1 as song_id FROM valid_edges
+                                UNION
+                                SELECT DISTINCT song_id_2 as song_id FROM valid_edges
+                            )
                             SELECT
-                                node_id as id,
-                                node_id as track_id,
+                                gn.node_id as id,
+                                gn.node_id as track_id,
                                 0 as x_position,
                                 0 as y_position,
                                 json_build_object(
-                                    'title', label,
-                                    'artist', artist_name,
-                                    'node_type', node_type,
-                                    'category', category,
-                                    'genre', category,
-                                    'release_year', release_year,
-                                    'appearance_count', appearance_count
+                                    'title', gn.label,
+                                    'artist', gn.artist_name,
+                                    'node_type', gn.node_type,
+                                    'category', gn.category,
+                                    'genre', gn.category,
+                                    'release_year', gn.release_year,
+                                    'appearance_count', gn.appearance_count
                                 ) as metadata,
                                 COUNT(*) OVER() as total_count
-                            FROM graph_nodes
-                            WHERE node_type = 'song'
-                            ORDER BY appearance_count DESC
+                            FROM graph_nodes gn
+                            INNER JOIN valid_node_ids vni ON 'song_' || vni.song_id::text = gn.node_id
+                            ORDER BY gn.appearance_count DESC
                             LIMIT :limit OFFSET :offset
                         """)
                         result = await session.execute(query, {
@@ -700,11 +728,10 @@ async def get_graph_edges(
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM song_adjacency sa
-                        JOIN tracks t1 ON sa.song_id_1 = t1.song_id
-                        JOIN tracks t2 ON sa.song_id_2 = t2.song_id
+                        JOIN tracks t1 ON sa.song_id_1 = t1.id
+                        JOIN tracks t2 ON sa.song_id_2 = t2.id
                         WHERE (sa.song_id_1 = ANY(:song_ids) OR sa.song_id_2 = ANY(:song_ids))
                           AND sa.occurrence_count >= 1  -- Show all adjacency relationships
-                          AND t1.primary_artist_id != t2.primary_artist_id  -- Exclude same-artist consecutive tracks
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """).bindparams(
@@ -728,10 +755,9 @@ async def get_graph_edges(
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM song_adjacency sa
-                        JOIN tracks t1 ON sa.song_id_1 = t1.song_id
-                        JOIN tracks t2 ON sa.song_id_2 = t2.song_id
+                        JOIN tracks t1 ON sa.song_id_1 = t1.id
+                        JOIN tracks t2 ON sa.song_id_2 = t2.id
                         WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
-                          AND t1.primary_artist_id != t2.primary_artist_id  -- Exclude same-artist consecutive tracks
                         ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
@@ -1017,8 +1043,8 @@ async def get_graph_data():
                     WITH edge_nodes AS (
                         -- First priority: nodes that have edges AND have artists
                         SELECT
-                            'song_' || t.song_id::text as id,
-                            t.song_id::text as track_id,
+                            'song_' || t.id::text as id,
+                            t.id::text as track_id,
                             0 as x_position,
                             0 as y_position,
                             json_build_object(
@@ -1033,14 +1059,18 @@ async def get_graph_data():
                             ) as metadata,
                             1 as priority
                         FROM tracks t
-                        LEFT JOIN artists a ON t.primary_artist_id = a.artist_id
-                        WHERE ('song_' || t.song_id::text) = ANY(:node_ids)
+                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                        INNER JOIN artists a ON ta.artist_id = a.artist_id
+                        WHERE ('song_' || t.id::text) = ANY(:node_ids)
+                          AND a.name IS NOT NULL
+                          AND a.name != ''
+                          AND a.name != 'Unknown'
                     ),
                     other_nodes AS (
                         -- Second priority: other nodes to fill up to limit (with artists only)
                         SELECT
-                            'song_' || t.song_id::text as id,
-                            t.song_id::text as track_id,
+                            'song_' || t.id::text as id,
+                            t.id::text as track_id,
                             0 as x_position,
                             0 as y_position,
                             json_build_object(
@@ -1055,8 +1085,12 @@ async def get_graph_data():
                             ) as metadata,
                             2 as priority
                         FROM tracks t
-                        LEFT JOIN artists a ON t.primary_artist_id = a.artist_id
-                        WHERE ('song_' || t.song_id::text) NOT IN (SELECT unnest(:node_ids))
+                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                        INNER JOIN artists a ON ta.artist_id = a.artist_id
+                        WHERE ('song_' || t.id::text) NOT IN (SELECT unnest(:node_ids))
+                          AND a.name IS NOT NULL
+                          AND a.name != ''
+                          AND a.name != 'Unknown'
                         ORDER BY t.created_at DESC
                         LIMIT :remaining_limit
                     )
@@ -1094,7 +1128,11 @@ async def get_graph_data():
                             'musical_key', t.key
                         ) as metadata
                     FROM tracks t
-                    LEFT JOIN artists a ON t.primary_artist_id = a.artist_id
+                    INNER JOIN track_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
+                    INNER JOIN artists a ON ta.artist_id = a.artist_id
+                    WHERE a.name IS NOT NULL
+                      AND a.name != ''
+                      AND a.name != 'Unknown'
                     ORDER BY t.created_at DESC
                     LIMIT 1000
                 """)
@@ -1196,10 +1234,9 @@ async def test_adjacency():
             query = text("""
                 SELECT COUNT(*) as count
                 FROM song_adjacency sa
-                JOIN tracks t1 ON sa.song_id_1 = t1.song_id
-                JOIN tracks t2 ON sa.song_id_2 = t2.song_id
+                JOIN tracks t1 ON sa.song_id_1 = t1.id
+                JOIN tracks t2 ON sa.song_id_2 = t2.id
                 WHERE sa.occurrence_count >= 1
-                  AND t1.primary_artist_id != t2.primary_artist_id
             """)
             result = await session.execute(query)
             count = result.scalar()
@@ -1546,22 +1583,26 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
             # Get the target node info (only if it has an artist)
             node_query = text("""
                 SELECT
-                    'song_' || t.song_id::text as id,
-                    'song_' || t.song_id::text as track_id,
+                    'song_' || t.id::text as id,
+                    'song_' || t.id::text as track_id,
                     0 as x_position,
                     0 as y_position,
                     json_build_object(
                         'title', t.title,
-                        'artist', a.name,
+                        'artist', COALESCE(
+                            (SELECT a.name FROM track_artists ta
+                             JOIN artists a ON ta.artist_id = a.artist_id
+                             WHERE ta.track_id = t.id AND ta.role = 'primary' LIMIT 1),
+                            'Unknown'
+                        ),
                         'node_type', 'song',
                         'category', t.genre,
                         'genre', t.genre,
-                        'release_year', t.release_year,
+                        'release_year', t.release_date,
                         'appearance_count', 0
                     ) as metadata
                 FROM tracks t
-                LEFT JOIN artists a ON t.primary_artist_id = a.artist_id
-                WHERE 'song_' || t.song_id::text = :node_id
+                WHERE 'song_' || t.id::text = :node_id
             """)
 
             node_result = await session.execute(node_query, {"node_id": node_id})
@@ -1599,8 +1640,14 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                         ELSE t1.title
                     END as connected_title,
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN COALESCE(a2.name, 'Unknown')
-                        ELSE COALESCE(a1.name, 'Unknown')
+                        WHEN sa.song_id_1::text = :clean_node_id THEN
+                            COALESCE((SELECT a.name FROM track_artists ta
+                                     JOIN artists a ON ta.artist_id = a.artist_id
+                                     WHERE ta.track_id = t2.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
+                        ELSE
+                            COALESCE((SELECT a.name FROM track_artists ta
+                                     JOIN artists a ON ta.artist_id = a.artist_id
+                                     WHERE ta.track_id = t1.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
                     END as connected_artist,
                     CASE
                         WHEN sa.song_id_1::text = :clean_node_id THEN t2.genre
@@ -1611,10 +1658,8 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                         ELSE sa.song_id_1::text
                     END as connected_id
                 FROM song_adjacency sa
-                LEFT JOIN tracks t1 ON sa.song_id_1 = t1.song_id
-                LEFT JOIN tracks t2 ON sa.song_id_2 = t2.song_id
-                LEFT JOIN artists a1 ON t1.primary_artist_id = a1.artist_id
-                LEFT JOIN artists a2 ON t2.primary_artist_id = a2.artist_id
+                LEFT JOIN tracks t1 ON sa.song_id_1 = t1.id
+                LEFT JOIN tracks t2 ON sa.song_id_2 = t2.id
                 WHERE (sa.song_id_1::text = :clean_node_id OR sa.song_id_2::text = :clean_node_id)
                   AND sa.occurrence_count >= 1
                 ORDER BY sa.occurrence_count DESC
@@ -1683,12 +1728,12 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
 async def get_combined_graph_data():
     """Get combined nodes and edges data for frontend visualization."""
     try:
-        # Get nodes data
+        # Get nodes data (only tracks with artists)
         async with async_session() as session:
             nodes_query = text("""
                 SELECT
-                    'song_' || t.song_id::text as id,
-                    'song_' || t.song_id::text as track_id,
+                    'song_' || t.id::text as id,
+                    'song_' || t.id::text as track_id,
                     0 as x_position,
                     0 as y_position,
                     json_build_object(
@@ -1702,7 +1747,11 @@ async def get_combined_graph_data():
                     ) as metadata,
                     CURRENT_TIMESTAMP as created_at
                 FROM tracks t
-                LEFT JOIN artists a ON t.primary_artist_id = a.artist_id
+                INNER JOIN track_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
+                INNER JOIN artists a ON ta.artist_id = a.artist_id
+                WHERE a.name IS NOT NULL
+                  AND a.name != ''
+                  AND a.name != 'Unknown'
                 ORDER BY t.created_at DESC
                 LIMIT 1000
             """)

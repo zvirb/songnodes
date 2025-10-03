@@ -46,13 +46,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         return;
       }
 
-      const { type, tokens, error } = event.data;
+      const { type, tokens, error, service } = event.data;
 
       if (type === 'oauth-success' && tokens) {
-        console.log('✅ OAuth success - storing tokens in Zustand');
+        const serviceName = service || 'tidal'; // Default to tidal for backward compatibility
+        console.log(`✅ OAuth success for ${serviceName} - storing tokens in Zustand`);
 
         // Store tokens in Zustand (which will auto-persist to localStorage)
-        credentials.updateCredentials('tidal', {
+        credentials.updateCredentials(serviceName, {
           accessToken: tokens.access_token,
           refreshToken: tokens.refresh_token,
           expiresAt: tokens.expires_at,
@@ -63,10 +64,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 3000);
 
-        alert('✅ Successfully connected to Tidal!');
+        const displayName = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+        alert(`✅ Successfully connected to ${displayName}!`);
       } else if (type === 'oauth-error') {
-        console.error('❌ OAuth error:', error);
-        alert(`❌ Failed to connect to Tidal: ${error}`);
+        const serviceName = service || 'music service';
+        console.error(`❌ OAuth error for ${serviceName}:`, error);
+        alert(`❌ Failed to connect to ${serviceName}: ${error}`);
       }
     };
 
@@ -78,10 +81,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
   useEffect(() => {
     const migrateLegacyTokens = () => {
       try {
-        const legacyTokensStr = localStorage.getItem('tidal_oauth_tokens');
-        if (legacyTokensStr) {
+        // Migrate Tidal tokens
+        const tidalTokensStr = localStorage.getItem('tidal_oauth_tokens');
+        if (tidalTokensStr) {
           console.log('🔄 Found legacy Tidal tokens - migrating to Zustand');
-          const legacyTokens = JSON.parse(legacyTokensStr);
+          const legacyTokens = JSON.parse(tidalTokensStr);
 
           // Only migrate if we don't already have tokens in Zustand
           if (!musicCredentials.tidal?.accessToken && legacyTokens.access_token) {
@@ -95,10 +99,35 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
             // Clean up legacy storage after successful migration
             localStorage.removeItem('tidal_oauth_tokens');
-            console.log('✅ Legacy tokens migrated and cleaned up');
+            console.log('✅ Legacy Tidal tokens migrated and cleaned up');
           } else {
-            console.log('ℹ️ Tokens already in Zustand, removing legacy storage');
+            console.log('ℹ️ Tidal tokens already in Zustand, removing legacy storage');
             localStorage.removeItem('tidal_oauth_tokens');
+          }
+        }
+
+        // Migrate Spotify tokens
+        const spotifyTokensStr = localStorage.getItem('spotify_oauth_tokens');
+        if (spotifyTokensStr) {
+          console.log('🔄 Found legacy Spotify tokens - migrating to Zustand');
+          const legacyTokens = JSON.parse(spotifyTokensStr);
+
+          // Only migrate if we don't already have tokens in Zustand
+          if (!musicCredentials.spotify?.accessToken && legacyTokens.access_token) {
+            credentials.updateCredentials('spotify', {
+              accessToken: legacyTokens.access_token,
+              refreshToken: legacyTokens.refresh_token,
+              expiresAt: legacyTokens.expires_at,
+              isConnected: true,
+              lastValidated: Date.now(),
+            });
+
+            // Clean up legacy storage after successful migration
+            localStorage.removeItem('spotify_oauth_tokens');
+            console.log('✅ Legacy Spotify tokens migrated and cleaned up');
+          } else {
+            console.log('ℹ️ Spotify tokens already in Zustand, removing legacy storage');
+            localStorage.removeItem('spotify_oauth_tokens');
           }
         }
       } catch (error) {
@@ -107,7 +136,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
     };
 
     migrateLegacyTokens();
-  }, [musicCredentials.tidal?.accessToken, credentials]);
+  }, [musicCredentials.tidal?.accessToken, musicCredentials.spotify?.accessToken, credentials]);
 
   // Handle credential updates
   const updateCredentials = (service: keyof MusicServiceCredentials, updates: any) => {

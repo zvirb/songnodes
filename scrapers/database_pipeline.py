@@ -263,7 +263,10 @@ class DatabasePipeline:
             'apple_music_id': item.get('apple_music_id'),
             'soundcloud_id': item.get('soundcloud_id'),
             'deezer_id': item.get('deezer_id'),
-            'youtube_music_id': item.get('youtube_music_id')
+            'youtube_music_id': item.get('youtube_music_id'),
+            # Preserve source data for validation and traceability
+            'source': item.get('source') or item.get('platform') or item.get('data_source') or 'unknown',
+            'url': item.get('source_url') or item.get('url') or item.get('tracklist_url')
         })
 
         # Auto-flush when batch is full

@@ -22,13 +22,18 @@ export default defineConfig({
     },
     proxy: {
       '/api/v1/graph': {
-        target: process.env.VITE_VISUALIZATION_API_URL || 'http://graph-visualization-api:8084',
+        target: 'http://localhost:8084',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/v1\/graph/, '/api/graph'),
       },
+      '/api/graph': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
-        target: process.env.VITE_API_URL || 'http://api-gateway:8080',
+        target: 'http://localhost:8082',
         changeOrigin: true,
         secure: false,
       },

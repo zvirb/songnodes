@@ -110,13 +110,14 @@ class LODSystem {
   }
 
   getNodeLOD(node: EnhancedGraphNode): number {
-    if (!node.x || !node.y) return 3; // Hide if no position
+    if (typeof node.x !== 'number' || typeof node.y !== 'number') return 3; // Hide if no position
 
     // Calculate screen bounds for proper viewport culling (2025 best practice)
     // Transform world coordinates to screen coordinates
     // Account for stage centering: world (0,0) is at screen (width/2, height/2)
-    const screenX = (node.x * this.viewport.zoom) + (this.viewport.width / 2);
-    const screenY = (node.y * this.viewport.zoom) + (this.viewport.height / 2);
+    // Account for pan offset: stage.x = width/2 + viewport.x
+    const screenX = (node.x * this.viewport.zoom) + (this.viewport.width / 2) + this.viewport.x;
+    const screenY = (node.y * this.viewport.zoom) + (this.viewport.height / 2) + this.viewport.y;
 
     // Define screen bounds with buffer for smooth transitions
     const buffer = 200; // pixels buffer for smooth appearing/disappearing
@@ -212,7 +213,7 @@ class SpatialIndex {
   }
 
   add(node: EnhancedGraphNode): void {
-    if (!node.x || !node.y) return;
+    if (typeof node.x !== 'number' || typeof node.y !== 'number') return;
 
     const cellX = Math.floor(node.x / this.gridSize);
     const cellY = Math.floor(node.y / this.gridSize);
@@ -241,7 +242,7 @@ class SpatialIndex {
     }
 
     return nearby.filter(node => {
-      if (!node.x || !node.y) return false;
+      if (typeof node.x !== 'number' || typeof node.y !== 'number') return false;
       const dx = node.x - x;
       const dy = node.y - y;
       return Math.sqrt(dx * dx + dy * dy) <= radius;
@@ -271,7 +272,7 @@ class SpatialIndex {
       }
 
       for (const node of candidates) {
-        if (!node.x || !node.y) continue;
+        if (typeof node.x !== 'number' || typeof node.y !== 'number') continue;
         const dx = node.x - x;
         const dy = node.y - y;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -337,9 +338,10 @@ class PerformanceMonitor {
 
 interface GraphVisualizationProps {
   onTrackSelect?: (track: Track) => void;
+  onTrackRightClick?: (track: Track, position: { x: number; y: number }) => void;
 }
 
-export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackSelect }) => {
+export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackSelect, onTrackRightClick }) => {
   // Store hooks
   const {
     graphData,
@@ -573,6 +575,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       (window as any).PIXI = PIXI;
       (window as any).pixiCanvas = canvas;
       (canvas as any).__pixi_app__ = app;
+      (window as any).enhancedNodesRef = enhancedNodesRef;
+      (window as any).enhancedEdgesRef = enhancedEdgesRef;
+      (window as any).lodSystemRef = lodSystemRef;
+      (window as any).viewportRef = viewportRef;
 
       // Additional canvas debugging
       console.log('Canvas DOM state after append:', {
@@ -746,28 +752,28 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     console.log('Force simulation completed');
   }, []);
 
-  // Initialize D3 force simulation with maximum speed parameters
+  // Initialize D3 force simulation with balanced parameters
   const initializeSimulation = useCallback(() => {
     const simulation = forceSimulation<EnhancedGraphNode, EnhancedGraphEdge>()
       .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>()
         .id(d => d.id)
-        .distance(250) // Much larger distance for better separation
-        .strength(0.8)  // HIGHER strength for faster movement
+        .distance(150) // Moderate distance for readable layout
+        .strength(0.3)  // Balanced strength
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-2500) // MUCH stronger repulsion for faster separation
-        .distanceMax(3000) // Larger influence radius
-        .distanceMin(30)   // Smaller minimum distance for tighter packing initially
+        .strength(-800) // Strong but not extreme repulsion
+        .distanceMax(800) // Reasonable influence radius
+        .distanceMin(30)
       )
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0))
+      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.05)) // STRONGER center force to keep nodes in viewport
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 20) // Smaller collision radius for faster settling
-        .strength(1.5)  // STRONGER collision prevention for faster response
-        .iterations(5)  // MORE iterations for faster convergence
+        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 20)
+        .strength(0.8)  // Balanced collision prevention
+        .iterations(3)
       )
-      .velocityDecay(0.1)   // MUCH LOWER friction for MAXIMUM speed (was 0.4)
-      .alphaDecay(0.005)    // MUCH SLOWER decay for longer-lasting movement (was 0.0228)
-      .alphaMin(0.01);      // HIGHER threshold to keep movement active longer (was 0.001)
+      .velocityDecay(0.4)   // FIXED: Normal friction to prevent nodes flying off (was 0.1)
+      .alphaDecay(0.0228)    // Standard decay rate for reasonable settling time
+      .alphaMin(0.001);      // Standard threshold
 
     simulation.on('tick', handleSimulationTick);
     simulation.on('end', handleSimulationEnd);
@@ -780,27 +786,27 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const preComputeLayout = useCallback((nodes: EnhancedGraphNode[], maxTicks = 300) => {
     console.log('🚀 Pre-computing accurate layout positions...');
 
-    // Create a separate simulation for pre-computation
+    // Create a separate simulation for pre-computation (match main simulation parameters)
     const preSimulation = forceSimulation<EnhancedGraphNode>(nodes)
       .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>(enhancedEdgesRef.current)
         .id(d => d.id)
-        .distance(250)
+        .distance(150)
         .strength(0.3)
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-1500)
-        .distanceMax(2000)
-        .distanceMin(50)
+        .strength(-800) // Match main simulation
+        .distanceMax(800) // Match main simulation
+        .distanceMin(30)
       )
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0))
+      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.05)) // Match main simulation
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 40)
-        .strength(1.0)
+        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 20)
+        .strength(0.8)
         .iterations(3)
       )
-      .velocityDecay(0.4)   // Quality settings for accurate layout
-      .alphaDecay(0.0228)   // Standard D3 decay rate
-      .alphaMin(0.001)      // Precise threshold
+      .velocityDecay(0.4)   // Match main simulation
+      .alphaDecay(0.0228)   // Match main simulation
+      .alphaMin(0.001)      // Match main simulation
       .stop(); // Stop automatic ticking
 
     // Run manual ticks until convergence
@@ -864,10 +870,24 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         }
 
         // Apply unified transform to PIXI stage - single source of truth
+        // Stage is centered at (width/2, height/2), so we add the transform offset to that
         if (pixiAppRef.current?.stage) {
-          pixiAppRef.current.stage.x = transform.x;
-          pixiAppRef.current.stage.y = transform.y;
+          const centerX = viewportRef.current.width / 2;
+          const centerY = viewportRef.current.height / 2;
+          pixiAppRef.current.stage.x = centerX + transform.x;
+          pixiAppRef.current.stage.y = centerY + transform.y;
           pixiAppRef.current.stage.scale.set(transform.k, transform.k);
+
+          console.log('🎯 Zoom handler applied:', {
+            transform: { x: transform.x, y: transform.y, k: transform.k },
+            viewport: { width: viewportRef.current.width, height: viewportRef.current.height },
+            stagePosition: { x: pixiAppRef.current.stage.x, y: pixiAppRef.current.stage.y },
+            nodeCount: enhancedNodesRef.current.length,
+            firstNodePosition: enhancedNodesRef.current[0] ? {
+              x: enhancedNodesRef.current[0].visual.x,
+              y: enhancedNodesRef.current[0].visual.y
+            } : 'no nodes'
+          });
         }
 
         // CRITICAL FIX: Update hit box radii for all nodes when zoom changes
@@ -888,13 +908,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const selection = select(containerRef.current);
     selection.call(zoomHandler);
 
-    // Set initial transform - center the graph in the viewport
-    const centerX = viewportRef.current.width / 2;
-    const centerY = viewportRef.current.height / 2;
-
+    // Set initial transform
+    // Note: Stage is already centered at (width/2, height/2) in initializePixi,
+    // so we only apply any saved pan/zoom state, not the centering offset
     const initialTransform = zoomIdentity
-      .translate(centerX + (viewState.pan.x || 0), centerY + (viewState.pan.y || 0))
+      .translate(viewState.pan.x || 0, viewState.pan.y || 0)
       .scale(viewState.zoom || 1);
+
+    console.log('🚀 Setting initial D3 zoom transform:', {
+      transform: { x: initialTransform.x, y: initialTransform.y, k: initialTransform.k },
+      viewState: { pan: viewState.pan, zoom: viewState.zoom },
+      viewport: { width: viewportRef.current.width, height: viewportRef.current.height }
+    });
 
     selection.call(zoomHandler.transform, initialTransform);
 
@@ -1278,6 +1303,23 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       event.preventDefault();
       event.stopPropagation();
 
+      // Call the parent handler if provided
+      if (onTrackRightClick && node.track) {
+        // Convert PIXI global coordinates to DOM coordinates
+        // PIXI's event.global is relative to the canvas
+        const canvas = event.target.parent?.parent as any;
+        const canvasRect = canvas?.view?.getBoundingClientRect?.();
+
+        if (canvasRect) {
+          const domX = canvasRect.left + event.globalX;
+          const domY = canvasRect.top + event.globalY;
+          onTrackRightClick(node.track, { x: domX, y: domY });
+        } else {
+          // Fallback to global coordinates if canvas rect not available
+          onTrackRightClick(node.track, { x: event.globalX, y: event.globalY });
+        }
+      }
+
       // Show context menu with node information
       console.group('🎵 Node Context Menu');
       console.log('Track:', node.track?.name || 'Unknown');
@@ -1472,7 +1514,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       });
       return;
     }
-    if (!edge.sourceNode.x || !edge.sourceNode.y || !edge.targetNode.x || !edge.targetNode.y) {
+    if (typeof edge.sourceNode.x !== 'number' || typeof edge.sourceNode.y !== 'number' ||
+        typeof edge.targetNode.x !== 'number' || typeof edge.targetNode.y !== 'number') {
       console.log('Edge missing positions:', {
         sourcePos: { x: edge.sourceNode.x, y: edge.sourceNode.y },
         targetPos: { x: edge.targetNode.x, y: edge.targetNode.y }
@@ -1575,6 +1618,29 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Render nodes (middle layer)
     if (nodesContainerRef.current) {
+      // Debug logging - check if we have nodes to render
+      if (currentFrame % 120 === 0) {
+        console.log(`🎨 Render check: ${enhancedNodesRef.current.size} enhanced nodes, ${nodesContainerRef.current.children.length} PIXI nodes`);
+
+        // Sample LOD levels
+        const lodSamples: Array<{id: string, x: number, y: number, lod: number, shouldRender: boolean}> = [];
+        let sampleCount = 0;
+        enhancedNodesRef.current.forEach(node => {
+          if (sampleCount < 5) {
+            const lod = lodSystem.getNodeLOD(node);
+            lodSamples.push({
+              id: node.id.substring(0, 20),
+              x: Math.round(node.x || 0),
+              y: Math.round(node.y || 0),
+              lod,
+              shouldRender: lod < 3
+            });
+            sampleCount++;
+          }
+        });
+        console.log('📊 LOD samples:', lodSamples);
+      }
+
       enhancedNodesRef.current.forEach(node => {
         const lodLevel = lodSystem.getNodeLOD(node);
         const shouldRender = lodLevel < 3;
