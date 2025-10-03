@@ -300,48 +300,59 @@ class LabelAwareFuzzyMatcher:
         """
         Search Spotify API with label context.
 
-        Note: Spotify's search_track() returns a single best match.
-        We wrap it in a list for consistent interface.
+        Uses search_track_multiple() to get top 10 results with label information.
+        Returns all as MatchCandidates for confidence scoring and label filtering.
         """
         if not self.spotify:
             return []
 
         try:
-            # Search by title (artist may be Unknown/None)
-            # Spotify will use its own ranking
-            result = await self.spotify.search_track(
-                artist=artist or title,  # If no artist, search by title
-                title=title
+            # Get multiple results (top 10) with label information
+            results = await self.spotify.search_track_multiple(
+                artist=artist,  # May be None/Unknown
+                title=title,
+                limit=10
             )
 
-            if not result:
+            if not results:
                 return []
 
-            # Extract label from album metadata (if available)
-            label = result.get('album', {}).get('label')
+            candidates = []
+            for result in results:
+                # Extract label from album metadata
+                label = result.get('album', {}).get('label')
 
-            # Parse release date for year
-            release_year = None
-            release_date = result.get('album', {}).get('release_date')
-            if release_date:
-                try:
-                    release_year = int(release_date[:4])
-                except (ValueError, TypeError):
-                    pass
+                # Parse release date for year
+                release_year = None
+                release_date = result.get('album', {}).get('release_date')
+                if release_date:
+                    try:
+                        release_year = int(release_date[:4])
+                    except (ValueError, TypeError):
+                        pass
 
-            candidate = MatchCandidate(
-                service='spotify',
-                title=result.get('title', ''),
-                artists=[a.get('name', '') for a in result.get('artists', [])],
-                label=label,
-                duration_ms=result.get('duration_ms'),
-                release_year=release_year,
-                service_id=result.get('spotify_id', ''),
-                confidence_score=0.0,  # Will be calculated later
-                metadata=result
+                candidate = MatchCandidate(
+                    service='spotify',
+                    title=result.get('title', ''),
+                    artists=[a.get('name', '') for a in result.get('artists', [])],
+                    label=label,
+                    duration_ms=result.get('duration_ms'),
+                    release_year=release_year,
+                    service_id=result.get('spotify_id', ''),
+                    confidence_score=0.0,  # Will be calculated later
+                    metadata=result
+                )
+
+                candidates.append(candidate)
+
+            logger.debug(
+                "Spotify search returned candidates",
+                count=len(candidates),
+                title=title,
+                labels=[c.label for c in candidates if c.label]
             )
 
-            return [candidate]
+            return candidates
 
         except Exception as e:
             logger.error("Spotify fuzzy search error", error=str(e), title=title)

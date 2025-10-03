@@ -8,7 +8,7 @@ import hashlib
 import json
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 import aiohttp
@@ -147,6 +147,132 @@ class SpotifyClient:
             return await self.circuit_breaker.call(_search)
         except (RetryExhausted, aiohttp.ClientError) as e:
             logger.error("Spotify search failed", error=str(e), query=query)
+            return None
+
+    async def search_track_multiple(
+        self,
+        artist: Optional[str],
+        title: str,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for tracks and return multiple results for fuzzy matching.
+
+        Unlike search_track() which returns single best match, this returns
+        top N results so fuzzy matcher can apply label-based filtering.
+
+        Args:
+            artist: Artist name (may be None/Unknown for fuzzy matching)
+            title: Track title
+            limit: Maximum results to return (default 10)
+
+        Returns:
+            List of track metadata dicts with label information
+        """
+        await self.rate_limiter.wait()
+
+        # Build search query
+        if artist and artist.lower() not in ['unknown', 'various artists']:
+            query = f"track:{title} artist:{artist}"
+        else:
+            query = f"track:{title}"
+
+        cache_key = f"spotify:search_multi:{hashlib.md5(query.encode()).hexdigest()}:{limit}"
+
+        # Check cache
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            logger.debug("Spotify multi-search cache hit", query=query)
+            return json.loads(cached)
+
+        async def _search():
+            token = await self._get_access_token()
+            headers = {'Authorization': f'Bearer {token}'}
+
+            url = f"{self.base_url}/search?q={quote(query)}&type=track&limit={limit}"
+
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
+                        data = await response.json()
+
+                        results = []
+                        for track in data['tracks']['items']:
+                            # Extract basic metadata
+                            metadata = self._extract_track_metadata(track)
+
+                            # Get album details for label info
+                            album_id = track['album']['id']
+                            album_details = await self._get_album_label(album_id)
+                            if album_details:
+                                metadata['album']['label'] = album_details.get('label')
+
+                            results.append(metadata)
+
+                        # Cache for 7 days
+                        await self.redis_client.setex(
+                            cache_key,
+                            7 * 24 * 3600,
+                            json.dumps(results)
+                        )
+
+                        return results
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'spotify', 'method': 'search_track_multiple', 'query': query}
+            )
+
+        try:
+            return await self.circuit_breaker.call(_search)
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Spotify multi-search failed", error=str(e), query=query)
+            return []
+
+    async def _get_album_label(self, album_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get album details including label information.
+
+        Spotify includes label in full album object but not in search results.
+        This method fetches the full album to extract label.
+        """
+        cache_key = f"spotify:album_label:{album_id}"
+
+        # Check cache
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            token = await self._get_access_token()
+            headers = {'Authorization': f'Bearer {token}'}
+
+            url = f"{self.base_url}/albums/{album_id}"
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    response.raise_for_status()
+                    album = await response.json()
+
+                    result = {
+                        'label': album.get('label'),
+                        'release_date': album.get('release_date')
+                    }
+
+                    # Cache for 30 days (labels don't change)
+                    await self.redis_client.setex(
+                        cache_key,
+                        30 * 24 * 3600,
+                        json.dumps(result)
+                    )
+
+                    return result
+        except Exception as e:
+            logger.warning("Failed to get album label", album_id=album_id, error=str(e))
             return None
 
     async def get_track_by_id(self, spotify_id: str) -> Optional[Dict[str, Any]]:
