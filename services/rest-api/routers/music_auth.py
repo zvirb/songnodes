@@ -51,11 +51,23 @@ async def get_redis() -> redis.Redis:
     """Get or create Redis connection for OAuth state storage"""
     global redis_client
     if redis_client is None:
-        redis_client = await redis.from_url(
-            "redis://redis:6379",
-            encoding="utf-8",
-            decode_responses=True
-        )
+        redis_password = os.getenv("REDIS_PASSWORD", "")
+        if redis_password:
+            # Password authentication - use password parameter directly (not URL-encoded in URL)
+            redis_client = redis.Redis(
+                host="redis",
+                port=6379,
+                password=redis_password,
+                encoding="utf-8",
+                decode_responses=True
+            )
+        else:
+            # No password - connect directly
+            redis_client = await redis.from_url(
+                "redis://redis:6379",
+                encoding="utf-8",
+                decode_responses=True
+            )
     return redis_client
 
 # ===========================================

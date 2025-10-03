@@ -86,9 +86,12 @@ except ImportError as e:
 # Database connection - use secrets_manager if available
 try:
     DATABASE_URL = get_database_url(async_driver=True, use_connection_pool=True)
+    # asyncpg doesn't accept SQLAlchemy-style DSN format (postgresql+asyncpg)
+    # Strip the driver suffix for direct asyncpg usage
+    DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
     logger.info("✅ Using secrets_manager for database connection")
 except NameError:
-    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb")
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb")
     logger.warning("⚠️ Using fallback DATABASE_URL from environment")
 
 db_pool = None
