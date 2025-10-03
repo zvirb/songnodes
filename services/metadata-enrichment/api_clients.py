@@ -351,14 +351,15 @@ class MusicBrainzClient:
                             recording = data['recordings'][0]
                             result = self._extract_recording_metadata(recording)
 
-                            # Cache for 90 days
-                            await self.redis_client.setex(
-                                cache_key,
-                                90 * 24 * 3600,
-                                json.dumps(result)
-                            )
-
-                            return result
+                            # Only cache and return if extraction succeeded
+                            if result:
+                                # Cache for 90 days
+                                await self.redis_client.setex(
+                                    cache_key,
+                                    90 * 24 * 3600,
+                                    json.dumps(result)
+                                )
+                                return result
                         return None
 
             return await fetch_with_exponential_backoff(
@@ -400,14 +401,15 @@ class MusicBrainzClient:
                             recording = data['recordings'][0]
                             result = self._extract_recording_metadata(recording)
 
-                            # Cache for 30 days
-                            await self.redis_client.setex(
-                                cache_key,
-                                30 * 24 * 3600,
-                                json.dumps(result)
-                            )
-
-                            return result
+                            # Only cache and return if extraction succeeded
+                            if result:
+                                # Cache for 30 days
+                                await self.redis_client.setex(
+                                    cache_key,
+                                    30 * 24 * 3600,
+                                    json.dumps(result)
+                                )
+                                return result
                         return None
 
             return await fetch_with_exponential_backoff(
@@ -424,24 +426,36 @@ class MusicBrainzClient:
             logger.error("MusicBrainz recording search failed", error=str(e), query=query)
             return None
 
-    def _extract_recording_metadata(self, recording: Dict) -> Dict[str, Any]:
-        """Extract metadata from MusicBrainz recording"""
+    def _extract_recording_metadata(self, recording: Dict) -> Optional[Dict[str, Any]]:
+        """
+        Extract metadata from MusicBrainz recording.
+
+        Returns None if recording doesn't have required 'id' field.
+        """
+        # MusicBrainz sometimes returns results without 'id' - skip these
+        if not recording.get('id'):
+            logger.warning(
+                "MusicBrainz recording missing 'id' field, skipping",
+                title=recording.get('title')
+            )
+            return None
+
         return {
             'musicbrainz_id': recording['id'],
-            'title': recording['title'],
+            'title': recording.get('title', ''),
             'isrcs': recording.get('isrcs', []),
             'artists': [
                 {
-                    'name': artist['name'],
-                    'musicbrainz_id': artist['id'],
+                    'name': artist.get('name', 'Unknown'),
+                    'musicbrainz_id': artist.get('id'),  # May be None
                     'country': artist.get('country')
                 }
                 for artist in recording.get('artist-credit', [])
-                if isinstance(artist, dict) and 'name' in artist
+                if isinstance(artist, dict) and artist.get('name')
             ],
             'releases': [
                 {
-                    'title': release['title'],
+                    'title': release.get('title', ''),
                     'date': release.get('date'),
                     'country': release.get('country')
                 }
