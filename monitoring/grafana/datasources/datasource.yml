@@ -35,6 +35,8 @@ datasources:
       poolSize: 5
       timeout: 10
       pingInterval: 0
+    secureJsonData:
+      password: ${REDIS_PASSWORD:-redis_secure_pass_2024}
 
   - name: Elasticsearch
     type: elasticsearch

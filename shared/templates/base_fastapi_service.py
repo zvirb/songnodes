@@ -34,7 +34,7 @@ class ServiceSettings(BaseSettings):
     database_max_overflow: int = 20
     
     # Redis configuration
-    redis_url: str = "redis://localhost:6379"
+    redis_url: str = "redis://:redis_secure_pass_2024@localhost:6379"  # Include password
     redis_db: int = 0
     
     # Monitoring
