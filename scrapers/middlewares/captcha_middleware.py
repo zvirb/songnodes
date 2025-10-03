@@ -3,12 +3,13 @@ CAPTCHA Solving Middleware - Specification Section IV.2
 Priority: 600 (runs before proxy selection, after retry logic)
 
 Detects CAPTCHA challenges in responses and automatically solves them using
-third-party CAPTCHA solving services (2Captcha, Anti-Captcha, etc.).
+FREE self-hosted Ollama vision models (default) or paid services (legacy).
 
 Features:
 - Automatic CAPTCHA detection (Cloudflare, reCAPTCHA, hCaptcha)
-- Pluggable backend support (2Captcha, Anti-Captcha)
-- Budget tracking and cost limits
+- FREE Ollama backend using local LLM (NO COST, privacy-preserving)
+- Legacy paid backend support (2Captcha, Anti-Captcha - deprecated)
+- Budget tracking and cost limits (for paid backends only)
 - Proxy marking on CAPTCHA detection
 - Request rescheduling with solution
 - Comprehensive logging and metrics
@@ -26,24 +27,41 @@ from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 import json
 
+# Import FREE Ollama backend (default)
+try:
+    from .ollama_captcha_solver import OllamaCaptchaBackend
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
+    logger.warning("Ollama CAPTCHA solver not available - install with: pip install pillow requests")
+
 logger = logging.getLogger(__name__)
 
 
 class CaptchaSolvingMiddleware:
     """
-    Detects CAPTCHA challenges and automatically solves them using external services.
+    Detects CAPTCHA challenges and automatically solves them using FREE Ollama or paid services.
 
-    Supported Services:
-    - 2Captcha (https://2captcha.com/)
-    - Anti-Captcha (https://anti-captcha.com/)
-    - Custom backends via CAPTCHA_BACKEND setting
+    Supported Backends:
+    - **Ollama (DEFAULT, FREE)**: Self-hosted LLM with vision capabilities
+    - 2Captcha (LEGACY, PAID): ~$0.002 per solve (https://2captcha.com/)
+    - Anti-Captcha (LEGACY, PAID): ~$0.002 per solve (https://anti-captcha.com/)
 
     Configuration (settings.py):
-        CAPTCHA_ENABLED = True
-        CAPTCHA_BACKEND = '2captcha'  # or 'anticaptcha', 'custom'
-        CAPTCHA_API_KEY = 'your_api_key'
-        CAPTCHA_BUDGET_LIMIT = 100.00  # USD
+        # FREE Ollama backend (recommended)
+        CAPTCHA_ENABLED = False  # Set to True to enable
+        CAPTCHA_BACKEND = 'ollama'  # FREE, self-hosted
+        OLLAMA_URL = 'http://ollama:11434'  # Optional, auto-detected
+
+        # Legacy paid backends (deprecated)
+        # CAPTCHA_BACKEND = '2captcha'
+        # CAPTCHA_API_KEY = 'your_api_key'
+        # CAPTCHA_BUDGET_LIMIT = 100.00
+
+        # Common settings
         CAPTCHA_MAX_RETRIES = 3
+        CAPTCHA_TIMEOUT = 120
+        CAPTCHA_MIN_CONFIDENCE = 0.6  # For Ollama backend
     """
 
     # CAPTCHA detection patterns
@@ -83,15 +101,27 @@ class CaptchaSolvingMiddleware:
         # Configuration
         settings = crawler.settings
         self.enabled = settings.getbool('CAPTCHA_ENABLED', False)
-        self.backend = settings.get('CAPTCHA_BACKEND', '2captcha')
-        self.api_key = settings.get('CAPTCHA_API_KEY')
+        self.backend = settings.get('CAPTCHA_BACKEND', 'ollama')  # Default to FREE Ollama
+        self.api_key = settings.get('CAPTCHA_API_KEY')  # Only for paid backends
         self.budget_limit = settings.getfloat('CAPTCHA_BUDGET_LIMIT', 100.0)
         self.max_retries = settings.getint('CAPTCHA_MAX_RETRIES', 3)
         self.timeout = settings.getint('CAPTCHA_TIMEOUT', 120)  # seconds
+        self.min_confidence = settings.getfloat('CAPTCHA_MIN_CONFIDENCE', 0.6)  # For Ollama
 
         # Validate configuration
-        if self.enabled and not self.api_key:
-            raise NotConfigured("CAPTCHA_ENABLED is True but CAPTCHA_API_KEY is not set")
+        if self.enabled:
+            if self.backend == 'ollama':
+                # Ollama doesn't need API key
+                if not OLLAMA_AVAILABLE:
+                    raise NotConfigured("Ollama backend not available. Install dependencies: pip install pillow requests")
+            elif self.backend in ['2captcha', 'anticaptcha']:
+                # Paid backends require API key
+                if not self.api_key:
+                    raise NotConfigured(f"CAPTCHA_BACKEND is '{self.backend}' but CAPTCHA_API_KEY is not set")
+                logger.warning(
+                    f"⚠️  Using PAID CAPTCHA backend '{self.backend}'. "
+                    f"Consider using FREE 'ollama' backend instead (CAPTCHA_BACKEND='ollama')"
+                )
 
         # Initialize backend
         if self.enabled:
@@ -408,13 +438,30 @@ class CaptchaSolvingMiddleware:
         """
         Initialize CAPTCHA solving backend.
 
+        Priority:
+        1. Ollama (FREE, self-hosted) - RECOMMENDED
+        2. 2Captcha (PAID, legacy) - DEPRECATED
+        3. Anti-Captcha (PAID, legacy) - DEPRECATED
+        4. Mock (testing only)
+
         Returns:
             CaptchaBackend instance
         """
-        if self.backend == '2captcha':
+        if self.backend == 'ollama':
+            logger.info("✓ Initializing FREE Ollama CAPTCHA backend (cost: $0)")
+            return OllamaCaptchaBackend(None, self.crawler.settings)
+
+        # Legacy paid backends (deprecated)
+        elif self.backend == '2captcha':
+            logger.warning("⚠️  Using LEGACY PAID backend: 2Captcha (~$0.002/solve)")
+            logger.warning("💡 Switch to FREE Ollama: Set CAPTCHA_BACKEND='ollama'")
             return TwoCaptchaBackend(self.api_key, self.crawler.settings)
+
         elif self.backend == 'anticaptcha':
+            logger.warning("⚠️  Using LEGACY PAID backend: Anti-Captcha (~$0.002/solve)")
+            logger.warning("💡 Switch to FREE Ollama: Set CAPTCHA_BACKEND='ollama'")
             return AntiCaptchaBackend(self.api_key, self.crawler.settings)
+
         else:
             logger.warning(f"Unknown CAPTCHA backend '{self.backend}', using mock backend")
             return MockCaptchaBackend(self.api_key, self.crawler.settings)
