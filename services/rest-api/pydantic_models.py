@@ -144,9 +144,18 @@ class ArtistBase(BaseModel):
     @classmethod
     def no_generic_artists(cls, v):
         """Prevent generic placeholder artist names (2025 best practices)"""
+        normalized = v.lower().strip()
+
+        # Exact matches
         generic_names = ['various artists', 'unknown artist', 'various', 'unknown', 'va']
-        if v.lower().strip() in generic_names:
+        if normalized in generic_names:
             raise ValueError(f'Generic artist name "{v}" not allowed - must have specific artist attribution')
+
+        # Prefix matches (catch "VA @...", "Unknown Artist, ...", etc.)
+        generic_prefixes = ['va @', 'various artists @', 'unknown artist,', 'unknown artist @']
+        if any(normalized.startswith(prefix) for prefix in generic_prefixes):
+            raise ValueError(f'Generic artist name prefix "{v}" not allowed - must have specific artist attribution')
+
         return v
 
     model_config = ConfigDict()

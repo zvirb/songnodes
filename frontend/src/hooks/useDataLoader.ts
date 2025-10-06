@@ -3,11 +3,35 @@ import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge, Track } from '../types';
 
 /**
+ * Helper function to check if a node has valid artist attribution
+ * Tracks without proper artists should not be displayed
+ */
+const hasValidArtist = (node: any): boolean => {
+  const metadata = node.metadata || {};
+  const artist = node.artist || metadata.artist;
+
+  if (!artist) return false;
+
+  const normalizedArtist = artist.toString().toLowerCase().trim();
+
+  // Exact matches - invalid artist values
+  const invalidArtists = ['unknown', 'unknown artist', 'various artists', 'various', 'va', ''];
+  if (invalidArtists.includes(normalizedArtist)) return false;
+
+  // Prefix matches - catch "VA @...", "Unknown Artist, ...", etc.
+  const invalidPrefixes = ['va @', 'various artists @', 'unknown artist,', 'unknown artist @'];
+  if (invalidPrefixes.some(prefix => normalizedArtist.startsWith(prefix))) return false;
+
+  return true;
+};
+
+/**
  * Helper function to transform node data into a Track object
  * This ensures that each node has the track property populated
  * for the track modal to display correctly
  *
  * ✅ FIX: Provides safe defaults for all required Track fields
+ * ⚠️  ASSUMES: Node has already been validated with hasValidArtist()
  */
 const nodeToTrack = (node: any): Track => {
   const metadata = node.metadata || {};
@@ -72,8 +96,9 @@ export const useDataLoader = () => {
       setError(null);
 
       try {
-        // Load nodes
-        const nodesResponse = await fetch('/api/graph/nodes?limit=500');
+        // Load nodes - request more since ~90% will be filtered out due to missing artists
+        // With 5000 nodes, we expect ~500-700 with valid artists
+        const nodesResponse = await fetch('/api/graph/nodes?limit=5000');
 
         // Check if nodes request was successful
         if (!nodesResponse.ok) {
@@ -82,8 +107,9 @@ export const useDataLoader = () => {
 
         const nodesData = await nodesResponse.json();
 
-        // Load edges
-        const edgesResponse = await fetch('/api/graph/edges?limit=5000');
+        // Load edges - request all edges to ensure we get connections between filtered nodes
+        // The edge density between nodes with artists is low (~1%), so we need the full dataset
+        const edgesResponse = await fetch('/api/graph/edges?limit=50000');
 
         // Check if edges request was successful (but don't throw - edges are optional)
         let edgesData = { edges: [] };
@@ -94,27 +120,47 @@ export const useDataLoader = () => {
         }
 
         // Transform nodes with safety check
-        const nodes: GraphNode[] = (nodesData.nodes || []).map((node: any) => ({
-          id: node.id,
-          title: node.title || node.metadata?.title || node.metadata?.label || 'Unknown',
-          artist: node.artist || node.metadata?.artist || 'Unknown',
-          artistId: node.artist_id,
-          bpm: node.metadata?.bpm,
-          key: node.metadata?.key,
-          genre: node.metadata?.genre || node.metadata?.category || 'Electronic',
-          energy: node.metadata?.energy,
-          year: node.metadata?.release_year,
-          label: node.metadata?.label || node.metadata?.title || node.title || 'Unknown',
-          connections: node.metadata?.appearance_count || 0,
-          popularity: node.metadata?.popularity || 0,
-          // Use provided positions or random
-          x: node.position?.x || Math.random() * 800 - 400,
-          y: node.position?.y || Math.random() * 600 - 300,
-          // Include metadata for DJInterface access
-          metadata: node.metadata,
-          // ✅ FIX: Create Track object for modal display
-          track: nodeToTrack(node),
-        }));
+        // ✅ FILTER: Exclude tracks without valid artist attribution
+        const allNodes = (nodesData.nodes || [])
+          .filter((node: any) => {
+            const isValid = hasValidArtist(node);
+            if (!isValid) {
+              console.debug(`Filtering out track without artist: ${node.title || node.id}`);
+            }
+            return isValid;
+          });
+
+        const nodes: GraphNode[] = allNodes.map((node: any) => {
+          // ✅ CRITICAL FIX: Generate stable random positions based on node ID hash
+          // This prevents LOD flickering caused by Math.random() returning different values on each render
+          const hash = node.id.split('').reduce((acc: number, char: string) => {
+            return ((acc << 5) - acc) + char.charCodeAt(0);
+          }, 0);
+          const stableRandomX = ((hash & 0xFFFF) / 0xFFFF) * 1600 - 800;
+          const stableRandomY = (((hash >> 16) & 0xFFFF) / 0xFFFF) * 1200 - 600;
+
+          return {
+            id: node.id,
+            title: node.title || node.metadata?.title || node.metadata?.label || 'Unknown',
+            artist: node.artist || node.metadata?.artist || 'Unknown',
+            artistId: node.artist_id,
+            bpm: node.metadata?.bpm,
+            key: node.metadata?.key,
+            genre: node.metadata?.genre || node.metadata?.category || 'Electronic',
+            energy: node.metadata?.energy,
+            year: node.metadata?.release_year,
+            label: node.metadata?.label || node.metadata?.title || node.title || 'Unknown',
+            connections: node.metadata?.appearance_count || 0,
+            popularity: node.metadata?.popularity || 0,
+            // ✅ FIX: Use stable hash-based positions instead of Math.random() to prevent LOD instability
+            x: (node.position?.x !== undefined && node.position?.x !== null) ? node.position.x : stableRandomX,
+            y: (node.position?.y !== undefined && node.position?.y !== null) ? node.position.y : stableRandomY,
+            // Include metadata for DJInterface access
+            metadata: node.metadata,
+            // ✅ FIX: Create Track object for modal display
+            track: nodeToTrack(node),
+          };
+        });
 
         // Create a set of loaded node IDs for quick lookup
         const nodeIds = new Set(nodes.map(n => n.id));
@@ -133,13 +179,40 @@ export const useDataLoader = () => {
             type: edge.type || edge.edge_type || 'adjacency',
           }));
 
-        console.log(`Filtered ${edges.length} edges from ${rawEdges.length} total edges`);
+        // ✅ CRITICAL: Filter out isolated nodes (nodes with no edges)
+        // A node should only be displayed if it has at least one connection
+        const connectedNodeIds = new Set<string>();
+        edges.forEach(edge => {
+          connectedNodeIds.add(edge.source);
+          connectedNodeIds.add(edge.target);
+        });
 
-        setGraphData({ nodes, edges });
+        const nodesBeforeConnectivityFilter = nodes.length;
+        const connectedNodes = nodes.filter(node => connectedNodeIds.has(node.id));
+        const isolatedNodeCount = nodesBeforeConnectivityFilter - connectedNodes.length;
+
+        const totalNodesReceived = (nodesData.nodes || []).length;
+        const filteredOutCount = totalNodesReceived - connectedNodes.length;
+        const edgesFilteredOut = rawEdges.length - edges.length;
+
+        console.log(`📊 Data Loading Summary:`);
+        console.log(`  API Response: ${totalNodesReceived} nodes, ${rawEdges.length} edges`);
+        console.log(`  After artist filtering: ${nodesBeforeConnectivityFilter} nodes, ${edges.length} edges`);
+        console.log(`  After connectivity filtering: ${connectedNodes.length} nodes, ${edges.length} edges`);
+        console.log(`  Filtered out: ${filteredOutCount} total (${totalNodesReceived - nodesBeforeConnectivityFilter} without artists, ${isolatedNodeCount} isolated)`);
+
+        if (isolatedNodeCount > 0) {
+          console.warn(`⚠️  Removed ${isolatedNodeCount} isolated nodes with no edges`);
+        }
+        if (edgesFilteredOut > 0) {
+          console.log(`ℹ️  Filtered ${edgesFilteredOut} edges (endpoints without artists)`);
+        }
+
+        setGraphData({ nodes: connectedNodes, edges });
         applyFilters({});
         setLoading(false);
 
-        console.log(`✅ Loaded ${nodes.length} nodes and ${edges.length} edges`);
+        console.log(`✅ Graph ready: ${connectedNodes.length} nodes, ${edges.length} edges`);
       } catch (error) {
         console.error('❌ Failed to load graph data:', error);
         setError('Failed to load graph data. Please try again.');
@@ -149,16 +222,28 @@ export const useDataLoader = () => {
           const response = await fetch('/api/graph');
           const data = await response.json();
 
-          const nodes: GraphNode[] = (data.nodes || []).map((node: any) => ({
-            id: node.id,
-            title: node.label || node.name || 'Unknown',
-            artist: node.artist || 'Unknown',
-            genre: node.type,
-            x: node.x || Math.random() * 800 - 400,
-            y: node.y || Math.random() * 600 - 300,
-            // ✅ FIX: Create Track object for fallback data too
-            track: nodeToTrack(node),
-          }));
+          // ✅ FILTER: Exclude tracks without valid artist attribution (fallback endpoint too)
+          const validNodes = (data.nodes || []).filter((node: any) => hasValidArtist(node));
+
+          const nodes: GraphNode[] = validNodes.map((node: any) => {
+            // Stable hash-based positions for fallback too
+            const hash = node.id.split('').reduce((acc: number, char: string) => {
+              return ((acc << 5) - acc) + char.charCodeAt(0);
+            }, 0);
+            const stableRandomX = ((hash & 0xFFFF) / 0xFFFF) * 1600 - 800;
+            const stableRandomY = (((hash >> 16) & 0xFFFF) / 0xFFFF) * 1200 - 600;
+
+            return {
+              id: node.id,
+              title: node.label || node.name || 'Unknown',
+              artist: node.artist || 'Unknown',
+              genre: node.type,
+              x: (node.x !== undefined && node.x !== null && node.x !== 0) ? node.x : stableRandomX,
+              y: (node.y !== undefined && node.y !== null && node.y !== 0) ? node.y : stableRandomY,
+              // ✅ FIX: Create Track object for fallback data too
+              track: nodeToTrack(node),
+            };
+          });
 
           const edges: GraphEdge[] = (data.edges || []).map((edge: any, index: number) => ({
             id: `edge-${index}`,
@@ -169,10 +254,18 @@ export const useDataLoader = () => {
             type: 'mix',
           }));
 
-          setGraphData({ nodes, edges });
+          // ✅ CRITICAL: Filter out isolated nodes (fallback path too)
+          const connectedNodeIds = new Set<string>();
+          edges.forEach(edge => {
+            connectedNodeIds.add(edge.source);
+            connectedNodeIds.add(edge.target);
+          });
+          const connectedNodes = nodes.filter(node => connectedNodeIds.has(node.id));
+
+          setGraphData({ nodes: connectedNodes, edges });
           applyFilters({});
           setLoading(false);
-          console.log(`✅ Loaded ${nodes.length} nodes and ${edges.length} edges from fallback`);
+          console.log(`✅ Fallback loaded: ${connectedNodes.length} connected nodes, ${edges.length} edges (${nodes.length - connectedNodes.length} isolated filtered)`);
         } catch (fallbackError) {
           console.error('❌ Failed to load from fallback:', fallbackError);
           setLoading(false);
