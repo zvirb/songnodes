@@ -47,6 +47,7 @@ interface SmartTooltipProps {
   placement?: 'top' | 'bottom' | 'left' | 'right' | 'auto';
   offset?: number;
   onClose?: () => void;
+  forceVisible?: boolean; // For context menus that should show immediately
 }
 
 export const SmartTooltip: React.FC<SmartTooltipProps> = ({
@@ -57,7 +58,8 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
   maxWidth = 320,
   placement = 'auto',
   offset = 10,
-  onClose
+  onClose,
+  forceVisible = false
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -165,9 +167,16 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
     }, 100);
   }, [interactive]);
 
+  // Force show tooltip immediately for context menus
+  useEffect(() => {
+    if (forceVisible && targetElement && content) {
+      showTooltip();
+    }
+  }, [forceVisible, targetElement, content, showTooltip]);
+
   // Handle mouse events on target element
   useEffect(() => {
-    if (!targetElement || !content) return;
+    if (!targetElement || !content || forceVisible) return; // Skip event listeners if force visible
 
     const handleMouseEnter = () => showTooltip();
     const handleMouseLeave = () => hideTooltip();
@@ -179,7 +188,7 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
       targetElement.removeEventListener('mouseenter', handleMouseEnter);
       targetElement.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [targetElement, content, showTooltip, hideTooltip]);
+  }, [targetElement, content, forceVisible, showTooltip, hideTooltip]);
 
   // Update position when visible
   useEffect(() => {

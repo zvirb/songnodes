@@ -8,7 +8,7 @@ interface GraphFilterPanelProps {
 }
 
 export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onClose }) => {
-  const { graphData } = useStore();
+  const { graphData, graph } = useStore();
 
   // Filter state
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -209,18 +209,17 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
       filteredNodeIds.has(edge.source) && filteredNodeIds.has(edge.target)
     );
 
-    // Update store with filtered data
-    useStore.setState({
-      graphData: {
-        nodes: filteredNodes,
-        edges: filteredEdges
-      }
+    // Update store with filtered data using setGraphData to preserve original
+    graph.setGraphData({
+      nodes: filteredNodes,
+      edges: filteredEdges
     });
 
     onClose();
-  }, [graphData, selectedGenres, yearRange, minConnectionStrength, maxNodes, maxEdges, onClose]);
+  }, [graphData, selectedGenres, yearRange, minConnectionStrength, maxNodes, maxEdges, onClose, graph]);
 
   const resetFilters = useCallback(() => {
+    // Reset UI state
     setSelectedGenres([]);
     if (years.length > 0) {
       setYearRange([years[0], years[years.length - 1]]);
@@ -228,7 +227,12 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
     setMinConnectionStrength(1);
     setMaxNodes(totalNodes);
     setMaxEdges(totalEdges);
-  }, [years, totalNodes, totalEdges]);
+
+    // Reset graph data to original
+    graph.resetGraphData();
+
+    onClose();
+  }, [years, totalNodes, totalEdges, graph, onClose]);
 
   const toggleGenre = useCallback((genre: string) => {
     setSelectedGenres(prev =>
