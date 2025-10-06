@@ -893,11 +893,25 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           event.transform.x = newX;
           event.transform.y = newY;
 
-          console.log('🔍 Zoom-to-cursor:', {
-            mouse: { x: mouseX, y: mouseY },
-            world: { x: worldX.toFixed(2), y: worldY.toFixed(2) },
-            oldTransform: { x: currentTransform.x.toFixed(2), y: currentTransform.y.toFixed(2), k: currentTransform.k.toFixed(2) },
-            newTransform: { x: newX.toFixed(2), y: newY.toFixed(2), k: newScale.toFixed(2) }
+          // Verify the calculation by transforming world back to screen
+          const verifyX = worldX * newScale + newX + centerX;
+          const verifyY = worldY * newScale + newY + centerY;
+
+          console.log('🔍 Zoom-to-cursor DEBUG:', {
+            viewport: { width: viewportRef.current.width, height: viewportRef.current.height, centerX, centerY },
+            mouseScreen: { x: mouseX.toFixed(2), y: mouseY.toFixed(2) },
+            mouseClient: { x: event.sourceEvent.clientX, y: event.sourceEvent.clientY },
+            rectOffset: { left: rect.left.toFixed(2), top: rect.top.toFixed(2) },
+            worldCoords: { x: worldX.toFixed(2), y: worldY.toFixed(2) },
+            oldTransform: { x: currentTransform.x.toFixed(2), y: currentTransform.y.toFixed(2), k: currentTransform.k.toFixed(3) },
+            newTransform: { x: newX.toFixed(2), y: newY.toFixed(2), k: newScale.toFixed(3) },
+            verification: {
+              screenX: verifyX.toFixed(2),
+              screenY: verifyY.toFixed(2),
+              errorX: Math.abs(verifyX - mouseX).toFixed(2),
+              errorY: Math.abs(verifyY - mouseY).toFixed(2),
+              shouldBeZero: Math.abs(verifyX - mouseX) < 0.1 && Math.abs(verifyY - mouseY) < 0.1 ? '✅ CORRECT' : '❌ ERROR'
+            }
           });
         }
 
@@ -983,6 +997,63 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       containerRef.current.style.position = 'relative';
       containerRef.current.style.overflow = 'hidden';
       containerRef.current.style.userSelect = 'none';
+
+      // DEBUG: Add right-click handler to show coordinate information
+      containerRef.current.addEventListener('contextmenu', (e) => {
+        // Only show debug info if right-clicking on the background (not on a node)
+        if (e.target !== containerRef.current?.querySelector('canvas')) {
+          return; // Let PIXI handle node right-clicks
+        }
+
+        e.preventDefault();
+
+        const rect = containerRef.current!.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const currentTransform = currentTransformRef.current || zoomIdentity;
+        const centerX = viewportRef.current.width / 2;
+        const centerY = viewportRef.current.height / 2;
+
+        // Calculate world coordinates
+        const worldX = (mouseX - centerX - currentTransform.x) / currentTransform.k;
+        const worldY = (mouseY - centerY - currentTransform.y) / currentTransform.k;
+
+        // Calculate screen coordinates (for verification)
+        const screenX = worldX * currentTransform.k + currentTransform.x + centerX;
+        const screenY = worldY * currentTransform.k + currentTransform.y + centerY;
+
+        console.log('╔═══════════════════════════════════════════════════════════════╗');
+        console.log('║              🎯 COORDINATE SYSTEM DEBUG INFO                  ║');
+        console.log('╠═══════════════════════════════════════════════════════════════╣');
+        console.log('║ MOUSE POSITION (relative to container):');
+        console.log(`║   X: ${mouseX.toFixed(2)}px, Y: ${mouseY.toFixed(2)}px`);
+        console.log('║');
+        console.log('║ VIEWPORT:');
+        console.log(`║   Width: ${viewportRef.current.width}px, Height: ${viewportRef.current.height}px`);
+        console.log(`║   Center: (${centerX}px, ${centerY}px)`);
+        console.log('║');
+        console.log('║ CURRENT TRANSFORM:');
+        console.log(`║   Offset: (${currentTransform.x.toFixed(2)}, ${currentTransform.y.toFixed(2)})`);
+        console.log(`║   Scale (zoom): ${currentTransform.k.toFixed(3)}x`);
+        console.log('║');
+        console.log('║ WORLD COORDINATES (graph space):');
+        console.log(`║   X: ${worldX.toFixed(2)}, Y: ${worldY.toFixed(2)}`);
+        console.log('║');
+        console.log('║ VERIFICATION (world → screen):');
+        console.log(`║   Screen X: ${screenX.toFixed(2)}px (should match ${mouseX.toFixed(2)}px)`);
+        console.log(`║   Screen Y: ${screenY.toFixed(2)}px (should match ${mouseY.toFixed(2)}px)`);
+        console.log(`║   Error: X=${Math.abs(screenX - mouseX).toFixed(2)}px, Y=${Math.abs(screenY - mouseY).toFixed(2)}px`);
+        console.log('╚═══════════════════════════════════════════════════════════════╝');
+
+        // Also show a visual indicator
+        alert(`Cursor Position Debug:\n\n` +
+              `Mouse: (${mouseX.toFixed(0)}, ${mouseY.toFixed(0)})px\n` +
+              `World: (${worldX.toFixed(1)}, ${worldY.toFixed(1)})\n` +
+              `Zoom: ${currentTransform.k.toFixed(2)}x\n` +
+              `Transform: (${currentTransform.x.toFixed(0)}, ${currentTransform.y.toFixed(0)})\n\n` +
+              `Check console for detailed debug info`);
+      });
     }
 
     zoomBehaviorRef.current = zoomHandler;
