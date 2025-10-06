@@ -13,6 +13,29 @@ import {
   Database
 } from 'lucide-react';
 
+/**
+ * Helper function to check if a node has valid artist attribution
+ * Tracks without proper artists should not be displayed
+ */
+const hasValidArtist = (node: any): boolean => {
+  const metadata = node.metadata || {};
+  const artist = node.artist || metadata.artist;
+
+  if (!artist) return false;
+
+  const normalizedArtist = artist.toString().toLowerCase().trim();
+
+  // Exact matches - invalid artist values
+  const invalidArtists = ['unknown', 'unknown artist', 'various artists', 'various', 'va', ''];
+  if (invalidArtists.includes(normalizedArtist)) return false;
+
+  // Prefix matches - catch "VA @...", "Unknown Artist, ...", etc.
+  const invalidPrefixes = ['va @', 'various artists @', 'unknown artist,', 'unknown artist @'];
+  if (invalidPrefixes.some(prefix => normalizedArtist.startsWith(prefix))) return false;
+
+  return true;
+};
+
 interface LiveDataLoaderProps {
   autoStart?: boolean;
   updateInterval?: number;
@@ -264,7 +287,16 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       ]);
 
       // Transform and validate data
-      const nodes: GraphNode[] = (nodesData.nodes || []).map((node: any) => ({
+      // ✅ FILTER: Exclude tracks without valid artist attribution
+      const validNodesData = (nodesData.nodes || []).filter((node: any) => {
+        const isValid = hasValidArtist(node);
+        if (!isValid) {
+          console.debug(`[LiveDataLoader] Filtering out track without artist: ${node.title || node.id}`);
+        }
+        return isValid;
+      });
+
+      const nodes: GraphNode[] = validNodesData.map((node: any) => ({
         id: node.id,
         title: node.title || node.metadata?.title || 'Unknown',
         artist: node.artist || node.metadata?.artist || 'Unknown',
