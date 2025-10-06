@@ -12,7 +12,8 @@ import os
 
 BOT_NAME = 'songnodes_scrapers'
 
-SPIDER_MODULES = ['spiders.aggregators', 'spiders.community', 'spiders.stores', 'spiders.events', 'spiders']
+# IMPORTANT: Include 'spiders' module itself for root-level spiders like mixesdb_spider.py
+SPIDER_MODULES = ['spiders', 'spiders.aggregators', 'spiders.community', 'spiders.stores', 'spiders.events']
 NEWSPIDER_MODULE = 'spiders'
 
 # ============================================================================

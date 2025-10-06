@@ -5,6 +5,7 @@ export interface Track {
   artist: string;
   album?: string;
   duration?: number;
+  duration_seconds?: number; // Alias for duration
   bpm?: number;
   key?: string;
   camelotKey?: string;
@@ -13,6 +14,7 @@ export interface Track {
   valence?: number;
   genre?: string;
   year?: number;
+  release_year?: number; // Alias for year
   popularity?: number;
   preview_url?: string;
   spotify_id?: string;
@@ -20,6 +22,26 @@ export interface Track {
   beatport_id?: string;
   isrc?: string;
   title?: string; // Alias for name for compatibility
+  intro?: number; // Intro length in beats
+  outro?: number; // Outro length in beats
+  status?: 'unplayed' | 'playing' | 'played' | 'queued'; // DJ status
+  waveform?: number[]; // Waveform data for visualization
+  beatgrid?: number[]; // Beatgrid data
+  lastPlayed?: Date; // Last time track was played
+  playCount?: number; // Number of times track was played
+  tags?: string[]; // User tags for filtering
+  mood?: string; // Mood descriptor
+  notes?: string; // User notes
+  cuePoints?: CuePoint[]; // DJ cue points for track navigation
+}
+
+// Cue point interface for DJ navigation
+export interface CuePoint {
+  id: string;
+  position: number; // in seconds
+  label: string;
+  color: string;
+  type: 'intro' | 'buildup' | 'drop' | 'breakdown' | 'outro' | 'custom';
 }
 
 // Graph visualization types
@@ -53,6 +75,9 @@ export interface GraphNode {
   year?: number;
   connections?: number;
   popularity?: number;
+  duration?: number;
+  camelot_key?: string;
+  hidden?: boolean; // For visibility filtering
   // Include raw metadata for transformation functions
   metadata?: any;
 }
@@ -62,6 +87,7 @@ export interface GraphEdge {
   source: string;
   target: string;
   weight: number;
+  hidden?: boolean; // For visibility filtering
   type: 'adjacency' | 'similarity' | 'collaboration' | 'genre' | 'key_compatibility';
   strength?: number;
   color?: string;

@@ -51,16 +51,10 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
       return [];
     }
 
-    console.log('🔍 Computing edges for track:', track.id, track.name);
-    console.log('📊 Available edges in store:', graphEdges.length);
-    console.log('📊 Available nodes in store:', graphNodes.length);
-
     // Find all edges connected to this track
     const connectedEdges = graphEdges.filter(
       edge => edge.source === track.id || edge.target === track.id
     );
-
-    console.log(`✅ Found ${connectedEdges.length} connected edges for ${track.name}`);
 
     // Transform edges and add related track info from nodes
     const trackEdges: TrackEdge[] = connectedEdges.map((edge, index) => {
@@ -76,19 +70,17 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
         relatedTrack: relatedNode
           ? {
               id: relatedNode.id,
-              name: relatedNode.track?.name || relatedNode.title || relatedNode.label || 'Unknown Track',
-              artist: relatedNode.track?.artist || relatedNode.artist || 'Unknown Artist',
+              name: relatedNode.track?.name || relatedNode.title || relatedNode.label || 'ERROR: No Track Name (Related)',
+              artist: relatedNode.track?.artist || relatedNode.artist || 'ERROR: No Artist (Related)',
               bpm: relatedNode.track?.bpm || relatedNode.bpm,
               key: relatedNode.track?.key || relatedNode.key,
             }
           : {
               id: relatedNodeId,
-              name: 'Unknown Track',
-              artist: 'Unknown Artist',
+              name: 'ERROR: Track Not Found in Graph',
+              artist: 'ERROR: Missing Track Data',
             },
       };
-
-      console.log(`  → Edge to: ${trackEdge.relatedTrack?.name} (${trackEdge.type}, weight: ${trackEdge.weight})`);
 
       return trackEdge;
     });

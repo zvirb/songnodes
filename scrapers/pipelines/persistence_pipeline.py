@@ -28,7 +28,35 @@ from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from scrapy import Spider
 
+# Add Prometheus metrics for monitoring
+try:
+    from prometheus_client import Counter, Gauge
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+    logging.warning("Prometheus client not available - metrics disabled")
+
 logger = logging.getLogger(__name__)
+
+# Define Prometheus metrics if available
+if METRICS_AVAILABLE:
+    playlists_created = Counter(
+        'playlists_created_total',
+        'Total playlists created',
+        ['source', 'tracklist_count']
+    )
+
+    silent_failures = Counter(
+        'silent_scraping_failures_total',
+        'Playlists with 0 tracks and no error',
+        ['source', 'parsing_version']
+    )
+
+    tracks_extracted = Counter(
+        'tracks_extracted_total',
+        'Total tracks extracted',
+        ['source']
+    )
 
 
 class PersistencePipeline:
@@ -117,6 +145,7 @@ class PersistencePipeline:
             'total_items': 0,
             'persisted_items': 0,
             'failed_items': 0,
+            'silent_failures': 0,  # NEW: Track silent failures
             'items_by_type': {}
         }
 
@@ -316,6 +345,11 @@ class PersistencePipeline:
 
         self.processed_items['songs'].add(track_key)
 
+        # Update Prometheus metric for tracks extracted
+        if METRICS_AVAILABLE:
+            source = item.get('data_source', 'unknown')
+            tracks_extracted.labels(source=source).inc()
+
         # First ensure artist exists
         artist_name = item.get('artist_name', '').strip()
         if artist_name and artist_name not in self.processed_items['artists']:
@@ -366,7 +400,7 @@ class PersistencePipeline:
 
     async def _process_playlist_item(self, item: Dict[str, Any]):
         """
-        Process playlist/setlist item and add to batch.
+        Process playlist/setlist item with comprehensive validation.
 
         Args:
             item: Playlist item
@@ -376,6 +410,56 @@ class PersistencePipeline:
             return
 
         self.processed_items['playlists'].add(playlist_name)
+
+        # Extract validation fields
+        tracklist_count = item.get('tracklist_count', item.get('total_tracks', 0))
+        scrape_error = item.get('scrape_error')
+        parsing_version = item.get('parsing_version', 'unknown')
+        source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
+
+        # CRITICAL: Validate tracklist count
+        if tracklist_count == 0:
+            if scrape_error:
+                # Expected failure - log as warning
+                self.logger.warning(
+                    f"⚠️ Playlist '{playlist_name}' failed to extract tracks: {scrape_error}",
+                    extra={
+                        'source': source,
+                        'source_url': item.get('source_url'),
+                        'error': scrape_error,
+                        'parsing_version': parsing_version
+                    }
+                )
+            else:
+                # UNEXPECTED: 0 tracks with no error = SILENT FAILURE
+                self.logger.error(
+                    f"🚨 SILENT FAILURE DETECTED: Playlist '{playlist_name}' has 0 tracks with no scrape_error",
+                    extra={
+                        'source': source,
+                        'source_url': item.get('source_url'),
+                        'parsing_version': parsing_version,
+                        'severity': 'CRITICAL'
+                    }
+                )
+                # Increment critical failure metric
+                self.stats['silent_failures'] = self.stats.get('silent_failures', 0) + 1
+
+                # Update Prometheus metric if available
+                if METRICS_AVAILABLE:
+                    silent_failures.labels(
+                        source=source,
+                        parsing_version=parsing_version
+                    ).inc()
+
+                # Generate synthetic error for DB constraint compliance
+                scrape_error = f"Silent failure: 0 tracks extracted by {parsing_version}"
+
+        # Update Prometheus metrics if available
+        if METRICS_AVAILABLE:
+            playlists_created.labels(
+                source=source,
+                tracklist_count='0' if tracklist_count == 0 else 'non_zero'
+            ).inc()
 
         # Convert date string to date object if present
         event_date = item.get('set_date') or item.get('playlist_date') or item.get('event_date')
@@ -398,10 +482,14 @@ class PersistencePipeline:
 
         self.item_batches['playlists'].append({
             'name': playlist_name,
-            'source': item.get('data_source') or item.get('source') or item.get('platform') or 'unknown',
+            'source': source,
             'source_url': item.get('source_url'),
             'playlist_type': item.get('playlist_type') or item.get('event_type'),
-            'event_date': event_date
+            'event_date': event_date,
+            'tracklist_count': tracklist_count,              # ADD
+            'scrape_error': scrape_error,                    # ADD
+            'last_scrape_attempt': datetime.utcnow(),        # ADD
+            'parsing_version': parsing_version               # ADD
         })
 
         if len(self.item_batches['playlists']) >= self.batch_size:
@@ -616,7 +704,7 @@ class PersistencePipeline:
         ])
 
     async def _insert_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert playlists batch with conflict handling."""
+        """Insert playlists batch with validation fields and conflict handling."""
         # Check if playlists already exist first
         for item in batch:
             existing = await conn.fetchval(
@@ -624,16 +712,33 @@ class PersistencePipeline:
                 item['name'], item.get('source', 'scraped_data')
             )
             if not existing:
-                await conn.execute("""
-                    INSERT INTO playlists (name, source, source_url, playlist_type, event_date)
-                    VALUES ($1, $2, $3, $4, $5)
-                """,
-                    item['name'],
-                    item.get('source', 'scraped_data'),
-                    item.get('source_url'),
-                    item.get('playlist_type'),
-                    item.get('event_date')
-                )
+                try:
+                    await conn.execute("""
+                        INSERT INTO playlists (
+                            name, source, source_url, playlist_type, event_date,
+                            tracklist_count, scrape_error, last_scrape_attempt, parsing_version
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    """,
+                        item['name'],
+                        item.get('source', 'scraped_data'),
+                        item.get('source_url'),
+                        item.get('playlist_type'),
+                        item.get('event_date'),
+                        item.get('tracklist_count', 0),          # NEW
+                        item.get('scrape_error'),                # NEW
+                        item.get('last_scrape_attempt'),         # NEW
+                        item.get('parsing_version')              # NEW
+                    )
+                except Exception as e:
+                    # Log constraint violations explicitly
+                    if 'chk_tracklist_count_valid' in str(e):
+                        self.logger.error(
+                            f"❌ Database constraint violation: Playlist '{item['name']}' "
+                            f"has tracklist_count={item.get('tracklist_count', 0)} "
+                            f"with scrape_error={item.get('scrape_error')}"
+                        )
+                    raise
 
     async def _insert_playlist_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
         """Insert playlist tracks batch with upsert logic."""
@@ -783,6 +888,7 @@ class PersistencePipeline:
             self.logger.info(f"  Total items processed: {self.stats['total_items']}")
             self.logger.info(f"  ✅ Items persisted: {self.stats['persisted_items']}")
             self.logger.info(f"  ❌ Items failed: {self.stats['failed_items']}")
+            self.logger.info(f"  🚨 Silent failures detected: {self.stats.get('silent_failures', 0)}")
 
             # Calculate persistence rate
             if self.stats['total_items'] > 0:

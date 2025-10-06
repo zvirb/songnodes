@@ -37,24 +37,36 @@ RUN echo 'server { \
     # NO CACHE for index.html and root path - CRITICAL for updates \
     location = / { \
         try_files /index.html =404; \
-        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"; \
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; \
         add_header Pragma "no-cache"; \
         add_header Expires "0"; \
+        add_header Last-Modified $date_gmt; \
+        add_header ETag ""; \
+        if_modified_since off; \
+        etag off; \
     } \
     \
     location ~ \.html$ { \
         try_files $uri /index.html; \
-        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"; \
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; \
         add_header Pragma "no-cache"; \
         add_header Expires "0"; \
+        add_header Last-Modified $date_gmt; \
+        add_header ETag ""; \
+        if_modified_since off; \
+        etag off; \
     } \
     \
     # Fallback for other files and SPA routing \
     location / { \
         try_files $uri $uri/ /index.html; \
-        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"; \
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; \
         add_header Pragma "no-cache"; \
         add_header Expires "0"; \
+        add_header Last-Modified $date_gmt; \
+        add_header ETag ""; \
+        if_modified_since off; \
+        etag off; \
     } \
     \
     location /api { \

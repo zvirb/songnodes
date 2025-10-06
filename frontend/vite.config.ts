@@ -2,8 +2,23 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
+// ✅ NUCLEAR CACHE-BUST: Add build timestamp to ALL script/CSS/preload URLs
+const timestampPlugin = () => {
+  return {
+    name: 'timestamp-inject',
+    transformIndexHtml(html: string) {
+      const timestamp = Date.now();
+      // Add ?v=timestamp to ALL script tags, CSS links, and module preloads
+      return html
+        .replace(/(<script[^>]+src="[^"]+)(")/g, `$1?v=${timestamp}$2`)
+        .replace(/(<link[^>]+href="[^"]+\.css)(")/g, `$1?v=${timestamp}$2`)
+        .replace(/(<link[^>]+href="[^"]+\.js)(")/g, `$1?v=${timestamp}$2`);
+    },
+  };
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), timestampPlugin()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -63,6 +78,18 @@ export default defineConfig({
     minify: 'esbuild',
     sourcemap: true,
     chunkSizeWarningLimit: 1000, // Increase threshold to 1MB for large components
+    // CRITICAL: Fix PIXI.js worker loading
+    assetsInlineLimit: 0, // Don't inline workers
+  },
+  worker: {
+    format: 'es',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    }
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'pixi.js', 'd3-force', 'd3-quadtree', 'fuse.js', 'zustand'],

@@ -49,3 +49,8 @@ websockets==15.0.1
 structlog==24.4.0
 beautifulsoup4==4.12.3
 psutil==5.9.6
+# Scrapy for Reddit monitor spider execution
+Scrapy>=2.11.0
+scrapy-playwright>=0.0.34
+praw>=7.7.1
+lxml>=4.9.3

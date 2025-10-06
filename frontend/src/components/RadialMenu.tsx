@@ -45,7 +45,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
 
   // Store actions
   const selectNode = useStore(state => state.graph.selectNode);
-  const addToSetlist = useStore(state => state.setlist.addTrack);
+  const addToSetlist = useStore(state => state.setlist.addTrackToSetlist);
   const setSelectedTool = useStore(state => state.view.setSelectedTool);
   const applyFilters = useStore(state => state.search.applyFilters);
 

@@ -26,17 +26,22 @@ export type DJMode = 'librarian' | 'performer';
 export interface Track {
   id: string;
   name: string;
+  title?: string;   // Alias for name (for compatibility)
   artist: string;
   album?: string;
   genre?: string;
+  year?: number;
+  release_year?: number; // Alias for year (for compatibility)
 
-  // DJ-critical metadata
-  bpm: number;
-  key: CamelotKey;
-  energy: EnergyLevel;
+  // DJ-critical metadata (optional for compatibility with graph data)
+  bpm?: number;
+  key?: string; // CamelotKey or other key notation
+  camelotKey?: string; // Alias for Camelot-specific key
+  energy?: number; // 0-1 float or 1-10 integer scale
 
   // Timing
-  duration: number; // in seconds
+  duration?: number; // in seconds
+  duration_seconds?: number; // Alias for duration (for compatibility)
   intro?: number;   // intro length in beats
   outro?: number;   // outro length in beats
 
@@ -45,9 +50,15 @@ export interface Track {
   beatgrid?: number[];
 
   // Status
-  status: TrackStatus;
-  lastPlayed?: Date;
+  status?: 'unplayed' | 'playing' | 'played' | 'queued';
+  lastPlayed?: Date | number; // Date or timestamp
   playCount?: number;
+
+  // Platform IDs
+  isrc?: string;
+  spotify_id?: string;
+  apple_music_id?: string;
+  beatport_id?: string;
 
   // Tags for filtering
   tags?: string[];

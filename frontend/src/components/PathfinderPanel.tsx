@@ -50,10 +50,12 @@ export const PathfinderPanel: React.FC = () => {
   const [showTrackSelector, setShowTrackSelector] = useState<'start' | 'end' | 'waypoint' | null>(null);
 
   // Filter tracks for selector
-  const filteredTracks = tracks.filter(track =>
-    track.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    track.artist.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTracks = tracks.filter(track => {
+    const query = searchQuery.toLowerCase();
+    const name = track.name?.toLowerCase() || '';
+    const artist = track.artist?.toLowerCase() || '';
+    return name.includes(query) || artist.includes(query);
+  });
 
   const addWaypoint = (track: Track) => {
     pathfinding.addWaypoint(track.id);
@@ -164,7 +166,7 @@ export const PathfinderPanel: React.FC = () => {
           {filteredTracks.map(track => (
             <div
               key={track.id}
-              onClick={() => onSelect(track)}
+              onClick={() => onSelect(track as any)}
               className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200"
             >
               <div className="font-medium">{track.name || track.title}</div>

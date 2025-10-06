@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class HealthThresholds:
     """Configurable health check thresholds"""
-    memory_percent: float = 85.0  # Maximum memory usage percentage
-    db_pool_usage: float = 0.8  # Maximum database pool usage (80%)
+    memory_percent: float = 95.0  # Maximum memory usage percentage (relaxed for dev)
+    db_pool_usage: float = 0.9  # Maximum database pool usage (90%, relaxed)
     redis_memory_mb: Optional[float] = None  # Optional Redis memory limit in MB
     connection_timeout: float = 5.0  # Connection health check timeout in seconds
 

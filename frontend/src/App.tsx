@@ -548,20 +548,7 @@ const App: React.FC = () => {
             {icons.restart}
           </button>
 
-          <button
-            className="btn btn-icon-small"
-            onClick={view.toggleLabels}
-            title={`${viewState.showLabels ? 'Hide' : 'Show'} Labels`}
-          >
-            🏷️
-          </button>
-          <button
-            className="btn btn-icon-small"
-            onClick={view.toggleEdges}
-            title={`${viewState.showEdges ? 'Hide' : 'Show'} Edges`}
-          >
-            🔗
-          </button>
+          {/* Labels and edges permanently enabled - toggles removed */}
           <button
             className="btn btn-icon-small"
             onClick={view.resetView}

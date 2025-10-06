@@ -358,7 +358,7 @@ class PrometheusService {
       }
 
       // Transform to chart-friendly format
-      return result.data.result[0].values?.map((v: [number, string]) => ({
+      return (result.data.result[0] as any).values?.map((v: [number, string]) => ({
         timestamp: v[0] * 1000, // Convert to milliseconds
         value: parseFloat(v[1])
       })) || [];

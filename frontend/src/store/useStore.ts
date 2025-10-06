@@ -206,8 +206,8 @@ const initialState: AppState = {
     hoveredNode: null,
     zoom: DEFAULT_CONFIG.ui.defaultZoom,
     pan: { x: 0, y: 0 },
-    showLabels: true,
-    showEdges: true,
+    showLabels: true, // PERMANENT: Always show labels
+    showEdges: true,  // PERMANENT: Always show edges
     nodeSize: DEFAULT_CONFIG.graph.defaultRadius,
     edgeOpacity: 0.6,
     colorBy: 'genre',
@@ -410,23 +410,13 @@ export const useStore = create<StoreState>()(
           },
 
           toggleLabels: () => {
-            set((state) => ({
-              ...state,
-              viewState: {
-                ...state.viewState,
-                showLabels: !state.viewState.showLabels,
-              },
-            }), false, 'view/toggleLabels');
+            // DISABLED: Labels permanently enabled
+            console.log('🏷️ Labels are permanently enabled');
           },
 
           toggleEdges: () => {
-            set((state) => ({
-              ...state,
-              viewState: {
-                ...state.viewState,
-                showEdges: !state.viewState.showEdges,
-              },
-            }), false, 'view/toggleEdges');
+            // DISABLED: Edges permanently enabled
+            console.log('🔗 Edges are permanently enabled');
           },
 
           setNodeSize: (size) => {
@@ -1273,10 +1263,9 @@ if (typeof window !== 'undefined') {
       };
     }
   };
-  console.log('🛠️ Debugging utilities available: window.debugZustand');
-  console.log('  - debugZustand.getState()');
-  console.log('  - debugZustand.getMusicCredentials()');
-  console.log('  - debugZustand.getLocalStorage()');
-  console.log('  - debugZustand.injectTestCredentials()');
-  console.log('  - debugZustand.verifyPersistence()');
+
+  // Debug utilities are available at window.debugZustand (see console for details)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🛠️ Debug utilities: window.debugZustand (getState, getMusicCredentials, getLocalStorage, injectTestCredentials, verifyPersistence)');
+  }
 }

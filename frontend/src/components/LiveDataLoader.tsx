@@ -83,9 +83,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
 
   // Store actions
   const setGraphData = useStore(state => state.graph.setGraphData);
-  const updatePerformanceMetrics = useStore(state => state.updatePerformanceMetrics);
-  const setError = useStore(state => state.setError);
-  const setLoading = useStore(state => state.setLoading);
+  const updatePerformanceMetrics = useStore(state => state.performance.updatePerformanceMetrics);
+  const setError = useStore(state => state.general.setError);
+  const setLoading = useStore(state => state.general.setLoading);
 
   // Refs for cleanup
   const intervalRef = useRef<NodeJS.Timeout>();
@@ -205,7 +205,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
     } catch (error) {
       console.error('Failed to create WebSocket:', error);
     }
-  }, [enableWebSocket, status.retryCount, maxRetries, onError]);
+  }, [enableWebSocket, maxRetries, onError]); // FIXED: Removed status.retryCount - using statusRef instead
 
   // Handle WebSocket messages
   const handleWebSocketMessage = useCallback((message: any) => {
@@ -288,19 +288,13 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
 
       // Transform and validate data
       // ✅ FILTER: Exclude tracks without valid artist attribution
-      const validNodesData = (nodesData.nodes || []).filter((node: any) => {
-        const isValid = hasValidArtist(node);
-        if (!isValid) {
-          console.debug(`[LiveDataLoader] Filtering out track without artist: ${node.title || node.id}`);
-        }
-        return isValid;
-      });
+      const validNodesData = (nodesData.nodes || []).filter((node: any) => hasValidArtist(node));
 
       const nodes: GraphNode[] = validNodesData.map((node: any) => ({
         id: node.id,
-        title: node.title || node.metadata?.title || 'Unknown',
-        artist: node.artist || node.metadata?.artist || 'Unknown',
-        label: node.metadata?.label || node.title || 'Unknown',
+        title: node.title || node.metadata?.title || 'ERROR: No Track Title (WebSocket)',
+        artist: node.artist || node.metadata?.artist || 'ERROR: No Artist (WebSocket)',
+        label: node.metadata?.label || node.title || 'ERROR: No Label (WebSocket)',
         bpm: node.metadata?.bpm,
         key: node.metadata?.key,
         genre: node.metadata?.genre || 'Electronic',
@@ -387,8 +381,8 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         renderTime: 16.67, // 60fps target
         nodeCount: useStore.getState().graphData.nodes.length,
         edgeCount: useStore.getState().graphData.edges.length,
-        visibleNodes: useStore.getState().graphData.nodes.filter(n => !n.hidden).length,
-        visibleEdges: useStore.getState().graphData.edges.filter(e => !e.hidden).length,
+        visibleNodes: useStore.getState().graphData.nodes.length,
+        visibleEdges: useStore.getState().graphData.edges.length,
         memoryUsage: memory ? memory.usedJSHeapSize : 0,
         lastUpdate: now
       };

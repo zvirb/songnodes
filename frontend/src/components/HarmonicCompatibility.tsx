@@ -15,6 +15,9 @@ interface HarmonicCompatibilityProps {
 
 // Camelot Wheel compatibility rules
 const getCompatibility = (current: CamelotKey, target: CamelotKey): HarmonicType => {
+  // Guard against undefined/null keys
+  if (!current || !target) return 'clash';
+
   const currentNum = parseInt(current.slice(0, -1));
   const currentLetter = current.slice(-1);
   const targetNum = parseInt(target.slice(0, -1));

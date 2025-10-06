@@ -53,8 +53,6 @@ const calculateRecommendations = (
     });
   }
 
-  console.log(`🎯 Found ${adjacencyMap.size} adjacent tracks for ${currentTrack.name}`);
-
   return (allTracks || [])
     .filter(track => track.id !== currentTrack.id)
     .map(track => {
@@ -79,11 +77,10 @@ const calculateRecommendations = (
           description: `Mixed together in real DJ sets (${adjacency.type})`,
           weight: adjacencyScore
         });
-        console.log(`  ✅ Adjacent track: ${track.name} (score: ${adjacencyScore})`);
       }
 
       // Harmonic compatibility scoring
-      const keyCompat = getKeyCompatibility(currentTrack.key, track.key);
+      const keyCompat = getKeyCompatibility(currentTrack.key as any, track.key as any);
       if (keyCompat === 'perfect') {
         recommendation.score += 25;
         recommendation.reasons.push({
@@ -102,45 +99,49 @@ const calculateRecommendations = (
         recommendation.compatibility.harmonic = 'compatible';
       }
 
-      // Energy flow scoring
-      const energyDiff = Math.abs(track.energy - currentTrack.energy);
-      if (energyDiff <= 1) {
-        recommendation.score += 15;
-        recommendation.reasons.push({
-          type: 'energy',
-          description: energyDiff === 0 ? 'Same energy level' : 'Smooth energy transition',
-          weight: 15
-        });
-        recommendation.compatibility.energy = 'perfect';
-      } else if (energyDiff <= 2) {
-        recommendation.score += 10;
-        recommendation.reasons.push({
-          type: 'energy',
-          description: 'Manageable energy change',
-          weight: 10
-        });
-        recommendation.compatibility.energy = 'good';
+      // Energy flow scoring (with safety checks)
+      if (track.energy !== undefined && currentTrack.energy !== undefined) {
+        const energyDiff = Math.abs(track.energy - currentTrack.energy);
+        if (energyDiff <= 1) {
+          recommendation.score += 15;
+          recommendation.reasons.push({
+            type: 'energy',
+            description: energyDiff === 0 ? 'Same energy level' : 'Smooth energy transition',
+            weight: 15
+          });
+          recommendation.compatibility.energy = 'perfect';
+        } else if (energyDiff <= 2) {
+          recommendation.score += 10;
+          recommendation.reasons.push({
+            type: 'energy',
+            description: 'Manageable energy change',
+            weight: 10
+          });
+          recommendation.compatibility.energy = 'good';
+        }
       }
 
-      // BPM compatibility scoring
-      const bpmDiff = Math.abs(track.bpm - currentTrack.bpm);
-      const bpmPercent = (bpmDiff / currentTrack.bpm) * 100;
-      if (bpmPercent <= 2) {
-        recommendation.score += 15;
-        recommendation.reasons.push({
-          type: 'bpm',
-          description: 'Perfect tempo match',
-          weight: 15
-        });
-        recommendation.compatibility.bpm = 'perfect';
-      } else if (bpmPercent <= 6) {
-        recommendation.score += 10;
-        recommendation.reasons.push({
-          type: 'bpm',
-          description: 'Close tempo (pitch adjust)',
-          weight: 10
-        });
-        recommendation.compatibility.bpm = 'close';
+      // BPM compatibility scoring (with safety checks)
+      if (track.bpm !== undefined && currentTrack.bpm !== undefined && currentTrack.bpm > 0) {
+        const bpmDiff = Math.abs(track.bpm - currentTrack.bpm);
+        const bpmPercent = (bpmDiff / currentTrack.bpm) * 100;
+        if (bpmPercent <= 2) {
+          recommendation.score += 15;
+          recommendation.reasons.push({
+            type: 'bpm',
+            description: 'Perfect tempo match',
+            weight: 15
+          });
+          recommendation.compatibility.bpm = 'perfect';
+        } else if (bpmPercent <= 6) {
+          recommendation.score += 10;
+          recommendation.reasons.push({
+            type: 'bpm',
+            description: 'Close tempo (pitch adjust)',
+            weight: 10
+          });
+          recommendation.compatibility.bpm = 'close';
+        }
       }
 
       return recommendation;
@@ -150,6 +151,8 @@ const calculateRecommendations = (
 
 // Helper function for key compatibility
 const getKeyCompatibility = (key1: CamelotKey, key2: CamelotKey): 'perfect' | 'compatible' | 'clash' => {
+  // Guard against undefined/null keys
+  if (!key1 || !key2) return 'clash';
   if (key1 === key2) return 'perfect';
 
   const num1 = parseInt(key1.slice(0, -1));
@@ -263,8 +266,8 @@ const RecommendationCard: React.FC<{
         {/* Harmonic */}
         <div style={{ textAlign: 'center' }}>
           <HarmonicCompatibility
-            currentKey={currentTrack.key}
-            targetKey={track.key}
+            currentKey={currentTrack.key as any}
+            targetKey={track.key as any}
             size="small"
           />
           <div style={{
@@ -278,7 +281,7 @@ const RecommendationCard: React.FC<{
 
         {/* Energy */}
         <div style={{ textAlign: 'center' }}>
-          <EnergyMeter level={track.energy} size="small" />
+          <EnergyMeter level={track.energy || 5} size="small" />
           <div style={{
             color: '#8E8E93',
             fontSize: '10px',
@@ -371,10 +374,41 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
   const [sortBy, setSortBy] = useState(finalConfig.sortBy);
 
   // Calculate recommendations with graph edges
+  const allRecommendations = useMemo(() => {
+    return calculateRecommendations(currentTrack, allTracks, graphEdges);
+  }, [currentTrack, allTracks, graphEdges]);
+
+  // Filter and sort recommendations based on selected tab
   const recommendations = useMemo(() => {
-    const recs = calculateRecommendations(currentTrack, allTracks, graphEdges);
-    return recs.slice(0, finalConfig.maxRecommendations);
-  }, [currentTrack, allTracks, graphEdges, finalConfig.maxRecommendations]);
+    let filtered = [...allRecommendations];
+
+    // Apply sorting based on selected tab
+    switch (sortBy) {
+      case 'score':
+        // Already sorted by score in calculateRecommendations
+        break;
+
+      case 'energy':
+        // Sort by energy similarity (closest energy to current track first)
+        filtered = filtered.sort((a, b) => {
+          const aDiff = Math.abs((a.track.energy ?? 0) - (currentTrack?.energy ?? 0));
+          const bDiff = Math.abs((b.track.energy ?? 0) - (currentTrack?.energy ?? 0));
+          return aDiff - bDiff;
+        });
+        break;
+
+      case 'bpm':
+        // Sort by BPM similarity (closest BPM to current track first)
+        filtered = filtered.sort((a, b) => {
+          const aDiff = Math.abs((a.track.bpm ?? 0) - (currentTrack?.bpm ?? 0));
+          const bDiff = Math.abs((b.track.bpm ?? 0) - (currentTrack?.bpm ?? 0));
+          return aDiff - bDiff;
+        });
+        break;
+    }
+
+    return filtered.slice(0, finalConfig.maxRecommendations);
+  }, [allRecommendations, sortBy, currentTrack, finalConfig.maxRecommendations]);
 
   // Group recommendations by compatibility if requested
   const groupedRecommendations = useMemo(() => {
@@ -428,14 +462,27 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <h3 style={{
-          color: '#FFFFFF',
-          fontSize: '20px',
-          margin: 0,
-          fontWeight: 600
-        }}>
-          🎯 Track Browser
-        </h3>
+        <div>
+          <h3 style={{
+            color: '#FFFFFF',
+            fontSize: '20px',
+            margin: 0,
+            fontWeight: 600
+          }}>
+            Track Browser
+          </h3>
+          <p style={{
+            color: '#8E8E93',
+            fontSize: '12px',
+            margin: '4px 0 0 0'
+          }}>
+            {recommendations.length} track{recommendations.length !== 1 ? 's' : ''} • Sorted by {
+              sortBy === 'score' ? 'Best Match' :
+              sortBy === 'energy' ? 'Energy Similarity' :
+              'Tempo Similarity'
+            }
+          </p>
+        </div>
         <span style={{
           color: '#7ED321',
           fontSize: '14px',
@@ -455,6 +502,7 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
       }}>
         <button
           onClick={() => setSortBy('score')}
+          title="Sort by overall compatibility score (harmonic + energy + BPM + playlist history)"
           style={{
             padding: '8px 16px',
             backgroundColor: sortBy === 'score' ? '#4A90E2' : 'transparent',
@@ -463,37 +511,76 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
             borderRadius: '20px',
             cursor: 'pointer',
             fontSize: '12px',
-            fontWeight: 600
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            if (sortBy !== 'score') {
+              e.currentTarget.style.backgroundColor = 'rgba(74,144,226,0.2)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (sortBy !== 'score') {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
           }}
         >
           Best Match
         </button>
         <button
           onClick={() => setSortBy('energy')}
+          title="Sort by energy level similarity (smooth transitions)"
           style={{
             padding: '8px 16px',
-            backgroundColor: sortBy === 'energy' ? '#4A90E2' : 'transparent',
+            backgroundColor: sortBy === 'energy' ? '#7ED321' : 'transparent',
             color: '#FFFFFF',
-            border: '1px solid #4A90E2',
+            border: sortBy === 'energy' ? '1px solid #7ED321' : '1px solid #7ED32180',
             borderRadius: '20px',
             cursor: 'pointer',
             fontSize: '12px',
-            fontWeight: 600
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            if (sortBy !== 'energy') {
+              e.currentTarget.style.backgroundColor = 'rgba(126,211,33,0.2)';
+              e.currentTarget.style.borderColor = '#7ED321';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (sortBy !== 'energy') {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = '#7ED32180';
+            }
           }}
         >
           Energy Flow
         </button>
         <button
           onClick={() => setSortBy('bpm')}
+          title="Sort by BPM similarity (closest tempo first)"
           style={{
             padding: '8px 16px',
-            backgroundColor: sortBy === 'bpm' ? '#4A90E2' : 'transparent',
+            backgroundColor: sortBy === 'bpm' ? '#F5A623' : 'transparent',
             color: '#FFFFFF',
-            border: '1px solid #4A90E2',
+            border: sortBy === 'bpm' ? '1px solid #F5A623' : '1px solid #F5A62380',
             borderRadius: '20px',
             cursor: 'pointer',
             fontSize: '12px',
-            fontWeight: 600
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            if (sortBy !== 'bpm') {
+              e.currentTarget.style.backgroundColor = 'rgba(245,166,35,0.2)';
+              e.currentTarget.style.borderColor = '#F5A623';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (sortBy !== 'bpm') {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = '#F5A62380';
+            }
           }}
         >
           Tempo Match

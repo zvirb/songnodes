@@ -17,6 +17,7 @@ import structlog
 
 from circuit_breaker import CircuitBreaker
 from retry_handler import fetch_with_exponential_backoff, RetryExhausted
+from abbreviation_expander import get_abbreviation_expander
 
 logger = structlog.get_logger(__name__)
 
@@ -357,6 +358,68 @@ class SpotifyClient:
         except (RetryExhausted, aiohttp.ClientError) as e:
             logger.error("Spotify multi-search failed", error=str(e), query=query)
             return []
+
+    async def search_track_with_abbreviation_expansion(
+        self,
+        artist: Optional[str],
+        title: str,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for tracks using abbreviation expansion
+
+        If artist or title contains abbreviations (e.g., "Gold Music Kft."),
+        this method will search with both original and expanded forms.
+
+        Args:
+            artist: Artist name (may contain abbreviations)
+            title: Track title
+            limit: Maximum results per search variant
+
+        Returns:
+            Combined deduplicated results from all search variants
+        """
+        expander = get_abbreviation_expander()
+        all_results = []
+        seen_ids = set()
+
+        # Get search variants for artist (if provided)
+        artist_variants = [artist] if artist else [None]
+        if artist and expander.is_abbreviation(artist):
+            artist_variants = await expander.get_search_variants(
+                artist,
+                context="music artist name"
+            )
+            logger.info(
+                "🔍 Artist contains abbreviation, searching with variants",
+                original=artist,
+                variants=artist_variants
+            )
+
+        # Search with each artist variant
+        for artist_variant in artist_variants:
+            results = await self.search_track_multiple(
+                artist=artist_variant,
+                title=title,
+                limit=limit
+            )
+
+            # Deduplicate by track ID
+            for result in results:
+                track_id = result.get('id')
+                if track_id and track_id not in seen_ids:
+                    seen_ids.add(track_id)
+                    all_results.append(result)
+
+        logger.debug(
+            "Abbreviation-expanded search completed",
+            artist=artist,
+            title=title,
+            variants_searched=len(artist_variants),
+            unique_results=len(all_results)
+        )
+
+        return all_results[:limit * 2]  # Allow more results when using expansions
 
     async def _get_album_label(self, album_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -886,6 +949,378 @@ class LastFMClient:
             return await self.circuit_breaker.call(_get_info)
         except (RetryExhausted, aiohttp.ClientError) as e:
             logger.error("Last.fm track info failed", error=str(e), artist=artist, track=track)
+            return None
+
+# ===================
+# ACOUSTICBRAINZ CLIENT
+# ===================
+class AcousticBrainzClient:
+    """AcousticBrainz API client for BPM and key detection via MusicBrainz IDs"""
+
+    def __init__(self, redis_client: aioredis.Redis):
+        self.redis_client = redis_client
+        self.base_url = "https://acousticbrainz.org/api/v1"
+        self.circuit_breaker = CircuitBreaker(
+            failure_threshold=5,
+            timeout_seconds=60,
+            name="acousticbrainz"
+        )
+        self.rate_limiter = RateLimiter(requests_per_second=2)
+
+    async def get_audio_features(self, musicbrainz_id: str) -> Optional[Dict[str, Any]]:
+        """Get BPM and key from AcousticBrainz using MusicBrainz recording ID"""
+        await self.rate_limiter.wait()
+
+        cache_key = f"acousticbrainz:{musicbrainz_id}"
+
+        # Check cache
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            logger.debug("AcousticBrainz cache hit", mbid=musicbrainz_id)
+            return json.loads(cached)
+
+        async def _get_features():
+            url = f"{self.base_url}/{musicbrainz_id}/low-level"
+
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as response:
+                        if response.status == 404:
+                            logger.debug("No AcousticBrainz data for recording", mbid=musicbrainz_id)
+                            return None
+
+                        response.raise_for_status()
+                        data = await response.json()
+
+                        # Extract BPM and key
+                        result = {}
+
+                        if 'rhythm' in data and 'bpm' in data['rhythm']:
+                            result['bpm'] = round(data['rhythm']['bpm'], 2)
+
+                        if 'tonal' in data:
+                            key_data = data['tonal']
+                            if 'key_key' in key_data and 'key_scale' in key_data:
+                                # Combine key and scale (e.g., "C# minor")
+                                result['key'] = f"{key_data['key_key']} {key_data['key_scale']}"
+                            if 'key_strength' in key_data:
+                                result['key_confidence'] = round(key_data['key_strength'], 3)
+
+                        if result:
+                            # Cache for 90 days (data doesn't change)
+                            await self.redis_client.setex(
+                                cache_key,
+                                90 * 24 * 3600,
+                                json.dumps(result)
+                            )
+                            logger.info("✓ AcousticBrainz data retrieved", mbid=musicbrainz_id, **result)
+                            return result
+
+                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'acousticbrainz', 'method': 'get_audio_features', 'mbid': musicbrainz_id}
+            )
+
+        try:
+            return await self.circuit_breaker.call(_get_features)
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.debug("AcousticBrainz lookup failed", error=str(e), mbid=musicbrainz_id)
+            return None
+
+# ===================
+# GETSONGBPM CLIENT
+# ===================
+class GetSongBPMClient:
+    """GetSongBPM API client for BPM and key lookups"""
+
+    def __init__(self, api_key: Optional[str], redis_client: aioredis.Redis):
+        self.api_key = api_key
+        self.redis_client = redis_client
+        self.base_url = "https://api.getsongbpm.com"
+        self.circuit_breaker = CircuitBreaker(
+            failure_threshold=5,
+            timeout_seconds=60,
+            name="getsongbpm"
+        )
+        self.rate_limiter = RateLimiter(requests_per_second=1)  # Conservative rate
+
+    async def search(self, artist: str, title: str) -> Optional[Dict[str, Any]]:
+        """Search for BPM and key by artist and title"""
+        if not self.api_key:
+            logger.warning("GetSongBPM API key not configured - skipping")
+            return None
+
+        await self.rate_limiter.wait()
+
+        query = f"{artist} {title}"
+        cache_key = f"getsongbpm:search:{hashlib.md5(query.encode()).hexdigest()}"
+
+        # Check cache
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            logger.debug("GetSongBPM cache hit", query=query)
+            return json.loads(cached)
+
+        async def _search():
+            params = {
+                'api_key': self.api_key,
+                'type': 'both',  # Search both artist and title
+                'lookup': query
+            }
+
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(f"{self.base_url}/search/", params=params) as response:
+                        if response.status == 403:
+                            logger.error("GetSongBPM API returned 403 - check API key")
+                            return None
+
+                        response.raise_for_status()
+                        data = await response.json()
+
+                        # Parse response (format depends on their API structure)
+                        if data and 'search' in data and len(data['search']) > 0:
+                            first_result = data['search'][0]
+                            result = {}
+
+                            if 'tempo' in first_result:
+                                result['bpm'] = float(first_result['tempo'])
+                            if 'song_key' in first_result:
+                                result['key'] = first_result['song_key']
+
+                            if result:
+                                # Cache for 30 days
+                                await self.redis_client.setex(
+                                    cache_key,
+                                    30 * 24 * 3600,
+                                    json.dumps(result)
+                                )
+                                logger.info("✓ GetSongBPM data retrieved", query=query, **result)
+                                return result
+
+                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'getsongbpm', 'method': 'search', 'query': query}
+            )
+
+        try:
+            return await self.circuit_breaker.call(_search)
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.debug("GetSongBPM search failed", error=str(e), query=query)
+            return None
+
+# ===================
+# SONOTELLER.AI CLIENT
+# ===================
+class SonotellerClient:
+    """
+    Sonoteller.ai API client via RapidAPI for comprehensive audio analysis
+
+    ⚠️ CRITICAL: FREE TIER LIMIT = 5 REQUESTS/MONTH
+    This should ONLY be used as an ABSOLUTE LAST RESORT when all other sources fail.
+    """
+
+    def __init__(self, rapidapi_key: Optional[str], redis_client: aioredis.Redis):
+        self.rapidapi_key = rapidapi_key
+        self.redis_client = redis_client
+        self.base_url = "https://sonoteller-ai1.p.rapidapi.com"
+        self.circuit_breaker = CircuitBreaker(
+            failure_threshold=2,  # Even lower - preserve quota
+            timeout_seconds=120,   # Longer timeout - can take ~1 min per track
+            name="sonoteller"
+        )
+        self.rate_limiter = RateLimiter(requests_per_second=0.1)  # Ultra conservative
+        self.monthly_usage_key = "sonoteller:monthly_usage"
+        self.monthly_limit = int(os.getenv("SONOTELLER_MONTHLY_LIMIT", "5"))  # DEFAULT: 5/month
+
+    async def check_monthly_quota(self) -> bool:
+        """
+        Check if monthly quota has been exceeded.
+
+        Returns:
+            True if quota available, False if exceeded
+        """
+        try:
+            # Get current usage count (resets monthly)
+            import time
+            from datetime import datetime
+
+            # Create monthly key (e.g., "sonoteller:monthly_usage:2025-10")
+            current_month = datetime.now().strftime("%Y-%m")
+            usage_key = f"{self.monthly_usage_key}:{current_month}"
+
+            current_usage = await self.redis_client.get(usage_key)
+            current_usage = int(current_usage) if current_usage else 0
+
+            if current_usage >= self.monthly_limit:
+                logger.warning(
+                    f"🚫 Sonoteller.ai monthly quota EXCEEDED",
+                    usage=current_usage,
+                    limit=self.monthly_limit,
+                    month=current_month
+                )
+                return False
+
+            logger.info(
+                f"✓ Sonoteller.ai quota check",
+                usage=current_usage,
+                limit=self.monthly_limit,
+                remaining=self.monthly_limit - current_usage
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to check Sonoteller quota: {e}")
+            # Fail safe - block usage if we can't track it
+            return False
+
+    async def increment_monthly_usage(self):
+        """Increment monthly usage counter"""
+        try:
+            from datetime import datetime
+
+            current_month = datetime.now().strftime("%Y-%m")
+            usage_key = f"{self.monthly_usage_key}:{current_month}"
+
+            # Increment and set expiry for end of next month (to handle edge cases)
+            await self.redis_client.incr(usage_key)
+            await self.redis_client.expire(usage_key, 60 * 60 * 24 * 60)  # 60 days
+
+        except Exception as e:
+            logger.error(f"Failed to increment Sonoteller usage: {e}")
+
+    async def analyze_track(self, artist: str, title: str, spotify_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Analyze track using Sonoteller.ai via YouTube URL
+
+        Sonoteller requires an audio file URL (MP3 or YouTube).
+        We'll construct a YouTube search URL from artist + title.
+
+        ⚠️ FREE TIER = 5 REQUESTS/MONTH
+        """
+        if not self.rapidapi_key:
+            logger.warning("Sonoteller.ai RapidAPI key not configured - skipping")
+            return None
+
+        # CHECK MONTHLY QUOTA FIRST (before rate limiter)
+        if not await self.check_monthly_quota():
+            logger.warning(
+                "Sonoteller.ai monthly quota exceeded - skipping",
+                artist=artist,
+                title=title
+            )
+            return None
+
+        await self.rate_limiter.wait()
+
+        cache_key = f"sonoteller:{hashlib.md5(f'{artist}{title}'.encode()).hexdigest()}"
+
+        # Check cache (long cache since analysis doesn't change)
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            logger.debug("Sonoteller cache hit", artist=artist, title=title)
+            return json.loads(cached)
+
+        async def _analyze():
+            # Construct YouTube search URL (Sonoteller can analyze from YouTube)
+            import urllib.parse
+            search_query = f"{artist} {title} official audio".strip()
+            youtube_search_url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(search_query)}"
+
+            # Note: For actual implementation, we'd need the first video URL from search
+            # For now, try multiple endpoint formats based on RapidAPI documentation
+
+            headers = {
+                'X-RapidAPI-Key': self.rapidapi_key,
+                'X-RapidAPI-Host': 'sonoteller-ai1.p.rapidapi.com',
+                'Content-Type': 'application/json'
+            }
+
+            # Try different payload formats that Sonoteller might accept
+            payloads_to_try = [
+                {'url': youtube_search_url},  # YouTube URL format
+                {'youtube_url': youtube_search_url},  # Alternative YouTube format
+                {'artist': artist, 'title': title},  # Text search format
+                {'song_url': youtube_search_url},  # Another URL format
+            ]
+
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        f"{self.base_url}/api/analyze",
+                        headers=headers,
+                        json=payload,
+                        timeout=aiohttp.ClientTimeout(total=120)  # 2 min timeout
+                    ) as response:
+                        if response.status == 429:
+                            logger.warning("Sonoteller.ai rate limit exceeded")
+                            return None
+
+                        response.raise_for_status()
+                        data = await response.json()
+
+                        # Extract relevant fields
+                        result = {}
+
+                        if 'BPMRange' in data:
+                            # Parse BPM range (e.g., "128-132")
+                            bpm_range = data['BPMRange']
+                            if '-' in bpm_range:
+                                bpm_values = bpm_range.split('-')
+                                result['bpm'] = (float(bpm_values[0]) + float(bpm_values[1])) / 2
+                                result['bpm_range'] = bpm_range
+                            else:
+                                result['bpm'] = float(bpm_range)
+
+                        if 'musicalKey' in data:
+                            result['key'] = data['musicalKey']
+
+                        if 'mood' in data:
+                            result['moods'] = data['mood']
+
+                        if 'genres' in data:
+                            result['genres'] = data['genres']
+
+                        if 'instruments' in data:
+                            result['instruments'] = data['instruments']
+
+                        if result:
+                            # INCREMENT USAGE COUNTER (successful call)
+                            await self.increment_monthly_usage()
+
+                            # Cache for 180 days (expensive API, data stable)
+                            await self.redis_client.setex(
+                                cache_key,
+                                180 * 24 * 3600,
+                                json.dumps(result)
+                            )
+                            logger.info("✓ Sonoteller.ai analysis complete", artist=artist, title=title, **result)
+                            return result
+
+                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=2,  # Only retry twice (expensive)
+                initial_delay=5.0,
+                max_delay=30.0,
+                logger_context={'api': 'sonoteller', 'method': 'analyze_track', 'artist': artist, 'title': title}
+            )
+
+        try:
+            return await self.circuit_breaker.call(_analyze)
+        except (RetryExhausted, aiohttp.ClientError, asyncio.TimeoutError) as e:
+            logger.warning("Sonoteller.ai analysis failed", error=str(e), artist=artist, title=title)
             return None
 
 # ===================

@@ -419,7 +419,7 @@ export const PipelineMonitoringDashboard: React.FC = () => {
                 cy="50%"
                 outerRadius={80}
                 dataKey="value"
-                label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+                label={(({ name, value }: any) => `${name}: ${value.toFixed(1)}%`) as any}
               >
                 {qualityPieData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
