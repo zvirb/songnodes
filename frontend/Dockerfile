@@ -27,7 +27,21 @@ RUN echo 'server { \
     root /usr/share/nginx/html; \
     index index.html; \
     \
-    # No cache for HTML - always check for updates \
+    # Long-term cache for hashed assets (JS, CSS with [hash] in filename) \
+    # These have content hashes, so new versions get new URLs \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+    } \
+    \
+    # NO CACHE for index.html and root path - CRITICAL for updates \
+    location = / { \
+        try_files /index.html =404; \
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"; \
+        add_header Pragma "no-cache"; \
+        add_header Expires "0"; \
+    } \
+    \
     location ~ \.html$ { \
         try_files $uri /index.html; \
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"; \
@@ -35,15 +49,12 @@ RUN echo 'server { \
         add_header Expires "0"; \
     } \
     \
-    # Long-term cache for hashed assets (JS, CSS with [hash] in filename) \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-    \
     # Fallback for other files and SPA routing \
     location / { \
         try_files $uri $uri/ /index.html; \
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"; \
+        add_header Pragma "no-cache"; \
+        add_header Expires "0"; \
     } \
     \
     location /api { \

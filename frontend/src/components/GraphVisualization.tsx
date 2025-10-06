@@ -110,17 +110,15 @@ class LODSystem {
   }
 
   getNodeLOD(node: EnhancedGraphNode): number {
-    if (typeof node.x !== 'number' || typeof node.y !== 'number') return 3; // Hide if no position
-
-    // Calculate screen bounds for proper viewport culling (2025 best practice)
-    // Transform world coordinates to screen coordinates
-    // Account for stage centering: world (0,0) is at screen (width/2, height/2)
-    // Account for pan offset: stage.x = width/2 + viewport.x
-    const screenX = (node.x * this.viewport.zoom) + (this.viewport.width / 2) + this.viewport.x;
-    const screenY = (node.y * this.viewport.zoom) + (this.viewport.height / 2) + this.viewport.y;
+    // Convert world coordinates to screen coordinates
+    // D3 transform: screen = world * zoom + transform.offset + center
+    const centerX = this.viewport.width / 2;
+    const centerY = this.viewport.height / 2;
+    const screenX = (node.x ?? 0) * this.viewport.zoom + this.viewport.x + centerX;
+    const screenY = (node.y ?? 0) * this.viewport.zoom + this.viewport.y + centerY;
 
     // Define screen bounds with buffer for smooth transitions
-    const buffer = 200; // pixels buffer for smooth appearing/disappearing
+    const buffer = PERFORMANCE_THRESHOLDS.VIEWPORT_BUFFER;
     const leftBound = -buffer;
     const rightBound = this.viewport.width + buffer;
     const topBound = -buffer;
@@ -133,8 +131,8 @@ class LODSystem {
     }
 
     // Calculate distance from viewport center for LOD decisions
-    const centerX = this.viewport.width / 2;
-    const centerY = this.viewport.height / 2;
+    // screenX/screenY are already in screen space (0,0 = top-left corner)
+    // Center is at (width/2, height/2)
     const distanceFromCenter = Math.sqrt(
       Math.pow(screenX - centerX, 2) + Math.pow(screenY - centerY, 2)
     );
@@ -166,32 +164,18 @@ class LODSystem {
   }
 
   getEdgeLOD(edge: EnhancedGraphEdge): number {
-    if (!edge.sourceNode || !edge.targetNode) return 3;
+    // Edge LOD based on both endpoint nodes
+    const sourceLOD = this.getNodeLOD(edge.source);
+    const targetLOD = this.getNodeLOD(edge.target);
 
-    const sourceLOD = this.getNodeLOD(edge.sourceNode);
-    const targetLOD = this.getNodeLOD(edge.targetNode);
-
-    // If both nodes are culled (LOD 3), cull the edge
-    if (sourceLOD === 3 && targetLOD === 3) {
+    // If either endpoint is culled (LOD 3), cull the edge
+    if (sourceLOD === 3 || targetLOD === 3) {
       return 3;
     }
 
-    // If one node is culled but the other is visible, check if edge crosses viewport
-    if (sourceLOD === 3 || targetLOD === 3) {
-      // Keep edge visible if it might cross the viewport
-      // This prevents edges from disappearing when one node is just outside bounds
-      return Math.min(sourceLOD, targetLOD);
-    }
-
-    // Edge LOD is determined by the best (lowest) node LOD for smoother transitions
-    const minLOD = Math.min(sourceLOD, targetLOD);
-
-    // Additional edge-specific culling for performance
-    if (this.edgeCount > PERFORMANCE_THRESHOLDS.EDGE_COUNT_HIGH && minLOD > 0) {
-      return Math.min(minLOD + 1, 3); // Slightly more aggressive culling for high edge counts
-    }
-
-    return minLOD;
+    // Otherwise, use the maximum LOD of the two endpoints
+    // (show edge at lower detail if either endpoint is far)
+    return Math.max(sourceLOD, targetLOD);
   }
 
   shouldRenderNode(node: EnhancedGraphNode): boolean {
@@ -516,7 +500,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           move: true,
           globalMove: false,
           click: true,
-          wheel: true,
+          wheel: false,  // CRITICAL FIX: Disable PIXI wheel events, let D3 handle zoom
         },
         preserveDrawingBuffer: true, // Enable for debugging
         hello: true, // Show PIXI greeting in console
@@ -842,8 +826,31 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const zoomHandler = zoom<HTMLDivElement, unknown>()
       .scaleExtent([DEFAULT_CONFIG.ui.minZoom, DEFAULT_CONFIG.ui.maxZoom])
       .filter((event: any) => {
-        // Allow wheel zoom and drag events, block right-click drag
-        return !event.ctrlKey && !event.button;
+        // CRITICAL FIX: Properly separate D3 zoom from PIXI node interactions
+
+        // Block D3 zoom if event originated from a PIXI interactive element
+        // PIXI events set a custom flag or we can check the target
+        if (event.target?.tagName === 'CANVAS') {
+          // Event is on the canvas - check if it's over a PIXI interactive element
+          // PIXI events will have stopPropagation() called, so they won't reach here
+          // But we need to check if we're clicking on the canvas itself (background)
+        }
+
+        // Allow wheel zoom (unless Ctrl is pressed for browser zoom)
+        if (event.type === 'wheel') {
+          return !event.ctrlKey;
+        }
+
+        // For pointer events (drag/pan), ONLY allow left-click on the background
+        // PIXI node events call stopPropagation(), so they won't trigger D3 zoom
+        if (event.type === 'mousedown' || event.type === 'pointerdown') {
+          // Only allow left-click (button 0) for panning
+          // Right-click (button 2) is reserved for context menus on nodes
+          return event.button === 0;
+        }
+
+        // Allow other zoom-related events (like touchstart, touchmove)
+        return true;
       })
       .wheelDelta((event: any) => {
         // Standard wheel delta handling for proper zoom speed
@@ -878,14 +885,15 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           pixiAppRef.current.stage.y = centerY + transform.y;
           pixiAppRef.current.stage.scale.set(transform.k, transform.k);
 
+          const firstNode = Array.from(enhancedNodesRef.current.values())[0];
           console.log('🎯 Zoom handler applied:', {
             transform: { x: transform.x, y: transform.y, k: transform.k },
             viewport: { width: viewportRef.current.width, height: viewportRef.current.height },
             stagePosition: { x: pixiAppRef.current.stage.x, y: pixiAppRef.current.stage.y },
-            nodeCount: enhancedNodesRef.current.length,
-            firstNodePosition: enhancedNodesRef.current[0] ? {
-              x: enhancedNodesRef.current[0].visual.x,
-              y: enhancedNodesRef.current[0].visual.y
+            nodeCount: enhancedNodesRef.current.size,
+            firstNodePosition: firstNode ? {
+              x: firstNode.x,
+              y: firstNode.y
             } : 'no nodes'
           });
         }
@@ -1255,6 +1263,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       }
 
       isDragging = false;
+
+      // CRITICAL FIX: Prevent D3 zoom from handling this event
+      event.stopPropagation();
     });
 
     container.on('pointermove', (event) => {
@@ -1268,6 +1279,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       if (dragDistance > 3) {
         isDragging = true;
       }
+
+      // CRITICAL FIX: Prevent D3 zoom pan from activating when dragging a node
+      event.stopPropagation();
     });
 
     // Enhanced hover handling with visual feedback
@@ -1282,9 +1296,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           circle.tint = COLOR_SCHEMES.node.hovered;
         }
       }
+
+      // Prevent event from bubbling to D3 zoom handler
+      event.stopPropagation();
     });
 
-    container.on('pointerleave', () => {
+    container.on('pointerleave', (event) => {
       console.log(`[Event Triggered] pointerleave → node ${nodeId}`);
 
       if (graph?.setHoveredNode) {
@@ -1295,6 +1312,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           circle.tint = isSelected ? COLOR_SCHEMES.node.selected : COLOR_SCHEMES.node.default;
         }
       }
+
+      // Prevent event from bubbling to D3 zoom handler
+      event.stopPropagation();
     });
 
     // Enhanced right-click context menu
@@ -1641,6 +1661,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         console.log('📊 LOD samples:', lodSamples);
       }
 
+      let visibleNodeCount = 0;
       enhancedNodesRef.current.forEach(node => {
         const lodLevel = lodSystem.getNodeLOD(node);
         const shouldRender = lodLevel < 3;
@@ -1649,11 +1670,19 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           node.pixiNode.visible = shouldRender;
           node.isVisible = shouldRender;
 
-          if (shouldRender && (node.lastUpdateFrame < currentFrame || shouldOptimize)) {
-            updateNodeVisuals(node, lodLevel);
+          if (shouldRender) {
+            visibleNodeCount++;
+            if (node.lastUpdateFrame < currentFrame || shouldOptimize) {
+              updateNodeVisuals(node, lodLevel);
+            }
           }
         }
       });
+
+      // Debug: Log visible node count
+      if (currentFrame % 120 === 0) {
+        console.log(`👁️ Node visibility: ${visibleNodeCount}/${enhancedNodesRef.current.size} nodes visible`);
+      }
     }
 
   }, [viewState, updateNodeVisuals, updateEdgeVisuals, performance]);
@@ -1712,6 +1741,58 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         console.log('Action: Toggling node selection');
         graph.toggleNodeSelection(nodeId);
         console.log('Selected nodes after toggle:', Array.from(viewState.selectedNodes));
+
+        // Center camera on selected node with smooth animation (2025 best practice)
+        if (node && zoomBehaviorRef.current && containerRef.current) {
+          const div = select(containerRef.current);
+          const viewport = viewportRef.current;
+
+          // Calculate the transform needed to center this node
+          // World position (0,0) is at screen center, so we need to translate
+          // to move the node to the center
+          const k = currentTransformRef.current.k;
+
+          // New pan: we want the node's world position to appear at screen center
+          // Screen center is (width/2, height/2)
+          // Transform formula: screenPos = (worldPos * zoom) + pan
+          // We want: (width/2, height/2) = (node.x * k) + pan
+          // So: pan = (width/2, height/2) - (node.x * k)
+          // But since world (0,0) is already at screen center, we need:
+          // pan = -(node.x * k, node.y * k)
+          const newX = -(node.x * k);
+          const newY = -(node.y * k);
+
+          console.log('📸 Focusing on node with smooth animation:', {
+            nodeId: nodeId,
+            nodeWorldPos: { x: node.x, y: node.y },
+            viewport: { width: viewport.width, height: viewport.height },
+            currentZoom: k,
+            newPan: { x: newX, y: newY }
+          });
+
+          // Use D3 transition for smooth animation
+          // This triggers the 'zoom' event which updates PIXI stage
+          div.transition()
+            .duration(500)
+            .ease(t => t * (2 - t)) // easeOutQuad for smooth deceleration
+            .call(
+              zoomBehaviorRef.current.transform,
+              zoomIdentity.translate(newX, newY).scale(k)
+            );
+
+          // Add visual highlight to focused node
+          if (node.pixiNode) {
+            const circle = node.pixiNode.children.find(child => child instanceof PIXI.Graphics) as PIXI.Graphics | undefined;
+            if (circle) {
+              // Pulse animation for visual feedback
+              const originalTint = circle.tint;
+              circle.tint = 0x00ff00; // Green highlight
+              setTimeout(() => {
+                circle.tint = originalTint;
+              }, 1000);
+            }
+          }
+        }
 
         // Trigger track modal if track data is available
         if (node?.track && onTrackSelect) {
@@ -1885,8 +1966,14 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       enhancedEdgesRef.current.set(edge.id, edge);
     });
 
-    // START DYNAMIC SIMULATION: Begin continuous movement
+    // PRE-COMPUTE LAYOUT: Position nodes before showing them
+    // This prevents LOD from culling nodes that start at random positions
     const nodes = Array.from(nodeMap.values());
+    console.log('🚀 PRE-COMPUTE: Running layout pre-computation for', nodes.length, 'nodes...');
+    preComputeLayout(nodes, 300); // Run 300 ticks for better convergence
+    console.log('✅ PRE-COMPUTE: Layout pre-computation complete');
+
+    // START DYNAMIC SIMULATION: Begin continuous movement
     console.log('🚀 DYNAMIC: Starting simulation with nodes for continuous movement...');
 
     // Update simulation with nodes/edges and START it
@@ -2077,7 +2164,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (isInitialized && graphData.nodes.length > 0) {
       updateGraphData();
     }
-  }, [isInitialized, graphData.nodes.length, graphData.edges.length]); // Only depend on data length, not the full function
+  }, [isInitialized, graphData, updateGraphData]); // Depend on actual data, not just length
 
   // Handle window resize
   useEffect(() => {
