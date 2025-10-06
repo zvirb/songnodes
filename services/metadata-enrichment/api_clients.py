@@ -78,7 +78,9 @@ class SpotifyClient:
 
                 # Check if token is still valid (with 5-minute buffer)
                 expires_at = row.expires_at
-                if expires_at > datetime.now() + timedelta(minutes=5):
+                # Ensure both datetimes are timezone-aware for comparison
+                now_utc = datetime.now(expires_at.tzinfo) if expires_at.tzinfo else datetime.now()
+                if expires_at > now_utc + timedelta(minutes=5):
                     logger.debug("✅ Retrieved valid Spotify user token from database")
                     return row.access_token
 
