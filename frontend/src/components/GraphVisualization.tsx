@@ -91,7 +91,7 @@ interface AnimationState {
 // Enhanced node interface for PIXI and D3 integration
 interface EnhancedGraphNode extends GraphNode, SimulationNodeDatum {
   pixiNode?: PIXI.Container;
-  pixiCircle?: PIXI.Graphics;
+  pixiCircle?: PIXI.Graphics | PIXI.Sprite; // Support both Graphics and Sprite
   pixiLabel?: PIXI.Text;
   lodLevel: number;
   lastUpdateFrame: number;
@@ -310,6 +310,185 @@ class SpatialIndex {
   }
 }
 
+// Texture Atlas Generator for sprite-based rendering (2025 optimization)
+class TextureAtlasGenerator {
+  private textures: Map<string, PIXI.Texture> = new Map();
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+
+  constructor() {
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = 512;
+    this.canvas.height = 512;
+    this.ctx = this.canvas.getContext('2d')!;
+  }
+
+  // Generate a circular node texture with given color and radius
+  generateNodeTexture(color: number, radius: number, selected: boolean = false): PIXI.Texture {
+    const key = `node_${color}_${radius}_${selected}`;
+
+    if (this.textures.has(key)) {
+      return this.textures.get(key)!;
+    }
+
+    // Create a dedicated canvas for this texture (better quality)
+    const size = Math.ceil(radius * 2 + 8); // Extra space for outline
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = size;
+    tempCanvas.height = size;
+    const tempCtx = tempCanvas.getContext('2d')!;
+
+    const centerX = size / 2;
+    const centerY = size / 2;
+
+    // Draw selection outline if selected
+    if (selected) {
+      tempCtx.beginPath();
+      tempCtx.arc(centerX, centerY, radius + 2, 0, Math.PI * 2);
+      tempCtx.strokeStyle = `#${COLOR_SCHEMES.node.selected.toString(16).padStart(6, '0')}`;
+      tempCtx.lineWidth = 2;
+      tempCtx.stroke();
+    }
+
+    // Draw main circle
+    tempCtx.beginPath();
+    tempCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    tempCtx.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+    tempCtx.fill();
+
+    // Create PIXI texture from canvas
+    const texture = PIXI.Texture.from(tempCanvas);
+    this.textures.set(key, texture);
+
+    return texture;
+  }
+
+  // Pre-generate common textures to avoid runtime overhead
+  preGenerateTextures(colors: number[], radii: number[]): void {
+    console.log('🎨 Pre-generating texture atlas...');
+    const startTime = performance.now();
+    let count = 0;
+
+    for (const color of colors) {
+      for (const radius of radii) {
+        this.generateNodeTexture(color, radius, false);
+        this.generateNodeTexture(color, radius, true);
+        count += 2;
+      }
+    }
+
+    const duration = performance.now() - startTime;
+    console.log(`✅ Generated ${count} textures in ${duration.toFixed(2)}ms`);
+  }
+
+  destroy(): void {
+    this.textures.forEach(texture => texture.destroy(true));
+    this.textures.clear();
+  }
+}
+
+// Text Label Pooling System (2025 optimization)
+class TextLabelPool {
+  private pool: PIXI.Text[] = [];
+  private activeLabels: Set<PIXI.Text> = new Set();
+  private poolSize: number = 200; // Start with 200 labels
+  private maxPoolSize: number = 1000;
+
+  constructor() {
+    console.log('📝 Initializing text label pool...');
+    this.preallocate(this.poolSize);
+  }
+
+  private preallocate(count: number): void {
+    for (let i = 0; i < count; i++) {
+      const label = new PIXI.Text({
+        text: '',
+        style: {
+          fontFamily: 'Arial',
+          fontSize: 12,
+          fill: 0xffffff,
+          align: 'center',
+          fontWeight: 'bold',
+        },
+      });
+      label.anchor.set(0.5);
+      label.visible = false;
+      label.eventMode = 'none';
+      this.pool.push(label);
+    }
+    console.log(`✅ Pre-allocated ${count} text labels`);
+  }
+
+  acquire(text: string, style?: Partial<PIXI.TextStyle>): PIXI.Text {
+    let label: PIXI.Text;
+
+    if (this.pool.length > 0) {
+      label = this.pool.pop()!;
+    } else {
+      // Pool exhausted, create new label (up to max)
+      if (this.activeLabels.size < this.maxPoolSize) {
+        label = new PIXI.Text({
+          text: '',
+          style: {
+            fontFamily: 'Arial',
+            fontSize: 12,
+            fill: 0xffffff,
+            align: 'center',
+            fontWeight: 'bold',
+          },
+        });
+        label.anchor.set(0.5);
+        label.eventMode = 'none';
+        console.log(`⚠️ Pool exhausted, created new label (${this.activeLabels.size + 1}/${this.maxPoolSize})`);
+      } else {
+        console.warn('🚨 Text label pool max size reached!');
+        return this.pool[0] || new PIXI.Text({ text: '' }); // Fallback
+      }
+    }
+
+    label.text = text;
+    if (style) {
+      Object.assign(label.style, style);
+    }
+    label.visible = true;
+
+    this.activeLabels.add(label);
+    return label;
+  }
+
+  release(label: PIXI.Text): void {
+    if (!this.activeLabels.has(label)) return;
+
+    label.text = '';
+    label.visible = false;
+    this.activeLabels.delete(label);
+    this.pool.push(label);
+  }
+
+  releaseAll(): void {
+    this.activeLabels.forEach(label => {
+      label.text = '';
+      label.visible = false;
+      this.pool.push(label);
+    });
+    this.activeLabels.clear();
+  }
+
+  getStats(): { active: number; pooled: number; total: number } {
+    return {
+      active: this.activeLabels.size,
+      pooled: this.pool.length,
+      total: this.activeLabels.size + this.pool.length,
+    };
+  }
+
+  destroy(): void {
+    this.releaseAll();
+    this.pool.forEach(label => label.destroy());
+    this.pool = [];
+  }
+}
+
 // Performance monitor for runtime optimization
 class PerformanceMonitor {
   private frameTime: number = 0;
@@ -378,6 +557,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const lodSystemRef = useRef<LODSystem | null>(null);
   const spatialIndexRef = useRef<SpatialIndex>(new SpatialIndex());
   const performanceMonitorRef = useRef<PerformanceMonitor>(new PerformanceMonitor());
+  const textureAtlasRef = useRef<TextureAtlasGenerator | null>(null);
+  const textLabelPoolRef = useRef<TextLabelPool | null>(null);
 
   // Animation control system with play/pause functionality
   const [isSimulationPaused, setIsSimulationPaused] = useState(false);
@@ -402,9 +583,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     layoutMode: 'standard',
     energyStrength: 0.15,
     genreStrength: 0.1,
-    linkStrength: 0.2,
-    linkDistance: 150,
+    linkStrength: 0.5,  // Increased from 0.2 to pull nodes closer together
+    linkDistance: 80,    // Reduced from 150 to keep nodes tighter
   });
+
+  // Sprite-based rendering mode (2025 optimization - enabled by default for better performance)
+  const [useSpriteMode, setUseSpriteMode] = useState(true);
   const frameRef = useRef<number>(0);
   const lastRenderFrame = useRef<number>(0);
 
@@ -699,6 +883,20 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Initialize LOD system
     lodSystemRef.current = new LODSystem(viewportRef.current);
 
+    // Initialize texture atlas for sprite-based rendering (2025 optimization)
+    textureAtlasRef.current = new TextureAtlasGenerator();
+
+    // Pre-generate common node textures for instant sprite creation
+    const commonColors = [
+      ...Object.values(COLOR_SCHEMES.node),
+      ...Object.values(COLOR_SCHEMES.genre),
+    ];
+    const commonRadii = [DEFAULT_CONFIG.graph.defaultRadius, 8, 12, 16];
+    textureAtlasRef.current.preGenerateTextures(commonColors, commonRadii);
+
+    // Initialize text label pool (2025 optimization)
+    textLabelPoolRef.current = new TextLabelPool();
+
     // Start render loop
     app.ticker.add(renderFrame);
     console.log('Started PIXI render loop with ticker');
@@ -750,7 +948,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     }
   }, []);
 
-  // Handle D3 simulation tick
+  // Handle D3 simulation tick with throttling
+  const lastSimulationTickRef = useRef<number>(0);
   const handleSimulationTick = useCallback(() => {
     // CRITICAL FIX: Check ref instead of state to avoid closure issues
     if (isSimulationPausedRef.current) {
@@ -762,6 +961,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // Animation not active, don't update positions
       return;
     }
+
+    // PERFORMANCE OPTIMIZATION: Throttle simulation ticks to 20fps for large graphs
+    const now = performance.now();
+    if (enhancedNodesRef.current.size > 200 && now - lastSimulationTickRef.current < 50) {
+      return; // Skip this tick (20fps = 50ms interval)
+    }
+    lastSimulationTickRef.current = now;
 
     const nodes = enhancedNodesRef.current;
 
@@ -831,26 +1037,43 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
             const source = d.source as any;
             const target = d.target as any;
             const energyDiff = Math.abs((source.energy || 0.5) - (target.energy || 0.5));
-            return forceSettings.linkDistance + (energyDiff * 300); // Stretch across energy gaps
+            return forceSettings.linkDistance + (energyDiff * 200); // Reduced from 300 to keep tighter
           }
           return forceSettings.linkDistance;
         })
         .strength(forceSettings.linkStrength)  // Elastic for energy-genre mode
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-800) // Strong but not extreme repulsion
-        .distanceMax(800) // Reasonable influence radius
-        .distanceMin(30)
+        .strength(-200) // OPTIMIZED: Reduced for better performance
+        .distanceMax(300) // OPTIMIZED: Limited range for O(n) complexity reduction
+        .distanceMin(20)
+        .theta(0.9) // OPTIMIZED: Barnes-Hut approximation (default 0.9, higher = faster but less accurate)
       )
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.05)) // STRONGER center force to keep nodes in viewport
+      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.1))
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 20)
-        .strength(0.8)  // Balanced collision prevention
-        .iterations(3)
+        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 10)
+        .strength(0.5)  // OPTIMIZED: Reduced for performance
+        .iterations(1)  // OPTIMIZED: Single iteration for massive speedup
       )
-      .velocityDecay(0.4)   // FIXED: Normal friction to prevent nodes flying off (was 0.1)
-      .alphaDecay(0.0228)    // Standard decay rate for reasonable settling time
-      .alphaMin(0.001);      // Standard threshold
+      // Add radial containment force to prevent nodes from spreading too far
+      .force('radial-contain', forceX<EnhancedGraphNode>()
+        .x(0)
+        .strength(d => {
+          const distance = Math.sqrt((d.x || 0) ** 2 + (d.y || 0) ** 2);
+          // Stronger pull-back when nodes get far from center
+          return distance > 1000 ? 0.2 : 0.02;
+        })
+      )
+      .force('radial-contain-y', forceY<EnhancedGraphNode>()
+        .y(0)
+        .strength(d => {
+          const distance = Math.sqrt((d.x || 0) ** 2 + (d.y || 0) ** 2);
+          return distance > 1000 ? 0.2 : 0.02;
+        })
+      )
+      .velocityDecay(0.6)   // OPTIMIZED: Higher friction = faster settling
+      .alphaDecay(0.05)     // OPTIMIZED: Faster cooldown for quicker settling
+      .alphaMin(0.01);      // OPTIMIZED: Higher threshold = stops earlier
 
     // Add energy-genre layout forces if enabled
     if (forceSettings.layoutMode === 'energy-genre') {
@@ -859,13 +1082,17 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         .x(d => {
           const energy = (d as any).energy || 0.5; // 0-1 from Spotify API
           const viewportWidth = pixiAppRef.current?.screen.width || 1920;
-          return (energy - 0.5) * viewportWidth * 0.8; // 80% of viewport width
+          return (energy - 0.5) * viewportWidth * 0.7; // 70% of viewport width for energy spread
         })
         .strength(forceSettings.energyStrength) // Dominant force for energy positioning
       );
 
       // Genre clustering force (custom)
       simulation.force('genre-cluster', genreClusterForce);
+
+      // Override radial containment forces for energy-genre mode to be less aggressive
+      simulation.force('radial-contain', null);
+      simulation.force('radial-contain-y', null);
     } else {
       // Remove energy-genre forces in standard mode
       simulation.force('x', null);
@@ -880,30 +1107,31 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   }, [handleSimulationTick, handleSimulationEnd, forceSettings, genreClusterForce]);
 
   // Fast pre-computation method using manual ticks for accurate positioning
-  const preComputeLayout = useCallback((nodes: EnhancedGraphNode[], maxTicks = 300) => {
+  const preComputeLayout = useCallback((nodes: EnhancedGraphNode[], maxTicks = 100) => {
     console.log('🚀 Pre-computing accurate layout positions...');
 
-    // Create a separate simulation for pre-computation (match main simulation parameters)
+    // Create a separate simulation for pre-computation (OPTIMIZED: simplified forces)
     const preSimulation = forceSimulation<EnhancedGraphNode>(nodes)
       .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>(enhancedEdgesRef.current)
         .id(d => d.id)
-        .distance(150)
-        .strength(0.3)
+        .distance(100)
+        .strength(0.2)
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-800) // Match main simulation
-        .distanceMax(800) // Match main simulation
-        .distanceMin(30)
+        .strength(-150) // OPTIMIZED: Much lighter for speed
+        .distanceMax(200) // OPTIMIZED: Reduced range
+        .distanceMin(20)
+        .theta(0.95) // OPTIMIZED: More approximation for speed
       )
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.05)) // Match main simulation
+      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.1))
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 20)
-        .strength(0.8)
-        .iterations(3)
+        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 8)
+        .strength(0.3) // OPTIMIZED: Weak collision for speed
+        .iterations(1) // OPTIMIZED: Single iteration
       )
-      .velocityDecay(0.4)   // Match main simulation
-      .alphaDecay(0.0228)   // Match main simulation
-      .alphaMin(0.001)      // Match main simulation
+      .velocityDecay(0.7)   // OPTIMIZED: High friction
+      .alphaDecay(0.1)      // OPTIMIZED: Fast cooldown
+      .alphaMin(0.05)       // OPTIMIZED: Stop early
       .stop(); // Stop automatic ticking
 
     // Run manual ticks until convergence
@@ -1108,63 +1336,6 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       containerRef.current.style.position = 'relative';
       containerRef.current.style.overflow = 'hidden';
       containerRef.current.style.userSelect = 'none';
-
-      // DEBUG: Add right-click handler to show coordinate information
-      containerRef.current.addEventListener('contextmenu', (e) => {
-        // Only show debug info if right-clicking on the background (not on a node)
-        if (e.target !== containerRef.current?.querySelector('canvas')) {
-          return; // Let PIXI handle node right-clicks
-        }
-
-        e.preventDefault();
-
-        const rect = containerRef.current!.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        const currentTransform = currentTransformRef.current || zoomIdentity;
-        const centerX = viewportRef.current.width / 2;
-        const centerY = viewportRef.current.height / 2;
-
-        // Calculate world coordinates
-        const worldX = (mouseX - centerX - currentTransform.x) / currentTransform.k;
-        const worldY = (mouseY - centerY - currentTransform.y) / currentTransform.k;
-
-        // Calculate screen coordinates (for verification)
-        const screenX = worldX * currentTransform.k + currentTransform.x + centerX;
-        const screenY = worldY * currentTransform.k + currentTransform.y + centerY;
-
-        console.log('╔═══════════════════════════════════════════════════════════════╗');
-        console.log('║              🎯 COORDINATE SYSTEM DEBUG INFO                  ║');
-        console.log('╠═══════════════════════════════════════════════════════════════╣');
-        console.log('║ MOUSE POSITION (relative to container):');
-        console.log(`║   X: ${mouseX.toFixed(2)}px, Y: ${mouseY.toFixed(2)}px`);
-        console.log('║');
-        console.log('║ VIEWPORT:');
-        console.log(`║   Width: ${viewportRef.current.width}px, Height: ${viewportRef.current.height}px`);
-        console.log(`║   Center: (${centerX}px, ${centerY}px)`);
-        console.log('║');
-        console.log('║ CURRENT TRANSFORM:');
-        console.log(`║   Offset: (${currentTransform.x.toFixed(2)}, ${currentTransform.y.toFixed(2)})`);
-        console.log(`║   Scale (zoom): ${currentTransform.k.toFixed(3)}x`);
-        console.log('║');
-        console.log('║ WORLD COORDINATES (graph space):');
-        console.log(`║   X: ${worldX.toFixed(2)}, Y: ${worldY.toFixed(2)}`);
-        console.log('║');
-        console.log('║ VERIFICATION (world → screen):');
-        console.log(`║   Screen X: ${screenX.toFixed(2)}px (should match ${mouseX.toFixed(2)}px)`);
-        console.log(`║   Screen Y: ${screenY.toFixed(2)}px (should match ${mouseY.toFixed(2)}px)`);
-        console.log(`║   Error: X=${Math.abs(screenX - mouseX).toFixed(2)}px, Y=${Math.abs(screenY - mouseY).toFixed(2)}px`);
-        console.log('╚═══════════════════════════════════════════════════════════════╝');
-
-        // Also show a visual indicator
-        alert(`Cursor Position Debug:\n\n` +
-              `Mouse: (${mouseX.toFixed(0)}, ${mouseY.toFixed(0)})px\n` +
-              `World: (${worldX.toFixed(1)}, ${worldY.toFixed(1)})\n` +
-              `Zoom: ${currentTransform.k.toFixed(2)}x\n` +
-              `Transform: (${currentTransform.x.toFixed(0)}, ${currentTransform.y.toFixed(0)})\n\n` +
-              `Check console for detailed debug info`);
-      });
     }
 
     zoomBehaviorRef.current = zoomHandler;
@@ -1395,38 +1566,69 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Debug: Log container setup
     console.log(`[Node Setup] Creating node ${node.id} - eventMode: ${container.eventMode}, cursor: ${container.cursor}, visual radius: ${visualRadius}, hit radius: ${hitRadius}`);
 
-    // Main circle (make it non-interactive so it doesn't block container events)
-    const circle = new PIXI.Graphics();
-    circle.eventMode = 'none';  // Important: let events pass through to container
+    // Main circle - use sprite or graphics based on mode (2025 optimization)
+    let circle: PIXI.Graphics | PIXI.Sprite;
+
+    if (useSpriteMode && textureAtlasRef.current) {
+      // SPRITE MODE: Use pre-generated texture for better batching
+      const color = getNodeColor(node);
+      const texture = textureAtlasRef.current.generateNodeTexture(color, visualRadius, false);
+      circle = new PIXI.Sprite(texture);
+      circle.anchor.set(0.5);
+      circle.eventMode = 'none';
+      console.log(`[Sprite Mode] Created sprite node ${node.id}`);
+    } else {
+      // GRAPHICS MODE: Traditional dynamic drawing
+      circle = new PIXI.Graphics();
+      circle.eventMode = 'none';  // Important: let events pass through to container
+    }
+
     container.addChild(circle);
 
-    // Create artist label (above node)
-    const artistLabel = new PIXI.Text({
-      text: node.artist || node.metadata?.artist || 'Unknown Artist',
-      style: {
-        fontFamily: 'Arial',
-        fontSize: 11,
-        fill: 0xaaaaaa,  // Lighter gray for artist
-        align: 'center',
-        fontWeight: 'normal',
-      },
-    });
+    // Create labels - use pooled labels if available (2025 optimization)
+    let artistLabel: PIXI.Text;
+    let titleLabel: PIXI.Text;
+
+    if (textLabelPoolRef.current) {
+      // POOLED LABELS: Reuse from pool for reduced GC pressure
+      artistLabel = textLabelPoolRef.current.acquire(
+        node.artist || node.metadata?.artist || 'Unknown Artist',
+        { fontSize: 11, fill: 0xaaaaaa, fontWeight: 'normal' }
+      );
+      titleLabel = textLabelPoolRef.current.acquire(
+        node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown',
+        { fontSize: 12, fill: 0xffffff, fontWeight: 'bold' }
+      );
+      console.log(`[Label Pool] Acquired labels from pool (${textLabelPoolRef.current.getStats().active} active)`);
+    } else {
+      // FALLBACK: Create new labels
+      artistLabel = new PIXI.Text({
+        text: node.artist || node.metadata?.artist || 'Unknown Artist',
+        style: {
+          fontFamily: 'Arial',
+          fontSize: 11,
+          fill: 0xaaaaaa,
+          align: 'center',
+          fontWeight: 'normal',
+        },
+      });
+      titleLabel = new PIXI.Text({
+        text: node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown',
+        style: {
+          fontFamily: 'Arial',
+          fontSize: 12,
+          fill: 0xffffff,
+          align: 'center',
+          fontWeight: 'bold',
+        },
+      });
+    }
+
     artistLabel.anchor.set(0.5, 1);  // Bottom-centered anchor
     artistLabel.visible = false; // Hidden by default
     artistLabel.eventMode = 'none';  // Don't block events
     container.addChild(artistLabel);
 
-    // Create title label (below node)
-    const titleLabel = new PIXI.Text({
-      text: node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown',
-      style: {
-        fontFamily: 'Arial',
-        fontSize: 12,
-        fill: 0xffffff,  // White for song title
-        align: 'center',
-        fontWeight: 'bold',
-      },
-    });
     titleLabel.anchor.set(0.5, 0);  // Top-centered anchor
     titleLabel.visible = false; // Hidden by default
     titleLabel.eventMode = 'none';  // Don't block events
@@ -1676,7 +1878,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     });
 
     return container;
-  }, [graph, pathfinding, viewState, pathfindingState]);
+  }, [graph, pathfinding, viewState, pathfindingState, useSpriteMode, getNodeColor]);
 
   // Create PIXI edge graphics
   const createPixiEdge = useCallback((edge: EnhancedGraphEdge): PIXI.Graphics => {
@@ -1702,19 +1904,31 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Update position
     node.pixiNode.position.set(node.x || 0, node.y || 0);
 
-    // Clear and redraw the circle using PIXI v8 API
-    node.pixiCircle.clear();
+    // Update visual based on rendering mode (2025 optimization)
+    if (node.pixiCircle instanceof PIXI.Sprite) {
+      // SPRITE MODE: Update texture if color/selection changed
+      const isSelected = viewState.selectedNodes.has(node.id);
+      if (textureAtlasRef.current) {
+        const texture = textureAtlasRef.current.generateNodeTexture(color, screenRadius, isSelected);
+        node.pixiCircle.texture = texture;
+      }
+      node.pixiCircle.tint = 0xFFFFFF; // Reset tint
+      node.pixiCircle.alpha = alpha;
+    } else {
+      // GRAPHICS MODE: Clear and redraw using PIXI v8 API
+      (node.pixiCircle as PIXI.Graphics).clear();
 
-    if (viewState.selectedNodes.has(node.id)) {
-      // Selected node outline
-      node.pixiCircle.circle(0, 0, screenRadius + 2);
-      node.pixiCircle.setStrokeStyle({ width: 2, color: COLOR_SCHEMES.node.selected, alpha: alpha });
-      node.pixiCircle.stroke();
+      if (viewState.selectedNodes.has(node.id)) {
+        // Selected node outline
+        (node.pixiCircle as PIXI.Graphics).circle(0, 0, screenRadius + 2);
+        (node.pixiCircle as PIXI.Graphics).setStrokeStyle({ width: 2, color: COLOR_SCHEMES.node.selected, alpha: alpha });
+        (node.pixiCircle as PIXI.Graphics).stroke();
+      }
+
+      // Draw the main node circle
+      (node.pixiCircle as PIXI.Graphics).circle(0, 0, screenRadius);
+      (node.pixiCircle as PIXI.Graphics).fill({ color: color, alpha: alpha });
     }
-
-    // Draw the main node circle
-    node.pixiCircle.circle(0, 0, screenRadius);
-    node.pixiCircle.fill({ color: color, alpha: alpha });
 
     // Update label visibility and content
     // Always show labels for now to make nodes identifiable
@@ -1800,9 +2014,20 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     edge.lastUpdateFrame = frameRef.current;
   }, [getEdgeColor, viewState]);
 
-  // Main render frame function
+  // Main render frame function with throttling
   const renderFrame = useCallback(() => {
     if (!lodSystemRef.current || !pixiAppRef.current) return;
+
+    // PERFORMANCE OPTIMIZATION: Throttle to 30fps for better CPU usage
+    // Skip every other frame when performance is good
+    const now = performance.now();
+    const lastFrameTime = performanceMonitorRef.current.frameTime || 0;
+    const frameInterval = 1000 / 30; // 30fps target
+
+    if (now - lastFrameTime < frameInterval && enhancedNodesRef.current.size > 100) {
+      return; // Skip this frame
+    }
+    performanceMonitorRef.current.frameTime = now;
 
     // CORRECTED: Always render to show nodes, even when paused
     // Pausing should freeze movement, not hide the graph
@@ -2131,6 +2356,16 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (nodesContainerRef.current) {
       nodesContainerRef.current.children.forEach(child => {
         child.removeAllListeners();
+
+        // Release pooled text labels before destroying container
+        if (textLabelPoolRef.current && child.children) {
+          child.children.forEach((grandchild: any) => {
+            if (grandchild instanceof PIXI.Text) {
+              textLabelPoolRef.current?.release(grandchild);
+            }
+          });
+        }
+
         if (child.destroy) {
           child.destroy({ children: true, texture: false, baseTexture: false });
         }
@@ -2192,7 +2427,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // This prevents LOD from culling nodes that start at random positions
     const nodes = Array.from(nodeMap.values());
     console.log('🚀 PRE-COMPUTE: Running layout pre-computation for', nodes.length, 'nodes...');
-    preComputeLayout(nodes, 300); // Run 300 ticks for better convergence
+    preComputeLayout(nodes, 50); // OPTIMIZED: Reduced from 300 for faster initial load
     console.log('✅ PRE-COMPUTE: Layout pre-computation complete');
 
     // START DYNAMIC SIMULATION: Begin continuous movement
@@ -2310,6 +2545,21 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
         pixiAppRef.current = null;
         console.log('✅ PIXI cleanup completed');
+      }
+
+      // Destroy texture atlas and label pool (2025 optimization cleanup)
+      if (textureAtlasRef.current) {
+        textureAtlasRef.current.destroy();
+        textureAtlasRef.current = null;
+        console.log('✅ Texture atlas destroyed');
+      }
+
+      if (textLabelPoolRef.current) {
+        const stats = textLabelPoolRef.current.getStats();
+        console.log(`📝 Label pool final stats:`, stats);
+        textLabelPoolRef.current.destroy();
+        textLabelPoolRef.current = null;
+        console.log('✅ Text label pool destroyed');
       }
 
       // Clean up performance timer
@@ -2610,6 +2860,30 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
               Energy vs. Genre Layout
             </span>
           </label>
+        </div>
+
+        {/* Sprite Mode Toggle (2025 Optimization) */}
+        <div className="mb-4 pb-4 border-b border-gray-700">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useSpriteMode}
+              onChange={(e) => {
+                setUseSpriteMode(e.target.checked);
+                console.log(`🎨 Sprite mode ${e.target.checked ? 'ENABLED' : 'DISABLED'} - reload graph for changes to take effect`);
+                // Note: Changes will apply on next graph data update
+              }}
+              className="rounded"
+            />
+            <span className={useSpriteMode ? 'text-yellow-400' : 'text-gray-400'}>
+              Sprite Mode (5000+ nodes)
+            </span>
+          </label>
+          {useSpriteMode && textLabelPoolRef.current && (
+            <div className="text-xs text-gray-500 mt-1">
+              Label pool: {textLabelPoolRef.current.getStats().active} active / {textLabelPoolRef.current.getStats().pooled} available
+            </div>
+          )}
         </div>
 
         {/* Force Strength Controls */}
