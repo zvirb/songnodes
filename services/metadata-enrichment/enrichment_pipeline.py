@@ -554,19 +554,32 @@ class MetadataEnrichmentPipeline:
     ):
         """Update or create enrichment status record"""
         try:
+            # Determine if this is a retriable error (circuit breaker)
+            is_retriable = False
+            if error_message and 'Circuit breaker' in error_message and 'is OPEN' in error_message:
+                is_retriable = True
+                logger.info(
+                    "Marking circuit breaker failure as retriable",
+                    track_id=track_id,
+                    error=error_message
+                )
+
             async with self.db_session_factory() as session:
                 query = text("""
-                    INSERT INTO enrichment_status (track_id, status, sources_enriched, last_attempt, error_message)
-                    VALUES (:track_id, :status, :sources_count, CURRENT_TIMESTAMP, :error_message)
+                    INSERT INTO enrichment_status (track_id, status, sources_enriched, last_attempt, error_message, is_retriable)
+                    VALUES (:track_id, :status, :sources_count, CURRENT_TIMESTAMP, :error_message, :is_retriable)
                     ON CONFLICT (track_id)
                     DO UPDATE SET
                         status = :status,
                         sources_enriched = :sources_count,
                         last_attempt = CURRENT_TIMESTAMP,
                         error_message = :error_message,
+                        is_retriable = :is_retriable,
                         retry_count = CASE
-                            WHEN enrichment_status.status = 'failed' AND :status = 'failed'
+                            WHEN enrichment_status.status = 'failed' AND :status = 'failed' AND NOT :is_retriable
                             THEN enrichment_status.retry_count + 1
+                            WHEN :is_retriable
+                            THEN 0  -- Reset retry count for circuit breaker errors
                             ELSE enrichment_status.retry_count
                         END
                 """)
@@ -577,7 +590,8 @@ class MetadataEnrichmentPipeline:
                         'track_id': track_id,
                         'status': status,
                         'sources_count': sources_count,
-                        'error_message': error_message
+                        'error_message': error_message,
+                        'is_retriable': is_retriable
                     }
                 )
                 await session.commit()
