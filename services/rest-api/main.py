@@ -749,19 +749,24 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
 
             nodes = []
             for row in rows:
+                artist = row['artist_name']
+                title = row['title']
                 nodes.append({
                     "id": f"song_{row['track_id']}",
                     "track_id": f"song_{row['track_id']}",
+                    # ✅ FIX: Add top-level artist and title fields for frontend
+                    "artist": artist,
+                    "title": title,
                     "position": {"x": 0.0, "y": 0.0},
                     "metadata": {
-                        "title": row['title'],
-                        "artist": row['artist_name'],
+                        "title": title,
+                        "artist": artist,
                         "node_type": "song",
                         "category": None,
                         "genre": None,
                         "release_year": None,
                         "appearance_count": row['connection_count'],
-                        "label": row['title'],
+                        "label": f"{artist} - {title}" if artist else title,
                         "bpm": row['bpm'],
                         "key": row['key']
                     }
