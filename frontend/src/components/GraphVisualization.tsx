@@ -823,6 +823,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (!containerRef.current) return;
     if (zoomBehaviorRef.current) return; // Already initialized
 
+    console.log('🚀 Initializing D3 zoom with zoom-to-cursor fix...');
+
     const zoomHandler = zoom<HTMLDivElement, unknown>()
       .scaleExtent([DEFAULT_CONFIG.ui.minZoom, DEFAULT_CONFIG.ui.maxZoom])
       .filter((event: any) => {
@@ -859,6 +861,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       .on('zoom', function(event: any) {
         // ZOOM-TO-CURSOR FIX: Calculate correct transform for wheel events
         // This ensures zooming happens at the cursor position, not at the canvas origin
+        console.log('🎯 ZOOM EVENT FIRED:', {
+          hasSourceEvent: !!event.sourceEvent,
+          eventType: event.sourceEvent?.type,
+          transformK: event.transform.k
+        });
+
         if (event.sourceEvent && event.sourceEvent.type === 'wheel') {
           const container = containerRef.current;
           if (!container) return;
