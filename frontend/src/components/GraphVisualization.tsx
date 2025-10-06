@@ -443,6 +443,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     bounds: { x: -1000, y: -1000, width: 2000, height: 2000 },
   });
 
+  // Helper function to get genre color (must be defined BEFORE getNodeColor)
+  const getGenreColor = useCallback((genre?: string): number => {
+    if (!genre) return COLOR_SCHEMES.genre.default;
+    const lowerGenre = genre.toLowerCase();
+    return (COLOR_SCHEMES.genre as any)[lowerGenre] || COLOR_SCHEMES.genre.default;
+  }, []);
+
   // Memoized color functions
   const getNodeColor = useCallback((node: EnhancedGraphNode): number => {
     // Path and selection states take priority
@@ -781,13 +788,6 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // Handle simulation end
   const handleSimulationEnd = useCallback(() => {
     console.log('Force simulation completed');
-  }, []);
-
-  // Helper function to get genre color
-  const getGenreColor = useCallback((genre?: string): number => {
-    if (!genre) return COLOR_SCHEMES.genre.default;
-    const lowerGenre = genre.toLowerCase();
-    return (COLOR_SCHEMES.genre as any)[lowerGenre] || COLOR_SCHEMES.genre.default;
   }, []);
 
   // Custom genre clustering force
