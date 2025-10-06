@@ -203,3 +203,19 @@ final-working-graph.png
 # Docker Secrets (sensitive data)
 secrets/
 !secrets/.gitkeep
+
+# Temporary fix/debug documentation (root level only, not subdirectories)
+/*_FIX.md
+/*_FIXES.md
+/*_ISSUE.md
+/DEBUG_*.md
+/FRONTEND_FIX_*.md
+/VIEWPORT_*.md
+/LOD_*.md
+/ISOLATED_*.md
+/EDGE_*.md
+/OAUTH_*.md
+
+# Temporary debug/test HTML files
+frontend/public/debug*.html
+frontend/public/test*.html
