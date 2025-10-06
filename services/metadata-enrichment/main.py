@@ -659,6 +659,117 @@ async def process_enrichment_batch(tasks: List[EnrichmentTask], correlation_id: 
     success_count = sum(1 for r in results if r.status == EnrichmentStatus.COMPLETED)
     logger.info(f"Batch enrichment completed: {success_count}/{len(tasks)} successful")
 
+@app.post("/enrich/trigger")
+async def trigger_enrichment(limit: int = 50):
+    """
+    Manually trigger enrichment for pending tracks
+
+    Args:
+        limit: Number of tracks to enrich (default 50, max 200)
+    """
+    if limit > 200:
+        raise HTTPException(status_code=400, detail="Maximum limit is 200 tracks per request")
+
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="manual_enrichment_trigger",
+        correlation_id=correlation_id
+    )
+
+    logger.info(f"Manual enrichment triggered for up to {limit} tracks")
+
+    try:
+        # Call the same logic as scheduled task
+        await process_pending_enrichments_manual(limit, correlation_id)
+
+        return {
+            "status": "completed",
+            "message": f"Enrichment triggered for up to {limit} tracks",
+            "correlation_id": correlation_id
+        }
+    except Exception as e:
+        logger.error("Manual enrichment trigger failed", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Enrichment failed: {str(e)}")
+
+async def process_pending_enrichments_manual(limit: int, correlation_id: str):
+    """Process tracks pending enrichment (manual trigger)"""
+    try:
+        async with connection_manager.session_factory() as session:
+            # Find tracks that need enrichment
+            query = text(f"""
+                SELECT t.id, t.title,
+                       COALESCE(ta.artist_names, 'Unknown') as artist_name,
+                       t.spotify_id, t.isrc, t.metadata->>'musicbrainz_id' as musicbrainz_id,
+                       es.status, es.last_attempt
+                FROM tracks t
+                LEFT JOIN (
+                    SELECT ta.track_id, STRING_AGG(a.name, ', ') as artist_names
+                    FROM track_artists ta
+                    JOIN artists a ON ta.artist_id = a.artist_id
+                    WHERE ta.role = 'primary'
+                    GROUP BY ta.track_id
+                ) ta ON t.id = ta.track_id
+                LEFT JOIN enrichment_status es ON t.id = es.track_id
+                WHERE (
+                    es.status IS NULL
+                    OR es.status = 'pending'
+                    OR (es.status = 'failed' AND es.retry_count < 3)
+                    OR (es.status = 'partial' AND es.last_attempt < NOW() - INTERVAL '24 hours')
+                )
+                AND (t.metadata IS NULL OR jsonb_array_length(COALESCE(t.metadata->'enrichment_sources', '[]'::jsonb)) < 2)
+                LIMIT {limit}
+            """)
+
+            result = await session.execute(query)
+            pending_tracks = result.fetchall()
+
+            logger.info(f"Found {len(pending_tracks)} tracks pending enrichment")
+
+            # Process in batches
+            batch_size = 10
+            for i in range(0, len(pending_tracks), batch_size):
+                batch = pending_tracks[i:i+batch_size]
+                tasks = []
+
+                for track in batch:
+                    task = EnrichmentTask(
+                        track_id=str(track.id),
+                        artist_name=track.artist_name,
+                        track_title=track.title,
+                        existing_spotify_id=track.spotify_id,
+                        existing_isrc=track.isrc,
+                        existing_musicbrainz_id=track.musicbrainz_id,
+                        correlation_id=correlation_id
+                    )
+                    tasks.append(enrichment_pipeline.enrich_track(task))
+
+                # Execute batch
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Log results
+                success_count = 0
+                for idx, r in enumerate(results):
+                    if isinstance(r, EnrichmentResult):
+                        if r.status == EnrichmentStatus.COMPLETED:
+                            success_count += 1
+                    elif isinstance(r, Exception):
+                        track = batch[idx]
+                        logger.error(
+                            "Track enrichment raised exception",
+                            track_id=str(track.id),
+                            error=str(r)
+                        )
+
+                logger.info(f"Batch processed: {success_count}/{len(batch)} successful")
+
+                # Add delay between batches to respect rate limits
+                await asyncio.sleep(2)
+
+    except Exception as e:
+        logger.error("Manual enrichment processing failed", error=str(e))
+        raise
+
 @app.get("/stats")
 async def get_enrichment_stats():
     """Get enrichment statistics including artist attribution metrics"""
