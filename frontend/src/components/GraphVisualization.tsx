@@ -856,7 +856,52 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         // Standard wheel delta handling for proper zoom speed
         return -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002);
       })
-      .on('zoom', (event: any) => {
+      .on('zoom', function(event: any) {
+        // ZOOM-TO-CURSOR FIX: Calculate correct transform for wheel events
+        // This ensures zooming happens at the cursor position, not at the canvas origin
+        if (event.sourceEvent && event.sourceEvent.type === 'wheel') {
+          const container = containerRef.current;
+          if (!container) return;
+
+          // Get mouse position relative to container
+          const rect = container.getBoundingClientRect();
+          const mouseX = event.sourceEvent.clientX - rect.left;
+          const mouseY = event.sourceEvent.clientY - rect.top;
+
+          // Get current transform (before this zoom)
+          const currentTransform = currentTransformRef.current || zoomIdentity;
+
+          // Center offset (our coordinate system has origin at center)
+          const centerX = viewportRef.current.width / 2;
+          const centerY = viewportRef.current.height / 2;
+
+          // Calculate world coordinates of the point under the mouse BEFORE zoom
+          // Formula: world = (screen - center - transform.offset) / transform.scale
+          const worldX = (mouseX - centerX - currentTransform.x) / currentTransform.k;
+          const worldY = (mouseY - centerY - currentTransform.y) / currentTransform.k;
+
+          // Get the new scale from the event
+          const newScale = event.transform.k;
+
+          // Calculate new transform offset to keep the world point under the mouse
+          // Formula: screen = world * newScale + newOffset + center
+          // Solving for newOffset: newOffset = screen - world * newScale - center
+          const newX = mouseX - centerX - worldX * newScale;
+          const newY = mouseY - centerY - worldY * newScale;
+
+          // Update the transform with corrected translation
+          event.transform.x = newX;
+          event.transform.y = newY;
+
+          console.log('🔍 Zoom-to-cursor:', {
+            mouse: { x: mouseX, y: mouseY },
+            world: { x: worldX.toFixed(2), y: worldY.toFixed(2) },
+            oldTransform: { x: currentTransform.x.toFixed(2), y: currentTransform.y.toFixed(2), k: currentTransform.k.toFixed(2) },
+            newTransform: { x: newX.toFixed(2), y: newY.toFixed(2), k: newScale.toFixed(2) }
+          });
+        }
+
+        // Continue with regular zoom handling
         const transform: ZoomTransform = event.transform;
         currentTransformRef.current = transform;
 
