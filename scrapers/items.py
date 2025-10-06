@@ -379,6 +379,7 @@ class PlaylistItem(scrapy.Item):
     # Track listing
     tracks = scrapy.Field()  # List of track titles/names
     total_tracks = scrapy.Field()  # Number of tracks
+    tracklist_count = scrapy.Field()  # Number of tracks (for validation)
 
     # Additional metadata
     description = scrapy.Field()  # Playlist description
@@ -389,6 +390,13 @@ class PlaylistItem(scrapy.Item):
     # Platform-specific IDs
     playlist_id = scrapy.Field()  # External playlist ID
     platform_id = scrapy.Field()  # Platform-specific ID
+    playlist_type = scrapy.Field()  # Type of playlist (DJ Set, Mix, etc.)
+    dj_artist_id = scrapy.Field()  # DJ/Artist ID
+
+    # Validation and error tracking (Silent Failure Detection)
+    scrape_error = scrapy.Field()  # Error message if scraping failed
+    last_scrape_attempt = scrapy.Field()  # Timestamp of last scrape attempt
+    parsing_version = scrapy.Field()  # Version of parser used (e.g., "mixesdb_v1.1")
 
     # System fields
     data_source = scrapy.Field()  # Which scraper collected this

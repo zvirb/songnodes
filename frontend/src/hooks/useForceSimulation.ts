@@ -9,8 +9,9 @@ export const useForceSimulation = () => {
 
   const startSimulation = useCallback(
     (nodes: GraphNode[], edges: GraphEdge[]) => {
-      // Stop existing simulation
+      // Stop existing simulation and remove old tick listener
       if (simulationRef.current) {
+        simulationRef.current.on('tick', null); // Remove old listener
         simulationRef.current.stop();
       }
 
@@ -18,17 +19,17 @@ export const useForceSimulation = () => {
       const simulation = d3.forceSimulation<GraphNode>(nodes)
         .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
           .id(d => d.id)
-          .distance(d => 50 + (d.distance || 1) * 20)
-          .strength(d => Math.min(1, d.weight / 10))
+          .distance(d => 120 + (d.distance || 1) * 40)  // INCREASED: Double the distances for better spacing
+          .strength(d => Math.min(0.7, d.weight / 10))  // REDUCED: Slightly weaker links for flexibility
         )
         .force('charge', d3.forceManyBody()
-          .strength((d: any) => -100 - (d.connections || 0) * 10)
-          .distanceMax(300)
+          .strength((d: any) => -400 - (d.connections || 0) * 30)  // INCREASED: 4x stronger repulsion
+          .distanceMax(600)  // INCREASED: Double the max distance for wider effect
         )
-        .force('center', d3.forceCenter(0, 0).strength(0.05))
+        .force('center', d3.forceCenter(0, 0).strength(0.03))  // REDUCED: Weaker centering allows spread
         .force('collision', d3.forceCollide()
-          .radius((d: any) => 10 + Math.sqrt(d.connections || 1) * 2)
-          .strength(0.7)
+          .radius((d: any) => 25 + Math.sqrt(d.connections || 1) * 5)  // INCREASED: Better collision detection
+          .strength(0.9)  // INCREASED: Stronger collision prevention
         )
         .alphaDecay(0.0228)   // Standard D3 decay rate for quality layouts
         .velocityDecay(0.4);  // Moderate friction for stability (D3 best practice)
@@ -58,6 +59,7 @@ export const useForceSimulation = () => {
 
   const stopSimulation = useCallback(() => {
     if (simulationRef.current) {
+      simulationRef.current.on('tick', null); // Explicitly remove tick listener
       simulationRef.current.stop();
       simulationRef.current = null;
     }

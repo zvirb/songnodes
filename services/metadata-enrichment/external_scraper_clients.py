@@ -12,6 +12,7 @@ import httpx
 import structlog
 from typing import List, Dict, Any, Optional
 from urllib.parse import quote_plus
+from abbreviation_expander import get_abbreviation_expander
 
 logger = structlog.get_logger(__name__)
 
@@ -28,55 +29,92 @@ class TracksLists1001Client:
         self.base_url = base_url
         self.timeout = 10.0  # Fast timeout - we're querying local API
     
-    async def search_track(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
+    async def search_track(
+        self,
+        query: str,
+        limit: int = 20,
+        expand_abbreviations: bool = True
+    ) -> List[Dict[str, Any]]:
         """
         Search cached 1001Tracklists data for track information
-        
+
         Args:
             query: Search query (track title, artist name, or combination)
             limit: Max results to return
-            
+            expand_abbreviations: If True, also search with abbreviation expansions
+
         Returns:
             List of track dictionaries with artist attribution
             Format: [{'artist': 'Name', 'title': 'Track', 'url': '...', ...}, ...]
         """
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                # Query the scraper's search endpoint
-                # This searches CACHED data, doesn't trigger new scrape
-                response = await client.get(
-                    f"{self.base_url}/search",
-                    params={
-                        'q': query,
-                        'limit': limit
-                    }
+            # Check if query contains abbreviations
+            expander = get_abbreviation_expander()
+            search_queries = [query]
+
+            if expand_abbreviations and expander.is_abbreviation(query):
+                search_queries = await expander.get_search_variants(
+                    query,
+                    context="DJ tracklist artist or track"
                 )
-                
-                if response.status_code == 404:
-                    logger.debug(
-                        "1001Tracklists API endpoint not found - may need custom implementation",
-                        base_url=self.base_url
+                logger.info(
+                    "🔍 1001TL search with abbreviation expansion",
+                    original=query,
+                    variants=search_queries
+                )
+
+            all_results = []
+            seen_urls = set()  # Deduplicate by URL
+
+            # Search with each query variant
+            for search_query in search_queries:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    # Query the scraper's search endpoint
+                    # This searches CACHED data, doesn't trigger new scrape
+                    response = await client.get(
+                        f"{self.base_url}/search",
+                        params={
+                            'q': search_query,
+                            'limit': limit
+                        }
                     )
-                    return []
                 
-                response.raise_for_status()
-                data = response.json()
-                
-                # Handle different response formats
-                if isinstance(data, dict):
-                    results = data.get('results', []) or data.get('tracks', [])
-                elif isinstance(data, list):
-                    results = data
-                else:
-                    results = []
-                
-                logger.debug(
-                    "1001Tracklists search completed",
-                    query=query,
-                    results_count=len(results)
-                )
-                
-                return results[:limit]
+                    if response.status_code == 404:
+                        logger.debug(
+                            "1001Tracklists API endpoint not found - may need custom implementation",
+                            base_url=self.base_url
+                        )
+                        continue
+
+                    response.raise_for_status()
+                    data = response.json()
+
+                    # Handle different response formats
+                    if isinstance(data, dict):
+                        results = data.get('results', []) or data.get('tracks', [])
+                    elif isinstance(data, list):
+                        results = data
+                    else:
+                        results = []
+
+                    # Deduplicate results
+                    for result in results:
+                        url = result.get('url')
+                        if url and url not in seen_urls:
+                            seen_urls.add(url)
+                            all_results.append(result)
+                        elif not url:
+                            # No URL to deduplicate by, just add it
+                            all_results.append(result)
+
+            logger.debug(
+                "1001Tracklists search completed",
+                original_query=query,
+                variants_searched=len(search_queries),
+                unique_results=len(all_results)
+            )
+
+            return all_results[:limit]
                 
         except httpx.ConnectError:
             logger.warning(
@@ -122,55 +160,89 @@ class MixesDBClient:
         self.base_url = base_url
         self.timeout = 10.0
     
-    async def search_track(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
+    async def search_track(
+        self,
+        query: str,
+        limit: int = 20,
+        expand_abbreviations: bool = True
+    ) -> List[Dict[str, Any]]:
         """
         Search cached MixesDB data for track information
-        
+
         Args:
             query: Search query (track title, artist name, or combination)
             limit: Max results to return
-            
+            expand_abbreviations: If True, also search with abbreviation expansions
+
         Returns:
             List of track dictionaries with artist information
             Format: [{'artist': 'Name', 'title': 'Track', ...}, ...]
         """
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                # Query the scraper's search endpoint
-                # This searches CACHED data, doesn't trigger new scrape
-                response = await client.get(
-                    f"{self.base_url}/search",
-                    params={
-                        'q': query,
-                        'limit': limit
-                    }
+            # Check if query contains abbreviations
+            expander = get_abbreviation_expander()
+            search_queries = [query]
+
+            if expand_abbreviations and expander.is_abbreviation(query):
+                search_queries = await expander.get_search_variants(
+                    query,
+                    context="DJ mix artist or track"
                 )
-                
-                if response.status_code == 404:
-                    logger.debug(
-                        "MixesDB API endpoint not found - may need custom implementation",
-                        base_url=self.base_url
+                logger.info(
+                    "🔍 MixesDB search with abbreviation expansion",
+                    original=query,
+                    variants=search_queries
+                )
+
+            all_results = []
+            seen_titles = set()  # Deduplicate by title
+
+            # Search with each query variant
+            for search_query in search_queries:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    # Query the scraper's search endpoint
+                    # This searches CACHED data, doesn't trigger new scrape
+                    response = await client.get(
+                        f"{self.base_url}/search",
+                        params={
+                            'q': search_query,
+                            'limit': limit
+                        }
                     )
-                    return []
                 
-                response.raise_for_status()
-                data = response.json()
-                
-                # Handle different response formats
-                if isinstance(data, dict):
-                    results = data.get('results', []) or data.get('tracks', [])
-                elif isinstance(data, list):
-                    results = data
-                else:
-                    results = []
-                
-                logger.debug(
-                    "MixesDB search completed",
-                    query=query,
-                    results_count=len(results)
-                )
-                
-                return results[:limit]
+                    if response.status_code == 404:
+                        logger.debug(
+                            "MixesDB API endpoint not found - may need custom implementation",
+                            base_url=self.base_url
+                        )
+                        continue
+
+                    response.raise_for_status()
+                    data = response.json()
+
+                    # Handle different response formats
+                    if isinstance(data, dict):
+                        results = data.get('results', []) or data.get('tracks', [])
+                    elif isinstance(data, list):
+                        results = data
+                    else:
+                        results = []
+
+                    # Deduplicate results by title
+                    for result in results:
+                        title_key = f"{result.get('artist', '')}:{result.get('title', '')}"
+                        if title_key not in seen_titles:
+                            seen_titles.add(title_key)
+                            all_results.append(result)
+
+            logger.debug(
+                "MixesDB search completed",
+                original_query=query,
+                variants_searched=len(search_queries),
+                unique_results=len(all_results)
+            )
+
+            return all_results[:limit]
                 
         except httpx.ConnectError:
             logger.warning(

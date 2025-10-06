@@ -206,7 +206,11 @@ def get_api_keys() -> Dict[str, str]:
         "tidal_client_id": get_secret("TIDAL_CLIENT_ID", ""),
         "tidal_client_secret": get_secret("TIDAL_CLIENT_SECRET", ""),
         "jwt_secret": get_secret("JWT_SECRET", ""),
-        "api_key": get_secret("API_KEY", "")
+        "api_key": get_secret("API_KEY", ""),
+        "rapidapi_key": get_secret("RAPIDAPI_KEY", ""),
+        "rapidapi_application": get_secret("RAPIDAPI_APPLICATION", ""),
+        "rapidapi_host": get_secret("RAPIDAPI_HOST", "rapidapi.com"),
+        "sonoteller_rapidapi_key": get_secret("SONOTELLER_RAPIDAPI_KEY", "")
     }
 
 

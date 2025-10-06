@@ -60,9 +60,13 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
 }) => {
   const dimensions = SIZES[size];
   const barCount = dimensions.bars;
-  const activeBars = Math.round((level / 10) * barCount);
-  const color = getEnergyColor(level);
-  const descriptor = ENERGY_DESCRIPTORS[level as keyof typeof ENERGY_DESCRIPTORS];
+
+  // Clamp level to valid range (1-10) to prevent undefined descriptor
+  const validLevel = Math.max(1, Math.min(10, Math.round(level || 5)));
+
+  const activeBars = Math.round((validLevel / 10) * barCount);
+  const color = getEnergyColor(validLevel);
+  const descriptor = ENERGY_DESCRIPTORS[validLevel as keyof typeof ENERGY_DESCRIPTORS];
 
   if (orientation === 'vertical') {
     return (

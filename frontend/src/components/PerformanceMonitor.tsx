@@ -13,8 +13,12 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ classNam
   useEffect(() => {
     let lastTime = performance.now();
     let frames = 0;
+    let animationId: number | null = null;
+    let isActive = true; // Track if effect is still active
 
     const measureFPS = () => {
+      if (!isActive) return; // Stop if unmounted
+
       frames++;
       const currentTime = performance.now();
 
@@ -25,11 +29,17 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ classNam
         lastTime = currentTime;
       }
 
-      requestAnimationFrame(measureFPS);
+      animationId = requestAnimationFrame(measureFPS); // Track each frame ID
     };
 
-    const animationId = requestAnimationFrame(measureFPS);
-    return () => cancelAnimationFrame(animationId);
+    animationId = requestAnimationFrame(measureFPS);
+
+    return () => {
+      isActive = false; // Signal to stop
+      if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+      }
+    };
   }, [updateMetrics]);
 
   const getFPSColor = (fps: number) => {

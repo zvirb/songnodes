@@ -246,7 +246,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({
           }}>
             ENERGY
           </span>
-          <EnergyMeter level={track.energy} size="small" />
+          <EnergyMeter level={track.energy || 5} size="small" />
         </div>
 
         {/* Duration */}

@@ -39,6 +39,9 @@ class MetadataEnrichmentPipeline:
         discogs_client,
         beatport_client,
         lastfm_client,
+        acousticbrainz_client,
+        getsongbpm_client,
+        sonoteller_client,
         db_session_factory: async_sessionmaker,
         redis_client: aioredis.Redis
     ):
@@ -47,6 +50,9 @@ class MetadataEnrichmentPipeline:
         self.discogs_client = discogs_client
         self.beatport_client = beatport_client
         self.lastfm_client = lastfm_client
+        self.acousticbrainz_client = acousticbrainz_client
+        self.getsongbpm_client = getsongbpm_client
+        self.sonoteller_client = sonoteller_client
         self.db_session_factory = db_session_factory
         self.redis_client = redis_client
 
@@ -203,14 +209,16 @@ class MetadataEnrichmentPipeline:
                         isrc = spotify_data['isrc']
                         logger.info("✓ ISRC populated from Spotify", isrc=isrc)
 
-                    # Get audio features - only if client exists
-                    if self.spotify_client:
-                        audio_features = await self.spotify_client.get_audio_features(
-                            task.existing_spotify_id
-                        )
-                        if audio_features:
-                            metadata['audio_features'] = audio_features
-                            logger.info("Spotify audio features retrieved")
+                    # Get audio features - DISABLED due to Spotify API restrictions (Nov 2024)
+                    # Spotify restricted audio-features endpoint to existing extended mode apps only
+                    # See: https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api
+                    # if self.spotify_client:
+                    #     audio_features = await self.spotify_client.get_audio_features(
+                    #         task.existing_spotify_id
+                    #     )
+                    #     if audio_features:
+                    #         metadata['audio_features'] = audio_features
+                    #         logger.info("Spotify audio features retrieved")
 
             # STEP 2: Enrichment via ISRC (if available or obtained from Spotify)
             if not isrc:
@@ -226,13 +234,14 @@ class MetadataEnrichmentPipeline:
                         sources_used.append(EnrichmentSource.SPOTIFY)
                         metadata.update(spotify_isrc_data)
 
-                        # Get audio features
-                        if spotify_isrc_data.get('spotify_id'):
-                            audio_features = await self.spotify_client.get_audio_features(
-                                spotify_isrc_data['spotify_id']
-                            )
-                            if audio_features:
-                                metadata['audio_features'] = audio_features
+                        # Get audio features - DISABLED (Spotify API restricted Nov 2024)
+                        # if spotify_isrc_data.get('spotify_id'):
+                        #     audio_features = await self.spotify_client.get_audio_features(
+                        #         spotify_isrc_data['spotify_id']
+                        #     )
+                        #     if audio_features:
+                        #         metadata['audio_features'] = audio_features
+                        pass
 
                 # MusicBrainz enrichment via ISRC
                 mb_data = await self.musicbrainz_client.search_by_isrc(isrc)
@@ -260,13 +269,14 @@ class MetadataEnrichmentPipeline:
                         metadata.update(spotify_search)
                         logger.info("Spotify search successful")
 
-                        # Get audio features
-                        if spotify_search.get('spotify_id'):
-                            audio_features = await self.spotify_client.get_audio_features(
-                                spotify_search['spotify_id']
-                            )
-                            if audio_features:
-                                metadata['audio_features'] = audio_features
+                        # Get audio features - DISABLED (Spotify API restricted Nov 2024)
+                        # if spotify_search.get('spotify_id'):
+                        #     audio_features = await self.spotify_client.get_audio_features(
+                        #         spotify_search['spotify_id']
+                        #     )
+                        #     if audio_features:
+                        #         metadata['audio_features'] = audio_features
+                        pass
 
                 # Update ISRC if we got it from search
                 if metadata.get('isrc') and not isrc:
@@ -318,14 +328,80 @@ class MetadataEnrichmentPipeline:
             else:
                 logger.debug("Skipping Last.fm enrichment - no client available (missing credentials)")
 
-            # Derive Camelot key from audio features
-            if metadata.get('audio_features'):
-                camelot_key = self._derive_camelot_key(
-                    metadata['audio_features'].get('key'),
-                    metadata['audio_features'].get('mode')
+            # STEP 7: Audio features (BPM, key) enrichment
+            logger.info("Step 7: Audio features enrichment (BPM, key)")
+
+            # Try AcousticBrainz if we have MusicBrainz ID (free, good coverage for older tracks)
+            musicbrainz_id = metadata.get('musicbrainz_id')
+            if musicbrainz_id and self.acousticbrainz_client:
+                ab_features = await self.acousticbrainz_client.get_audio_features(musicbrainz_id)
+                if ab_features:
+                    if 'bpm' in ab_features:
+                        metadata['bpm'] = ab_features['bpm']
+                    if 'key' in ab_features:
+                        metadata['key'] = ab_features['key']
+                        metadata['key_confidence'] = ab_features.get('key_confidence')
+                    logger.info("✓ AcousticBrainz audio features retrieved", **ab_features)
+
+            # Fallback: GetSongBPM if no BPM/key yet (free with attribution)
+            if (not metadata.get('bpm') or not metadata.get('key')) and self.getsongbpm_client:
+                gsbpm_features = await self.getsongbpm_client.search(task.artist_name, task.track_title)
+                if gsbpm_features:
+                    if 'bpm' in gsbpm_features and not metadata.get('bpm'):
+                        metadata['bpm'] = gsbpm_features['bpm']
+                    if 'key' in gsbpm_features and not metadata.get('key'):
+                        metadata['key'] = gsbpm_features['key']
+                    logger.info("✓ GetSongBPM audio features retrieved", **gsbpm_features)
+
+            # Sonoteller.ai - Active data source (respects 5/month quota via internal tracking)
+            # Use whenever BPM or key is missing (quota check happens inside client)
+            if (not metadata.get('bpm') or not metadata.get('key')) and self.sonoteller_client:
+                logger.info(
+                    "🎵 Using Sonoteller.ai for audio analysis",
+                    artist=task.artist_name,
+                    title=task.track_title,
+                    missing_bpm=not metadata.get('bpm'),
+                    missing_key=not metadata.get('key')
                 )
-                if camelot_key:
-                    metadata['camelot_key'] = camelot_key
+
+                sono_features = await self.sonoteller_client.analyze_track(
+                    task.artist_name,
+                    task.track_title,
+                    spotify_id=metadata.get('spotify_id')
+                )
+                if sono_features:
+                    if 'bpm' in sono_features and not metadata.get('bpm'):
+                        metadata['bpm'] = sono_features['bpm']
+                        if 'bpm_range' in sono_features:
+                            metadata['bpm_range'] = sono_features['bpm_range']
+                    if 'key' in sono_features and not metadata.get('key'):
+                        metadata['key'] = sono_features['key']
+                    if 'moods' in sono_features:
+                        metadata['moods'] = sono_features['moods']
+                    if 'genres' in sono_features:
+                        metadata['ai_genres'] = sono_features['genres']
+                    if 'instruments' in sono_features:
+                        metadata['instruments'] = sono_features['instruments']
+                    logger.info("✓ Sonoteller.ai comprehensive analysis complete", **sono_features)
+                    sources_used.append('sonoteller')
+
+            # Derive Camelot key from key/BPM data
+            if metadata.get('key'):
+                # Handle both string format ("C# minor") and numeric format (pitch class)
+                key_str = metadata['key']
+                if isinstance(key_str, str):
+                    # Parse string format "C# minor" → Camelot
+                    camelot_key = self._key_to_camelot(key_str)
+                    if camelot_key:
+                        metadata['camelot_key'] = camelot_key
+                elif isinstance(key_str, (int, float)) and metadata.get('audio_features'):
+                    # Old numeric format from Spotify (pitch class + mode)
+                    camelot_key = self._derive_camelot_key(
+                        metadata['audio_features'].get('key'),
+                        metadata['audio_features'].get('mode')
+                    )
+                    if camelot_key:
+                        metadata['camelot_key'] = camelot_key
 
             # FINAL ISRC CHECK: Log warning if still missing
             final_isrc = metadata.get('isrc')
@@ -459,14 +535,25 @@ class MetadataEnrichmentPipeline:
                     updates.append("duration_ms = :duration_ms")
                     params['duration_ms'] = metadata['duration_ms']
 
-                # Audio features
-                audio_features = metadata.get('audio_features', {})
-                if audio_features.get('tempo'):
+                # BPM from new sources or legacy audio_features
+                if metadata.get('bpm'):
                     updates.append("bpm = :bpm")
-                    params['bpm'] = round(audio_features['tempo'], 2)
+                    params['bpm'] = round(metadata['bpm'], 2)
+                elif metadata.get('audio_features', {}).get('tempo'):
+                    # Legacy Spotify tempo
+                    updates.append("bpm = :bpm")
+                    params['bpm'] = round(metadata['audio_features']['tempo'], 2)
 
-                if audio_features.get('key') is not None:
-                    # Convert key number to note name
+                # Key from new sources or legacy audio_features
+                # Initialize audio_features to avoid scoping issues
+                audio_features = metadata.get('audio_features', {})
+
+                if metadata.get('key') and isinstance(metadata['key'], str):
+                    # String format from AcousticBrainz/GetSongBPM/Sonoteller
+                    updates.append("key = :key")
+                    params['key'] = metadata['key']
+                elif audio_features.get('key') is not None:
+                    # Legacy Spotify numeric format
                     key_map = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
                     key_num = audio_features['key']
                     mode = audio_features.get('mode', 1)
@@ -474,6 +561,7 @@ class MetadataEnrichmentPipeline:
                     updates.append("key = :key")
                     params['key'] = key_str
 
+                # Only process additional audio features if they exist
                 if audio_features.get('energy') is not None:
                     updates.append("energy = :energy")
                     params['energy'] = round(audio_features['energy'], 2)
@@ -598,6 +686,55 @@ class MetadataEnrichmentPipeline:
 
         except Exception as e:
             logger.error("Failed to update enrichment status", error=str(e), track_id=track_id)
+
+    def _key_to_camelot(self, key_str: str) -> Optional[str]:
+        """
+        Convert string key notation (e.g., "C# minor", "D major") to Camelot notation
+
+        Args:
+            key_str: Key string like "C# minor" or "Ab major"
+
+        Returns:
+            Camelot notation like "5A" or "8B", or None if invalid
+        """
+        if not key_str:
+            return None
+
+        # Normalize and parse
+        key_str = key_str.strip().lower()
+
+        # Mapping from key names to Camelot
+        key_to_camelot = {
+            # Minor keys (A)
+            'a minor': '1A',
+            'e minor': '2A',
+            'b minor': '3A',
+            'f# minor': '4A', 'gb minor': '4A',
+            'c# minor': '5A', 'db minor': '5A',
+            'g# minor': '6A', 'ab minor': '6A',
+            'd# minor': '7A', 'eb minor': '7A',
+            'a# minor': '8A', 'bb minor': '8A',
+            'f minor': '9A',
+            'c minor': '10A',
+            'g minor': '11A',
+            'd minor': '12A',
+
+            # Major keys (B)
+            'c major': '8B',
+            'g major': '9B',
+            'd major': '10B',
+            'a major': '11B',
+            'e major': '12B',
+            'b major': '1B',
+            'f# major': '2B', 'gb major': '2B',
+            'c# major': '3B', 'db major': '3B',
+            'g# major': '4B', 'ab major': '4B',
+            'd# major': '5B', 'eb major': '5B',
+            'a# major': '6B', 'bb major': '6B',
+            'f major': '7B'
+        }
+
+        return key_to_camelot.get(key_str)
 
     def _derive_camelot_key(self, key_num: Optional[int], mode: Optional[int]) -> Optional[str]:
         """

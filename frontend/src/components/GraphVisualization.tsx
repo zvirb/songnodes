@@ -15,8 +15,10 @@ import {
 } from 'd3-force';
 import { zoom, zoomIdentity, ZoomBehavior, ZoomTransform } from 'd3-zoom';
 import { select } from 'd3-selection';
+import 'd3-transition'; // Adds .transition() method to selections
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge, DEFAULT_CONFIG, Bounds, Track } from '../types';
+import { ContextMenu, useContextMenu } from './ContextMenu';
 
 // Performance constants - updated for 2025 best practices
 const PERFORMANCE_THRESHOLDS = {
@@ -69,13 +71,14 @@ const COLOR_SCHEMES = {
 } as const;
 
 // Layout mode for force simulation
-type LayoutMode = 'standard' | 'energy-genre';
+type LayoutMode = 'standard' | 'energy-genre' | 'category-horizontal';
 
 // Force simulation settings
 interface ForceSettings {
   layoutMode: LayoutMode;
   energyStrength: number;
   genreStrength: number;
+  categoryStrength: number;  // For category-horizontal layout
   linkStrength: number;
   linkDistance: number;
 }
@@ -168,36 +171,44 @@ class LODSystem {
       Math.pow(screenX - centerX, 2) + Math.pow(screenY - centerY, 2)
     );
 
-    // Performance-based LOD adjustment using screen-space distances
-    let baseDistance1 = PERFORMANCE_THRESHOLDS.LOD_DISTANCE_1;
-    let baseDistance2 = PERFORMANCE_THRESHOLDS.LOD_DISTANCE_2;
-
-    // Scale LOD distances based on performance requirements
-    if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_HIGH) {
-      baseDistance1 *= 0.6;
-      baseDistance2 *= 0.6;
-    } else if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_MEDIUM) {
-      baseDistance1 *= 0.8;
-      baseDistance2 *= 0.8;
-    }
-
-    // Use screen-space distances for consistent LOD behavior
+    // Use screen-space distance thresholds that scale with viewport size
+    // This ensures consistent label visibility across different screen sizes
     const screenDiagonal = Math.sqrt(this.viewport.width * this.viewport.width + this.viewport.height * this.viewport.height);
     const normalizedDistance = distanceFromCenter / screenDiagonal;
 
-    if (normalizedDistance > 0.8) {
-      return 2; // Minimal detail - far from center
-    } else if (normalizedDistance > 0.4) {
-      return 1; // Reduced detail - medium distance
+    // Scale thresholds based on performance requirements
+    let threshold1 = 0.4; // ~40% of diagonal for reduced detail
+    let threshold2 = 0.8; // ~80% of diagonal for minimal detail
+
+    if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_HIGH) {
+      threshold1 *= 0.6;
+      threshold2 *= 0.6;
+    } else if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_MEDIUM) {
+      threshold1 *= 0.8;
+      threshold2 *= 0.8;
+    }
+
+    if (normalizedDistance > threshold2) {
+      return 2; // Minimal detail - far from center (no labels)
+    } else if (normalizedDistance > threshold1) {
+      return 1; // Reduced detail - medium distance (labels show)
     } else {
-      return 0; // Full detail - near center
+      return 0; // Full detail - near center (labels show)
     }
   }
 
   getEdgeLOD(edge: EnhancedGraphEdge): number {
     // Edge LOD based on both endpoint nodes
-    const sourceLOD = this.getNodeLOD(edge.source);
-    const targetLOD = this.getNodeLOD(edge.target);
+    // Handle case where source/target might still be IDs (before D3 processing)
+    const source = typeof edge.source === 'object' ? edge.source : null;
+    const target = typeof edge.target === 'object' ? edge.target : null;
+
+    if (!source || !target) {
+      return 0; // Default to full detail if nodes aren't resolved yet
+    }
+
+    const sourceLOD = this.getNodeLOD(source);
+    const targetLOD = this.getNodeLOD(target);
 
     // If either endpoint is culled (LOD 3), cull the edge
     if (sourceLOD === 3 || targetLOD === 3) {
@@ -365,8 +376,6 @@ class TextureAtlasGenerator {
 
   // Pre-generate common textures to avoid runtime overhead
   preGenerateTextures(colors: number[], radii: number[]): void {
-    console.log('🎨 Pre-generating texture atlas...');
-    const startTime = performance.now();
     let count = 0;
 
     for (const color of colors) {
@@ -377,8 +386,10 @@ class TextureAtlasGenerator {
       }
     }
 
-    const duration = performance.now() - startTime;
-    console.log(`✅ Generated ${count} textures in ${duration.toFixed(2)}ms`);
+    // DEBUG: Texture generation logging disabled (too noisy)
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.log(`✅ Generated ${count} textures`);
+    // }
   }
 
   destroy(): void {
@@ -391,11 +402,10 @@ class TextureAtlasGenerator {
 class TextLabelPool {
   private pool: PIXI.Text[] = [];
   private activeLabels: Set<PIXI.Text> = new Set();
-  private poolSize: number = 200; // Start with 200 labels
-  private maxPoolSize: number = 1000;
+  private poolSize: number = 500; // INCREASED: Start with 500 labels for larger graphs
+  private maxPoolSize: number = 2000; // INCREASED: Allow up to 2000 labels
 
   constructor() {
-    console.log('📝 Initializing text label pool...');
     this.preallocate(this.poolSize);
   }
 
@@ -416,7 +426,11 @@ class TextLabelPool {
       label.eventMode = 'none';
       this.pool.push(label);
     }
-    console.log(`✅ Pre-allocated ${count} text labels`);
+
+    if (process.env.NODE_ENV === 'development') {
+      // DEBUG: Label pre-allocation logging disabled (too noisy)
+      // console.log(`✅ Pre-allocated ${count} text labels`);
+    }
   }
 
   acquire(text: string, style?: Partial<PIXI.TextStyle>): PIXI.Text {
@@ -424,6 +438,23 @@ class TextLabelPool {
 
     if (this.pool.length > 0) {
       label = this.pool.pop()!;
+
+      // Safety check: Validate label hasn't been destroyed (PIXI v8 sets anchor to null on destroy)
+      if (!label || !label.anchor) {
+        console.warn('⚠️ Pool contained destroyed label, creating new one');
+        label = new PIXI.Text({
+          text: '',
+          style: {
+            fontFamily: 'Arial',
+            fontSize: 12,
+            fill: 0xffffff,
+            align: 'center',
+            fontWeight: 'bold',
+          },
+        });
+        label.anchor.set(0.5);
+        label.eventMode = 'none';
+      }
     } else {
       // Pool exhausted, create new label (up to max)
       if (this.activeLabels.size < this.maxPoolSize) {
@@ -442,12 +473,21 @@ class TextLabelPool {
         console.log(`⚠️ Pool exhausted, created new label (${this.activeLabels.size + 1}/${this.maxPoolSize})`);
       } else {
         console.warn('🚨 Text label pool max size reached!');
-        return this.pool[0] || new PIXI.Text({ text: '' }); // Fallback
+        return this.pool[0] || new PIXI.Text({
+          text: '',
+          style: {
+            fontFamily: 'Arial',
+            fontSize: 12,
+            fill: 0xffffff,
+            align: 'center',
+            fontWeight: 'bold',
+          },
+        }); // Fallback
       }
     }
 
     label.text = text;
-    if (style) {
+    if (style && label.style) {
       Object.assign(label.style, style);
     }
     label.visible = true;
@@ -459,6 +499,13 @@ class TextLabelPool {
   release(label: PIXI.Text): void {
     if (!this.activeLabels.has(label)) return;
 
+    // CRITICAL: Don't pool destroyed labels
+    if (!label || !label.anchor) {
+      console.warn('⚠️ Attempted to release destroyed label, discarding');
+      this.activeLabels.delete(label);
+      return;
+    }
+
     label.text = '';
     label.visible = false;
     this.activeLabels.delete(label);
@@ -467,9 +514,12 @@ class TextLabelPool {
 
   releaseAll(): void {
     this.activeLabels.forEach(label => {
-      label.text = '';
-      label.visible = false;
-      this.pool.push(label);
+      // Only pool valid labels
+      if (label && label.anchor) {
+        label.text = '';
+        label.visible = false;
+        this.pool.push(label);
+      }
     });
     this.activeLabels.clear();
   }
@@ -543,7 +593,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     pathfindingState,
     graph,
     pathfinding,
-    performance,
+    performance: performanceStore,
+    performanceMetrics,
   } = useStore();
 
   // Refs for PIXI and D3
@@ -583,14 +634,19 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     layoutMode: 'standard',
     energyStrength: 0.15,
     genreStrength: 0.1,
-    linkStrength: 0.5,  // Increased from 0.2 to pull nodes closer together
-    linkDistance: 80,    // Reduced from 150 to keep nodes tighter
+    categoryStrength: 0.2,  // For category-horizontal layout mode
+    linkStrength: 0.2,  // Very elastic edges to allow spreading (was 0.3)
+    linkDistance: 250,  // Much larger distance for readable layouts (was 150)
   });
 
   // Sprite-based rendering mode (2025 optimization - enabled by default for better performance)
   const [useSpriteMode, setUseSpriteMode] = useState(true);
+
+  // Context menu for layout mode and options
+  const { contextMenu, openContextMenu, closeContextMenu } = useContextMenu();
   const frameRef = useRef<number>(0);
   const lastRenderFrame = useRef<number>(0);
+  const lastFrameTimeRef = useRef<number>(0); // For render throttling
 
   // Memory monitoring (2025 best practice)
   const memoryStatsRef = useRef({
@@ -616,6 +672,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // Enhanced data with PIXI objects
   const enhancedNodesRef = useRef<Map<string, EnhancedGraphNode>>(new Map());
   const enhancedEdgesRef = useRef<Map<string, EnhancedGraphEdge>>(new Map());
+
+  // Navigation state - track current focused node index for Tab cycling
+  const focusedNodeIndexRef = useRef<number>(0);
 
   // Current viewport state
   const viewportRef = useRef<Viewport>({
@@ -683,29 +742,29 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
 
-    // Debug container dimensions and state
-    console.log('Container debug info:', {
-      container,
-      containerChildren: container.children.length,
-      containerStyle: {
-        width: container.style.width,
-        height: container.style.height,
-        display: container.style.display,
-        position: container.style.position,
-      },
-      containerClasses: container.className,
-      containerId: container.id,
-      parentElement: container.parentElement,
-      boundingRect: rect,
-      offsetDimensions: {
-        width: container.offsetWidth,
-        height: container.offsetHeight
-      },
-      clientDimensions: {
-        width: container.clientWidth,
-        height: container.clientHeight
-      }
-    });
+    // DEBUG: Container debug logging disabled (too noisy)
+    // console.log('Container debug info:', {
+    //   container,
+    //   containerChildren: container.children.length,
+    //   containerStyle: {
+    //     width: container.style.width,
+    //     height: container.style.height,
+    //     display: container.style.display,
+    //     position: container.style.position,
+    //   },
+    //   containerClasses: container.className,
+    //   containerId: container.id,
+    //   parentElement: container.parentElement,
+    //   boundingRect: rect,
+    //   offsetDimensions: {
+    //     width: container.offsetWidth,
+    //     height: container.offsetHeight
+    //   },
+    //   clientDimensions: {
+    //     width: container.clientWidth,
+    //     height: container.clientHeight
+    //   }
+    // });
 
     // Check if container has zero dimensions
     if (rect.width === 0 || rect.height === 0) {
@@ -715,11 +774,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     }
 
     try {
-      console.log('Initializing PIXI.js application...', {
-        containerWidth: rect.width,
-        containerHeight: rect.height,
-        devicePixelRatio: window.devicePixelRatio
-      });
+      // DEBUG: PIXI initialization logging disabled (too noisy)
+      // console.log('Initializing PIXI.js application...', {
+      //   containerWidth: rect.width,
+      //   containerHeight: rect.height,
+      //   devicePixelRatio: window.devicePixelRatio
+      // });
 
       // Create PIXI application with WebGL
       const app = new PIXI.Application();
@@ -762,23 +822,25 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       canvas.style.userSelect = 'none';
 
       // Initialize WebGL memory monitoring (2025 best practice)
-      const gl = app.renderer.gl;
+      const gl = (app.renderer as any).gl;
       if (gl) {
-        console.log('WebGL context initialized', {
-          vendor: gl.getParameter(gl.VENDOR),
-          renderer: gl.getParameter(gl.RENDERER),
-          version: gl.getParameter(gl.VERSION),
-          maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
-          maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS)
-        });
+        // DEBUG: WebGL context logging disabled (too noisy)
+        // console.log('WebGL context initialized', {
+        //   vendor: gl.getParameter(gl.VENDOR),
+        //   renderer: gl.getParameter(gl.RENDERER),
+        //   version: gl.getParameter(gl.VERSION),
+        //   maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+        //   maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS)
+        // });
 
         // Monitor initial WebGL memory state
         const ext = gl.getExtension('WEBGL_debug_renderer_info');
         if (ext) {
-          console.log('GPU info:', {
-            vendor: gl.getParameter(ext.UNMASKED_VENDOR_WEBGL),
-            renderer: gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
-          });
+          // DEBUG: GPU info logging disabled (too noisy)
+          // console.log('GPU info:', {
+          //   vendor: gl.getParameter(ext.UNMASKED_VENDOR_WEBGL),
+          //   renderer: gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
+          // });
         }
       }
       canvas.style.zIndex = '10';
@@ -802,41 +864,42 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       (window as any).lodSystemRef = lodSystemRef;
       (window as any).viewportRef = viewportRef;
 
-      // Additional canvas debugging
-      console.log('Canvas DOM state after append:', {
-        canvasParent: canvas.parentElement,
-        canvasInDocument: document.contains(canvas),
-        canvasStyle: {
-          position: canvas.style.position,
-          top: canvas.style.top,
-          left: canvas.style.left,
-          width: canvas.style.width,
-          height: canvas.style.height,
-          display: canvas.style.display,
-          visibility: canvas.style.visibility,
-          opacity: canvas.style.opacity,
-          zIndex: canvas.style.zIndex
-        },
-        canvasComputedStyle: {
-          display: window.getComputedStyle(canvas).display,
-          visibility: window.getComputedStyle(canvas).visibility,
-          opacity: window.getComputedStyle(canvas).opacity
-        },
-        containerRect: container.getBoundingClientRect(),
-        canvasRect: canvas.getBoundingClientRect()
-      });
+      // DEBUG: Canvas DOM state logging disabled (too noisy)
+      // console.log('Canvas DOM state after append:', {
+      //   canvasParent: canvas.parentElement,
+      //   canvasInDocument: document.contains(canvas),
+      //   canvasStyle: {
+      //     position: canvas.style.position,
+      //     top: canvas.style.top,
+      //     left: canvas.style.left,
+      //     width: canvas.style.width,
+      //     height: canvas.style.height,
+      //     display: canvas.style.display,
+      //     visibility: canvas.style.visibility,
+      //     opacity: canvas.style.opacity,
+      //     zIndex: canvas.style.zIndex
+      //   },
+      //   canvasComputedStyle: {
+      //     display: window.getComputedStyle(canvas).display,
+      //     visibility: window.getComputedStyle(canvas).visibility,
+      //     opacity: window.getComputedStyle(canvas).opacity
+      //   },
+      //   containerRect: container.getBoundingClientRect(),
+      //   canvasRect: canvas.getBoundingClientRect()
+      // });
 
-      console.log('PIXI.js application initialized successfully', {
-        canvasElement: canvas,
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        canvasStyleWidth: canvas.style.width,
-        canvasStyleHeight: canvas.style.height,
-        rendererType: app.renderer.type,
-        pixiVersion: PIXI.VERSION,
-        container: container,
-        containerChildren: container.children.length
-      });
+      // DEBUG: PIXI initialization success logging disabled (too noisy)
+      // console.log('PIXI.js application initialized successfully', {
+      //   canvasElement: canvas,
+      //   canvasWidth: canvas.width,
+      //   canvasHeight: canvas.height,
+      //   canvasStyleWidth: canvas.style.width,
+      //   canvasStyleHeight: canvas.style.height,
+      //   rendererType: app.renderer.type,
+      //   pixiVersion: PIXI.VERSION,
+      //   container: container,
+      //   containerChildren: container.children.length
+      // });
 
     // Create container hierarchy for proper layering
     const edgesContainer = new PIXI.Container();
@@ -850,7 +913,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Center the stage so world coordinate (0,0) appears at canvas center
     app.stage.position.set(rect.width / 2, rect.height / 2);
-    console.log(`Centered stage at (${rect.width / 2}, ${rect.height / 2})`);
+    // DEBUG: Stage centering logging disabled (too noisy)
+    // console.log(`Centered stage at (${rect.width / 2}, ${rect.height / 2})`);
 
     // Add containers in rendering order (bottom to top)
     app.stage.addChild(edgesContainer);
@@ -874,7 +938,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     background.rect(-rect.width / 2, -rect.height / 2, rect.width, rect.height);
     background.fill(0x1a1a1a); // Darker background for better contrast
     app.stage.addChildAt(background, 0); // Add as first child (bottom layer)
-    console.log('Added background visual to PIXI stage (offset for centered stage)');
+    // DEBUG: Background visual logging disabled (too noisy)
+    // console.log('Added background visual to PIXI stage (offset for centered stage)');
 
     // Update viewport dimensions
     viewportRef.current.width = rect.width;
@@ -899,14 +964,17 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Start render loop
     app.ticker.add(renderFrame);
-    console.log('Started PIXI render loop with ticker');
+    // DEBUG: PIXI ticker start logging disabled (too noisy)
+    // console.log('Started PIXI render loop with ticker');
 
     // Force an initial render to show test visuals
     app.render();
-    console.log('Forced initial PIXI render');
+    // DEBUG: Initial render logging disabled (too noisy)
+    // console.log('Forced initial PIXI render');
 
     setIsInitialized(true);
-    console.log('PIXI initialization complete, isInitialized set to true');
+    // DEBUG: PIXI initialization complete logging disabled (too noisy)
+    // console.log('PIXI initialization complete, isInitialized set to true');
 
     } catch (error) {
       console.error('Failed to initialize PIXI.js application:', error);
@@ -951,6 +1019,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // Handle D3 simulation tick with throttling
   const lastSimulationTickRef = useRef<number>(0);
   const handleSimulationTick = useCallback(() => {
+    // CRITICAL FIX: Early exit if nodes map doesn't exist or is cleared
+    if (!enhancedNodesRef.current || enhancedNodesRef.current.size === 0) {
+      return;
+    }
+
     // CRITICAL FIX: Check ref instead of state to avoid closure issues
     if (isSimulationPausedRef.current) {
       // Simulation is paused, don't update positions (but keep rendering current positions)
@@ -963,11 +1036,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     }
 
     // PERFORMANCE OPTIMIZATION: Throttle simulation ticks to 20fps for large graphs
-    const now = performance.now();
-    if (enhancedNodesRef.current.size > 200 && now - lastSimulationTickRef.current < 50) {
+    const currentTime = performance.now();
+    if (enhancedNodesRef.current.size > 200 && currentTime - lastSimulationTickRef.current < 50) {
       return; // Skip this tick (20fps = 50ms interval)
     }
-    lastSimulationTickRef.current = now;
+    lastSimulationTickRef.current = currentTime;
 
     const nodes = enhancedNodesRef.current;
 
@@ -993,7 +1066,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Handle simulation end
   const handleSimulationEnd = useCallback(() => {
-    console.log('Force simulation completed');
+    // DEBUG: Force simulation completion logging disabled (too noisy)
+    // console.log('Force simulation completed');
   }, []);
 
   // Custom genre clustering force
@@ -1032,50 +1106,150 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>()
         .id(d => d.id)
         .distance(d => {
-          // Dynamic distance based on energy difference for elastic stretching
+          // CRITICAL: Use edge weight to encode relationship strength spatially
+          // Strong connections (high weight) = short distance = tight clusters
+          // Weak connections (low weight) = long distance = spread apart
+          const weight = d.weight || 1;
+          const minDistance = 40;   // Tight clusters for weight 10+
+          const maxDistance = 250;  // Spread apart for weight 1
+
+          // Logarithmic encoding prevents "uniform blob" problem
+          const normalizedWeight = Math.log(weight + 1) / Math.log(13);
+          const baseDistance = maxDistance - (normalizedWeight * (maxDistance - minDistance));
+
+          // Additional energy-based stretching for energy-genre mode
           if (forceSettings.layoutMode === 'energy-genre') {
             const source = d.source as any;
             const target = d.target as any;
             const energyDiff = Math.abs((source.energy || 0.5) - (target.energy || 0.5));
-            return forceSettings.linkDistance + (energyDiff * 200); // Reduced from 300 to keep tighter
+            return baseDistance + (energyDiff * 150);
           }
-          return forceSettings.linkDistance;
+
+          return baseDistance;
         })
-        .strength(forceSettings.linkStrength)  // Elastic for energy-genre mode
+        .strength(d => {
+          // Quadratic strength scaling: strong edges are rigid, weak edges are flexible
+          const weight = d.weight || 1;
+          const minStrength = 0.05;  // Very flexible for rare pairings
+          const maxStrength = 1.0;   // Rigid for signature pairings
+          const normalizedWeight = Math.min(weight / 12, 1.0);
+
+          // Base strength from edge weight
+          const baseStrength = minStrength + (maxStrength - minStrength) * Math.pow(normalizedWeight, 2);
+
+          // CRITICAL: Degree-weighted link strength creates "gravity wells" at hubs
+          // High-degree nodes pull harder to maintain their cluster position
+          const source = d.source as any;
+          const target = d.target as any;
+          const sourceDegree = source.degree || source.connections || 0;
+          const targetDegree = target.degree || target.connections || 0;
+
+          // Use max degree (the hub) to determine boost
+          const maxDegree = Math.max(sourceDegree, targetDegree);
+          const degreeBoost = 1 + Math.min(maxDegree / 15, 2.0); // Up to 3x stronger for hubs with 15+ connections
+
+          return baseStrength * degreeBoost;
+        })
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-200) // OPTIMIZED: Reduced for better performance
-        .distanceMax(300) // OPTIMIZED: Limited range for O(n) complexity reduction
-        .distanceMin(20)
+        .strength(d => {
+          // Degree-weighted charge repulsion prevents hub collapse
+          // Hubs push harder, isolated/low-connectivity nodes are extremely lightweight
+          const baseStrength = -800;
+          const degree = d.degree || d.connections || 0;
+
+          if (degree === 0) {
+            // Isolated nodes are "featherweight" - only 15% repulsion
+            return baseStrength * 0.15;
+          } else if (degree === 1) {
+            // Single connection: very lightweight - 25% repulsion
+            return baseStrength * 0.25;
+          } else if (degree === 2) {
+            // Two connections: lightweight - 35% repulsion
+            return baseStrength * 0.35;
+          } else {
+            // Hubs push progressively harder (up to 3x for 30+ connections)
+            const degreeMultiplier = 1 + Math.min(degree / 15, 2.0);
+            return baseStrength * degreeMultiplier;
+          }
+        })
+        .distanceMax(500) // Increased range for more separation (was 300)
+        .distanceMin(30) // Increased minimum distance (was 20)
         .theta(0.9) // OPTIMIZED: Barnes-Hut approximation (default 0.9, higher = faster but less accurate)
       )
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.1))
+      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.01)) // Drastically weakened to allow unrelated nodes to escape
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 10)
-        .strength(0.5)  // OPTIMIZED: Reduced for performance
-        .iterations(1)  // OPTIMIZED: Single iteration for massive speedup
-      )
-      // Add radial containment force to prevent nodes from spreading too far
-      .force('radial-contain', forceX<EnhancedGraphNode>()
-        .x(0)
-        .strength(d => {
-          const distance = Math.sqrt((d.x || 0) ** 2 + (d.y || 0) ** 2);
-          // Stronger pull-back when nodes get far from center
-          return distance > 1000 ? 0.2 : 0.02;
-        })
-      )
-      .force('radial-contain-y', forceY<EnhancedGraphNode>()
-        .y(0)
-        .strength(d => {
-          const distance = Math.sqrt((d.x || 0) ** 2 + (d.y || 0) ** 2);
-          return distance > 1000 ? 0.2 : 0.02;
-        })
-      )
-      .velocityDecay(0.6)   // OPTIMIZED: Higher friction = faster settling
-      .alphaDecay(0.05)     // OPTIMIZED: Faster cooldown for quicker settling
-      .alphaMin(0.01);      // OPTIMIZED: Higher threshold = stops earlier
+        .radius(d => {
+          const baseRadius = (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 50;
+          const degree = d.degree || d.connections || 0;
 
-    // Add energy-genre layout forces if enabled
+          // Hubs need more breathing room for their labels and connections
+          if (degree >= 10) {
+            return baseRadius * 1.5; // 50% larger collision radius for hubs
+          } else if (degree >= 5) {
+            return baseRadius * 1.25; // 25% larger for medium hubs
+          }
+          return baseRadius;
+        })
+        .strength(0.9)  // Strong collision prevention (was 0.5)
+        .iterations(3)  // More iterations for better separation (was 1)
+      )
+      // Canvas edge repulsion - push nodes back when approaching viewport boundaries
+      .force('canvas-edge-x', forceX<EnhancedGraphNode>()
+        .x(d => {
+          const viewportWidth = pixiAppRef.current?.screen.width || 1920;
+          const halfWidth = viewportWidth / 2;
+          const x = d.x || 0;
+          const distanceFromEdge = Math.min(Math.abs(x + halfWidth), Math.abs(halfWidth - x));
+
+          // Push toward center if close to edge
+          if (distanceFromEdge < 100) {
+            return 0; // Strong push to center
+          }
+          return x; // No adjustment if far from edge
+        })
+        .strength(d => {
+          const viewportWidth = pixiAppRef.current?.screen.width || 1920;
+          const halfWidth = viewportWidth / 2;
+          const x = d.x || 0;
+          const distanceFromEdge = Math.min(Math.abs(x + halfWidth), Math.abs(halfWidth - x));
+
+          // Gradual strength increase as nodes approach edge
+          if (distanceFromEdge > 200) return 0; // No force if far from edge
+          if (distanceFromEdge > 100) return 0.05; // Gentle nudge
+          return 0.2; // Stronger push close to edge
+        })
+      )
+      .force('canvas-edge-y', forceY<EnhancedGraphNode>()
+        .y(d => {
+          const viewportHeight = pixiAppRef.current?.screen.height || 1080;
+          const halfHeight = viewportHeight / 2;
+          const y = d.y || 0;
+          const distanceFromEdge = Math.min(Math.abs(y + halfHeight), Math.abs(halfHeight - y));
+
+          // Push toward center if close to edge
+          if (distanceFromEdge < 100) {
+            return 0; // Strong push to center
+          }
+          return y; // No adjustment if far from edge
+        })
+        .strength(d => {
+          const viewportHeight = pixiAppRef.current?.screen.height || 1080;
+          const halfHeight = viewportHeight / 2;
+          const y = d.y || 0;
+          const distanceFromEdge = Math.min(Math.abs(y + halfHeight), Math.abs(halfHeight - y));
+
+          // Gradual strength increase as nodes approach edge
+          if (distanceFromEdge > 200) return 0; // No force if far from edge
+          if (distanceFromEdge > 100) return 0.05; // Gentle nudge
+          return 0.2; // Stronger push close to edge
+        })
+      )
+      .velocityDecay(0.4)   // Lower friction for smoother movement
+      .alphaDecay(0.008)    // Slower cooldown so graph has time to settle properly
+      .alphaMin(0.001);     // Lower threshold - let simulation run until truly settled
+
+    // Configure layout-specific forces
     if (forceSettings.layoutMode === 'energy-genre') {
       // X-axis: Energy positioning (low energy left, high energy right)
       simulation.force('x', forceX<EnhancedGraphNode>()
@@ -1090,13 +1264,43 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // Genre clustering force (custom)
       simulation.force('genre-cluster', genreClusterForce);
 
-      // Override radial containment forces for energy-genre mode to be less aggressive
+      // CRITICAL: Very weak center force - let unrelated nodes escape
+      simulation.force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.01));
       simulation.force('radial-contain', null);
       simulation.force('radial-contain-y', null);
+
+    } else if (forceSettings.layoutMode === 'category-horizontal') {
+      // X-axis: Category positioning (track -> artist -> album -> genre, left to right)
+      const viewportWidth = pixiAppRef.current?.screen.width || 1920;
+      const categoryPositions = {
+        'track': -viewportWidth * 0.3,
+        'artist': -viewportWidth * 0.1,
+        'album': viewportWidth * 0.1,
+        'genre': viewportWidth * 0.3,
+      };
+
+      simulation.force('x', forceX<EnhancedGraphNode>()
+        .x(d => {
+          const nodeType = d.type || 'track';
+          return categoryPositions[nodeType as keyof typeof categoryPositions] || 0;
+        })
+        .strength(forceSettings.categoryStrength)
+      );
+
+      // Genre clustering on Y-axis for vertical organization within categories
+      simulation.force('genre-cluster', genreClusterForce);
+
+      // Weak centering and disable radial containment
+      simulation.force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.01));
+      simulation.force('radial-contain', null);
+      simulation.force('radial-contain-y', null);
+
     } else {
-      // Remove energy-genre forces in standard mode
+      // Standard mode - keep weak centering to allow peripheral escape
       simulation.force('x', null);
       simulation.force('genre-cluster', null);
+      // Use the same weak center force (already set above) to let unrelated nodes escape
+      // Don't override it - radial containment handles boundaries
     }
 
     simulation.on('tick', handleSimulationTick);
@@ -1108,26 +1312,73 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Fast pre-computation method using manual ticks for accurate positioning
   const preComputeLayout = useCallback((nodes: EnhancedGraphNode[], maxTicks = 100) => {
-    console.log('🚀 Pre-computing accurate layout positions...');
-
     // Create a separate simulation for pre-computation (OPTIMIZED: simplified forces)
     const preSimulation = forceSimulation<EnhancedGraphNode>(nodes)
-      .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>(enhancedEdgesRef.current)
+      .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>(Array.from(enhancedEdgesRef.current.values()))
         .id(d => d.id)
-        .distance(100)
-        .strength(0.2)
+        .distance(d => {
+          // Use simplified weight-based distance for fast pre-computation
+          const weight = d.weight || 1;
+          const minDistance = 60;
+          const maxDistance = 220;
+          const normalizedWeight = Math.log(weight + 1) / Math.log(13);
+          return maxDistance - (normalizedWeight * (maxDistance - minDistance));
+        })
+        .strength(d => {
+          // Simplified quadratic strength with degree boost
+          const weight = d.weight || 1;
+          const normalizedWeight = Math.min(weight / 12, 1.0);
+          const baseStrength = 0.1 + 0.5 * Math.pow(normalizedWeight, 2);
+
+          // Degree boost for hub gravity wells (simplified for pre-computation)
+          const source = d.source as any;
+          const target = d.target as any;
+          const sourceDegree = source.degree || source.connections || 0;
+          const targetDegree = target.degree || target.connections || 0;
+          const maxDegree = Math.max(sourceDegree, targetDegree);
+          const degreeBoost = 1 + Math.min(maxDegree / 20, 1.5); // Up to 2.5x for pre-comp
+
+          return baseStrength * degreeBoost;
+        })
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-150) // OPTIMIZED: Much lighter for speed
-        .distanceMax(200) // OPTIMIZED: Reduced range
-        .distanceMin(20)
+        .strength(d => {
+          // Match main simulation: hubs push harder, isolated/low-connectivity nodes are extremely lightweight
+          const baseStrength = -400;
+          const degree = d.degree || d.connections || 0;
+
+          if (degree === 0) {
+            return baseStrength * 0.15; // Featherweight isolated nodes
+          } else if (degree === 1) {
+            return baseStrength * 0.25; // Single connection: very lightweight
+          } else if (degree === 2) {
+            return baseStrength * 0.35; // Two connections: lightweight
+          } else {
+            // Hubs push harder (up to 3x for 30+ connections)
+            const degreeMultiplier = 1 + Math.min(degree / 15, 2.0);
+            return baseStrength * degreeMultiplier;
+          }
+        })
+        .distanceMax(400) // Increased range (was 200)
+        .distanceMin(30) // Match main simulation (was 20)
         .theta(0.95) // OPTIMIZED: More approximation for speed
       )
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.1))
+      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.01)) // Match main simulation - very weak
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 8)
-        .strength(0.3) // OPTIMIZED: Weak collision for speed
-        .iterations(1) // OPTIMIZED: Single iteration
+        .radius(d => {
+          const baseRadius = (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 40;
+          const degree = d.degree || d.connections || 0;
+
+          // Hubs need more breathing room (same as main simulation)
+          if (degree >= 10) {
+            return baseRadius * 1.5;
+          } else if (degree >= 5) {
+            return baseRadius * 1.25;
+          }
+          return baseRadius;
+        })
+        .strength(0.7) // Stronger collision (was 0.3)
+        .iterations(2) // More iterations for better initial separation (was 1)
       )
       .velocityDecay(0.7)   // OPTIMIZED: High friction
       .alphaDecay(0.1)      // OPTIMIZED: Fast cooldown
@@ -1136,19 +1387,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Run manual ticks until convergence
     let tickCount = 0;
-    const startTime = typeof performance !== 'undefined' && performance.now
-      ? performance.now()
-      : Date.now();
 
     while (preSimulation.alpha() > preSimulation.alphaMin() && tickCount < maxTicks) {
       preSimulation.tick();
       tickCount++;
     }
-
-    const endTime = typeof performance !== 'undefined' && performance.now
-      ? performance.now()
-      : Date.now();
-    console.log(`✅ Layout pre-computed in ${tickCount} ticks (${(endTime - startTime).toFixed(1)}ms)`);
 
     // Return the computed positions
     return nodes.map(node => ({
@@ -1164,7 +1407,6 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (!containerRef.current) return;
     if (zoomBehaviorRef.current) return; // Already initialized
 
-    console.log('🚀 Initializing D3 zoom with zoom-to-cursor fix...');
 
     const zoomHandler = zoom<HTMLDivElement, unknown>()
       .scaleExtent([DEFAULT_CONFIG.ui.minZoom, DEFAULT_CONFIG.ui.maxZoom])
@@ -1202,11 +1444,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       .on('zoom', function(event: any) {
         // ZOOM-TO-CURSOR FIX: Calculate correct transform for wheel events
         // This ensures zooming happens at the cursor position, not at the canvas origin
-        console.log('🎯 ZOOM EVENT FIRED:', {
-          hasSourceEvent: !!event.sourceEvent,
-          eventType: event.sourceEvent?.type,
-          transformK: event.transform.k
-        });
+        // DEBUG: Zoom event logging disabled (too noisy)
+        // console.log('🎯 ZOOM EVENT FIRED:', {
+        //   hasSourceEvent: !!event.sourceEvent,
+        //   eventType: event.sourceEvent?.type,
+        //   transformK: event.transform.k
+        // });
 
         if (event.sourceEvent && event.sourceEvent.type === 'wheel') {
           const container = containerRef.current;
@@ -1246,22 +1489,23 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           const verifyX = worldX * newScale + newX + centerX;
           const verifyY = worldY * newScale + newY + centerY;
 
-          console.log('🔍 Zoom-to-cursor DEBUG:', {
-            viewport: { width: viewportRef.current.width, height: viewportRef.current.height, centerX, centerY },
-            mouseScreen: { x: mouseX.toFixed(2), y: mouseY.toFixed(2) },
-            mouseClient: { x: event.sourceEvent.clientX, y: event.sourceEvent.clientY },
-            rectOffset: { left: rect.left.toFixed(2), top: rect.top.toFixed(2) },
-            worldCoords: { x: worldX.toFixed(2), y: worldY.toFixed(2) },
-            oldTransform: { x: currentTransform.x.toFixed(2), y: currentTransform.y.toFixed(2), k: currentTransform.k.toFixed(3) },
-            newTransform: { x: newX.toFixed(2), y: newY.toFixed(2), k: newScale.toFixed(3) },
-            verification: {
-              screenX: verifyX.toFixed(2),
-              screenY: verifyY.toFixed(2),
-              errorX: Math.abs(verifyX - mouseX).toFixed(2),
-              errorY: Math.abs(verifyY - mouseY).toFixed(2),
-              shouldBeZero: Math.abs(verifyX - mouseX) < 0.1 && Math.abs(verifyY - mouseY) < 0.1 ? '✅ CORRECT' : '❌ ERROR'
-            }
-          });
+          // DEBUG: Zoom-to-cursor calculation logging disabled (too noisy)
+          // console.log('🔍 Zoom-to-cursor DEBUG:', {
+          //   viewport: { width: viewportRef.current.width, height: viewportRef.current.height, centerX, centerY },
+          //   mouseScreen: { x: mouseX.toFixed(2), y: mouseY.toFixed(2) },
+          //   mouseClient: { x: event.sourceEvent.clientX, y: event.sourceEvent.clientY },
+          //   rectOffset: { left: rect.left.toFixed(2), top: rect.top.toFixed(2) },
+          //   worldCoords: { x: worldX.toFixed(2), y: worldY.toFixed(2) },
+          //   oldTransform: { x: currentTransform.x.toFixed(2), y: currentTransform.y.toFixed(2), k: currentTransform.k.toFixed(3) },
+          //   newTransform: { x: newX.toFixed(2), y: newY.toFixed(2), k: newScale.toFixed(3) },
+          //   verification: {
+          //     screenX: verifyX.toFixed(2),
+          //     screenY: verifyY.toFixed(2),
+          //     errorX: Math.abs(verifyX - mouseX).toFixed(2),
+          //     errorY: Math.abs(verifyY - mouseY).toFixed(2),
+          //     shouldBeZero: Math.abs(verifyX - mouseX) < 0.1 && Math.abs(verifyY - mouseY) < 0.1 ? '✅ CORRECT' : '❌ ERROR'
+          //   }
+          // });
         }
 
         // Continue with regular zoom handling
@@ -1293,17 +1537,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           pixiAppRef.current.stage.y = centerY + transform.y;
           pixiAppRef.current.stage.scale.set(transform.k, transform.k);
 
-          const firstNode = Array.from(enhancedNodesRef.current.values())[0];
-          console.log('🎯 Zoom handler applied:', {
-            transform: { x: transform.x, y: transform.y, k: transform.k },
-            viewport: { width: viewportRef.current.width, height: viewportRef.current.height },
-            stagePosition: { x: pixiAppRef.current.stage.x, y: pixiAppRef.current.stage.y },
-            nodeCount: enhancedNodesRef.current.size,
-            firstNodePosition: firstNode ? {
-              x: firstNode.x,
-              y: firstNode.y
-            } : 'no nodes'
-          });
+          // DEBUG: Zoom handler logging disabled (too noisy)
+          // const firstNode = Array.from(enhancedNodesRef.current.values())[0];
+          // console.log('🎯 Zoom handler applied:', {
+          //   transform: { x: transform.x, y: transform.y, k: transform.k },
+          //   viewport: { width: viewportRef.current.width, height: viewportRef.current.height },
+          //   stagePosition: { x: pixiAppRef.current.stage.x, y: pixiAppRef.current.stage.y },
+          //   nodeCount: enhancedNodesRef.current.size,
+          //   firstNodePosition: firstNode ? {
+          //     x: firstNode.x,
+          //     y: firstNode.y
+          //   } : 'no nodes'
+          // });
         }
 
         // NOTE: Hit radius is set ONCE during node creation and NEVER updated
@@ -1320,12 +1565,6 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const initialTransform = zoomIdentity
       .translate(viewState.pan.x || 0, viewState.pan.y || 0)
       .scale(viewState.zoom || 1);
-
-    console.log('🚀 Setting initial D3 zoom transform:', {
-      transform: { x: initialTransform.x, y: initialTransform.y, k: initialTransform.k },
-      viewState: { pan: viewState.pan, zoom: viewState.zoom },
-      viewport: { width: viewportRef.current.width, height: viewportRef.current.height }
-    });
 
     selection.call(zoomHandler.transform, initialTransform);
 
@@ -1563,8 +1802,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       container.addChild(hitAreaDebug);
     }
 
-    // Debug: Log container setup
-    console.log(`[Node Setup] Creating node ${node.id} - eventMode: ${container.eventMode}, cursor: ${container.cursor}, visual radius: ${visualRadius}, hit radius: ${hitRadius}`);
+    // Debug: Log container setup (DISABLED for performance)
+    // console.log(`[Node Setup] Creating node ${node.id} - eventMode: ${container.eventMode}, cursor: ${container.cursor}, visual radius: ${visualRadius}, hit radius: ${hitRadius}`);
 
     // Main circle - use sprite or graphics based on mode (2025 optimization)
     let circle: PIXI.Graphics | PIXI.Sprite;
@@ -1576,7 +1815,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       circle = new PIXI.Sprite(texture);
       circle.anchor.set(0.5);
       circle.eventMode = 'none';
-      console.log(`[Sprite Mode] Created sprite node ${node.id}`);
+      // console.log(`[Sprite Mode] Created sprite node ${node.id}`); // DISABLED: Excessive logging
     } else {
       // GRAPHICS MODE: Traditional dynamic drawing
       circle = new PIXI.Graphics();
@@ -1585,60 +1824,52 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     container.addChild(circle);
 
-    // Create labels - use pooled labels if available (2025 optimization)
-    let artistLabel: PIXI.Text;
-    let titleLabel: PIXI.Text;
+    // Create combined label - ALWAYS create new (pooling disabled for stability)
+    let combinedLabel!: PIXI.Text;
 
-    if (textLabelPoolRef.current) {
-      // POOLED LABELS: Reuse from pool for reduced GC pressure
-      artistLabel = textLabelPoolRef.current.acquire(
-        node.artist || node.metadata?.artist || 'Unknown Artist',
-        { fontSize: 11, fill: 0xaaaaaa, fontWeight: 'normal' }
-      );
-      titleLabel = textLabelPoolRef.current.acquire(
-        node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown',
-        { fontSize: 12, fill: 0xffffff, fontWeight: 'bold' }
-      );
-      console.log(`[Label Pool] Acquired labels from pool (${textLabelPoolRef.current.getStats().active} active)`);
-    } else {
-      // FALLBACK: Create new labels
-      artistLabel = new PIXI.Text({
-        text: node.artist || node.metadata?.artist || 'Unknown Artist',
-        style: {
-          fontFamily: 'Arial',
-          fontSize: 11,
-          fill: 0xaaaaaa,
-          align: 'center',
-          fontWeight: 'normal',
-        },
-      });
-      titleLabel = new PIXI.Text({
-        text: node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown',
-        style: {
-          fontFamily: 'Arial',
-          fontSize: 12,
-          fill: 0xffffff,
-          align: 'center',
-          fontWeight: 'bold',
-        },
+    // Combine artist and title into one label
+    const artistText = node.artist || node.metadata?.artist || 'Unknown Artist';
+    const titleText = node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown Title';
+    const hasError = artistText.includes('ERROR') || titleText.includes('ERROR');
+
+    // Format: "Artist - Title" on one line for better readability
+    const combinedText = `${artistText} - ${titleText}`;
+
+    combinedLabel = new PIXI.Text({
+      text: combinedText,
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 11,
+        fill: hasError ? 0xff0000 : 0xffffff,
+        align: 'center',
+        fontWeight: '500',
+        dropShadow: true,
+        dropShadowColor: 0x000000,
+        dropShadowBlur: 3,
+        dropShadowAlpha: 0.8,
+        dropShadowDistance: 1,
+      },
+    });
+
+    // Safety check: Ensure label was created successfully
+    if (!combinedLabel || !combinedLabel.anchor) {
+      console.error('❌ Failed to create text label for node', node.id);
+      // Create fallback label
+      combinedLabel = new PIXI.Text({
+        text: combinedText,
+        style: { fontSize: 11, fill: hasError ? 0xff0000 : 0xffffff },
       });
     }
 
-    artistLabel.anchor.set(0.5, 1);  // Bottom-centered anchor
-    artistLabel.visible = false; // Hidden by default
-    artistLabel.eventMode = 'none';  // Don't block events
-    container.addChild(artistLabel);
+    combinedLabel.anchor.set(0.5, 0.5);  // Center anchor for better positioning
+    combinedLabel.visible = false; // Hidden by default
+    combinedLabel.eventMode = 'none';  // Don't block events
+    container.addChild(combinedLabel);
 
-    titleLabel.anchor.set(0.5, 0);  // Top-centered anchor
-    titleLabel.visible = false; // Hidden by default
-    titleLabel.eventMode = 'none';  // Don't block events
-    container.addChild(titleLabel);
-
-    // Store references (using pixiLabel for title, add new property for artist)
+    // Store references
     node.pixiNode = container;
     node.pixiCircle = circle;
-    node.pixiLabel = titleLabel;  // Main label is the title
-    (node as any).pixiArtistLabel = artistLabel;  // Store artist label separately
+    node.pixiLabel = combinedLabel;  // Store the combined label
 
     // Enhanced interaction handlers with 2025 best practices
     const nodeId = node.id;
@@ -1653,7 +1884,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // CRITICAL FIX: Use pointerdown/pointerup for reliable click detection
     // This ensures clicks work even during animations
     container.on('pointerdown', (event) => {
-      console.log(`[Event Triggered] pointerdown → node ${nodeId}`);
+      // console.log(`[Event Triggered] pointerdown → node ${nodeId}`); // DISABLED: Excessive logging
       isPointerDown = true;
       const now = Date.now();
 
@@ -1674,7 +1905,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     });
 
     container.on('pointerup', (event) => {
-      console.log(`[Event Triggered] pointerup → node ${nodeId}`);
+      // console.log(`[Event Triggered] pointerup → node ${nodeId}`); // DISABLED: Excessive logging
 
       if (!isPointerDown) return;
       isPointerDown = false;
@@ -1688,9 +1919,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // Only process as click if minimal movement (< 5 pixels)
       if (dragDistance < 5) {
         processNodeClick(event, nodeId, node);
-      } else {
-        console.log(`⚠️ Ignored drag (distance: ${dragDistance.toFixed(1)}px)`);
       }
+      // Drag ignored - no need to log this common event
 
       isDragging = false;
 
@@ -1716,7 +1946,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Enhanced hover handling with visual feedback
     container.on('pointerenter', (event) => {
-      console.log(`[Event Triggered] pointerenter → node ${nodeId}`);
+      // console.log(`[Event Triggered] pointerenter → node ${nodeId}`); // DISABLED: Excessive logging
 
       if (graph?.setHoveredNode && !isDragging) {
         graph.setHoveredNode(nodeId);
@@ -1732,7 +1962,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     });
 
     container.on('pointerleave', (event) => {
-      console.log(`[Event Triggered] pointerleave → node ${nodeId}`);
+      // console.log(`[Event Triggered] pointerleave → node ${nodeId}`); // DISABLED: Excessive logging
 
       if (graph?.setHoveredNode) {
         graph.setHoveredNode(null);
@@ -1749,7 +1979,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Enhanced right-click context menu
     container.on('rightclick', (event) => {
-      console.log(`[Event Triggered] rightclick → node ${nodeId}`);
+      // console.log(`[Event Triggered] rightclick → node ${nodeId}`); // DISABLED: Excessive logging
       event.preventDefault();
       event.stopPropagation();
 
@@ -1770,13 +2000,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         }
       }
 
-      // Show context menu with node information
-      console.group('🎵 Node Context Menu');
-      console.log('Track:', node.track?.name || 'Unknown');
-      console.log('Artist:', node.track?.artist || 'Unknown');
-      console.log('BPM:', node.track?.bpm || 'Unknown');
-      console.log('Position:', { x: event.globalX, y: event.globalY });
-      console.groupEnd();
+      // Show context menu with node information (logging removed for cleaner console)
 
       // TODO: Show visual context menu
     });
@@ -1787,12 +2011,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
       // Debounce rapid clicks
       if (now - lastClickTime < 150) {
-        console.log(`⚠️ Click debounced - too rapid (${now - lastClickTime}ms)`);
         return;
       }
       lastClickTime = now;
-
-      console.log(`✅ Processing click for node ${nodeId}`);
 
       const isCtrlClick = event.ctrlKey || event.metaKey;
       const isShiftClick = event.shiftKey;
@@ -1804,17 +2025,14 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
             // Multi-select: toggle this node
             isSelected = !isSelected;
             graph.toggleNodeSelection(nodeId);
-            console.log(`🔸 Multi-select toggled for node ${nodeId}`);
           } else if (isShiftClick) {
             // Range select: select all nodes between last selected and this one
-            console.log(`📏 Range select to node ${nodeId} (TODO)`);
             // TODO: Implement range selection
           } else {
             // Single select: clear others and select this one
-            graph.clearAllSelections?.();
+            graph.clearSelection?.();
             isSelected = true;
             graph.toggleNodeSelection(nodeId);
-            console.log(`🎯 Single select for node ${nodeId}`);
           }
 
           // Update visual state
@@ -1823,59 +2041,46 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           }
 
           // CRITICAL: Trigger track modal if onTrackSelect is provided
-          console.log('🔍 Checking track modal trigger:', {
-            hasNode: !!node,
-            hasTrack: !!(node?.track),
-            hasCallback: !!onTrackSelect,
-            nodeId: nodeId,
-            trackName: node?.track?.name || 'N/A'
-          });
-
           if (node?.track && onTrackSelect) {
-            console.log('🎵 Opening track modal for:', node.track.name || node.track.id);
             onTrackSelect(node.track);
-          } else if (!node?.track) {
-            console.log('⚠️ No track data available for node:', nodeId);
-          } else if (!onTrackSelect) {
-            console.log('⚠️ No onTrackSelect callback provided');
           }
           break;
 
         case 'path':
           if (!pathfindingState.startTrackId) {
             pathfinding.setStartTrack(nodeId);
-            console.log(`🚩 Set START track: ${nodeId}`);
+            if (showDebugInfo) console.log(`🚩 Set START track: ${nodeId}`);
           } else if (!pathfindingState.endTrackId && nodeId !== pathfindingState.startTrackId) {
             pathfinding.setEndTrack(nodeId);
-            console.log(`🏁 Set END track: ${nodeId}`);
+            if (showDebugInfo) console.log(`🏁 Set END track: ${nodeId}`);
           } else {
             pathfinding.addWaypoint(nodeId);
-            console.log(`📍 Added waypoint: ${nodeId}`);
+            if (showDebugInfo) console.log(`📍 Added waypoint: ${nodeId}`);
           }
           break;
 
         case 'setlist':
-          console.log(`📝 Add to setlist: ${nodeId}`);
+          if (showDebugInfo) console.log(`📝 Add to setlist: ${nodeId}`);
           // TODO: Implement setlist functionality
           break;
 
         default:
-          console.log(`⚠️ Unknown tool: ${viewState.selectedTool}`);
+          if (showDebugInfo) console.log(`⚠️ Unknown tool: ${viewState.selectedTool}`);
       }
     };
 
-    // Enhanced debugging - log all attached event listeners
-    console.log(`[Events Attached] Node ${node.id}:`, {
-      pointerdown: container.listenerCount('pointerdown'),
-      pointerup: container.listenerCount('pointerup'),
-      pointermove: container.listenerCount('pointermove'),
-      pointerenter: container.listenerCount('pointerenter'),
-      pointerleave: container.listenerCount('pointerleave'),
-      rightclick: container.listenerCount('rightclick'),
-      eventMode: container.eventMode,
-      cursor: container.cursor,
-      hitArea: container.hitArea ? `Circle(r=${(container.hitArea as PIXI.Circle).radius})` : 'none'
-    });
+    // Enhanced debugging - log all attached event listeners (DISABLED for performance)
+    // console.log(`[Events Attached] Node ${node.id}:`, {
+    //   pointerdown: container.listenerCount('pointerdown'),
+    //   pointerup: container.listenerCount('pointerup'),
+    //   pointermove: container.listenerCount('pointermove'),
+    //   pointerenter: container.listenerCount('pointerenter'),
+    //   pointerleave: container.listenerCount('pointerleave'),
+    //   rightclick: container.listenerCount('rightclick'),
+    //   eventMode: container.eventMode,
+    //   cursor: container.cursor,
+    //   hitArea: container.hitArea ? `Circle(r=${(container.hitArea as PIXI.Circle).radius})` : 'none'
+    // });
 
     return container;
   }, [graph, pathfinding, viewState, pathfindingState, useSpriteMode, getNodeColor]);
@@ -1930,28 +2135,16 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       (node.pixiCircle as PIXI.Graphics).fill({ color: color, alpha: alpha });
     }
 
-    // Update label visibility and content
-    // Always show labels for now to make nodes identifiable
-    const shouldShowLabel = true; // viewState.showLabels && lodLevel === 0 && transform.k > 1.5;
+    // Show combined labels (artist + title) for better readability
+    const shouldShowLabel = viewState.showLabels && lodLevel < 2; // LOD 0-1 only
+
     node.pixiLabel.visible = shouldShowLabel;
 
-    const artistLabel = (node as any).pixiArtistLabel;
-    if (artistLabel) {
-      artistLabel.visible = shouldShowLabel;
-    }
-
+    // Only update label POSITION when visible (skip expensive style updates)
     if (shouldShowLabel) {
-      const fontSize = 11; // Fixed font size - stage scaling will handle zoom
-
-      // Update title label (below node)
-      node.pixiLabel.style.fontSize = fontSize * 1.2;  // Title slightly larger
-      node.pixiLabel.position.set(0, screenRadius + 10);
-
-      // Update artist label (above node)
-      if (artistLabel) {
-        artistLabel.style.fontSize = fontSize;
-        artistLabel.position.set(0, -screenRadius - 5);
-      }
+      // Position label to the RIGHT of the node, slightly above center
+      // This prevents overlap and makes connections easier to trace
+      node.pixiLabel.position.set(screenRadius + 4, -screenRadius * 0.3);
     }
 
     // Update container alpha
@@ -1997,18 +2190,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     edge.pixiEdge.lineTo(edge.targetNode.x, edge.targetNode.y);
     edge.pixiEdge.stroke();
 
-    // Debug first few edges
-    if (Math.random() < 0.001) { // Log ~0.1% of edges to avoid spam
-      console.log('Edge rendered:', {
-        id: edge.id,
-        width: screenWidth,
-        color: color.toString(16),
-        alpha: alpha,
-        from: { x: edge.sourceNode.x, y: edge.sourceNode.y },
-        to: { x: edge.targetNode.x, y: edge.targetNode.y },
-        visible: edge.pixiEdge.visible
-      });
-    }
+    // DEBUG: Edge rendering logging disabled (too noisy)
+    // if (Math.random() < 0.001) { // Log ~0.1% of edges to avoid spam
+    //   console.log('Edge rendered:', {
+    //     id: edge.id,
+    //     width: screenWidth,
+    //     color: color.toString(16),
+    //     alpha: alpha,
+    //     from: { x: edge.sourceNode.x, y: edge.sourceNode.y },
+    //     to: { x: edge.targetNode.x, y: edge.targetNode.y },
+    //     visible: edge.pixiEdge.visible
+    //   });
+    // }
 
     edge.lodLevel = lodLevel;
     edge.lastUpdateFrame = frameRef.current;
@@ -2020,14 +2213,14 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // PERFORMANCE OPTIMIZATION: Throttle to 30fps for better CPU usage
     // Skip every other frame when performance is good
-    const now = performance.now();
-    const lastFrameTime = performanceMonitorRef.current.frameTime || 0;
+    const currentTime = performance.now();
+    const lastFrameTime = lastFrameTimeRef.current || 0;
     const frameInterval = 1000 / 30; // 30fps target
 
-    if (now - lastFrameTime < frameInterval && enhancedNodesRef.current.size > 100) {
+    if (currentTime - lastFrameTime < frameInterval && enhancedNodesRef.current.size > 100) {
       return; // Skip this frame
     }
-    performanceMonitorRef.current.frameTime = now;
+    lastFrameTimeRef.current = currentTime;
 
     // CORRECTED: Always render to show nodes, even when paused
     // Pausing should freeze movement, not hide the graph
@@ -2039,7 +2232,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const visibleNodes = Array.from(enhancedNodesRef.current.values()).filter(n => n.isVisible).length;
     const visibleEdges = Array.from(enhancedEdgesRef.current.values()).filter(e => e.isVisible).length;
 
-    performance.updatePerformanceMetrics({
+    performanceStore.updatePerformanceMetrics({
       frameRate,
       renderTime,
       visibleNodes,
@@ -2058,6 +2251,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Render edges first (bottom layer)
     if (viewState.showEdges && edgesContainerRef.current) {
       let visibleEdgeCount = 0;
+
       enhancedEdgesRef.current.forEach(edge => {
         const lodLevel = lodSystem.getEdgeLOD(edge);
         const shouldRender = lodLevel < 3;
@@ -2068,6 +2262,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
           if (shouldRender) {
             visibleEdgeCount++;
+            // Update edge visuals when needed (no aggressive frame skipping to prevent flashing)
             if (edge.lastUpdateFrame < currentFrame || shouldOptimize) {
               updateEdgeVisuals(edge, lodLevel);
             }
@@ -2075,38 +2270,38 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         }
       });
 
-      // Debug logging - only log occasionally to avoid spam
-      if (currentFrame % 60 === 0) {
-        console.log(`Edge render debug: ${visibleEdgeCount}/${enhancedEdgesRef.current.size} edges visible, showEdges=${viewState.showEdges}`);
-      }
-    } else if (currentFrame % 60 === 0) {
-      console.log(`Edges not rendering: showEdges=${viewState.showEdges}, container=${!!edgesContainerRef.current}`);
-    }
+      // DEBUG: Edge render debug logging disabled (too noisy)
+      // if (currentFrame % 60 === 0) {
+      //   console.log(`Edge render debug: ${visibleEdgeCount}/${enhancedEdgesRef.current.size} edges visible, showEdges=${viewState.showEdges}`);
+      // }
+    } // else if (currentFrame % 60 === 0) {
+      // console.log(`Edges not rendering: showEdges=${viewState.showEdges}, container=${!!edgesContainerRef.current}`);
+    // }
 
     // Render nodes (middle layer)
     if (nodesContainerRef.current) {
-      // Debug logging - check if we have nodes to render
-      if (currentFrame % 120 === 0) {
-        console.log(`🎨 Render check: ${enhancedNodesRef.current.size} enhanced nodes, ${nodesContainerRef.current.children.length} PIXI nodes`);
+      // DEBUG: Render check logging disabled (too noisy)
+      // if (currentFrame % 120 === 0) {
+      //   console.log(`🎨 Render check: ${enhancedNodesRef.current.size} enhanced nodes, ${nodesContainerRef.current.children.length} PIXI nodes`);
 
-        // Sample LOD levels
-        const lodSamples: Array<{id: string, x: number, y: number, lod: number, shouldRender: boolean}> = [];
-        let sampleCount = 0;
-        enhancedNodesRef.current.forEach(node => {
-          if (sampleCount < 5) {
-            const lod = lodSystem.getNodeLOD(node);
-            lodSamples.push({
-              id: node.id.substring(0, 20),
-              x: Math.round(node.x || 0),
-              y: Math.round(node.y || 0),
-              lod,
-              shouldRender: lod < 3
-            });
-            sampleCount++;
-          }
-        });
-        console.log('📊 LOD samples:', lodSamples);
-      }
+      //   // Sample LOD levels
+      //   const lodSamples: Array<{id: string, x: number, y: number, lod: number, shouldRender: boolean}> = [];
+      //   let sampleCount = 0;
+      //   enhancedNodesRef.current.forEach(node => {
+      //     if (sampleCount < 5) {
+      //       const lod = lodSystem.getNodeLOD(node);
+      //       lodSamples.push({
+      //         id: node.id.substring(0, 20),
+      //         x: Math.round(node.x || 0),
+      //         y: Math.round(node.y || 0),
+      //         lod,
+      //         shouldRender: lod < 3
+      //       });
+      //       sampleCount++;
+      //     }
+      //   });
+      //   console.log('📊 LOD samples:', lodSamples);
+      // }
 
       let visibleNodeCount = 0;
       enhancedNodesRef.current.forEach(node => {
@@ -2119,34 +2314,94 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
           if (shouldRender) {
             visibleNodeCount++;
+            // PERFORMANCE: Skip label updates every other frame for massive speedup
+            const skipLabelUpdate = currentFrame % 2 === 0 && enhancedNodesRef.current.size > 100;
             if (node.lastUpdateFrame < currentFrame || shouldOptimize) {
               updateNodeVisuals(node, lodLevel);
+            } else if (skipLabelUpdate && node.pixiLabel) {
+              // Just update position, not full visuals
+              node.pixiNode.position.set(node.x || 0, node.y || 0);
             }
           }
         }
       });
 
-      // Debug: Log visible node count
-      if (currentFrame % 120 === 0) {
-        console.log(`👁️ Node visibility: ${visibleNodeCount}/${enhancedNodesRef.current.size} nodes visible`);
-      }
+      // DEBUG: Node visibility logging disabled (too noisy)
+      // if (currentFrame % 120 === 0) {
+      //   console.log(`👁️ Node visibility: ${visibleNodeCount}/${enhancedNodesRef.current.size} nodes visible`);
+      // }
     }
 
   }, [viewState, updateNodeVisuals, updateEdgeVisuals, performance]);
+
+  // Helper function to navigate to a specific node with smooth animation
+  const navigateToNode = useCallback((nodeId: string, options?: { highlight?: boolean; openModal?: boolean }) => {
+    const node = enhancedNodesRef.current.get(nodeId);
+
+    if (!node || !zoomBehaviorRef.current || !containerRef.current) {
+      console.warn(`⚠️ Cannot navigate to node ${nodeId}: node or zoom behavior not found`);
+      return;
+    }
+
+    const div = select(containerRef.current);
+    const viewport = viewportRef.current;
+    const k = currentTransformRef.current.k;
+
+    // Calculate the transform needed to center this node
+    const newX = -(node.x * k);
+    const newY = -(node.y * k);
+
+    console.log('🧭 Navigating to node:', {
+      nodeId,
+      nodeWorldPos: { x: node.x, y: node.y },
+      viewport: { width: viewport.width, height: viewport.height },
+      currentZoom: k,
+      newPan: { x: newX, y: newY }
+    });
+
+    // Use D3 transition for smooth animation
+    (div as any).transition()
+      .duration(500)
+      .ease((t: number) => t * (2 - t)) // easeOutQuad for smooth deceleration
+      .call(
+        zoomBehaviorRef.current.transform,
+        zoomIdentity.translate(newX, newY).scale(k)
+      );
+
+    // Add visual highlight if requested
+    if (options?.highlight && node.pixiNode) {
+      const circle = node.pixiNode.children.find(child => child instanceof PIXI.Graphics) as PIXI.Graphics | undefined;
+      if (circle) {
+        const originalTint = circle.tint;
+        circle.tint = 0x00ff00; // Green highlight
+        setTimeout(() => {
+          circle.tint = originalTint;
+        }, 1000);
+      }
+    }
+
+    // Open track modal if requested
+    if (options?.openModal && node.track && onTrackSelect) {
+      console.log('🎵 Opening track modal for:', node.track.name || node.track.id);
+      onTrackSelect(node.track);
+    }
+  }, [onTrackSelect]);
 
   // Handle node interactions
   const handleNodeClick = useCallback((nodeId: string) => {
     const tool = viewState.selectedTool;
 
-    // Debug logging for click registration
-    console.group(`🎵 Node Click Detected`);
-    console.log('Node ID:', nodeId);
-    console.log('Selected Tool:', tool);
-    console.log('Timestamp:', new Date().toISOString());
+    // Debug logging for click registration (only in debug mode)
+    if (showDebugInfo) {
+      console.group(`🎵 Node Click Detected`);
+      console.log('Node ID:', nodeId);
+      console.log('Selected Tool:', tool);
+      console.log('Timestamp:', new Date().toISOString());
+    }
 
     // Get node details for debugging
     const node = enhancedNodesRef.current.get(nodeId);
-    if (node) {
+    if (node && showDebugInfo) {
       console.log('Node Details:', {
         id: node.id,
         title: node.title || node.metadata?.title || node.metadata?.label || node.label,
@@ -2185,128 +2440,79 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     switch (tool) {
       case 'select':
-        console.log('Action: Toggling node selection');
+        if (showDebugInfo) console.log('Action: Toggling node selection');
         graph.toggleNodeSelection(nodeId);
-        console.log('Selected nodes after toggle:', Array.from(viewState.selectedNodes));
+        if (showDebugInfo) console.log('Selected nodes after toggle:', Array.from(viewState.selectedNodes));
 
-        // Center camera on selected node with smooth animation (2025 best practice)
-        if (node && zoomBehaviorRef.current && containerRef.current) {
-          const div = select(containerRef.current);
-          const viewport = viewportRef.current;
+        // Navigate to the selected node with highlight and modal
+        navigateToNode(nodeId, { highlight: true, openModal: !!node?.track });
 
-          // Calculate the transform needed to center this node
-          // World position (0,0) is at screen center, so we need to translate
-          // to move the node to the center
-          const k = currentTransformRef.current.k;
-
-          // New pan: we want the node's world position to appear at screen center
-          // Screen center is (width/2, height/2)
-          // Transform formula: screenPos = (worldPos * zoom) + pan
-          // We want: (width/2, height/2) = (node.x * k) + pan
-          // So: pan = (width/2, height/2) - (node.x * k)
-          // But since world (0,0) is already at screen center, we need:
-          // pan = -(node.x * k, node.y * k)
-          const newX = -(node.x * k);
-          const newY = -(node.y * k);
-
-          console.log('📸 Focusing on node with smooth animation:', {
-            nodeId: nodeId,
-            nodeWorldPos: { x: node.x, y: node.y },
-            viewport: { width: viewport.width, height: viewport.height },
-            currentZoom: k,
-            newPan: { x: newX, y: newY }
-          });
-
-          // Use D3 transition for smooth animation
-          // This triggers the 'zoom' event which updates PIXI stage
-          div.transition()
-            .duration(500)
-            .ease(t => t * (2 - t)) // easeOutQuad for smooth deceleration
-            .call(
-              zoomBehaviorRef.current.transform,
-              zoomIdentity.translate(newX, newY).scale(k)
-            );
-
-          // Add visual highlight to focused node
-          if (node.pixiNode) {
-            const circle = node.pixiNode.children.find(child => child instanceof PIXI.Graphics) as PIXI.Graphics | undefined;
-            if (circle) {
-              // Pulse animation for visual feedback
-              const originalTint = circle.tint;
-              circle.tint = 0x00ff00; // Green highlight
-              setTimeout(() => {
-                circle.tint = originalTint;
-              }, 1000);
-            }
-          }
-        }
-
-        // Trigger track modal if track data is available
-        if (node?.track && onTrackSelect) {
-          console.log('🎵 Opening track modal for:', node.track.name || node.track.id);
-          onTrackSelect(node.track);
-        } else if (!node?.track) {
+        if (!node?.track && showDebugInfo) {
           console.log('⚠️ No track data available for node:', nodeId);
         }
         break;
       case 'path':
-        console.log('Action: Pathfinding mode');
+        if (showDebugInfo) console.log('Action: Pathfinding mode');
         if (!pathfindingState.startTrackId) {
-          console.log('Setting as START track');
+          if (showDebugInfo) console.log('Setting as START track');
           pathfinding.setStartTrack(nodeId);
         } else if (!pathfindingState.endTrackId && nodeId !== pathfindingState.startTrackId) {
-          console.log('Setting as END track');
+          if (showDebugInfo) console.log('Setting as END track');
           pathfinding.setEndTrack(nodeId);
         } else {
-          console.log('Adding as WAYPOINT');
+          if (showDebugInfo) console.log('Adding as WAYPOINT');
           pathfinding.addWaypoint(nodeId);
         }
-        console.log('Pathfinding state:', pathfindingState);
+        if (showDebugInfo) console.log('Pathfinding state:', pathfindingState);
         break;
       case 'setlist':
-        console.log('Action: Setlist mode');
+        if (showDebugInfo) console.log('Action: Setlist mode');
         if (node?.track) {
-          console.log('Track found, adding to setlist:', node.track);
+          if (showDebugInfo) console.log('Track found, adding to setlist:', node.track);
           // TODO: Add to setlist functionality
         } else {
-          console.log('⚠️ No track data for this node');
+          if (showDebugInfo) console.log('⚠️ No track data for this node');
         }
         break;
       default:
-        console.log('⚠️ Unknown tool:', tool);
+        if (showDebugInfo) console.log('⚠️ Unknown tool:', tool);
     }
-    console.groupEnd();
-  }, [viewState, pathfindingState, graph, pathfinding]);
+    if (showDebugInfo) console.groupEnd();
+  }, [viewState, pathfindingState, graph, pathfinding, navigateToNode, showDebugInfo]);
 
   const handleNodeHover = useCallback((nodeId: string, isHovering: boolean) => {
     // Debug hover events (less verbose since these fire frequently)
-    if (isHovering) {
-      console.log(`🎯 Hover START on node: ${nodeId}`);
-    } else {
-      console.log(`👋 Hover END on node: ${nodeId}`);
+    if (showDebugInfo) {
+      if (isHovering) {
+        console.log(`🎯 Hover START on node: ${nodeId}`);
+      } else {
+        console.log(`👋 Hover END on node: ${nodeId}`);
+      }
     }
     graph.setHoveredNode(isHovering ? nodeId : null);
-  }, [graph]);
+  }, [graph, showDebugInfo]);
 
   const handleNodeRightClick = useCallback((nodeId: string, event: PIXI.FederatedPointerEvent) => {
     event.preventDefault();
 
-    console.group(`🎵 Node Right-Click Detected`);
-    console.log('Node ID:', nodeId);
-    console.log('Event position:', { x: event.global.x, y: event.global.y });
+    if (showDebugInfo) {
+      console.group(`🎵 Node Right-Click Detected`);
+      console.log('Node ID:', nodeId);
+      console.log('Event position:', { x: event.global.x, y: event.global.y });
 
-    const node = enhancedNodesRef.current.get(nodeId);
-    if (node) {
-      console.log('Node Details:', {
-        title: node.title || node.metadata?.title || node.metadata?.label || node.label,
-        artist: node.artist || node.metadata?.artist
-      });
+      const node = enhancedNodesRef.current.get(nodeId);
+      if (node) {
+        console.log('Node Details:', {
+          title: node.title || node.metadata?.title || node.metadata?.label || node.label,
+          artist: node.artist || node.metadata?.artist
+        });
+      }
+
+      // TODO: Show context menu
+      console.log('TODO: Show context menu for node');
+      console.groupEnd();
     }
-
-    // TODO: Show context menu
-    console.log('TODO: Show context menu for node');
-    console.groupEnd();
-  }, []);
+  }, [showDebugInfo]);
 
   // Handle window resize
   const handleResize = useCallback(() => {
@@ -2330,8 +2536,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Detect data changes to trigger animation
   const generateDataHash = useCallback((nodes: GraphNode[], edges: GraphEdge[]): string => {
-    const nodeHash = nodes.map(n => `${n.id}:${n.x}:${n.y}`).join('|');
-    const edgeHash = edges.map(e => `${e.id}:${e.source}:${e.target}`).join('|');
+    // ✅ FIX: Only hash structural data (IDs), NOT layout data (x, y)
+    // Position changes during D3 simulation are expected and should NOT trigger re-initialization
+    const nodeHash = nodes.map(n => n.id).sort().join('|');
+    const edgeHash = edges.map(e => `${e.id}:${e.source}:${e.target}`).sort().join('|');
     return `${nodeHash}#${edgeHash}`;
   }, []);
 
@@ -2339,14 +2547,29 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const updateGraphData = useCallback(() => {
     if (!simulationRef.current || !nodesContainerRef.current || !edgesContainerRef.current) return;
 
+    // CRITICAL FIX: Ensure enhancedNodesRef is initialized
+    if (!enhancedNodesRef.current) {
+      enhancedNodesRef.current = new Map();
+    }
+    if (!enhancedEdgesRef.current) {
+      enhancedEdgesRef.current = new Map();
+    }
+
     // Check if this is new data (trigger animation)
     const newDataHash = generateDataHash(graphData.nodes, graphData.edges);
     const isNewData = newDataHash !== lastDataHashRef.current;
     const wasEmpty = lastDataHashRef.current === '';
+
+    // CRITICAL FIX: Don't re-run if data hasn't actually changed
+    if (!isNewData && !wasEmpty) {
+      return; // Data unchanged - skip redundant update
+    }
+
     lastDataHashRef.current = newDataHash;
 
     if (isNewData && !wasEmpty) { // Don't trigger on initial empty->data load
-      console.log('🔄 New data detected - using instant positioning instead of animation');
+      // DEBUG: New data detection logging disabled (too noisy)
+      // console.log('🔄 New data detected - using instant positioning instead of animation');
       // NO automatic animation - instant positioning happens in updateGraphData
     }
 
@@ -2357,17 +2580,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       nodesContainerRef.current.children.forEach(child => {
         child.removeAllListeners();
 
-        // Release pooled text labels before destroying container
-        if (textLabelPoolRef.current && child.children) {
-          child.children.forEach((grandchild: any) => {
-            if (grandchild instanceof PIXI.Text) {
-              textLabelPoolRef.current?.release(grandchild);
-            }
-          });
-        }
-
+        // Destroy container WITH children (pooling disabled, normal destruction)
         if (child.destroy) {
-          child.destroy({ children: true, texture: false, baseTexture: false });
+          child.destroy({ children: true, texture: false });
         }
       });
       nodesContainerRef.current.removeChildren();
@@ -2377,7 +2592,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       edgesContainerRef.current.children.forEach(child => {
         child.removeAllListeners();
         if (child.destroy) {
-          child.destroy({ children: true, texture: false, baseTexture: false });
+          child.destroy({ children: true, texture: false });
         }
       });
       edgesContainerRef.current.removeChildren();
@@ -2426,13 +2641,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // PRE-COMPUTE LAYOUT: Position nodes before showing them
     // This prevents LOD from culling nodes that start at random positions
     const nodes = Array.from(nodeMap.values());
-    console.log('🚀 PRE-COMPUTE: Running layout pre-computation for', nodes.length, 'nodes...');
+    if (process.env.NODE_ENV === 'development') {
+      // DEBUG: Pre-computation logging disabled (too noisy)
+      // console.log(`🚀 Layout: Pre-computing ${nodes.length} nodes...`);
+    }
     preComputeLayout(nodes, 50); // OPTIMIZED: Reduced from 300 for faster initial load
-    console.log('✅ PRE-COMPUTE: Layout pre-computation complete');
 
     // START DYNAMIC SIMULATION: Begin continuous movement
-    console.log('🚀 DYNAMIC: Starting simulation with nodes for continuous movement...');
-
     // Update simulation with nodes/edges and START it
     simulation.nodes(nodes);
     const linkForce = simulation.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
@@ -2445,9 +2660,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (!isSimulationPausedRef.current) {
       simulation.alpha(1.0).restart(); // Start with maximum energy
       animationStateRef.current.isActive = true;
-      console.log('✅ DYNAMIC: Simulation started with maximum speed for continuous movement');
-    } else {
-      console.log('⏸️ Simulation is paused - NOT restarting on data update');
+      if (process.env.NODE_ENV === 'development') {
+        // DEBUG: Simulation start logging disabled (too noisy)
+        // console.log('✅ Simulation started');
+      }
     }
 
     // Rebuild spatial index
@@ -2462,7 +2678,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // Initialize on mount - delayed to ensure container is properly mounted
   useEffect(() => {
     const initializeAfterMount = () => {
-      console.log('Attempting PIXI initialization after component mount');
+      // DEBUG: PIXI initialization attempt logging disabled (too noisy)
+      // console.log('Attempting PIXI initialization after component mount');
       // NO automatic animation - use instant positioning when data loads
       initializePixi();
     };
@@ -2488,6 +2705,16 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           }
         }
 
+        // IMPORTANT: Destroy label pool FIRST before container cleanup
+        // This prevents pooled labels from being destroyed individually
+        if (textLabelPoolRef.current) {
+          const stats = textLabelPoolRef.current.getStats();
+          console.log(`📝 Label pool cleanup (before containers):`, stats);
+          textLabelPoolRef.current.destroy();
+          textLabelPoolRef.current = null;
+          console.log('✅ Text label pool destroyed (early cleanup)');
+        }
+
         // Clean up all containers and their children safely
         [nodesContainerRef, edgesContainerRef, labelsContainerRef, interactionContainerRef].forEach((containerRef, index) => {
           if (containerRef.current) {
@@ -2497,7 +2724,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
                 try {
                   child.removeAllListeners?.();
                   if (child.destroy) {
-                    child.destroy({ children: true, texture: false, baseTexture: false });
+                    child.destroy({ children: true, texture: false });
                   }
                 } catch (childError) {
                   console.warn(`⚠️ Child cleanup warning in container ${index}:`, childError);
@@ -2513,31 +2740,31 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           }
         });
 
-        // Clear enhanced data maps
-        enhancedNodesRef.current.clear();
-        enhancedEdgesRef.current.clear();
-
-        // Stop D3 simulation
+        // Stop D3 simulation FIRST (before clearing data)
         if (simulationRef.current) {
           simulationRef.current.stop();
           simulationRef.current = null;
         }
 
+        // Clear enhanced data maps (after simulation is stopped)
+        enhancedNodesRef.current.clear();
+        enhancedEdgesRef.current.clear();
+
         // Destroy PIXI app with comprehensive options (v8 memory leak fix)
         // The destroy method will handle ticker cleanup internally
         pixiAppRef.current.destroy(true, {
           children: true,
-          texture: true,
-          baseTexture: true
+          texture: true
         });
 
         // Manual v8 renderGroup cleanup (known issue workaround)
         // Note: Do this BEFORE nulling pixiAppRef
         try {
           if (pixiAppRef.current?.stage?.renderGroup) {
-            pixiAppRef.current.stage.renderGroup.childrenRenderablesToUpdate = {};
-            pixiAppRef.current.stage.renderGroup.childrenToUpdate = {};
-            pixiAppRef.current.stage.renderGroup.instructionSet = null;
+            const renderGroup = pixiAppRef.current.stage.renderGroup as any;
+            renderGroup.childrenRenderablesToUpdate = {};
+            renderGroup.childrenToUpdate = {};
+            renderGroup.instructionSet = null;
           }
         } catch (e) {
           console.warn('Could not clean renderGroup:', e);
@@ -2547,19 +2774,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         console.log('✅ PIXI cleanup completed');
       }
 
-      // Destroy texture atlas and label pool (2025 optimization cleanup)
+      // Destroy texture atlas (2025 optimization cleanup)
+      // Note: Label pool is destroyed earlier to prevent race conditions
       if (textureAtlasRef.current) {
         textureAtlasRef.current.destroy();
         textureAtlasRef.current = null;
         console.log('✅ Texture atlas destroyed');
       }
 
+      // Label pool already destroyed early - skip duplicate cleanup
       if (textLabelPoolRef.current) {
-        const stats = textLabelPoolRef.current.getStats();
-        console.log(`📝 Label pool final stats:`, stats);
-        textLabelPoolRef.current.destroy();
+        console.warn('⚠️ Label pool still exists at late cleanup (should have been destroyed early)');
         textLabelPoolRef.current = null;
-        console.log('✅ Text label pool destroyed');
       }
 
       // Clean up performance timer
@@ -2605,8 +2831,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
             const memoryDiff = currentMemory - memoryStatsRef.current.lastMemory;
 
             // Monitor WebGL resources if available
-            if (pixiAppRef.current?.renderer?.gl) {
-              const gl = pixiAppRef.current.renderer.gl;
+            if ((pixiAppRef.current?.renderer as any)?.gl) {
+              const gl = (pixiAppRef.current.renderer as any).gl;
               const webglMemory = {
                 buffers: gl.getParameter(gl.MAX_VERTEX_ATTRIBS),
                 textures: gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
@@ -2615,8 +2841,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
               memoryStatsRef.current.webglMemory = webglMemory;
             }
 
-            // Log significant memory increases (> 5MB)
-            if (memoryDiff > 5 * 1024 * 1024) {
+            // Log significant memory increases (> 20MB to reduce noise) - debug only
+            if (memoryDiff > 20 * 1024 * 1024 && showDebugInfo) {
               console.warn(`🚨 Memory increase detected: +${(memoryDiff / 1024 / 1024).toFixed(2)}MB`, {
                 current: `${(currentMemory / 1024 / 1024).toFixed(2)}MB`,
                 limit: `${(memInfo.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`,
@@ -2685,8 +2911,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           console.log('H - Show this help');
           console.log('Space - Pause/resume animation');
           console.log('Escape - Clear selection');
-          console.log('A - Select all visible nodes');
-          console.log('Tab - Navigate between selected nodes');
+          console.log('Ctrl+A - Select all visible nodes');
+          console.log('Tab - Navigate to next selected node');
+          console.log('Shift+Tab - Navigate to previous selected node');
           console.log('Enter - Open track modal for focused node');
           console.log('Arrow Keys - Pan viewport');
           console.log('+ / - - Zoom in/out');
@@ -2703,7 +2930,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
         case 'escape':
           // Clear all selections
-          graph.clearAllSelections?.();
+          graph.clearSelection?.();
           console.log('🚫 All selections cleared');
           break;
 
@@ -2726,8 +2953,17 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           event.preventDefault();
           const selectedNodes = Array.from(viewState.selectedNodes);
           if (selectedNodes.length > 0) {
-            // TODO: Implement focus cycling between selected nodes
-            console.log('🔄 Tab navigation (TODO)');
+            // Cycle through selected nodes (forward with Tab, backward with Shift+Tab)
+            const direction = event.shiftKey ? -1 : 1;
+            focusedNodeIndexRef.current = (focusedNodeIndexRef.current + direction + selectedNodes.length) % selectedNodes.length;
+
+            const focusedNodeId = selectedNodes[focusedNodeIndexRef.current];
+            console.log(`🔄 Tab navigation: focusing on node ${focusedNodeIndexRef.current + 1}/${selectedNodes.length} (${focusedNodeId})`);
+
+            // Navigate to the focused node with highlight (but no modal)
+            navigateToNode(focusedNodeId, { highlight: true, openModal: false });
+          } else {
+            console.log('⚠️ No nodes selected for Tab navigation');
           }
           break;
 
@@ -2776,17 +3012,35 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewState, showDebugInfo, graph, onTrackSelect]);
+  }, [viewState, showDebugInfo, graph, onTrackSelect, navigateToNode]);
 
   // Handle view state changes with throttling
   useEffect(() => {
     scheduleFrameUpdate();
   }, [viewState.showLabels, viewState.showEdges, viewState.nodeSize, viewState.edgeOpacity, scheduleFrameUpdate]);
 
+  // CRITICAL: Update PIXI ticker callback when renderFrame changes
+  // This ensures the ticker uses the latest closure with current viewState
+  useEffect(() => {
+    if (pixiAppRef.current?.ticker) {
+      // Remove old callback and add new one
+      pixiAppRef.current.ticker.remove(renderFrame as any);
+      pixiAppRef.current.ticker.add(renderFrame as any);
+      // DEBUG: PIXI ticker update logging disabled (too noisy - fires on every render)
+      // console.log('🔄 Updated PIXI ticker with latest renderFrame callback');
+    }
+  }, [renderFrame]);
+
   // Handle selected nodes changes with throttling
   useEffect(() => {
     scheduleFrameUpdate();
   }, [viewState.selectedNodes, scheduleFrameUpdate]);
+
+  // Reset focused node index when selection changes
+  useEffect(() => {
+    // Reset to 0 whenever the selection changes
+    focusedNodeIndexRef.current = 0;
+  }, [viewState.selectedNodes]);
 
   // Handle hovered node changes with throttling
   useEffect(() => {
@@ -2799,11 +3053,34 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   }, [pathfindingState.currentPath, pathfindingState.selectedWaypoints, scheduleFrameUpdate]);
 
 
+  // Handle right-click on canvas to show context menu
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    // Only show context menu if clicking on empty space (not on a node)
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'CANVAS' || target.classList.contains('graph-container')) {
+      openContextMenu(e, 'empty');
+    }
+  }, [openContextMenu]);
+
+  // Handle left-click on canvas to close context menu
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    // Close context menu if clicking on empty space
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'CANVAS' || target.classList.contains('graph-container')) {
+      if (contextMenu) {
+        closeContextMenu();
+        console.log('🚫 Context menu closed via left-click');
+      }
+    }
+  }, [contextMenu, closeContextMenu]);
+
   return (
     <div
       ref={containerRef}
       className="graph-canvas graph-container graph-visualization graph-component w-full h-full overflow-hidden bg-gray-900 relative"
       style={{ touchAction: 'none' }}
+      onContextMenu={handleContextMenu}
+      onClick={handleCanvasClick}
     >
       {!isInitialized && (
         <div className="graph-loading absolute inset-0 flex items-center justify-center text-white">
@@ -2823,167 +3100,6 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         </div>
       )}
 
-      {/* Controls moved to main toolbar - keeping this comment for reference */}
-
-      {/* Energy-Genre Layout Controls */}
-      <div className="absolute top-4 right-4 bg-black/80 text-gray-200 p-4 rounded-lg font-sans text-sm w-80">
-        <div className="mb-3 text-cyan-400 font-bold flex items-center gap-2">
-          <span>🎵</span>
-          <span>Layout Mode</span>
-        </div>
-
-        {/* Layout Mode Toggle */}
-        <div className="mb-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={forceSettings.layoutMode === 'energy-genre'}
-              onChange={(e) => {
-                const newMode = e.target.checked ? 'energy-genre' : 'standard';
-                setForceSettings(prev => ({ ...prev, layoutMode: newMode }));
-
-                // Reinitialize simulation with new mode
-                if (simulationRef.current) {
-                  simulationRef.current.stop();
-                  initializeSimulation();
-                  simulationRef.current.nodes(Array.from(enhancedNodesRef.current.values()));
-                  const linkForce = simulationRef.current.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
-                  if (linkForce) {
-                    linkForce.links(enhancedEdgesRef.current);
-                  }
-                  simulationRef.current.alpha(1).restart();
-                }
-              }}
-              className="rounded"
-            />
-            <span className={forceSettings.layoutMode === 'energy-genre' ? 'text-green-400' : 'text-gray-400'}>
-              Energy vs. Genre Layout
-            </span>
-          </label>
-        </div>
-
-        {/* Sprite Mode Toggle (2025 Optimization) */}
-        <div className="mb-4 pb-4 border-b border-gray-700">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useSpriteMode}
-              onChange={(e) => {
-                setUseSpriteMode(e.target.checked);
-                console.log(`🎨 Sprite mode ${e.target.checked ? 'ENABLED' : 'DISABLED'} - reload graph for changes to take effect`);
-                // Note: Changes will apply on next graph data update
-              }}
-              className="rounded"
-            />
-            <span className={useSpriteMode ? 'text-yellow-400' : 'text-gray-400'}>
-              Sprite Mode (5000+ nodes)
-            </span>
-          </label>
-          {useSpriteMode && textLabelPoolRef.current && (
-            <div className="text-xs text-gray-500 mt-1">
-              Label pool: {textLabelPoolRef.current.getStats().active} active / {textLabelPoolRef.current.getStats().pooled} available
-            </div>
-          )}
-        </div>
-
-        {/* Force Strength Controls */}
-        {forceSettings.layoutMode === 'energy-genre' && (
-          <div className="space-y-3">
-            {/* Energy Strength */}
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">
-                Energy Strength: {forceSettings.energyStrength.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0.05"
-                max="0.3"
-                step="0.01"
-                value={forceSettings.energyStrength}
-                onChange={(e) => setForceSettings(prev => ({ ...prev, energyStrength: parseFloat(e.target.value) }))}
-                className="w-full"
-              />
-              <div className="text-xs text-gray-500 mt-1">Low energy ← → High energy</div>
-            </div>
-
-            {/* Genre Clustering Strength */}
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">
-                Genre Clustering: {forceSettings.genreStrength.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0.02"
-                max="0.2"
-                step="0.01"
-                value={forceSettings.genreStrength}
-                onChange={(e) => setForceSettings(prev => ({ ...prev, genreStrength: parseFloat(e.target.value) }))}
-                className="w-full"
-              />
-              <div className="text-xs text-gray-500 mt-1">Groups tracks by genre</div>
-            </div>
-
-            {/* Link Strength */}
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">
-                Link Elasticity: {forceSettings.linkStrength.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0.1"
-                max="0.5"
-                step="0.05"
-                value={forceSettings.linkStrength}
-                onChange={(e) => setForceSettings(prev => ({ ...prev, linkStrength: parseFloat(e.target.value) }))}
-                className="w-full"
-              />
-              <div className="text-xs text-gray-500 mt-1">Lower = more stretchy edges</div>
-            </div>
-
-            {/* Apply Button */}
-            <button
-              onClick={() => {
-                if (simulationRef.current) {
-                  simulationRef.current.stop();
-                  initializeSimulation();
-                  simulationRef.current.nodes(Array.from(enhancedNodesRef.current.values()));
-                  const linkForce = simulationRef.current.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
-                  if (linkForce) {
-                    linkForce.links(enhancedEdgesRef.current);
-                  }
-                  simulationRef.current.alpha(1).restart();
-                }
-              }}
-              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded transition-colors"
-            >
-              Apply Changes
-            </button>
-
-            {/* Legend */}
-            <div className="mt-4 pt-3 border-t border-gray-700">
-              <div className="text-xs text-gray-400 mb-2">Genre Colors:</div>
-              <div className="grid grid-cols-2 gap-1 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#3498db'}}></div>
-                  <span>House</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#9b59b6'}}></div>
-                  <span>Techno</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#e74c3c'}}></div>
-                  <span>Trance</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#2ecc71'}}></div>
-                  <span>EDM</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Debug overlay */}
       {showDebugInfo && (
@@ -2996,7 +3112,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
             <div>Hovered: {viewState.hoveredNode || 'none'}</div>
             <div>Tool: {viewState.selectedTool}</div>
             <div>Zoom: {viewState.zoom.toFixed(2)}x</div>
-            <div>FPS: {performance?.fps?.toFixed(0) || 'N/A'}</div>
+            <div>FPS: {performanceMetrics?.frameRate?.toFixed(0) || 'N/A'}</div>
             {('memory' in window.performance) && (
               <div className="mt-1 text-yellow-300">
                 <div>Memory: {((window.performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(1)}MB</div>
@@ -3019,6 +3135,26 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
             <div className="text-xs">• Animation blocking for first 2s</div>
           </div>
         </div>
+      )}
+
+      {/* Context Menu for layout mode and graph options */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          targetType={contextMenu.targetType}
+          targetData={{
+            forceSettings,
+            setForceSettings,
+            useSpriteMode,
+            setUseSpriteMode,
+            initializeSimulation,
+            simulationRef,
+            enhancedNodesRef,
+            enhancedEdgesRef
+          }}
+          onClose={closeContextMenu}
+        />
       )}
     </div>
   );

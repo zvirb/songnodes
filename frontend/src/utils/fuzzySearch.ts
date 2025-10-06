@@ -8,7 +8,7 @@
  * - Advanced filtering
  */
 
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResult, type IFuseOptions, type FuseResultMatch } from 'fuse.js';
 import { GraphNode, Track } from '../types';
 
 export interface SearchFilters {
@@ -55,7 +55,7 @@ export interface SearchFilters {
 export interface SearchResult<T> {
   item: T;
   score: number;
-  matches?: Fuse.FuseResultMatch[];
+  matches?: readonly FuseResultMatch[];
   highlights?: string[];
 }
 
@@ -82,7 +82,7 @@ export class TrackSearchEngine {
   private allNodes: GraphNode[];
 
   // Fuse.js configuration for optimal music track searching
-  private static readonly FUSE_OPTIONS: Fuse.IFuseOptions<GraphNode> = {
+  private static readonly FUSE_OPTIONS: IFuseOptions<GraphNode> = {
     // Keys to search with weights (higher = more important)
     keys: [
       { name: 'track.title', weight: 2.0 },           // Track title most important
@@ -208,9 +208,10 @@ export class TrackSearchEngine {
     // Genre filter
     if (filters.genres && filters.genres.length > 0) {
       const nodeGenre = metadata.genre || track?.genre;
-      if (!nodeGenre || !filters.genres.some(g =>
-        nodeGenre.toLowerCase().includes(g.toLowerCase())
-      )) {
+      if (!nodeGenre || !filters.genres.some(g => {
+        if (!g) return false;
+        return nodeGenre.toLowerCase().includes(g.toLowerCase());
+      })) {
         return false;
       }
     }
@@ -240,9 +241,10 @@ export class TrackSearchEngine {
     // Mood filter
     if (filters.moods && filters.moods.length > 0) {
       const mood = metadata.mood || metadata.mood_category;
-      if (!mood || !filters.moods.some(m =>
-        mood.toLowerCase().includes(m.toLowerCase())
-      )) {
+      if (!mood || !filters.moods.some(m => {
+        if (!m) return false;
+        return mood.toLowerCase().includes(m.toLowerCase());
+      })) {
         return false;
       }
     }
@@ -266,9 +268,10 @@ export class TrackSearchEngine {
     // Artist filter
     if (filters.artists && filters.artists.length > 0) {
       const artist = track?.artist || metadata.primary_artist;
-      if (!artist || !filters.artists.some(a =>
-        artist.toLowerCase().includes(a.toLowerCase())
-      )) {
+      if (!artist || !filters.artists.some(a => {
+        if (!a) return false;
+        return artist.toLowerCase().includes(a.toLowerCase());
+      })) {
         return false;
       }
     }
@@ -276,9 +279,10 @@ export class TrackSearchEngine {
     // Label filter
     if (filters.labels && filters.labels.length > 0) {
       const label = metadata.label;
-      if (!label || !filters.labels.some(l =>
-        label.toLowerCase().includes(l.toLowerCase())
-      )) {
+      if (!label || !filters.labels.some(l => {
+        if (!l) return false;
+        return label.toLowerCase().includes(l.toLowerCase());
+      })) {
         return false;
       }
     }
@@ -305,7 +309,7 @@ export class TrackSearchEngine {
   /**
    * Extract highlighted text from matches
    */
-  private extractHighlights(matches?: readonly Fuse.FuseResultMatch[]): string[] {
+  private extractHighlights(matches?: readonly FuseResultMatch[]): string[] {
     if (!matches) return [];
 
     return matches.map(match => {

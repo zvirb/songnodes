@@ -392,10 +392,10 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
 
     // Axes
     const xAxis = axisBottom(xScale)
-      .tickFormat(d => `${Math.round(d * 100)}%`);
+      .tickFormat((d) => `${Math.round((d as number) * 100)}%`);
 
     const yAxis = axisLeft(yScale)
-      .tickFormat(d => `${Math.round(d * 100)}%`);
+      .tickFormat((d) => `${Math.round((d as number) * 100)}%`);
 
     g.append('g')
       .attr('transform', `translate(0, ${chartHeight})`)

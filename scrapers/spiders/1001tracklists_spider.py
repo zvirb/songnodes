@@ -922,6 +922,35 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             # Extract tracks and relationships
             tracks_data = self.extract_tracks_with_metadata(response, setlist_data)
 
+            # CRITICAL: Validate track extraction
+            if not tracks_data or len(tracks_data) == 0:
+                self.logger.warning(
+                    f"⚠️ No tracks extracted from {response.url}",
+                    extra={
+                        'url': response.url,
+                        'setlist_name': setlist_data.get('setlist_name') if setlist_data else None,
+                        'parsing_version': '1001tracklists_v2.0'
+                    }
+                )
+
+                # Create failure playlist item
+                if setlist_data:
+                    failure_item = PlaylistItem(
+                        name=setlist_data.get('setlist_name', 'Unknown Setlist'),
+                        source='1001tracklists',
+                        source_url=response.url,
+                        tracklist_count=0,
+                        scrape_error=f"Track extraction failed - 0 tracks found",
+                        last_scrape_attempt=datetime.utcnow(),
+                        parsing_version='1001tracklists_v2.0'
+                    )
+                    self.logger.info(f"Yielding failure playlist item: {failure_item.get('name')}")
+                    yield failure_item
+                return
+
+            # Success path - log track count
+            self.logger.info(f"✅ Extracted {len(tracks_data)} tracks from {response.url}")
+
             # CRITICAL: Create and yield playlist item FIRST, before processing tracks
             if setlist_data and tracks_data:
                 track_names = [track_info['track']['track_name'] for track_info in tracks_data if track_info.get('track', {}).get('track_name')]

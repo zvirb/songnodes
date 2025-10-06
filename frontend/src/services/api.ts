@@ -48,7 +48,8 @@ class ApiClient {
 
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      console.log(`[API] ${options.method || 'GET'} ${url} (${requestId})`);
+      // Debug logging disabled - too verbose
+      // console.log(`[API] ${options.method || 'GET'} ${url} (${requestId})`);
 
       const response = await fetch(url, {
         ...options,
@@ -61,7 +62,8 @@ class ApiClient {
       });
 
       const responseTime = Date.now() - startTime;
-      console.log(`[API] Response ${response.status} in ${responseTime}ms (${requestId})`);
+      // Debug logging disabled - too verbose
+      // console.log(`[API] Response ${response.status} in ${responseTime}ms (${requestId})`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -227,7 +229,8 @@ export const graphApi = {
           type: edge.edge_type as any || edge.type || 'adjacency',
         }));
 
-      console.log(`Filtered ${edges.length} edges from ${edgesResponse.data.edges?.length || 0} total for ${nodes.length} nodes`);
+      // Debug: Edge filtering info (disabled - too verbose)
+      // console.log(`Filtered ${edges.length} edges from ${edgesResponse.data.edges?.length || 0} total for ${nodes.length} nodes`);
 
       const graphData: GraphData = { nodes, edges };
 
@@ -561,7 +564,20 @@ const createTargetTracksClient = () => {
   };
 
   return {
-    get: (url: string) => request('GET', url),
+    get: (url: string, params?: Record<string, any>) => {
+      let fullUrl = url;
+      if (params) {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            searchParams.set(key, value.toString());
+          }
+        });
+        const queryString = searchParams.toString();
+        fullUrl = queryString ? `${url}?${queryString}` : url;
+      }
+      return request('GET', fullUrl);
+    },
     post: (url: string, data?: any) => request('POST', url, data),
     put: (url: string, data?: any) => request('PUT', url, data),
     delete: (url: string) => request('DELETE', url),

@@ -91,6 +91,10 @@ export function keyToCamelot(key: string): CamelotKey | null {
  */
 export function camelotToKey(camelotKey: CamelotKey): string {
   const info = CAMELOT_WHEEL[camelotKey];
+  if (!info) {
+    console.warn(`Invalid Camelot key: ${camelotKey}`);
+    return 'Unknown';
+  }
   return `${info.key} ${info.mode}`;
 }
 
@@ -103,8 +107,16 @@ export function getHarmonicCompatibility(key1: CamelotKey, key2: CamelotKey): nu
     return 1.0; // Perfect match
   }
 
-  const pos1 = CAMELOT_WHEEL[key1].position;
-  const pos2 = CAMELOT_WHEEL[key2].position;
+  const wheel1 = CAMELOT_WHEEL[key1];
+  const wheel2 = CAMELOT_WHEEL[key2];
+
+  if (!wheel1 || !wheel2) {
+    console.warn(`Invalid Camelot key(s): ${key1}, ${key2}`);
+    return 0.1; // Return low compatibility for invalid keys
+  }
+
+  const pos1 = wheel1.position;
+  const pos2 = wheel2.position;
   const mode1 = key1.endsWith('A') ? 'minor' : 'major';
   const mode2 = key2.endsWith('A') ? 'minor' : 'major';
 
@@ -180,7 +192,14 @@ export function suggestNextKeys(currentKey: CamelotKey, energyDirection: 'up' | 
   reason: string;
   compatibility: number;
 }[] {
-  const pos = CAMELOT_WHEEL[currentKey].position;
+  const wheelData = CAMELOT_WHEEL[currentKey];
+
+  if (!wheelData) {
+    console.warn(`Invalid Camelot key: ${currentKey}`);
+    return [];
+  }
+
+  const pos = wheelData.position;
   const isMinor = currentKey.endsWith('A');
   const suggestions: { key: CamelotKey; reason: string; compatibility: number; }[] = [];
 
@@ -353,7 +372,14 @@ export function analyzeHarmonicProgression(keys: CamelotKey[]): {
  * Get key color for visualization (based on circle of fifths)
  */
 export function getKeyColor(camelotKey: CamelotKey): string {
-  const position = CAMELOT_WHEEL[camelotKey].position;
+  const wheelData = CAMELOT_WHEEL[camelotKey];
+
+  if (!wheelData) {
+    console.warn(`Invalid Camelot key: ${camelotKey}`);
+    return 'hsl(0, 50%, 50%)'; // Default gray color
+  }
+
+  const position = wheelData.position;
   const isMinor = camelotKey.endsWith('A');
 
   // Use HSL color space for smooth transitions
