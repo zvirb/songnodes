@@ -4,7 +4,7 @@ import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
 import MobileTrackExplorer from './MobileTrackExplorer';
 import { TrackDetailsModal } from './TrackDetailsModal';
-import { TrackContextMenu } from './TrackContextMenu';
+import { ContextMenu } from './ContextMenu';
 import { SettingsPanel } from './SettingsPanel';
 import { TidalPlaylistManager } from './TidalPlaylistManager';
 import { SpotifyPlaylistManager } from './SpotifyPlaylistManager';
@@ -113,10 +113,10 @@ const TrackListItem = React.memo<{
       onTouchEnd={handleTouchEnd}
       onContextMenu={handleContextMenu}
       style={{
-        padding: '12px',
+        padding: '8px 10px',
         backgroundColor: isNowPlaying ? 'rgba(126,211,33,0.2)' : 'transparent',
         border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '8px',
+        borderRadius: '6px',
         color: '#F8F8F8',
         textAlign: 'left',
         cursor: 'pointer',
@@ -124,14 +124,35 @@ const TrackListItem = React.memo<{
         userSelect: 'none',
         WebkitTouchCallout: 'none',
         WebkitUserSelect: 'none',
-        minHeight: '44px',
+        minHeight: '52px',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        width: '100%',
+        overflow: 'hidden'
       }}
     >
-      <div style={{ fontSize: '14px', fontWeight: 600 }}>{track.name}</div>
-      <div style={{ fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
+      <div style={{
+        fontSize: '13px',
+        fontWeight: 600,
+        lineHeight: '1.3',
+        marginBottom: '3px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        maxWidth: '100%'
+      }}>
+        {track.name}
+      </div>
+      <div style={{
+        fontSize: '11px',
+        color: '#8E8E93',
+        lineHeight: '1.4',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        maxWidth: '100%'
+      }}>
         {track.artist} • {track.bpm} BPM • {track.key}
       </div>
     </button>
@@ -195,6 +216,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   // Animation controls state
   const [isAnimationPaused, setIsAnimationPaused] = useState(false);
 
+  // Library search state (librarian mode)
+  const [librarySearchQuery, setLibrarySearchQuery] = useState('');
+
   // Get graph data from store with selective subscriptions to prevent unnecessary re-renders
   const graphData = useStore(state => state.graphData);
   const isLoading = useStore(state => state.isLoading);
@@ -234,6 +258,69 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     console.log(`DJInterface: Transformed ${transformedTracks.length} tracks (only logs when data actually changes)`);
     return transformedTracks;
   }, [validNodes]);
+
+  // Filtered tracks for librarian mode with scoring algorithm
+  const filteredLibraryTracks = useMemo(() => {
+    if (!librarySearchQuery.trim()) return tracks;
+
+    const query = librarySearchQuery.toLowerCase().trim();
+    const searchTerms = query.split(/\s+/); // Support multi-term search
+
+    // Scoring function
+    const calculateScore = (track: Track): number => {
+      let score = 0;
+      const name = track.name.toLowerCase();
+      const artist = track.artist.toLowerCase();
+      const genre = track.genre?.toLowerCase() || '';
+      const key = track.key?.toLowerCase() || '';
+      const bpm = track.bpm?.toString() || '';
+
+      searchTerms.forEach(term => {
+        // Exact phrase matches (highest priority)
+        if (name === term) score += 1000;
+        if (artist === term) score += 900;
+
+        // Word starts with term (high priority)
+        const nameWords = name.split(/\s+/);
+        const artistWords = artist.split(/\s+/);
+        if (nameWords.some(word => word.startsWith(term))) score += 500;
+        if (artistWords.some(word => word.startsWith(term))) score += 400;
+
+        // Contains exact term (medium priority)
+        if (name.includes(term)) score += 300;
+        if (artist.includes(term)) score += 250;
+        if (genre.includes(term)) score += 200;
+        if (key.includes(term)) score += 150;
+        if (bpm.includes(term)) score += 150;
+
+        // Fuzzy match (1 char difference) - low priority
+        const fuzzyMatch = (str: string, term: string): boolean => {
+          if (Math.abs(str.length - term.length) > 1) return false;
+          let diff = 0;
+          const maxLen = Math.max(str.length, term.length);
+          for (let i = 0; i < maxLen; i++) {
+            if (str[i] !== term[i]) diff++;
+            if (diff > 1) return false;
+          }
+          return diff === 1;
+        };
+
+        if (nameWords.some(word => fuzzyMatch(word, term))) score += 10;
+        if (artistWords.some(word => fuzzyMatch(word, term))) score += 8;
+      });
+
+      return score;
+    };
+
+    // Filter and score tracks
+    const scoredTracks = tracks
+      .map(track => ({ track, score: calculateScore(track) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ track }) => track);
+
+    return scoredTracks;
+  }, [tracks, librarySearchQuery]);
 
   // Mode toggle handler
   const toggleMode = () => {
@@ -988,19 +1075,124 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
               borderRadius: '12px',
               border: '1px solid rgba(255,255,255,0.1)',
               padding: '20px',
-              overflowY: 'auto'
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
             }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Library</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {tracks.map(track => (
-                  <TrackListItem
-                    key={track.id}
-                    track={track}
-                    isNowPlaying={nowPlaying?.id === track.id}
-                    onInspect={handleTrackInspect}
-                    onRightClick={handleTrackRightClick}
-                  />
-                ))}
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '16px' }}>Library</h3>
+
+              {/* Search Input */}
+              <div style={{ position: 'relative', marginBottom: '12px' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search tracks, artists, BPM, key..."
+                  value={librarySearchQuery}
+                  onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 32px 10px 12px',
+                    backgroundColor: 'rgba(0,0,0,0.4)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '8px',
+                    color: '#F8F8F8',
+                    fontSize: '13px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(74,144,226,0.6)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                  }}
+                />
+                {librarySearchQuery && (
+                  <button
+                    onClick={() => setLibrarySearchQuery('')}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: '#8E8E93',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      fontSize: '16px',
+                      lineHeight: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'color 0.2s'
+                    }}
+                    title="Clear search"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#F8F8F8';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#8E8E93';
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Results Counter */}
+              {librarySearchQuery && (
+                <div style={{
+                  fontSize: '11px',
+                  color: '#8E8E93',
+                  marginBottom: '8px',
+                  padding: '0 4px'
+                }}>
+                  {filteredLibraryTracks.length} of {tracks.length} tracks
+                </div>
+              )}
+
+              {/* Track List */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                overflowY: 'auto',
+                flex: 1,
+                minHeight: 0
+              }}>
+                {filteredLibraryTracks.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    color: '#8E8E93',
+                    padding: '60px 20px',
+                    fontSize: '14px'
+                  }}>
+                    {librarySearchQuery ? (
+                      <>
+                        <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🔍</div>
+                        <div style={{ fontWeight: 600, marginBottom: '8px' }}>No tracks found</div>
+                        <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                          Try a different search term
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📚</div>
+                        <div>No tracks in library</div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  filteredLibraryTracks.map(track => (
+                    <TrackListItem
+                      key={track.id}
+                      track={track}
+                      isNowPlaying={nowPlaying?.id === track.id}
+                      onInspect={handleTrackInspect}
+                      onRightClick={handleTrackRightClick}
+                    />
+                  ))
+                )}
               </div>
             </div>
 
@@ -1250,9 +1442,11 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
 
       {/* Track Context Menu for Pathfinder */}
       {contextMenuTrack && contextMenuPosition && (
-        <TrackContextMenu
-          track={contextMenuTrack}
-          position={contextMenuPosition}
+        <ContextMenu
+          x={contextMenuPosition.x}
+          y={contextMenuPosition.y}
+          targetType="track"
+          targetData={contextMenuTrack}
           onClose={handleContextMenuClose}
         />
       )}
