@@ -21,10 +21,22 @@ import json
 import os
 import redis.asyncio as redis
 from datetime import datetime, timedelta
+import asyncpg
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/music-auth", tags=["Music Authentication"])
+
+# Get database pool from app state
+async def get_db_pool():
+    """Dependency to get database pool"""
+    from main import db_pool
+    if not db_pool:
+        raise HTTPException(
+            status_code=500,
+            detail="Database connection pool not available"
+        )
+    return db_pool
 
 # ===========================================
 # MUSIC SERVICE CREDENTIALS FROM ENVIRONMENT
@@ -516,6 +528,37 @@ async def spotify_callback(
                     # Successfully obtained tokens
                     logger.info("🎵 [SPOTIFY] Successfully exchanged authorization code for tokens")
 
+                    # Store tokens in database for enrichment service to use
+                    try:
+                        db_pool = await get_db_pool()
+                        expires_at = datetime.now() + timedelta(seconds=result['expires_in'])
+
+                        async with db_pool.acquire() as conn:
+                            await conn.execute("""
+                                INSERT INTO user_oauth_tokens (service, user_id, access_token, refresh_token, token_type, expires_at, scope)
+                                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                                ON CONFLICT (service, user_id)
+                                DO UPDATE SET
+                                    access_token = EXCLUDED.access_token,
+                                    refresh_token = EXCLUDED.refresh_token,
+                                    token_type = EXCLUDED.token_type,
+                                    expires_at = EXCLUDED.expires_at,
+                                    scope = EXCLUDED.scope,
+                                    updated_at = CURRENT_TIMESTAMP
+                            """,
+                                'spotify',
+                                'default_user',  # Single-user mode for now
+                                result['access_token'],
+                                result.get('refresh_token'),
+                                result['token_type'],
+                                expires_at,
+                                result.get('scope')
+                            )
+                        logger.info("🎵 [SPOTIFY] Stored user OAuth tokens in database for enrichment service")
+                    except Exception as db_error:
+                        logger.error(f"Failed to store Spotify tokens in database: {db_error}")
+                        # Don't fail the request, tokens are still returned to frontend
+
                     return JSONResponse({
                         "success": True,
                         "access_token": result['access_token'],
@@ -537,6 +580,64 @@ async def spotify_callback(
     except Exception as e:
         logger.error(f"Spotify OAuth callback failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
+
+class StoreTokenRequest(BaseModel):
+    """Request to store OAuth tokens in database"""
+    service: str = Field(..., description="Service name (spotify, tidal)")
+    access_token: str = Field(..., min_length=1)
+    refresh_token: Optional[str] = None
+    expires_in: int = Field(..., description="Token lifetime in seconds")
+    token_type: str = Field(default="Bearer")
+    scope: Optional[str] = None
+
+@router.post("/store-token")
+async def store_oauth_token(request: StoreTokenRequest):
+    """
+    Store OAuth tokens in database for enrichment service to use
+
+    This endpoint allows frontend to persist tokens from localStorage into the database,
+    enabling the backend enrichment service to use user OAuth tokens for API calls.
+    """
+    try:
+        db_pool = await get_db_pool()
+        expires_at = datetime.now() + timedelta(seconds=request.expires_in)
+
+        async with db_pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO user_oauth_tokens (service, user_id, access_token, refresh_token, token_type, expires_at, scope)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (service, user_id)
+                DO UPDATE SET
+                    access_token = EXCLUDED.access_token,
+                    refresh_token = EXCLUDED.refresh_token,
+                    token_type = EXCLUDED.token_type,
+                    expires_at = EXCLUDED.expires_at,
+                    scope = EXCLUDED.scope,
+                    updated_at = CURRENT_TIMESTAMP
+            """,
+                request.service,
+                'default_user',  # Single-user mode for now
+                request.access_token,
+                request.refresh_token,
+                request.token_type,
+                expires_at,
+                request.scope
+            )
+
+        logger.info(f"✅ [{request.service.upper()}] Stored user OAuth tokens in database")
+
+        return JSONResponse({
+            "success": True,
+            "message": f"{request.service} tokens stored successfully",
+            "expires_at": expires_at.isoformat()
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to store {request.service} tokens: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to store tokens: {str(e)}"
+        )
 
 @router.post("/spotify/token")
 async def spotify_exchange_token(
