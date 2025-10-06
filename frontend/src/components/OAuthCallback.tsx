@@ -134,6 +134,31 @@ const OAuthCallback: React.FC = () => {
         localStorage.setItem(storageKey, JSON.stringify(tokens));
         console.log(`[OAuth] ${serviceName} tokens stored in localStorage as '${storageKey}'`);
 
+        // ALSO store tokens in database for backend enrichment service to use
+        try {
+          const storeResponse = await fetch(`${API_BASE_URL}/api/v1/music-auth/store-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              service: detectedService,
+              access_token: tokenData.access_token,
+              refresh_token: tokenData.refresh_token,
+              expires_in: tokenData.expires_in,
+              token_type: tokenData.token_type,
+              scope: tokenData.scope
+            })
+          });
+
+          if (storeResponse.ok) {
+            console.log(`[OAuth] ✅ ${serviceName} tokens stored in database for enrichment service`);
+          } else {
+            console.warn(`[OAuth] ⚠️ Failed to store ${serviceName} tokens in database (enrichment may not work)`);
+          }
+        } catch (dbError) {
+          console.error(`[OAuth] Failed to store tokens in database:`, dbError);
+          // Don't fail the whole flow, tokens are still in localStorage
+        }
+
         // Notify parent window (if opened as popup)
         if (window.opener) {
           window.opener.postMessage({
