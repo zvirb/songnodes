@@ -262,9 +262,10 @@ async def lifespan(app: FastAPI):
             spotify_client = SpotifyClient(
                 client_id=spotify_client_id,
                 client_secret=spotify_client_secret,
-                redis_client=connection_manager.redis_client
+                redis_client=connection_manager.redis_client,
+                db_session_factory=connection_manager.session_factory
             )
-            logger.info("Spotify client initialized with credentials")
+            logger.info("Spotify client initialized with credentials and user token support")
         else:
             spotify_client = None
             logger.warning("Spotify client NOT initialized - no credentials found (this is OK if not using Spotify)")
@@ -660,7 +661,7 @@ async def process_enrichment_batch(tasks: List[EnrichmentTask], correlation_id: 
 
 @app.get("/stats")
 async def get_enrichment_stats():
-    """Get enrichment statistics"""
+    """Get enrichment statistics including artist attribution metrics"""
     try:
         async with connection_manager.session_factory() as session:
             stats_query = text("""
@@ -690,6 +691,83 @@ async def get_enrichment_stats():
             result = await session.execute(enrichment_stats_query)
             enrichment_stats = result.fetchall()
 
+            # Artist attribution statistics
+            artist_stats_query = text("""
+                WITH track_artist_counts AS (
+                    SELECT
+                        t.id as track_id,
+                        COUNT(DISTINCT ta.artist_id) FILTER (WHERE ta.role = 'primary') as primary_artists,
+                        COUNT(DISTINCT ta.artist_id) FILTER (WHERE ta.role = 'featured') as featured_artists,
+                        COUNT(DISTINCT ta.artist_id) FILTER (WHERE ta.role = 'remixer') as remixers,
+                        COUNT(DISTINCT ta.artist_id) as total_artists
+                    FROM tracks t
+                    LEFT JOIN track_artists ta ON t.id = ta.track_id
+                    GROUP BY t.id
+                )
+                SELECT
+                    COUNT(*) as total_tracks,
+                    COUNT(CASE WHEN primary_artists > 0 THEN 1 END) as tracks_with_artists,
+                    COUNT(CASE WHEN primary_artists = 0 THEN 1 END) as tracks_without_artists,
+                    CAST(ROUND(CAST(AVG(primary_artists) AS numeric), 2) AS float) as avg_primary_artists_per_track,
+                    CAST(ROUND(CAST(AVG(featured_artists) AS numeric), 2) AS float) as avg_featured_artists_per_track,
+                    CAST(ROUND(CAST(AVG(total_artists) AS numeric), 2) AS float) as avg_total_artists_per_track,
+                    COUNT(CASE WHEN primary_artists >= 2 THEN 1 END) as tracks_with_multiple_artists,
+                    MAX(total_artists) as max_artists_on_single_track
+                FROM track_artist_counts
+            """)
+
+            result = await session.execute(artist_stats_query)
+            artist_stats = result.fetchone()
+
+            # Fuzzy match success rate
+            fuzzy_match_query = text("""
+                SELECT
+                    COUNT(CASE WHEN metadata->>'fuzzy_matched' = 'true' THEN 1 END) as fuzzy_matched_tracks,
+                    COUNT(CASE WHEN metadata->>'fuzzy_matched' = 'true' THEN 1 END)::float /
+                        NULLIF(COUNT(*), 0) * 100 as fuzzy_match_percentage,
+                    CAST(ROUND(CAST(AVG((metadata->>'fuzzy_match_confidence')::float) AS numeric), 2) AS float) as avg_fuzzy_confidence
+                FROM tracks
+                WHERE metadata->>'fuzzy_matched' IS NOT NULL
+            """)
+
+            result = await session.execute(fuzzy_match_query)
+            fuzzy_stats = result.fetchone()
+
+            # OAuth token status
+            oauth_token_query = text("""
+                SELECT
+                    service,
+                    CASE WHEN expires_at > NOW() THEN 'valid' ELSE 'expired' END as status,
+                    expires_at,
+                    EXTRACT(EPOCH FROM (expires_at - NOW())) / 3600 as hours_until_expiry
+                FROM user_oauth_tokens
+                WHERE service = 'spotify'
+                ORDER BY expires_at DESC
+                LIMIT 1
+            """)
+
+            try:
+                result = await session.execute(oauth_token_query)
+                oauth_token = result.fetchone()
+                oauth_status = {
+                    "has_user_token": oauth_token is not None,
+                    "status": oauth_token.status if oauth_token else "none",
+                    "expires_at": oauth_token.expires_at.isoformat() if oauth_token else None,
+                    "hours_until_expiry": round(oauth_token.hours_until_expiry, 2) if oauth_token and oauth_token.hours_until_expiry > 0 else 0
+                } if oauth_token else {
+                    "has_user_token": False,
+                    "status": "none",
+                    "expires_at": None,
+                    "hours_until_expiry": 0
+                }
+            except Exception as oauth_error:
+                logger.warning(f"Could not fetch OAuth token status: {oauth_error}")
+                oauth_status = {
+                    "has_user_token": False,
+                    "status": "error",
+                    "error": str(oauth_error)
+                }
+
             return {
                 "track_stats": {
                     "total_tracks": stats.total_tracks,
@@ -698,8 +776,30 @@ async def get_enrichment_stats():
                     "with_musicbrainz_id": stats.with_musicbrainz_id,
                     "with_bpm": stats.with_bpm,
                     "with_key": stats.with_key,
-                    "with_audio_features": stats.with_audio_features
+                    "with_audio_features": stats.with_audio_features,
+                    "coverage_percentages": {
+                        "spotify_id": round(stats.with_spotify_id / max(stats.total_tracks, 1) * 100, 2),
+                        "isrc": round(stats.with_isrc / max(stats.total_tracks, 1) * 100, 2),
+                        "audio_features": round(stats.with_audio_features / max(stats.total_tracks, 1) * 100, 2)
+                    }
                 },
+                "artist_attribution": {
+                    "total_tracks": artist_stats.total_tracks,
+                    "tracks_with_artists": artist_stats.tracks_with_artists,
+                    "tracks_without_artists": artist_stats.tracks_without_artists,
+                    "attribution_rate": round(artist_stats.tracks_with_artists / max(artist_stats.total_tracks, 1) * 100, 2),
+                    "avg_primary_artists_per_track": float(artist_stats.avg_primary_artists_per_track) if artist_stats.avg_primary_artists_per_track else 0,
+                    "avg_featured_artists_per_track": float(artist_stats.avg_featured_artists_per_track) if artist_stats.avg_featured_artists_per_track else 0,
+                    "avg_total_artists_per_track": float(artist_stats.avg_total_artists_per_track) if artist_stats.avg_total_artists_per_track else 0,
+                    "tracks_with_multiple_artists": artist_stats.tracks_with_multiple_artists,
+                    "max_artists_on_single_track": artist_stats.max_artists_on_single_track
+                },
+                "fuzzy_matching": {
+                    "fuzzy_matched_tracks": fuzzy_stats.fuzzy_matched_tracks if fuzzy_stats else 0,
+                    "fuzzy_match_percentage": round(fuzzy_stats.fuzzy_match_percentage, 2) if fuzzy_stats and fuzzy_stats.fuzzy_match_percentage else 0,
+                    "avg_confidence": float(fuzzy_stats.avg_fuzzy_confidence) if fuzzy_stats and fuzzy_stats.avg_fuzzy_confidence else 0
+                },
+                "oauth_token_status": oauth_status,
                 "enrichment_status": [
                     {
                         "status": row.status,

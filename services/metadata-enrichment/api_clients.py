@@ -33,14 +33,16 @@ API_MAX_DELAY = float(os.getenv('API_MAX_DELAY', '60.0'))
 class SpotifyClient:
     """Spotify Web API client with OAuth 2.0 and rate limiting"""
 
-    def __init__(self, client_id: str, client_secret: str, redis_client: aioredis.Redis):
+    def __init__(self, client_id: str, client_secret: str, redis_client: aioredis.Redis, db_session_factory=None):
         self.client_id = client_id
         self.client_secret = client_secret
         self.redis_client = redis_client
+        self.db_session_factory = db_session_factory  # For user token retrieval
         self.base_url = "https://api.spotify.com/v1"
         self.token_url = "https://accounts.spotify.com/api/token"
         self.access_token = None
         self.token_expires_at = 0
+        self.user_token_mode = db_session_factory is not None  # Use user tokens if DB available
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
             timeout_seconds=60,
@@ -48,8 +50,129 @@ class SpotifyClient:
         )
         self.rate_limiter = RateLimiter(requests_per_second=3)
 
+    async def _get_user_token_from_db(self) -> Optional[str]:
+        """Get user OAuth token from database (for audio features access) with automatic refresh"""
+        if not self.db_session_factory:
+            return None
+
+        try:
+            from sqlalchemy import text
+            from datetime import datetime, timedelta
+
+            async with self.db_session_factory() as session:
+                # Get token with refresh capability
+                result = await session.execute(
+                    text("""
+                        SELECT access_token, refresh_token, expires_at
+                        FROM user_oauth_tokens
+                        WHERE service = 'spotify' AND user_id = 'default_user'
+                        ORDER BY expires_at DESC
+                        LIMIT 1
+                    """)
+                )
+                row = result.fetchone()
+
+                if not row:
+                    logger.warning("⚠️ No Spotify user token found in database")
+                    return None
+
+                # Check if token is still valid (with 5-minute buffer)
+                expires_at = row.expires_at
+                if expires_at > datetime.now() + timedelta(minutes=5):
+                    logger.debug("✅ Retrieved valid Spotify user token from database")
+                    return row.access_token
+
+                # Token expired or expiring soon - try to refresh
+                if row.refresh_token:
+                    logger.info("🔄 Spotify user token expired/expiring, attempting refresh...")
+                    new_token = await self._refresh_user_token(row.refresh_token)
+                    if new_token:
+                        logger.info("✅ Successfully refreshed Spotify user token")
+                        return new_token
+                    else:
+                        logger.warning("⚠️ Failed to refresh Spotify user token")
+                        return None
+                else:
+                    logger.warning("⚠️ Spotify user token expired and no refresh token available")
+                    return None
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve user token from database: {e}")
+            return None
+
+    async def _refresh_user_token(self, refresh_token: str) -> Optional[str]:
+        """Refresh expired user OAuth token and update database"""
+        try:
+            from sqlalchemy import text
+            from datetime import datetime, timedelta
+
+            # Request new access token using refresh token
+            auth_str = f"{self.client_id}:{self.client_secret}"
+            auth_bytes = auth_str.encode('utf-8')
+            auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
+
+            headers = {
+                'Authorization': f'Basic {auth_base64}',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+
+            data = {
+                'grant_type': 'refresh_token',
+                'refresh_token': refresh_token
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.token_url, headers=headers, data=data) as response:
+                    if response.status == 200:
+                        token_data = await response.json()
+                        new_access_token = token_data['access_token']
+                        new_refresh_token = token_data.get('refresh_token', refresh_token)  # Spotify may not return new refresh token
+                        expires_in = token_data['expires_in']
+                        expires_at = datetime.now() + timedelta(seconds=expires_in)
+
+                        # Update database with new token
+                        if self.db_session_factory:
+                            async with self.db_session_factory() as db_session:
+                                await db_session.execute(
+                                    text("""
+                                        UPDATE user_oauth_tokens
+                                        SET access_token = :access_token,
+                                            refresh_token = :refresh_token,
+                                            expires_at = :expires_at,
+                                            updated_at = CURRENT_TIMESTAMP
+                                        WHERE service = 'spotify' AND user_id = 'default_user'
+                                    """),
+                                    {
+                                        'access_token': new_access_token,
+                                        'refresh_token': new_refresh_token,
+                                        'expires_at': expires_at
+                                    }
+                                )
+                                await db_session.commit()
+                                logger.info(f"✅ Updated Spotify user token in database (expires: {expires_at.isoformat()})")
+
+                        return new_access_token
+                    else:
+                        error_data = await response.text()
+                        logger.error(f"Failed to refresh Spotify token: {response.status} - {error_data}")
+                        return None
+
+        except Exception as e:
+            logger.error(f"Error refreshing Spotify user token: {e}")
+            return None
+
     async def _get_access_token(self) -> str:
-        """Get Spotify access token using client credentials flow"""
+        """Get Spotify access token - prefers user tokens (for audio features) over client credentials"""
+        # Try user token first (has access to audio features)
+        if self.user_token_mode:
+            user_token = await self._get_user_token_from_db()
+            if user_token:
+                logger.debug("Using Spotify user token (audio features enabled)")
+                return user_token
+            else:
+                logger.info("No user token available, falling back to client credentials (no audio features)")
+
+        # Fallback to client credentials flow (no audio features access)
         if self.access_token and time.time() < self.token_expires_at:
             return self.access_token
 
