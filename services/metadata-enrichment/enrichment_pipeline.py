@@ -490,12 +490,18 @@ class MetadataEnrichmentPipeline:
                 album = metadata.get('album', {})
                 if album.get('release_date'):
                     updates.append("release_date = :release_date")
-                    # Handle different date formats
+                    # Handle different date formats - convert to date object
+                    from datetime import date
                     date_str = album['release_date']
                     if len(date_str) == 4:  # Year only
-                        params['release_date'] = f"{date_str}-01-01"
+                        params['release_date'] = date(int(date_str), 1, 1)
                     else:
-                        params['release_date'] = date_str
+                        # Parse YYYY-MM-DD or YYYY-MM format
+                        parts = date_str.split('-')
+                        year = int(parts[0])
+                        month = int(parts[1]) if len(parts) > 1 else 1
+                        day = int(parts[2]) if len(parts) > 2 else 1
+                        params['release_date'] = date(year, month, day)
 
                 # Genre from Discogs or Last.fm
                 if metadata.get('genre'):
