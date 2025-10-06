@@ -543,13 +543,15 @@ async def get_graph_nodes(
                     # Get the metadata from the view
                     metadata = dict(row.metadata) if row.metadata else {}
 
-                    # Add computed fields
-                    artist = metadata.get('artist', 'Unknown')
-                    title = metadata.get('title', 'Unknown')
+                    # Extract artist and title from metadata
+                    artist = metadata.get('artist')
+                    title = metadata.get('title')
+
+                    # Compute label
                     if artist and artist != 'Unknown':
                         metadata['label'] = f"{artist} - {title}"
                     else:
-                        metadata['label'] = title
+                        metadata['label'] = title or 'Unknown'
 
                     metadata['node_type'] = metadata.get('node_type', 'song')
                     metadata['category'] = metadata.get('genre', metadata.get('category', 'Electronic'))
@@ -558,6 +560,9 @@ async def get_graph_nodes(
                     node_data = {
                         'id': str(row.id),
                         'track_id': str(row.track_id),
+                        # ✅ FIX: Add top-level artist and title fields for frontend
+                        'artist': artist,
+                        'title': title,
                         'position': {
                             'x': float(row.x_position) if row.x_position is not None else 0.0,
                             'y': float(row.y_position) if row.y_position is not None else 0.0
@@ -1143,13 +1148,15 @@ async def get_graph_data():
                 # Get the metadata from the view
                 metadata = dict(row.metadata) if row.metadata else {}
 
-                # Add computed fields
-                artist = metadata.get('artist', 'Unknown')
-                title = metadata.get('title', 'Unknown')
+                # Extract artist and title from metadata
+                artist = metadata.get('artist')
+                title = metadata.get('title')
+
+                # Compute label
                 if artist and artist != 'Unknown':
                     metadata['label'] = f"{artist} - {title}"
                 else:
-                    metadata['label'] = title
+                    metadata['label'] = title or 'Unknown'
 
                 metadata['node_type'] = 'song'
                 metadata['category'] = metadata.get('genre', 'Electronic')
@@ -1158,6 +1165,9 @@ async def get_graph_data():
                 node_data = {
                     'id': str(row.id),
                     'track_id': str(row.track_id),
+                    # ✅ FIX: Add top-level artist and title fields for frontend
+                    'artist': artist,
+                    'title': title,
                     'position': {
                         'x': float(row.x_position) if row.x_position is not None else 0.0,
                         'y': float(row.y_position) if row.y_position is not None else 0.0
