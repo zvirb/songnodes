@@ -1,6 +1,12 @@
 """
 🎵 SongNodes Scraper Orchestrator - 2025 Best Practices Edition
 Enhanced with circuit breakers, structured logging, comprehensive monitoring, and graceful error handling
+
+Features:
+- Automated failed queue cleanup (removes tasks older than 3 days, runs daily at 3 AM UTC)
+- Manual cleanup endpoint: POST /queue/cleanup-expired
+- Circuit breaker pattern for resilient scraping
+- Comprehensive health monitoring
 """
 
 import asyncio
@@ -347,6 +353,16 @@ async def lifespan(app: FastAPI):
             misfire_grace_time=300
         )
 
+        # Failed queue cleanup - Remove tasks older than 3 days
+        scheduler.add_job(
+            cleanup_expired_failed_tasks,
+            trigger=CronTrigger(hour=3, minute=0),  # Daily at 3:00 AM UTC
+            id="failed_queue_cleanup",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3600  # 1 hour grace period
+        )
+
         logger.info("Scraper Orchestrator started successfully")
 
     except Exception as e:
@@ -513,6 +529,86 @@ async def health_monitor():
 
     except Exception as e:
         logger.error("Health monitoring failed", error=str(e))
+
+async def cleanup_expired_failed_tasks():
+    """Clean up failed queue items older than 3 days"""
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="cleanup_expired_failed_tasks",
+        correlation_id=correlation_id
+    )
+
+    try:
+        redis_client = connection_manager.redis_client
+        failed_queue_key = 'scraping_queue:failed'
+
+        # Get all failed tasks
+        failed_tasks_json = redis_client.lrange(failed_queue_key, 0, -1)
+
+        if not failed_tasks_json:
+            logger.info("No failed tasks to clean up")
+            return
+
+        total_tasks = len(failed_tasks_json)
+        removed_count = 0
+        kept_count = 0
+        cutoff_time = datetime.now() - timedelta(days=3)
+
+        # Parse tasks and filter out expired ones
+        valid_tasks = []
+
+        for task_json in failed_tasks_json:
+            try:
+                task = json.loads(task_json)
+                created_at = datetime.fromisoformat(task.get('created_at', ''))
+
+                if created_at < cutoff_time:
+                    # Task is older than 3 days - mark for removal
+                    removed_count += 1
+                    logger.debug(
+                        "Removing expired failed task",
+                        task_id=task.get('id'),
+                        created_at=task.get('created_at'),
+                        age_days=(datetime.now() - created_at).days
+                    )
+                else:
+                    # Task is still valid - keep it
+                    valid_tasks.append(task_json)
+                    kept_count += 1
+
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.warning("Failed to parse task, removing it", error=str(e))
+                removed_count += 1
+
+        # Replace the failed queue with only valid tasks
+        if removed_count > 0:
+            # Use a pipeline for atomic operation
+            pipe = redis_client.pipeline()
+            pipe.delete(failed_queue_key)
+
+            if valid_tasks:
+                for task_json in valid_tasks:
+                    pipe.lpush(failed_queue_key, task_json)
+
+            pipe.execute()
+
+            logger.info(
+                "Failed queue cleanup completed",
+                total_tasks=total_tasks,
+                removed=removed_count,
+                kept=kept_count,
+                cutoff_days=3
+            )
+        else:
+            logger.info(
+                "No expired tasks found in failed queue",
+                total_tasks=total_tasks,
+                cutoff_days=3
+            )
+
+    except Exception as e:
+        logger.error("Failed queue cleanup failed", error=str(e))
 
 # ===================
 # ENHANCED API ENDPOINTS
@@ -1040,6 +1136,44 @@ async def clear_queue(queue_type: Optional[str] = None):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to clear queue: {str(e)}"
+        )
+
+@app.post("/queue/cleanup-expired")
+async def trigger_failed_queue_cleanup():
+    """
+    Manually trigger cleanup of expired failed queue items (older than 3 days)
+
+    This endpoint is useful for testing the automatic cleanup that runs daily at 3 AM.
+    """
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="manual_failed_queue_cleanup",
+        correlation_id=correlation_id
+    )
+
+    try:
+        logger.info("Manual cleanup triggered via API", correlation_id=correlation_id)
+
+        # Run the cleanup function
+        await cleanup_expired_failed_tasks()
+
+        # Get updated queue status
+        failed_queue_size = connection_manager.redis_client.llen('scraping_queue:failed') or 0
+
+        return {
+            "status": "success",
+            "message": "Failed queue cleanup completed",
+            "remaining_failed_tasks": failed_queue_size,
+            "timestamp": datetime.now().isoformat(),
+            "correlation_id": correlation_id
+        }
+
+    except Exception as e:
+        logger.error("Manual cleanup failed", error=str(e), correlation_id=correlation_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to cleanup expired tasks: {str(e)}"
         )
 
 # ===================
