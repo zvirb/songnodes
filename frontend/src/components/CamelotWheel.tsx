@@ -56,8 +56,8 @@ interface CamelotWheelProps {
 
 export const CamelotWheel: React.FC<CamelotWheelProps> = ({
   size = 300,
-  showMoodLabels = true,
-  showEnergyGradient = false,
+  showMoodLabels: showMoodLabelsProp = true,
+  showEnergyGradient: showEnergyGradientProp = false,
   showHarmonicSuggestions = false,
   onKeySelect,
   onTrackSelect,
@@ -68,6 +68,8 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMoodLabels, setShowMoodLabels] = useState(showMoodLabelsProp);
+  const [showEnergyGradient, setShowEnergyGradient] = useState(showEnergyGradientProp);
 
   // Store data
   const graphData = useStore(state => state.graphData);

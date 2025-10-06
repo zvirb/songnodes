@@ -13,7 +13,8 @@ import { KeyMoodPanel } from './KeyMoodPanel';
 import TargetTracksManager from './TargetTracksManager';
 import GraphFilterPanel from './GraphFilterPanel';
 // Import removed - PipelineMonitoringDashboard has missing dependencies
-import { Track, DJMode } from '../types/dj';
+import { Track as DJTrack, DJMode } from '../types/dj';
+import { Track } from '../types/index';
 import useStore from '../store/useStore';
 import { useDataLoader } from '../hooks/useDataLoader';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -49,11 +50,6 @@ const transformNodeToTrack = (node: any): Track => {
   const metadata = node.metadata || {};
   const trackId = node.id || node.track_id || '';
 
-  // Stable defaults based on track ID
-  const defaultBPM = metadata.bpm || getStableHashValue(trackId + '_bpm', 120, 140);
-  const defaultKey = metadata.key || metadata.camelotKey ||
-                     CAMELOT_KEYS[getStableHashValue(trackId + '_key', 0, CAMELOT_KEYS.length - 1)];
-
   // Get track name from multiple potential sources
   const trackName = node.title || metadata.title || metadata.label || node.label || 'Unknown Track';
 
@@ -65,9 +61,9 @@ const transformNodeToTrack = (node: any): Track => {
     name: trackName,
     title: trackName, // Alias for compatibility
     artist: artistName,
-    bpm: defaultBPM,
-    key: defaultKey,
-    energy: metadata.energy || getStableHashValue(trackId + '_energy', 1, 10),
+    bpm: metadata.bpm || undefined,
+    key: metadata.key || metadata.camelotKey || undefined,
+    energy: metadata.energy || undefined,
     duration: metadata.duration || getStableHashValue(trackId + '_duration', 180, 480), // 3-8 minutes
     status: 'unplayed' as const,
     genre: metadata.genre || metadata.category || 'Electronic',
@@ -153,7 +149,9 @@ const TrackListItem = React.memo<{
         whiteSpace: 'nowrap',
         maxWidth: '100%'
       }}>
-        {track.artist} • {track.bpm} BPM • {track.key}
+        {track.artist}
+        {track.bpm && <> • {track.bpm} BPM</>}
+        {track.key && <> • {track.key}</>}
       </div>
     </button>
   );
@@ -255,7 +253,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
       .map(transformNodeToTrack)
       .sort((a, b) => a.artist.localeCompare(b.artist) || a.name.localeCompare(b.name));
 
-    console.log(`DJInterface: Transformed ${transformedTracks.length} tracks (only logs when data actually changes)`);
     return transformedTracks;
   }, [validNodes]);
 
@@ -269,8 +266,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     // Scoring function
     const calculateScore = (track: Track): number => {
       let score = 0;
-      const name = track.name.toLowerCase();
-      const artist = track.artist.toLowerCase();
+      const name = track.name?.toLowerCase() || '';
+      const artist = track.artist?.toLowerCase() || '';
       const genre = track.genre?.toLowerCase() || '';
       const key = track.key?.toLowerCase() || '';
       const bpm = track.bpm?.toString() || '';
@@ -969,7 +966,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
               }}
             >
               <NowPlayingDeck
-                track={nowPlaying}
+                track={nowPlaying as any}
                 onTrackSelect={() => {}} // No direct selection from NowPlayingDeck
               />
             </section>
@@ -1045,9 +1042,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                 maxHeight: '100%'
               }}>
                 <IntelligentBrowser
-                  currentTrack={nowPlaying}
-                  allTracks={tracks}
-                  onTrackSelect={handleTrackInspect}
+                  currentTrack={nowPlaying as any}
+                  allTracks={tracks as any}
+                  onTrackSelect={handleTrackInspect as any}
                   graphEdges={graphData?.edges || []} // ✅ Pass graph edges for adjacency-based recommendations
                   config={{
                     maxRecommendations: 12,
@@ -1351,32 +1348,36 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                           <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                             <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>BPM</div>
-                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm}</div>
+                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm || '---'}</div>
                           </div>
                           <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                             <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>KEY</div>
-                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key}</div>
+                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key || '---'}</div>
                           </div>
                         </div>
 
                         <div>
                           <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '8px' }}>ENERGY</div>
-                          <div style={{
-                            display: 'flex',
-                            gap: '2px',
-                            height: '20px'
-                          }}>
-                            {Array.from({ length: 10 }).map((_, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  flex: 1,
-                                  backgroundColor: i < nowPlaying.energy ? '#7ED321' : 'rgba(255,255,255,0.1)',
-                                  borderRadius: '2px'
-                                }}
-                              />
-                            ))}
-                          </div>
+                          {nowPlaying.energy !== undefined ? (
+                            <div style={{
+                              display: 'flex',
+                              gap: '2px',
+                              height: '20px'
+                            }}>
+                              {Array.from({ length: 10 }).map((_, i) => (
+                                <div
+                                  key={i}
+                                  style={{
+                                    flex: 1,
+                                    backgroundColor: i < nowPlaying.energy! ? '#7ED321' : 'rgba(255,255,255,0.1)',
+                                    borderRadius: '2px'
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '14px', color: '#8E8E93' }}>---</div>
+                          )}
                         </div>
 
                         <button
@@ -1433,11 +1434,11 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
 
       {/* Track Details Modal */}
       <TrackDetailsModal
-        track={inspectedTrack}
+        track={inspectedTrack as any}
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        onSetAsCurrentlyPlaying={handleSetAsCurrentlyPlaying}
-        currentlyPlayingTrack={nowPlaying}
+        onSetAsCurrentlyPlaying={handleSetAsCurrentlyPlaying as any}
+        currentlyPlayingTrack={nowPlaying as any}
       />
 
       {/* Track Context Menu for Pathfinder */}

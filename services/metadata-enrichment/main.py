@@ -34,7 +34,10 @@ from api_clients import (
     MusicBrainzClient,
     DiscogsClient,
     BeatportClient,
-    LastFMClient
+    LastFMClient,
+    AcousticBrainzClient,
+    GetSongBPMClient,
+    SonotellerClient
 )
 from enrichment_pipeline import MetadataEnrichmentPipeline
 from circuit_breaker import CircuitBreaker, CircuitBreakerState
@@ -307,6 +310,44 @@ async def lifespan(app: FastAPI):
             lastfm_client = None
             logger.warning("Last.fm client NOT initialized - no API key found (this is OK if not using Last.fm)")
 
+        # AcousticBrainz - free, no API key required
+        acousticbrainz_client = AcousticBrainzClient(
+            redis_client=connection_manager.redis_client
+        )
+        logger.info("AcousticBrainz client initialized (free, no API key)")
+
+        # GetSongBPM - requires API key (free with attribution)
+        # TODO: Add to frontend API settings: GETSONGBPM_API_KEY
+        getsongbpm_keys = await get_service_keys('getsongbpm')
+        getsongbpm_api_key = getsongbpm_keys.get('api_key') or os.getenv("GETSONGBPM_API_KEY")
+        if getsongbpm_api_key:
+            getsongbpm_client = GetSongBPMClient(
+                api_key=getsongbpm_api_key,
+                redis_client=connection_manager.redis_client
+            )
+            logger.info("GetSongBPM client initialized with API key")
+        else:
+            getsongbpm_client = None
+            logger.warning("GetSongBPM client NOT initialized - no API key (get from https://getsongbpm.com/api)")
+
+        # Sonoteller.ai - requires RapidAPI key (5 free/month, then paid)
+        # ⚠️ CRITICAL: This is used as ABSOLUTE LAST RESORT only
+        # TODO: Add to frontend API settings: SONOTELLER_RAPIDAPI_KEY
+        sonoteller_keys = await get_service_keys('sonoteller')
+        sonoteller_rapidapi_key = sonoteller_keys.get('rapidapi_key') or os.getenv("SONOTELLER_RAPIDAPI_KEY")
+        if sonoteller_rapidapi_key:
+            sonoteller_client = SonotellerClient(
+                rapidapi_key=sonoteller_rapidapi_key,
+                redis_client=connection_manager.redis_client
+            )
+            logger.info(
+                "✅ Sonoteller.ai client initialized and ACTIVE",
+                monthly_limit=sonoteller_client.monthly_limit
+            )
+        else:
+            sonoteller_client = None
+            logger.warning("Sonoteller.ai client NOT initialized - no RapidAPI key")
+
         # Initialize enrichment pipeline
         enrichment_pipeline = MetadataEnrichmentPipeline(
             spotify_client=spotify_client,
@@ -314,6 +355,9 @@ async def lifespan(app: FastAPI):
             discogs_client=discogs_client,
             beatport_client=beatport_client,
             lastfm_client=lastfm_client,
+            acousticbrainz_client=acousticbrainz_client,
+            getsongbpm_client=getsongbpm_client,
+            sonoteller_client=sonoteller_client,
             db_session_factory=connection_manager.session_factory,
             redis_client=connection_manager.redis_client
         )
@@ -845,6 +889,44 @@ async def process_pending_enrichments_manual(limit: int, correlation_id: str):
     except Exception as e:
         logger.error("Manual enrichment processing failed", error=str(e))
         raise
+
+@app.get("/sonoteller/quota")
+async def get_sonoteller_quota():
+    """
+    Get Sonoteller.ai monthly quota usage
+
+    Returns current month's usage count and remaining quota.
+    Use this to monitor your 5/month free tier limit.
+    """
+    if not enrichment_pipeline or not enrichment_pipeline.sonoteller_client:
+        return {
+            "status": "disabled",
+            "message": "Sonoteller.ai client not configured"
+        }
+
+    try:
+        from datetime import datetime
+
+        client = enrichment_pipeline.sonoteller_client
+        current_month = datetime.now().strftime("%Y-%m")
+        usage_key = f"{client.monthly_usage_key}:{current_month}"
+
+        current_usage = await connection_manager.redis_client.get(usage_key)
+        current_usage = int(current_usage) if current_usage else 0
+
+        return {
+            "status": "active",
+            "month": current_month,
+            "usage": current_usage,
+            "limit": client.monthly_limit,
+            "remaining": max(0, client.monthly_limit - current_usage),
+            "quota_exceeded": current_usage >= client.monthly_limit,
+            "warning": "⚠️ This is a last resort service - only used for 2026+ tracks with no BPM/key from free sources"
+        }
+
+    except Exception as e:
+        logger.error("Failed to get Sonoteller quota", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to get quota: {str(e)}")
 
 @app.get("/stats")
 async def get_enrichment_stats():

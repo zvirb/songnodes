@@ -64,6 +64,7 @@ class MixesdbSpider(scrapy.Spider):
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.2,
         'RETRY_TIMES': 3,
         'DOWNLOAD_TIMEOUT': 30,  # 30 second timeout per request
+        # Legacy database pipeline - works with psycopg2 + Twisted adbapi
         'ITEM_PIPELINES': {
             'database_pipeline.DatabasePipeline': 300,
         }
@@ -443,11 +444,17 @@ class MixesdbSpider(scrapy.Spider):
     def parse_mix_page(self, response):
         """Parse individual mix page with CSS selector-based extraction"""
         try:
+            # DEBUG: Entry point logging
+            self.logger.info(f"🔍 [DEBUG] parse_mix_page ENTRY for URL: {response.url}")
+            self.logger.info(f"🔍 [DEBUG] Response status: {response.status}, encoding: {response.encoding}")
+
             # Store response for debugging
             self.last_response = response
 
             # Extract comprehensive setlist metadata
+            self.logger.info(f"🔍 [DEBUG] Calling extract_enhanced_setlist_data...")
             setlist_data = self.extract_enhanced_setlist_data(response)
+            self.logger.info(f"🔍 [DEBUG] Setlist data extracted: {bool(setlist_data)}")
             if setlist_data:
                 yield EnhancedSetlistItem(**setlist_data)
 
@@ -457,12 +464,30 @@ class MixesdbSpider(scrapy.Spider):
                 yield EnhancedArtistItem(**artist_data)
 
             # Extract tracks with full metadata using CSS selectors
+            self.logger.info(f"🔍 [DEBUG] Calling extract_enhanced_tracks...")
             tracks_data = self.extract_enhanced_tracks(response, setlist_data)
+            self.logger.info(f"🔍 [DEBUG] Tracks data returned: {len(tracks_data) if tracks_data else 0} tracks")
 
             if not tracks_data:
                 self.logger.warning(
                     f"No tracks extracted from {response.url} using CSS selectors"
                 )
+                # Yield a parsing failure item for retry tracking
+                failure_item = PlaylistItem(
+                    name=setlist_data.get('setlist_name', 'Unknown Playlist') if setlist_data else 'Unknown Playlist',
+                    source='mixesdb',
+                    source_url=response.url,
+                    playlist_type='DJ Set',
+                    dj_artist_id=None,
+                    event_name=setlist_data.get('event_name') if setlist_data else None,
+                    event_date=setlist_data.get('event_date') if setlist_data else None,
+                    tracklist_count=0,
+                    scrape_error=f"XPath selector failed - 0 tracks found",
+                    last_scrape_attempt=datetime.utcnow(),
+                    parsing_version="mixesdb_v1.1_xpath_fixed"  # Updated version identifier
+                )
+                self.logger.warning(f"⚠️ Yielding failure item for playlist: {failure_item.get('name')}")
+                yield failure_item
                 return
 
             self.logger.info(f"✅ CSS extraction: {len(tracks_data)} tracks found from {response.url}")
@@ -639,6 +664,8 @@ class MixesdbSpider(scrapy.Spider):
     def create_playlist_item_from_setlist(self, setlist_data, source_url, track_names=None):
         """Create a PlaylistItem from setlist metadata for database storage"""
         try:
+            track_count = len(track_names) if track_names else setlist_data.get('total_tracks', 0)
+
             playlist_item = PlaylistItem(
                 item_type='playlist',
                 name=setlist_data.get('setlist_name'),
@@ -651,17 +678,22 @@ class MixesdbSpider(scrapy.Spider):
                 event_date=setlist_data.get('set_date'),
                 venue_name=setlist_data.get('venue_name'),
                 tracks=track_names,  # List of track names
-                total_tracks=len(track_names) if track_names else setlist_data.get('total_tracks', 0),
+                total_tracks=track_count,
                 description=setlist_data.get('description'),
                 genre_tags=setlist_data.get('genre_tags'),
                 duration_minutes=None,  # Could be calculated from track durations if available
                 bpm_range=setlist_data.get('bpm_range'),
                 data_source=self.name,
                 scrape_timestamp=datetime.utcnow(),
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
+                # Validation fields for silent failure detection
+                tracklist_count=track_count,
+                scrape_error=None,  # No error for successful scrapes
+                last_scrape_attempt=datetime.utcnow(),
+                parsing_version="mixesdb_v1.1_xpath_fixed"
             )
 
-            self.logger.debug(f"Created playlist item: {setlist_data.get('setlist_name')}")
+            self.logger.debug(f"Created playlist item: {setlist_data.get('setlist_name')} with {track_count} tracks")
             return playlist_item
 
         except Exception as e:
@@ -670,17 +702,45 @@ class MixesdbSpider(scrapy.Spider):
 
     def extract_enhanced_tracks(self, response, setlist_data):
         """Extract tracks with comprehensive metadata using CSS selectors"""
+        self.logger.info(f"🔍 [DEBUG] extract_enhanced_tracks ENTRY")
         tracks_data = []
 
-        # MixesDB structure: <h2>Tracklist</h2> followed by <ol><li>...</li></ol>
+        # MixesDB structure: <h2>Tracklist</h2> followed by <div class="mw-parser-output"><ol><li>...</li></ol></div>
         # Find the tracklist <ol> that comes after the "Tracklist" heading
+        #
+        # IMPORTANT: This uses a cascading fallback pattern to handle different HTML structures
+        # across the domain. When updating XPath selectors in the future, ALWAYS ADD NEW PATTERNS
+        # AS ADDITIONAL FALLBACKS instead of replacing existing ones. Different pages on the same
+        # domain may use different HTML structures (e.g., older vs newer MediaWiki versions).
+        # Removing working patterns can silently break scraping for subsets of pages.
         tracklist_heading = response.xpath('//h2[contains(., "Tracklist")]').get()
+        self.logger.info(f"🔍 [DEBUG] Tracklist heading found: {bool(tracklist_heading)}")
+        track_elements = []
+
         if tracklist_heading:
-            # Get the <ol> element that immediately follows the tracklist heading
-            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
+            # Try mw-parser-output first (MediaWiki standard wrapper - most common)
+            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="mw-parser-output"][1]//ol/li')
+            self.logger.info(f"🔍 [DEBUG] XPath pattern 1 (mw-parser-output): {len(track_elements)} elements")
+
+            if not track_elements:
+                # Fallback 1: try div.list wrapper (older MixesDB pages)
+                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="list"][1]//ol/li')
+                self.logger.info(f"🔍 [DEBUG] XPath pattern 2 (div.list): {len(track_elements)} elements")
+
+            if not track_elements:
+                # Fallback 2: try direct sibling
+                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
+                self.logger.info(f"🔍 [DEBUG] XPath pattern 3 (direct sibling): {len(track_elements)} elements")
         else:
-            # Fallback: try finding any <ol> or <ul> with tracks
+            self.logger.warning(f"🔍 [DEBUG] No Tracklist heading found on page!")
+
+        if not track_elements:
+            # Final fallback: try finding any <ol> or <ul> with tracks
             track_elements = response.css('ol li, ul.tracklist li, div.tracklist-section ul li')
+            self.logger.info(f"🔍 [DEBUG] CSS fallback pattern: {len(track_elements)} elements")
+
+        self.logger.info(f"🔍 [DEBUG] FINAL track_elements count: {len(track_elements)}")
+        self.logger.info(f"Found {len(track_elements)} track elements from {response.url}")
 
         for i, track_el in enumerate(track_elements):
             try:

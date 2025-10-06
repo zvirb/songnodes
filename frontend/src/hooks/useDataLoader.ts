@@ -122,13 +122,7 @@ export const useDataLoader = () => {
         // Transform nodes with safety check
         // ✅ FILTER: Exclude tracks without valid artist attribution
         const allNodes = (nodesData.nodes || [])
-          .filter((node: any) => {
-            const isValid = hasValidArtist(node);
-            if (!isValid) {
-              console.debug(`Filtering out track without artist: ${node.title || node.id}`);
-            }
-            return isValid;
-          });
+          .filter((node: any) => hasValidArtist(node));
 
         const nodes: GraphNode[] = allNodes.map((node: any) => {
           // ✅ CRITICAL FIX: Generate stable random positions based on node ID hash
@@ -141,15 +135,15 @@ export const useDataLoader = () => {
 
           return {
             id: node.id,
-            title: node.title || node.metadata?.title || node.metadata?.label || 'Unknown',
-            artist: node.artist || node.metadata?.artist || 'Unknown',
+            title: node.title || node.metadata?.title || node.metadata?.label || 'ERROR: No Track Title',
+            artist: node.artist || node.metadata?.artist || 'ERROR: No Artist (Filter Bypass)',
             artistId: node.artist_id,
             bpm: node.metadata?.bpm,
             key: node.metadata?.key,
             genre: node.metadata?.genre || node.metadata?.category || 'Electronic',
             energy: node.metadata?.energy,
             year: node.metadata?.release_year,
-            label: node.metadata?.label || node.metadata?.title || node.title || 'Unknown',
+            label: node.metadata?.label || node.metadata?.title || node.title || 'ERROR: No Label',
             connections: node.metadata?.appearance_count || 0,
             popularity: node.metadata?.popularity || 0,
             // ✅ FIX: Use stable hash-based positions instead of Math.random() to prevent LOD instability
@@ -193,26 +187,15 @@ export const useDataLoader = () => {
 
         const totalNodesReceived = (nodesData.nodes || []).length;
         const filteredOutCount = totalNodesReceived - connectedNodes.length;
-        const edgesFilteredOut = rawEdges.length - edges.length;
 
-        console.log(`📊 Data Loading Summary:`);
-        console.log(`  API Response: ${totalNodesReceived} nodes, ${rawEdges.length} edges`);
-        console.log(`  After artist filtering: ${nodesBeforeConnectivityFilter} nodes, ${edges.length} edges`);
-        console.log(`  After connectivity filtering: ${connectedNodes.length} nodes, ${edges.length} edges`);
-        console.log(`  Filtered out: ${filteredOutCount} total (${totalNodesReceived - nodesBeforeConnectivityFilter} without artists, ${isolatedNodeCount} isolated)`);
-
-        if (isolatedNodeCount > 0) {
-          console.warn(`⚠️  Removed ${isolatedNodeCount} isolated nodes with no edges`);
-        }
-        if (edgesFilteredOut > 0) {
-          console.log(`ℹ️  Filtered ${edgesFilteredOut} edges (endpoints without artists)`);
-        }
+        // DEBUG: Graph ready logging disabled (too noisy)
+        // if (process.env.NODE_ENV === 'development') {
+        //   console.log(`✅ Graph ready: ${connectedNodes.length} nodes, ${edges.length} edges (filtered ${filteredOutCount} nodes)`);
+        // }
 
         setGraphData({ nodes: connectedNodes, edges });
         applyFilters({});
         setLoading(false);
-
-        console.log(`✅ Graph ready: ${connectedNodes.length} nodes, ${edges.length} edges`);
       } catch (error) {
         console.error('❌ Failed to load graph data:', error);
         setError('Failed to load graph data. Please try again.');
@@ -235,8 +218,8 @@ export const useDataLoader = () => {
 
             return {
               id: node.id,
-              title: node.label || node.name || 'Unknown',
-              artist: node.artist || 'Unknown',
+              title: node.label || node.name || 'ERROR: No Track Title (Fallback)',
+              artist: node.artist || 'ERROR: No Artist (Fallback)',
               genre: node.type,
               x: (node.x !== undefined && node.x !== null && node.x !== 0) ? node.x : stableRandomX,
               y: (node.y !== undefined && node.y !== null && node.y !== 0) ? node.y : stableRandomY,
@@ -265,7 +248,8 @@ export const useDataLoader = () => {
           setGraphData({ nodes: connectedNodes, edges });
           applyFilters({});
           setLoading(false);
-          console.log(`✅ Fallback loaded: ${connectedNodes.length} connected nodes, ${edges.length} edges (${nodes.length - connectedNodes.length} isolated filtered)`);
+          // DEBUG: Fallback loaded logging disabled (too noisy)
+          // console.log(`✅ Fallback loaded: ${connectedNodes.length} connected nodes, ${edges.length} edges (${nodes.length - connectedNodes.length} isolated filtered)`);
         } catch (fallbackError) {
           console.error('❌ Failed to load from fallback:', fallbackError);
           setLoading(false);

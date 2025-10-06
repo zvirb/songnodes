@@ -148,6 +148,11 @@ class DatabasePipeline:
                 elif 'track_name' in item and 'artist_name' in item and 'artist_role' in item:
                     item_type = 'track_artist'
                     self.logger.debug(f"✓ Detected track-artist relationship: {item.get('artist_name')} ({item.get('artist_role')}) - {item.get('track_name')}")
+                # Check for setlist_track (playlist-track relationship) BEFORE standalone track
+                # This must come before the track check since setlist_track items also have track_name
+                elif ('setlist_name' in item or 'playlist_name' in item) and 'track_name' in item and ('track_order' in item or 'position' in item):
+                    item_type = 'setlist_track'
+                    self.logger.debug(f"✓ Detected setlist-track relationship: {item.get('setlist_name') or item.get('playlist_name')} - {item.get('track_name')}")
                 elif 'artist_name' in item and 'track_name' not in item and 'setlist_name' not in item:
                     item_type = 'artist'
                 elif 'track_name' in item:
@@ -168,6 +173,9 @@ class DatabasePipeline:
             elif item_type in ('playlist', 'setlist'):
                 self._process_playlist_item(item)
             elif item_type == 'playlist_track':
+                self._process_playlist_track_item(item)
+            elif item_type == 'setlist_track':
+                # Handle setlist-track relationships (playlists in mixesdb parlance)
                 self._process_playlist_track_item(item)
             elif item_type == 'track_adjacency':
                 self.logger.info(f"Processing adjacency: {item.get('track_1_name')} → {item.get('track_2_name')}")
@@ -323,10 +331,15 @@ class DatabasePipeline:
             self._flush_batch('playlists')
 
     def _process_playlist_track_item(self, item):
-        """Process playlist track item"""
-        playlist_name = item.get('playlist_name', '').strip()
+        """Process playlist track item (supports both playlist_name and setlist_name)"""
+        # Handle both playlist_track and setlist_track items
+        playlist_name = item.get('playlist_name') or item.get('setlist_name', '')
+        playlist_name = playlist_name.strip() if playlist_name else ''
+
         track_name = item.get('track_name', '').strip()
-        position = item.get('position')
+
+        # Handle both 'position' and 'track_order' fields
+        position = item.get('position') or item.get('track_order')
 
         if not playlist_name or not track_name or position is None:
             return
@@ -336,7 +349,7 @@ class DatabasePipeline:
             'track_name': track_name,
             'artist_name': item.get('artist_name', ''),
             'position': position,
-            'source': item.get('source', 'scraped_data')
+            'source': item.get('source', item.get('data_source', 'scraped_data'))
         })
 
         # Auto-flush when batch is full
@@ -795,17 +808,37 @@ class DatabasePipeline:
                     self.logger.info(f"Skipping duplicate playlist: {item['name']}")
                     continue
 
-            # Insert new playlist
+            # Extract validation fields for silent failure detection
+            tracklist_count = item.get('tracklist_count', item.get('total_tracks', len(item.get('tracklist', []))))
+            scrape_error = item.get('scrape_error')
+            parsing_version = item.get('parsing_version', 'unknown')
+
+            # CRITICAL: Validate tracklist count - prevent silent failures
+            if tracklist_count == 0 and scrape_error is None:
+                # Silent failure detected - generate error for database constraint compliance
+                scrape_error = f"Silent failure: 0 tracks extracted by {parsing_version}"
+                self.logger.error(
+                    f"🚨 SILENT FAILURE DETECTED: Playlist '{item['name']}' has 0 tracks with no scrape_error. "
+                    f"Source: {item.get('source')}, URL: {source_url}"
+                )
+
+            # Insert new playlist with validation fields
             txn.execute("""
-                INSERT INTO playlists (name, source, source_url, playlist_type, event_date, content_hash)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO playlists (
+                    name, source, source_url, playlist_type, event_date, content_hash,
+                    tracklist_count, scrape_error, last_scrape_attempt, parsing_version
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
             """,
                 (item['name'],
                 item.get('source', 'scraped_data'),
                 source_url,
                 item.get('playlist_type'),
                 item.get('event_date'),
-                content_hash)
+                content_hash,
+                tracklist_count,
+                scrape_error,
+                parsing_version)
             )
 
     def _insert_playlist_tracks_batch(self, txn, batch: List[Dict[str, Any]]):

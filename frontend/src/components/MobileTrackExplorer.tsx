@@ -59,11 +59,12 @@ export const MobileTrackExplorer: React.FC = () => {
 
     const query = searchQuery.toLowerCase();
     return allTracks
-      .filter(track =>
-        track.name.toLowerCase().includes(query) ||
-        track.artist.toLowerCase().includes(query) ||
-        track.genre?.toLowerCase().includes(query)
-      )
+      .filter(track => {
+        const name = track.name?.toLowerCase() || '';
+        const artist = track.artist?.toLowerCase() || '';
+        const genre = track.genre?.toLowerCase() || '';
+        return name.includes(query) || artist.includes(query) || genre.includes(query);
+      })
       .slice(0, 20); // Limit to 20 results for performance
   }, [searchQuery, allTracks]);
 
@@ -87,14 +88,14 @@ export const MobileTrackExplorer: React.FC = () => {
       // Check if current track is source or target
       if (typeof edge.source === 'string') {
         if (edge.source === currentTrackId) {
-          connectedId = typeof edge.target === 'string' ? edge.target : edge.target?.id;
+          connectedId = typeof edge.target === 'string' ? edge.target : (edge.target as any)?.id;
         } else if (edge.target === currentTrackId) {
           connectedId = edge.source;
         }
-      } else if (edge.source?.id === currentTrackId) {
-        connectedId = typeof edge.target === 'string' ? edge.target : edge.target?.id;
-      } else if (edge.target?.id === currentTrackId) {
-        connectedId = typeof edge.source === 'string' ? edge.source : edge.source?.id;
+      } else if ((edge.source as any)?.id === currentTrackId) {
+        connectedId = typeof edge.target === 'string' ? edge.target : (edge.target as any)?.id;
+      } else if ((edge.target as any)?.id === currentTrackId) {
+        connectedId = typeof edge.source === 'string' ? edge.source : (edge.source as any)?.id;
       }
 
       if (connectedId) {

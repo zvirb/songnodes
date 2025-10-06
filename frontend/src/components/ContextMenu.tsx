@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { select } from 'd3-selection';
+import { zoomIdentity } from 'd3-zoom';
+import 'd3-transition'; // Adds .transition() method to selections
 import { useStore } from '../store/useStore';
 import { Track, GraphNode } from '../types';
 import {
@@ -44,9 +47,13 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   // Store actions
   const selectNode = useStore(state => state.graph.selectNode);
   const setHoveredNode = useStore(state => state.graph.setHoveredNode);
-  const addToSetlist = useStore(state => state.setlist.addTrack);
+  const addToSetlist = useStore(state => state.setlist.addTrackToSetlist);
   const applyFilters = useStore(state => state.search.applyFilters);
   const setSelectedTool = useStore(state => state.view.setSelectedTool);
+
+  // View state for toggle indicators
+  const showLabels = useStore(state => state.viewState.showLabels);
+  const showEdges = useStore(state => state.viewState.showEdges);
 
   // Calculate menu position to keep it on screen
   const calculatePosition = useCallback(() => {
@@ -197,12 +204,82 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         break;
 
       case 'empty':
+        const graphSettings = targetData as any;
+        const currentLayoutMode = graphSettings?.forceSettings?.layoutMode || 'standard';
+
+        // Helper function to switch layout modes
+        const switchLayoutMode = (newMode: 'standard' | 'energy-genre' | 'category-horizontal') => {
+          if (graphSettings?.setForceSettings && graphSettings?.initializeSimulation) {
+            graphSettings.setForceSettings((prev: any) => ({ ...prev, layoutMode: newMode }));
+
+            // Reinitialize simulation with new mode
+            if (graphSettings.simulationRef?.current) {
+              graphSettings.simulationRef.current.stop();
+              graphSettings.initializeSimulation();
+              graphSettings.simulationRef.current.nodes(Array.from(graphSettings.enhancedNodesRef.current.values()));
+              const linkForce = graphSettings.simulationRef.current.force('link');
+              if (linkForce) {
+                linkForce.links(Array.from(graphSettings.enhancedEdgesRef.current.values()));
+              }
+              graphSettings.simulationRef.current.alpha(1).restart();
+            }
+          }
+        };
+
         items.push(
+          {
+            label: 'Layout Mode',
+            icon: <Layers size={16} />,
+            action: () => {
+              // Header - no action
+            },
+            disabled: true
+          },
+          {
+            label: currentLayoutMode === 'standard' ? '✓ Standard Layout' : 'Standard Layout',
+            action: () => {
+              switchLayoutMode('standard');
+              onClose();
+            }
+          },
+          {
+            label: currentLayoutMode === 'energy-genre' ? '✓ Energy/Genre Layout' : 'Energy/Genre Layout',
+            action: () => {
+              switchLayoutMode('energy-genre');
+              onClose();
+            }
+          },
+          {
+            label: currentLayoutMode === 'category-horizontal' ? '✓ Category Layout (Horizontal)' : 'Category Layout (Horizontal)',
+            action: () => {
+              switchLayoutMode('category-horizontal');
+              onClose();
+            }
+          },
+          { divider: true } as MenuItem,
+          {
+            label: graphSettings?.useSpriteMode ? '✓ Sprite Mode (Performance)' : 'Sprite Mode (Performance)',
+            action: () => {
+              if (graphSettings?.setUseSpriteMode) {
+                graphSettings.setUseSpriteMode(!graphSettings.useSpriteMode);
+              }
+              onClose();
+            }
+          },
+          { divider: true } as MenuItem,
           {
             label: 'Reset View',
             icon: <Layers size={16} />,
             action: () => {
-              // TODO: Reset viewport
+              // Reset viewport to centered view
+              if (graphSettings?.zoomBehaviorRef?.current && graphSettings?.containerRef?.current) {
+                const container = graphSettings.containerRef.current;
+                const zoomHandler = graphSettings.zoomBehaviorRef.current;
+                const selection = (select as any)(container);
+                selection.transition()
+                  .duration(500)
+                  .call(zoomHandler.transform, zoomIdentity);
+              }
               onClose();
             }
           },
@@ -222,20 +299,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               onClose();
             }
           },
-          {
-            label: 'Hide Labels',
-            action: () => {
-              useStore.getState().view.toggleLabels();
-              onClose();
-            }
-          },
-          {
-            label: 'Hide Edges',
-            action: () => {
-              useStore.getState().view.toggleEdges();
-              onClose();
-            }
-          }
+          // Labels and edges permanently enabled - toggles removed
         );
         break;
 

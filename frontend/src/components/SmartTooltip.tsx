@@ -463,7 +463,7 @@ export const useSmartTooltip = () => {
   } | null>(null);
 
   // Store actions for tooltip interactions
-  const addToSetlist = useStore(state => state.setlist.addTrack);
+  const addToSetlist = useStore(state => state.setlist.addTrackToSetlist);
   const selectNode = useStore(state => state.graph.selectNode);
 
   const showTooltip = useCallback((

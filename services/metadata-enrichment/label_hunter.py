@@ -25,6 +25,7 @@ from urllib.parse import quote_plus
 
 import httpx
 from bs4 import BeautifulSoup
+from abbreviation_expander import get_abbreviation_expander
 
 logger = structlog.get_logger(__name__)
 
@@ -113,21 +114,21 @@ class LabelHunter:
 
             # Check if label contains abbreviations and expand if needed
             label_text = parsed_label.label_name
-            search_terms = [label_text]  # Always include original
+            expander = get_abbreviation_expander()
 
-            if self._is_abbreviation(label_text):
+            # Get all search variants (original + expansions + stripped)
+            search_terms = await expander.get_search_variants(
+                label_text,
+                context="EDM record label"
+            )
+
+            if len(search_terms) > 1:
                 logger.info(
-                    "🔍 Abbreviation detected in label, expanding...",
-                    label=label_text
+                    "✅ Generated search variants for label",
+                    original=label_text,
+                    variants=search_terms,
+                    count=len(search_terms)
                 )
-                expansions = await self._expand_abbreviation(label_text)
-                if expansions:
-                    search_terms.extend(expansions)
-                    logger.info(
-                        "✅ Will search with expanded terms",
-                        original=label_text,
-                        expansions=expansions
-                    )
 
             # Store search terms for downstream use
             parsed_label.search_terms = search_terms
@@ -250,159 +251,31 @@ class LabelHunter:
 
         return None
 
-    def _is_abbreviation(self, text: str) -> bool:
-        """
-        Detect if text is likely an abbreviation
-
-        Examples:
-            "Kft." -> True (short with period)
-            "Ltd." -> True
-            "Inc." -> True
-            "GmbH" -> True (German company suffix)
-            "Armada" -> False (normal word)
-            "Gold Music Kft." -> True (contains abbreviation)
-        """
-        # Check for periods (strong signal)
-        if '.' in text:
-            # Check if it's a short word with period(s)
-            words = text.split()
-            for word in words:
-                if '.' in word and len(word.replace('.', '')) <= 6:
-                    return True
-
-        # Check for common company suffixes (especially non-English)
-        company_suffixes = ['gmbh', 'kft', 'llc', 'ltd', 'inc', 's.a.', 'ag', 'bv', 'nv', 'oy']
-        text_lower = text.lower()
-
-        if any(suffix in text_lower for suffix in company_suffixes):
-            return True
-
-        return False
-
-    async def _expand_abbreviation(self, abbreviation: str) -> List[str]:
-        """
-        Use web search to expand abbreviations in EDM context
-
-        Args:
-            abbreviation: Text containing abbreviation (e.g., "Kft.")
-
-        Returns:
-            List of possible expansions
-        """
-        try:
-            # Extract just the abbreviated part
-            words = abbreviation.split()
-            abbrev_word = None
-
-            # Find the word with period or known suffix
-            for word in words:
-                if '.' in word or word.lower() in ['kft', 'gmbh', 'llc', 'ltd', 'inc']:
-                    abbrev_word = word
-                    break
-
-            if not abbrev_word:
-                return []
-
-            # Build search query
-            search_query = f"{abbreviation} EDM record label full name"
-
-            logger.info(
-                "🔍 Searching for abbreviation expansion",
-                abbreviation=abbreviation,
-                search_query=search_query
-            )
-
-            # Use DuckDuckGo HTML search (no API key required)
-            search_url = f"https://html.duckduckgo.com/html/?q={quote_plus(search_query)}"
-
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(
-                    search_url,
-                    headers={
-                        'User-Agent': self.user_agents[0],
-                        'Accept': 'text/html',
-                    }
-                )
-
-                if response.status_code != 200:
-                    logger.debug("Web search failed", status=response.status_code)
-                    return []
-
-                soup = BeautifulSoup(response.text, 'html.parser')
-
-                # Extract text from search results
-                expansions = []
-
-                # Look for result snippets
-                snippets = soup.select('.result__snippet')[:5]
-
-                for snippet in snippets:
-                    text = snippet.get_text()
-
-                    # Look for patterns like "Kft. stands for X" or "Kft. is X"
-                    # Also look for the abbreviation followed by full name in parentheses
-
-                    # Pattern 1: "Kft. is/stands for/means X"
-                    pattern1 = re.search(
-                        rf"{re.escape(abbrev_word)}\s+(?:is|stands for|means)\s+([A-Z][a-zA-Z\s]+)",
-                        text,
-                        re.IGNORECASE
-                    )
-                    if pattern1:
-                        expansion = pattern1.group(1).strip()
-                        if len(expansion) > 3 and expansion not in expansions:
-                            expansions.append(expansion)
-
-                    # Pattern 2: Look for capitalized words near abbreviation
-                    # This catches "Gold Music Kft. (Korlátolt Felelősségű Társaság)"
-                    pattern2 = re.search(
-                        rf"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+{re.escape(abbrev_word)}",
-                        text
-                    )
-                    if pattern2:
-                        expansion = pattern2.group(1).strip()
-                        if len(expansion) > 3 and expansion not in expansions:
-                            expansions.append(expansion)
-
-                if expansions:
-                    logger.info(
-                        "✅ Found abbreviation expansions",
-                        abbreviation=abbreviation,
-                        expansions=expansions
-                    )
-                else:
-                    logger.debug(
-                        "No abbreviation expansions found",
-                        abbreviation=abbreviation
-                    )
-
-                return expansions[:3]  # Return top 3 matches
-
-        except Exception as e:
-            logger.warning(
-                "Abbreviation expansion search failed",
-                error=str(e),
-                abbreviation=abbreviation
-            )
-            return []
-
     def _is_likely_label(self, text: str) -> bool:
         """
         Filter out common non-label bracket contents
 
         Examples of NON-labels:
             "Original Mix", "Radio Edit", "Extended", "Clean", "feat. Artist"
+            "ft. Someone" (featuring)
+
+        Examples of LABELS (should NOT be filtered):
+            "Gold Music Kft." (company suffix, not featuring)
+            "XYZ Ltd." (company suffix)
         """
         text_lower = text.lower()
 
         # Common non-label terms
-        non_labels = [
-            'mix', 'edit', 'version', 'remix', 'original', 'radio',
-            'extended', 'club', 'dub', 'instrumental', 'acapella',
-            'clean', 'explicit', 'feat', 'ft.', 'vs', 'mashup'
+        # Use word boundaries to avoid false positives like "Kft." matching "ft."
+        non_label_patterns = [
+            r'\bmix\b', r'\bedit\b', r'\bversion\b', r'\bremix\b', r'\boriginal\b', r'\bradio\b',
+            r'\bextended\b', r'\bclub\b', r'\bdub\b', r'\binstrumental\b', r'\bacapella\b',
+            r'\bclean\b', r'\bexplicit\b', r'\bfeat\b', r'\bvs\b', r'\bmashup\b',
+            # Special case: "ft." or "ft " (featuring) but NOT "kft." or other company suffixes
+            r'(?<![a-z])ft\.?\s'
         ]
 
-        return not any(term in text_lower for term in non_labels)
+        return not any(re.search(pattern, text_lower) for pattern in non_label_patterns)
 
     async def _search_beatport(
         self,
@@ -684,36 +557,36 @@ class LabelHunter:
             from sqlalchemy import text
 
             # Update metadata->original_data->label
+            # Note: Nest jsonb_set calls since PostgreSQL doesn't allow multiple assignments to same column
             query = text("""
                 UPDATE tracks
                 SET
                     metadata = jsonb_set(
-                        metadata,
-                        '{original_data,label}',
-                        to_jsonb(:label::text),
-                        true
-                    ),
-                    metadata = jsonb_set(
-                        metadata,
+                        jsonb_set(
+                            metadata,
+                            '{original_data,label}',
+                            to_jsonb(CAST(:label AS text)),
+                            true
+                        ),
                         '{label_hunter}',
                         jsonb_build_object(
-                            'source', :source::text,
-                            'confidence', :confidence::numeric,
+                            'source', CAST(:source AS text),
+                            'confidence', CAST(:confidence AS numeric),
                             'discovered_at', CURRENT_TIMESTAMP
                         ),
                         true
                     ),
                     updated_at = CURRENT_TIMESTAMP
-                WHERE id = :track_id
+                WHERE id = CAST(:track_id AS uuid)
             """)
 
             await db_session.execute(
                 query,
                 {
-                    'track_id': track_id,
-                    'label': label_candidate.label_name,
-                    'source': label_candidate.source,
-                    'confidence': label_candidate.confidence
+                    'track_id': str(track_id),
+                    'label': str(label_candidate.label_name),
+                    'source': str(label_candidate.source),
+                    'confidence': float(label_candidate.confidence)
                 }
             )
             await db_session.commit()

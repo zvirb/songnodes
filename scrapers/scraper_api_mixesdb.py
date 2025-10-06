@@ -75,11 +75,12 @@ async def scrape_url(request: ScrapeRequest):
             timeout=900  # 15 minute timeout to accommodate download delays and parsing
         )
 
-        # Log output for debugging
+        # Log output for debugging (only first/last portions to avoid log spam)
         if result.stdout:
-            logger.info(f"Spider stdout: {result.stdout[:500]}")
+            logger.info(f"Spider stdout (first 500 chars): {result.stdout[:500]}")
         if result.stderr:
-            logger.warning(f"Spider stderr: {result.stderr[:500]}")
+            logger.warning(f"Spider stderr (first 500 chars): {result.stderr[:500]}")
+            logger.info(f"Spider stderr (last 1000 chars): {result.stderr[-1000:]}")
 
         # Check if spider ran successfully
         if result.returncode != 0:
@@ -94,29 +95,47 @@ async def scrape_url(request: ScrapeRequest):
                 "returncode": result.returncode
             }
 
-        # Parse Scrapy stats from output
+        # Parse Scrapy stats from FULL stderr (Scrapy logs to stderr, not stdout!)
+        # BUG FIX #1: Stats are at the END of output
+        # BUG FIX #2: Scrapy logs go to STDERR, not stdout!
         tracks_count = 0
         items_scraped = 0
+        items_processed_db = 0  # From database pipeline stats
 
-        # Look for stats in stdout (Scrapy prints stats at the end)
-        if result.stdout:
-            # Extract item_scraped_count from Scrapy stats
-            for line in result.stdout.split('\n'):
-                if 'item_scraped_count' in line:
-                    try:
-                        # Format: 'item_scraped_count': 123,
-                        items_scraped = int(line.split(':')[1].strip().rstrip(','))
-                    except:
-                        pass
+        # Combine stdout and stderr for parsing (check both just in case)
+        combined_output = (result.stdout or "") + "\n" + (result.stderr or "")
+
+        # Look for stats in FULL combined output
+        for line in combined_output.split('\n'):
+            if 'item_scraped_count' in line:
+                try:
+                    # Format: 'item_scraped_count': 123,
+                    items_scraped = int(line.split(':')[1].strip().rstrip(','))
+                    logger.info(f"✅ Parsed item_scraped_count: {items_scraped}")
+                except Exception as e:
+                    logger.warning(f"Failed to parse item_scraped_count: {e}")
+
+            # Also extract database pipeline stats (more accurate for actual DB inserts)
+            if 'Total items processed:' in line:
+                try:
+                    # Format: "Total items processed: 153"
+                    items_processed_db = int(line.split(':')[1].strip())
+                    logger.info(f"✅ Parsed database items processed: {items_processed_db}")
+                except Exception as e:
+                    logger.warning(f"Failed to parse database items: {e}")
+
+        # Use database pipeline count if available (more accurate), fallback to scrapy stats
+        final_count = items_processed_db if items_processed_db > 0 else items_scraped
 
         return {
             "status": "success",
             "task_id": task_id,
             "url": request.url,
             "mode": "url" if request.url else "targeted",
-            "items_processed": items_scraped,
-            "tracks_count": items_scraped,  # For backward compatibility
-            "message": f"Spider executed, {items_scraped} items processed through database pipeline"
+            "items_processed": final_count,
+            "tracks_count": items_scraped,  # Scrapy count (includes all items)
+            "db_items": items_processed_db,  # Database pipeline count (actual inserts)
+            "message": f"Spider executed, {final_count} items processed ({items_processed_db} via database pipeline, {items_scraped} total scraped)"
         }
 
     except subprocess.TimeoutExpired:

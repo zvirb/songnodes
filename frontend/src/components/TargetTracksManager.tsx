@@ -310,9 +310,12 @@ const TargetTracksManager: React.FC = () => {
 
   // Filter tracks based on search and priority
   const filteredTracks = tracks?.filter(track => {
+    const query = searchQuery.toLowerCase();
+    const title = track.title?.toLowerCase() || '';
+    const artist = track.artist?.toLowerCase() || '';
     const matchesSearch = !searchQuery ||
-      track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      track.artist.toLowerCase().includes(searchQuery.toLowerCase());
+      title.includes(query) ||
+      artist.includes(query);
 
     const matchesPriority = selectedPriority === 'all' || track.priority === selectedPriority;
 

@@ -144,6 +144,7 @@ services:
     - 8001:8001
     volumes:
     - ./scrapers/target_tracks_for_scraping.json:/app/target_tracks_for_scraping.json:ro
+    - ./scrapers:/app/scrapers:ro
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -152,6 +153,7 @@ services:
       RABBITMQ_PORT: 5672
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
+      SCRAPERS_DIR: /app/scrapers
     depends_on:
     - postgres
     - redis
@@ -785,6 +787,12 @@ services:
       # Spotify API credentials from .env
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      # RapidAPI credentials (Sonoteller.ai)
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+      RAPIDAPI_APPLICATION: ${RAPIDAPI_APPLICATION}
+      RAPIDAPI_HOST: ${RAPIDAPI_HOST:-rapidapi.com}
+      SONOTELLER_RAPIDAPI_KEY: ${SONOTELLER_RAPIDAPI_KEY}
+      SONOTELLER_MONTHLY_LIMIT: ${SONOTELLER_MONTHLY_LIMIT:-5}
       # NOTE: External API keys (Spotify, Discogs, Last.fm, etc.) should be configured
       # through the frontend Settings panel. They are stored encrypted in the database.
       # Environment variables are only used as fallback if database keys are not set.
@@ -1573,6 +1581,7 @@ services:
         condition: service_healthy
     networks:
     - musicdb-frontend
+    - musicdb-monitoring
     healthcheck:
       test:
       - CMD

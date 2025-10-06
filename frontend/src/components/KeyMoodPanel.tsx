@@ -38,7 +38,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
   // Store state and actions
   const graphData = useStore(state => state.graphData);
   const selectNode = useStore(state => state.graph.selectNode);
-  const addToSetlist = useStore(state => state.setlist.addTrack);
+  const addToSetlist = useStore(state => state.setlist.addTrackToSetlist);
   const applyFilters = useStore(state => state.search.applyFilters);
 
   // Handle key selection from wheel
@@ -117,11 +117,11 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
             className="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Music size={20} />
-              <TrendingUp size={16} />
+              <Music />
+              <TrendingUp />
             </div>
             <span className="font-semibold">Key & Mood Analysis</span>
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {isExpanded ? <ChevronUp /> : <ChevronDown />}
           </button>
         </div>
 
@@ -176,7 +176,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
                 onChange={(e) => setUsePlaylistData(e.target.checked)}
                 className="rounded"
               />
-              <Target size={14} />
+              <Target />
               <span>Prioritize playlist connections</span>
             </label>
 
@@ -187,7 +187,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
                 onChange={(e) => setShowHarmonicSuggestions(e.target.checked)}
                 className="rounded"
               />
-              <Zap size={14} />
+              <Zap />
               <span>Show harmonic suggestions</span>
             </label>
 
@@ -241,7 +241,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
           {/* Analysis Summary */}
           <div className="bg-white/5 rounded-lg border border-white/10 p-4">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <BarChart3 size={16} />
+              <BarChart3 />
               Quick Stats
             </h4>
 
@@ -284,7 +284,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
                 }}
                 className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 text-sm font-medium hover:bg-blue-500/30 transition-colors flex items-center gap-1"
               >
-                <Shuffle size={12} />
+                <Shuffle />
                 Shuffle View
               </button>
 
@@ -295,7 +295,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
                 }}
                 className="px-3 py-1 bg-gray-500/20 border border-gray-500/30 rounded text-gray-400 text-sm font-medium hover:bg-gray-500/30 transition-colors flex items-center gap-1"
               >
-                <RotateCw size={12} />
+                <RotateCw />
                 Reset Filters
               </button>
 
@@ -308,7 +308,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
                 }}
                 className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center gap-1"
               >
-                <Zap size={12} />
+                <Zap />
                 High Energy
               </button>
 
@@ -321,7 +321,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
                 }}
                 className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded text-purple-400 text-sm font-medium hover:bg-purple-500/30 transition-colors flex items-center gap-1"
               >
-                <Heart size={12} />
+                <Heart />
                 Mellow
               </button>
             </div>

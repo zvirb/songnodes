@@ -3,11 +3,6 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/global.css';
 
-// ⚠️ CRITICAL: Check localStorage BEFORE any React code runs
-console.log('🔍 [MAIN.TSX] Checking localStorage at React entry point...');
-const mainTsxStorage = localStorage.getItem('songnodes-store');
-console.log('🔍 [MAIN.TSX] localStorage:', mainTsxStorage ? mainTsxStorage.substring(0, 200) + '...' : 'NULL');
-
 // Disable right-click context menu for cleaner UX
 document.addEventListener('contextmenu', (e) => {
   if (e.target instanceof HTMLCanvasElement) {
@@ -39,9 +34,11 @@ function hideLoadingScreen() {
     }, 300);
   }
 
-  // Log performance metrics
-  const endTime = performance.now();
-  console.log(`🎵 SongNodes DJ Interface loaded in ${Math.round(endTime - startTime)}ms`);
+  // Log performance metrics in development
+  if (process.env.NODE_ENV === 'development') {
+    const endTime = performance.now();
+    console.log(`🎵 SongNodes loaded in ${Math.round(endTime - startTime)}ms`);
+  }
 }
 
 // Mount the app
@@ -58,8 +55,8 @@ root.render(
 // Hide loading screen after initial render
 setTimeout(hideLoadingScreen, 100);
 
-// Performance monitoring (basic timing)
-if (process.env.NODE_ENV === 'development') {
-  // Simple performance logging without web-vitals
-  console.log('🎵 SongNodes DJ Interface - Development mode enabled');
+// Development mode logging
+if (import.meta.env.DEV) {
+  console.log('🎵 SongNodes - Development mode');
+  console.log(`📦 Vite: ${import.meta.env.MODE}`);
 }

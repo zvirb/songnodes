@@ -40,7 +40,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
 
       for (const service of services) {
         try {
-          const response = await api.get(`/music-search/${service}`, {
+          const response = await (api as any).get(`/music-search/${service}`, {
             params: { q: searchQuery, limit: 20 }
           });
 
