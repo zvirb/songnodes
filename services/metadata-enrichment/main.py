@@ -399,11 +399,21 @@ async def process_pending_enrichments():
     try:
         async with connection_manager.session_factory() as session:
             # Find tracks that need enrichment
+            # Priority: retriable failures (circuit breaker) > pending > failed with retries < 3
             query = text("""
                 SELECT t.id, t.title,
                        COALESCE(ta.artist_names, 'Unknown') as artist_name,
                        t.spotify_id, t.isrc, t.metadata->>'musicbrainz_id' as musicbrainz_id,
-                       es.status, es.last_attempt
+                       es.status, es.last_attempt,
+                       -- Priority score: retriable failures first
+                       CASE
+                           WHEN es.status = 'failed' AND es.is_retriable = true THEN 1
+                           WHEN es.status = 'pending' THEN 2
+                           WHEN es.status IS NULL THEN 3
+                           WHEN es.status = 'failed' AND es.retry_count < 3 THEN 4
+                           WHEN es.status = 'partial' THEN 5
+                           ELSE 6
+                       END as priority
                 FROM tracks t
                 LEFT JOIN (
                     SELECT ta.track_id, STRING_AGG(a.name, ', ') as artist_names
@@ -416,10 +426,12 @@ async def process_pending_enrichments():
                 WHERE (
                     es.status IS NULL
                     OR es.status = 'pending'
+                    OR (es.status = 'failed' AND es.is_retriable = true)
                     OR (es.status = 'failed' AND es.retry_count < 3)
                     OR (es.status = 'partial' AND es.last_attempt < NOW() - INTERVAL '24 hours')
                 )
                 AND (t.metadata IS NULL OR jsonb_array_length(COALESCE(t.metadata->'enrichment_sources', '[]'::jsonb)) < 2)
+                ORDER BY priority ASC, es.last_attempt ASC NULLS FIRST
                 LIMIT 100
             """)
 
@@ -664,6 +676,8 @@ async def trigger_enrichment(limit: int = 50):
     """
     Manually trigger enrichment for pending tracks
 
+    Prioritizes retriable failures (circuit breaker errors) before new pending tracks
+
     Args:
         limit: Number of tracks to enrich (default 50, max 200)
     """
@@ -685,23 +699,75 @@ async def trigger_enrichment(limit: int = 50):
 
         return {
             "status": "completed",
-            "message": f"Enrichment triggered for up to {limit} tracks",
+            "message": f"Enrichment triggered for up to {limit} tracks (prioritizing retriable failures)",
             "correlation_id": correlation_id
         }
     except Exception as e:
         logger.error("Manual enrichment trigger failed", error=str(e))
         raise HTTPException(status_code=500, detail=f"Enrichment failed: {str(e)}")
 
+@app.post("/enrich/reset-circuit-breaker/{service}")
+async def reset_circuit_breaker_failures(service: str):
+    """
+    Reset circuit breaker failures for a specific service
+
+    Moves failed tracks with circuit breaker errors back to 'pending' status
+    with reset retry counts, allowing them to be enriched when the service is healthy.
+
+    Args:
+        service: Service name (spotify, musicbrainz, discogs, lastfm)
+    """
+    valid_services = ['spotify', 'musicbrainz', 'discogs', 'lastfm']
+    if service not in valid_services:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid service. Must be one of: {', '.join(valid_services)}"
+        )
+
+    try:
+        async with connection_manager.session_factory() as session:
+            # Use the database function to reset failures
+            query = text("SELECT reset_circuit_breaker_failures(:service)")
+            result = await session.execute(query, {'service': service})
+            updated_count = result.scalar()
+            await session.commit()
+
+            logger.info(
+                "Circuit breaker failures reset",
+                service=service,
+                tracks_reset=updated_count
+            )
+
+            return {
+                "status": "success",
+                "service": service,
+                "tracks_reset": updated_count,
+                "message": f"Reset {updated_count} tracks with circuit breaker failures for {service}"
+            }
+    except Exception as e:
+        logger.error("Failed to reset circuit breaker failures", error=str(e), service=service)
+        raise HTTPException(status_code=500, detail=f"Reset failed: {str(e)}")
+
 async def process_pending_enrichments_manual(limit: int, correlation_id: str):
     """Process tracks pending enrichment (manual trigger)"""
     try:
         async with connection_manager.session_factory() as session:
             # Find tracks that need enrichment
+            # Priority: retriable failures (circuit breaker) > pending > failed with retries < 3
             query = text(f"""
                 SELECT t.id, t.title,
                        COALESCE(ta.artist_names, 'Unknown') as artist_name,
                        t.spotify_id, t.isrc, t.metadata->>'musicbrainz_id' as musicbrainz_id,
-                       es.status, es.last_attempt
+                       es.status, es.last_attempt,
+                       -- Priority score: retriable failures first
+                       CASE
+                           WHEN es.status = 'failed' AND es.is_retriable = true THEN 1
+                           WHEN es.status = 'pending' THEN 2
+                           WHEN es.status IS NULL THEN 3
+                           WHEN es.status = 'failed' AND es.retry_count < 3 THEN 4
+                           WHEN es.status = 'partial' THEN 5
+                           ELSE 6
+                       END as priority
                 FROM tracks t
                 LEFT JOIN (
                     SELECT ta.track_id, STRING_AGG(a.name, ', ') as artist_names
@@ -714,10 +780,12 @@ async def process_pending_enrichments_manual(limit: int, correlation_id: str):
                 WHERE (
                     es.status IS NULL
                     OR es.status = 'pending'
+                    OR (es.status = 'failed' AND es.is_retriable = true)
                     OR (es.status = 'failed' AND es.retry_count < 3)
                     OR (es.status = 'partial' AND es.last_attempt < NOW() - INTERVAL '24 hours')
                 )
                 AND (t.metadata IS NULL OR jsonb_array_length(COALESCE(t.metadata->'enrichment_sources', '[]'::jsonb)) < 2)
+                ORDER BY priority ASC, es.last_attempt ASC NULLS FIRST
                 LIMIT {limit}
             """)
 
@@ -751,8 +819,16 @@ async def process_pending_enrichments_manual(limit: int, correlation_id: str):
                 success_count = 0
                 for idx, r in enumerate(results):
                     if isinstance(r, EnrichmentResult):
+                        logger.debug(f"Result {idx}: status={r.status}, sources={len(r.sources_used)}")
                         if r.status == EnrichmentStatus.COMPLETED:
                             success_count += 1
+                        else:
+                            track = batch[idx]
+                            logger.warning(
+                                f"Track enrichment not completed: status={r.status}",
+                                track_id=str(track.id),
+                                status=r.status.value
+                            )
                     elif isinstance(r, Exception):
                         track = batch[idx]
                         logger.error(
@@ -794,13 +870,34 @@ async def get_enrichment_stats():
                 SELECT
                     status,
                     COUNT(*) as count,
-                    AVG(retry_count) as avg_retries
+                    AVG(retry_count) as avg_retries,
+                    COUNT(CASE WHEN is_retriable = true THEN 1 END) as retriable_count
                 FROM enrichment_status
                 GROUP BY status
             """)
 
             result = await session.execute(enrichment_stats_query)
             enrichment_stats = result.fetchall()
+
+            # Retriable failures summary
+            retriable_summary_query = text("""
+                SELECT
+                    CASE
+                        WHEN error_message LIKE '%spotify%' THEN 'spotify'
+                        WHEN error_message LIKE '%musicbrainz%' THEN 'musicbrainz'
+                        WHEN error_message LIKE '%discogs%' THEN 'discogs'
+                        ELSE 'other'
+                    END as service,
+                    COUNT(*) as failure_count,
+                    MAX(last_attempt) as newest_attempt
+                FROM enrichment_status
+                WHERE status = 'failed' AND is_retriable = true
+                GROUP BY 1
+                ORDER BY failure_count DESC
+            """)
+
+            result = await session.execute(retriable_summary_query)
+            retriable_summary = result.fetchall()
 
             # Artist attribution statistics
             artist_stats_query = text("""
@@ -915,9 +1012,18 @@ async def get_enrichment_stats():
                     {
                         "status": row.status,
                         "count": row.count,
-                        "avg_retries": float(row.avg_retries) if row.avg_retries else 0
+                        "avg_retries": float(row.avg_retries) if row.avg_retries else 0,
+                        "retriable_count": row.retriable_count
                     }
                     for row in enrichment_stats
+                ],
+                "retriable_failures": [
+                    {
+                        "service": row.service,
+                        "failure_count": row.failure_count,
+                        "newest_attempt": row.newest_attempt.isoformat() if row.newest_attempt else None
+                    }
+                    for row in retriable_summary
                 ],
                 "timestamp": datetime.now().isoformat()
             }
@@ -937,3 +1043,366 @@ if __name__ == "__main__":
         log_level="info",
         access_log=True
     )
+# ============================================================================
+# MULTI-TIER ARTIST RESOLVER ENDPOINT
+# ============================================================================
+
+@app.post("/enrich/multi-tier-resolve")
+async def trigger_multi_tier_resolution(limit: int = 50):
+    """
+    Trigger multi-tier artist resolution for failed tracks
+
+    This uses a sophisticated 3-tier approach:
+    - Tier 1: Internal DB (artist-label map, mashup component lookup)
+    - Tier 2: External sources (1001Tracklists, Discogs, MixesDB)
+    - Tier 3: Feedback loop (enriches internal DB with findings)
+
+    Args:
+        limit: Number of failed tracks to process (default 50, max 200)
+    """
+    if limit > 200:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum limit is 200 tracks per request"
+        )
+
+    logger.info(f"🚀 Multi-tier artist resolution triggered for {limit} tracks")
+
+    try:
+        # Import modules
+        from multi_tier_artist_resolver import enrich_failed_tracks_with_multi_tier_resolver
+        from external_scraper_clients import create_scraper_clients
+
+        # Initialize scraper clients (with fallback to direct DB)
+        scraper_clients = await create_scraper_clients(
+            db_session_factory=connection_manager.session_factory,
+            use_fallback=True
+        )
+
+        # Run the batch enrichment with all available clients
+        stats = await enrich_failed_tracks_with_multi_tier_resolver(
+            db_session_factory=connection_manager.session_factory,
+            discogs_client=discogs_client,
+            tracklists_1001_client=scraper_clients.get('tracklists_1001'),
+            mixesdb_client=scraper_clients.get('mixesdb'),
+            limit=limit
+        )
+
+        logger.info(
+            "✅ Multi-tier resolution completed",
+            **stats,
+            external_sources_available={
+                '1001tracklists': scraper_clients.get('tracklists_1001') is not None,
+                'mixesdb': scraper_clients.get('mixesdb') is not None,
+                'fallback': scraper_clients.get('fallback') is not None
+            }
+        )
+
+        return {
+            "status": "completed",
+            "message": f"Processed {stats['processed']} tracks via multi-tier resolution",
+            "stats": stats,
+            "success_rate": f"{stats['success'] / max(stats['processed'], 1) * 100:.1f}%",
+            "sources_used": {
+                "internal_db": True,
+                "1001tracklists": scraper_clients.get('tracklists_1001') is not None,
+                "mixesdb": scraper_clients.get('mixesdb') is not None,
+                "discogs": discogs_client is not None,
+                "fallback_enabled": scraper_clients.get('fallback') is not None
+            }
+        }
+
+    except Exception as e:
+        logger.error("Multi-tier resolution failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Multi-tier resolution failed: {str(e)}"
+        )
+
+
+# ============================================================================
+# TIER 0: LABEL HUNTER ENDPOINT
+# ============================================================================
+
+@app.post("/enrich/hunt-labels")
+async def trigger_label_hunter(limit: int = 100, skip_with_labels: bool = True):
+    """
+    Trigger Tier 0 label hunting for tracks with missing labels
+
+    This is a PRE-enrichment step that finds missing record labels before
+    attempting artist resolution. Finding the label dramatically improves
+    downstream enrichment success rates.
+
+    Args:
+        limit: Number of tracks to process (default 100, max 500)
+        skip_with_labels: Skip tracks that already have labels (default true)
+
+    Sources:
+        - Title parsing ([Label] brackets)
+        - Beatport (EDM specialist)
+        - Juno Download (broad coverage)
+        - Traxsource (house/techno)
+
+    Returns:
+        Stats on labels found and updated
+    """
+    if limit > 500:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum limit is 500 tracks per request"
+        )
+
+    logger.info(f"🏷️ Label Hunter triggered for {limit} tracks")
+
+    try:
+        from label_hunter import enrich_tracks_with_labels
+
+        stats = await enrich_tracks_with_labels(
+            db_session_factory=connection_manager.session_factory,
+            limit=limit,
+            skip_with_labels=skip_with_labels,
+            use_musicbrainz=True  # Enable Priority 2 (MusicBrainz API)
+        )
+
+        logger.info("✅ Label hunting completed", **stats)
+
+        success_rate = (stats['labels_updated'] / max(stats['processed'], 1)) * 100
+
+        return {
+            "status": "completed",
+            "message": f"Processed {stats['processed']} tracks, found {stats['labels_found']} labels",
+            "stats": stats,
+            "success_rate": f"{success_rate:.1f}%"
+        }
+
+    except Exception as e:
+        logger.error("Label hunting failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Label hunting failed: {str(e)}"
+        )
+
+
+# ============================================================================
+# COOL-DOWN QUEUE ENDPOINTS
+# ============================================================================
+
+@app.post("/enrich/cooldown/migrate")
+async def migrate_to_cooldown_queue(limit: int = 100):
+    """
+    Migrate non-retriable failed tracks to cool-down queue
+
+    This moves tracks from "failed" status to "pending_re_enrichment"
+    with a future retry timestamp. The system will automatically retry
+    these tracks after the cool-down period (default 90 days).
+
+    This acknowledges that tracks may be unidentifiable TODAY but
+    identifiable in the future when they get official releases.
+
+    Args:
+        limit: Maximum tracks to migrate (default 100, max 500)
+
+    Returns:
+        Migration statistics
+    """
+    if limit > 500:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum limit is 500 tracks per request"
+        )
+
+    logger.info(f"🔄 Migrating failed tracks to cool-down queue (limit: {limit})")
+
+    try:
+        from cooldown_queue import move_failed_to_cooldown
+
+        stats = await move_failed_to_cooldown(
+            db_session_factory=connection_manager.session_factory,
+            max_tracks=limit
+        )
+
+        logger.info("✅ Migration to cool-down queue completed", **stats)
+
+        return {
+            "status": "completed",
+            "message": f"Migrated {stats['migrated']} tracks to cool-down queue",
+            "stats": stats
+        }
+
+    except Exception as e:
+        logger.error("Migration to cool-down queue failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Migration failed: {str(e)}"
+        )
+
+
+@app.post("/enrich/cooldown/process")
+async def process_cooldown_queue_endpoint(limit: int = 50):
+    """
+    Process cool-down queue (retry tracks that are ready)
+
+    This retrieves tracks that have completed their cool-down period
+    and resets them to "pending" status for re-enrichment.
+
+    Should be called periodically (e.g., daily cron job) to automatically
+    retry tracks after their cool-down period expires.
+
+    Args:
+        limit: Maximum tracks to process (default 50, max 200)
+
+    Returns:
+        Processing statistics
+    """
+    if limit > 200:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum limit is 200 tracks per request"
+        )
+
+    logger.info(f"⏳ Processing cool-down queue (limit: {limit})")
+
+    try:
+        from cooldown_queue import process_cooldown_queue
+
+        stats = await process_cooldown_queue(
+            db_session_factory=connection_manager.session_factory,
+            enrichment_pipeline=None,  # Not needed - just resetting to pending
+            limit=limit
+        )
+
+        logger.info("✅ Cool-down queue processing completed", **stats)
+
+        return {
+            "status": "completed",
+            "message": f"Reset {stats['reset_to_pending']} tracks to pending",
+            "stats": stats,
+            "note": "Tracks reset to pending will be processed in next enrichment cycle"
+        }
+
+    except Exception as e:
+        logger.error("Cool-down queue processing failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Cool-down queue processing failed: {str(e)}"
+        )
+
+
+@app.get("/enrich/cooldown/stats")
+async def get_cooldown_stats():
+    """
+    Get statistics about the cool-down queue
+
+    Returns:
+        Current cool-down queue statistics including:
+        - Total tracks in queue
+        - Tracks ready for retry now
+        - Tracks still waiting
+        - Next retry time
+        - Average retry attempts
+    """
+    try:
+        from cooldown_queue import CoolDownQueue
+
+        queue = CoolDownQueue()
+
+        async with connection_manager.session_factory() as session:
+            stats = await queue.get_cooldown_stats(session)
+
+        return {
+            "status": "success",
+            "cooldown_queue": stats
+        }
+
+    except Exception as e:
+        logger.error("Failed to get cool-down stats", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get stats: {str(e)}"
+        )
+
+
+# ============================================================================
+# PROBABILISTIC MATCHER ENDPOINTS (TIER 2)
+# ============================================================================
+
+@app.post("/enrich/probabilistic-match")
+async def trigger_probabilistic_matching(
+    limit: int = 50,
+    min_confidence: float = 0.70
+):
+    """
+    Trigger Tier 2 probabilistic matching for unknown artists
+
+    Uses splink (Fellegi-Sunter model) with Songstats API data to identify
+    artists for tracks with "ID - ID" or unknown artist names.
+
+    This solves the "promo/unreleased track" problem by analyzing DJ set
+    context and co-occurrence patterns.
+
+    Args:
+        limit: Maximum tracks to process (default 50, max 100)
+        min_confidence: Minimum probability threshold (default 0.70)
+
+    Returns:
+        Matching statistics including high/medium/low confidence matches
+    """
+    if limit > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum limit is 100 tracks per request (probabilistic matching is computationally expensive)"
+        )
+
+    if min_confidence < 0.60 or min_confidence > 0.95:
+        raise HTTPException(
+            status_code=400,
+            detail="min_confidence must be between 0.60 and 0.95"
+        )
+
+    logger.info(
+        f"🧠 Probabilistic matcher triggered",
+        limit=limit,
+        min_confidence=min_confidence
+    )
+
+    try:
+        # Initialize Songstats client
+        from songstats_client import create_songstats_client
+        from cooccurrence_analyzer import enrich_tracks_with_probabilistic_matching
+
+        songstats_client = await create_songstats_client()
+
+        if not songstats_client:
+            raise HTTPException(
+                status_code=503,
+                detail="Songstats API not available - check API key configuration"
+            )
+
+        # Run probabilistic matching
+        stats = await enrich_tracks_with_probabilistic_matching(
+            db_session_factory=connection_manager.session_factory,
+            songstats_client=songstats_client,
+            limit=limit,
+            min_confidence=min_confidence
+        )
+
+        logger.info("✅ Probabilistic matching completed", **stats)
+
+        success_rate = (stats['artists_updated'] / max(stats['processed'], 1)) * 100
+
+        return {
+            "status": "completed",
+            "message": f"Processed {stats['processed']} tracks, identified {stats['artists_found']} artists",
+            "stats": stats,
+            "success_rate": f"{success_rate:.1f}%",
+            "note": "High confidence (>0.85) matches are most reliable"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Probabilistic matching failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Probabilistic matching failed: {str(e)}"
+        )
