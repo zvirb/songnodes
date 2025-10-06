@@ -1078,17 +1078,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           });
         }
 
-        // CRITICAL FIX: Use small, constant hit radius to prevent zoom targeting wrong location
-        // Large hit boxes cause cursor to "always" be inside a node, making zoom target node centers
-        // instead of cursor position. Keep hit radius small and constant (world-space, not screen-space).
-        enhancedNodesRef.current.forEach(node => {
-          if (node.pixiNode) {
-            const baseRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
-            const hitRadius = baseRadius + 4; // Small constant addition for easier clicking
-            node.hitBoxRadius = hitRadius;
-            node.pixiNode.hitArea = new PIXI.Circle(0, 0, hitRadius);
-          }
-        });
+        // NOTE: Hit radius is set ONCE during node creation and NEVER updated
+        // Updating hit radius during zoom causes the "snap to node center" bug
+        // PIXI automatically handles scaling of hit areas based on stage transform
       });
 
     const selection = select(containerRef.current);
@@ -1700,13 +1692,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Use fixed radius - let stage scaling handle zoom
     const screenRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
 
-    // Use small, constant hit radius in world coordinates
-    // CRITICAL: Large zoom-dependent hit boxes break zoom-to-cursor behavior
-    const hitRadius = screenRadius + 4; // Small constant for easier clicking
-    node.hitBoxRadius = hitRadius;
-
-    // Update hit area with small constant radius
-    node.pixiNode.hitArea = new PIXI.Circle(0, 0, hitRadius);
+    // NOTE: Hit radius is set ONCE during node creation and NEVER updated here
+    // Updating hit radius during rendering causes dynamic hit box growth
+    // The hit area was already set in createNodeVisuals() and should remain static
 
     const color = getNodeColor(node);
     const alpha = lodLevel > 1 ? 0.5 : node.opacity || 1;
