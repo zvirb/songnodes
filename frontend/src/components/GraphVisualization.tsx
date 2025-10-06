@@ -6,6 +6,8 @@ import {
   forceManyBody,
   forceCenter,
   forceCollide,
+  forceX,
+  forceY,
   SimulationNodeDatum,
   SimulationLinkDatum,
   Simulation,
@@ -47,7 +49,36 @@ const COLOR_SCHEMES = {
     path: 0x9013fe,
     strong: 0x4a90e2,
   },
+  genre: {
+    // Electronic/Dance genres
+    'house': 0x3498db,
+    'techno': 0x9b59b6,
+    'trance': 0xe74c3c,
+    'dubstep': 0x1abc9c,
+    'drum and bass': 0xf39c12,
+    'edm': 0x2ecc71,
+    // Other genres
+    'hip hop': 0xe67e22,
+    'pop': 0xff6b9d,
+    'rock': 0xc0392b,
+    'indie': 0x16a085,
+    'electronic': 0x8e44ad,
+    'ambient': 0x34495e,
+    'default': 0x95a5a6,
+  },
 } as const;
+
+// Layout mode for force simulation
+type LayoutMode = 'standard' | 'energy-genre';
+
+// Force simulation settings
+interface ForceSettings {
+  layoutMode: LayoutMode;
+  energyStrength: number;
+  genreStrength: number;
+  linkStrength: number;
+  linkDistance: number;
+}
 
 // Animation control system
 interface AnimationState {
@@ -365,6 +396,15 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const [isInitialized, setIsInitialized] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [animationTimer, setAnimationTimer] = useState<number>(0);
+
+  // Force layout settings for energy-genre visualization
+  const [forceSettings, setForceSettings] = useState<ForceSettings>({
+    layoutMode: 'standard',
+    energyStrength: 0.15,
+    genreStrength: 0.1,
+    linkStrength: 0.2,
+    linkDistance: 150,
+  });
   const frameRef = useRef<number>(0);
   const lastRenderFrame = useRef<number>(0);
 
@@ -405,6 +445,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Memoized color functions
   const getNodeColor = useCallback((node: EnhancedGraphNode): number => {
+    // Path and selection states take priority
     if (pathfindingState.currentPath?.path.some(p => p.id === node.id)) {
       return COLOR_SCHEMES.node.path;
     }
@@ -417,8 +458,14 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (viewState.hoveredNode === node.id) {
       return COLOR_SCHEMES.node.hovered;
     }
+
+    // Genre-based coloring in energy-genre layout mode
+    if (forceSettings.layoutMode === 'energy-genre') {
+      return getGenreColor((node as any).genre);
+    }
+
     return COLOR_SCHEMES.node.default;
-  }, [viewState.selectedNodes, viewState.hoveredNode, pathfindingState]);
+  }, [viewState.selectedNodes, viewState.hoveredNode, pathfindingState, forceSettings.layoutMode, getGenreColor]);
 
   const getEdgeColor = useCallback((edge: EnhancedGraphEdge): number => {
     if (pathfindingState.currentPath?.path.some((p, i) => {
@@ -736,13 +783,59 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     console.log('Force simulation completed');
   }, []);
 
+  // Helper function to get genre color
+  const getGenreColor = useCallback((genre?: string): number => {
+    if (!genre) return COLOR_SCHEMES.genre.default;
+    const lowerGenre = genre.toLowerCase();
+    return (COLOR_SCHEMES.genre as any)[lowerGenre] || COLOR_SCHEMES.genre.default;
+  }, []);
+
+  // Custom genre clustering force
+  const genreClusterForce = useCallback((alpha: number) => {
+    const nodes = Array.from(enhancedNodesRef.current.values());
+
+    // Group nodes by genre
+    const genreGroups = new Map<string, EnhancedGraphNode[]>();
+    nodes.forEach(node => {
+      const genre = (node as any).genre || 'unknown';
+      if (!genreGroups.has(genre)) {
+        genreGroups.set(genre, []);
+      }
+      genreGroups.get(genre)!.push(node);
+    });
+
+    // Pull each node toward its genre cluster centroid
+    genreGroups.forEach(group => {
+      if (group.length < 2) return;
+
+      const cx = group.reduce((sum, n) => sum + (n.x || 0), 0) / group.length;
+      const cy = group.reduce((sum, n) => sum + (n.y || 0), 0) / group.length;
+
+      group.forEach(node => {
+        if (typeof node.x === 'number' && typeof node.y === 'number') {
+          node.vx = (node.vx || 0) - (node.x - cx) * alpha * forceSettings.genreStrength;
+          node.vy = (node.vy || 0) - (node.y - cy) * alpha * forceSettings.genreStrength;
+        }
+      });
+    });
+  }, [forceSettings.genreStrength]);
+
   // Initialize D3 force simulation with balanced parameters
   const initializeSimulation = useCallback(() => {
     const simulation = forceSimulation<EnhancedGraphNode, EnhancedGraphEdge>()
       .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>()
         .id(d => d.id)
-        .distance(150) // Moderate distance for readable layout
-        .strength(0.3)  // Balanced strength
+        .distance(d => {
+          // Dynamic distance based on energy difference for elastic stretching
+          if (forceSettings.layoutMode === 'energy-genre') {
+            const source = d.source as any;
+            const target = d.target as any;
+            const energyDiff = Math.abs((source.energy || 0.5) - (target.energy || 0.5));
+            return forceSettings.linkDistance + (energyDiff * 300); // Stretch across energy gaps
+          }
+          return forceSettings.linkDistance;
+        })
+        .strength(forceSettings.linkStrength)  // Elastic for energy-genre mode
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
         .strength(-800) // Strong but not extreme repulsion
@@ -759,12 +852,32 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       .alphaDecay(0.0228)    // Standard decay rate for reasonable settling time
       .alphaMin(0.001);      // Standard threshold
 
+    // Add energy-genre layout forces if enabled
+    if (forceSettings.layoutMode === 'energy-genre') {
+      // X-axis: Energy positioning (low energy left, high energy right)
+      simulation.force('x', forceX<EnhancedGraphNode>()
+        .x(d => {
+          const energy = (d as any).energy || 0.5; // 0-1 from Spotify API
+          const viewportWidth = pixiAppRef.current?.screen.width || 1920;
+          return (energy - 0.5) * viewportWidth * 0.8; // 80% of viewport width
+        })
+        .strength(forceSettings.energyStrength) // Dominant force for energy positioning
+      );
+
+      // Genre clustering force (custom)
+      simulation.force('genre-cluster', genreClusterForce);
+    } else {
+      // Remove energy-genre forces in standard mode
+      simulation.force('x', null);
+      simulation.force('genre-cluster', null);
+    }
+
     simulation.on('tick', handleSimulationTick);
     simulation.on('end', handleSimulationEnd);
 
     simulationRef.current = simulation;
     return simulation;
-  }, [handleSimulationTick, handleSimulationEnd]);
+  }, [handleSimulationTick, handleSimulationEnd, forceSettings, genreClusterForce]);
 
   // Fast pre-computation method using manual ticks for accurate positioning
   const preComputeLayout = useCallback((nodes: EnhancedGraphNode[], maxTicks = 300) => {
@@ -965,15 +1078,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           });
         }
 
-        // CRITICAL FIX: Update hit box radii for all nodes when zoom changes
-        // This ensures click detection remains accurate at all zoom levels
+        // CRITICAL FIX: Use small, constant hit radius to prevent zoom targeting wrong location
+        // Large hit boxes cause cursor to "always" be inside a node, making zoom target node centers
+        // instead of cursor position. Keep hit radius small and constant (world-space, not screen-space).
         enhancedNodesRef.current.forEach(node => {
           if (node.pixiNode) {
-            const currentZoom = transform.k;
             const baseRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
-            const minHitBoxSizeScreen = 20; // minimum 20px hit area in screen coordinates
-            const minHitBoxWorldSize = minHitBoxSizeScreen / currentZoom; // Convert to world coordinates
-            const hitRadius = Math.max(baseRadius + 10, minHitBoxWorldSize);
+            const hitRadius = baseRadius + 4; // Small constant addition for easier clicking
             node.hitBoxRadius = hitRadius;
             node.pixiNode.hitArea = new PIXI.Circle(0, 0, hitRadius);
           }
@@ -1273,10 +1384,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     container.eventMode = 'static';
     container.cursor = 'pointer';
 
-    // Define EXTENDED hit area for the container (critical for click detection!)
-    // Use the extended hit box radius for easier clicking, especially when zoomed out
+    // Define small, constant hit area for the container
+    // CRITICAL: Keep hit radius small to prevent zoom targeting wrong location
     const visualRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
-    const hitRadius = node.hitBoxRadius || (visualRadius + 10);
+    const hitRadius = visualRadius + 4; // Small constant for easier clicking
+    node.hitBoxRadius = hitRadius; // Store for future updates
     container.hitArea = new PIXI.Circle(0, 0, hitRadius);
 
     // Visual debugging for hit areas (optional, can be enabled for testing)
@@ -1588,14 +1700,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Use fixed radius - let stage scaling handle zoom
     const screenRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
 
-    // Recalculate zoom-aware hit box for current zoom level
-    const currentZoom = viewState.zoom || 1;
-    const minHitBoxSizeScreen = 20; // minimum 20px hit area in screen coordinates
-    const minHitBoxWorldSize = minHitBoxSizeScreen / currentZoom; // Convert to world coordinates
-    const hitRadius = Math.max(screenRadius + 10, minHitBoxWorldSize);
+    // Use small, constant hit radius in world coordinates
+    // CRITICAL: Large zoom-dependent hit boxes break zoom-to-cursor behavior
+    const hitRadius = screenRadius + 4; // Small constant for easier clicking
     node.hitBoxRadius = hitRadius;
 
-    // Update hit area with extended radius (CRITICAL for click detection!)
+    // Update hit area with small constant radius
     node.pixiNode.hitArea = new PIXI.Circle(0, 0, hitRadius);
 
     const color = getNodeColor(node);
@@ -2476,6 +2586,142 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       )}
 
       {/* Controls moved to main toolbar - keeping this comment for reference */}
+
+      {/* Energy-Genre Layout Controls */}
+      <div className="absolute top-4 right-4 bg-black/80 text-gray-200 p-4 rounded-lg font-sans text-sm w-80">
+        <div className="mb-3 text-cyan-400 font-bold flex items-center gap-2">
+          <span>🎵</span>
+          <span>Layout Mode</span>
+        </div>
+
+        {/* Layout Mode Toggle */}
+        <div className="mb-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={forceSettings.layoutMode === 'energy-genre'}
+              onChange={(e) => {
+                const newMode = e.target.checked ? 'energy-genre' : 'standard';
+                setForceSettings(prev => ({ ...prev, layoutMode: newMode }));
+
+                // Reinitialize simulation with new mode
+                if (simulationRef.current) {
+                  simulationRef.current.stop();
+                  initializeSimulation();
+                  simulationRef.current.nodes(Array.from(enhancedNodesRef.current.values()));
+                  const linkForce = simulationRef.current.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
+                  if (linkForce) {
+                    linkForce.links(enhancedEdgesRef.current);
+                  }
+                  simulationRef.current.alpha(1).restart();
+                }
+              }}
+              className="rounded"
+            />
+            <span className={forceSettings.layoutMode === 'energy-genre' ? 'text-green-400' : 'text-gray-400'}>
+              Energy vs. Genre Layout
+            </span>
+          </label>
+        </div>
+
+        {/* Force Strength Controls */}
+        {forceSettings.layoutMode === 'energy-genre' && (
+          <div className="space-y-3">
+            {/* Energy Strength */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Energy Strength: {forceSettings.energyStrength.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="0.05"
+                max="0.3"
+                step="0.01"
+                value={forceSettings.energyStrength}
+                onChange={(e) => setForceSettings(prev => ({ ...prev, energyStrength: parseFloat(e.target.value) }))}
+                className="w-full"
+              />
+              <div className="text-xs text-gray-500 mt-1">Low energy ← → High energy</div>
+            </div>
+
+            {/* Genre Clustering Strength */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Genre Clustering: {forceSettings.genreStrength.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="0.02"
+                max="0.2"
+                step="0.01"
+                value={forceSettings.genreStrength}
+                onChange={(e) => setForceSettings(prev => ({ ...prev, genreStrength: parseFloat(e.target.value) }))}
+                className="w-full"
+              />
+              <div className="text-xs text-gray-500 mt-1">Groups tracks by genre</div>
+            </div>
+
+            {/* Link Strength */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Link Elasticity: {forceSettings.linkStrength.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="0.1"
+                max="0.5"
+                step="0.05"
+                value={forceSettings.linkStrength}
+                onChange={(e) => setForceSettings(prev => ({ ...prev, linkStrength: parseFloat(e.target.value) }))}
+                className="w-full"
+              />
+              <div className="text-xs text-gray-500 mt-1">Lower = more stretchy edges</div>
+            </div>
+
+            {/* Apply Button */}
+            <button
+              onClick={() => {
+                if (simulationRef.current) {
+                  simulationRef.current.stop();
+                  initializeSimulation();
+                  simulationRef.current.nodes(Array.from(enhancedNodesRef.current.values()));
+                  const linkForce = simulationRef.current.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
+                  if (linkForce) {
+                    linkForce.links(enhancedEdgesRef.current);
+                  }
+                  simulationRef.current.alpha(1).restart();
+                }
+              }}
+              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded transition-colors"
+            >
+              Apply Changes
+            </button>
+
+            {/* Legend */}
+            <div className="mt-4 pt-3 border-t border-gray-700">
+              <div className="text-xs text-gray-400 mb-2">Genre Colors:</div>
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#3498db'}}></div>
+                  <span>House</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#9b59b6'}}></div>
+                  <span>Techno</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#e74c3c'}}></div>
+                  <span>Trance</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#2ecc71'}}></div>
+                  <span>EDM</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Debug overlay */}
       {showDebugInfo && (
