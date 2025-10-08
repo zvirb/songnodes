@@ -1,133 +1,50 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Track } from '../types/dj';
+import { Track } from '../types';
 import useStore from '../store/useStore';
-
-/**
- * MobileTrackExplorer - Mobile-optimized track navigation
- *
- * Uses card-based UI instead of graph visualization for better mobile performance.
- * Features:
- * - Search to find tracks
- * - Large track info card for current track
- * - Connected tracks shown as smaller cards below
- * - Navigation history (breadcrumbs)
- * - No WebGL/PIXI.js rendering
- */
+import { transformNodesToTracks, getConnectedTracks, ConnectedTrack } from '../utils/mobileExplorerUtils';
+import { Search, ArrowLeft, XCircle } from 'lucide-react';
 
 interface NavigationHistoryItem {
   trackId: string;
   trackName: string;
 }
 
-interface ConnectedTrack {
-  track: Track;
-  connectionStrength: number;
-  edgeMetadata?: {
-    weight?: number;
-    type?: string;
-  };
-}
-
+/**
+ * A mobile-optimized interface for exploring track connections.
+ * It uses a card-based navigation system instead of the WebGL graph
+ * to ensure performance on lower-powered devices.
+ */
 export const MobileTrackExplorer: React.FC = () => {
   const { graphData } = useStore();
 
-  // Navigation state
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [navigationHistory, setNavigationHistory] = useState<NavigationHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(true);
 
-  // Get all tracks from graph data
-  const allTracks = useMemo(() => {
-    return (graphData?.nodes || []).map(node => ({
-      id: node.id,
-      name: node.title || node.metadata?.title || node.label || 'Unknown Track',
-      artist: node.artist || node.metadata?.artist || 'Unknown Artist',
-      bpm: node.metadata?.bpm || 120,
-      key: node.metadata?.key || node.metadata?.camelotKey || '1A',
-      energy: node.metadata?.energy || 5,
-      duration: node.metadata?.duration || 180,
-      genre: node.metadata?.genre || 'Electronic',
-      album: node.metadata?.album,
-      year: node.metadata?.year,
-    }));
-  }, [graphData?.nodes]);
+  const allTracks = useMemo(() => transformNodesToTracks(graphData?.nodes || []), [graphData?.nodes]);
 
-  // Search functionality
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-
     const query = searchQuery.toLowerCase();
-    return allTracks
-      .filter(track => {
-        const name = track.name?.toLowerCase() || '';
-        const artist = track.artist?.toLowerCase() || '';
-        const genre = track.genre?.toLowerCase() || '';
-        return name.includes(query) || artist.includes(query) || genre.includes(query);
-      })
-      .slice(0, 20); // Limit to 20 results for performance
+    return allTracks.filter(track =>
+      track.name.toLowerCase().includes(query) ||
+      track.artist.toLowerCase().includes(query)
+    ).slice(0, 20);
   }, [searchQuery, allTracks]);
 
-  // Get current track
-  const currentTrack = useMemo(() => {
-    if (!currentTrackId) return null;
-    return allTracks.find(t => t.id === currentTrackId) || null;
-  }, [currentTrackId, allTracks]);
+  const currentTrack = useMemo(() => allTracks.find(t => t.id === currentTrackId) || null, [currentTrackId, allTracks]);
 
-  // Get connected tracks (tracks with edges to current track)
-  const connectedTracks = useMemo((): ConnectedTrack[] => {
-    if (!currentTrackId || !graphData?.edges) return [];
-
-    const connections: ConnectedTrack[] = [];
-    const edges = graphData.edges;
-
-    edges.forEach(edge => {
-      let connectedId: string | null = null;
-      let edgeWeight = edge.weight || edge.strength || 1;
-
-      // Check if current track is source or target
-      if (typeof edge.source === 'string') {
-        if (edge.source === currentTrackId) {
-          connectedId = typeof edge.target === 'string' ? edge.target : (edge.target as any)?.id;
-        } else if (edge.target === currentTrackId) {
-          connectedId = edge.source;
-        }
-      } else if ((edge.source as any)?.id === currentTrackId) {
-        connectedId = typeof edge.target === 'string' ? edge.target : (edge.target as any)?.id;
-      } else if ((edge.target as any)?.id === currentTrackId) {
-        connectedId = typeof edge.source === 'string' ? edge.source : (edge.source as any)?.id;
-      }
-
-      if (connectedId) {
-        const track = allTracks.find(t => t.id === connectedId);
-        if (track) {
-          connections.push({
-            track,
-            connectionStrength: edgeWeight,
-            edgeMetadata: {
-              weight: edgeWeight,
-              type: edge.type,
-            },
-          });
-        }
-      }
-    });
-
-    // Sort by connection strength (highest first)
-    return connections.sort((a, b) => b.connectionStrength - a.connectionStrength);
+  const connectedTracks = useMemo(() => {
+    if (!currentTrackId) return [];
+    return getConnectedTracks(currentTrackId, graphData?.edges || [], allTracks);
   }, [currentTrackId, graphData?.edges, allTracks]);
 
-  // Navigation handlers
   const navigateToTrack = useCallback((trackId: string, trackName: string) => {
-    if (currentTrackId) {
-      // Add current track to history
-      setNavigationHistory(prev => [...prev, {
-        trackId: currentTrackId,
-        trackName: currentTrack?.name || 'Unknown',
-      }]);
+    if (currentTrackId && currentTrack) {
+      setNavigationHistory(prev => [...prev, { trackId: currentTrackId, trackName: currentTrack.name }]);
     }
     setCurrentTrackId(trackId);
-    setShowSearch(false);
+    setSearchQuery('');
   }, [currentTrackId, currentTrack]);
 
   const navigateBack = useCallback(() => {
@@ -136,467 +53,110 @@ export const MobileTrackExplorer: React.FC = () => {
       setCurrentTrackId(previous.trackId);
       setNavigationHistory(prev => prev.slice(0, -1));
     } else {
-      // No history, go back to search
       setCurrentTrackId(null);
-      setShowSearch(true);
     }
   }, [navigationHistory]);
 
-  const resetNavigation = useCallback(() => {
-    setCurrentTrackId(null);
-    setNavigationHistory([]);
-    setShowSearch(true);
-    setSearchQuery('');
-  }, []);
-
-  // Render search view
-  if (!currentTrackId || showSearch) {
+  // Search View
+  if (!currentTrackId) {
     return (
-      <div style={{
-        padding: '16px',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#1C1C1E',
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <div style={{ marginBottom: '16px' }}>
-          <h2 style={{
-            margin: '0 0 8px 0',
-            color: '#F8F8F8',
-            fontSize: '24px',
-            fontWeight: 700,
-          }}>
-            Explore Tracks
-          </h2>
-          <p style={{
-            margin: 0,
-            color: '#8E8E93',
-            fontSize: '14px',
-          }}>
-            Search for a track to start exploring connections
-          </p>
-        </div>
-
-        {/* Search Input */}
-        <div style={{ marginBottom: '16px' }}>
+      <div className="flex flex-col h-full p-4 bg-gray-900 text-white overflow-hidden">
+        <header className="mb-4">
+          <h2 className="text-2xl font-bold">Explore Tracks</h2>
+          <p className="text-sm text-gray-400">Search for a track to start</p>
+        </header>
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
           <input
             type="text"
-            placeholder="Search by track, artist, or genre..."
+            placeholder="Search by track or artist..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: '#2C2C2E',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px',
-              color: '#F8F8F8',
-              fontSize: '16px',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-            autoFocus
+            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white"
           />
         </div>
-
-        {/* Search Results */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          marginRight: '-16px',
-          paddingRight: '16px',
-        }}>
-          {searchQuery.trim() === '' ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '40px 20px',
-              color: '#8E8E93',
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-              <p style={{ margin: 0, fontSize: '16px' }}>Start typing to search</p>
-              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
-                {allTracks.length} tracks available
-              </p>
-            </div>
-          ) : searchResults.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '40px 20px',
-              color: '#8E8E93',
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>😕</div>
-              <p style={{ margin: 0, fontSize: '16px' }}>No tracks found</p>
-              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
-                Try a different search term
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {searchResults.map(track => (
-                <button
-                  key={track.id}
-                  onClick={() => navigateToTrack(track.id, track.name)}
-                  style={{
-                    padding: '12px',
-                    backgroundColor: '#2C2C2E',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px',
-                    color: '#F8F8F8',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onTouchStart={(e) => {
-                    e.currentTarget.style.backgroundColor = '#3C3C3E';
-                  }}
-                  onTouchEnd={(e) => {
-                    e.currentTarget.style.backgroundColor = '#2C2C2E';
-                  }}
-                >
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    marginBottom: '4px',
-                  }}>
-                    {track.name}
-                  </div>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#8E8E93',
-                  }}>
-                    {track.artist} • {track.bpm} BPM • {track.key}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {searchResults.map(track => (
+            <button
+              key={track.id}
+              onClick={() => navigateToTrack(track.id, track.name)}
+              className="w-full p-3 bg-gray-800 rounded-lg text-left hover:bg-gray-700 active:bg-gray-600 transition-colors"
+            >
+              <div className="font-semibold">{track.name}</div>
+              <div className="text-sm text-gray-400">{track.artist}</div>
+            </button>
+          ))}
         </div>
       </div>
     );
   }
 
-  // Render track detail view
+  // Track Detail View
   return (
-    <div style={{
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#1C1C1E',
-      overflow: 'hidden',
-    }}>
-      {/* Navigation Bar */}
-      <div style={{
-        padding: '12px 16px',
-        backgroundColor: '#2C2C2E',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-      }}>
-        <button
-          onClick={navigateBack}
-          style={{
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#007AFF',
-            fontSize: '16px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-          }}
-        >
-          <span style={{ fontSize: '18px' }}>←</span>
+    <div className="flex flex-col h-full bg-gray-900 text-white overflow-hidden">
+      <header className="flex items-center justify-between p-3 bg-gray-800 border-b border-gray-700">
+        <button onClick={navigateBack} className="flex items-center gap-1 text-blue-400 hover:text-blue-300">
+          <ArrowLeft size={20} />
           Back
         </button>
-
-        <button
-          onClick={resetNavigation}
-          style={{
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#007AFF',
-            fontSize: '16px',
-            cursor: 'pointer',
-          }}
-        >
-          🔍 Search
+        <button onClick={() => setCurrentTrackId(null)} className="flex items-center gap-1 text-blue-400 hover:text-blue-300">
+          <Search size={16} />
+          Search
         </button>
+      </header>
 
-        <div style={{ flex: 1 }} />
-
-        {navigationHistory.length > 0 && (
-          <div style={{
-            fontSize: '12px',
-            color: '#8E8E93',
-          }}>
-            {navigationHistory.length} deep
-          </div>
-        )}
-      </div>
-
-      {/* Content Area */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '16px',
-      }}>
-        {/* Current Track Card (Large) */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {currentTrack && (
-          <div style={{
-            padding: '24px',
-            backgroundColor: '#2C2C2E',
-            border: '2px solid rgba(126,211,33,0.5)',
-            borderRadius: '16px',
-            marginBottom: '24px',
-          }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#8E8E93',
-              marginBottom: '8px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}>
-              Now Viewing
-            </div>
-
-            <h1 style={{
-              margin: '0 0 8px 0',
-              fontSize: '24px',
-              fontWeight: 700,
-              color: '#F8F8F8',
-              lineHeight: 1.3,
-            }}>
-              {currentTrack.name}
-            </h1>
-
-            <div style={{
-              fontSize: '18px',
-              color: '#8E8E93',
-              marginBottom: '20px',
-            }}>
-              {currentTrack.artist}
-            </div>
-
-            {/* Track Metadata Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '16px',
-              marginTop: '20px',
-            }}>
+          <div className="p-5 bg-gray-800 border-2 border-green-500/50 rounded-xl">
+            <p className="text-xs text-gray-400 uppercase mb-2">Now Viewing</p>
+            <h1 className="text-2xl font-bold mb-1">{currentTrack.name}</h1>
+            <p className="text-lg text-gray-400 mb-4">{currentTrack.artist}</p>
+            <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
-                  BPM
-                </div>
-                <div style={{ fontSize: '20px', fontWeight: 600, color: '#F8F8F8' }}>
-                  {currentTrack.bpm}
-                </div>
+                <p className="text-xs text-gray-400">BPM</p>
+                <p className="text-xl font-semibold">{currentTrack.bpm}</p>
               </div>
-
               <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
-                  Key
-                </div>
-                <div style={{ fontSize: '20px', fontWeight: 600, color: '#F8F8F8' }}>
-                  {currentTrack.key}
-                </div>
+                <p className="text-xs text-gray-400">Key</p>
+                <p className="text-xl font-semibold">{currentTrack.key}</p>
               </div>
-
               <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
-                  Energy
-                </div>
-                <div style={{ fontSize: '20px', fontWeight: 600, color: '#F8F8F8' }}>
-                  {currentTrack.energy}/10
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
-                  Genre
-                </div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: '#F8F8F8' }}>
-                  {currentTrack.genre}
-                </div>
-              </div>
-            </div>
-
-            {/* Duration */}
-            <div style={{ marginTop: '16px' }}>
-              <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
-                Duration
-              </div>
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#F8F8F8' }}>
-                {Math.floor(currentTrack.duration / 60)}:{(currentTrack.duration % 60).toString().padStart(2, '0')}
+                <p className="text-xs text-gray-400">Energy</p>
+                <p className="text-xl font-semibold">{currentTrack.energy}/10</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Connected Tracks Section */}
-        <div style={{ marginBottom: '16px' }}>
-          <h3 style={{
-            margin: '0 0 16px 0',
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#F8F8F8',
-          }}>
-            Connected Tracks ({connectedTracks.length})
-          </h3>
-
-          {connectedTracks.length === 0 ? (
-            <div style={{
-              padding: '32px',
-              textAlign: 'center',
-              backgroundColor: '#2C2C2E',
-              borderRadius: '12px',
-              color: '#8E8E93',
-            }}>
-              <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔗</div>
-              <p style={{ margin: 0 }}>No connected tracks found</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {connectedTracks.map(({ track, connectionStrength }) => (
+        <div>
+          <h3 className="text-lg font-bold mb-3">Connected Tracks ({connectedTracks.length})</h3>
+          <div className="space-y-3">
+            {connectedTracks.length > 0 ? (
+              connectedTracks.map(({ track, connectionStrength }) => (
                 <button
                   key={track.id}
                   onClick={() => navigateToTrack(track.id, track.name)}
-                  style={{
-                    padding: '16px',
-                    backgroundColor: '#2C2C2E',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px',
-                    color: '#F8F8F8',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    position: 'relative',
-                  }}
-                  onTouchStart={(e) => {
-                    e.currentTarget.style.backgroundColor = '#3C3C3E';
-                    e.currentTarget.style.transform = 'scale(0.98)';
-                  }}
-                  onTouchEnd={(e) => {
-                    e.currentTarget.style.backgroundColor = '#2C2C2E';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
+                  className="w-full p-4 bg-gray-800 rounded-lg text-left relative hover:bg-gray-700 active:bg-gray-600 transition-colors"
                 >
-                  {/* Connection Strength Indicator */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    padding: '4px 8px',
-                    backgroundColor: `rgba(126, 211, 33, ${Math.min(connectionStrength, 1)})`,
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: '#000',
-                  }}>
+                  <div className="absolute top-3 right-3 px-2 py-0.5 text-xs font-bold text-black bg-green-400 rounded-full" style={{ opacity: Math.min(connectionStrength, 1) }}>
                     {Math.round(connectionStrength * 100)}%
                   </div>
-
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    marginBottom: '6px',
-                    paddingRight: '60px', // Space for strength indicator
-                  }}>
-                    {track.name}
-                  </div>
-
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#8E8E93',
-                    marginBottom: '8px',
-                  }}>
-                    {track.artist}
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    fontSize: '12px',
-                    color: '#8E8E93',
-                  }}>
+                  <div className="font-semibold pr-16">{track.name}</div>
+                  <div className="text-sm text-gray-400 mb-2">{track.artist}</div>
+                  <div className="flex gap-3 text-xs text-gray-500">
                     <span>{track.bpm} BPM</span>
                     <span>•</span>
                     <span>{track.key}</span>
-                    <span>•</span>
-                    <span>Energy {track.energy}/10</span>
-                  </div>
-
-                  {/* Navigate Arrow */}
-                  <div style={{
-                    position: 'absolute',
-                    right: '16px',
-                    bottom: '16px',
-                    fontSize: '18px',
-                    color: '#007AFF',
-                  }}>
-                    →
                   </div>
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Breadcrumb Trail */}
-        {navigationHistory.length > 0 && (
-          <div style={{
-            marginTop: '24px',
-            padding: '16px',
-            backgroundColor: '#2C2C2E',
-            borderRadius: '12px',
-          }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#8E8E93',
-              marginBottom: '12px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}>
-              Navigation Trail
-            </div>
-
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}>
-              {navigationHistory.map((item, index) => (
-                <div
-                  key={`${item.trackId}-${index}`}
-                  style={{
-                    fontSize: '14px',
-                    color: '#8E8E93',
-                    paddingLeft: `${index * 16}px`,
-                  }}
-                >
-                  {index > 0 && <span style={{ marginRight: '8px' }}>↳</span>}
-                  {item.trackName}
-                </div>
-              ))}
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: '#7ED321',
-                  fontWeight: 600,
-                  paddingLeft: `${navigationHistory.length * 16}px`,
-                }}
-              >
-                <span style={{ marginRight: '8px' }}>↳</span>
-                {currentTrack?.name} (current)
+              ))
+            ) : (
+              <div className="p-8 text-center bg-gray-800 rounded-lg text-gray-500">
+                <p>No connected tracks found.</p>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
