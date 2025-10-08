@@ -1,49 +1,25 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { GraphData, GraphNode, GraphEdge, Track, PerformanceMetrics } from '../types';
-import {
-  Wifi,
-  WifiOff,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Activity,
-  Zap,
-  Database
-} from 'lucide-react';
-
-/**
- * Helper function to check if a node has valid artist attribution
- * Tracks without proper artists should not be displayed
- */
-const hasValidArtist = (node: any): boolean => {
-  const metadata = node.metadata || {};
-  const artist = node.artist || metadata.artist;
-
-  if (!artist) return false;
-
-  const normalizedArtist = artist.toString().toLowerCase().trim();
-
-  // Exact matches - invalid artist values
-  const invalidArtists = ['unknown', 'unknown artist', 'various artists', 'various', 'va', ''];
-  if (invalidArtists.includes(normalizedArtist)) return false;
-
-  // Prefix matches - catch "VA @...", "Unknown Artist, ...", etc.
-  const invalidPrefixes = ['va @', 'various artists @', 'unknown artist,', 'unknown artist @'];
-  if (invalidPrefixes.some(prefix => normalizedArtist.startsWith(prefix))) return false;
-
-  return true;
-};
+import { GraphData, GraphNode, GraphEdge, PerformanceMetrics } from '../types';
+import { hasValidArtist } from '../utils/dataLoaderUtils';
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Clock, Database } from 'lucide-react';
 
 interface LiveDataLoaderProps {
+  /** If true, starts fetching data and connecting to WebSocket on mount. */
   autoStart?: boolean;
+  /** The interval in milliseconds for polling the REST API. */
   updateInterval?: number;
+  /** If true, enables WebSocket connection for real-time updates. */
   enableWebSocket?: boolean;
+  /** If true, enables performance metric tracking. */
   enablePerformanceTracking?: boolean;
+  /** Callback for when new data is received. */
   onDataUpdate?: (type: string, data: any) => void;
+  /** Callback for when an error occurs. */
   onError?: (error: string) => void;
+  /** If true, displays the status indicator UI. */
   showStatus?: boolean;
+  /** The maximum number of times to retry WebSocket connection. */
   maxRetries?: number;
 }
 
@@ -55,532 +31,159 @@ interface ConnectionStatus {
   error?: string;
 }
 
+type DataUpdateEventSource = 'api' | 'websocket' | 'cache';
 interface DataUpdateEvent {
   type: 'graph' | 'nodes' | 'edges' | 'tracks' | 'performance' | 'scraper';
   data: any;
   timestamp: number;
-  source: 'api' | 'websocket' | 'cache';
+  source: DataUpdateEventSource;
 }
 
+/**
+ * A non-visual component that handles live data fetching from both a REST API and a WebSocket server.
+ * It manages connection status, data updates, and performance tracking, feeding the data into the global Zustand store.
+ * It can optionally display a status indicator.
+ */
 export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
   autoStart = true,
-  updateInterval = 30000, // 30 seconds
+  updateInterval = 30000,
   enableWebSocket = true,
-  enablePerformanceTracking = true,
+  showStatus = true,
+  maxRetries = 3,
   onDataUpdate,
   onError,
-  showStatus = true,
-  maxRetries = 3
 }) => {
-  const [status, setStatus] = useState<ConnectionStatus>({
-    connected: false,
-    lastUpdate: 0,
-    retryCount: 0,
-    latency: 0
-  });
+  const [status, setStatus] = useState<ConnectionStatus>({ connected: false, lastUpdate: 0, retryCount: 0, latency: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [recentUpdates, setRecentUpdates] = useState<DataUpdateEvent[]>([]);
 
-  // Store actions
-  const setGraphData = useStore(state => state.graph.setGraphData);
-  const updatePerformanceMetrics = useStore(state => state.performance.updatePerformanceMetrics);
-  const setError = useStore(state => state.general.setError);
-  const setLoading = useStore(state => state.general.setLoading);
+  const { setGraphData, setError, setLoading } = useStore(state => ({
+    setGraphData: state.graph.setGraphData,
+    setError: state.general.setError,
+    setLoading: state.general.setLoading,
+  }));
 
-  // Refs for cleanup
-  const intervalRef = useRef<NodeJS.Timeout>();
-  const websocketRef = useRef<WebSocket>();
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const wsRef = useRef<WebSocket | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statusRef = useRef(status);
+  statusRef.current = status;
 
-  // CRITICAL: Add ref to avoid closure issues with WebSocket retry logic
-  const statusRef = useRef<ConnectionStatus>({
-    connected: false,
-    lastUpdate: 0,
-    retryCount: 0,
-    latency: 0
-  });
-  const performanceTrackerRef = useRef<number>();
+  const addRecentUpdate = useCallback((update: DataUpdateEvent) => {
+    setRecentUpdates(prev => [update, ...prev.slice(0, 9)]);
+  }, []);
 
-  // WebSocket connection management
+  const handleWebSocketMessage = useCallback((message: any) => {
+    addRecentUpdate({ type: message.type, data: message.data, timestamp: Date.now(), source: 'websocket' });
+    if (message.type === 'graph_update') {
+      setGraphData(message.data);
+      onDataUpdate?.('graph', message.data);
+    }
+  }, [setGraphData, onDataUpdate, addRecentUpdate]);
+
   const connectWebSocket = useCallback(() => {
-    if (!enableWebSocket) return;
+    if (!enableWebSocket || wsRef.current) return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/ws`;
-
+      const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/ws`;
       const ws = new WebSocket(wsUrl);
-      websocketRef.current = ws;
+      wsRef.current = ws;
 
-      ws.onopen = () => {
-        setStatus(prev => {
-          const newStatus = {
-            ...prev,
-            connected: true,
-            retryCount: 0,
-            error: undefined
-          };
-          statusRef.current = newStatus; // Update ref to avoid closure issues
-          return newStatus;
-        });
-
-        // Send subscription message
-        ws.send(JSON.stringify({
-          type: 'subscribe',
-          topics: ['graph_updates', 'node_changes', 'scraper_status', 'performance']
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        const startTime = performance.now();
-
-        try {
-          const message = JSON.parse(event.data);
-          const latency = performance.now() - startTime;
-
-          setStatus(prev => {
-            const newStatus = {
-              ...prev,
-              lastUpdate: Date.now(),
-              latency: Math.round(latency)
-            };
-            statusRef.current = newStatus; // Update ref to keep it in sync
-            return newStatus;
-          });
-
-          handleWebSocketMessage(message);
-        } catch (error) {
-          console.error('WebSocket message parsing error:', error);
-        }
-      };
-
-      ws.onclose = (event) => {
-        setStatus(prev => {
-          const newStatus = {
-            ...prev,
-            connected: false
-          };
-          statusRef.current = newStatus; // Update ref to avoid closure issues
-          return newStatus;
-        });
-
-        // Attempt to reconnect if not intentional close
-        // CRITICAL FIX: Use ref instead of state to avoid stale closure
-        if (event.code !== 1000 && statusRef.current.retryCount < maxRetries) {
-          const delay = Math.pow(2, statusRef.current.retryCount) * 1000; // Exponential backoff using ref
-          retryTimeoutRef.current = setTimeout(() => {
-            setStatus(prev => {
-              const newStatus = {
-                ...prev,
-                retryCount: prev.retryCount + 1
-              };
-              statusRef.current = newStatus; // Update ref
-              return newStatus;
-            });
+      ws.onopen = () => setStatus(prev => ({ ...prev, connected: true, retryCount: 0, error: undefined }));
+      ws.onmessage = (event) => handleWebSocketMessage(JSON.parse(event.data));
+      ws.onerror = () => onError?.('WebSocket connection failed.');
+      ws.onclose = () => {
+        setStatus(prev => ({ ...prev, connected: false }));
+        if (statusRef.current.retryCount < maxRetries) {
+          setTimeout(() => {
+            setStatus(prev => ({ ...prev, retryCount: prev.retryCount + 1 }));
             connectWebSocket();
-          }, delay);
+          }, Math.pow(2, statusRef.current.retryCount) * 1000);
         }
       };
-
-      ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
-        const errorMessage = 'WebSocket connection failed';
-        setStatus(prev => {
-          const newStatus = {
-            ...prev,
-            connected: false,
-            error: errorMessage
-          };
-          statusRef.current = newStatus; // Update ref to avoid closure issues
-          return newStatus;
-        });
-
-        if (onError) {
-          onError(errorMessage);
-        }
-      };
-
     } catch (error) {
       console.error('Failed to create WebSocket:', error);
     }
-  }, [enableWebSocket, maxRetries, onError]); // FIXED: Removed status.retryCount - using statusRef instead
+  }, [enableWebSocket, maxRetries, onError, handleWebSocketMessage]);
 
-  // Handle WebSocket messages
-  const handleWebSocketMessage = useCallback((message: any) => {
-    const updateEvent: DataUpdateEvent = {
-      type: message.type,
-      data: message.data,
-      timestamp: Date.now(),
-      source: 'websocket'
-    };
-
-    addRecentUpdate(updateEvent);
-
-    switch (message.type) {
-      case 'graph_update':
-        if (message.data.nodes && message.data.edges) {
-          setGraphData(message.data);
-          if (onDataUpdate) {
-            onDataUpdate('graph', message.data);
-          }
-        }
-        break;
-
-      case 'node_update':
-        // Update specific nodes
-        break;
-
-      case 'scraper_status':
-        break;
-
-      case 'performance_update':
-        if (enablePerformanceTracking) {
-          updatePerformanceMetrics(message.data);
-          if (onDataUpdate) {
-            onDataUpdate('performance', message.data);
-          }
-        }
-        break;
-
-      case 'new_tracks':
-        // Could trigger a refresh or show notification
-        break;
-
-      default:
-    }
-  }, [setGraphData, updatePerformanceMetrics, enablePerformanceTracking, onDataUpdate]);
-
-  // Add update to recent updates list
-  const addRecentUpdate = useCallback((update: DataUpdateEvent) => {
-    setRecentUpdates(prev => {
-      const newUpdates = [update, ...prev.slice(0, 9)]; // Keep last 10 updates
-      return newUpdates;
-    });
-  }, []);
-
-  // Fetch data from API
   const fetchGraphData = useCallback(async () => {
+    setIsLoading(true);
+    setLoading(true);
     try {
-      setIsLoading(true);
-      setLoading(true);
-      const startTime = performance.now();
-
-      // Parallel fetch of nodes and edges
-      const [nodesResponse, edgesResponse] = await Promise.all([
+      const [nodesRes, edgesRes] = await Promise.all([
         fetch('/api/graph/nodes?limit=1000'),
-        fetch('/api/graph/edges?limit=10000')
+        fetch('/api/graph/edges?limit=10000'),
       ]);
+      if (!nodesRes.ok || !edgesRes.ok) throw new Error('Failed to fetch graph data');
 
-      if (!nodesResponse.ok || !edgesResponse.ok) {
-        throw new Error('Failed to fetch graph data');
-      }
+      const nodesData = await nodesRes.json();
+      const edgesData = await edgesRes.json();
 
-      const [nodesData, edgesData] = await Promise.all([
-        nodesResponse.json(),
-        edgesResponse.json()
-      ]);
+      const validNodes = (nodesData.nodes || []).filter(hasValidArtist);
+      const nodeIds = new Set(validNodes.map((n: GraphNode) => n.id));
+      const validEdges = (edgesData.edges || []).filter((e: GraphEdge) => nodeIds.has(e.source) && nodeIds.has(e.target));
 
-      // Transform and validate data
-      // ✅ FILTER: Exclude tracks without valid artist attribution
-      const validNodesData = (nodesData.nodes || []).filter((node: any) => hasValidArtist(node));
-
-      const nodes: GraphNode[] = validNodesData.map((node: any) => ({
-        id: node.id,
-        title: node.title || node.metadata?.title || 'ERROR: No Track Title (WebSocket)',
-        artist: node.artist || node.metadata?.artist || 'ERROR: No Artist (WebSocket)',
-        label: node.metadata?.label || node.title || 'ERROR: No Label (WebSocket)',
-        bpm: node.metadata?.bpm,
-        key: node.metadata?.key,
-        genre: node.metadata?.genre || 'Electronic',
-        energy: node.metadata?.energy,
-        year: node.metadata?.release_year,
-        connections: node.metadata?.appearance_count || 0,
-        popularity: node.metadata?.popularity || 0,
-        x: node.position?.x || Math.random() * 800 - 400,
-        y: node.position?.y || Math.random() * 600 - 300,
-        metadata: node.metadata
-      }));
-
-      const nodeIds = new Set(nodes.map(n => n.id));
-      const edges: GraphEdge[] = (edgesData.edges || [])
-        .filter((edge: any) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
-        .map((edge: any, index: number) => ({
-          id: edge.id || `edge-${index}`,
-          source: edge.source,
-          target: edge.target,
-          weight: edge.weight || 1,
-          distance: edge.distance || 1,
-          type: edge.type || 'adjacency'
-        }));
-
-      const graphData: GraphData = { nodes, edges };
-      const latency = performance.now() - startTime;
-
-      // Update store
+      const graphData: GraphData = { nodes: validNodes, edges: validEdges };
       setGraphData(graphData);
-
-      // Update status
-      setStatus(prev => ({
-        ...prev,
-        lastUpdate: Date.now(),
-        latency: Math.round(latency),
-        error: undefined
-      }));
-
-      // Add to recent updates
-      const updateEvent: DataUpdateEvent = {
-        type: 'graph',
-        data: graphData,
-        timestamp: Date.now(),
-        source: 'api'
-      };
-      addRecentUpdate(updateEvent);
-
-      if (onDataUpdate) {
-        onDataUpdate('graph', graphData);
-      }
-
-      }ms)`);
-
-    } catch (error) {
-      const errorMessage = `Failed to load data: ${error}`;
-      console.error('❌', errorMessage);
-
-      setStatus(prev => ({
-        ...prev,
-        error: errorMessage
-      }));
-
-      setError(errorMessage);
-
-      if (onError) {
-        onError(errorMessage);
-      }
+      addRecentUpdate({ type: 'graph', data: graphData, timestamp: Date.now(), source: 'api' });
+      onDataUpdate?.('graph', graphData);
+      setStatus(prev => ({ ...prev, lastUpdate: Date.now(), error: undefined }));
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown data loading error';
+      setError(errorMsg);
+      onError?.(errorMsg);
+      setStatus(prev => ({ ...prev, error: errorMsg }));
     } finally {
       setIsLoading(false);
       setLoading(false);
     }
-  }, [setGraphData, setLoading, setError, addRecentUpdate, onDataUpdate, onError]);
+  }, [setGraphData, setLoading, setError, onDataUpdate, onError, addRecentUpdate]);
 
-  // Start performance tracking
-  const startPerformanceTracking = useCallback(() => {
-    if (!enablePerformanceTracking) return;
-
-    const trackPerformance = () => {
-      const now = performance.now();
-      const memory = (performance as any).memory;
-
-      const metrics: PerformanceMetrics = {
-        frameRate: 60, // Will be updated by animation loop
-        renderTime: 16.67, // 60fps target
-        nodeCount: useStore.getState().graphData.nodes.length,
-        edgeCount: useStore.getState().graphData.edges.length,
-        visibleNodes: useStore.getState().graphData.nodes.length,
-        visibleEdges: useStore.getState().graphData.edges.length,
-        memoryUsage: memory ? memory.usedJSHeapSize : 0,
-        lastUpdate: now
-      };
-
-      updatePerformanceMetrics(metrics);
-    };
-
-    trackPerformance();
-    performanceTrackerRef.current = window.setInterval(trackPerformance, 1000);
-  }, [enablePerformanceTracking, updatePerformanceMetrics]);
-
-  // Manual refresh
-  const refresh = useCallback(() => {
-    fetchGraphData();
-  }, [fetchGraphData]);
-
-  // Initialize
   useEffect(() => {
     if (autoStart) {
       fetchGraphData();
       connectWebSocket();
-      startPerformanceTracking();
-
-      // Set up periodic refresh
       intervalRef.current = setInterval(fetchGraphData, updateInterval);
     }
-
     return () => {
-      // Cleanup
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-      if (performanceTrackerRef.current) {
-        clearInterval(performanceTrackerRef.current);
-      }
-      if (websocketRef.current) {
-        websocketRef.current.close(1000, 'Component unmounting');
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      wsRef.current?.close(1000, 'Component unmounting');
     };
-  }, [autoStart, fetchGraphData, connectWebSocket, startPerformanceTracking, updateInterval]);
+  }, [autoStart, fetchGraphData, connectWebSocket, updateInterval]);
 
-  // Don't render status if disabled
   if (!showStatus) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 1000,
-        backgroundColor: 'rgba(30, 30, 40, 0.95)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '12px',
-        padding: '16px',
-        minWidth: '280px',
-        backdropFilter: 'blur(20px)',
-        color: 'white',
-        fontSize: '13px'
-      }}
-    >
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '12px'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontSize: '14px',
-          fontWeight: '600'
-        }}>
-          <Database size={16} />
-          Live Data
-        </div>
+    <div className="fixed top-5 right-5 z-[1000] bg-gray-900/90 border border-white/10 rounded-xl p-4 w-72 backdrop-blur-xl text-white text-sm">
+      <header className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 font-semibold"><Database size={16} /> Live Data</div>
+        <button onClick={fetchGraphData} disabled={isLoading} className="p-1.5 bg-white/10 rounded-md hover:bg-white/20 disabled:opacity-50"><RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /></button>
+      </header>
 
-        <button
-          onClick={refresh}
-          disabled={isLoading}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '6px',
-            color: 'white',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            padding: '6px',
-            opacity: isLoading ? 0.5 : 1
-          }}
-        >
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-        </button>
+      <div className={`flex items-center gap-2 mb-3 p-2 rounded-md ${status.connected ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+        {status.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
+        <span>{status.connected ? 'Connected' : 'Disconnected'}</span>
+        {status.connected && status.latency > 0 && <span className="text-gray-400 text-xs">({status.latency}ms)</span>}
       </div>
 
-      {/* Connection Status */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '12px',
-        padding: '8px',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: '6px'
-      }}>
-        {status.connected ? (
-          <>
-            <Wifi size={16} color="#10b981" />
-            <span style={{ color: '#10b981' }}>Connected</span>
-            {status.latency > 0 && (
-              <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                ({status.latency}ms)
-              </span>
-            )}
-          </>
-        ) : (
-          <>
-            <WifiOff size={16} color="#ef4444" />
-            <span style={{ color: '#ef4444' }}>Disconnected</span>
-            {status.retryCount > 0 && (
-              <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                (Retry {status.retryCount}/{maxRetries})
-              </span>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Error Display */}
       {status.error && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-          padding: '8px',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.2)',
-          borderRadius: '6px',
-          color: '#fecaca'
-        }}>
+        <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 text-xs">
           <AlertTriangle size={14} />
-          <span style={{ fontSize: '12px' }}>{status.error}</span>
+          <span>{status.error}</span>
         </div>
       )}
 
-      {/* Last Update */}
       {status.lastUpdate > 0 && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-          color: 'rgba(255, 255, 255, 0.7)'
-        }}>
-          <Clock size={14} />
-          <span>
-            Last update: {new Date(status.lastUpdate).toLocaleTimeString()}
-          </span>
-        </div>
+        <div className="flex items-center gap-2 mb-3 text-gray-400"><Clock size={14} /><span>Last update: {new Date(status.lastUpdate).toLocaleTimeString()}</span></div>
       )}
 
-      {/* Recent Updates */}
       {recentUpdates.length > 0 && (
-        <div style={{ marginTop: '12px' }}>
-          <div style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            color: 'rgba(255, 255, 255, 0.8)',
-            marginBottom: '8px'
-          }}>
-            Recent Updates
-          </div>
-          <div style={{
-            maxHeight: '120px',
-            overflowY: 'auto',
-            display: 'grid',
-            gap: '4px'
-          }}>
-            {recentUpdates.slice(0, 5).map((update, index) => (
-              <div
-                key={index}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '6px 8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                  borderRadius: '4px',
-                  fontSize: '11px'
-                }}
-              >
-                <span style={{
-                  color: update.source === 'websocket' ? '#3b82f6' : '#8b5cf6'
-                }}>
-                  {update.type}
-                </span>
-                <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                  {new Date(update.timestamp).toLocaleTimeString()}
-                </span>
+        <div className="pt-2 border-t border-white/10">
+          <h4 className="text-xs font-semibold text-gray-300 mb-2">Recent Updates</h4>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {recentUpdates.map((update, i) => (
+              <div key={i} className="flex justify-between items-center text-xs p-1.5 bg-white/5 rounded">
+                <span className={`font-medium ${update.source === 'websocket' ? 'text-blue-400' : 'text-purple-400'}`}>{update.type}</span>
+                <span className="text-gray-500">{new Date(update.timestamp).toLocaleTimeString()}</span>
               </div>
             ))}
           </div>
@@ -590,39 +193,4 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
   );
 };
 
-// Hook for using LiveDataLoader functionality
-export const useLiveDataLoader = (options?: Partial<LiveDataLoaderProps>) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<number>(0);
-
-  const loaderRef = useRef<{
-    refresh: () => void;
-  }>();
-
-  const refresh = useCallback(() => {
-    if (loaderRef.current) {
-      loaderRef.current.refresh();
-    }
-  }, []);
-
-  return {
-    isLoading,
-    lastUpdate,
-    refresh,
-    LiveDataLoader: (props: Partial<LiveDataLoaderProps>) => (
-      <LiveDataLoader
-        {...options}
-        {...props}
-        onDataUpdate={(type, data) => {
-          setLastUpdate(Date.now());
-          if (options?.onDataUpdate) {
-            options.onDataUpdate(type, data);
-          }
-          if (props.onDataUpdate) {
-            props.onDataUpdate(type, data);
-          }
-        }}
-      />
-    )
-  };
-};
+export default LiveDataLoader;
