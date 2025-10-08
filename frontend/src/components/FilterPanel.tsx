@@ -314,13 +314,17 @@ export const FilterPanel: React.FC = () => {
   const {
     searchFilters,
     graphData,
+    originalGraphData,
     setSearchFilters,
+    applyFilters,
     clearSearch,
     resetGraphData
   } = useStore((state) => ({
     searchFilters: state.searchFilters,
     graphData: state.graphData,
+    originalGraphData: state.originalGraphData,
     setSearchFilters: state.search.setSearchFilters,
+    applyFilters: state.search.applyFilters,
     clearSearch: state.search.clearSearch,
     resetGraphData: state.graph.resetGraphData
   }));
@@ -454,9 +458,9 @@ export const FilterPanel: React.FC = () => {
     <div className="h-full flex flex-col bg-dj-dark">
       {/* Header */}
       <div className="p-4 border-b border-dj-light-gray">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <span>🎛️</span> Filters
+            <span>🎛️</span> Graph Filters
             {activeFilterCount > 0 && (
               <span className="text-xs bg-dj-accent text-black px-2 py-1 rounded-full font-bold">
                 {activeFilterCount}
@@ -477,6 +481,22 @@ export const FilterPanel: React.FC = () => {
             >
               Reset All
             </button>
+          </div>
+        </div>
+
+        {/* Current filter status */}
+        <div className="text-xs text-gray-400 space-y-1">
+          <div className="flex justify-between">
+            <span>Showing:</span>
+            <span className="font-mono text-dj-accent">
+              {graphData.nodes.length} / {originalGraphData?.nodes.length || graphData.nodes.length} nodes
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Edges:</span>
+            <span className="font-mono text-dj-info">
+              {graphData.edges.length} / {originalGraphData?.edges.length || graphData.edges.length}
+            </span>
           </div>
         </div>
 
@@ -728,17 +748,20 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Apply Filters Button */}
-        <div className="pt-4 border-t border-dj-light-gray">
+        <div className="pt-4 border-t border-dj-light-gray space-y-2">
           <button
             onClick={() => {
-              // Apply filters to graph visualization
-              // This would typically trigger a data refresh
-              console.log('Applying filters:', currentFilters);
+              applyFilters(currentFilters);
             }}
             className="w-full py-3 bg-gradient-to-r from-dj-accent to-dj-info text-black font-bold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
-            Apply Filters to Graph ({activeFilterCount} active)
+            Apply Filters ({activeFilterCount} active)
           </button>
+
+          {/* Show current vs total counts */}
+          <div className="text-xs text-center text-gray-400">
+            Showing {graphData.nodes.length} of {originalGraphData?.nodes.length || graphData.nodes.length} nodes, {graphData.edges.length} of {originalGraphData?.edges.length || graphData.edges.length} edges
+          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,34 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy common modules first (for layer caching)
+COPY services/common /app/common
+
+# Copy scrapers directory
+COPY scrapers /app/scrapers
+
+# Install Python dependencies (use requirements.txt from scrapers directory)
+COPY scrapers/requirements.txt /app/scrapers/requirements.txt
+RUN pip install --no-cache-dir -r /app/scrapers/requirements.txt
+
+# Also ensure we have the specific versions needed for the processor
+RUN pip install --no-cache-dir \
+    asyncpg==0.29.0 \
+    psycopg2-binary==2.9.9 \
+    python-dotenv==1.0.0 \
+    requests==2.32.3
+
+# Set Python path to include app directory
+ENV PYTHONPATH=/app
+
+WORKDIR /app/scrapers
+
+# Run the processor
+CMD ["python", "raw_data_processor.py"]

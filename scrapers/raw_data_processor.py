@@ -28,7 +28,7 @@ except ImportError:
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from services.common.secrets_manager import get_database_config, validate_secrets
+from common.secrets_manager import get_database_config, validate_secrets
 from database_pipeline import DatabasePipeline
 
 # Import track string parser for artist extraction
@@ -83,8 +83,8 @@ class RawDataProcessor:
             max_size=5
         )
 
-        # Initialize pipeline
-        await self.pipeline.open_spider(spider=None)
+        # Initialize pipeline (synchronous method)
+        self.pipeline.open_spider(spider=None)
 
         logger.info("✓ Raw data processor initialized")
 
@@ -196,11 +196,11 @@ class RawDataProcessor:
                 'tracklist_count': len(raw_data.get('tracks', []))
             }
 
-            await self.pipeline.process_item(playlist_item, spider=None)
+            self.pipeline.process_item(playlist_item, spider=None)
             result["playlists"] += 1
 
             # CRITICAL: Flush playlists batch immediately so it exists before we add playlist_tracks
-            await self.pipeline._flush_batch('playlists')
+            self.pipeline._flush_batch('playlists')
 
             # Process tracks
             tracks = raw_data.get('tracks', [])
@@ -263,7 +263,7 @@ class RawDataProcessor:
 
                     logger.debug(f"Generated track_id {track_id} for: {artist_name} - {track_name}")
 
-                    await self.pipeline.process_item(song_item, spider=None)
+                    self.pipeline.process_item(song_item, spider=None)
                     result["tracks"] += 1
 
                     # Create playlist_track link
@@ -276,16 +276,16 @@ class RawDataProcessor:
                         'source': source
                     }
 
-                    await self.pipeline.process_item(playlist_track_item, spider=None)
+                    self.pipeline.process_item(playlist_track_item, spider=None)
 
                     # Store for adjacency creation (track names for lookup)
                     track_song_ids.append((position, track_name, track_info.get('artist', 'Unknown Artist')))
 
             # CRITICAL: Flush songs batch so they exist before creating playlist_tracks and adjacencies
-            await self.pipeline._flush_batch('songs')
+            self.pipeline._flush_batch('songs')
 
             # CRITICAL: Flush playlist_tracks batch so relationships are recorded
-            await self.pipeline._flush_batch('playlist_tracks')
+            self.pipeline._flush_batch('playlist_tracks')
 
             # Create song adjacencies (edges between sequential tracks)
             track_song_ids.sort(key=lambda x: x[0])  # Sort by position
@@ -306,7 +306,7 @@ class RawDataProcessor:
                     'source_url': playlist_url
                 }
 
-                await self.pipeline.process_item(adjacency_item, spider=None)
+                self.pipeline.process_item(adjacency_item, spider=None)
                 result["edges"] += 1
 
         except Exception as e:
@@ -324,7 +324,7 @@ class RawDataProcessor:
 
 
 async def main():
-    """Main entry point - process all unprocessed scrapes"""
+    """Main entry point - continuous processing loop"""
     # Validate secrets before starting
     logger.info("Validating secrets...")
     if not validate_secrets():
@@ -332,32 +332,50 @@ async def main():
         sys.exit(1)
 
     # Detect if running from host (check if we can connect to docker socket)
-    use_localhost = not os.path.exists('/var/run/docker.sock')
-    if use_localhost:
-        logger.info("Running from HOST - connecting to localhost:5433")
-    else:
-        logger.info("Running in CONTAINER - connecting to postgres:5432")
+    # FORCE CONTAINER MODE - use postgres:5432
+    use_localhost = False
+    logger.info("Running in CONTAINER - connecting to postgres:5432")
 
     processor = RawDataProcessor(use_localhost=use_localhost)
 
     try:
-        logger.info("Starting raw data processor...")
+        logger.info("Starting raw data processor in continuous mode...")
 
         await processor.initialize()
 
-        stats = await processor.process_unprocessed_scrapes(limit=100)
+        # Get processing interval from environment (default: 60 seconds)
+        processing_interval = int(os.getenv('PROCESSING_INTERVAL', '60'))
+        batch_size = int(os.getenv('BATCH_SIZE', '100'))
 
-        logger.info("=" * 60)
-        logger.info("PROCESSING COMPLETE")
-        logger.info(f"  Processed: {stats['processed']} scrapes")
-        logger.info(f"  Failed: {stats['failed']} scrapes")
-        logger.info(f"  Tracks created: {stats['tracks_created']}")
-        logger.info(f"  Playlists created: {stats['playlists_created']}")
-        logger.info(f"  Edges created: {stats['edges_created']}")
-        logger.info("=" * 60)
+        logger.info(f"Processing configuration: batch_size={batch_size}, interval={processing_interval}s")
+
+        # Continuous processing loop
+        while True:
+            try:
+                stats = await processor.process_unprocessed_scrapes(limit=batch_size)
+
+                if stats['processed'] > 0:
+                    logger.info("=" * 60)
+                    logger.info("BATCH PROCESSING COMPLETE")
+                    logger.info(f"  Processed: {stats['processed']} scrapes")
+                    logger.info(f"  Failed: {stats['failed']} scrapes")
+                    logger.info(f"  Tracks created: {stats['tracks_created']}")
+                    logger.info(f"  Playlists created: {stats['playlists_created']}")
+                    logger.info(f"  Edges created: {stats['edges_created']}")
+                    logger.info("=" * 60)
+                else:
+                    logger.debug(f"No unprocessed scrapes found, sleeping for {processing_interval}s")
+
+                # Wait before next processing cycle
+                await asyncio.sleep(processing_interval)
+
+            except Exception as batch_error:
+                logger.error(f"Error in processing batch: {batch_error}", exc_info=True)
+                # Continue processing after error with exponential backoff
+                await asyncio.sleep(min(processing_interval * 2, 300))
 
     except Exception as e:
-        logger.error(f"Fatal error: {e}")
+        logger.error(f"Fatal error: {e}", exc_info=True)
         raise
     finally:
         await processor.close()

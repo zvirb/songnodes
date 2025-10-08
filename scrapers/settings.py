@@ -86,7 +86,7 @@ DOWNLOAD_HANDLERS = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'nlp_fallback_pipeline.NLPFallbackPipeline': 200,  # Run before database pipeline
-   'simple_twisted_pipeline.SimpleMusicDatabasePipeline': 300,
+   'database_pipeline.DatabasePipeline': 300,  # CORRECT: Working pipeline (psycopg2 + Twisted adbapi)
    'pipelines.discogs_enrichment_pipeline.DiscogsEnrichmentPipeline': 400,  # Framework Section 2.2: MixesDB→Discogs bridge
    'pipelines.reddit_validation_pipeline.RedditValidationPipeline': 450,  # Framework Section 2.4: Reddit→Spotify validation
 }

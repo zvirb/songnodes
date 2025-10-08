@@ -318,12 +318,22 @@ class DatabasePipeline:
         elif not isinstance(event_date, date):
             event_date = None
 
+        # CRITICAL: Include validation fields for silent failure detection
+        # Extract tracklist count from multiple possible field names
+        tracklist_count = item.get('tracklist_count') or item.get('total_tracks') or len(item.get('tracks', []))
+
         self.item_batches['playlists'].append({
             'name': playlist_name,
             'source': item.get('source') or item.get('platform') or 'unknown',
             'source_url': item.get('source_url'),
             'playlist_type': item.get('playlist_type'),
-            'event_date': event_date
+            'event_date': event_date,
+            # Validation fields (Silent Failure Detection - CRITICAL!)
+            'tracklist_count': tracklist_count,
+            'total_tracks': tracklist_count,  # Alias for compatibility
+            'tracklist': item.get('tracks', []),  # For content hash generation
+            'scrape_error': item.get('scrape_error'),
+            'parsing_version': item.get('parsing_version', 'unknown')
         })
 
         # Auto-flush when batch is full
@@ -440,21 +450,34 @@ class DatabasePipeline:
 
     def _flush_batch_to_db(self, txn, batch_data, batch_type):
         """Execute batch insert in thread pool (callback for runInteraction)"""
-        if batch_type == 'artists':
-            self._insert_artists_batch(txn, batch_data)
-        elif batch_type == 'songs':
-            self._insert_songs_batch(txn, batch_data)
-        elif batch_type == 'playlists':
-            self._insert_playlists_batch(txn, batch_data)
-        elif batch_type == 'playlist_tracks':
-            self._insert_playlist_tracks_batch(txn, batch_data)
-        elif batch_type == 'track_artists':
-            self._insert_track_artists_batch(txn, batch_data)
-        elif batch_type == 'song_adjacency':
-            self._insert_adjacency_batch(txn, batch_data)
+        self.logger.info(f"🔧 [DEBUG] _flush_batch_to_db called for {batch_type} with {len(batch_data)} items")
+
+        try:
+            if batch_type == 'artists':
+                self._insert_artists_batch(txn, batch_data)
+            elif batch_type == 'songs':
+                self._insert_songs_batch(txn, batch_data)
+            elif batch_type == 'playlists':
+                self._insert_playlists_batch(txn, batch_data)
+            elif batch_type == 'playlist_tracks':
+                self._insert_playlist_tracks_batch(txn, batch_data)
+            elif batch_type == 'track_artists':
+                self._insert_track_artists_batch(txn, batch_data)
+            elif batch_type == 'song_adjacency':
+                self._insert_adjacency_batch(txn, batch_data)
+
+            # Twisted adbapi automatically commits if no exception is raised
+            self.logger.info(f"🔧 [DEBUG] _flush_batch_to_db completed successfully for {batch_type} - auto-commit will occur")
+        except Exception as e:
+            self.logger.error(f"❌ [DEBUG] Exception in _flush_batch_to_db for {batch_type}: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            raise  # Re-raise to trigger rollback
 
     def _insert_artists_batch(self, txn, batch: List[Dict[str, Any]]):
         """Insert artists batch using psycopg2"""
+        self.logger.info(f"🔧 [DEBUG] _insert_artists_batch executing INSERT for {len(batch)} artists")
+
         txn.executemany("""
             INSERT INTO artists (name, normalized_name, genres, country)
             VALUES (%s, %s, %s, %s)
@@ -472,6 +495,8 @@ class DatabasePipeline:
             ) for item in batch
         ])
 
+        self.logger.info(f"🔧 [DEBUG] _insert_artists_batch executemany completed, rowcount: {txn.rowcount}")
+
     def _insert_songs_batch(self, txn, batch: List[Dict[str, Any]]):
         """
         Insert tracks batch with ISRC/Spotify ID based upsert logic.
@@ -483,6 +508,8 @@ class DatabasePipeline:
 
         Uses COALESCE for smart merging - prefer new non-null values.
         """
+        self.logger.info(f"🔧 [DEBUG] _insert_songs_batch called with {len(batch)} songs")
+
         tracks_data = []
         track_artist_relationships = []
 
@@ -551,29 +578,42 @@ class DatabasePipeline:
             })
 
         # Insert tracks using ISRC/Spotify ID upsert strategy
+        self.logger.info(f"🔧 [DEBUG] Starting upsert loop for {len(tracks_data)} tracks")
+        upserted_count = 0
+
         for track in tracks_data:
             try:
                 import json
                 track_id = self._upsert_track(txn, track)
 
-                # Create track_artists relationship if we have both track and artist
-                if track_id and track['primary_artist_id']:
-                    track_artist_relationships.append((
-                        track_id,
-                        track['primary_artist_id'],
-                        'primary',
-                        0
-                    ))
+                if track_id:
+                    upserted_count += 1
+                    # Create track_artists relationship if we have both track and artist
+                    if track['primary_artist_id']:
+                        track_artist_relationships.append((
+                            track_id,
+                            track['primary_artist_id'],
+                            'primary',
+                            0
+                        ))
+                else:
+                    self.logger.warning(f"⚠️ _upsert_track returned None for '{track['title']}'")
             except Exception as e:
                 self.logger.warning(f"Error upserting track '{track['title']}': {e}")
+                import traceback
+                self.logger.warning(traceback.format_exc())
+
+        self.logger.info(f"🔧 [DEBUG] Completed upsert loop: {upserted_count}/{len(tracks_data)} tracks upserted successfully")
 
         # Insert track_artists relationships
         if track_artist_relationships:
+            self.logger.info(f"🔧 [DEBUG] Inserting {len(track_artist_relationships)} track_artist relationships")
             txn.executemany("""
                 INSERT INTO track_artists (track_id, artist_id, role, position)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (track_id, artist_id, role) DO NOTHING
             """, track_artist_relationships)
+            self.logger.info(f"🔧 [DEBUG] track_artists executemany completed")
 
     def _upsert_track(self, txn, track: Dict[str, Any]) -> Optional[str]:
         """
@@ -588,8 +628,11 @@ class DatabasePipeline:
         """
         import json
 
+        self.logger.debug(f"🔧 [DEBUG] _upsert_track called for: {track['title'][:50]}")
+
         # STRATEGY 1: Try ISRC-based upsert (highest priority)
         if track.get('isrc'):
+            self.logger.debug(f"🔧 [DEBUG] Attempting ISRC-based upsert for ISRC: {track['isrc']}")
             try:
                 txn.execute("""
                     INSERT INTO tracks (
@@ -681,6 +724,7 @@ class DatabasePipeline:
                 self.logger.warning(f"Spotify ID upsert failed for {track.get('spotify_id')}: {e}")
 
         # STRATEGY 3: Fallback to title-based lookup (legacy compatibility)
+        self.logger.debug(f"🔧 [DEBUG] Attempting title-based fallback for: {track['title'][:50]}")
         try:
             # First, check if track exists by normalized title
             txn.execute(
@@ -690,6 +734,7 @@ class DatabasePipeline:
             existing = txn.fetchone()
 
             if existing:
+                self.logger.debug(f"🔧 [DEBUG] Found existing track by title, updating...")
                 # Update existing track with new data (backfill ISRC/Spotify ID if available)
                 track_id = existing[0]
                 txn.execute("""
@@ -725,6 +770,7 @@ class DatabasePipeline:
                 return track_id
             else:
                 # Insert new track (no identifiers, no existing match)
+                self.logger.debug(f"🔧 [DEBUG] Inserting NEW track: {track['title'][:50]}")
                 txn.execute("""
                     INSERT INTO tracks (
                         title, normalized_title, isrc, genre, bpm, key,
@@ -748,13 +794,19 @@ class DatabasePipeline:
                     json.dumps(track['metadata'])
                 ))
                 result = txn.fetchone()
+                self.logger.debug(f"🔧 [DEBUG] INSERT result: {result}")
                 if result:
-                    self.logger.debug(f"✓ Inserted new track: {track['title']}")
+                    self.logger.debug(f"✓ Inserted new track: {track['title']}, ID: {result[0]}")
                     return result[0]
+                else:
+                    self.logger.warning(f"⚠️ INSERT returned no result for: {track['title']}")
 
         except Exception as e:
             self.logger.error(f"Title-based fallback failed for '{track['title']}': {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
 
+        self.logger.warning(f"🔧 [DEBUG] _upsert_track returning None for: {track['title'][:50]}")
         return None
 
     def _insert_playlists_batch(self, txn, batch: List[Dict[str, Any]]):
@@ -769,11 +821,18 @@ class DatabasePipeline:
             # This prevents duplicates even when URLs change (dynamic URLs, pagination, etc.)
             content_hash = None
             if 'tracklist' in item and item['tracklist']:
-                # Sort track names to ensure consistent hash regardless of order
-                tracklist_normalized = sorted([
-                    t.get('track_name', '').lower().strip()
-                    for t in item['tracklist']
-                ])
+                # Handle both list of strings and list of dicts
+                tracklist_normalized = []
+                for t in item['tracklist']:
+                    if isinstance(t, dict):
+                        # Dictionary format: {'track_name': 'Song Name', ...}
+                        tracklist_normalized.append(t.get('track_name', '').lower().strip())
+                    elif isinstance(t, str):
+                        # String format: 'Song Name'
+                        tracklist_normalized.append(t.lower().strip())
+
+                # Sort to ensure consistent hash regardless of order
+                tracklist_normalized = sorted(tracklist_normalized)
                 content_str = json.dumps(tracklist_normalized, sort_keys=True)
                 content_hash = hashlib.sha256(content_str.encode()).hexdigest()[:16]  # 16 chars sufficient
 
@@ -787,29 +846,15 @@ class DatabasePipeline:
                     self.logger.info(f"Skipping duplicate playlist (same tracklist, different URL): {item['name']}")
                     continue
 
-            # CRITICAL: Deduplicate by source_url to prevent same setlist being scraped multiple times
-            if source_url:
-                txn.execute(
-                    "SELECT playlist_id FROM playlists WHERE source_url = %s",
-                    (source_url,)
-                )
-                existing = txn.fetchone()
-                if existing:
-                    self.logger.info(f"Skipping duplicate playlist URL: {source_url}")
-                    continue  # Skip - this playlist already scraped
-            else:
-                # Fallback to name+source if no URL (less reliable)
-                txn.execute(
-                    "SELECT playlist_id FROM playlists WHERE name = %s AND source = %s",
-                    (item['name'], item.get('source', 'scraped_data'))
-                )
-                existing = txn.fetchone()
-                if existing:
-                    self.logger.info(f"Skipping duplicate playlist: {item['name']}")
-                    continue
-
             # Extract validation fields for silent failure detection
+            self.logger.debug(f"🔧 [DEBUG] Playlist item keys: {list(item.keys())}")
+            self.logger.debug(f"🔧 [DEBUG] tracklist_count field: {item.get('tracklist_count')}")
+            self.logger.debug(f"🔧 [DEBUG] total_tracks field: {item.get('total_tracks')}")
+            self.logger.debug(f"🔧 [DEBUG] tracklist field length: {len(item.get('tracklist', []))}")
+
             tracklist_count = item.get('tracklist_count', item.get('total_tracks', len(item.get('tracklist', []))))
+            self.logger.debug(f"🔧 [DEBUG] Final tracklist_count: {tracklist_count}")
+
             scrape_error = item.get('scrape_error')
             parsing_version = item.get('parsing_version', 'unknown')
 
@@ -822,13 +867,23 @@ class DatabasePipeline:
                     f"Source: {item.get('source')}, URL: {source_url}"
                 )
 
-            # Insert new playlist with validation fields
+            # UPSERT: Insert new playlist or UPDATE existing one
+            # This ensures re-scraping updates tracklist_count and clears errors
             txn.execute("""
                 INSERT INTO playlists (
                     name, source, source_url, playlist_type, event_date, content_hash,
                     tracklist_count, scrape_error, last_scrape_attempt, parsing_version
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
+                ON CONFLICT (source_url) WHERE source_url IS NOT NULL
+                DO UPDATE SET
+                    name = EXCLUDED.name,
+                    tracklist_count = EXCLUDED.tracklist_count,
+                    scrape_error = EXCLUDED.scrape_error,
+                    last_scrape_attempt = NOW(),
+                    parsing_version = EXCLUDED.parsing_version,
+                    content_hash = COALESCE(EXCLUDED.content_hash, playlists.content_hash),
+                    updated_at = NOW()
             """,
                 (item['name'],
                 item.get('source', 'scraped_data'),
@@ -840,6 +895,7 @@ class DatabasePipeline:
                 scrape_error,
                 parsing_version)
             )
+            self.logger.debug(f"✓ Upserted playlist: {item['name']} ({tracklist_count} tracks)")
 
     def _insert_playlist_tracks_batch(self, txn, batch: List[Dict[str, Any]]):
         """Insert playlist tracks batch using psycopg2 (now uses tracks table)"""

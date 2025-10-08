@@ -113,7 +113,6 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       websocketRef.current = ws;
 
       ws.onopen = () => {
-        console.log('✅ WebSocket connected');
         setStatus(prev => {
           const newStatus = {
             ...prev,
@@ -156,7 +155,6 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       };
 
       ws.onclose = (event) => {
-        console.log('🔌 WebSocket closed:', event.code, event.reason);
         setStatus(prev => {
           const newStatus = {
             ...prev,
@@ -230,11 +228,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
 
       case 'node_update':
         // Update specific nodes
-        console.log('Node update received:', message.data);
         break;
 
       case 'scraper_status':
-        console.log('Scraper status:', message.data);
         break;
 
       case 'performance_update':
@@ -247,12 +243,10 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         break;
 
       case 'new_tracks':
-        console.log('New tracks available:', message.data.count);
         // Could trigger a refresh or show notification
         break;
 
       default:
-        console.log('Unknown WebSocket message type:', message.type);
     }
   }, [setGraphData, updatePerformanceMetrics, enablePerformanceTracking, onDataUpdate]);
 
@@ -346,7 +340,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         onDataUpdate('graph', graphData);
       }
 
-      console.log(`📊 Loaded ${nodes.length} nodes, ${edges.length} edges (${Math.round(latency)}ms)`);
+      }ms)`);
 
     } catch (error) {
       const errorMessage = `Failed to load data: ${error}`;

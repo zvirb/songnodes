@@ -123,8 +123,6 @@ const App: React.FC = () => {
     if (toggleFn) {
       toggleFn();
       setIsAnimationPaused(prev => !prev);
-    } else {
-      console.warn('toggleSimulation function not available');
     }
   }, []);
 
@@ -133,8 +131,6 @@ const App: React.FC = () => {
     if (restartFn) {
       restartFn();
       setIsAnimationPaused(false);
-    } else {
-      console.warn('manualRefresh function not available');
     }
   }, []);
 
@@ -144,7 +140,6 @@ const App: React.FC = () => {
       try {
         const legacyTokensStr = localStorage.getItem('tidal_oauth_tokens');
         if (legacyTokensStr) {
-          console.log('🔄 [App] Found legacy Tidal tokens - migrating to Zustand');
           const legacyTokens = JSON.parse(legacyTokensStr);
 
           const store = useStore.getState();
@@ -163,9 +158,7 @@ const App: React.FC = () => {
 
             // Clean up legacy storage after successful migration
             localStorage.removeItem('tidal_oauth_tokens');
-            console.log('✅ [App] Legacy tokens migrated and cleaned up');
           } else {
-            console.log('ℹ️ [App] Tokens already in Zustand, removing legacy storage');
             localStorage.removeItem('tidal_oauth_tokens');
           }
         }

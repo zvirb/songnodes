@@ -39,6 +39,8 @@ interface MusicServiceCredentials {
     accessToken?: string;
     refreshToken?: string;
     expiresAt?: number;
+    isConnected?: boolean;
+    lastValidated?: number;
   };
 }
 
@@ -96,6 +98,7 @@ interface ViewActions {
   setNodeSize: (size: number) => void;
   setEdgeOpacity: (opacity: number) => void;
   resetView: () => void;
+  navigateToNode: (nodeId: string, options?: { highlight?: boolean; openModal?: boolean; selectNode?: boolean }) => void;
 }
 
 interface PanelActions {
@@ -215,6 +218,7 @@ const initialState: AppState = {
     edgeDisplay: 'all',
     performanceMode: 'balanced',
     showStats: false,
+    navigationRequest: null,
   },
 
   panelState: {
@@ -293,14 +297,24 @@ export const useStore = create<StoreState>()(
           updateNodePositions: (positions) => {
             set((state) => {
               const nodeMap = new Map(state.graphData.nodes.map(node => [node.id, node]));
+              let rejectedCount = 0;
 
               positions.forEach(({ id, x, y }) => {
                 const node = nodeMap.get(id);
                 if (node) {
+                  // ✅ CRITICAL: Validate positions from localStorage - reject exploded positions
+                  const maxReasonablePosition = 5000;
+                  if (Math.abs(x) > maxReasonablePosition || Math.abs(y) > maxReasonablePosition) {
+                    rejectedCount++;
+                    // Don't set exploded positions - let simulation initialize them
+                    return;
+                  }
                   node.x = x;
                   node.y = y;
                 }
               });
+
+              // Silently reject exploded positions without logging noise
 
               return {
                 ...state,
@@ -411,12 +425,10 @@ export const useStore = create<StoreState>()(
 
           toggleLabels: () => {
             // DISABLED: Labels permanently enabled
-            console.log('🏷️ Labels are permanently enabled');
           },
 
           toggleEdges: () => {
             // DISABLED: Edges permanently enabled
-            console.log('🔗 Edges are permanently enabled');
           },
 
           setNodeSize: (size) => {
@@ -450,6 +462,20 @@ export const useStore = create<StoreState>()(
                 hoveredNode: null,
               },
             }), false, 'view/resetView');
+          },
+
+          navigateToNode: (nodeId, options) => {
+            set((state) => ({
+              ...state,
+              viewState: {
+                ...state.viewState,
+                navigationRequest: {
+                  nodeId,
+                  timestamp: Date.now(),
+                  options: options || {},
+                },
+              },
+            }), false, 'view/navigateToNode');
           },
         },
 
@@ -554,9 +580,94 @@ export const useStore = create<StoreState>()(
           },
 
           applyFilters: (filters) => {
-            // This would typically trigger a re-fetch of graph data
-            // For now, just update the filters
+            // Update filters
             get().search.setSearchFilters(filters);
+
+            // Apply filters to graph data
+            const state = get();
+            const originalData = state.originalGraphData || state.graphData;
+
+            // Filter nodes based on SearchFilters
+            const filteredNodes = originalData.nodes.filter(node => {
+              // Only filter track nodes
+              if (node.type !== 'track' || !node.track) return true;
+
+              const track = node.track;
+
+              // Genre filter
+              if (filters.genre && filters.genre.length > 0) {
+                if (!track.genre || !filters.genre.includes(track.genre)) {
+                  return false;
+                }
+              }
+
+              // Key range filter
+              if (filters.keyRange && filters.keyRange.length > 0) {
+                if (!track.camelotKey || !filters.keyRange.includes(track.camelotKey)) {
+                  return false;
+                }
+              }
+
+              // BPM range filter
+              if (filters.bpmRange) {
+                if (!track.bpm || track.bpm < filters.bpmRange[0] || track.bpm > filters.bpmRange[1]) {
+                  return false;
+                }
+              }
+
+              // Energy range filter
+              if (filters.energyRange) {
+                if (!track.energy || track.energy < filters.energyRange[0] || track.energy > filters.energyRange[1]) {
+                  return false;
+                }
+              }
+
+              // Year range filter
+              if (filters.yearRange) {
+                const year = track.year || track.release_year;
+                if (!year || year < filters.yearRange[0] || year > filters.yearRange[1]) {
+                  return false;
+                }
+              }
+
+              // Artist filter
+              if (filters.artist && filters.artist.length > 0) {
+                if (!track.artist || !filters.artist.includes(track.artist)) {
+                  return false;
+                }
+              }
+
+              // Min popularity filter
+              if (filters.minPopularity !== undefined && filters.minPopularity > 0) {
+                if (!track.popularity || track.popularity < filters.minPopularity) {
+                  return false;
+                }
+              }
+
+              // Has preview filter
+              if (filters.hasPreview) {
+                if (!track.preview_url) {
+                  return false;
+                }
+              }
+
+              return true;
+            });
+
+            // Create a set of visible node IDs for edge filtering
+            const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
+
+            // Filter edges - only keep edges where both source and target are visible
+            const filteredEdges = originalData.edges.filter(edge =>
+              visibleNodeIds.has(edge.source.toString()) &&
+              visibleNodeIds.has(edge.target.toString())
+            );
+
+            // Update graph data with filtered results
+            get().graph.setGraphData({
+              nodes: filteredNodes,
+              edges: filteredEdges
+            });
           },
         },
 
@@ -899,8 +1010,6 @@ export const useStore = create<StoreState>()(
               ...state,
               musicCredentials: newCredentials,
             }), false, `credentials/update${service.charAt(0).toUpperCase() + service.slice(1)}`);
-
-            console.log(`✅ Updated ${service} credentials`);
           },
 
           clearCredentials: (service) => {
@@ -1015,18 +1124,14 @@ export const useStore = create<StoreState>()(
           loadCredentialsFromStorage: () => {
             // ✅ 2025 Best Practice: Zustand persist automatically loads on hydration
             // This function is kept for backward compatibility but does nothing
-            console.log('ℹ️ loadCredentialsFromStorage called - Zustand persist handles this automatically');
           },
 
           saveCredentialsToStorage: () => {
             // ✅ 2025 Best Practice: Zustand persist automatically saves on state changes
             // This function is kept for backward compatibility but does nothing
-            console.log('ℹ️ saveCredentialsToStorage called - Zustand persist handles this automatically');
           },
 
           setConnectionStatus: (service, isConnected) => {
-            console.log(`🔧 [setConnectionStatus] ${service} = ${isConnected}`);
-
             const newCredentials = {
               ...get().musicCredentials,
               [service]: {
@@ -1049,7 +1154,7 @@ export const useStore = create<StoreState>()(
                 try {
                   const parsed = JSON.parse(stored);
                   const hasCreds = parsed?.state?.musicCredentials?.[service]?.isConnected;
-                  console.log(`✅ [setConnectionStatus] Verified persistence:`, { hasCreds, service });
+                  // Persistence verified silently
                 } catch (e) {
                   console.error('❌ Failed to verify persistence:', e);
                 }
@@ -1203,10 +1308,51 @@ export const useStore = create<StoreState>()(
                 state.pathfindingState.selectedWaypoints = new Set(state.pathfindingState.selectedWaypoints);
               }
 
-              // Log successful credential restoration
-              if (state.musicCredentials && Object.keys(state.musicCredentials).length > 0) {
-                console.log('✅ Credentials restored:', Object.keys(state.musicCredentials));
+              // ✅ CRITICAL FIX: Validate and reset bad viewport pan AND zoom values
+              // Extreme pan values (> 2000 or < -2000) OR extreme zoom (< 0.5 or > 3) cause LOD culling issues
+              // This happens when users zoom/pan way out and the state is persisted
+              if (state.viewState?.pan || state.viewState?.zoom) {
+                const maxPan = 2000;
+                const minReasonableZoom = 0.5; // Below this, everything gets culled
+                const maxReasonableZoom = 3.0; // Above this is excessive
+
+                const badPan =
+                  Math.abs(state.viewState.pan?.x || 0) > maxPan ||
+                  Math.abs(state.viewState.pan?.y || 0) > maxPan;
+
+                const badZoom =
+                  (state.viewState.zoom || 1) < minReasonableZoom ||
+                  (state.viewState.zoom || 1) > maxReasonableZoom;
+
+                if (badPan || badZoom) {
+                  console.warn('⚠️ Detected extreme viewport values, resetting to defaults:', {
+                    pan: state.viewState.pan,
+                    zoom: state.viewState.zoom,
+                    reasons: { badPan, badZoom }
+                  });
+                  state.viewState.pan = { x: 0, y: 0 };
+                  state.viewState.zoom = DEFAULT_CONFIG.ui.defaultZoom;
+
+                  // Force save the corrected state back to localStorage
+                  setTimeout(() => {
+                    const storeData = localStorage.getItem('songnodes-store');
+                    if (storeData) {
+                      try {
+                        const parsed = JSON.parse(storeData);
+                        if (parsed.state?.viewState) {
+                          parsed.state.viewState.pan = { x: 0, y: 0 };
+                          parsed.state.viewState.zoom = DEFAULT_CONFIG.ui.defaultZoom;
+                          localStorage.setItem('songnodes-store', JSON.stringify(parsed));
+                        }
+                      } catch (e) {
+                        console.error('Failed to update localStorage:', e);
+                      }
+                    }
+                  }, 100);
+                }
               }
+
+              // Credentials restored silently
             }
           };
         },
@@ -1244,17 +1390,11 @@ if (typeof window !== 'undefined') {
         clientId: 'console-test-client',
         clientSecret: 'console-test-secret'
       });
-      console.log('✅ Test credentials injected via Zustand');
     },
     verifyPersistence: () => {
       const state = useStore.getState().musicCredentials;
       const stored = localStorage.getItem('songnodes-store');
       const parsed = stored ? JSON.parse(stored) : null;
-
-      console.log('🔍 Persistence Verification:');
-      console.log('  Zustand state:', state);
-      console.log('  localStorage:', parsed?.state?.musicCredentials);
-      console.log('  Match:', JSON.stringify(state) === JSON.stringify(parsed?.state?.musicCredentials));
 
       return {
         zustandState: state,
@@ -1264,8 +1404,5 @@ if (typeof window !== 'undefined') {
     }
   };
 
-  // Debug utilities are available at window.debugZustand (see console for details)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🛠️ Debug utilities: window.debugZustand (getState, getMusicCredentials, getLocalStorage, injectTestCredentials, verifyPersistence)');
-  }
+  // Debug utilities are available at window.debugZustand
 }

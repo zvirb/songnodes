@@ -18,6 +18,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from fuzzy_matcher import LabelAwareFuzzyMatcher
 from artist_populator import ArtistPopulator
+from title_normalizer import TitleNormalizer, FuzzyTitleMatcher
+from dj_profiler import DJProfiler
+from confidence_scorer import ConfidenceScorer, AttributionMethod
 
 logger = structlog.get_logger(__name__)
 
@@ -41,7 +44,6 @@ class MetadataEnrichmentPipeline:
         lastfm_client,
         acousticbrainz_client,
         getsongbpm_client,
-        sonoteller_client,
         db_session_factory: async_sessionmaker,
         redis_client: aioredis.Redis
     ):
@@ -52,7 +54,6 @@ class MetadataEnrichmentPipeline:
         self.lastfm_client = lastfm_client
         self.acousticbrainz_client = acousticbrainz_client
         self.getsongbpm_client = getsongbpm_client
-        self.sonoteller_client = sonoteller_client
         self.db_session_factory = db_session_factory
         self.redis_client = redis_client
 
@@ -69,6 +70,12 @@ class MetadataEnrichmentPipeline:
             db_session_factory=db_session_factory,
             spotify_client=spotify_client
         )
+
+        # Initialize framework components
+        self.title_normalizer = TitleNormalizer()
+        self.fuzzy_title_matcher = FuzzyTitleMatcher(threshold=85)
+        self.dj_profiler = DJProfiler(db_session_factory=db_session_factory)
+        self.confidence_scorer = ConfidenceScorer()
 
     async def enrich_track(self, task) -> Any:
         """Execute the waterfall enrichment pipeline for a track"""
@@ -116,7 +123,30 @@ class MetadataEnrichmentPipeline:
                 )
 
         try:
-            # STEP 0: Check ISRC availability (CRITICAL for deduplication)
+            # STEP 0: Parse and normalize title (Framework Section III/IV)
+            parsed_title = self.title_normalizer.parse_title(task.track_title)
+            normalized_title = parsed_title.normalized_title
+
+            logger.info(
+                "Title parsing",
+                original=task.track_title,
+                normalized=normalized_title,
+                is_remix=parsed_title.is_remix,
+                remixer=parsed_title.remixer,
+                label=parsed_title.label
+            )
+
+            # Store parsed information for downstream use
+            metadata['parsed_title'] = {
+                'normalized': normalized_title,
+                'clean': parsed_title.clean_title,
+                'is_remix': parsed_title.is_remix,
+                'remixer': parsed_title.remixer,
+                'remix_type': parsed_title.remix_type,
+                'label': parsed_title.label
+            }
+
+            # STEP 0.1: Check ISRC availability (CRITICAL for deduplication)
             isrc = task.existing_isrc or metadata.get('isrc')
             if not isrc:
                 logger.warning(
@@ -194,31 +224,39 @@ class MetadataEnrichmentPipeline:
                     )
                     errors.append(f"Fuzzy matching error: {str(e)}")
 
-            # STEP 1: Primary enrichment via Spotify (if spotify_id available)
+            # STEP 1: Primary enrichment via Spotify (if spotify_id available) - INDEPENDENT
             if task.existing_spotify_id:
                 logger.info("Step 1: Enriching from Spotify ID", spotify_id=task.existing_spotify_id)
-                spotify_data = await self._enrich_from_spotify_id(task.existing_spotify_id)
+                try:
+                    spotify_data = await self._enrich_from_spotify_id(task.existing_spotify_id)
 
-                if spotify_data:
-                    sources_used.append(EnrichmentSource.SPOTIFY)
-                    metadata.update(spotify_data)
-                    logger.info("Spotify enrichment successful")
+                    if spotify_data:
+                        sources_used.append(EnrichmentSource.SPOTIFY)
+                        metadata.update(spotify_data)
+                        logger.info("✓ Spotify enrichment successful")
 
-                    # CRITICAL: Check if ISRC was obtained from Spotify
-                    if spotify_data.get('isrc') and not isrc:
-                        isrc = spotify_data['isrc']
-                        logger.info("✓ ISRC populated from Spotify", isrc=isrc)
+                        # CRITICAL: Check if ISRC was obtained from Spotify
+                        if spotify_data.get('isrc') and not isrc:
+                            isrc = spotify_data['isrc']
+                            logger.info("✓ ISRC populated from Spotify", isrc=isrc)
 
-                    # Get audio features - DISABLED due to Spotify API restrictions (Nov 2024)
-                    # Spotify restricted audio-features endpoint to existing extended mode apps only
-                    # See: https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api
-                    # if self.spotify_client:
-                    #     audio_features = await self.spotify_client.get_audio_features(
-                    #         task.existing_spotify_id
-                    #     )
-                    #     if audio_features:
-                    #         metadata['audio_features'] = audio_features
-                    #         logger.info("Spotify audio features retrieved")
+                        # Get audio features - DISABLED due to Spotify API restrictions (Nov 2024)
+                        # Spotify restricted audio-features endpoint to existing extended mode apps only
+                        # See: https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api
+                        # if self.spotify_client:
+                        #     audio_features = await self.spotify_client.get_audio_features(
+                        #         task.existing_spotify_id
+                        #     )
+                        #     if audio_features:
+                        #         metadata['audio_features'] = audio_features
+                        #         logger.info("Spotify audio features retrieved")
+                except Exception as e:
+                    logger.warning(
+                        "Spotify enrichment failed - continuing with other sources",
+                        error=str(e),
+                        spotify_id=task.existing_spotify_id
+                    )
+                    errors.append(f"Spotify enrichment error: {str(e)}")
 
             # STEP 2: Enrichment via ISRC (if available or obtained from Spotify)
             if not isrc:
@@ -229,28 +267,44 @@ class MetadataEnrichmentPipeline:
 
                 # Try Spotify ISRC search if we don't have Spotify data yet - only if client exists
                 if self.spotify_client and EnrichmentSource.SPOTIFY not in sources_used:
-                    spotify_isrc_data = await self.spotify_client.search_by_isrc(isrc)
-                    if spotify_isrc_data:
-                        sources_used.append(EnrichmentSource.SPOTIFY)
-                        metadata.update(spotify_isrc_data)
+                    try:
+                        spotify_isrc_data = await self.spotify_client.search_by_isrc(isrc)
+                        if spotify_isrc_data:
+                            sources_used.append(EnrichmentSource.SPOTIFY)
+                            metadata.update(spotify_isrc_data)
 
-                        # Get audio features - DISABLED (Spotify API restricted Nov 2024)
-                        # if spotify_isrc_data.get('spotify_id'):
-                        #     audio_features = await self.spotify_client.get_audio_features(
-                        #         spotify_isrc_data['spotify_id']
-                        #     )
-                        #     if audio_features:
-                        #         metadata['audio_features'] = audio_features
-                        pass
+                            # Get audio features - DISABLED (Spotify API restricted Nov 2024)
+                            # if spotify_isrc_data.get('spotify_id'):
+                            #     audio_features = await self.spotify_client.get_audio_features(
+                            #         spotify_isrc_data['spotify_id']
+                            #     )
+                            #     if audio_features:
+                            #         metadata['audio_features'] = audio_features
+                            pass
+                    except Exception as e:
+                        logger.warning(
+                            "Spotify ISRC search failed - continuing with other sources",
+                            error=str(e),
+                            isrc=isrc
+                        )
+                        errors.append(f"Spotify ISRC search error: {str(e)}")
 
-                # MusicBrainz enrichment via ISRC
-                mb_data = await self.musicbrainz_client.search_by_isrc(isrc)
-                if mb_data:
-                    sources_used.append(EnrichmentSource.MUSICBRAINZ)
-                    metadata.update(mb_data)
-                    logger.info("MusicBrainz ISRC enrichment successful")
+                # MusicBrainz enrichment via ISRC - INDEPENDENT (fails gracefully)
+                try:
+                    mb_data = await self.musicbrainz_client.search_by_isrc(isrc)
+                    if mb_data:
+                        sources_used.append(EnrichmentSource.MUSICBRAINZ)
+                        metadata.update(mb_data)
+                        logger.info("✓ MusicBrainz ISRC enrichment successful")
+                except Exception as e:
+                    logger.warning(
+                        "MusicBrainz ISRC search failed - continuing with other sources",
+                        error=str(e),
+                        isrc=isrc
+                    )
+                    errors.append(f"MusicBrainz ISRC error: {str(e)}")
 
-            # STEP 3: Text-based search fallback
+            # STEP 3: Text-based search fallback - INDEPENDENT
             if EnrichmentSource.SPOTIFY not in sources_used:
                 logger.info(
                     "Step 3: Text-based search fallback",
@@ -260,45 +314,63 @@ class MetadataEnrichmentPipeline:
 
                 # Try Spotify search - only if client exists
                 if self.spotify_client:
-                    spotify_search = await self.spotify_client.search_track(
-                        task.artist_name,
-                        task.track_title
-                    )
-                    if spotify_search:
-                        sources_used.append(EnrichmentSource.SPOTIFY)
-                        metadata.update(spotify_search)
-                        logger.info("Spotify search successful")
+                    try:
+                        spotify_search = await self.spotify_client.search_track(
+                            task.artist_name,
+                            task.track_title
+                        )
+                        if spotify_search:
+                            sources_used.append(EnrichmentSource.SPOTIFY)
+                            metadata.update(spotify_search)
+                            logger.info("✓ Spotify text search successful")
 
-                        # Get audio features - DISABLED (Spotify API restricted Nov 2024)
-                        # if spotify_search.get('spotify_id'):
-                        #     audio_features = await self.spotify_client.get_audio_features(
-                        #         spotify_search['spotify_id']
-                        #     )
-                        #     if audio_features:
-                        #         metadata['audio_features'] = audio_features
-                        pass
+                            # Get audio features - DISABLED (Spotify API restricted Nov 2024)
+                            # if spotify_search.get('spotify_id'):
+                            #     audio_features = await self.spotify_client.get_audio_features(
+                            #         spotify_search['spotify_id']
+                            #     )
+                            #     if audio_features:
+                            #         metadata['audio_features'] = audio_features
+                            pass
+                    except Exception as e:
+                        logger.warning(
+                            "Spotify text search failed - continuing with other sources",
+                            error=str(e),
+                            artist=task.artist_name,
+                            title=task.track_title
+                        )
+                        errors.append(f"Spotify text search error: {str(e)}")
 
                 # Update ISRC if we got it from search
                 if metadata.get('isrc') and not isrc:
                     isrc = metadata['isrc']
 
-            # STEP 4: MusicBrainz text search if we don't have MB data yet
+            # STEP 4: MusicBrainz text search - INDEPENDENT (always runs if not already enriched)
             if EnrichmentSource.MUSICBRAINZ not in sources_used:
                 logger.info("Step 4: MusicBrainz text search")
 
-                mb_search = await self.musicbrainz_client.search_recording(
-                    task.artist_name,
-                    task.track_title
-                )
-                if mb_search:
-                    sources_used.append(EnrichmentSource.MUSICBRAINZ)
-                    metadata.update(mb_search)
-                    logger.info("MusicBrainz search successful")
+                try:
+                    mb_search = await self.musicbrainz_client.search_recording(
+                        task.artist_name,
+                        task.track_title
+                    )
+                    if mb_search:
+                        sources_used.append(EnrichmentSource.MUSICBRAINZ)
+                        metadata.update(mb_search)
+                        logger.info("✓ MusicBrainz text search successful")
 
-                    # CRITICAL: Check if ISRC was obtained from MusicBrainz
-                    if mb_search.get('isrc') and not isrc:
-                        isrc = mb_search['isrc']
-                        logger.info("✓ ISRC populated from MusicBrainz", isrc=isrc)
+                        # CRITICAL: Check if ISRC was obtained from MusicBrainz
+                        if mb_search.get('isrc') and not isrc:
+                            isrc = mb_search['isrc']
+                            logger.info("✓ ISRC populated from MusicBrainz", isrc=isrc)
+                except Exception as e:
+                    logger.warning(
+                        "MusicBrainz text search failed - continuing with other sources",
+                        error=str(e),
+                        artist=task.artist_name,
+                        title=task.track_title
+                    )
+                    errors.append(f"MusicBrainz text search error: {str(e)}")
 
             # STEP 5: Discogs for release-specific metadata
             logger.info("Step 5: Discogs enrichment")
@@ -353,38 +425,6 @@ class MetadataEnrichmentPipeline:
                         metadata['key'] = gsbpm_features['key']
                     logger.info("✓ GetSongBPM audio features retrieved", **gsbpm_features)
 
-            # Sonoteller.ai - Active data source (respects 5/month quota via internal tracking)
-            # Use whenever BPM or key is missing (quota check happens inside client)
-            if (not metadata.get('bpm') or not metadata.get('key')) and self.sonoteller_client:
-                logger.info(
-                    "🎵 Using Sonoteller.ai for audio analysis",
-                    artist=task.artist_name,
-                    title=task.track_title,
-                    missing_bpm=not metadata.get('bpm'),
-                    missing_key=not metadata.get('key')
-                )
-
-                sono_features = await self.sonoteller_client.analyze_track(
-                    task.artist_name,
-                    task.track_title,
-                    spotify_id=metadata.get('spotify_id')
-                )
-                if sono_features:
-                    if 'bpm' in sono_features and not metadata.get('bpm'):
-                        metadata['bpm'] = sono_features['bpm']
-                        if 'bpm_range' in sono_features:
-                            metadata['bpm_range'] = sono_features['bpm_range']
-                    if 'key' in sono_features and not metadata.get('key'):
-                        metadata['key'] = sono_features['key']
-                    if 'moods' in sono_features:
-                        metadata['moods'] = sono_features['moods']
-                    if 'genres' in sono_features:
-                        metadata['ai_genres'] = sono_features['genres']
-                    if 'instruments' in sono_features:
-                        metadata['instruments'] = sono_features['instruments']
-                    logger.info("✓ Sonoteller.ai comprehensive analysis complete", **sono_features)
-                    sources_used.append('sonoteller')
-
             # Derive Camelot key from key/BPM data
             if metadata.get('key'):
                 # Handle both string format ("C# minor") and numeric format (pitch class)
@@ -420,8 +460,41 @@ class MetadataEnrichmentPipeline:
                     isrc=final_isrc
                 )
 
+            # Calculate confidence score based on enrichment method (Framework Section VII)
+            confidence_score = await self._calculate_confidence_score(
+                task=task,
+                metadata=metadata,
+                sources_used=sources_used,
+                parsed_title=parsed_title
+            )
+
+            # Store confidence score in metadata
+            metadata['confidence_score'] = confidence_score.score
+            metadata['confidence_method'] = confidence_score.method.value
+            metadata['confidence_tier'] = self.confidence_scorer.get_quality_tier(
+                confidence_score.final_score or confidence_score.score
+            )
+
+            logger.info(
+                "Confidence score calculated",
+                track_id=task.track_id,
+                score=confidence_score.score,
+                method=confidence_score.method.value,
+                tier=metadata['confidence_tier']
+            )
+
             # Update database with enriched metadata
             await self._update_track_in_database(task.track_id, metadata, sources_used)
+
+            # CRITICAL FIX: Create artist relationships if we have artist data
+            if metadata.get('artists') and isinstance(metadata['artists'], list):
+                await self._create_artist_relationships(task.track_id, metadata['artists'])
+            elif metadata.get('spotify_id'):
+                # If we have Spotify ID but no artists array, fetch and populate artists
+                await self.artist_populator.populate_artists_from_spotify(
+                    track_id=UUID(task.track_id),
+                    spotify_track_id=metadata['spotify_id']
+                )
 
             # Update enrichment status
             await self._update_enrichment_status(
@@ -687,6 +760,67 @@ class MetadataEnrichmentPipeline:
         except Exception as e:
             logger.error("Failed to update enrichment status", error=str(e), track_id=track_id)
 
+    async def _create_artist_relationships(
+        self,
+        track_id: str,
+        artists: List[Dict[str, Any]]
+    ):
+        """
+        Create artist records and link them to track.
+
+        Args:
+            track_id: Track UUID string
+            artists: List of artist dicts from API response (must have 'name', optionally 'spotify_id'/'id')
+        """
+        try:
+            track_uuid = UUID(track_id)
+
+            for position, artist_data in enumerate(artists):
+                artist_name = artist_data.get('name')
+                # Handle both 'spotify_id' and 'id' field names from different API responses
+                artist_spotify_id = artist_data.get('spotify_id') or artist_data.get('id')
+
+                if not artist_name:
+                    logger.warning("Artist missing name - skipping", artist_data=artist_data)
+                    continue
+
+                # Get or create artist record
+                artist_id = await self.artist_populator.get_or_create_artist(
+                    name=artist_name,
+                    spotify_id=artist_spotify_id,
+                    genres=artist_data.get('genres')
+                )
+
+                if not artist_id:
+                    logger.warning(
+                        "Failed to get/create artist",
+                        name=artist_name,
+                        spotify_id=artist_spotify_id
+                    )
+                    continue
+
+                # Link artist to track
+                await self.artist_populator.link_artist_to_track(
+                    track_id=track_uuid,
+                    artist_id=artist_id,
+                    role='primary',
+                    position=position
+                )
+
+            logger.info(
+                "Artist relationships created",
+                track_id=track_id,
+                artist_count=len(artists)
+            )
+
+        except Exception as e:
+            logger.error(
+                "Failed to create artist relationships",
+                track_id=track_id,
+                error=str(e),
+                exc_info=True
+            )
+
     def _key_to_camelot(self, key_str: str) -> Optional[str]:
         """
         Convert string key notation (e.g., "C# minor", "D major") to Camelot notation
@@ -789,3 +923,129 @@ class MetadataEnrichmentPipeline:
     def _get_cache_key(self, track_id: str) -> str:
         """Generate cache key for track enrichment"""
         return f"enrichment:result:{track_id}"
+
+    async def _calculate_confidence_score(
+        self,
+        task,
+        metadata: Dict[str, Any],
+        sources_used: List,
+        parsed_title
+    ):
+        """
+        Calculate confidence score for enrichment result (Framework Section VII).
+
+        Args:
+            task: Enrichment task with track info
+            metadata: Enriched metadata
+            sources_used: List of enrichment sources used
+            parsed_title: ParsedTitle object from title normalization
+
+        Returns:
+            ConfidenceScore object with calculated confidence
+        """
+        from main import EnrichmentSource
+
+        # Determine primary attribution method
+        confidence_score = None
+
+        # Tier 1: Exact API match via ISRC or Spotify ID
+        if task.existing_spotify_id or task.existing_isrc:
+            if EnrichmentSource.SPOTIFY in sources_used:
+                confidence_score = self.confidence_scorer.score_exact_api_match(
+                    api_name='spotify',
+                    match_quality='exact'
+                )
+            elif EnrichmentSource.MUSICBRAINZ in sources_used:
+                confidence_score = self.confidence_scorer.score_exact_api_match(
+                    api_name='musicbrainz',
+                    match_quality='exact'
+                )
+
+        # Tier 2: Disambiguated match (if we did fuzzy matching)
+        elif metadata.get('fuzzy_matched'):
+            # Fuzzy match confidence already stored
+            fuzzy_confidence = metadata.get('fuzzy_match_confidence', 85)
+            confidence_score = self.confidence_scorer.score_fuzzy_match(
+                fuzzy_score=fuzzy_confidence,
+                threshold=85
+            )
+
+        # Tier 3: Text search with normalization
+        elif EnrichmentSource.SPOTIFY in sources_used or EnrichmentSource.MUSICBRAINZ in sources_used:
+            # Text-based search - lower confidence than exact match
+            api_name = 'spotify' if EnrichmentSource.SPOTIFY in sources_used else 'musicbrainz'
+            confidence_score = self.confidence_scorer.score_disambiguated_match(
+                api_name=api_name,
+                disambiguation_factors={
+                    'title_normalized': True,
+                    'label_match': parsed_title.label is not None
+                },
+                num_candidates=1  # We only take best match
+            )
+
+        # Tier 4: Community database
+        elif EnrichmentSource.DISCOGS in sources_used or EnrichmentSource.LASTFM in sources_used:
+            api_name = 'discogs' if EnrichmentSource.DISCOGS in sources_used else 'lastfm'
+            confidence_score = self.confidence_scorer.score_community_match(
+                platform=api_name,
+                has_external_link=metadata.get('discogs_id') is not None
+            )
+
+        # Fallback: Low confidence if no good matches
+        else:
+            confidence_score = self.confidence_scorer.score_contextual_inference(
+                inference_strength=0.3
+            )
+
+        # Apply contextual boost if we have DJ and setlist information
+        if hasattr(task, 'dj_name') and hasattr(task, 'playlist_id') and hasattr(task, 'track_position'):
+            try:
+                # Build DJ profile for affinity calculation
+                dj_profile = await self.dj_profiler.build_profile(task.dj_name)
+
+                # Get setlist context
+                setlist_context = await self.dj_profiler.get_setlist_context(
+                    task.playlist_id,
+                    task.track_position
+                )
+
+                if dj_profile and setlist_context and metadata.get('artists'):
+                    # Calculate artist affinity
+                    primary_artist = metadata['artists'][0]['name'] if isinstance(metadata['artists'], list) else metadata.get('artist_name', '')
+                    dj_affinity = self.dj_profiler.calculate_artist_affinity(
+                        dj_profile,
+                        primary_artist
+                    )
+
+                    # Check contextual coherence
+                    coherence_scores = self.dj_profiler.check_contextual_coherence(
+                        setlist_context,
+                        {
+                            'genre': metadata.get('genre'),
+                            'bpm': metadata.get('bpm'),
+                            'key': metadata.get('key'),
+                            'label': metadata.get('label') or parsed_title.label
+                        }
+                    )
+
+                    # Apply boost
+                    confidence_score = self.confidence_scorer.apply_contextual_boost(
+                        confidence_score,
+                        dj_affinity=dj_affinity,
+                        coherence_score=coherence_scores['overall_coherence']
+                    )
+
+                    logger.info(
+                        "Contextual boost applied",
+                        dj_affinity=dj_affinity,
+                        coherence=coherence_scores['overall_coherence'],
+                        boost=confidence_score.contextual_boost
+                    )
+
+            except Exception as e:
+                logger.warning(
+                    "Failed to apply contextual boost",
+                    error=str(e)
+                )
+
+        return confidence_score

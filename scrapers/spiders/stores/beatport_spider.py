@@ -120,7 +120,8 @@ class BeatportSpider(scrapy.Spider):
 
         # Pipeline
         'ITEM_PIPELINES': {
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
+            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
         },
 
         # Playwright for JavaScript rendering

@@ -64,7 +64,8 @@ class MusicBrainzSpider(scrapy.Spider):
         'DOWNLOAD_TIMEOUT': 30,
         'USER_AGENT': 'SongNodes/1.0 (https://songnodes.com; contact@songnodes.com)',
         'ITEM_PIPELINES': {
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
+            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
         }
     }
 

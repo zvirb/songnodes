@@ -5,6 +5,8 @@ import { zoomIdentity } from 'd3-zoom';
 import 'd3-transition'; // Adds .transition() method to selections
 import { useStore } from '../store/useStore';
 import { Track, GraphNode } from '../types';
+import { findDJPath } from '../utils/pathfinding';
+import { DEFAULT_CONSTRAINTS } from '../types/pathfinding';
 import {
   Play,
   Plus,
@@ -15,7 +17,13 @@ import {
   Target,
   Filter,
   Layers,
-  MoreHorizontal
+  MoreHorizontal,
+  Navigation,
+  MapPin,
+  Flag,
+  FlagTriangleRight,
+  RefreshCw,
+  MousePointer2
 } from 'lucide-react';
 
 interface ContextMenuProps {
@@ -50,6 +58,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const addToSetlist = useStore(state => state.setlist.addTrackToSetlist);
   const applyFilters = useStore(state => state.search.applyFilters);
   const setSelectedTool = useStore(state => state.view.setSelectedTool);
+
+  // Pathfinding actions
+  const pathfinding = useStore(state => state.pathfinding);
+  const pathfindingState = useStore(state => state.pathfindingState);
 
   // View state for toggle indicators
   const showLabels = useStore(state => state.viewState.showLabels);
@@ -86,89 +98,116 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     switch (targetType) {
       case 'node':
         const node = targetData as GraphNode;
+
+        // Helper function to calculate route
+        const handleCalculateRoute = async () => {
+          if (!pathfindingState.startTrackId || !pathfindingState.endTrackId) {
+            console.warn('⚠️ Cannot calculate route: missing start or end track');
+            return;
+          }
+
+          try {
+            pathfinding.setPathCalculating(true);
+            const graphData = useStore.getState().graphData;
+
+            const options = {
+              startTrackId: pathfindingState.startTrackId,
+              endTrackId: pathfindingState.endTrackId,
+              waypoints: pathfindingState.selectedWaypoints,
+              maxBpmChange: 20,
+              energyFlow: 'ascending' as const,
+              timeConstraints: {
+                maxDuration: 3600, // 60 minutes
+              },
+            };
+
+            const result = await findDJPath(
+              graphData,
+              options,
+              DEFAULT_CONSTRAINTS.flexible,
+              pathfindingState.algorithm
+            );
+
+            pathfinding.setCurrentPath(result);
+
+            if (result.success) {
+              console.log('✅ Route calculated successfully:', result.path.length, 'tracks');
+            } else {
+              console.warn('⚠️ Route calculation failed:', result.error);
+            }
+          } catch (error) {
+            console.error('❌ Route calculation error:', error);
+            pathfinding.setCurrentPath(null);
+          } finally {
+            pathfinding.setPathCalculating(false);
+          }
+        };
+
         items.push(
           {
-            label: 'Play Preview',
-            icon: <Play size={16} />,
-            action: () => {
-              console.log('Playing preview for:', node.label);
-              // TODO: Integrate with audio player
+            label: 'Calculate Route',
+            icon: <Navigation size={16} />,
+            action: async () => {
+              await handleCalculateRoute();
               onClose();
             },
-            shortcut: 'Space'
+            disabled: !pathfindingState.startTrackId || !pathfindingState.endTrackId
+          },
+          { divider: true } as MenuItem,
+          {
+            label: 'Set as Starting Track',
+            icon: <Flag size={16} />,
+            action: () => {
+              pathfinding.setStartTrack(node.id);
+              selectNode(node.id);
+              console.log('🏁 Start track set:', node.label);
+              onClose();
+            }
           },
           {
-            label: 'Add to Setlist',
-            icon: <Plus size={16} />,
+            label: 'Set as Waypoint',
+            icon: <MapPin size={16} />,
             action: () => {
-              if (node.track) {
-                addToSetlist(node.track);
+              if (pathfindingState.selectedWaypoints.has(node.id)) {
+                pathfinding.removeWaypoint(node.id);
+                console.log('📍 Waypoint removed:', node.label);
+              } else {
+                pathfinding.addWaypoint(node.id);
+                console.log('📍 Waypoint added:', node.label);
               }
               onClose();
-            },
-            shortcut: 'A'
-          },
-          {
-            label: 'View Details',
-            icon: <Info size={16} />,
-            action: () => {
-              selectNode(node.id);
-              onClose();
-            },
-            shortcut: 'I'
-          },
-          { divider: true } as MenuItem,
-          {
-            label: 'Find Similar',
-            icon: <Filter size={16} />,
-            action: () => {
-              // Apply filters based on node properties
-              applyFilters({
-                genre: node.genre ? [node.genre] : undefined,
-                bpmRange: node.bpm ? [node.bpm - 5, node.bpm + 5] : undefined,
-                keyRange: node.key ? [node.key] : undefined
-              });
-              onClose();
             }
           },
           {
-            label: 'Create Path From',
-            icon: <Share2 size={16} />,
+            label: 'Set as Finish Point',
+            icon: <FlagTriangleRight size={16} />,
             action: () => {
+              pathfinding.setEndTrack(node.id);
               selectNode(node.id);
-              setSelectedTool('path');
-              onClose();
-            }
-          },
-          {
-            label: 'Set as Target',
-            icon: <Target size={16} />,
-            action: () => {
-              console.log('Setting as target:', node.label);
-              // TODO: Integrate with target tracks
+              console.log('🏁 Finish track set:', node.label);
               onClose();
             }
           },
           { divider: true } as MenuItem,
           {
-            label: 'Copy Track Info',
-            icon: <Copy size={16} />,
+            label: 'Select Track',
+            icon: <MousePointer2 size={16} />,
             action: () => {
-              const info = `${node.label} - ${node.artist || 'Unknown Artist'}`;
-              navigator.clipboard.writeText(info);
+              selectNode(node.id);
               onClose();
-            },
-            shortcut: 'Ctrl+C'
+            }
           },
           {
-            label: 'Open in Spotify',
-            icon: <ExternalLink size={16} />,
+            label: 'Reset Route',
+            icon: <RefreshCw size={16} />,
             action: () => {
-              // TODO: Open in music service
-              console.log('Opening in Spotify:', node.label);
+              pathfinding.setStartTrack('');
+              pathfinding.setEndTrack('');
+              pathfinding.clearWaypoints();
+              pathfinding.setCurrentPath(null);
+              console.log('🔄 Route reset - all pathfinding data cleared');
               onClose();
-            },
-            disabled: !node.track?.spotify_id
+            }
           }
         );
         break;
@@ -180,7 +219,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: 'Play Preview',
             icon: <Play size={16} />,
             action: () => {
-              console.log('Playing:', track.name);
               onClose();
             }
           },
@@ -205,58 +243,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
       case 'empty':
         const graphSettings = targetData as any;
-        const currentLayoutMode = graphSettings?.forceSettings?.layoutMode || 'standard';
-
-        // Helper function to switch layout modes
-        const switchLayoutMode = (newMode: 'standard' | 'energy-genre' | 'category-horizontal') => {
-          if (graphSettings?.setForceSettings && graphSettings?.initializeSimulation) {
-            graphSettings.setForceSettings((prev: any) => ({ ...prev, layoutMode: newMode }));
-
-            // Reinitialize simulation with new mode
-            if (graphSettings.simulationRef?.current) {
-              graphSettings.simulationRef.current.stop();
-              graphSettings.initializeSimulation();
-              graphSettings.simulationRef.current.nodes(Array.from(graphSettings.enhancedNodesRef.current.values()));
-              const linkForce = graphSettings.simulationRef.current.force('link');
-              if (linkForce) {
-                linkForce.links(Array.from(graphSettings.enhancedEdgesRef.current.values()));
-              }
-              graphSettings.simulationRef.current.alpha(1).restart();
-            }
-          }
-        };
 
         items.push(
-          {
-            label: 'Layout Mode',
-            icon: <Layers size={16} />,
-            action: () => {
-              // Header - no action
-            },
-            disabled: true
-          },
-          {
-            label: currentLayoutMode === 'standard' ? '✓ Standard Layout' : 'Standard Layout',
-            action: () => {
-              switchLayoutMode('standard');
-              onClose();
-            }
-          },
-          {
-            label: currentLayoutMode === 'energy-genre' ? '✓ Energy/Genre Layout' : 'Energy/Genre Layout',
-            action: () => {
-              switchLayoutMode('energy-genre');
-              onClose();
-            }
-          },
-          {
-            label: currentLayoutMode === 'category-horizontal' ? '✓ Category Layout (Horizontal)' : 'Category Layout (Horizontal)',
-            action: () => {
-              switchLayoutMode('category-horizontal');
-              onClose();
-            }
-          },
-          { divider: true } as MenuItem,
           {
             label: graphSettings?.useSpriteMode ? '✓ Sprite Mode (Performance)' : 'Sprite Mode (Performance)',
             action: () => {
@@ -271,14 +259,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: 'Reset View',
             icon: <Layers size={16} />,
             action: () => {
-              // Reset viewport to centered view
-              if (graphSettings?.zoomBehaviorRef?.current && graphSettings?.containerRef?.current) {
-                const container = graphSettings.containerRef.current;
-                const zoomHandler = graphSettings.zoomBehaviorRef.current;
-                const selection = (select as any)(container);
-                selection.transition()
-                  .duration(500)
-                  .call(zoomHandler.transform, zoomIdentity);
+              // ✅ FIX: Use fitToContent to properly center and zoom to all nodes
+              if (graphSettings?.fitToContent) {
+                graphSettings.fitToContent();
+              } else {
+                // Fallback: Reset to identity transform if fitToContent not available
+                console.warn('⚠️ fitToContent not available, using fallback reset');
+                if (graphSettings?.zoomBehaviorRef?.current && graphSettings?.containerRef?.current) {
+                  const container = graphSettings.containerRef.current;
+                  const zoomHandler = graphSettings.zoomBehaviorRef.current;
+                  const selection = (select as any)(container);
+                  selection.transition()
+                    .duration(500)
+                    .call(zoomHandler.transform, zoomIdentity);
+                }
               }
               onClose();
             }
@@ -309,7 +303,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: 'View Connection Details',
             icon: <Info size={16} />,
             action: () => {
-              console.log('Edge details:', targetData);
               onClose();
             }
           },

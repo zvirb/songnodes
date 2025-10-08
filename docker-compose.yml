@@ -608,7 +608,7 @@ services:
     build:
       context: ./services
       dockerfile: data-transformer/Dockerfile
-    restart: always
+    restart: unless-stopped
     expose:
     - '8002'
     environment:
@@ -622,9 +622,16 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       BATCH_SIZE: 100
       LOG_LEVEL: INFO
+      DB_RECONNECT_ENABLED: "true"
+      DB_RECONNECT_MAX_RETRIES: 5
+      DB_RECONNECT_INTERVAL: 5
     depends_on:
-    - postgres
-    - redis
+      postgres:
+        condition: service_healthy
+      db-connection-pool:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
     - musicdb-backend
     healthcheck:
@@ -633,10 +640,10 @@ services:
       - curl
       - -f
       - http://127.0.0.1:8002/health
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -645,6 +652,39 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
+  raw-data-processor:
+    build:
+      context: .
+      dockerfile: scrapers/Dockerfile.raw_data_processor
+    container_name: raw-data-processor
+    restart: always
+    environment:
+      # Secrets manager expects these names
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: musicdb_user
+      POSTGRES_DB: musicdb
+      # Also provide database-specific names for compatibility
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: musicdb
+      DATABASE_USER: musicdb_user
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      PROCESSING_INTERVAL: 30
+      BATCH_SIZE: 200
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+    - musicdb-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   nlp-processor:
     build:
       context: ./services/nlp-processor
@@ -687,7 +727,7 @@ services:
       context: ./services
       dockerfile: data-validator/Dockerfile
     container_name: data-validator
-    restart: always
+    restart: unless-stopped
     ports:
     - 8003:8003
     environment:
@@ -701,9 +741,16 @@ services:
       DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       VALIDATION_BATCH_SIZE: 100
       VALIDATION_WORKERS: 4
+      DB_RECONNECT_ENABLED: "true"
+      DB_RECONNECT_MAX_RETRIES: 5
+      DB_RECONNECT_INTERVAL: 5
     depends_on:
-    - postgres
-    - redis
+      postgres:
+        condition: service_healthy
+      db-connection-pool:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
     - musicdb-backend
     healthcheck:
@@ -712,10 +759,10 @@ services:
       - curl
       - -f
       - http://127.0.0.1:8003/health
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -787,12 +834,6 @@ services:
       # Spotify API credentials from .env
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
-      # RapidAPI credentials (Sonoteller.ai)
-      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
-      RAPIDAPI_APPLICATION: ${RAPIDAPI_APPLICATION}
-      RAPIDAPI_HOST: ${RAPIDAPI_HOST:-rapidapi.com}
-      SONOTELLER_RAPIDAPI_KEY: ${SONOTELLER_RAPIDAPI_KEY}
-      SONOTELLER_MONTHLY_LIMIT: ${SONOTELLER_MONTHLY_LIMIT:-5}
       # NOTE: External API keys (Spotify, Discogs, Last.fm, etc.) should be configured
       # through the frontend Settings panel. They are stored encrypted in the database.
       # Environment variables are only used as fallback if database keys are not set.
