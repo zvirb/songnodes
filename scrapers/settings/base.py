@@ -111,6 +111,7 @@ COMPAT_MIDDLEWARE_STATS = True  # Track migration statistics
 # ============================================================================
 
 ITEM_PIPELINES = {
+    'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive (validation)
     'pipelines.validation_pipeline.ValidationPipeline': 100,       # Holistic validation
     'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,       # NLP, fuzzy matching, external data
     'pipelines.persistence_pipeline.PersistencePipeline': 300,     # Database upsert

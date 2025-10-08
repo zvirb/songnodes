@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { findDJPath, validateWaypoints } from '../utils/pathfinding';
+import { validateWaypoints } from '../utils/pathfinding';
 import { DEFAULT_CONSTRAINTS, AVAILABLE_ALGORITHMS } from '../types/pathfinding';
 import { formatCamelotKey } from '../utils/harmonic';
 import clsx from 'clsx';
 import Fuse, { FuseResult } from 'fuse.js';
+
+const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
 type EnergyFlowType = 'ascending' | 'descending' | 'plateau' | 'wave' | 'custom';
 
@@ -59,18 +61,22 @@ export const PathBuilder: React.FC = () => {
   // Create searchable track data from graph nodes
   const trackSearchData: TrackSearchResult[] = useMemo(() => {
     return (graphData.nodes || [])
-      .filter(node => node.track)
-      .map(node => ({
-        id: node.id,
-        title: node.track!.name || node.label,
-        artist: node.track!.artist || 'Unknown Artist',
-        bpm: node.track!.bpm,
-        key: node.track!.key,
-        camelotKey: node.track!.camelotKey,
-        energy: node.track!.energy,
-        genre: node.track!.genre,
-        duration: node.track!.duration,
-      }));
+      .map(node => {
+        // Handle both nested track format and flat node format
+        const track = node.track || node;
+        return {
+          id: node.id,
+          title: track.name || node.name || node.title || node.label,
+          artist: track.artist || node.artist || 'Unknown Artist',
+          bpm: track.bpm || node.bpm,
+          key: track.key || node.key,
+          camelotKey: track.camelotKey || node.camelot_key,
+          energy: track.energy || node.energy,
+          genre: track.genre || node.genre,
+          duration: track.duration || node.duration,
+        };
+      })
+      .filter(track => track.title); // Filter out invalid entries
   }, [graphData.nodes]);
 
   // Fuse.js search instances
@@ -178,48 +184,93 @@ export const PathBuilder: React.FC = () => {
     pathActions.clearPath();
 
     try {
-      // Build path constraints
-      const constraints = {
-        ...DEFAULT_CONSTRAINTS.flexible,
-        harmonicCompatibility: {
-          ...DEFAULT_CONSTRAINTS.flexible.harmonicCompatibility,
-          enabled: harmonicMixing,
-          weight: harmonicMixing ? 0.8 : 0.1,
-        },
-        bpmCompatibility: {
-          ...DEFAULT_CONSTRAINTS.flexible.bpmCompatibility,
-          maxChange: maxBpmChange,
-          preferredChange: Math.max(5, maxBpmChange / 2),
-        },
-        energyFlow: {
-          ...DEFAULT_CONSTRAINTS.flexible.energyFlow,
-          flowType: energyCurve === 'custom' ? 'any' : (energyCurve as 'ascending' | 'descending' | 'plateau' | 'wave'),
-        },
-        timing: {
-          ...DEFAULT_CONSTRAINTS.flexible.timing,
-          enabled: targetDuration > 0,
-          targetDuration: targetDuration * 60, // Convert to seconds
-        },
+      // Prepare tracks data - handle both nested track format and flat node format
+      const tracksData = graphData.nodes.map(node => {
+        const track = node.track || node;
+        return {
+          id: node.id,
+          name: track.name || node.name || node.title || node.label || 'Unknown',
+          artist: track.artist || node.artist || 'Unknown',
+          duration_ms: ((track.duration || node.duration || 180) * 1000), // Convert seconds to ms
+          camelot_key: track.camelotKey || node.camelot_key || node.metadata?.camelot_key,
+          bpm: track.bpm || node.bpm || node.metadata?.bpm,
+          energy: track.energy || node.energy || node.metadata?.energy
+        };
+      });
+
+      // Prepare edges data
+      const edgesData = graphData.edges.map(edge => ({
+        from_id: edge.source,
+        to_id: edge.target,
+        weight: edge.weight || 1.0,
+        connection_type: edge.type
+      }));
+
+      // Build request for backend API
+      const requestBody = {
+        start_track_id: pathfindingState.startTrackId,
+        end_track_id: pathfindingState.endTrackId || null,
+        target_duration_ms: targetDuration * 60 * 1000, // Convert minutes to ms
+        waypoint_track_ids: Array.from(pathfindingState.selectedWaypoints),
+        tracks: tracksData,
+        edges: edgesData,
+        tolerance_ms: 5 * 60 * 1000, // 5 minutes tolerance
+        prefer_key_matching: harmonicMixing
       };
 
-      // Build path options
-      const options = {
-        startTrackId: pathfindingState.startTrackId,
-        endTrackId: pathfindingState.endTrackId || pathfindingState.startTrackId,
-        waypoints: pathfindingState.selectedWaypoints,
-        maxBpmChange,
-        energyFlow: energyCurve === 'custom' ? 'any' : (energyCurve as 'ascending' | 'descending' | 'plateau' | 'wave'),
-        timeConstraints: {
-          maxDuration: targetDuration * 60,
+      // Call backend pathfinding API
+      const response = await fetch(`${REST_API_BASE}/api/v1/pathfinder/find-path`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      } as const;
+        body: JSON.stringify(requestBody),
+      });
 
-      const result = await findDJPath(
-        graphData,
-        options,
-        constraints as any,
-        pathfindingState.algorithm
-      );
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Pathfinding failed' }));
+        throw new Error(errorData.detail || 'Pathfinding failed');
+      }
+
+      const backendResult = await response.json();
+
+      // Transform backend response to frontend PathResult format
+      const result = {
+        success: backendResult.success,
+        path: backendResult.path.map((segment: any, index: number) => ({
+          id: segment.track.id,
+          track: {
+            id: segment.track.id,
+            name: segment.track.name,
+            artist: segment.track.artist,
+            duration: segment.track.duration_ms / 1000, // Convert ms to seconds
+            bpm: segment.track.bpm,
+            camelotKey: segment.track.camelot_key,
+            energy: segment.track.energy,
+          },
+          position: index,
+          isWaypoint: backendResult.waypoints_visited.includes(segment.track.id),
+          transitionScore: segment.key_compatible ? 1.0 : 0.5,
+          cumulativeWeight: segment.cumulative_duration_ms / 1000,
+          parentId: index > 0 ? backendResult.path[index - 1].track.id : null,
+          distanceFromStart: segment.cumulative_duration_ms / 1000,
+        })),
+        totalWeight: backendResult.total_duration_ms / 1000,
+        totalDuration: backendResult.total_duration_ms / 1000,
+        averageTransitionScore: backendResult.key_compatibility_score,
+        keyTransitions: [], // Backend doesn't provide this, but not critical for UI
+        bpmTransitions: [],
+        energyProfile: [],
+        genreTransitions: [],
+        waypointsIncluded: backendResult.waypoints_visited,
+        waypointsSkipped: backendResult.waypoints_missed,
+        metadata: {
+          searchTime: 0,
+          nodesExplored: 0,
+          algorithmsUsed: ['backend-astar'],
+          optimizationPasses: 1,
+        },
+      };
 
       pathActions.setCurrentPath(result);
 
@@ -238,6 +289,8 @@ export const PathBuilder: React.FC = () => {
 
     } catch (error) {
       console.error('Path generation failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Pathfinding failed';
+
       pathActions.setCurrentPath({
         success: false,
         path: [],
@@ -253,10 +306,13 @@ export const PathBuilder: React.FC = () => {
         metadata: {
           searchTime: 0,
           nodesExplored: 0,
-          algorithmsUsed: [pathfindingState.algorithm.name],
+          algorithmsUsed: ['backend-astar'],
           optimizationPasses: 0,
         },
       });
+
+      // Show error message to user
+      alert(`Pathfinding Error: ${errorMessage}`);
     }
 
     pathActions.setPathCalculating(false);
@@ -265,7 +321,6 @@ export const PathBuilder: React.FC = () => {
     targetDuration,
     maxBpmChange,
     harmonicMixing,
-    energyCurve,
     graphData,
     pathActions,
     graphActions,
@@ -775,7 +830,6 @@ export const PathBuilder: React.FC = () => {
                               const track = graphData.nodes.find(n => n.id === pathNode.id)?.track;
                               if (track) {
                                 // This would integrate with setlist functionality
-                                console.log('Add to setlist:', track);
                               }
                             });
                           }

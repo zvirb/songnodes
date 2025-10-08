@@ -147,6 +147,16 @@ export interface SearchResult {
 }
 
 // UI state types
+export interface NavigationRequest {
+  nodeId: string;
+  timestamp: number;
+  options?: {
+    highlight?: boolean;
+    openModal?: boolean;
+    selectNode?: boolean;
+  };
+}
+
 export interface ViewState {
   selectedTool: 'select' | 'path' | 'setlist' | 'filter';
   selectedNodes: Set<string>;
@@ -162,6 +172,7 @@ export interface ViewState {
   edgeDisplay?: 'all' | 'strong' | 'selected' | 'none';
   performanceMode?: 'high' | 'balanced' | 'low';
   showStats?: boolean;
+  navigationRequest?: NavigationRequest | null;
 }
 
 export interface PanelState {

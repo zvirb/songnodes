@@ -18,18 +18,29 @@ const OAuthCallback: React.FC = () => {
     const handleOAuthCallback = async () => {
       // Guard against React Strict Mode double-rendering
       if (hasProcessed.current) {
-        console.log('[OAuth] Skipping duplicate callback (React Strict Mode)');
         return;
       }
       hasProcessed.current = true;
       try {
-        // Detect which service from URL path
+        // Detect which service from URL path (2025 Best Practice: Explicit service detection)
         const pathname = window.location.pathname;
-        const detectedService = pathname.includes('spotify') ? 'spotify' : 'tidal';
+        console.log('[OAuth] Callback pathname:', pathname);
+
+        // Explicit service detection with validation
+        let detectedService: 'spotify' | 'tidal';
+        if (pathname.includes('/callback/spotify') || pathname.includes('spotify')) {
+          detectedService = 'spotify';
+        } else if (pathname.includes('/oauth/callback') || pathname.includes('tidal')) {
+          detectedService = 'tidal';
+        } else {
+          console.error('[OAuth] Unable to determine service from path:', pathname);
+          throw new Error('Unable to determine authentication service. Please try again.');
+        }
+
         setService(detectedService);
+        console.log('[OAuth] Detected service:', detectedService);
 
         const serviceName = detectedService.charAt(0).toUpperCase() + detectedService.slice(1);
-        console.log(`[OAuth] Detected service: ${serviceName}`);
 
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -72,18 +83,19 @@ const OAuthCallback: React.FC = () => {
         }
 
         setMessage(`Exchanging authorization code for ${serviceName} access token...`);
-        console.log(`[OAuth] Exchanging code for ${serviceName} tokens...`, { state: state.substring(0, 8) + '...' });
 
         // Exchange authorization code for tokens
         // SECURITY: Client secret handled entirely by backend, never exposed to frontend
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
-        // Route to correct backend endpoint based on service
+        // Route to correct backend endpoint based on service (2025 Best Practice: Service isolation)
         const callbackEndpoint = detectedService === 'spotify'
           ? `${API_BASE_URL}/api/v1/music-auth/spotify/callback`
           : `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/callback`;
 
-        console.log(`[OAuth] Calling ${serviceName} callback endpoint:`, callbackEndpoint);
+        console.log(`[OAuth] Calling ${detectedService} callback endpoint:`, callbackEndpoint);
+        console.log(`[OAuth] Authorization code: ${code.substring(0, 10)}...`);
+        console.log(`[OAuth] State: ${state.substring(0, 10)}...`);
 
         const response = await fetch(
           `${callbackEndpoint}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
@@ -91,6 +103,8 @@ const OAuthCallback: React.FC = () => {
             method: 'GET'
           }
         );
+
+        console.log(`[OAuth] ${serviceName} callback response status:`, response.status);
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -105,11 +119,11 @@ const OAuthCallback: React.FC = () => {
         }
 
         const tokenData = await response.json();
-        console.log('[OAuth] Token exchange successful:', {
+        console.log(`[OAuth] ${serviceName} token data received:`, {
+          success: tokenData.success,
           hasAccessToken: !!tokenData.access_token,
           hasRefreshToken: !!tokenData.refresh_token,
-          expiresIn: tokenData.expires_in,
-          scope: tokenData.scope
+          expiresIn: tokenData.expires_in
         });
 
         if (!tokenData.success || !tokenData.access_token) {
@@ -129,10 +143,10 @@ const OAuthCallback: React.FC = () => {
           scope: tokenData.scope
         };
 
-        // Use service-specific storage key
+        // Use service-specific storage key (2025 Best Practice: Namespace separation)
         const storageKey = `${detectedService}_oauth_tokens`;
         localStorage.setItem(storageKey, JSON.stringify(tokens));
-        console.log(`[OAuth] ${serviceName} tokens stored in localStorage as '${storageKey}'`);
+        console.log(`[OAuth] Stored ${serviceName} tokens in localStorage with key:`, storageKey);
 
         // ALSO store tokens in database for backend enrichment service to use
         try {
@@ -150,7 +164,7 @@ const OAuthCallback: React.FC = () => {
           });
 
           if (storeResponse.ok) {
-            console.log(`[OAuth] ✅ ${serviceName} tokens stored in database for enrichment service`);
+            console.log(`[OAuth] ✅ Stored ${serviceName} tokens in database for enrichment service`);
           } else {
             console.warn(`[OAuth] ⚠️ Failed to store ${serviceName} tokens in database (enrichment may not work)`);
           }
@@ -159,11 +173,12 @@ const OAuthCallback: React.FC = () => {
           // Don't fail the whole flow, tokens are still in localStorage
         }
 
-        // Notify parent window (if opened as popup)
+        // Notify parent window (if opened as popup) - 2025 Best Practice: Include service identifier
         if (window.opener) {
+          console.log(`[OAuth] Posting success message to parent window for service: ${detectedService}`);
           window.opener.postMessage({
             type: 'oauth-success',
-            service: detectedService,
+            service: detectedService,  // CRITICAL: Service identifier
             tokens: tokens
           }, window.location.origin);
 

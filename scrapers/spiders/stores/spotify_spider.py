@@ -76,7 +76,8 @@ class SpotifySpider(scrapy.Spider):
         'RETRY_HTTP_CODES': [429, 500, 502, 503, 504, 522, 524, 408],
         'DOWNLOAD_TIMEOUT': 30,
         'ITEM_PIPELINES': {
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
+            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
         },
         'DEFAULT_REQUEST_HEADERS': {
             'Accept': 'application/json',

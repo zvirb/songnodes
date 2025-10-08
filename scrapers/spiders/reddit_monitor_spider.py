@@ -111,7 +111,8 @@ class RedditMonitorSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         'ROBOTSTXT_OBEY': True,
         'USER_AGENT': 'SongNodes/2.0 Music Discovery Bot (by /u/songnodes_bot)',
         'ITEM_PIPELINES': {
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
+            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
         }
     }
 

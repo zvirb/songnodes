@@ -43,7 +43,6 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
 
   // Handle key selection from wheel
   const handleKeySelect = useCallback((keys: string[]) => {
-    console.log('Selected keys:', keys);
 
     // Apply key-based filters to the graph
     if (keys.length > 0) {
@@ -60,7 +59,6 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
 
   // Handle track selection
   const handleTrackSelect = useCallback((track: Track) => {
-    console.log('Selected track:', track);
     // Find the node and select it
     const node = (graphData.nodes || []).find(n =>
       n.id === track.id ||
@@ -75,7 +73,6 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
 
   // Handle transition planning
   const handlePlanTransition = useCallback((fromKey: string, toKey: string) => {
-    console.log('Planning transition:', fromKey, '→', toKey);
 
     // Find tracks in these keys and suggest transitions
     const fromTracks = (graphData.nodes || []).filter(node => {
@@ -100,7 +97,6 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
 
   // Handle energy point selection from mood visualizer
   const handleEnergyPointSelect = useCallback((point: any) => {
-    console.log('Selected energy point:', point);
 
     if (point.track) {
       selectNode(point.track.id);
@@ -280,7 +276,6 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
               <button
                 onClick={() => {
                   // Shuffle the visualization
-                  console.log('Shuffling view...');
                 }}
                 className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 text-sm font-medium hover:bg-blue-500/30 transition-colors flex items-center gap-1"
               >

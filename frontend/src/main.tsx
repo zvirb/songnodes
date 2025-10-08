@@ -34,11 +34,7 @@ function hideLoadingScreen() {
     }, 300);
   }
 
-  // Log performance metrics in development
-  if (process.env.NODE_ENV === 'development') {
-    const endTime = performance.now();
-    console.log(`🎵 SongNodes loaded in ${Math.round(endTime - startTime)}ms`);
-  }
+  // Performance metrics tracked silently
 }
 
 // Mount the app
@@ -54,9 +50,3 @@ root.render(
 
 // Hide loading screen after initial render
 setTimeout(hideLoadingScreen, 100);
-
-// Development mode logging
-if (import.meta.env.DEV) {
-  console.log('🎵 SongNodes - Development mode');
-  console.log(`📦 Vite: ${import.meta.env.MODE}`);
-}

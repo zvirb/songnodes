@@ -1099,65 +1099,87 @@ validation_engine = ValidationEngine()
 # =====================
 
 async def init_database():
-    """Initialize database connection pool"""
+    """Initialize database connection pool with automatic retry logic"""
     global db_pool, resource_monitor
-    try:
-        # Set statement_cache_size=0 for PgBouncer compatibility
-        db_pool = await asyncpg.create_pool(
-            **DATABASE_CONFIG,
-            min_size=5,
-            max_size=20,
-            command_timeout=30,  # Prevent connection hanging
-            statement_cache_size=0
-        )
-        logger.info("Database connection pool initialized")
 
-        # Initialize resource monitor
-        if ResourceMonitor:
-            resource_monitor = ResourceMonitor(
-                service_name="data-validator",
-                db_pool=db_pool
+    # Get reconnection settings from environment
+    reconnect_enabled = os.getenv("DB_RECONNECT_ENABLED", "true").lower() == "true"
+    max_retries = int(os.getenv("DB_RECONNECT_MAX_RETRIES", "5"))
+    retry_interval = int(os.getenv("DB_RECONNECT_INTERVAL", "5"))
+
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            # Set statement_cache_size=0 for PgBouncer compatibility
+            db_pool = await asyncpg.create_pool(
+                **DATABASE_CONFIG,
+                min_size=5,
+                max_size=20,
+                command_timeout=30,  # Prevent connection hanging
+                statement_cache_size=0
             )
-            logger.info("✅ Resource monitor initialized")
+            logger.info("✅ Database connection pool initialized")
 
-        # Create tables if they don't exist
-        async with db_pool.acquire() as conn:
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS validation_results (
-                    id SERIAL PRIMARY KEY,
-                    task_id VARCHAR(255) NOT NULL,
-                    validation_types JSONB NOT NULL,
-                    status VARCHAR(20) NOT NULL,
-                    is_valid BOOLEAN NOT NULL,
-                    score FLOAT NOT NULL,
-                    total_issues INTEGER NOT NULL,
-                    error_count INTEGER NOT NULL,
-                    warning_count INTEGER NOT NULL,
-                    info_count INTEGER NOT NULL,
-                    processing_time FLOAT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-                
-                CREATE TABLE IF NOT EXISTS validation_issues (
-                    id SERIAL PRIMARY KEY,
-                    task_id VARCHAR(255) NOT NULL,
-                    rule_id VARCHAR(100) NOT NULL,
-                    rule_name VARCHAR(255) NOT NULL,
-                    severity VARCHAR(20) NOT NULL,
-                    field VARCHAR(100),
-                    message TEXT NOT NULL,
-                    value TEXT,
-                    suggestions JSONB,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-                
-                CREATE INDEX IF NOT EXISTS idx_validation_results_task_id ON validation_results(task_id);
-                CREATE INDEX IF NOT EXISTS idx_validation_issues_task_id ON validation_issues(task_id);
-                CREATE INDEX IF NOT EXISTS idx_validation_issues_severity ON validation_issues(severity);
-            """)
-            
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {str(e)}")
+            # Initialize resource monitor
+            if ResourceMonitor:
+                resource_monitor = ResourceMonitor(
+                    service_name="data-validator",
+                    db_pool=db_pool
+                )
+                logger.info("✅ Resource monitor initialized")
+
+            # Create tables if they don't exist
+            async with db_pool.acquire() as conn:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS validation_results (
+                        id SERIAL PRIMARY KEY,
+                        task_id VARCHAR(255) NOT NULL,
+                        validation_types JSONB NOT NULL,
+                        status VARCHAR(20) NOT NULL,
+                        is_valid BOOLEAN NOT NULL,
+                        score FLOAT NOT NULL,
+                        total_issues INTEGER NOT NULL,
+                        error_count INTEGER NOT NULL,
+                        warning_count INTEGER NOT NULL,
+                        info_count INTEGER NOT NULL,
+                        processing_time FLOAT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+
+                    CREATE TABLE IF NOT EXISTS validation_issues (
+                        id SERIAL PRIMARY KEY,
+                        task_id VARCHAR(255) NOT NULL,
+                        rule_id VARCHAR(100) NOT NULL,
+                        rule_name VARCHAR(255) NOT NULL,
+                        severity VARCHAR(20) NOT NULL,
+                        field VARCHAR(100),
+                        message TEXT NOT NULL,
+                        value TEXT,
+                        suggestions JSONB,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_validation_results_task_id ON validation_results(task_id);
+                    CREATE INDEX IF NOT EXISTS idx_validation_issues_task_id ON validation_issues(task_id);
+                    CREATE INDEX IF NOT EXISTS idx_validation_issues_severity ON validation_issues(severity);
+                """)
+
+            # Successfully initialized
+            logger.info(f"✅ Database tables verified/created successfully")
+            return
+
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"Failed to initialize database (attempt {retry_count}/{max_retries}): {str(e)}")
+
+            if retry_count < max_retries and reconnect_enabled:
+                logger.info(f"Retrying database connection in {retry_interval} seconds...")
+                await asyncio.sleep(retry_interval)
+            else:
+                logger.error(f"❌ Database initialization failed after {max_retries} attempts")
+                if not reconnect_enabled:
+                    logger.warning("DB_RECONNECT_ENABLED=false, not retrying")
+                break
 
 # =====================
 # Background Workers

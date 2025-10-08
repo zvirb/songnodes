@@ -64,9 +64,10 @@ class MixesdbSpider(scrapy.Spider):
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.2,
         'RETRY_TIMES': 3,
         'DOWNLOAD_TIMEOUT': 30,  # 30 second timeout per request
-        # Legacy database pipeline - works with psycopg2 + Twisted adbapi
+        # Pipeline chain: raw data archive → legacy database processing
         'ITEM_PIPELINES': {
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
+            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
         }
     }
 

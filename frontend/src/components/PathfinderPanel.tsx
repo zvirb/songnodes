@@ -89,16 +89,19 @@ export const PathfinderPanel: React.FC = () => {
       setIsSearching(true);
       setError(null);
 
-      // Prepare tracks data
-      const tracksData = graphData.nodes.map(node => ({
-        id: node.id,
-        name: node.name || node.title || 'Unknown',
-        artist: node.artist || 'Unknown',
-        duration_ms: (node.duration || 180) * 1000, // Convert seconds to ms, default 3min
-        camelot_key: node.camelot_key || node.metadata?.camelot_key,
-        bpm: node.bpm || node.metadata?.bpm,
-        energy: node.energy || node.metadata?.energy
-      }));
+      // Prepare tracks data - handle both nested track format and flat node format
+      const tracksData = graphData.nodes.map(node => {
+        const track = node.track || node;
+        return {
+          id: node.id,
+          name: track.name || node.name || node.title || node.label || 'Unknown',
+          artist: track.artist || node.artist || 'Unknown',
+          duration_ms: ((track.duration || node.duration || 180) * 1000), // Convert seconds to ms, default 3min
+          camelot_key: track.camelotKey || node.camelot_key || node.metadata?.camelot_key,
+          bpm: track.bpm || node.bpm || node.metadata?.bpm,
+          energy: track.energy || node.energy || node.metadata?.energy
+        };
+      });
 
       // Prepare edges data
       const edgesData = graphData.edges.map(edge => ({

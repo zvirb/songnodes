@@ -1073,6 +1073,7 @@ async def get_graph_data():
                     ),
                     other_nodes AS (
                         -- Second priority: other nodes to fill up to limit (with artists only)
+                        -- CRITICAL FIX: Use NOT (... = ANY()) for proper array exclusion
                         SELECT
                             'song_' || t.id::text as id,
                             t.id::text as track_id,
@@ -1092,7 +1093,7 @@ async def get_graph_data():
                         FROM tracks t
                         INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
                         INNER JOIN artists a ON ta.artist_id = a.artist_id
-                        WHERE ('song_' || t.id::text) NOT IN (SELECT unnest(:node_ids))
+                        WHERE NOT (('song_' || t.id::text) = ANY(:node_ids))
                           AND a.name IS NOT NULL
                           AND a.name != ''
                           AND a.name != 'Unknown'
@@ -1101,7 +1102,7 @@ async def get_graph_data():
                     )
                     SELECT * FROM (
                         SELECT * FROM edge_nodes
-                        UNION ALL
+                        UNION  -- CRITICAL FIX: Changed from UNION ALL to UNION for automatic deduplication
                         SELECT * FROM other_nodes
                     ) combined
                     ORDER BY priority

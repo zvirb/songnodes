@@ -206,7 +206,6 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
             {!isCurrentlyPlaying && (
               <button
                 onClick={() => {
-                  console.log('Setting as currently playing:', track.name);
                   onSetAsCurrentlyPlaying(track);
                 }}
                 style={{
