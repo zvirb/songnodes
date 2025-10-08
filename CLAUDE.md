@@ -256,6 +256,45 @@ class DynamicSiteSpider(Spider):
         )
 ```
 
+#### 5.1.4. Testing Spiders
+
+Spiders must be tested using the proper Scrapy framework invocation to maintain the Python package context required for relative imports.
+
+**❌ INCORRECT - Using `runspider` with relative imports**:
+```bash
+# This command WILL FAIL with ImportError if the spider uses relative imports
+docker compose exec scraper-orchestrator python -m scrapy runspider spiders/mixesdb_spider.py -a artist_name='Artist'
+```
+
+**Why it fails**: The `runspider` command executes a spider file directly, outside of its Python package context. When the spider contains relative imports (e.g., `from .improved_search_strategies import get_mixesdb_searches`), Python cannot resolve them because it doesn't recognize the parent package, resulting in:
+```
+ImportError: attempted relative import with no known parent package
+```
+
+**✅ CORRECT - Using `scrapy crawl` with spider name**:
+```bash
+# Method 1: Via Scrapy CLI (proper module loading)
+docker compose exec scraper-orchestrator scrapy crawl mixesdb -a artist_name='Deadmau5' -a limit=1
+
+# Method 2: Via Orchestrator API (recommended for production)
+curl -X POST http://localhost:8012/scrape \
+  -H "Content-Type: application/json" \
+  -d '{"artist_name":"Deadmau5","limit":1}'
+```
+
+**Why it works**: The `scrapy crawl` command:
+1. Loads the spider through Scrapy's project structure
+2. Maintains the Python package hierarchy (`scrapers.spiders.mixesdb_spider`)
+3. Properly resolves all relative imports within the package
+4. Applies all configured settings, middlewares, and pipelines
+
+**Testing Guidelines**:
+- Always use `scrapy crawl [spider_name]` for testing
+- Pass spider arguments using `-a key=value` format
+- Use the orchestrator API endpoint for integration testing
+- Never use `runspider` for spiders with relative imports
+- If you must use `runspider`, convert all relative imports to absolute imports first
+
 ### 5.2. Secrets Management
 
 A unified, centralized secrets management system is enforced to prevent configuration drift and security vulnerabilities.
@@ -517,6 +556,7 @@ kubectl apply -k k8s/overlays/production/
 | Port issues | Use `ports:` not `expose:` in docker-compose.yml |
 | Memory leaks | Check cleanup in useEffect, verify connection pool limits |
 | Stale code in containers | Rebuild: `docker compose build [service] && docker compose up -d` |
+| Spider ImportError (relative imports) | Use `scrapy crawl [spider_name]` NOT `scrapy runspider` - see Section 5.1.4 |
 
 ### 7.1. Common Docker Commands
 
@@ -552,6 +592,7 @@ docker run --rm \
 ❌ **Skipping tests**: E2E tests are mandatory
 ❌ **Force pushes to main**: Protected branch
 ❌ **Unclear commit messages**: Use Conventional Commits
+❌ **Using `runspider` with relative imports**: Use `scrapy crawl [spider_name]` instead
 
 ---
 
@@ -563,6 +604,7 @@ docker run --rm \
 | **Rebuild Service** | `docker compose build [service] && docker compose up -d` |
 | **View Logs** | `docker compose logs -f [service]` |
 | **Run Tests** | `npm run test:e2e` |
+| **Test Spider** | `docker compose exec scraper-orchestrator scrapy crawl [spider_name] -a arg=value` |
 | **Frontend Dev** | `cd frontend && npm run dev` |
 | **Production Deploy** | `kubectl apply -k k8s/overlays/production/` |
 

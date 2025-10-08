@@ -22,8 +22,8 @@ import { prometheusService, ScraperMetrics, PipelineMetrics, SystemMetrics } fro
 
 /**
  * DJInterface - Main container implementing dual-mode interface
- * Librarian Mode: Full complexity for preparation
- * Performer Mode: Cognitive offloading for live performance
+ * PLAN Mode: Full complexity for preparation and track selection
+ * PLAY Mode: Cognitive offloading for live performance
  */
 
 interface DJInterfaceProps {
@@ -157,7 +157,7 @@ const TrackListItem = React.memo<{
   );
 });
 
-export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'performer' }) => {
+export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }) => {
   // Detect if we're on a mobile device
   const isMobile = useIsMobile();
 
@@ -178,7 +178,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   const [contextMenuTrack, setContextMenuTrack] = useState<Track | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
-  // Right panel tab state (librarian mode)
+  // Right panel tab state (PLAN mode)
   const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'keymood' | 'pathfinder' | 'tidal' | 'spotify' | 'targets'>('analysis');
 
   // Monitoring dashboard state
@@ -211,10 +211,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     scraperTasks: { loading: false, lastTriggered: null },
     clearQueue: { loading: false, lastTriggered: null }
   });
-  // Animation controls state
-  const [isAnimationPaused, setIsAnimationPaused] = useState(false);
 
-  // Library search state (librarian mode)
+  // Library search state (PLAN mode)
   const [librarySearchQuery, setLibrarySearchQuery] = useState('');
 
   // Get graph data from store with selective subscriptions to prevent unnecessary re-renders
@@ -222,6 +220,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   const isLoading = useStore(state => state.isLoading);
   const error = useStore(state => state.error);
   const credentials = useStore(state => state.credentials);
+  const view = useStore(state => state.view);
 
   // Load data and credentials
   useDataLoader();
@@ -242,21 +241,46 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   // Memoize track nodes to prevent recalculation on every render
   const validNodes = useMemo(() => {
     if (!graphData?.nodes) return [];
-    return graphData.nodes.filter(isValidTrackNode);
+
+    // CRITICAL FIX: Deduplicate nodes by ID at the source
+    // Backend may return duplicate nodes in the graph data
+    const uniqueNodesMap = new Map<string, GraphNode>();
+
+    graphData.nodes
+      .filter(isValidTrackNode)
+      .forEach(node => {
+        if (!uniqueNodesMap.has(node.id)) {
+          uniqueNodesMap.set(node.id, node);
+        }
+      });
+
+    return Array.from(uniqueNodesMap.values());
   }, [graphData?.nodes?.length]);
 
   // Transform nodes to tracks with stable references
   const tracks = useMemo(() => {
     if (validNodes.length === 0) return [];
 
-    const transformedTracks = validNodes
+    // CRITICAL FIX: Deduplicate tracks by ID to prevent React key warnings
+    // Backend may return duplicate nodes, so we use a Map to keep only the first occurrence
+    const uniqueTracksMap = new Map<string, Track>();
+
+    validNodes
       .map(transformNodeToTrack)
+      .forEach(track => {
+        if (!uniqueTracksMap.has(track.id)) {
+          uniqueTracksMap.set(track.id, track);
+        }
+      });
+
+    // Convert back to array and sort
+    const transformedTracks = Array.from(uniqueTracksMap.values())
       .sort((a, b) => a.artist.localeCompare(b.artist) || a.name.localeCompare(b.name));
 
     return transformedTracks;
   }, [validNodes]);
 
-  // Filtered tracks for librarian mode with scoring algorithm
+  // Filtered tracks for PLAN mode with scoring algorithm
   const filteredLibraryTracks = useMemo(() => {
     if (!librarySearchQuery.trim()) return tracks;
 
@@ -321,24 +345,23 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
 
   // Mode toggle handler
   const toggleMode = () => {
-    setMode(mode === 'performer' ? 'librarian' : 'performer');
+    setMode(mode === 'play' ? 'plan' : 'play');
   };
 
   // Memoized event handlers to prevent child re-renders
   const handleTrackInspect = useCallback((track: Track) => {
-    console.log('🎵 Track selected:', track.name, 'Mode:', mode);
+    // Trigger zoom-to-node navigation for the selected track
+    // Find the node ID corresponding to this track
+    const nodeId = track.id || `track-${track.artist}-${track.title}`;
+    view.navigateToNode(nodeId, {
+      highlight: true,
+      openModal: false, // Never open modal - consistent behavior in both modes
+      selectNode: true
+    });
 
-    // ✅ FIX: In Performer mode, set as now playing instead of opening modal
-    if (mode === 'performer') {
-      setNowPlaying(track);
-      console.log('✅ Set as now playing in Performer mode');
-    } else {
-      // In Librarian mode, open inspection modal
-      setInspectedTrack(track);
-      setIsModalOpen(true);
-      console.log('✅ Opened modal in Librarian mode');
-    }
-  }, [mode]);
+    // Set as now playing in both PLAN and PLAY modes (consistent behavior)
+    setNowPlaying(track);
+  }, [view]);
 
   const handleSetAsCurrentlyPlaying = useCallback((track: Track) => {
     setNowPlaying(track);
@@ -351,7 +374,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
   }, []);
 
   const handleTrackRightClick = useCallback((track: Track, position: { x: number; y: number }) => {
-    console.log('🎵 Track right-clicked:', track.name, 'at', position);
     setContextMenuTrack(track);
     setContextMenuPosition(position);
   }, []);
@@ -361,26 +383,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
     setContextMenuPosition(null);
   }, []);
 
-  // Animation control handlers
-  const handleToggleAnimation = useCallback(() => {
-    const toggleFn = (window as any).toggleSimulation;
-    if (toggleFn) {
-      toggleFn();
-      setIsAnimationPaused(prev => !prev);
-    } else {
-      console.warn('toggleSimulation function not available');
-    }
-  }, []);
-
-  const handleRestartAnimation = useCallback(() => {
-    const restartFn = (window as any).manualRefresh;
-    if (restartFn) {
-      restartFn();
-      setIsAnimationPaused(false);
-    } else {
-      console.warn('manualRefresh function not available');
-    }
-  }, []);
 
   // Fetch monitoring data when dashboard is opened
   const fetchMonitoringData = useCallback(async () => {
@@ -489,8 +491,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
 
       // Refresh monitoring data after trigger
       setTimeout(fetchMonitoringData, 2000);
-
-      console.log('Target search triggered successfully:', result);
     } catch (error) {
       console.error('Failed to trigger target search:', error);
       setTriggerStates(prev => ({
@@ -522,7 +522,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
       }
 
       const result = await response.json();
-      console.log('Scrapers triggered successfully:', result);
 
       setTriggerStates(prev => ({
         ...prev,
@@ -573,7 +572,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
       }
 
       const result = await response.json();
-      console.log('Queue cleared successfully:', result);
 
       alert(
         `✅ Queue Cleared Successfully!\n\n` +
@@ -663,48 +661,48 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
             border: '1px solid rgba(255,255,255,0.1)'
           }}>
             <button
-              onClick={() => setMode('performer')}
-              aria-label="Switch to Performer mode"
-              aria-pressed={mode === 'performer'}
+              onClick={() => setMode('play')}
+              aria-label="Switch to PLAY mode"
+              aria-pressed={mode === 'play'}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 16px',
-                backgroundColor: mode === 'performer' ? '#7ED321' : 'transparent',
+                backgroundColor: mode === 'play' ? '#7ED321' : 'transparent',
                 border: 'none',
                 borderRadius: '20px',
-                color: mode === 'performer' ? '#FFFFFF' : '#8E8E93',
+                color: mode === 'play' ? '#FFFFFF' : '#8E8E93',
                 fontSize: '14px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                opacity: mode === 'performer' ? 1 : 0.7
+                opacity: mode === 'play' ? 1 : 0.7
               }}
             >
-              🎤 Performer
+              ▶️ PLAY
             </button>
             <button
-              onClick={() => setMode('librarian')}
-              aria-label="Switch to Librarian mode"
-              aria-pressed={mode === 'librarian'}
+              onClick={() => setMode('plan')}
+              aria-label="Switch to PLAN mode"
+              aria-pressed={mode === 'plan'}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 16px',
-                backgroundColor: mode === 'librarian' ? '#4A90E2' : 'transparent',
+                backgroundColor: mode === 'plan' ? '#4A90E2' : 'transparent',
                 border: 'none',
                 borderRadius: '20px',
-                color: mode === 'librarian' ? '#FFFFFF' : '#8E8E93',
+                color: mode === 'plan' ? '#FFFFFF' : '#8E8E93',
                 fontSize: '14px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                opacity: mode === 'librarian' ? 1 : 0.7
+                opacity: mode === 'plan' ? 1 : 0.7
               }}
             >
-              📚 Librarian
+              📋 PLAN
             </button>
           </div>
         </div>
@@ -730,73 +728,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           }}>
             {graphData?.edges?.length || 0} Connections
           </span>
-
-          <span style={{
-            padding: '6px 12px',
-            backgroundColor: 'rgba(126,211,33,0.2)',
-            borderRadius: '12px',
-            fontSize: '12px',
-            color: '#7ED321',
-            fontWeight: 600
-          }}>
-            Co-Pilot Active
-          </span>
-          {/* Animation Controls */}
-          <button
-            onClick={handleToggleAnimation}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: isAnimationPaused ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)',
-              border: `1px solid ${isAnimationPaused ? 'rgba(76,175,80,0.4)' : 'rgba(244,67,54,0.4)'}`,
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              marginRight: '8px'
-            }}
-            title={isAnimationPaused ? 'Resume graph animation' : 'Pause graph animation'}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = isAnimationPaused ? 'rgba(76,175,80,0.3)' : 'rgba(244,67,54,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = isAnimationPaused ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)';
-            }}
-          >
-            {isAnimationPaused ? '▶️' : '⏸️'}
-          </button>
-
-          <button
-            onClick={handleRestartAnimation}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(33,150,243,0.2)',
-              border: '1px solid rgba(33,150,243,0.4)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              marginRight: '8px'
-            }}
-            title="Restart graph animation"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.2)';
-            }}
-          >
-            🔄
-          </button>
 
           <button
             onClick={() => setShowMonitoringDashboard(true)}
@@ -946,13 +877,13 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         <main style={{
           flex: 1,
           display: 'grid',
-          gridTemplateRows: mode === 'performer' ? 'minmax(150px, auto) 1fr' : '1fr',
+          gridTemplateRows: mode === 'play' ? 'minmax(150px, auto) 1fr' : '1fr',
           gap: '16px',
           padding: '16px',
           overflow: 'hidden'
         }}>
-        {/* Performer Mode Layout */}
-        {mode === 'performer' && (
+        {/* PLAY Mode Layout */}
+        {mode === 'play' && (
           <>
             {/* Now Playing Section - Compact Primary Focus */}
             <section
@@ -1057,8 +988,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
           </>
         )}
 
-        {/* Librarian Mode Layout */}
-        {mode === 'librarian' && (
+        {/* PLAN Mode Layout */}
+        {mode === 'plan' && (
           <section style={{
             display: 'grid',
             gridTemplateColumns: '250px 1fr 350px',
@@ -1441,13 +1372,22 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'perform
         currentlyPlayingTrack={nowPlaying as any}
       />
 
-      {/* Track Context Menu for Pathfinder */}
+      {/* Track Context Menu for Pathfinder - Convert track to node format */}
       {contextMenuTrack && contextMenuPosition && (
         <ContextMenu
           x={contextMenuPosition.x}
           y={contextMenuPosition.y}
-          targetType="track"
-          targetData={contextMenuTrack}
+          targetType="node"
+          targetData={{
+            id: contextMenuTrack.id,
+            label: contextMenuTrack.name,
+            type: 'track',
+            track: contextMenuTrack,
+            artist: contextMenuTrack.artist,
+            genre: contextMenuTrack.genre,
+            bpm: contextMenuTrack.bpm,
+            key: contextMenuTrack.key,
+          }}
           onClose={handleContextMenuClose}
         />
       )}

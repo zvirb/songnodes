@@ -517,7 +517,7 @@ export const useSmartTooltip = () => {
           {
             label: 'Play',
             icon: <Play size={12} />,
-            onClick: () => console.log('Playing:', title),
+            onClick: () => ,
             color: '#10b981'
           },
           {

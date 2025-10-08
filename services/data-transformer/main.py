@@ -822,74 +822,96 @@ async def init_redis():
         async_redis_client = None
 
 async def init_database():
-    """Initialize database connection pool with optimized configuration for batch operations"""
+    """Initialize database connection pool with optimized configuration for batch operations and automatic retry"""
     global db_pool, resource_monitor
-    try:
-        # Optimized pool configuration for batch operations
-        pool_config = {
-            **DATABASE_CONFIG,
-            "min_size": 10,          # Increased minimum connections for consistent performance
-            "max_size": 50,          # Increased maximum for high throughput
-            "command_timeout": 60,   # Increased timeout for batch operations
-            # Note: server_settings removed - asyncpg handles these automatically
-        }
-        
-        db_pool = await asyncpg.create_pool(**pool_config)
-        logger.info("Optimized database connection pool initialized with batch operation support")
-        logger.info(f"Pool configuration: min_size=10, max_size=50, command_timeout=60s")
 
-        # Initialize resource monitor
-        if ResourceMonitor:
-            resource_monitor = ResourceMonitor(
-                service_name="data-transformer",
-                db_pool=db_pool
-            )
-            logger.info("✅ Resource monitor initialized")
+    # Get reconnection settings from environment
+    reconnect_enabled = os.getenv("DB_RECONNECT_ENABLED", "true").lower() == "true"
+    max_retries = int(os.getenv("DB_RECONNECT_MAX_RETRIES", "5"))
+    retry_interval = int(os.getenv("DB_RECONNECT_INTERVAL", "5"))
 
-        # Create tables if they don't exist
-        async with db_pool.acquire() as conn:
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS normalized_tracks (
-                    id VARCHAR(255) PRIMARY KEY,
-                    source VARCHAR(50) NOT NULL,
-                    source_id VARCHAR(255) NOT NULL,
-                    title TEXT NOT NULL,
-                    artist TEXT NOT NULL,
-                    album TEXT,
-                    genre VARCHAR(100),
-                    label VARCHAR(255),
-                    release_date TIMESTAMP,
-                    duration_seconds INTEGER,
-                    bpm INTEGER,
-                    key VARCHAR(10),
-                    url TEXT,
-                    fingerprint VARCHAR(32) NOT NULL,
-                    confidence_score FLOAT NOT NULL,
-                    metadata JSONB,
-                    normalized_at TIMESTAMP NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(source, source_id)
-                );
-                
-                CREATE INDEX IF NOT EXISTS idx_normalized_tracks_fingerprint ON normalized_tracks(fingerprint);
-                CREATE INDEX IF NOT EXISTS idx_normalized_tracks_source ON normalized_tracks(source);
-                CREATE INDEX IF NOT EXISTS idx_normalized_tracks_artist ON normalized_tracks(artist);
-                CREATE INDEX IF NOT EXISTS idx_normalized_tracks_genre ON normalized_tracks(genre);
-                
-                CREATE TABLE IF NOT EXISTS transformation_results (
-                    id SERIAL PRIMARY KEY,
-                    task_id VARCHAR(255) NOT NULL,
-                    operation VARCHAR(50) NOT NULL,
-                    status VARCHAR(20) NOT NULL,
-                    input_count INTEGER NOT NULL,
-                    output_count INTEGER NOT NULL,
-                    processing_time FLOAT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-            
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {str(e)}")
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            # Optimized pool configuration for batch operations
+            pool_config = {
+                **DATABASE_CONFIG,
+                "min_size": 10,          # Increased minimum connections for consistent performance
+                "max_size": 50,          # Increased maximum for high throughput
+                "command_timeout": 60,   # Increased timeout for batch operations
+                # Note: server_settings removed - asyncpg handles these automatically
+            }
+
+            db_pool = await asyncpg.create_pool(**pool_config)
+            logger.info("✅ Optimized database connection pool initialized with batch operation support")
+            logger.info(f"Pool configuration: min_size=10, max_size=50, command_timeout=60s")
+
+            # Initialize resource monitor
+            if ResourceMonitor:
+                resource_monitor = ResourceMonitor(
+                    service_name="data-transformer",
+                    db_pool=db_pool
+                )
+                logger.info("✅ Resource monitor initialized")
+
+            # Create tables if they don't exist
+            async with db_pool.acquire() as conn:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS normalized_tracks (
+                        id VARCHAR(255) PRIMARY KEY,
+                        source VARCHAR(50) NOT NULL,
+                        source_id VARCHAR(255) NOT NULL,
+                        title TEXT NOT NULL,
+                        artist TEXT NOT NULL,
+                        album TEXT,
+                        genre VARCHAR(100),
+                        label VARCHAR(255),
+                        release_date TIMESTAMP,
+                        duration_seconds INTEGER,
+                        bpm INTEGER,
+                        key VARCHAR(10),
+                        url TEXT,
+                        fingerprint VARCHAR(32) NOT NULL,
+                        confidence_score FLOAT NOT NULL,
+                        metadata JSONB,
+                        normalized_at TIMESTAMP NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(source, source_id)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_normalized_tracks_fingerprint ON normalized_tracks(fingerprint);
+                    CREATE INDEX IF NOT EXISTS idx_normalized_tracks_source ON normalized_tracks(source);
+                    CREATE INDEX IF NOT EXISTS idx_normalized_tracks_artist ON normalized_tracks(artist);
+                    CREATE INDEX IF NOT EXISTS idx_normalized_tracks_genre ON normalized_tracks(genre);
+
+                    CREATE TABLE IF NOT EXISTS transformation_results (
+                        id SERIAL PRIMARY KEY,
+                        task_id VARCHAR(255) NOT NULL,
+                        operation VARCHAR(50) NOT NULL,
+                        status VARCHAR(20) NOT NULL,
+                        input_count INTEGER NOT NULL,
+                        output_count INTEGER NOT NULL,
+                        processing_time FLOAT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+
+            # Successfully initialized
+            logger.info(f"✅ Database tables verified/created successfully")
+            return
+
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"Failed to initialize database (attempt {retry_count}/{max_retries}): {str(e)}")
+
+            if retry_count < max_retries and reconnect_enabled:
+                logger.info(f"Retrying database connection in {retry_interval} seconds...")
+                await asyncio.sleep(retry_interval)
+            else:
+                logger.error(f"❌ Database initialization failed after {max_retries} attempts")
+                if not reconnect_enabled:
+                    logger.warning("DB_RECONNECT_ENABLED=false, not retrying")
+                break
 
 # =====================
 # Background Workers

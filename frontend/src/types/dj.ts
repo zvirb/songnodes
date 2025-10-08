@@ -19,8 +19,10 @@ export type EnergyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 // Track play status
 export type TrackStatus = 'unplayed' | 'playing' | 'played' | 'queued';
 
-// DJ modes (Librarian vs Performer)
-export type DJMode = 'librarian' | 'performer';
+// DJ modes (PLAN vs PLAY)
+// PLAN mode: Full-featured preparation interface for track selection and setlist building
+// PLAY mode: Simplified performance interface with cognitive offloading for live sets
+export type DJMode = 'plan' | 'play';
 
 // Track interface with DJ-specific metadata
 export interface Track {

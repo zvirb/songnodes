@@ -24,6 +24,8 @@ interface MusicServiceCredentials {
     accessToken?: string;
     refreshToken?: string;
     expiresAt?: number;
+    isConnected?: boolean;  // 2025 Best Practice: Standardized connection status
+    lastValidated?: number; // 2025 Best Practice: Track last validation timestamp
   };
 }
 
@@ -37,12 +39,67 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
   const [showAPIKeyManager, setShowAPIKeyManager] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // Listen for OAuth callback messages
+  // Helper function to check if credentials are expired (2025 Best Practice: Token validation)
+  const isTokenExpired = (expiresAt?: number): boolean => {
+    if (!expiresAt) return true;
+    // Add 5-minute buffer to refresh before actual expiration
+    return Date.now() >= (expiresAt - 5 * 60 * 1000);
+  };
+
+  // Check if service is truly connected (has valid, non-expired token)
+  const isSpotifyConnected = musicCredentials.spotify?.accessToken
+    && musicCredentials.spotify?.isConnected
+    && !isTokenExpired(musicCredentials.spotify?.expiresAt);
+
+  const isTidalConnected = musicCredentials.tidal?.accessToken
+    && musicCredentials.tidal?.isConnected
+    && !isTokenExpired(musicCredentials.tidal?.expiresAt);
+
+  // Clear expired tokens on component mount (2025 Best Practice: Token lifecycle management)
+  useEffect(() => {
+    const clearExpiredTokens = () => {
+      let needsUpdate = false;
+
+      // Check Spotify token expiration
+      if (musicCredentials.spotify?.accessToken && isTokenExpired(musicCredentials.spotify?.expiresAt)) {
+        console.log('[SettingsPanel] ⚠️ Spotify token expired, clearing credentials');
+        credentials.updateCredentials('spotify', {
+          ...musicCredentials.spotify,
+          isConnected: false,
+          accessToken: undefined,
+          refreshToken: undefined
+        });
+        needsUpdate = true;
+      }
+
+      // Check Tidal token expiration
+      if (musicCredentials.tidal?.accessToken && isTokenExpired(musicCredentials.tidal?.expiresAt)) {
+        console.log('[SettingsPanel] ⚠️ Tidal token expired, clearing credentials');
+        credentials.updateCredentials('tidal', {
+          ...musicCredentials.tidal,
+          isConnected: false,
+          accessToken: undefined,
+          refreshToken: undefined
+        });
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        console.log('[SettingsPanel] ✅ Cleared expired tokens');
+      }
+    };
+
+    clearExpiredTokens();
+  }, [isOpen]); // Run when panel opens
+
+  // Listen for OAuth callback messages (2025 Best Practice: Service-aware message handling)
   useEffect(() => {
     const handleOAuthMessage = (event: MessageEvent) => {
+      console.log('[SettingsPanel] Received postMessage:', { origin: event.origin, type: event.data?.type, service: event.data?.service });
+
       // Security: Verify the message origin matches our app
       if (event.origin !== window.location.origin) {
-        console.warn('Ignoring message from untrusted origin:', event.origin);
+        console.warn('[SettingsPanel] ❌ Ignoring message from untrusted origin:', event.origin);
         return;
       }
 
@@ -50,7 +107,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
       if (type === 'oauth-success' && tokens) {
         const serviceName = service || 'tidal'; // Default to tidal for backward compatibility
-        console.log(`✅ OAuth success for ${serviceName} - storing tokens in Zustand`);
+        console.log(`[SettingsPanel] ✅ OAuth success for ${serviceName}, storing credentials...`);
 
         // Store tokens in Zustand (which will auto-persist to localStorage)
         credentials.updateCredentials(serviceName, {
@@ -61,6 +118,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           lastValidated: Date.now(),
         });
 
+        console.log(`[SettingsPanel] ✅ Stored ${serviceName} credentials in Zustand store`);
+
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 3000);
 
@@ -68,7 +127,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         alert(`✅ Successfully connected to ${displayName}!`);
       } else if (type === 'oauth-error') {
         const serviceName = service || 'music service';
-        console.error(`❌ OAuth error for ${serviceName}:`, error);
+        console.error(`[SettingsPanel] ❌ OAuth error for ${serviceName}:`, error);
         alert(`❌ Failed to connect to ${serviceName}: ${error}`);
       }
     };
@@ -84,7 +143,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         // Migrate Tidal tokens
         const tidalTokensStr = localStorage.getItem('tidal_oauth_tokens');
         if (tidalTokensStr) {
-          console.log('🔄 Found legacy Tidal tokens - migrating to Zustand');
           const legacyTokens = JSON.parse(tidalTokensStr);
 
           // Only migrate if we don't already have tokens in Zustand
@@ -99,9 +157,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
             // Clean up legacy storage after successful migration
             localStorage.removeItem('tidal_oauth_tokens');
-            console.log('✅ Legacy Tidal tokens migrated and cleaned up');
           } else {
-            console.log('ℹ️ Tidal tokens already in Zustand, removing legacy storage');
             localStorage.removeItem('tidal_oauth_tokens');
           }
         }
@@ -109,7 +165,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         // Migrate Spotify tokens
         const spotifyTokensStr = localStorage.getItem('spotify_oauth_tokens');
         if (spotifyTokensStr) {
-          console.log('🔄 Found legacy Spotify tokens - migrating to Zustand');
           const legacyTokens = JSON.parse(spotifyTokensStr);
 
           // Only migrate if we don't already have tokens in Zustand
@@ -124,9 +179,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
             // Clean up legacy storage after successful migration
             localStorage.removeItem('spotify_oauth_tokens');
-            console.log('✅ Legacy Spotify tokens migrated and cleaned up');
           } else {
-            console.log('ℹ️ Spotify tokens already in Zustand, removing legacy storage');
             localStorage.removeItem('spotify_oauth_tokens');
           }
         }
@@ -250,7 +303,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
               {/* Connection Status Banner */}
               <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {musicCredentials.tidal?.isConnected && (
+                {/* Tidal Connection Status - Validated with expiration check */}
+                {isTidalConnected && (
                   <div style={{
                     padding: '12px 16px',
                     backgroundColor: 'rgba(29, 185, 84, 0.2)',
@@ -265,7 +319,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   </div>
                 )}
 
-                {musicCredentials.spotify?.accessToken && (
+                {/* Spotify Connection Status - Validated with expiration check */}
+                {isSpotifyConnected && (
                   <div style={{
                     padding: '12px 16px',
                     backgroundColor: 'rgba(29, 185, 84, 0.2)',
@@ -319,7 +374,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   style={{
                     width: '100%',
                     padding: '20px',
-                    backgroundColor: musicCredentials.tidal?.isConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000',
+                    backgroundColor: isTidalConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000',
                     border: '2px solid #FFFFFF',
                     borderRadius: '12px',
                     color: '#FFFFFF',
@@ -337,22 +392,43 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   }}
                   onMouseEnter={(e) => {
                     if (!isLoading) {
-                      e.currentTarget.style.backgroundColor = musicCredentials.tidal?.isConnected ? '#1DB954' : '#1A1A1A';
+                      e.currentTarget.style.backgroundColor = isTidalConnected ? '#1DB954' : '#1A1A1A';
                       e.currentTarget.style.transform = 'scale(1.02)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = musicCredentials.tidal?.isConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000';
+                    e.currentTarget.style.backgroundColor = isTidalConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000';
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
                   <span style={{ fontSize: '24px' }}>🎵</span>
-                  {musicCredentials.tidal?.isConnected ? 'TIDAL - CONNECTED ✓' : 'CONNECT TIDAL'}
+                  {isTidalConnected ? 'TIDAL - CONNECTED ✓' : 'CONNECT TIDAL'}
                 </button>
 
                 {/* Spotify Button */}
                 <button
                   onClick={() => {
+                    console.log('[SettingsPanel] Spotify button clicked');
+                    console.log('[SettingsPanel] Current Spotify credentials:', {
+                      hasAccessToken: !!musicCredentials.spotify?.accessToken,
+                      isConnected: musicCredentials.spotify?.isConnected,
+                      expiresAt: musicCredentials.spotify?.expiresAt,
+                      isExpired: isTokenExpired(musicCredentials.spotify?.expiresAt),
+                      isSpotifyConnected
+                    });
+
+                    // If already connected with valid token, inform user
+                    if (isSpotifyConnected) {
+                      const reconnect = confirm(
+                        'You are already connected to Spotify. Do you want to reconnect (this will refresh your access token)?'
+                      );
+                      if (!reconnect) {
+                        console.log('[SettingsPanel] User cancelled Spotify reconnection');
+                        return;
+                      }
+                      console.log('[SettingsPanel] User confirmed Spotify reconnection');
+                    }
+
                     const state = Array.from(crypto.getRandomValues(new Uint8Array(32)))
                       .map(b => b.toString(16).padStart(2, '0')).join('');
                     sessionStorage.setItem('spotify_auth_state', state);
@@ -363,13 +439,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                       state: state
                     });
 
-                    console.log('🎵 [SPOTIFY LOGIN] Redirecting to backend authorize endpoint...');
+                    console.log('[SettingsPanel] Redirecting to Spotify OAuth:', authorizeUrl);
                     window.location.href = authorizeUrl;
                   }}
                   style={{
                     width: '100%',
                     padding: '20px',
-                    backgroundColor: musicCredentials.spotify?.accessToken ? '#1ed760' : '#1DB954',
+                    backgroundColor: isSpotifyConnected ? '#1ed760' : '#1DB954',
                     border: 'none',
                     borderRadius: '12px',
                     color: '#FFFFFF',
@@ -389,14 +465,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                     e.currentTarget.style.transform = 'scale(1.02)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = musicCredentials.spotify?.accessToken ? '#1ed760' : '#1DB954';
+                    e.currentTarget.style.backgroundColor = isSpotifyConnected ? '#1ed760' : '#1DB954';
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
                   </svg>
-                  {musicCredentials.spotify?.accessToken ? 'SPOTIFY - CONNECTED ✓' : 'CONNECT SPOTIFY'}
+                  {isSpotifyConnected ? 'SPOTIFY - CONNECTED ✓' : 'CONNECT SPOTIFY'}
                 </button>
               </div>
 

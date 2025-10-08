@@ -246,10 +246,24 @@ export async function findDJPath(
     const adjacencyList = new Map<string, Array<{ node: GraphNode; weight: PathEdgeWeight }>>();
     const trackMap = new Map<string, Track>();
 
-    // Build track map
+    // Build track map - handle both nested and flat formats
     graphData.nodes.forEach(node => {
-      if (node.track) {
-        trackMap.set(node.id, node.track);
+      // Create track object from either nested node.track or flat node properties
+      const track: Track = node.track || {
+        id: node.id,
+        name: node.name || node.title || node.label,
+        artist: node.artist || 'Unknown Artist',
+        duration: node.duration,
+        bpm: node.bpm,
+        key: node.key,
+        camelotKey: node.camelotKey || node.camelot_key,
+        energy: node.energy,
+        genre: node.genre,
+      };
+
+      // Only include if we have a valid name
+      if (track.name) {
+        trackMap.set(node.id, track);
         adjacencyList.set(node.id, []);
       }
     });

@@ -370,7 +370,6 @@ const SetlistBuilder: React.FC = () => {
 
   const handleEditTrack = useCallback((trackId: string) => {
     // TODO: Open track editing modal/panel
-    console.log('Edit track:', trackId);
   }, []);
 
   const handleSaveSetlist = useCallback(() => {

@@ -64,7 +64,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           icon: <Play size={20} />,
           color: '#10b981',
           action: () => {
-            console.log('Playing:', targetNode.label);
             onClose();
           }
         },
@@ -120,7 +119,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           icon: <Target size={20} />,
           color: '#ef4444',
           action: () => {
-            console.log('Setting target:', targetNode.label);
             onClose();
           }
         }
@@ -133,7 +131,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           icon: <Play size={20} />,
           color: '#10b981',
           action: () => {
-            console.log('Playing:', targetTrack.name);
             onClose();
           }
         },
@@ -153,7 +150,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           icon: <Layers size={20} />,
           color: '#8b5cf6',
           action: () => {
-            console.log('View in graph:', targetTrack.name);
             onClose();
           }
         },
@@ -163,7 +159,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           icon: <BarChart size={20} />,
           color: '#f59e0b',
           action: () => {
-            console.log('Analyze:', targetTrack.name);
             onClose();
           }
         }
@@ -187,7 +182,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           icon: <Shuffle size={20} />,
           color: '#10b981',
           action: () => {
-            console.log('Shuffle view');
             onClose();
           }
         },
@@ -207,7 +201,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           icon: <Layers size={20} />,
           color: '#8b5cf6',
           action: () => {
-            console.log('Toggle layers');
             onClose();
           }
         }

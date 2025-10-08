@@ -393,13 +393,23 @@ async def spotify_authorize(
     if not state:
         state = secrets.token_urlsafe(32)
 
-    # Store state for validation in callback
-    oauth_state_store[state] = {
+    # Store state in Redis with service-specific namespace (2025 Best Practice)
+    # This prevents state collisions between Spotify and Tidal OAuth flows
+    r = await get_redis()
+    oauth_data = {
         'client_id': SPOTIFY_CLIENT_ID,
+        'client_secret': SPOTIFY_CLIENT_SECRET,  # Store securely server-side
         'redirect_uri': redirect_uri,
         'created_at': time.time(),
         'service': 'spotify'
     }
+    await r.setex(
+        f"oauth:spotify:{state}",  # Service-specific namespace
+        600,  # 10 minutes TTL (IETF Best Practice)
+        json.dumps(oauth_data)
+    )
+
+    logger.info(f"🎵 [SPOTIFY] Stored OAuth state in Redis with key: oauth:spotify:{state[:8]}...")
 
     # Spotify authorization scopes
     scopes = [
@@ -462,45 +472,41 @@ async def spotify_callback(
                 detail=f"Spotify authorization failed: {error}"
             )
 
-        # Validate state parameter (CSRF protection)
-        if state not in oauth_state_store:
-            # Check if this is a duplicate request (state already used)
-            # In development, React Strict Mode can cause double renders
-            logger.warning(f"Spotify OAuth state not found for state: {state[:8]}... (may be duplicate request)")
+        # Validate state parameter (CSRF protection) - retrieve from Redis
+        r = await get_redis()
+        oauth_data_json = await r.get(f"oauth:spotify:{state}")
 
-            # Return success anyway to handle duplicate callbacks gracefully
-            # The frontend will have the tokens from the first successful call
-            return JSONResponse({
-                "success": True,
-                "message": "OAuth callback already processed",
-                "access_token": "already_processed",
-                "token_type": "Bearer",
-                "expires_in": 3600,
-                "scope": ""
-            })
-
-        stored_data = oauth_state_store[state]
-        redirect_uri = stored_data['redirect_uri']
-
-        # Clean up state (but keep for 5 seconds to handle duplicate requests)
-        # This is a workaround for React Strict Mode double-rendering in development
-        oauth_state_store[f"{state}_processed"] = True
-        del oauth_state_store[state]
-
-        # Validate backend has Spotify credentials configured
-        if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+        if not oauth_data_json:
+            logger.error(f"🎵 [SPOTIFY] OAuth state not found or expired for state: {state[:8]}...")
             raise HTTPException(
-                status_code=500,
-                detail="Spotify credentials not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables."
+                status_code=400,
+                detail="Invalid or expired state parameter. Please try connecting again."
             )
+
+        oauth_data = json.loads(oauth_data_json)
+        redirect_uri = oauth_data['redirect_uri']
+
+        # Validate service match (prevent cross-service attacks)
+        if oauth_data.get('service') != 'spotify':
+            logger.error(f"🎵 [SPOTIFY] Service mismatch! Expected 'spotify', got '{oauth_data.get('service')}'")
+            raise HTTPException(
+                status_code=400,
+                detail="Service mismatch detected. Please restart the authentication flow."
+            )
+
+        logger.info(f"🎵 [SPOTIFY] Retrieved OAuth state from Redis for state: {state[:8]}...")
+
+        # Clean up state from Redis (one-time use, IETF Best Practice)
+        await r.delete(f"oauth:spotify:{state}")
+        logger.info(f"🎵 [SPOTIFY] Deleted OAuth state from Redis (one-time use)")
 
         logger.info(f"🎵 [SPOTIFY] Exchanging authorization code for tokens (state: {state[:8]}...)")
 
         # Exchange authorization code for access token
         token_url = 'https://accounts.spotify.com/api/token'
 
-        # Encode credentials for Basic Auth
-        auth_str = f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}"
+        # Encode credentials for Basic Auth (retrieve from Redis, not env vars)
+        auth_str = f"{oauth_data['client_id']}:{oauth_data['client_secret']}"
         auth_bytes = auth_str.encode('utf-8')
         auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
 
@@ -1221,8 +1227,12 @@ async def init_tidal_oauth(request: TidalOAuthInitRequest):
         )
 
         # Build authorization URL
-        # Scopes from Tidal Developer Portal configuration
+        # Scopes from Tidal Developer Portal configuration (2025 Update - Modern API)
+        # NOTE: Tidal migrated from legacy scopes (r_usr/w_usr) to modern scopes (user.read/user.write)
+        # 'playback' does NOT mean audio streaming - it's for playlist/queue metadata access
         scopes = [
+            'user.read',             # REQUIRED: Read user profile (replaces legacy 'r_usr')
+            'playback',              # REQUIRED: Access to playback-related APIs (metadata, not streaming)
             'collection.read',       # Read access to user's "My Collection"
             'collection.write',      # Write access to user's "My Collection"
             'playlists.read',        # Required to list playlists created by user

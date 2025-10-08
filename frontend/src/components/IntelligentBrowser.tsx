@@ -192,11 +192,9 @@ const RecommendationCard: React.FC<{
     <div
       className="recommendation-card"
       onClick={() => {
-        console.log('RecommendationCard clicked:', recommendation.track.name);
         onSelect();
       }}
       onTouchEnd={(e) => {
-        console.log('RecommendationCard touched:', recommendation.track.name);
         e.preventDefault();
         onSelect();
       }}
