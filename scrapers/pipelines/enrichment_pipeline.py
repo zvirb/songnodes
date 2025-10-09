@@ -5,6 +5,7 @@ Enriches validated items with additional data and transformations.
 Implements Scrapy Specification Section VI.1: Separation of Concerns
 
 Responsibilities:
+- Remix/version/label parsing from track titles (2025 enhancement)
 - NLP fallback for low-quality extractions (moved from nlp_fallback_pipeline.py)
 - Fuzzy matching for genre normalization
 - Add timestamps (created_at, updated_at)
@@ -24,6 +25,15 @@ import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from scrapy import Spider
+
+# Import remix parser (2025 Best Practice)
+try:
+    from utils.remix_parser import TrackTitleParser
+    REMIX_PARSER_AVAILABLE = True
+except ImportError:
+    REMIX_PARSER_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("⚠️ Remix parser not available - remix extraction disabled")
 
 # RapidFuzz for genre normalization (2025 Best Practice)
 try:
@@ -76,6 +86,11 @@ class EnrichmentPipeline:
 
     def __init__(self):
         """Initialize enrichment pipeline."""
+        # Remix parser configuration (2025 Best Practice)
+        self.enable_remix_parser = REMIX_PARSER_AVAILABLE
+        if self.enable_remix_parser:
+            self.remix_parser = TrackTitleParser()
+
         # NLP Fallback configuration (moved from nlp_fallback_pipeline.py)
         self.enable_nlp_fallback = os.getenv('ENABLE_NLP_FALLBACK', 'true').lower() in ('true', '1', 'yes')
         self.min_track_threshold = int(os.getenv('NLP_MIN_TRACK_THRESHOLD', '3'))
@@ -98,8 +113,11 @@ class EnrichmentPipeline:
             'genre_normalized': 0,
             'timestamp_added': 0,
             'text_normalized': 0,
+            'remix_parsed': 0,
         }
 
+        if self.enable_remix_parser:
+            logger.info("✅ EnrichmentPipeline initialized with Remix Parser enabled")
         if self.enable_nlp_fallback:
             logger.info("✅ EnrichmentPipeline initialized with NLP fallback enabled")
         if self.enable_fuzzy_genres:
@@ -131,6 +149,7 @@ class EnrichmentPipeline:
         # Apply enrichment operations
         item = self._add_timestamps(item)
         item = self._normalize_text_fields(item)
+        item = self._parse_remix_info(item)  # NEW: Parse remix/version/label info
         item = self._normalize_genre(item)
         item = self._derive_fields(item)
 
@@ -152,16 +171,26 @@ class EnrichmentPipeline:
         """
         now = datetime.utcnow()
 
-        if 'created_at' not in item or item.get('created_at') is None:
-            item['created_at'] = now
-            self.stats['timestamp_added'] += 1
+        # Safely add timestamps - Scrapy Items have fixed schemas, so use try/except
+        try:
+            if 'created_at' not in item or item.get('created_at') is None:
+                item['created_at'] = now
+                self.stats['timestamp_added'] += 1
+        except KeyError:
+            pass  # Item doesn't support this field
 
-        if 'updated_at' not in item or item.get('updated_at') is None:
-            item['updated_at'] = now
+        try:
+            if 'updated_at' not in item or item.get('updated_at') is None:
+                item['updated_at'] = now
+        except KeyError:
+            pass  # Item doesn't support this field
 
-        # Also add scrape_timestamp if not present
-        if 'scrape_timestamp' not in item or item.get('scrape_timestamp') is None:
-            item['scrape_timestamp'] = now
+        try:
+            # Also add scrape_timestamp if not present
+            if 'scrape_timestamp' not in item or item.get('scrape_timestamp') is None:
+                item['scrape_timestamp'] = now
+        except KeyError:
+            pass  # Item doesn't support this field
 
         return item
 
@@ -190,22 +219,102 @@ class EnrichmentPipeline:
                 normalized = re.sub(r'\s+', ' ', str(original).strip())
                 item[field] = normalized
 
-                # Generate normalized version
-                if field == 'artist_name' and 'normalized_name' not in item:
-                    item['normalized_name'] = normalized.lower()
-                    self.stats['text_normalized'] += 1
-                elif field == 'track_name' and 'normalized_title' not in item:
-                    item['normalized_title'] = normalized.lower()
-                    self.stats['text_normalized'] += 1
-                elif field == 'title' and 'normalized_title' not in item:
-                    item['normalized_title'] = normalized.lower()
-                    self.stats['text_normalized'] += 1
-                elif field == 'setlist_name' and 'normalized_name' not in item:
-                    item['normalized_name'] = normalized.lower()
-                    self.stats['text_normalized'] += 1
-                elif field == 'name' and 'normalized_name' not in item and 'setlist_name' not in item:
-                    item['normalized_name'] = normalized.lower()
-                    self.stats['text_normalized'] += 1
+                # Generate normalized version - wrapped in try/except for Scrapy Items
+                try:
+                    if field == 'artist_name' and 'normalized_name' not in item:
+                        item['normalized_name'] = normalized.lower()
+                        self.stats['text_normalized'] += 1
+                    elif field == 'track_name' and 'normalized_title' not in item:
+                        item['normalized_title'] = normalized.lower()
+                        self.stats['text_normalized'] += 1
+                    elif field == 'title' and 'normalized_title' not in item:
+                        item['normalized_title'] = normalized.lower()
+                        self.stats['text_normalized'] += 1
+                    elif field == 'setlist_name' and 'normalized_name' not in item:
+                        item['normalized_name'] = normalized.lower()
+                        self.stats['text_normalized'] += 1
+                    elif field == 'name' and 'normalized_name' not in item and 'setlist_name' not in item:
+                        item['normalized_name'] = normalized.lower()
+                        self.stats['text_normalized'] += 1
+                except KeyError:
+                    # Item doesn't support normalized fields (e.g., EnhancedTrackArtistItem)
+                    pass
+
+        return item
+
+    def _parse_remix_info(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Parse remix/version/label information from track titles (2025 Best Practice).
+
+        Extracts:
+        - Remix artist name
+        - Remix type (Extended, Radio, Club, VIP, Edit, etc.)
+        - Record label
+        - Clean title (without remix/label info)
+        - is_remix, is_mashup, is_live, is_cover flags
+
+        Args:
+            item: Item to parse
+
+        Returns:
+            Item with remix information populated
+        """
+        if not self.enable_remix_parser:
+            return item
+
+        # Get track title from various possible fields
+        title = item.get('track_name') or item.get('title') or item.get('name')
+
+        if not title or not isinstance(title, str):
+            return item
+
+        try:
+            # Parse the title
+            parsed = self.remix_parser.parse(title)
+
+            # Update item with parsed information
+            # Only update fields that exist in the item schema (wrapped in try/except for Scrapy Items)
+            try:
+                # Update clean title if different
+                if parsed['clean_title'] != title:
+                    item['track_name'] = parsed['clean_title']
+                    item['title'] = parsed['clean_title']
+            except KeyError:
+                pass
+
+            # Update remix flags
+            try:
+                if parsed['is_remix']:
+                    item['is_remix'] = True
+                    if parsed['remix_type']:
+                        item['remix_type'] = str(parsed['remix_type'].value) if hasattr(parsed['remix_type'], 'value') else str(parsed['remix_type'])
+                    if parsed['remixer']:
+                        item['remixer'] = parsed['remixer']
+                    self.stats['remix_parsed'] += 1
+                    logger.debug(f"Remix parsed: '{title}' → remixer='{parsed['remixer']}', type='{parsed['remix_type']}'")
+            except KeyError:
+                pass
+
+            # Update other flags
+            try:
+                if parsed['is_mashup']:
+                    item['is_mashup'] = True
+                if parsed['is_live']:
+                    item['is_live'] = True
+                if parsed['is_cover']:
+                    item['is_cover'] = True
+            except KeyError:
+                pass
+
+            # Update label information
+            try:
+                if parsed['label']:
+                    item['record_label'] = parsed['label']
+            except KeyError:
+                pass
+
+        except Exception as e:
+            logger.warning(f"Error parsing remix info from '{title}': {e}")
 
         return item
 
@@ -280,8 +389,9 @@ class EnrichmentPipeline:
         Derivations:
         - duration_seconds from duration_ms
         - bpm_range for setlists from track BPMs
-        - is_remix from track_name
-        - is_live from track_name or event_type
+
+        NOTE: Remix/mashup/live detection is now handled by _parse_remix_info()
+        which uses the sophisticated TrackTitleParser (2025 Best Practice).
 
         Args:
             item: Item to derive fields for
@@ -292,35 +402,6 @@ class EnrichmentPipeline:
         # Duration conversion
         if 'duration_ms' in item and item['duration_ms'] and 'duration_seconds' not in item:
             item['duration_seconds'] = int(item['duration_ms'] / 1000)
-
-        # Detect remix from track name
-        if 'track_name' in item or 'title' in item:
-            track_name = (item.get('track_name') or item.get('title', '')).lower()
-            if 'remix' in track_name or 'edit' in track_name or 'rework' in track_name:
-                item['is_remix'] = True
-                # Try to detect remix type
-                if 'vip' in track_name:
-                    item['remix_type'] = 'vip'
-                elif 'extended' in track_name:
-                    item['remix_type'] = 'extended'
-                elif 'radio' in track_name:
-                    item['remix_type'] = 'radio'
-                elif 'club' in track_name:
-                    item['remix_type'] = 'club'
-                else:
-                    item['remix_type'] = 'remix'
-
-        # Detect mashup
-        if 'track_name' in item or 'title' in item:
-            track_name = (item.get('track_name') or item.get('title', '')).lower()
-            if 'mashup' in track_name or ' vs ' in track_name or ' x ' in track_name:
-                item['is_mashup'] = True
-
-        # Detect live
-        if 'track_name' in item or 'title' in item:
-            track_name = (item.get('track_name') or item.get('title', '')).lower()
-            if 'live' in track_name:
-                item['is_live'] = True
 
         # BPM range for setlists
         if 'tracks' in item and isinstance(item['tracks'], list):
@@ -484,14 +565,17 @@ class EnrichmentPipeline:
         logger.info("=" * 80)
         logger.info(f"  Spider: {spider.name}")
         logger.info(f"  Total items processed: {self.stats['total_items']}")
+        logger.info(f"  🎧 Remix info parsed: {self.stats['remix_parsed']}")
         logger.info(f"  🔧 NLP enriched: {self.stats['nlp_enriched']}")
         logger.info(f"  🎵 Genres normalized: {self.stats['genre_normalized']}")
         logger.info(f"  ⏰ Timestamps added: {self.stats['timestamp_added']}")
         logger.info(f"  📝 Text normalized: {self.stats['text_normalized']}")
 
-        # Calculate enrichment rate
+        # Calculate enrichment rates
         if self.stats['total_items'] > 0:
+            remix_rate = (self.stats['remix_parsed'] / self.stats['total_items']) * 100
             nlp_rate = (self.stats['nlp_enriched'] / self.stats['total_items']) * 100
+            logger.info(f"  📈 Remix parsing rate: {remix_rate:.2f}%")
             logger.info(f"  📈 NLP enrichment rate: {nlp_rate:.2f}%")
 
         logger.info("=" * 80)

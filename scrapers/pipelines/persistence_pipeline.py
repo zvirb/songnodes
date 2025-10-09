@@ -154,6 +154,8 @@ class PersistencePipeline:
         self.flush_thread: Optional[threading.Thread] = None
         self._stop_flushing = threading.Event()
         self._flushing_lock = threading.Lock()
+        self._pool_ready = threading.Event()  # Signal when pool is initialized
+        self._persistent_loop = None  # The event loop used by the persistent thread
 
     def _periodic_flush_thread_target(self):
         """
@@ -162,18 +164,43 @@ class PersistencePipeline:
         Runs in its own thread with its own asyncio event loop to bypass
         Scrapy's Twisted reactor async incompatibility. Ensures data is saved
         even if close_spider() fails.
+
+        CRITICAL: This thread also initializes the connection pool to ensure
+        the pool and event loop are in the same thread.
         """
         # Create new event loop for this thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        self._persistent_loop = loop  # Store for use by close_spider
 
-        self.logger.info(f"🔄 Starting periodic batch flushing thread (every {self.flush_interval} seconds)")
+        self.logger.info(f"🔄 Starting persistent async thread for database operations")
 
         try:
+            # Initialize connection pool in THIS thread's event loop
+            connection_string = (
+                f"postgresql://{self.config['user']}:{self.config['password']}"
+                f"@{self.config['host']}:{self.config['port']}/{self.config['database']}"
+            )
+            self.connection_pool = loop.run_until_complete(asyncpg.create_pool(
+                connection_string,
+                min_size=5,
+                max_size=15,
+                command_timeout=30,
+                max_queries=50000,
+                max_inactive_connection_lifetime=1800,
+                server_settings={
+                    'statement_timeout': '30000',
+                    'idle_in_transaction_session_timeout': '300000'
+                }
+            ))
+            self.logger.info("✓ Database connection pool initialized in persistent thread")
+            self._pool_ready.set()  # Signal that pool is ready
+
+            # Now start periodic flushing
             while not self._stop_flushing.is_set():
                 # Wait for flush interval or stop signal
                 if self._stop_flushing.wait(timeout=self.flush_interval):
-                    # Stop signal received
+                    # Stop signal received - do final flush before exiting
                     break
 
                 # Check if there's anything to flush
@@ -189,60 +216,41 @@ class PersistencePipeline:
                             self.logger.error(traceback.format_exc())
 
             self.logger.info("✓ Periodic flushing thread stopped")
+        except Exception as e:
+            self.logger.error(f"Error in persistent async thread: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            self._pool_ready.set()  # Unblock waiting threads even on error
         finally:
-            loop.close()
+            # Don't close loop yet - close_spider might need it
+            pass
 
     def open_spider(self, spider: Spider):
         """
         Initialize connection pool when spider starts.
 
-        Uses a separate thread with its own event loop to avoid Twisted/asyncio conflicts.
+        Starts a persistent thread that manages both the connection pool
+        and periodic flushing. The thread runs with its own event loop to
+        avoid Twisted/asyncio conflicts.
 
         Args:
             spider: Spider instance
         """
-        def init_pool():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                connection_string = (
-                    f"postgresql://{self.config['user']}:{self.config['password']}"
-                    f"@{self.config['host']}:{self.config['port']}/{self.config['database']}"
-                )
-                self.connection_pool = loop.run_until_complete(asyncpg.create_pool(
-                    connection_string,
-                    min_size=5,
-                    max_size=15,
-                    command_timeout=30,
-                    max_queries=50000,
-                    max_inactive_connection_lifetime=1800,
-                    server_settings={
-                        'statement_timeout': '30000',
-                        'idle_in_transaction_session_timeout': '300000'
-                    }
-                ))
-                self.logger.info("✓ Database connection pool initialized")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize database connection pool: {e}")
-                raise
-            finally:
-                # Don't close loop - connection pool needs it
-                pass
-
-        # Initialize pool in separate thread to avoid Twisted/asyncio conflicts
-        init_thread = threading.Thread(target=init_pool)
-        init_thread.start()
-        init_thread.join()  # Wait for initialization to complete
-
-        # Start periodic flushing thread
+        # Start persistent async thread (it will initialize the pool)
         self._stop_flushing.clear()
+        self._pool_ready.clear()
         self.flush_thread = threading.Thread(
             target=self._periodic_flush_thread_target,
             daemon=True,
-            name="PersistencePipelineFlushThread"
+            name="PersistencePipelinePersistentThread"
         )
         self.flush_thread.start()
-        self.logger.info("✓ Periodic flushing thread started")
+
+        # Wait for the pool to be initialized (with timeout)
+        if not self._pool_ready.wait(timeout=30):
+            raise RuntimeError("Timeout waiting for database connection pool initialization")
+
+        self.logger.info("✓ Persistent async thread started and pool ready")
 
     async def process_item(self, item: Dict[str, Any], spider: Spider) -> Dict[str, Any]:
         """
@@ -267,7 +275,8 @@ class PersistencePipeline:
 
             self.stats['total_items'] += 1
 
-            item_type = item.get('item_type')
+            # Determine item type (with fallback if not explicitly set)
+            item_type = self._determine_item_type(item)
 
             if item_type == 'artist':
                 await self._process_artist_item(item)
@@ -499,20 +508,54 @@ class PersistencePipeline:
         """
         Process playlist track item (position in playlist).
 
+        IMPORTANT: This also extracts and queues the underlying track data,
+        since playlist_track items contain both track metadata AND position info.
+
         Args:
             item: Playlist track item
         """
-        playlist_name = item.get('playlist_name', '').strip()
+        # Handle both playlist_name and setlist_name
+        playlist_name = (item.get('playlist_name') or item.get('setlist_name', '')).strip()
         track_name = item.get('track_name', '').strip()
-        position = item.get('position')
+        artist_name = item.get('artist_name', '').strip()
+        # Handle both position and track_order
+        position = item.get('position') or item.get('track_order')
 
-        if not playlist_name or not track_name or position is None:
+        if not playlist_name:
+            self.logger.warning(f"Missing playlist/setlist name in playlist_track item: {item.keys()}")
+            return
+        if not track_name:
+            self.logger.warning(f"Missing track_name in playlist_track item: {item.keys()}")
+            return
+        if position is None:
+            self.logger.warning(f"Missing position/track_order in playlist_track item: {item.keys()}")
             return
 
+        # FIRST: Queue the track itself (so it exists when we create the relationship)
+        # Use _process_track_item to handle this properly
+        await self._process_track_item({
+            'track_name': track_name,
+            'artist_name': artist_name,
+            'normalized_title': item.get('normalized_title', track_name.lower().strip()),
+            'normalized_artist': item.get('normalized_artist', artist_name.lower().strip()),
+            'duration_seconds': item.get('duration_seconds'),
+            'bpm': item.get('bpm'),
+            'key': item.get('key'),
+            'genre': item.get('genre'),
+            'release_year': item.get('release_year'),
+            'spotify_id': item.get('spotify_id'),
+            'musicbrainz_id': item.get('musicbrainz_id'),
+            'soundcloud_id': item.get('soundcloud_id'),
+            'beatport_id': item.get('beatport_id'),
+            'source': item.get('source', 'scraped_data'),
+            'metadata': item.get('metadata')
+        })
+
+        # SECOND: Queue the playlist_track relationship
         self.item_batches['playlist_tracks'].append({
             'playlist_name': playlist_name,
             'track_name': track_name,
-            'artist_name': item.get('artist_name', ''),
+            'artist_name': artist_name,
             'position': position,
             'source': item.get('source', 'scraped_data')
         })
@@ -546,6 +589,61 @@ class PersistencePipeline:
 
         if len(self.item_batches['song_adjacency']) >= self.batch_size:
             await self._flush_batch('song_adjacency')
+
+    def _determine_item_type(self, item: Dict[str, Any]) -> str:
+        """
+        Determine item type from item data (copied from validation_pipeline.py).
+
+        Args:
+            item: Scrapy item
+
+        Returns:
+            Item type string
+        """
+        # Check explicit item_type field
+        if 'item_type' in item:
+            return item['item_type']
+
+        # Infer from item class name
+        if hasattr(item, '__class__'):
+            class_name = item.__class__.__name__.lower()
+            self.logger.debug(f"Item class name: {class_name}")
+
+            if 'artist' in class_name and 'track' not in class_name:
+                return 'artist'
+            # Check for setlist-track relationship items BEFORE generic setlist check
+            elif ('setlist' in class_name and 'track' in class_name) or 'setlisttrack' in class_name:
+                self.logger.info(f"✓ Detected playlist_track from class name: {class_name}")
+                return 'playlist_track'
+            elif 'track' in class_name and 'adjacency' not in class_name and 'artist' not in class_name:
+                return 'track'
+            elif 'setlist' in class_name or 'playlist' in class_name:
+                return 'setlist'
+            elif 'adjacency' in class_name:
+                return 'track_adjacency'
+            elif 'trackartist' in class_name:
+                return 'track_artist'
+
+        # Infer from item fields
+        if 'artist_name' in item and 'track_name' not in item and 'setlist_name' not in item:
+            return 'artist'
+        elif 'track_name' in item or 'title' in item:
+            if 'track1_name' in item or 'track2_name' in item:
+                return 'track_adjacency'
+            elif 'artist_role' in item:
+                return 'track_artist'
+            # Check for setlist-track relationship (has both setlist and track fields)
+            elif 'setlist_name' in item and 'track_order' in item:
+                self.logger.info(f"✓ Detected playlist_track from fields: setlist_name + track_order")
+                return 'playlist_track'
+            else:
+                return 'track'
+        elif 'setlist_name' in item or ('name' in item and 'dj_artist_name' in item):
+            return 'setlist'
+        elif 'playlist_name' in item and 'position' in item:
+            return 'playlist_track'
+
+        return 'unknown'
 
     async def _flush_batch(self, batch_type: str):
         """
@@ -606,101 +704,80 @@ class PersistencePipeline:
         ])
 
     async def _insert_songs_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert songs batch with upsert logic."""
-        # First, get artist IDs for songs that have artists
-        songs_with_artists = []
-        for item in batch:
-            primary_artist_id = None
-            if item.get('artist_name'):
-                try:
-                    result = await conn.fetchrow(
-                        "SELECT artist_id FROM artists WHERE name = $1",
-                        item['artist_name']
-                    )
-                    if result:
-                        primary_artist_id = result['artist_id']
-                except Exception as e:
-                    self.logger.warning(f"Could not find artist ID for {item.get('artist_name')}: {e}")
+        """
+        Insert tracks batch with upsert logic.
 
-            songs_with_artists.append({
-                **item,
-                'primary_artist_id': primary_artist_id
-            })
-
+        NOTE: Schema uses 'tracks' table with columns matching actual database.
+        Artist relationships are handled separately via track_artists junction table.
+        """
         await conn.executemany("""
-            INSERT INTO songs (track_id, title, primary_artist_id, genre, bpm, key,
-                             duration_seconds, release_year, label, spotify_id, musicbrainz_id,
-                             tidal_id, beatport_id, apple_music_id, soundcloud_id, deezer_id, youtube_music_id,
-                             energy, danceability, valence, acousticness, instrumentalness,
-                             liveness, speechiness, loudness, normalized_title, popularity_score,
-                             is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-                    $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
-            ON CONFLICT (title, primary_artist_id) DO UPDATE SET
-                track_id = COALESCE(EXCLUDED.track_id, songs.track_id),
-                genre = COALESCE(EXCLUDED.genre, songs.genre),
-                bpm = COALESCE(EXCLUDED.bpm, songs.bpm),
-                key = COALESCE(EXCLUDED.key, songs.key),
-                duration_seconds = COALESCE(EXCLUDED.duration_seconds, songs.duration_seconds),
-                release_year = COALESCE(EXCLUDED.release_year, songs.release_year),
-                label = COALESCE(EXCLUDED.label, songs.label),
-                spotify_id = COALESCE(EXCLUDED.spotify_id, songs.spotify_id),
-                musicbrainz_id = COALESCE(EXCLUDED.musicbrainz_id, songs.musicbrainz_id),
-                tidal_id = COALESCE(EXCLUDED.tidal_id, songs.tidal_id),
-                beatport_id = COALESCE(EXCLUDED.beatport_id, songs.beatport_id),
-                apple_music_id = COALESCE(EXCLUDED.apple_music_id, songs.apple_music_id),
-                soundcloud_id = COALESCE(EXCLUDED.soundcloud_id, songs.soundcloud_id),
-                deezer_id = COALESCE(EXCLUDED.deezer_id, songs.deezer_id),
-                youtube_music_id = COALESCE(EXCLUDED.youtube_music_id, songs.youtube_music_id),
-                energy = COALESCE(EXCLUDED.energy, songs.energy),
-                danceability = COALESCE(EXCLUDED.danceability, songs.danceability),
-                valence = COALESCE(EXCLUDED.valence, songs.valence),
-                acousticness = COALESCE(EXCLUDED.acousticness, songs.acousticness),
-                instrumentalness = COALESCE(EXCLUDED.instrumentalness, songs.instrumentalness),
-                liveness = COALESCE(EXCLUDED.liveness, songs.liveness),
-                speechiness = COALESCE(EXCLUDED.speechiness, songs.speechiness),
-                loudness = COALESCE(EXCLUDED.loudness, songs.loudness),
-                normalized_title = COALESCE(EXCLUDED.normalized_title, songs.normalized_title),
-                popularity_score = COALESCE(EXCLUDED.popularity_score, songs.popularity_score),
+            INSERT INTO tracks (
+                title, normalized_title, genre, subgenre, bpm, key,
+                duration_ms, spotify_id, apple_music_id, tidal_id,
+                musicbrainz_id, soundcloud_id, beatport_id, deezer_id, youtube_music_id,
+                energy, danceability, valence, acousticness, instrumentalness,
+                liveness, speechiness, loudness, popularity_score,
+                is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
+            ON CONFLICT (title, normalized_title) DO UPDATE SET
+                genre = COALESCE(EXCLUDED.genre, tracks.genre),
+                subgenre = COALESCE(EXCLUDED.subgenre, tracks.subgenre),
+                bpm = COALESCE(EXCLUDED.bpm, tracks.bpm),
+                key = COALESCE(EXCLUDED.key, tracks.key),
+                duration_ms = COALESCE(EXCLUDED.duration_ms, tracks.duration_ms),
+                spotify_id = COALESCE(EXCLUDED.spotify_id, tracks.spotify_id),
+                apple_music_id = COALESCE(EXCLUDED.apple_music_id, tracks.apple_music_id),
+                tidal_id = COALESCE(EXCLUDED.tidal_id, tracks.tidal_id),
+                musicbrainz_id = COALESCE(EXCLUDED.musicbrainz_id, tracks.musicbrainz_id),
+                soundcloud_id = COALESCE(EXCLUDED.soundcloud_id, tracks.soundcloud_id),
+                beatport_id = COALESCE(EXCLUDED.beatport_id, tracks.beatport_id),
+                deezer_id = COALESCE(EXCLUDED.deezer_id, tracks.deezer_id),
+                youtube_music_id = COALESCE(EXCLUDED.youtube_music_id, tracks.youtube_music_id),
+                energy = COALESCE(EXCLUDED.energy, tracks.energy),
+                danceability = COALESCE(EXCLUDED.danceability, tracks.danceability),
+                valence = COALESCE(EXCLUDED.valence, tracks.valence),
+                acousticness = COALESCE(EXCLUDED.acousticness, tracks.acousticness),
+                instrumentalness = COALESCE(EXCLUDED.instrumentalness, tracks.instrumentalness),
+                liveness = COALESCE(EXCLUDED.liveness, tracks.liveness),
+                speechiness = COALESCE(EXCLUDED.speechiness, tracks.speechiness),
+                loudness = COALESCE(EXCLUDED.loudness, tracks.loudness),
+                popularity_score = COALESCE(EXCLUDED.popularity_score, tracks.popularity_score),
                 updated_at = CURRENT_TIMESTAMP
         """, [
             (
-                item.get('track_id'),
-                item['title'],
-                item.get('primary_artist_id'),
-                item.get('genre'),
-                item.get('bpm'),
-                item.get('key'),
-                item.get('duration_seconds', 0),
-                int(item.get('release_year')) if item.get('release_year') else None,
-                item.get('label'),
-                item.get('spotify_id'),
-                item.get('musicbrainz_id'),
-                item.get('tidal_id'),
-                item.get('beatport_id'),
-                item.get('apple_music_id'),
-                item.get('soundcloud_id'),
-                item.get('deezer_id'),
-                item.get('youtube_music_id'),
+                item.get('track_name') or item.get('title'),  # title
+                (item.get('normalized_title') or (item.get('track_name') or item.get('title', '')).lower().strip()),  # normalized_title
+                item.get('genre'),  # genre
+                item.get('subgenre'),  # subgenre
+                float(item.get('bpm')) if item.get('bpm') else None,  # bpm
+                item.get('key') or item.get('musical_key'),  # key
+                int(item.get('duration_ms', 0)) if item.get('duration_ms') else None,  # duration_ms
+                item.get('spotify_id'),  # spotify_id
+                item.get('apple_music_id'),  # apple_music_id
+                int(item.get('tidal_id')) if item.get('tidal_id') else None,  # tidal_id (INTEGER)
+                item.get('musicbrainz_id'),  # musicbrainz_id
+                item.get('soundcloud_id'),  # soundcloud_id
+                item.get('beatport_id'),  # beatport_id
+                item.get('deezer_id'),  # deezer_id
+                item.get('youtube_music_id'),  # youtube_music_id
                 # Audio features
-                item.get('energy'),
-                item.get('danceability'),
-                item.get('valence'),
-                item.get('acousticness'),
-                item.get('instrumentalness'),
-                item.get('liveness'),
-                item.get('speechiness'),
-                item.get('loudness'),
-                # Additional metadata
-                item.get('normalized_title') or item['title'].lower().strip(),
-                item.get('popularity_score'),
+                float(item.get('energy')) if item.get('energy') is not None else None,
+                float(item.get('danceability')) if item.get('danceability') is not None else None,
+                float(item.get('valence')) if item.get('valence') is not None else None,
+                float(item.get('acousticness')) if item.get('acousticness') is not None else None,
+                float(item.get('instrumentalness')) if item.get('instrumentalness') is not None else None,
+                float(item.get('liveness')) if item.get('liveness') is not None else None,
+                float(item.get('speechiness')) if item.get('speechiness') is not None else None,
+                float(item.get('loudness')) if item.get('loudness') is not None else None,
+                int(item.get('popularity_score', 0)) if item.get('popularity_score') is not None else None,  # popularity_score
                 item.get('is_remix', False),
                 item.get('is_mashup', False),
                 item.get('is_live', False),
                 item.get('is_cover', False),
                 item.get('is_instrumental', False),
                 item.get('is_explicit', False)
-            ) for item in songs_with_artists
+            ) for item in batch
         ])
 
     async def _insert_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
@@ -739,29 +816,65 @@ class PersistencePipeline:
                             f"with scrape_error={item.get('scrape_error')}"
                         )
                     raise
+            else:
+                # Update existing playlist with new scrape data
+                try:
+                    await conn.execute("""
+                        UPDATE playlists
+                        SET tracklist_count = $1,
+                            scrape_error = $2,
+                            last_scrape_attempt = $3,
+                            parsing_version = $4,
+                            source_url = $5
+                        WHERE name = $6 AND source = $7
+                    """,
+                        item.get('tracklist_count', 0),
+                        item.get('scrape_error'),
+                        item.get('last_scrape_attempt'),
+                        item.get('parsing_version'),
+                        item.get('source_url'),
+                        item['name'],
+                        item.get('source', 'scraped_data')
+                    )
+                    self.logger.info(f"✓ Updated playlist '{item['name']}' with tracklist_count={item.get('tracklist_count', 0)}")
+                except Exception as e:
+                    self.logger.error(f"Failed to update playlist '{item['name']}': {e}")
+                    raise
 
     async def _insert_playlist_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
         """Insert playlist tracks batch with upsert logic."""
         for item in batch:
             try:
+                # Handle both playlist_name and setlist_name
+                playlist_name = item.get('playlist_name') or item.get('setlist_name')
+                if not playlist_name:
+                    self.logger.warning(f"Missing playlist/setlist name in item: {item}")
+                    continue
+
+                # Handle both position and track_order
+                position = item.get('position') or item.get('track_order')
+                if position is None:
+                    self.logger.warning(f"Missing position/track_order in item: {item}")
+                    continue
+
                 # Get playlist ID
                 playlist_result = await conn.fetchrow(
-                    "SELECT playlist_id FROM playlists WHERE name = $1 AND source = $2",
-                    item['playlist_name'], item.get('source', 'scraped_data')
+                    "SELECT playlist_id FROM playlists WHERE name = $1 LIMIT 1",
+                    playlist_name
                 )
 
                 if not playlist_result:
-                    self.logger.warning(f"Playlist not found: {item['playlist_name']}")
+                    self.logger.warning(f"Playlist not found: {playlist_name}")
                     continue
 
-                # Get song ID
-                song_result = await conn.fetchrow(
-                    "SELECT song_id FROM songs WHERE title = $1 LIMIT 1",
+                # Get track ID
+                track_result = await conn.fetchrow(
+                    "SELECT id FROM tracks WHERE title = $1 LIMIT 1",
                     item['track_name']
                 )
 
-                if not song_result:
-                    self.logger.warning(f"Song not found: {item['track_name']}")
+                if not track_result:
+                    self.logger.warning(f"Track not found: {item['track_name']}")
                     continue
 
                 # Insert playlist track
@@ -772,8 +885,8 @@ class PersistencePipeline:
                         song_id = EXCLUDED.song_id
                 """,
                     playlist_result['playlist_id'],
-                    item['position'],
-                    song_result['song_id']
+                    position,
+                    track_result['id']
                 )
 
             except Exception as e:
@@ -782,36 +895,52 @@ class PersistencePipeline:
                 )
 
     async def _insert_adjacency_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert song adjacency batch with upsert logic."""
-        # Get song IDs for adjacencies
+        """Insert track adjacency batch with upsert logic."""
+        self.logger.info(f"🔍 Processing {len(batch)} adjacency items for insertion")
+
+        # Get track IDs for adjacencies
         adjacencies_with_ids = []
+        skipped_count = 0
+
         for item in batch:
             try:
-                song1_result = await conn.fetchrow(
-                    "SELECT song_id FROM songs WHERE title = $1 LIMIT 1",
-                    item['track1_name']
+                track1_name = item.get('track1_name', 'UNKNOWN')
+                track2_name = item.get('track2_name', 'UNKNOWN')
+
+                track1_result = await conn.fetchrow(
+                    "SELECT id FROM tracks WHERE title = $1 LIMIT 1",
+                    track1_name
                 )
-                song2_result = await conn.fetchrow(
-                    "SELECT song_id FROM songs WHERE title = $1 LIMIT 1",
-                    item['track2_name']
+                track2_result = await conn.fetchrow(
+                    "SELECT id FROM tracks WHERE title = $1 LIMIT 1",
+                    track2_name
                 )
 
-                if song1_result and song2_result:
-                    # Ensure song_id_1 < song_id_2 for the CHECK constraint
-                    id1, id2 = song1_result['song_id'], song2_result['song_id']
+                if track1_result and track2_result:
+                    # Ensure track_id_1 < track_id_2 for the CHECK constraint
+                    id1, id2 = track1_result['id'], track2_result['id']
                     if str(id1) > str(id2):
                         id1, id2 = id2, id1
 
                     adjacencies_with_ids.append({
-                        'song_id_1': id1,
-                        'song_id_2': id2,
+                        'track_id_1': id1,
+                        'track_id_2': id2,
                         'occurrence_count': item.get('occurrence_count', 1),
                         'avg_distance': item.get('distance', 1.0)
                     })
+                else:
+                    skipped_count += 1
+                    if not track1_result:
+                        self.logger.debug(f"Track not found in DB: '{track1_name}'")
+                    if not track2_result:
+                        self.logger.debug(f"Track not found in DB: '{track2_name}'")
+
             except Exception as e:
-                self.logger.warning(f"Could not create adjacency for {item['track1_name']} -> {item['track2_name']}: {e}")
+                skipped_count += 1
+                self.logger.warning(f"Could not create adjacency for {item.get('track1_name', '?')} -> {item.get('track2_name', '?')}: {e}")
 
         if adjacencies_with_ids:
+            self.logger.info(f"✅ Inserting {len(adjacencies_with_ids)} adjacencies ({skipped_count} skipped due to missing tracks)")
             await conn.executemany("""
                 INSERT INTO song_adjacency (song_id_1, song_id_2, occurrence_count, avg_distance)
                 VALUES ($1, $2, $3, $4)
@@ -822,22 +951,44 @@ class PersistencePipeline:
                                    (song_adjacency.occurrence_count + EXCLUDED.occurrence_count)
             """, [
                 (
-                    item['song_id_1'],
-                    item['song_id_2'],
+                    item['track_id_1'],
+                    item['track_id_2'],
                     item['occurrence_count'],
                     item['avg_distance']
                 ) for item in adjacencies_with_ids
             ])
+        else:
+            self.logger.warning(f"⚠️ No adjacencies inserted! {skipped_count} items skipped (tracks not found in DB)")
 
     async def flush_all_batches(self):
         """
-        Flush all batches to database.
+        Flush all batches to database in dependency order.
 
         Thread-safe via async lock to prevent concurrent flushes
         from periodic task and manual flush calls.
+
+        Each batch flush is wrapped in try-except to ensure one failing
+        batch doesn't prevent other batches from being persisted.
+
+        IMPORTANT: Flush order matters! Adjacencies require tracks to exist,
+        so we flush in this order: artists → songs → playlists → playlist_tracks → song_adjacency
         """
-        for batch_type in self.item_batches:
-            await self._flush_batch(batch_type)
+        # Define flush order to respect foreign key dependencies
+        flush_order = ['artists', 'songs', 'playlists', 'playlist_tracks', 'song_adjacency']
+
+        for batch_type in flush_order:
+            if batch_type not in self.item_batches:
+                continue
+
+            try:
+                await self._flush_batch(batch_type)
+            except (GeneratorExit, KeyboardInterrupt, SystemExit):
+                # Don't catch these - they indicate shutdown/cancellation
+                raise
+            except Exception as e:
+                self.logger.error(f"Error flushing {batch_type} batch (continuing with other batches): {e}")
+                # Clear the failed batch to prevent retry loops
+                self.item_batches[batch_type] = []
 
     def close_spider(self, spider: Spider):
         """
@@ -848,9 +999,40 @@ class PersistencePipeline:
         Args:
             spider: Spider instance
         """
-        self.logger.info("🔄 close_spider called - stopping periodic flushing and flushing remaining batches...")
+        self.logger.info("🔄 close_spider called - flushing remaining batches before stopping thread...")
         try:
-            # Stop periodic flushing thread
+            # Log batch sizes before flushing
+            with self._flushing_lock:
+                for batch_type, batch in self.item_batches.items():
+                    if batch:
+                        self.logger.info(f"  Pending {batch_type}: {len(batch)} items")
+
+            # CRITICAL: Do final flush BEFORE stopping the thread
+            # The persistent thread's event loop must still be running to execute the flush
+            if self._persistent_loop and self.connection_pool and self.flush_thread and self.flush_thread.is_alive():
+                try:
+                    # Use asyncio.run_coroutine_threadsafe to schedule in the persistent thread's loop
+                    import concurrent.futures
+                    import time
+                    future = asyncio.run_coroutine_threadsafe(
+                        self.flush_all_batches(),
+                        self._persistent_loop
+                    )
+                    # Wait for completion with longer timeout
+                    future.result(timeout=60)
+                    # Give extra time for database commits to fully complete
+                    time.sleep(0.5)
+                    self.logger.info("✓ All batches flushed successfully")
+                except concurrent.futures.TimeoutError:
+                    self.logger.error("❌ Timeout waiting for final batch flush")
+                except Exception as e:
+                    self.logger.error(f"❌ Error during final flush: {e}")
+                    import traceback
+                    self.logger.error(traceback.format_exc())
+            else:
+                self.logger.warning("⚠️ No persistent loop or connection pool - skipping final flush")
+
+            # NOW stop the periodic flushing thread
             if self.flush_thread and self.flush_thread.is_alive():
                 self.logger.info("Stopping periodic flush thread...")
                 self._stop_flushing.set()
@@ -859,26 +1041,6 @@ class PersistencePipeline:
                     self.logger.warning("Periodic flush thread did not stop gracefully")
                 else:
                     self.logger.info("✓ Periodic flush thread stopped")
-
-            # Log batch sizes before flushing
-            with self._flushing_lock:
-                for batch_type, batch in self.item_batches.items():
-                    if batch:
-                        self.logger.info(f"  Pending {batch_type}: {len(batch)} items")
-
-            # Final flush of any remaining batches (in separate thread)
-            def final_flush():
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    loop.run_until_complete(self.flush_all_batches())
-                    self.logger.info("✓ All batches flushed successfully")
-                finally:
-                    pass  # Don't close loop
-
-            flush_thread = threading.Thread(target=final_flush)
-            flush_thread.start()
-            flush_thread.join()
 
             # Log persistence statistics
             self.logger.info("=" * 80)
@@ -904,20 +1066,23 @@ class PersistencePipeline:
 
             self.logger.info("=" * 80)
 
-            # Close connection pool (in separate thread)
-            if self.connection_pool:
-                def close_pool():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        loop.run_until_complete(self.connection_pool.close())
-                        self.logger.info("✓ Database connection pool closed successfully")
-                    finally:
-                        loop.close()
+            # Close connection pool using the persistent thread's event loop
+            if self.connection_pool and self._persistent_loop:
+                try:
+                    import concurrent.futures
+                    future = asyncio.run_coroutine_threadsafe(
+                        self.connection_pool.close(),
+                        self._persistent_loop
+                    )
+                    future.result(timeout=10)
+                    self.logger.info("✓ Database connection pool closed successfully")
+                except Exception as e:
+                    self.logger.error(f"Error closing connection pool: {e}")
 
-                close_thread = threading.Thread(target=close_pool)
-                close_thread.start()
-                close_thread.join()
+            # Now close the persistent event loop
+            if self._persistent_loop:
+                self._persistent_loop.call_soon_threadsafe(self._persistent_loop.stop)
+                self.logger.info("✓ Persistent event loop stopped")
 
             self.logger.info("✓ Persistence pipeline closed successfully")
 

@@ -110,7 +110,10 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             'sec-ch-ua-platform': '"Linux"'
         },
         'ITEM_PIPELINES': {
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
+            'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validation
+            'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Enrichment
+            'pipelines.persistence_pipeline.PersistencePipeline': 300,  # Modern async persistence
         }
         # NOTE: Playwright launch options are defined globally in settings.py
         # to ensure headless mode works in Docker containers without X server
@@ -1282,7 +1285,8 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             '.bItm',
             'div.bItm',
             '.mediaRow',
-            '[data-track]'
+            '[data-track]',
+            'div.list-track'  # MixesDB-style track divs
         ]
 
         for selector in selectors:
@@ -1342,10 +1346,8 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             for component in parsed_track.get('mashup_components'):
                 loader.add_value('mashup_components', component)
 
-        # Remix type
-        remix_type = self.extract_remix_type(parsed_track['track_name'])
-        if remix_type:
-            loader.add_value('remix_type', remix_type)
+        # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
+        # which uses the sophisticated TrackTitleParser (2025 Best Practice)
 
         # Audio features
         if bpm:
@@ -1494,36 +1496,6 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
         genre_text = track_el.css('.genre::text, [data-genre]::attr(data-genre)').get()
         if genre_text:
             return genre_text.strip()
-        return None
-
-    def extract_remix_type(self, track_name):
-        """Extract remix type from track name - returns lowercase enum values"""
-        # Specific remix patterns (check these first)
-        remix_patterns = {
-            r'\(Original Mix\)': 'original',
-            r'\(Extended Mix\)': 'extended',
-            r'\(Radio Edit\)': 'radio',
-            r'\(Club Mix\)': 'club',
-            r'\(Dub Mix\)': 'club',  # Map dub to club
-            r'\(Vocal Mix\)': 'remix',  # Map vocal to generic remix
-            r'\(Instrumental\)': 'instrumental',
-            r'\(VIP\)': 'vip',
-            r'\(VIP Mix\)': 'vip',
-            r'\(Edit\)': 'edit',
-            r'\(Rework\)': 'rework',
-            r'\(Bootleg\)': 'bootleg',
-            r'\(Acappella\)': 'acappella'
-        }
-
-        for pattern, remix_type in remix_patterns.items():
-            if re.search(pattern, track_name, re.IGNORECASE):
-                return remix_type
-
-        # Check for artist-based remixes like "(Skrillex Remix)" or "(Calvin Harris Remix)"
-        # This pattern matches any text followed by "Remix" in parentheses
-        if re.search(r'\([^)]+\s+Remix\)', track_name, re.IGNORECASE):
-            return 'remix'
-
         return None
 
     def calculate_extraction_confidence(self, parsed_track):
