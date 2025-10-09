@@ -95,6 +95,7 @@ class RedisQueueConsumer:
     async def process_task(self, task_json: str):
         """Process a single task from the queue"""
         try:
+            await asyncio.sleep(5)
             task = json.loads(task_json)
 
             logger.info(

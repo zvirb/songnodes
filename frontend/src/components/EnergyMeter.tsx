@@ -1,73 +1,159 @@
 import React from 'react';
-import { ENERGY_DESCRIPTORS, getEnergyColor, SIZES } from '../utils/energyUtils';
+
+/**
+ * EnergyMeter Component - Visual representation of track energy (1-10 scale)
+ * Implements cognitive offloading through visual bars (DJ's Co-Pilot Section 5)
+ * No numbers shown - pure visual pattern recognition
+ */
 
 interface EnergyMeterProps {
-  /** The energy level to display, on a scale of 1-10. */
-  level: number;
-  /** Whether to show the descriptive label (e.g., "Energetic"). */
+  level: number; // 1-10 scale from Mixed In Key
   showLabel?: boolean;
-  /** The orientation of the meter. */
   orientation?: 'horizontal' | 'vertical';
-  /** The size of the meter. */
   size?: 'small' | 'medium' | 'large';
-  /** Whether to animate transitions. */
   animated?: boolean;
 }
 
-/**
- * A visual component to represent track energy on a 1-10 scale.
- * It uses a series of bars to provide a quick, at-a-glance understanding of energy level.
- */
+// Energy level descriptions based on Mixed In Key standards
+const ENERGY_DESCRIPTORS = {
+  1: { label: 'Ambient', desc: 'Very low energy, chill' },
+  2: { label: 'Minimal', desc: 'Low energy, background' },
+  3: { label: 'Relaxed', desc: 'Easy listening' },
+  4: { label: 'Moderate', desc: 'Building energy' },
+  5: { label: 'Groovy', desc: 'Danceable, steady' },
+  6: { label: 'Energetic', desc: 'High groove, driving' },
+  7: { label: 'Peak', desc: 'Party atmosphere' },
+  8: { label: 'Intense', desc: 'Very high energy' },
+  9: { label: 'Extreme', desc: 'Festival energy' },
+  10: { label: 'Maximum', desc: 'Peak time anthem' }
+};
+
+// Color gradient for energy levels (cool to hot)
+const getEnergyColor = (level: number): string => {
+  const colors = {
+    1: '#2E3A87',   // Deep blue
+    2: '#3A4A9C',
+    3: '#4A5FB1',
+    4: '#5A7AC6',
+    5: '#4A90E2',   // Medium blue
+    6: '#62B0FF',
+    7: '#FFA500',   // Orange transition
+    8: '#FF7F00',
+    9: '#FF5500',
+    10: '#FF0000'   // Red peak
+  };
+  return colors[level as keyof typeof colors] || colors[5];
+};
+
+const SIZES = {
+  small: { width: 60, height: 20, bars: 5 },
+  medium: { width: 100, height: 30, bars: 10 },
+  large: { width: 150, height: 40, bars: 10 }
+};
+
 export const EnergyMeter: React.FC<EnergyMeterProps> = ({
   level,
   showLabel = false,
   orientation = 'horizontal',
   size = 'medium',
-  animated = true,
+  animated = true
 }) => {
   const dimensions = SIZES[size];
   const barCount = dimensions.bars;
+
+  // Clamp level to valid range (1-10) to prevent undefined descriptor
   const validLevel = Math.max(1, Math.min(10, Math.round(level || 5)));
+
   const activeBars = Math.round((validLevel / 10) * barCount);
   const color = getEnergyColor(validLevel);
-  const descriptor = ENERGY_DESCRIPTORS[validLevel];
+  const descriptor = ENERGY_DESCRIPTORS[validLevel as keyof typeof ENERGY_DESCRIPTORS];
 
   if (orientation === 'vertical') {
     return (
-      <div className="flex flex-col items-center gap-2">
-        <div className={`flex flex-col-reverse gap-px p-1 bg-black/50 rounded border border-white/20 ${dimensions.height} ${dimensions.width}`}>
+      <div className="energy-meter-vertical" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px'
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column-reverse',
+          gap: '2px',
+          width: dimensions.height,
+          height: dimensions.width,
+          padding: '4px',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          borderRadius: '4px',
+          border: '1px solid rgba(255,255,255,0.2)'
+        }}>
           {Array.from({ length: barCount }).map((_, i) => (
             <div
               key={i}
-              className={`flex-1 rounded-sm ${animated ? 'transition-all duration-300' : ''}`}
               style={{
+                flex: 1,
                 backgroundColor: i < activeBars ? getEnergyColor(Math.ceil((i + 1) * 10 / barCount)) : 'rgba(255,255,255,0.1)',
-                boxShadow: i < activeBars ? `0 0 8px ${getEnergyColor(Math.ceil((i + 1) * 10 / barCount))}40` : 'none',
+                borderRadius: '2px',
+                transition: animated ? 'all 0.3s ease' : 'none',
+                boxShadow: i < activeBars ? `0 0 8px ${color}40` : 'none'
               }}
             />
           ))}
         </div>
-        {showLabel && <span className="text-white text-xs font-semibold text-center">{descriptor.label}</span>}
+        {showLabel && (
+          <span style={{
+            color: '#F8F8F8',
+            fontSize: '12px',
+            fontWeight: 600,
+            textAlign: 'center'
+          }}>
+            {descriptor.label}
+          </span>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2" title={`Energy: ${descriptor.label} - ${descriptor.desc}`}>
-      <div className={`flex gap-px p-1 bg-black/50 rounded border border-white/20 ${dimensions.width} ${dimensions.height}`}>
+    <div
+      className="energy-meter-horizontal"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }}
+      title={`Energy: ${descriptor.label} - ${descriptor.desc}`}
+    >
+      <div style={{
+        display: 'flex',
+        gap: '2px',
+        width: dimensions.width,
+        height: dimensions.height,
+        padding: '4px',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: '4px',
+        border: '1px solid rgba(255,255,255,0.2)'
+      }}>
         {Array.from({ length: barCount }).map((_, i) => (
           <div
             key={i}
-            className={`flex-1 rounded-sm ${animated ? 'transition-all duration-300' : ''}`}
             style={{
+              flex: 1,
               backgroundColor: i < activeBars ? getEnergyColor(Math.ceil((i + 1) * 10 / barCount)) : 'rgba(255,255,255,0.1)',
-              boxShadow: i < activeBars ? `0 0 8px ${color}40` : 'none',
+              borderRadius: '2px',
+              transition: animated ? 'all 0.3s ease' : 'none',
+              boxShadow: i < activeBars ? `0 0 8px ${color}40` : 'none'
             }}
           />
         ))}
       </div>
       {showLabel && (
-        <span className="text-sm font-semibold min-w-[80px]" style={{ color }}>
+        <span style={{
+          color: color,
+          fontSize: '14px',
+          fontWeight: 600,
+          minWidth: '80px'
+        }}>
           {descriptor.label}
         </span>
       )}
@@ -75,26 +161,20 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
   );
 };
 
+// Comparison component for energy flow management
 interface EnergyFlowProps {
-  /** The energy level of the current track. */
   currentEnergy: number;
-  /** The energy level of the target/next track. */
   targetEnergy: number;
-  /** Whether to show the text recommendation for the transition. */
   showRecommendation?: boolean;
 }
 
-/**
- * A component to visualize the energy transition between two tracks.
- * It provides a quick recommendation on the quality of the energy flow.
- */
 export const EnergyFlow: React.FC<EnergyFlowProps> = ({
   currentEnergy,
   targetEnergy,
-  showRecommendation = true,
+  showRecommendation = true
 }) => {
   const diff = targetEnergy - currentEnergy;
-  const isGoodTransition = Math.abs(diff) <= 2;
+  const isGoodTransition = Math.abs(diff) <= 2; // Adjacent energy levels work best
 
   const getRecommendation = () => {
     if (diff === 0) return { text: 'Same energy - smooth continuation', icon: '→' };
@@ -107,24 +187,50 @@ export const EnergyFlow: React.FC<EnergyFlowProps> = ({
   };
 
   const recommendation = getRecommendation();
-  const borderColor = isGoodTransition ? 'border-green-500' : 'border-amber-500';
-  const textColor = isGoodTransition ? 'text-green-400' : 'text-amber-400';
 
   return (
-    <div className={`flex flex-col gap-3 p-3 bg-black/80 rounded-lg border-2 ${borderColor}`}>
-      <div className="flex items-center gap-4">
+    <div className="energy-flow" style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+      padding: '12px',
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      borderRadius: '8px',
+      border: `2px solid ${isGoodTransition ? '#7ED321' : '#F5A623'}`
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px'
+      }}>
         <div>
-          <div className="text-gray-400 text-[10px] mb-1">NOW</div>
+          <div style={{ color: '#8E8E93', fontSize: '10px', marginBottom: '4px' }}>
+            NOW
+          </div>
           <EnergyMeter level={currentEnergy} size="small" />
         </div>
-        <div className="text-white text-xl">{recommendation.icon}</div>
+
+        <div style={{
+          color: '#F8F8F8',
+          fontSize: '20px'
+        }}>
+          {recommendation.icon}
+        </div>
+
         <div>
-          <div className="text-gray-400 text-[10px] mb-1">NEXT</div>
+          <div style={{ color: '#8E8E93', fontSize: '10px', marginBottom: '4px' }}>
+            NEXT
+          </div>
           <EnergyMeter level={targetEnergy} size="small" />
         </div>
       </div>
+
       {showRecommendation && (
-        <div className={`text-xs text-center ${textColor}`}>
+        <div style={{
+          color: isGoodTransition ? '#7ED321' : '#F5A623',
+          fontSize: '12px',
+          textAlign: 'center'
+        }}>
           {recommendation.text}
         </div>
       )}

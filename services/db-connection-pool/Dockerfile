@@ -17,19 +17,21 @@ RUN useradd -r -s /bin/false pgbouncer && \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY db-connection-pool/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY db-connection-pool/. .
+COPY common /app/common
+ENV PYTHONPATH="/app"
 
 # Copy PgBouncer configuration
-COPY pgbouncer.ini /etc/pgbouncer/
-COPY userlist.txt /etc/pgbouncer/
+COPY db-connection-pool/pgbouncer.ini /etc/pgbouncer/
+COPY db-connection-pool/userlist.txt /etc/pgbouncer/
 RUN chown pgbouncer:pgbouncer /etc/pgbouncer/*
 
 # Create startup script
-COPY start.sh /start.sh
+COPY db-connection-pool/start.sh /start.sh
 RUN chmod +x /start.sh
 
 # Health check

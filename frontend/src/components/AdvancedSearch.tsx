@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, X, Filter, ChevronDown, ChevronUp, Sliders, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { GraphNode } from '../types';
 import { TrackSearchEngine, SearchFilters, SearchFacets, createSearchEngine } from '../utils/fuzzySearch';
 
 interface AdvancedSearchProps {
@@ -9,13 +8,6 @@ interface AdvancedSearchProps {
   className?: string;
 }
 
-/**
- * A comprehensive search component with fuzzy matching and faceted filtering.
- * It allows users to search for tracks by text and refine results using
- * various filters like BPM, genre, key, and mood.
- * @param {AdvancedSearchProps} props The component props.
- * @returns {React.ReactElement} The rendered advanced search panel.
- */
 export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, className = '' }) => {
   const graphData = useStore(state => state.graphData);
   const selectNode = useStore(state => state.graph.selectNode);
@@ -26,15 +18,12 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
   const [searchEngine, setSearchEngine] = useState<TrackSearchEngine | null>(null);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [facets, setFacets] = useState<SearchFacets | null>(null);
-  const [results, setResults] = useState<GraphNode[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilterGroups, setActiveFilterGroups] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
 
-  /**
-   * Initializes the Fuse.js search engine when graph data is available.
-   * This effect runs only when the graph nodes change.
-   */
+  // Initialize search engine
   useEffect(() => {
     if (graphData.nodes.length > 0) {
       const engine = createSearchEngine(graphData.nodes);
@@ -43,41 +32,34 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
     }
   }, [graphData.nodes]);
 
-  /**
-   * Performs the search operation with debouncing.
-   * This effect is triggered whenever the search query or filters change.
-   */
+  // Perform search
   useEffect(() => {
     if (!searchEngine) return;
 
     setIsSearching(true);
 
-    // Debounce search to avoid excessive processing while typing
-    const timeoutId = setTimeout(() => {
+    const performSearch = () => {
       const searchResults = searchEngine.search(query, filters, 100);
       setResults(searchResults.map(r => r.item));
       setIsSearching(false);
-    }, 300);
+    };
 
+    // Debounce search
+    const timeoutId = setTimeout(performSearch, 300);
     return () => {
       clearTimeout(timeoutId);
-      setIsSearching(false); // Cleanup on unmount or re-run
+      setIsSearching(false);
     };
   }, [query, filters, searchEngine]);
 
-  /**
-   * Re-generates facets based on the current search results.
-   * This provides users with relevant filter options for their current query.
-   */
+  // Update facets when filters change
   useEffect(() => {
     if (!searchEngine || results.length === 0) return;
     const newFacets = searchEngine.generateFacets(results);
     setFacets(newFacets);
   }, [results, searchEngine]);
 
-  /**
-   * Toggles the visibility of a filter group in the UI.
-   */
+  // Toggle filter group expansion
   const toggleFilterGroup = useCallback((group: string) => {
     setActiveFilterGroups(prev => {
       const next = new Set(prev);
@@ -90,44 +72,36 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
     });
   }, []);
 
-  /**
-   * Updates a specific filter value in the state.
-   */
+  // Update filters
   const updateFilter = useCallback((key: keyof SearchFilters, value: any) => {
-    setFilters(prev => {
-      const newFilters = { ...prev, [key]: value };
-      // Remove filter if value is undefined or an empty array
-      if (value === undefined || (Array.isArray(value) && value.length === 0)) {
-        delete newFilters[key];
-      }
-      return newFilters;
-    });
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
   }, []);
 
-  /**
-   * Clears all active filters and the search query.
-   */
+  // Clear all filters
   const clearFilters = useCallback(() => {
     setFilters({});
     setQuery('');
   }, []);
 
-  /**
-   * Handles clicking on a search result, selecting the corresponding node in the graph.
-   */
+  // Select search result
   const handleResultClick = useCallback((nodeId: string) => {
     clearSelection();
     selectNode(nodeId);
   }, [selectNode, clearSelection]);
 
-  /**
-   * Calculates the number of currently active filter categories.
-   */
+  // Active filter count
   const activeFilterCount = useMemo(() => {
-    return Object.values(filters).filter(value => {
-      if (Array.isArray(value)) return value.length > 0;
-      return value !== undefined;
-    }).length;
+    let count = 0;
+    if (filters.genres?.length) count++;
+    if (filters.keys?.length) count++;
+    if (filters.moods?.length) count++;
+    if (filters.bpmMin !== undefined || filters.bpmMax !== undefined) count++;
+    if (filters.energyMin !== undefined || filters.energyMax !== undefined) count++;
+    if (filters.yearMin !== undefined || filters.yearMax !== undefined) count++;
+    return count;
   }, [filters]);
 
   return (
@@ -493,11 +467,6 @@ interface FilterGroupProps {
   children: React.ReactNode;
 }
 
-/**
- * A collapsible component for grouping filters.
- * @param {FilterGroupProps} props The component props.
- * @returns {React.ReactElement} The rendered filter group.
- */
 const FilterGroup: React.FC<FilterGroupProps> = ({ title, icon, isExpanded, onToggle, children }) => {
   return (
     <div className="border border-gray-700 rounded-lg overflow-hidden">
