@@ -454,42 +454,190 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
       maxHeight: '80vh',
       overflowY: 'auto'
     }}>
-      {/* Header */}
+      {/* Header - Current Track Info */}
       <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        flexDirection: 'column',
+        gap: '16px'
       }}>
-        <div>
-          <h3 style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
-            margin: 0,
-            fontWeight: 600
-          }}>
-            Track Browser
-          </h3>
-          <p style={{
-            color: '#8E8E93',
-            fontSize: '12px',
-            margin: '4px 0 0 0'
-          }}>
-            {recommendations.length} track{recommendations.length !== 1 ? 's' : ''} • Sorted by {
-              sortBy === 'score' ? 'Best Match' :
-              sortBy === 'energy' ? 'Energy Similarity' :
-              'Tempo Similarity'
-            }
-          </p>
-        </div>
-        <span style={{
-          color: '#7ED321',
-          fontSize: '14px',
-          padding: '4px 12px',
-          backgroundColor: 'rgba(126,211,33,0.2)',
-          borderRadius: '12px'
+        {/* Track Title and Artist */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start'
         }}>
-          Co-Pilot Active
-        </span>
+          <div style={{ flex: 1 }}>
+            <h3 style={{
+              color: '#FFFFFF',
+              fontSize: '20px',
+              margin: 0,
+              fontWeight: 700,
+              lineHeight: 1.2
+            }}>
+              {currentTrack.name}
+            </h3>
+            <p style={{
+              color: '#8E8E93',
+              fontSize: '16px',
+              margin: '4px 0 0 0',
+              fontWeight: 400
+            }}>
+              {currentTrack.artist}
+            </p>
+          </div>
+          <span style={{
+            color: '#7ED321',
+            fontSize: '12px',
+            padding: '4px 12px',
+            backgroundColor: 'rgba(126,211,33,0.2)',
+            borderRadius: '12px',
+            whiteSpace: 'nowrap'
+          }}>
+            Co-Pilot Active
+          </span>
+        </div>
+
+        {/* Track Metrics - BPM, Key, Energy, Time */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '12px'
+        }}>
+          {/* BPM */}
+          <div style={{
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            borderRadius: '8px',
+            padding: '12px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <div style={{
+              fontSize: '10px',
+              color: '#8E8E93',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+              letterSpacing: '0.5px'
+            }}>
+              BPM
+            </div>
+            <div style={{
+              fontSize: '24px',
+              color: '#4A90E2',
+              fontWeight: 700
+            }}>
+              {currentTrack.bpm || '---'}
+            </div>
+          </div>
+
+          {/* Key */}
+          <div style={{
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            borderRadius: '8px',
+            padding: '12px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <div style={{
+              fontSize: '10px',
+              color: '#8E8E93',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+              letterSpacing: '0.5px'
+            }}>
+              KEY
+            </div>
+            <div style={{
+              fontSize: '24px',
+              color: '#7ED321',
+              fontWeight: 700
+            }}>
+              {currentTrack.key || '---'}
+            </div>
+          </div>
+
+          {/* Energy */}
+          <div style={{
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            borderRadius: '8px',
+            padding: '12px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <div style={{
+              fontSize: '10px',
+              color: '#8E8E93',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+              letterSpacing: '0.5px'
+            }}>
+              ENERGY
+            </div>
+            {currentTrack.energy !== undefined ? (
+              <div style={{
+                display: 'flex',
+                gap: '2px',
+                alignItems: 'center',
+                height: '24px'
+              }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: 1,
+                      height: '100%',
+                      backgroundColor: i < Math.ceil(currentTrack.energy! / 2) ? '#7ED321' : 'rgba(255,255,255,0.1)',
+                      borderRadius: '2px'
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                fontSize: '24px',
+                color: '#8E8E93',
+                fontWeight: 700
+              }}>
+                ---
+              </div>
+            )}
+          </div>
+
+          {/* Time */}
+          <div style={{
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            borderRadius: '8px',
+            padding: '12px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <div style={{
+              fontSize: '10px',
+              color: '#8E8E93',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+              letterSpacing: '0.5px'
+            }}>
+              TIME
+            </div>
+            <div style={{
+              fontSize: '24px',
+              color: '#FFFFFF',
+              fontWeight: 700
+            }}>
+              {currentTrack.duration ? `${Math.floor(currentTrack.duration / 60)}:${String(currentTrack.duration % 60).padStart(2, '0')}` : '---'}
+            </div>
+          </div>
+        </div>
+
+        {/* Sort Info */}
+        <div style={{
+          fontSize: '11px',
+          color: '#8E8E93',
+          paddingTop: '8px',
+          borderTop: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          {recommendations.length} track{recommendations.length !== 1 ? 's' : ''} • Sorted by {
+            sortBy === 'score' ? 'Best Match' :
+            sortBy === 'energy' ? 'Energy Similarity' :
+            'Tempo Similarity'
+          }
+        </div>
       </div>
 
       {/* Quick Filters */}
