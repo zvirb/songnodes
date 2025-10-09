@@ -18,7 +18,7 @@ from scrapy.exceptions import CloseSpider
 try:
     from ..items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
     from ..nlp_spider_mixin import NLPFallbackSpiderMixin
-    from ..track_id_generator import generate_track_id, extract_remix_type
+    from ..track_id_generator import generate_track_id
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -26,7 +26,7 @@ except ImportError:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem, EnhancedTrackAdjacencyItem, PlaylistItem
     from nlp_spider_mixin import NLPFallbackSpiderMixin
-    from track_id_generator import generate_track_id, extract_remix_type
+    from track_id_generator import generate_track_id
 
 class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = 'setlistfm'
@@ -395,7 +395,9 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                         # Detect remix/mashup properties
                         is_remix = bool(re.search(r'(remix|edit|mix)\b', name, re.IGNORECASE))
                         is_mashup = bool(re.search(r'\b(vs\.|mashup)\b', name, re.IGNORECASE))
-                        remix_type = extract_remix_type(name) if is_remix else None
+                        # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
+                        # which uses the sophisticated TrackTitleParser (2025 Best Practice)
+                        remix_type = None  # Will be populated by enrichment pipeline
 
                         # Generate deterministic track_id for cross-source deduplication
                         artist_name = artist_data.get('name')
@@ -674,7 +676,9 @@ class SetlistFmSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             # Detect remix/mashup properties
             is_remix = bool(re.search(r'(remix|edit|mix)\b', title, re.IGNORECASE))
             is_mashup = bool(re.search(r'\b(vs\.|mashup)\b', title, re.IGNORECASE))
-            remix_type = extract_remix_type(title) if is_remix else None
+            # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
+            # which uses the sophisticated TrackTitleParser (2025 Best Practice)
+            remix_type = None  # Will be populated by enrichment pipeline
 
             # Generate deterministic track_id
             track_id = generate_track_id(

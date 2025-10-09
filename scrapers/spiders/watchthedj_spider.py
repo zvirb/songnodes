@@ -1,7 +1,7 @@
 import scrapy
 from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
 from .utils import parse_track_string
-from track_id_generator import generate_track_id_from_parsed, extract_remix_type
+from track_id_generator import generate_track_id_from_parsed
 import re
 
 class WatchTheDjSpider(scrapy.Spider):
@@ -38,7 +38,11 @@ class WatchTheDjSpider(scrapy.Spider):
         yield setlist_item
 
         # Extract Tracklist from the dedicated section [1]
+        # Try multiple selectors to handle different HTML structures
         track_elements = response.css('div.tracklist-section ol li')
+        if not track_elements:
+            # Fallback for alternative structures
+            track_elements = response.css('ol li, ul.tracklist li, div.list-track')
 
         for i, track_el in enumerate(track_elements):
             track_string_raw = track_el.css('::text').getall()
@@ -60,6 +64,8 @@ class WatchTheDjSpider(scrapy.Spider):
                 # Generate deterministic track_id for cross-source deduplication
                 track_id = generate_track_id_from_parsed(parsed_track)
 
+                # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
+                # which uses the sophisticated TrackTitleParser (2025 Best Practice)
                 track_item = TrackItem(
                     track_id=track_id,  # Deterministic ID for matching across sources
                     track_name=parsed_track['track_name'],
@@ -68,7 +74,7 @@ class WatchTheDjSpider(scrapy.Spider):
                     mashup_components=parsed_track['mashup_components'],
                     start_time=start_time,
                     track_type='Setlist',
-                    remix_type=extract_remix_type(parsed_track['track_name']) if parsed_track['is_remix'] else None
+                    remix_type=None  # Will be populated by enrichment pipeline
                 )
 
                 # Log track_id generation

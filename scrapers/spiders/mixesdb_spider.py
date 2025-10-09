@@ -27,7 +27,7 @@ try:
         PlaylistItem
     )
     from .utils import parse_track_string
-    from ..track_id_generator import generate_track_id, generate_track_id_from_parsed, extract_remix_type
+    from ..track_id_generator import generate_track_id, generate_track_id_from_parsed
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -43,7 +43,7 @@ except ImportError:
         PlaylistItem
     )
     from spiders.utils import parse_track_string
-    from track_id_generator import generate_track_id, generate_track_id_from_parsed, extract_remix_type
+    from track_id_generator import generate_track_id, generate_track_id_from_parsed
 
 
 class MixesdbSpider(scrapy.Spider):
@@ -64,10 +64,12 @@ class MixesdbSpider(scrapy.Spider):
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 0.2,
         'RETRY_TIMES': 3,
         'DOWNLOAD_TIMEOUT': 30,  # 30 second timeout per request
-        # Pipeline chain: raw data archive → legacy database processing
+        # Pipeline chain: Use modern async pipeline (2025 best practices)
         'ITEM_PIPELINES': {
             'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
-            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
+            'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validation
+            'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Enrichment
+            'pipelines.persistence_pipeline.PersistencePipeline': 300,  # Modern async persistence
         }
     }
 
@@ -459,7 +461,9 @@ class MixesdbSpider(scrapy.Spider):
             if setlist_data:
                 yield EnhancedSetlistItem(**setlist_data)
 
-            # Extract artist information
+            # Extract artist information (playlist-level DJ)
+            # NOTE: This may be "VA" or other generic names - validation will handle it
+            # If validation drops it, that's fine - the playlist will still have tracks
             artist_data = self.extract_artist_data(response)
             if artist_data:
                 yield EnhancedArtistItem(**artist_data)
@@ -520,8 +524,12 @@ class MixesdbSpider(scrapy.Spider):
                     )
 
             # Generate track adjacency relationships within THIS mix only
+            self.logger.info(f"🔍 Adjacency check: setlist_data={bool(setlist_data)}, tracks_data_len={len(tracks_data)}")
             if setlist_data and len(tracks_data) > 1:
+                self.logger.info(f"✅ Calling generate_track_adjacencies() for {len(tracks_data)} tracks")
                 yield from self.generate_track_adjacencies(tracks_data, setlist_data)
+            else:
+                self.logger.warning(f"❌ Skipping adjacency generation: setlist_data={bool(setlist_data)}, tracks={len(tracks_data)}")
 
         except Exception as e:
             self.logger.error(f"Error parsing mix page {response.url}: {e}")
@@ -736,9 +744,9 @@ class MixesdbSpider(scrapy.Spider):
             self.logger.warning(f"🔍 [DEBUG] No Tracklist heading found on page!")
 
         if not track_elements:
-            # Final fallback: try finding any <ol> or <ul> with tracks
-            track_elements = response.css('ol li, ul.tracklist li, div.tracklist-section ul li')
-            self.logger.info(f"🔍 [DEBUG] CSS fallback pattern: {len(track_elements)} elements")
+            # Final fallback: try finding any <ol> or <ul> with tracks, or div.list-track elements
+            track_elements = response.css('ol li, ul.tracklist li, div.tracklist-section ul li, div.list-track')
+            self.logger.info(f"🔍 [DEBUG] CSS fallback pattern (includes div.list-track): {len(track_elements)} elements")
 
         self.logger.info(f"🔍 [DEBUG] FINAL track_elements count: {len(track_elements)}")
         self.logger.info(f"Found {len(track_elements)} track elements from {response.url}")
@@ -795,11 +803,9 @@ class MixesdbSpider(scrapy.Spider):
 
                 # Build comprehensive track data (with label/catalog for Discogs linking)
                 is_remix = parsed_track.get('is_remix', False)
-                remix_type = self.extract_remix_type(parsed_track['track_name'])
-
-                # Pydantic validation requires remix_type when is_remix=True
-                if is_remix and not remix_type:
-                    remix_type = "unknown"
+                # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
+                # which uses the sophisticated TrackTitleParser (2025 Best Practice)
+                remix_type = None  # Will be populated by enrichment pipeline
 
                 track_item = {
                     'track_id': track_id,  # Deterministic ID for matching across sources
@@ -1018,35 +1024,6 @@ class MixesdbSpider(scrapy.Spider):
         key_match = re.search(key_pattern, track_string)
         if key_match:
             return key_match.group(1)
-        return None
-
-    def extract_remix_type(self, track_name):
-        """Extract remix type from track name - returns lowercase enum values"""
-        # Specific remix patterns (check these first)
-        remix_patterns = {
-            r'\(Original Mix\)': 'original',
-            r'\(Extended Mix\)': 'extended',
-            r'\(Radio Edit\)': 'radio',
-            r'\(Club Mix\)': 'club',
-            r'\(Dub Mix\)': 'club',  # Map dub to club
-            r'\(Vocal Mix\)': 'remix',  # Map vocal to generic remix
-            r'\(Instrumental\)': 'instrumental',
-            r'\(VIP\)': 'vip',
-            r'\(Edit\)': 'edit',
-            r'\(Rework\)': 'rework',
-            r'\(Bootleg\)': 'bootleg',
-            r'\(Acappella\)': 'acappella'
-        }
-
-        for pattern, remix_type in remix_patterns.items():
-            if re.search(pattern, track_name, re.IGNORECASE):
-                return remix_type
-
-        # Check for artist-based remixes like "(Skrillex Remix)" or "(Calvin Harris Remix)"
-        # This pattern matches any text followed by "Remix" in parentheses
-        if re.search(r'\([^)]+\s+Remix\)', track_name, re.IGNORECASE):
-            return 'remix'
-
         return None
 
     def generate_track_adjacencies(self, tracks_data, setlist_data):

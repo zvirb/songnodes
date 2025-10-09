@@ -231,6 +231,11 @@ class GenericArchiveSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         track_row_selectors = selectors_config.get('track_row', [])
         track_rows = self._find_elements(container, track_row_selectors)
 
+        # Add fallback selectors for common track structures
+        if not track_rows:
+            fallback_selectors = ['div.list-track', 'li.tracklist-item', 'div.tlpItem', 'div.bItm']
+            track_rows = self._find_elements(container, fallback_selectors)
+
         if not track_rows:
             self.logger.debug("Could not find track rows")
             return tracks
