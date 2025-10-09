@@ -1,6 +1,11 @@
+# DEPRECATED: This file uses the removed database_pipeline. Use modern pipelines instead.
 """
 Enhanced Database Pipeline with Comprehensive Observability
 Extends the existing database pipeline with 2025 best practices for data observability
+
+⚠️  WARNING: This file imports from the deprecated database_pipeline module
+    which has been replaced by pipelines.persistence_pipeline.PersistencePipeline.
+    This file is deprecated and should not be used in production.
 """
 
 import asyncio

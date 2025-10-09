@@ -1,6 +1,11 @@
+# DEPRECATED: This file uses the removed database_pipeline. Use modern pipelines instead.
 """
 FastAPI wrapper for Internet Archive scraper
 Focuses on BBC Essential Mix collection and Hip-hop mixtapes
+
+⚠️  WARNING: This file imports the deprecated database_pipeline.DatabasePipeline
+    which has been replaced by pipelines.persistence_pipeline.PersistencePipeline.
+    This scraper may require refactoring to use the modern pipeline architecture.
 """
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel

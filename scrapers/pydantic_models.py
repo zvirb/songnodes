@@ -116,6 +116,16 @@ class ArtistBase(BaseModel):
     scrape_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Validators
+    @field_validator('artist_name')
+    @classmethod
+    def no_generic_artist_names(cls, v):
+        """Reject generic placeholder artist names like 'VA', 'Various Artists', etc."""
+        # These should never be treated as real artist entities
+        generic_names = ['various artists', 'unknown artist', 'various', 'unknown', 'va', 'n/a', 'tba', 'tbd']
+        if v and v.lower().strip() in generic_names:
+            raise ValueError(f'Generic artist name "{v}" not allowed - drop this artist item')
+        return v
+
     @field_validator('country')
     @classmethod
     def validate_country_code(cls, v):
@@ -144,8 +154,10 @@ class ArtistBase(BaseModel):
     @classmethod
     def no_generic_artists(cls, v):
         """Prevent generic placeholder artist names (2025 best practices)"""
+        # For Artist entities, we DO want to reject placeholders since we shouldn't
+        # create an artist record for "VA" - those should be left NULL on the playlist
         generic_names = ['various artists', 'unknown artist', 'various', 'unknown', 'va']
-        if v.lower().strip() in generic_names:
+        if v and v.lower().strip() in generic_names:
             raise ValueError(f'Generic artist name "{v}" not allowed - must have specific artist attribution')
         return v
 
@@ -338,9 +350,10 @@ class TrackArtistRelationship(BaseModel):
     @field_validator('artist_name')
     @classmethod
     def no_generic_artists(cls, v):
-        """Prevent generic placeholder artist names"""
-        generic_names = ['various artists', 'unknown artist', 'various', 'unknown']
-        if v.lower().strip() in generic_names:
+        """Prevent generic placeholder artist names on tracks"""
+        # For Track entities, reject placeholders - tracks should have specific artists
+        generic_names = ['various artists', 'unknown artist', 'various', 'unknown', 'va']
+        if v and v.lower().strip() in generic_names:
             raise ValueError(f'Generic artist name "{v}" not allowed')
         return v
 
@@ -400,10 +413,13 @@ class SetlistBase(BaseModel):
     @field_validator('dj_artist_name')
     @classmethod
     def no_generic_dj_names(cls, v):
-        """Prevent generic placeholder DJ names"""
+        """Convert generic placeholder DJ names to None for later enrichment"""
+        # Generic names like "VA", "Various Artists", etc. should be stored as NULL
+        # Enrichment service will attempt artist attribution later for:
+        # - Radio shows, compilations, and multi-DJ events
         generic_names = ['various artists', 'unknown artist', 'various', 'unknown', 'va']
-        if v.lower().strip() in generic_names:
-            raise ValueError(f'Generic DJ name "{v}" not allowed')
+        if v and v.lower().strip() in generic_names:
+            return None  # Store as NULL, not as "VA"
         return v
 
     @model_validator(mode='after')

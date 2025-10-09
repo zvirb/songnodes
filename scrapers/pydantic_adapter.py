@@ -385,7 +385,7 @@ class ValidationPipeline:
     Add to settings.py:
         ITEM_PIPELINES = {
             'pydantic_adapter.ValidationPipeline': 100,  # Run first
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.persistence_pipeline.PersistencePipeline': 300,
         }
     """
 

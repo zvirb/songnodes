@@ -1,6 +1,11 @@
+# DEPRECATED: This file uses the removed database_pipeline. Use modern pipelines instead.
 """
 FastAPI wrapper for YouTube scraper
 Uses YouTube Data API v3 with quota management + NLP for tracklist parsing
+
+⚠️  WARNING: This file imports the deprecated database_pipeline.DatabasePipeline
+    which has been replaced by pipelines.persistence_pipeline.PersistencePipeline.
+    This scraper may require refactoring to use the modern pipeline architecture.
 """
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
