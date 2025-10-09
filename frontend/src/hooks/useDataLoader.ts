@@ -96,9 +96,9 @@ export const useDataLoader = () => {
       setError(null);
 
       try {
-        // Load nodes - request more since ~90% will be filtered out due to missing artists
-        // With 5000 nodes, we expect ~500-700 with valid artists
-        const nodesResponse = await fetch('/api/graph/nodes?limit=5000');
+        // Load nodes - request 20k to get maximum available tracks with valid artist attribution
+        // After recovery: ~5,500+ nodes with valid artists available from 31k+ tracks in edges
+        const nodesResponse = await fetch('/api/graph/nodes?limit=20000');
 
         // Check if nodes request was successful
         if (!nodesResponse.ok) {
