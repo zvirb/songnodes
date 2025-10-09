@@ -180,7 +180,7 @@ async def execute_spider(spider_name: str, args: Dict, custom_settings: Dict):
             'pipelines.framework_integration_pipeline.FrameworkIntegrationPipeline': 150,
             'pipelines.discogs_enrichment_pipeline.DiscogsEnrichmentPipeline': 200,
             'pipelines.reddit_validation_pipeline.RedditValidationPipeline': 250,
-            'database_pipeline.DatabasePipeline': 300,
+            'pipelines.persistence_pipeline.PersistencePipeline': 300,
         })
 
         # Create crawler process

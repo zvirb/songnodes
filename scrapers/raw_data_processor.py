@@ -1,8 +1,13 @@
+# DEPRECATED: This file uses the removed database_pipeline. Use modern pipelines instead.
 """
 Raw Data Processor - Bridge between raw_scrape_data and database_pipeline
 Reads unprocessed scrapes from raw_scrape_data and processes them through database_pipeline
 
 Uses unified secrets management (2025 best practices) for credentials.
+
+⚠️  WARNING: This file references the deprecated database_pipeline.DatabasePipeline
+    which has been replaced by pipelines.persistence_pipeline.PersistencePipeline.
+    This file may require refactoring to use the modern pipeline architecture.
 """
 import asyncio
 import asyncpg

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
+# DEPRECATED: This file uses the removed database_pipeline. Use modern pipelines instead.
 """
 Setlist Data Importer
 Imports festival setlist data directly into the database pipeline for processing
+
+⚠️  WARNING: This file imports the deprecated database_pipeline.EnhancedMusicDatabasePipeline
+    which has been replaced by pipelines.persistence_pipeline.PersistencePipeline.
+    This import script may require refactoring to use the modern pipeline architecture.
 """
 
 import asyncio
