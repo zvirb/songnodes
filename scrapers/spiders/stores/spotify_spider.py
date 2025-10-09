@@ -77,7 +77,9 @@ class SpotifySpider(scrapy.Spider):
         'DOWNLOAD_TIMEOUT': 30,
         'ITEM_PIPELINES': {
             'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
-            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
+            'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validation
+            'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Enrichment
+            'pipelines.persistence_pipeline.PersistencePipeline': 300,  # Modern async persistence
         },
         'DEFAULT_REQUEST_HEADERS': {
             'Accept': 'application/json',
