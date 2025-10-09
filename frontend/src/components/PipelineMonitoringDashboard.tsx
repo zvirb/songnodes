@@ -122,6 +122,78 @@ interface MetricsSummary {
   }>;
 }
 
+interface DataCompletenessResponse {
+  total_counts: {
+    tracks: number;
+    artists: number;
+    setlists: number;
+  };
+  track_completeness: {
+    artist_attribution: {
+      count: number;
+      percentage: number;
+      missing: number;
+      blocking_enrichment: boolean;
+      dependency_level: number;
+      description: string;
+    };
+    platform_ids: {
+      [key: string]: {
+        count: number;
+        percentage: number;
+        dependency_level: number;
+        depends_on?: string;
+        ready_for_enrichment?: number;
+        description?: string;
+      };
+    };
+    audio_features: {
+      [key: string]: {
+        count: number;
+        percentage: number;
+        dependency_level: number;
+        depends_on?: string;
+        description?: string;
+      };
+    };
+    metadata: {
+      [key: string]: {
+        count: number;
+        percentage: number;
+        dependency_level: number;
+      };
+    };
+  };
+  artist_completeness: {
+    total_artists: number;
+    artists_with_tracks: number;
+    platform_ids: {
+      [key: string]: {
+        count: number;
+        percentage: number;
+      };
+    };
+  };
+  setlist_completeness: {
+    total_setlists: number;
+    complete_setlists: number;
+    setlists_with_tracks: number;
+    setlists_with_performer: number;
+  };
+  enrichment_pipeline_status: {
+    tracks_ready_for_enrichment: number;
+    tracks_blocking_enrichment: number;
+    enrichment_readiness_rate: number;
+  };
+  data_quality?: {
+    total_checks: number;
+    passed: number;
+    warned: number;
+    failed: number;
+    avg_score: number;
+  };
+}
+
 // API service
 class ObservabilityAPI {
   private static readonly BASE_URL = process.env.VITE_API_URL || 'http://localhost:8082';
@@ -185,6 +257,12 @@ class ObservabilityAPI {
     });
     if (!response.ok) throw new Error('Failed to acknowledge anomaly');
   }
+
+  static async getDataCompleteness(): Promise<DataCompletenessResponse> {
+    const response = await fetch(`${this.BASE_URL}/api/v1/observability/data-completeness`);
+    if (!response.ok) throw new Error('Failed to fetch data completeness');
+    return response.json();
+  }
 }
 
 // Utility functions
@@ -229,6 +307,7 @@ export const PipelineMonitoringDashboard: React.FC = () => {
   const [runs, setRuns] = useState<ScrapingRun[]>([]);
   const [healthData, setHealthData] = useState<PipelineHealthData[]>([]);
   const [metricsSummary, setMetricsSummary] = useState<MetricsSummary | null>(null);
+  const [dataCompleteness, setDataCompleteness] = useState<DataCompletenessResponse | null>(null);
   const [selectedRunDetail, setSelectedRunDetail] = useState<{
     run: ScrapingRun;
     sources: SourceExtraction[];
@@ -241,15 +320,17 @@ export const PipelineMonitoringDashboard: React.FC = () => {
   const loadOverviewData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [runsData, healthDataResponse, summaryData] = await Promise.all([
+      const [runsData, healthDataResponse, summaryData, completenessData] = await Promise.all([
         ObservabilityAPI.getRuns(20),
         ObservabilityAPI.getPipelineHealth(24),
-        ObservabilityAPI.getMetricsSummary()
+        ObservabilityAPI.getMetricsSummary(),
+        ObservabilityAPI.getDataCompleteness()
       ]);
 
       setRuns(runsData);
       setHealthData(healthDataResponse);
       setMetricsSummary(summaryData);
+      setDataCompleteness(completenessData);
     } catch (error) {
       console.error('Failed to load overview data:', error);
     } finally {
@@ -525,6 +606,284 @@ export const PipelineMonitoringDashboard: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Data Completeness Table */}
+      {dataCompleteness && (
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Data Completeness & Quality</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Track enrichment status and identify missing data blocking the pipeline
+                </p>
+              </div>
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{dataCompleteness.total_counts.tracks.toLocaleString()}</div>
+                  <div className="text-gray-500">Total Tracks</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{dataCompleteness.total_counts.artists.toLocaleString()}</div>
+                  <div className="text-gray-500">Total Artists</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{dataCompleteness.total_counts.setlists.toLocaleString()}</div>
+                  <div className="text-gray-500">Total Setlists</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Data Field
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Count
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Completeness
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dependency
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {/* Level 1: Artist Attribution (Critical for all enrichment) */}
+                <tr className="bg-red-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 mr-2">
+                        L1
+                      </span>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Artist Attribution</div>
+                        <div className="text-xs text-gray-500">{dataCompleteness.track_completeness.artist_attribution.description}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {dataCompleteness.track_completeness.artist_attribution.count.toLocaleString()} / {dataCompleteness.total_counts.tracks.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-full bg-gray-200 rounded-full h-2 mr-2" style={{ width: '100px' }}>
+                        <div
+                          className={`h-2 rounded-full ${
+                            dataCompleteness.track_completeness.artist_attribution.percentage >= 90 ? 'bg-green-500' :
+                            dataCompleteness.track_completeness.artist_attribution.percentage >= 70 ? 'bg-yellow-500' :
+                            'bg-red-500'
+                          }`}
+                          style={{ width: `${dataCompleteness.track_completeness.artist_attribution.percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">
+                        {dataCompleteness.track_completeness.artist_attribution.percentage}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    Required first
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {dataCompleteness.track_completeness.artist_attribution.missing > 0 ? (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                        {dataCompleteness.track_completeness.artist_attribution.missing.toLocaleString()} missing (blocking)
+                      </span>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        Complete
+                      </span>
+                    )}
+                  </td>
+                </tr>
+
+                {/* Level 2: Platform IDs */}
+                {Object.entries(dataCompleteness.track_completeness.platform_ids).map(([key, data]) => (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mr-2">
+                          L2
+                        </span>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                          {data.description && <div className="text-xs text-gray-500">{data.description}</div>}
+                          {data.ready_for_enrichment !== undefined && data.ready_for_enrichment > 0 && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              ✓ {data.ready_for_enrichment.toLocaleString()} tracks ready for enrichment
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {data.count.toLocaleString()} / {dataCompleteness.total_counts.tracks.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mr-2" style={{ width: '100px' }}>
+                          <div
+                            className={`h-2 rounded-full ${
+                              data.percentage >= 70 ? 'bg-green-500' :
+                              data.percentage >= 40 ? 'bg-yellow-500' :
+                              'bg-orange-500'
+                            }`}
+                            style={{ width: `${data.percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {data.percentage}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      Requires {data.depends_on?.replace(/_/g, ' ') || 'artist'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        data.percentage >= 70 ? 'bg-green-100 text-green-800' :
+                        data.percentage >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-orange-100 text-orange-800'
+                      }`}>
+                        {data.percentage >= 70 ? 'Good' : data.percentage >= 40 ? 'Fair' : 'Low'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+
+                {/* Level 3: Audio Features */}
+                {Object.entries(dataCompleteness.track_completeness.audio_features).map(([key, data]) => (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                          L3
+                        </span>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                          {data.description && <div className="text-xs text-gray-500">{data.description}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {data.count.toLocaleString()} / {dataCompleteness.total_counts.tracks.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mr-2" style={{ width: '100px' }}>
+                          <div
+                            className={`h-2 rounded-full ${
+                              data.percentage >= 60 ? 'bg-green-500' :
+                              data.percentage >= 30 ? 'bg-yellow-500' :
+                              'bg-orange-500'
+                            }`}
+                            style={{ width: `${data.percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {data.percentage}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      Requires {data.depends_on?.replace(/_/g, ' ') || 'platform ID'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        data.percentage >= 60 ? 'bg-green-100 text-green-800' :
+                        data.percentage >= 30 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-orange-100 text-orange-800'
+                      }`}>
+                        {data.percentage >= 60 ? 'Good' : data.percentage >= 30 ? 'Fair' : 'Low'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+
+                {/* Metadata fields */}
+                {Object.entries(dataCompleteness.track_completeness.metadata).map(([key, data]) => (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mr-2">
+                          L3
+                        </span>
+                        <div className="text-sm font-medium text-gray-900">
+                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {data.count.toLocaleString()} / {dataCompleteness.total_counts.tracks.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mr-2" style={{ width: '100px' }}>
+                          <div
+                            className={`h-2 rounded-full ${
+                              data.percentage >= 50 ? 'bg-green-500' :
+                              data.percentage >= 25 ? 'bg-yellow-500' :
+                              'bg-gray-500'
+                            }`}
+                            style={{ width: `${data.percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {data.percentage}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      Optional
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        data.percentage >= 50 ? 'bg-green-100 text-green-800' :
+                        data.percentage >= 25 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {data.percentage >= 50 ? 'Good' : data.percentage >= 25 ? 'Fair' : 'Low'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Enrichment Pipeline Status Summary */}
+          <div className="px-6 py-4 bg-blue-50 border-t border-blue-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-blue-900">Enrichment Pipeline Status</h4>
+                <p className="mt-1 text-sm text-blue-700">
+                  {dataCompleteness.enrichment_pipeline_status.tracks_ready_for_enrichment.toLocaleString()} tracks ready for Spotify enrichment
+                  {dataCompleteness.enrichment_pipeline_status.tracks_blocking_enrichment > 0 && (
+                    <> • <span className="font-semibold text-red-700">
+                      {dataCompleteness.enrichment_pipeline_status.tracks_blocking_enrichment.toLocaleString()} tracks blocked
+                    </span> (missing artist attribution)</>
+                  )}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-900">
+                  {dataCompleteness.enrichment_pipeline_status.enrichment_readiness_rate}%
+                </div>
+                <div className="text-sm text-blue-700">Pipeline Readiness</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

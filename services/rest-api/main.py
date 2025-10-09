@@ -1218,6 +1218,278 @@ async def acknowledge_anomaly(anomaly_id: str, acknowledged_by: str = "user"):
         logger.error(f"Failed to acknowledge anomaly {anomaly_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/observability/data-completeness")
+async def get_data_completeness():
+    """
+    Get comprehensive data completeness and quality statistics.
+
+    Returns dependency-ordered metadata showing:
+    - Total tracks, artists, and playlists
+    - Enrichment status (Spotify IDs, Tidal IDs, etc.)
+    - Audio features (BPM, key, energy, etc.)
+    - Missing data that blocks enrichment
+    - Data quality metrics
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Set search path to musicdb schema
+            await conn.execute("SET search_path TO musicdb, public")
+
+            # Get comprehensive track statistics with dependency tracking
+            track_stats_query = """
+            WITH track_stats AS (
+                SELECT
+                    COUNT(*) as total_tracks,
+                    -- Artist attribution (required for enrichment)
+                    COUNT(*) FILTER (WHERE EXISTS (
+                        SELECT 1 FROM track_artists ta
+                        WHERE ta.track_id = tracks.id AND ta.role = 'primary'
+                    )) as tracks_with_artist,
+                    -- External platform IDs
+                    COUNT(*) FILTER (WHERE spotify_id IS NOT NULL) as tracks_with_spotify_id,
+                    COUNT(*) FILTER (WHERE apple_music_id IS NOT NULL) as tracks_with_apple_music_id,
+                    COUNT(*) FILTER (WHERE tidal_id IS NOT NULL) as tracks_with_tidal_id,
+                    COUNT(*) FILTER (WHERE isrc IS NOT NULL) as tracks_with_isrc,
+                    COUNT(*) FILTER (WHERE musicbrainz_id IS NOT NULL) as tracks_with_musicbrainz_id,
+                    -- Audio features (enriched data)
+                    COUNT(*) FILTER (WHERE bpm IS NOT NULL) as tracks_with_bpm,
+                    COUNT(*) FILTER (WHERE key IS NOT NULL) as tracks_with_key,
+                    COUNT(*) FILTER (WHERE energy IS NOT NULL) as tracks_with_energy,
+                    COUNT(*) FILTER (WHERE danceability IS NOT NULL) as tracks_with_danceability,
+                    COUNT(*) FILTER (WHERE valence IS NOT NULL) as tracks_with_valence,
+                    -- Comprehensive audio analysis
+                    COUNT(*) FILTER (WHERE
+                        bpm IS NOT NULL AND
+                        key IS NOT NULL AND
+                        energy IS NOT NULL AND
+                        danceability IS NOT NULL
+                    ) as tracks_with_complete_audio_features,
+                    -- Release metadata
+                    COUNT(*) FILTER (WHERE release_date IS NOT NULL) as tracks_with_release_date,
+                    COUNT(*) FILTER (WHERE genre IS NOT NULL) as tracks_with_genre,
+                    -- Tracks ready for enrichment (have artist, no Spotify ID yet)
+                    COUNT(*) FILTER (WHERE
+                        EXISTS (
+                            SELECT 1 FROM track_artists ta
+                            WHERE ta.track_id = tracks.id AND ta.role = 'primary'
+                        )
+                        AND spotify_id IS NULL
+                    ) as tracks_ready_for_spotify_enrichment,
+                    -- Tracks blocking enrichment (no artist attribution)
+                    COUNT(*) FILTER (WHERE NOT EXISTS (
+                        SELECT 1 FROM track_artists ta
+                        WHERE ta.track_id = tracks.id AND ta.role = 'primary'
+                    )) as tracks_missing_artist_attribution
+                FROM tracks
+            )
+            SELECT * FROM track_stats
+            """
+
+            track_stats = await conn.fetchrow(track_stats_query)
+
+            # Get artist statistics
+            artist_stats_query = """
+            SELECT
+                COUNT(*) as total_artists,
+                COUNT(*) FILTER (WHERE spotify_id IS NOT NULL) as artists_with_spotify_id,
+                COUNT(*) FILTER (WHERE apple_music_id IS NOT NULL) as artists_with_apple_music_id,
+                COUNT(*) FILTER (WHERE soundcloud_id IS NOT NULL) as artists_with_soundcloud_id,
+                COUNT(*) FILTER (WHERE musicbrainz_id IS NOT NULL) as artists_with_musicbrainz_id,
+                COUNT(*) FILTER (WHERE metadata IS NOT NULL AND metadata != '{}') as artists_with_metadata,
+                -- Artists with tracks (active artists)
+                COUNT(*) FILTER (WHERE EXISTS (
+                    SELECT 1 FROM track_artists ta WHERE ta.artist_id = artists.id
+                )) as artists_with_tracks
+            FROM artists
+            """
+
+            artist_stats = await conn.fetchrow(artist_stats_query)
+
+            # Get playlist/setlist statistics
+            playlist_stats_query = """
+            SELECT
+                COUNT(*) as total_setlists,
+                COUNT(*) FILTER (WHERE source IS NOT NULL) as setlists_with_source,
+                COUNT(*) FILTER (WHERE is_complete = true) as complete_setlists,
+                COUNT(*) FILTER (WHERE performer_id IS NOT NULL) as setlists_with_performer,
+                COUNT(*) FILTER (WHERE set_date IS NOT NULL) as setlists_with_date,
+                -- Setlists with tracks
+                COUNT(*) FILTER (WHERE EXISTS (
+                    SELECT 1 FROM setlist_tracks st WHERE st.setlist_id = setlists.id
+                )) as setlists_with_tracks
+            FROM setlists
+            """
+
+            playlist_stats = await conn.fetchrow(playlist_stats_query)
+
+            # Get data quality metrics (last enrichment run)
+            quality_metrics_query = """
+            SELECT
+                COUNT(*) as total_quality_checks,
+                COUNT(*) FILTER (WHERE status = 'pass') as checks_passed,
+                COUNT(*) FILTER (WHERE status = 'warn') as checks_warned,
+                COUNT(*) FILTER (WHERE status = 'fail') as checks_failed,
+                AVG(quality_score) as avg_quality_score
+            FROM data_quality_metrics
+            WHERE measured_at >= NOW() - INTERVAL '7 days'
+            """
+
+            try:
+                quality_stats = await conn.fetchrow(quality_metrics_query)
+            except Exception:
+                # Table might not exist yet
+                quality_stats = None
+
+            # Calculate enrichment readiness and blockers
+            total_tracks = track_stats['total_tracks'] if track_stats else 0
+
+            # Build comprehensive response
+            response = {
+                "total_counts": {
+                    "tracks": total_tracks,
+                    "artists": artist_stats['total_artists'] if artist_stats else 0,
+                    "setlists": playlist_stats['total_setlists'] if playlist_stats else 0
+                },
+                "track_completeness": {
+                    "artist_attribution": {
+                        "count": track_stats['tracks_with_artist'] if track_stats else 0,
+                        "percentage": round((track_stats['tracks_with_artist'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                        "missing": track_stats['tracks_missing_artist_attribution'] if track_stats else 0,
+                        "blocking_enrichment": True,
+                        "dependency_level": 1,
+                        "description": "Required for all external ID enrichment"
+                    },
+                    "platform_ids": {
+                        "spotify_id": {
+                            "count": track_stats['tracks_with_spotify_id'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_spotify_id'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 2,
+                            "depends_on": "artist_attribution",
+                            "ready_for_enrichment": track_stats['tracks_ready_for_spotify_enrichment'] if track_stats else 0
+                        },
+                        "tidal_id": {
+                            "count": track_stats['tracks_with_tidal_id'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_tidal_id'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 2,
+                            "depends_on": "artist_attribution"
+                        },
+                        "apple_music_id": {
+                            "count": track_stats['tracks_with_apple_music_id'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_apple_music_id'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 2,
+                            "depends_on": "artist_attribution"
+                        },
+                        "isrc": {
+                            "count": track_stats['tracks_with_isrc'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_isrc'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 2,
+                            "description": "Universal track identifier"
+                        },
+                        "musicbrainz_id": {
+                            "count": track_stats['tracks_with_musicbrainz_id'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_musicbrainz_id'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 2
+                        }
+                    },
+                    "audio_features": {
+                        "bpm": {
+                            "count": track_stats['tracks_with_bpm'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_bpm'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3,
+                            "depends_on": "spotify_id"
+                        },
+                        "musical_key": {
+                            "count": track_stats['tracks_with_key'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_key'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3,
+                            "depends_on": "spotify_id"
+                        },
+                        "energy": {
+                            "count": track_stats['tracks_with_energy'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_energy'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3,
+                            "depends_on": "spotify_id"
+                        },
+                        "danceability": {
+                            "count": track_stats['tracks_with_danceability'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_danceability'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3,
+                            "depends_on": "spotify_id"
+                        },
+                        "valence": {
+                            "count": track_stats['tracks_with_valence'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_valence'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3,
+                            "depends_on": "spotify_id"
+                        },
+                        "complete_analysis": {
+                            "count": track_stats['tracks_with_complete_audio_features'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_complete_audio_features'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3,
+                            "description": "Tracks with BPM, key, energy, and danceability"
+                        }
+                    },
+                    "metadata": {
+                        "release_date": {
+                            "count": track_stats['tracks_with_release_date'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_release_date'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3
+                        },
+                        "genre": {
+                            "count": track_stats['tracks_with_genre'] if track_stats else 0,
+                            "percentage": round((track_stats['tracks_with_genre'] / total_tracks * 100) if total_tracks > 0 else 0, 1),
+                            "dependency_level": 3
+                        }
+                    }
+                },
+                "artist_completeness": {
+                    "total_artists": artist_stats['total_artists'] if artist_stats else 0,
+                    "artists_with_tracks": artist_stats['artists_with_tracks'] if artist_stats else 0,
+                    "platform_ids": {
+                        "spotify_id": {
+                            "count": artist_stats['artists_with_spotify_id'] if artist_stats else 0,
+                            "percentage": round((artist_stats['artists_with_spotify_id'] / artist_stats['total_artists'] * 100) if artist_stats and artist_stats['total_artists'] > 0 else 0, 1)
+                        },
+                        "apple_music_id": {
+                            "count": artist_stats['artists_with_apple_music_id'] if artist_stats else 0,
+                            "percentage": round((artist_stats['artists_with_apple_music_id'] / artist_stats['total_artists'] * 100) if artist_stats and artist_stats['total_artists'] > 0 else 0, 1)
+                        },
+                        "musicbrainz_id": {
+                            "count": artist_stats['artists_with_musicbrainz_id'] if artist_stats else 0,
+                            "percentage": round((artist_stats['artists_with_musicbrainz_id'] / artist_stats['total_artists'] * 100) if artist_stats and artist_stats['total_artists'] > 0 else 0, 1)
+                        }
+                    }
+                },
+                "setlist_completeness": {
+                    "total_setlists": playlist_stats['total_setlists'] if playlist_stats else 0,
+                    "complete_setlists": playlist_stats['complete_setlists'] if playlist_stats else 0,
+                    "setlists_with_tracks": playlist_stats['setlists_with_tracks'] if playlist_stats else 0,
+                    "setlists_with_performer": playlist_stats['setlists_with_performer'] if playlist_stats else 0
+                },
+                "enrichment_pipeline_status": {
+                    "tracks_ready_for_enrichment": track_stats['tracks_ready_for_spotify_enrichment'] if track_stats else 0,
+                    "tracks_blocking_enrichment": track_stats['tracks_missing_artist_attribution'] if track_stats else 0,
+                    "enrichment_readiness_rate": round(
+                        (track_stats['tracks_ready_for_spotify_enrichment'] / total_tracks * 100) if total_tracks > 0 else 0, 1
+                    )
+                },
+                "data_quality": {
+                    "total_checks": quality_stats['total_quality_checks'] if quality_stats else 0,
+                    "passed": quality_stats['checks_passed'] if quality_stats else 0,
+                    "warned": quality_stats['checks_warned'] if quality_stats else 0,
+                    "failed": quality_stats['checks_failed'] if quality_stats else 0,
+                    "avg_score": round(float(quality_stats['avg_quality_score']) * 100, 1) if quality_stats and quality_stats['avg_quality_score'] else 0
+                } if quality_stats else None
+            }
+
+            return response
+
+    except Exception as e:
+        logger.error(f"Failed to fetch data completeness: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/observability/sources/performance")
 async def get_source_performance_analysis(domain: Optional[str] = None, hours: int = 24):
     """Get source performance analysis"""
