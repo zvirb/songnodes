@@ -25,14 +25,14 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 from scrapy import Spider
 
-# FuzzyWuzzy for genre normalization
+# RapidFuzz for genre normalization (2025 Best Practice)
 try:
-    from fuzzywuzzy import fuzz, process
-    FUZZYWUZZY_AVAILABLE = True
+    from rapidfuzz import fuzz, process
+    RAPIDFUZZ_AVAILABLE = True
 except ImportError:
-    FUZZYWUZZY_AVAILABLE = False
+    RAPIDFUZZ_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning("⚠️ FuzzyWuzzy not available - genre normalization disabled")
+    logger.warning("⚠️ RapidFuzz not available - genre normalization disabled")
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +81,15 @@ class EnrichmentPipeline:
         self.min_track_threshold = int(os.getenv('NLP_MIN_TRACK_THRESHOLD', '3'))
         self.nlp_processor_url = os.getenv('NLP_PROCESSOR_URL', 'http://nlp-processor:8021')
 
-        # Fuzzy matching configuration
-        self.enable_fuzzy_genres = FUZZYWUZZY_AVAILABLE
-        self.fuzzy_threshold = 80  # Minimum similarity score for fuzzy match
+        # Fuzzy matching configuration (2025 Best Practices)
+        self.enable_fuzzy_genres = RAPIDFUZZ_AVAILABLE
+        # Multi-tier thresholds based on 2025 research:
+        # - High confidence: 90+ (exact match with minor variations)
+        # - Medium confidence: 80-89 (probable match)
+        # - Low confidence: 70-79 (possible match, needs review)
+        self.fuzzy_high_threshold = 90
+        self.fuzzy_medium_threshold = 80
+        self.fuzzy_low_threshold = 70
 
         # Statistics
         self.stats = {
@@ -97,7 +103,11 @@ class EnrichmentPipeline:
         if self.enable_nlp_fallback:
             logger.info("✅ EnrichmentPipeline initialized with NLP fallback enabled")
         if self.enable_fuzzy_genres:
-            logger.info("✅ EnrichmentPipeline initialized with fuzzy genre normalization")
+            logger.info(
+                "✅ EnrichmentPipeline initialized with RapidFuzz genre normalization "
+                f"(thresholds: high={self.fuzzy_high_threshold}, "
+                f"medium={self.fuzzy_medium_threshold}, low={self.fuzzy_low_threshold})"
+            )
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -201,13 +211,19 @@ class EnrichmentPipeline:
 
     def _normalize_genre(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Normalize genre using fuzzy matching against standard taxonomy.
+        Normalize genre using multi-tier fuzzy matching (2025 Best Practices).
+
+        Uses RapidFuzz with token_sort_ratio for word-order independence.
+        Implements confidence tiers:
+        - High (90+): Exact match with minor variations → auto-apply
+        - Medium (80-89): Probable match → apply with confidence flag
+        - Low (70-79): Possible match → store as suggestion only
 
         Args:
             item: Item to normalize
 
         Returns:
-            Item with normalized genre
+            Item with normalized genre and confidence metadata
         """
         if not self.enable_fuzzy_genres:
             return item
@@ -216,16 +232,44 @@ class EnrichmentPipeline:
         if not genre or not isinstance(genre, str):
             return item
 
-        # Find best match in standard genres
-        best_match, score = process.extractOne(genre, STANDARD_GENRES, scorer=fuzz.token_sort_ratio)
+        # Find best match in standard genres using token_sort_ratio
+        # (handles word reordering: "House Deep" matches "Deep House")
+        best_match, score, _ = process.extractOne(
+            genre,
+            STANDARD_GENRES,
+            scorer=fuzz.token_sort_ratio
+        )
 
-        if score >= self.fuzzy_threshold:
-            # Store original genre if different
+        # Multi-tier matching logic (2025 Best Practice)
+        if score >= self.fuzzy_high_threshold:
+            # High confidence - auto-apply
             if genre.lower() != best_match.lower():
                 item['original_genre'] = genre
                 item['genre'] = best_match
+                item['genre_confidence'] = 'high'
+                item['genre_match_score'] = score
                 self.stats['genre_normalized'] += 1
-                logger.debug(f"Genre normalized: '{genre}' → '{best_match}' (score: {score})")
+                logger.debug(
+                    f"Genre normalized (HIGH): '{genre}' → '{best_match}' (score: {score})"
+                )
+        elif score >= self.fuzzy_medium_threshold:
+            # Medium confidence - apply with flag
+            item['original_genre'] = genre
+            item['genre'] = best_match
+            item['genre_confidence'] = 'medium'
+            item['genre_match_score'] = score
+            self.stats['genre_normalized'] += 1
+            logger.debug(
+                f"Genre normalized (MEDIUM): '{genre}' → '{best_match}' (score: {score})"
+            )
+        elif score >= self.fuzzy_low_threshold:
+            # Low confidence - store as suggestion only
+            item['genre_suggestion'] = best_match
+            item['genre_suggestion_score'] = score
+            item['genre_confidence'] = 'low'
+            logger.debug(
+                f"Genre suggestion (LOW): '{genre}' → suggested: '{best_match}' (score: {score})"
+            )
 
         return item
 

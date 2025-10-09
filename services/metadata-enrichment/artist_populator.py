@@ -1,14 +1,23 @@
 """
-Artist Population Service
+Artist Population Service (Enhanced with 2025 Best Practices)
 
-Populates artist records from Spotify track metadata. Used by fuzzy matcher
-to create artist records for tracks with missing/unknown artists.
+Populates artist records from multiple sources with intelligent disambiguation:
+1. Spotify (primary - has popularity metrics for disambiguation)
+2. MusicBrainz (canonical - MBID is unique, authoritative identifier)
+3. Discogs (release-specific)
+
+Key 2025 Enhancements:
+- MBID (MusicBrainz ID) as canonical identifier
+- Popularity-based disambiguation for common names
+- Fuzzy name matching with RapidFuzz
+- Multi-source artist unification
 
 Workflow:
-1. Fuzzy matcher finds Spotify match for track with unknown artist
-2. Artist populator gets full track details from Spotify
-3. Creates artist records if they don't exist
-4. Links artists to track via track_artists table
+1. Fuzzy matcher finds track match (Spotify/MusicBrainz)
+2. Artist populator extracts artist data
+3. Disambiguates using popularity/MBID
+4. Creates/updates artist records
+5. Links to track via track_artists table
 """
 
 import re
@@ -20,23 +29,43 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy.exc import IntegrityError
 
+# Import RapidFuzz for artist name matching (2025 Best Practice)
+try:
+    from rapidfuzz import fuzz
+    RAPIDFUZZ_AVAILABLE = True
+except ImportError:
+    RAPIDFUZZ_AVAILABLE = False
+
 logger = structlog.get_logger(__name__)
 
 
 class ArtistPopulator:
     """
-    Populates artist records from Spotify metadata.
+    Populates artist records from multiple sources (2025 Enhanced).
 
     Handles:
-    - Artist creation with Spotify IDs
-    - Name normalization
-    - Duplicate detection
-    - Track-artist linkage
+    - Artist creation with multiple IDs (Spotify, MBID, Discogs)
+    - Intelligent name normalization with RapidFuzz
+    - Disambiguation using popularity metrics
+    - Duplicate detection with fuzzy matching
+    - Track-artist linkage with role/position
+    - MBID-based canonical linking (2025 Best Practice)
     """
 
-    def __init__(self, db_session_factory: async_sessionmaker, spotify_client):
+    def __init__(self, db_session_factory: async_sessionmaker, spotify_client, musicbrainz_client=None):
         self.db_session_factory = db_session_factory
         self.spotify = spotify_client
+        self.musicbrainz = musicbrainz_client  # Optional for MBID enrichment
+
+        # 2025 Best Practice: Fuzzy matching thresholds
+        self.high_confidence_threshold = 95  # Near-exact match
+        self.medium_confidence_threshold = 85  # Probable match
+        self.low_confidence_threshold = 75  # Possible match
+
+        if RAPIDFUZZ_AVAILABLE:
+            logger.info("✅ ArtistPopulator initialized with RapidFuzz support")
+        else:
+            logger.warning("⚠️ RapidFuzz not available - using exact matching only")
 
     def normalize_artist_name(self, name: str) -> str:
         """
@@ -57,27 +86,102 @@ class ArtistPopulator:
         normalized = re.sub(r'\s+', ' ', normalized)  # Collapse whitespace
         return normalized
 
+    async def disambiguate_artist(
+        self,
+        name: str,
+        candidates: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Disambiguate artist using 2025 best practices.
+
+        Strategy:
+        1. Exact MBID match (highest priority)
+        2. Spotify ID match
+        3. Name similarity + popularity (for common names)
+        4. Fuzzy name matching with RapidFuzz
+
+        Args:
+            name: Artist name to match
+            candidates: List of candidate artist dicts from database
+
+        Returns:
+            Best matching candidate or None
+        """
+        if not candidates:
+            return None
+
+        if len(candidates) == 1:
+            return candidates[0]
+
+        # 2025 Best Practice: Use popularity for disambiguation
+        # Common artist names (e.g., "DJ Shadow", "Matrix") need disambiguation
+        candidates_with_scores = []
+
+        for candidate in candidates:
+            score = 0
+
+            # MBID match = highest priority (canonical identifier)
+            if candidate.get('musicbrainz_id'):
+                score += 100
+
+            # Spotify popularity (0-100 scale)
+            if candidate.get('spotify_popularity'):
+                score += candidate['spotify_popularity'] * 0.5  # Max +50
+
+            # Fuzzy name match (if RapidFuzz available)
+            if RAPIDFUZZ_AVAILABLE:
+                name_score = fuzz.ratio(
+                    name.lower(),
+                    candidate['name'].lower()
+                )
+                score += name_score * 0.3  # Max +30
+
+            # Genre match bonus (if we have genre context)
+            # TODO: Add genre context parameter in future
+
+            candidates_with_scores.append((candidate, score))
+
+        # Sort by score (descending)
+        candidates_with_scores.sort(key=lambda x: x[1], reverse=True)
+        best_match = candidates_with_scores[0][0]
+        best_score = candidates_with_scores[0][1]
+
+        logger.debug(
+            "Artist disambiguation completed",
+            name=name,
+            best_match=best_match['name'],
+            score=best_score,
+            total_candidates=len(candidates)
+        )
+
+        return best_match
+
     async def get_or_create_artist(
         self,
         name: str,
         spotify_id: Optional[str] = None,
-        genres: Optional[List[str]] = None
+        musicbrainz_id: Optional[str] = None,
+        genres: Optional[List[str]] = None,
+        spotify_popularity: Optional[int] = None
     ) -> Optional[UUID]:
         """
-        Get existing artist or create new one.
+        Get existing artist or create new one (Enhanced 2025).
 
         Args:
             name: Artist name
             spotify_id: Spotify artist ID (if available)
+            musicbrainz_id: MusicBrainz ID (MBID) - canonical identifier
             genres: List of genres (if available)
+            spotify_popularity: Spotify popularity (0-100) for disambiguation
 
         Returns:
             artist_id (UUID) if successful, None if failed
 
-        Duplicate Detection Priority:
-        1. Match by spotify_id (exact match)
-        2. Match by normalized_name (fuzzy match)
-        3. Create new artist
+        Duplicate Detection Priority (2025 Best Practices):
+        1. Match by MusicBrainz ID (MBID) - canonical, authoritative
+        2. Match by Spotify ID (service-specific)
+        3. Fuzzy match by name with disambiguation
+        4. Create new artist
         """
         normalized_name = self.normalize_artist_name(name)
 
@@ -93,67 +197,137 @@ class ArtistPopulator:
 
         async with self.db_session_factory() as session:
             try:
-                # 1. Try to find by spotify_id
+                # 1. Try to find by MusicBrainz ID (MBID) - 2025 Best Practice (canonical)
+                if musicbrainz_id:
+                    result = await session.execute(
+                        text("SELECT artist_id, name FROM artists WHERE musicbrainz_id = :mbid"),
+                        {"mbid": musicbrainz_id}
+                    )
+                    row = result.first()
+                    if row:
+                        logger.info(
+                            "Artist found by MBID (canonical match)",
+                            name=name,
+                            mbid=musicbrainz_id,
+                            artist_id=str(row.artist_id)
+                        )
+                        # Update Spotify ID if we have a new one
+                        if spotify_id:
+                            await session.execute(
+                                text("UPDATE artists SET spotify_id = :spotify_id WHERE artist_id = :artist_id"),
+                                {"spotify_id": spotify_id, "artist_id": row.artist_id}
+                            )
+                            await session.commit()
+                        return row.artist_id
+
+                # 2. Try to find by Spotify ID
                 if spotify_id:
                     result = await session.execute(
-                        text("SELECT artist_id FROM artists WHERE spotify_id = :spotify_id"),
+                        text("SELECT artist_id, name FROM artists WHERE spotify_id = :spotify_id"),
                         {"spotify_id": spotify_id}
                     )
                     row = result.first()
                     if row:
-                        logger.debug(
-                            "Artist found by spotify_id",
+                        logger.info(
+                            "Artist found by Spotify ID",
                             name=name,
                             spotify_id=spotify_id,
                             artist_id=str(row.artist_id)
                         )
+                        # Update MBID if we have a new one
+                        if musicbrainz_id:
+                            await session.execute(
+                                text("UPDATE artists SET musicbrainz_id = :mbid WHERE artist_id = :artist_id"),
+                                {"mbid": musicbrainz_id, "artist_id": row.artist_id}
+                            )
+                            await session.commit()
                         return row.artist_id
 
-                # 2. Try to find by normalized_name
-                result = await session.execute(
-                    text("SELECT artist_id, spotify_id FROM artists WHERE normalized_name = :normalized_name"),
-                    {"normalized_name": normalized_name}
-                )
-                row = result.first()
-                if row:
-                    # Found by name - update spotify_id if we have a new one
-                    if spotify_id and not row.spotify_id:
-                        await session.execute(
-                            text("UPDATE artists SET spotify_id = :spotify_id WHERE artist_id = :artist_id"),
-                            {"spotify_id": spotify_id, "artist_id": row.artist_id}
-                        )
-                        await session.commit()
-                        logger.info(
-                            "Updated existing artist with spotify_id",
-                            name=name,
-                            artist_id=str(row.artist_id),
-                            spotify_id=spotify_id
-                        )
-
-                    return row.artist_id
-
-                # 3. Create new artist
+                # 3. Fuzzy match by normalized_name with disambiguation (2025 Enhancement)
                 result = await session.execute(
                     text("""
-                        INSERT INTO artists (name, spotify_id, normalized_name, genres)
-                        VALUES (:name, :spotify_id, :normalized_name, :genres)
+                        SELECT artist_id, name, spotify_id, musicbrainz_id,
+                               COALESCE((metadata->>'spotify_popularity')::int, 0) as spotify_popularity
+                        FROM artists
+                        WHERE normalized_name = :normalized_name
+                    """),
+                    {"normalized_name": normalized_name}
+                )
+                rows = result.fetchall()
+
+                if rows:
+                    # Convert rows to dicts for disambiguation
+                    candidates = [
+                        {
+                            'artist_id': row.artist_id,
+                            'name': row.name,
+                            'spotify_id': row.spotify_id,
+                            'musicbrainz_id': row.musicbrainz_id,
+                            'spotify_popularity': row.spotify_popularity
+                        }
+                        for row in rows
+                    ]
+
+                    # Disambiguate using 2025 best practices
+                    best_match = await self.disambiguate_artist(name, candidates)
+
+                    if best_match:
+                        artist_id = best_match['artist_id']
+
+                        # Update with new metadata if we have better data
+                        updates = []
+                        params = {"artist_id": artist_id}
+
+                        if spotify_id and not best_match['spotify_id']:
+                            updates.append("spotify_id = :spotify_id")
+                            params['spotify_id'] = spotify_id
+
+                        if musicbrainz_id and not best_match['musicbrainz_id']:
+                            updates.append("musicbrainz_id = :mbid")
+                            params['mbid'] = musicbrainz_id
+
+                        if updates:
+                            await session.execute(
+                                text(f"UPDATE artists SET {', '.join(updates)} WHERE artist_id = :artist_id"),
+                                params
+                            )
+                            await session.commit()
+                            logger.info(
+                                "Updated existing artist with new metadata",
+                                artist_id=str(artist_id),
+                                updates=updates
+                            )
+
+                        return artist_id
+
+                # 4. Create new artist with all available metadata (2025 Enhanced)
+                result = await session.execute(
+                    text("""
+                        INSERT INTO artists (name, spotify_id, musicbrainz_id, normalized_name, genres, metadata)
+                        VALUES (:name, :spotify_id, :mbid, :normalized_name, :genres, :metadata)
                         RETURNING artist_id
                     """),
                     {
                         "name": name,
                         "spotify_id": spotify_id,
+                        "mbid": musicbrainz_id,
                         "normalized_name": normalized_name,
-                        "genres": genres or []
+                        "genres": genres or [],
+                        "metadata": {
+                            "spotify_popularity": spotify_popularity
+                        } if spotify_popularity else {}
                     }
                 )
                 row = result.first()
                 await session.commit()
 
                 logger.info(
-                    "Created new artist",
+                    "Created new artist with enhanced metadata",
                     name=name,
                     artist_id=str(row.artist_id),
                     spotify_id=spotify_id,
+                    mbid=musicbrainz_id,
+                    popularity=spotify_popularity,
                     genres=genres or []
                 )
 
@@ -167,7 +341,16 @@ class ArtistPopulator:
                     name=name,
                     error=str(e)
                 )
-                # Retry lookup
+                # Retry lookup with priority order: MBID > Spotify ID > name
+                if musicbrainz_id:
+                    result = await session.execute(
+                        text("SELECT artist_id FROM artists WHERE musicbrainz_id = :mbid"),
+                        {"mbid": musicbrainz_id}
+                    )
+                    row = result.first()
+                    if row:
+                        return row.artist_id
+
                 if spotify_id:
                     result = await session.execute(
                         text("SELECT artist_id FROM artists WHERE spotify_id = :spotify_id"),

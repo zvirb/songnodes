@@ -231,14 +231,14 @@ class WebSocketService:
             rabbitmq_port = str(rabbitmq_config['port'])
             rabbitmq_user = rabbitmq_config['username']
             rabbitmq_pass = rabbitmq_config['password']
-            rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', '/')
+            rabbitmq_vhost = rabbitmq_config.get('vhost', 'musicdb')
             logger.info("✅ Using secrets_manager for RabbitMQ connection")
         except NameError:
-            rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
+            rabbitmq_host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
             rabbitmq_port = os.getenv('RABBITMQ_PORT', '5672')
-            rabbitmq_user = os.getenv('RABBITMQ_USER', 'guest')
+            rabbitmq_user = os.getenv('RABBITMQ_USER', 'musicdb_user')
             rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'rabbitmq_secure_pass_2024')
-            rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', '/')
+            rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', 'musicdb')
             logger.warning("⚠️ Using fallback RabbitMQ config from environment")
         try:
             self.rabbitmq_connection = await aio_pika.connect_robust(

@@ -24,10 +24,10 @@ beautifulsoup4>=4.12.2
 lxml>=4.9.3
 PyYAML>=6.0.1
 
-# Fuzzy matching (Framework Section 3.1 - Table 3.1)
-jellyfish>=0.11.0  # Jaro-Winkler, Levenshtein distance
-fuzzywuzzy>=0.18.0  # Token Set Ratio for word reordering
-python-Levenshtein>=0.21.0  # Fast C implementation for Levenshtein
+# Fuzzy matching (2025 Best Practices - Framework Section 3.1)
+# RapidFuzz: 2-3x faster than fuzzywuzzy, MIT licensed, more algorithms
+rapidfuzz>=3.10.1  # Modern replacement for fuzzywuzzy with C++ optimizations
+jellyfish>=0.11.0  # Jaro-Winkler, Levenshtein distance (complementary)
 
 # JSON and data validation
 jsonschema>=4.20.0

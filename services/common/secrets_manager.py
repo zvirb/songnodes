@@ -182,7 +182,8 @@ def get_rabbitmq_config() -> Dict[str, Any]:
         "host": get_secret("RABBITMQ_HOST", "rabbitmq"),
         "port": int(get_secret("RABBITMQ_PORT", "5672")),
         "username": get_secret("RABBITMQ_USER", "musicdb_user"),
-        "password": get_secret("RABBITMQ_PASS", "rabbitmq_secure_pass_2024")
+        "password": get_secret("RABBITMQ_PASS", "rabbitmq_secure_pass_2024"),
+        "vhost": get_secret("RABBITMQ_VHOST", "musicdb")
     }
 
 
@@ -191,7 +192,7 @@ def get_rabbitmq_url() -> str:
     config = get_rabbitmq_config()
     return (
         f"amqp://{config['username']}:{config['password']}"
-        f"@{config['host']}:{config['port']}/"
+        f"@{config['host']}:{config['port']}/{config['vhost']}"
     )
 
 

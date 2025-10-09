@@ -1256,6 +1256,158 @@ async def get_browser_collector_stats():
         logger.error("Failed to get browser-collector stats", error=str(e))
         return {"status": "error", "error": str(e)}
 
+# ===================
+# OBSERVABILITY API ENDPOINTS
+# ===================
+@app.get("/api/v1/observability/runs")
+async def get_scraping_runs(
+    limit: int = 20,
+    offset: int = 0,
+    status: Optional[str] = None
+):
+    """
+    Get list of scraping runs with pagination and optional status filter
+
+    Args:
+        limit: Maximum number of runs to return (default 20)
+        offset: Number of runs to skip (default 0)
+        status: Optional status filter (e.g., 'completed', 'failed', 'running')
+
+    Returns:
+        List of scraping run records
+    """
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="get_scraping_runs",
+        correlation_id=correlation_id,
+        limit=limit,
+        offset=offset,
+        status_filter=status
+    )
+
+    try:
+        async with connection_manager.session_factory() as session:
+            # Build query - only select existing columns
+            query = """
+                SELECT
+                    run_id,
+                    scraper_name,
+                    start_time,
+                    end_time,
+                    status,
+                    tracks_searched,
+                    playlists_found,
+                    songs_added,
+                    artists_added,
+                    errors_count
+                FROM scraping_runs
+            """
+
+            params = {}
+            if status:
+                query += " WHERE status = :status"
+                params['status'] = status
+
+            query += " ORDER BY start_time DESC LIMIT :limit OFFSET :offset"
+            params['limit'] = limit
+            params['offset'] = offset
+
+            result = await session.execute(text(query), params)
+            rows = result.fetchall()
+
+            runs = []
+            for row in rows:
+                runs.append({
+                    'run_id': str(row.run_id),
+                    'scraper_name': row.scraper_name,
+                    'start_time': row.start_time.isoformat() if row.start_time else None,
+                    'end_time': row.end_time.isoformat() if row.end_time else None,
+                    'status': row.status,
+                    'tracks_searched': row.tracks_searched,
+                    'playlists_found': row.playlists_found,
+                    'songs_added': row.songs_added,
+                    'artists_added': row.artists_added,
+                    'errors_count': row.errors_count,
+                    # These columns will be added later via other tables
+                    'avg_quality_score': None,
+                    'quality_issues': None,
+                    'playlists_validated': None,
+                    'validation_failures': None,
+                    'sources_attempted': None,
+                    'sources_successful': None,
+                    'avg_response_time_ms': None,
+                    'critical_anomalies': None,
+                    'warning_anomalies': None
+                })
+
+            logger.info(f"Retrieved {len(runs)} scraping runs", correlation_id=correlation_id)
+            return runs
+
+    except Exception as e:
+        logger.error("Failed to get scraping runs", error=str(e), correlation_id=correlation_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get scraping runs: {str(e)}"
+        )
+
+@app.get("/api/v1/observability/metrics/summary")
+async def get_metrics_summary():
+    """
+    Get aggregated metrics summary for the pipeline monitoring dashboard
+
+    Returns:
+        Summary metrics including total runs, success rate, songs scraped, etc.
+    """
+    correlation_id = str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="get_metrics_summary",
+        correlation_id=correlation_id
+    )
+
+    try:
+        async with connection_manager.session_factory() as session:
+            # Get overall summary
+            summary_query = """
+                SELECT
+                    COUNT(*) as total_runs,
+                    COUNT(*) FILTER (WHERE status = 'completed') as successful_runs,
+                    COUNT(*) FILTER (WHERE status = 'failed') as failed_runs,
+                    COUNT(*) FILTER (WHERE start_time >= NOW() - INTERVAL '24 hours') as runs_last_24h,
+                    AVG(songs_added) as avg_songs_per_run,
+                    SUM(songs_added) as total_songs_scraped,
+                    SUM(artists_added) as total_artists_scraped
+                FROM scraping_runs
+            """
+
+            result = await session.execute(text(summary_query))
+            row = result.fetchone()
+
+            summary = {
+                'total_runs': row.total_runs or 0,
+                'successful_runs': row.successful_runs or 0,
+                'failed_runs': row.failed_runs or 0,
+                'runs_last_24h': row.runs_last_24h or 0,
+                'avg_songs_per_run': float(row.avg_songs_per_run) if row.avg_songs_per_run else 0,
+                'total_songs_scraped': row.total_songs_scraped or 0,
+                'total_artists_scraped': row.total_artists_scraped or 0
+            }
+
+            # Return empty data for now (quality_by_pillar and recent_anomalies tables may not exist yet)
+            return {
+                'summary': summary,
+                'quality_by_pillar': [],
+                'recent_anomalies': []
+            }
+
+    except Exception as e:
+        logger.error("Failed to get metrics summary", error=str(e), correlation_id=correlation_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get metrics summary: {str(e)}"
+        )
+
 if __name__ == "__main__":
     import uvicorn
     import sys
