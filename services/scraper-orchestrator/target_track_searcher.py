@@ -1392,8 +1392,10 @@ class SearchOrchestrator2025:
 
         for task in tasks:
             try:
+                logger.info("Queuing task", task=task)
                 # Add to Redis queue (using synchronous Redis client)
-                self.redis.lpush('scraping_queue', json.dumps(task))
+                result = self.redis.lpush('scraping_queue', json.dumps(task))
+                logger.info("LPUSH result", result=result)
 
                 # Also publish to RabbitMQ if configured
                 if self.queue:

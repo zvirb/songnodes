@@ -2529,39 +2529,125 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // Initialize on mount - delayed to ensure container is properly mounted
   useEffect(() => {
     const initializeAfterMount = () => {
+      // DEBUG: PIXI initialization attempt logging disabled (too noisy)
+      // console.log('Attempting PIXI initialization after component mount');
+      // NO automatic animation - use instant positioning when data loads
       initializePixi();
     };
 
-    const timeoutId = setTimeout(initializeAfterMount, 10); // Small delay for DOM
+    // Use a small delay to ensure the DOM is fully rendered
+    const timeoutId = setTimeout(initializeAfterMount, 0);
 
     return () => {
       clearTimeout(timeoutId);
 
-      // Stop D3 simulation
-      if (simulationRef.current) {
-        simulationRef.current.stop();
-        simulationRef.current = null;
-      }
-
-      // Clean up PIXI application
+      // Comprehensive PIXI.js v8 cleanup (2025 best practices)
       if (pixiAppRef.current) {
-        pixiAppRef.current.destroy(true, { children: true, texture: true, baseTexture: true });
+
+        // Stop ticker safely (PIXI v8 compatibility)
+        if (pixiAppRef.current.ticker) {
+          try {
+            pixiAppRef.current.ticker.stop();
+            // Don't manually remove ticker listeners - let app.destroy() handle it
+          } catch (error) {
+            console.warn('⚠️ Ticker stop warning:', error);
+          }
+        }
+
+        // ✅ REMOVED: TextLabelPool cleanup - no longer used
+        // Labels are destroyed as part of their parent containers
+
+        // Clean up all containers and their children safely
+        [nodesContainerRef, edgesContainerRef, labelsContainerRef, interactionContainerRef].forEach((containerRef, index) => {
+          if (containerRef.current) {
+            try {
+              // Remove all event listeners from container children
+              containerRef.current.children.forEach(child => {
+                try {
+                  child.removeAllListeners?.();
+                  if (child.destroy) {
+                    child.destroy({ children: true, texture: false });
+                  }
+                } catch (childError) {
+                  console.warn(`⚠️ Child cleanup warning in container ${index}:`, childError);
+                }
+              });
+              containerRef.current.destroy({ children: true });
+              containerRef.current = null;
+            } catch (containerError) {
+              console.warn(`⚠️ Container ${index} cleanup warning:`, containerError);
+              containerRef.current = null; // Clear reference even if cleanup failed
+            }
+          }
+        });
+
+        // Stop D3 simulation FIRST (before clearing data)
+        if (simulationRef.current) {
+          simulationRef.current.stop();
+          simulationRef.current = null;
+        }
+
+        // Clear enhanced data maps (after simulation is stopped)
+        enhancedNodesRef.current.clear();
+        enhancedEdgesRef.current.clear();
+
+        // Destroy PIXI app with comprehensive options (v8 memory leak fix)
+        // The destroy method will handle ticker cleanup internally
+        pixiAppRef.current.destroy(true, {
+          children: true,
+          texture: true
+        });
+
+        // Manual v8 renderGroup cleanup (known issue workaround)
+        // Note: Do this BEFORE nulling pixiAppRef
+        try {
+          if (pixiAppRef.current?.stage?.renderGroup) {
+            const renderGroup = pixiAppRef.current.stage.renderGroup as any;
+            renderGroup.childrenRenderablesToUpdate = {};
+            renderGroup.childrenToUpdate = {};
+            renderGroup.instructionSet = null;
+          }
+        } catch (e) {
+          console.warn('Could not clean renderGroup:', e);
+        }
+
         pixiAppRef.current = null;
       }
 
-      // Clean up texture atlas
+      // Destroy texture atlas (2025 optimization cleanup)
+      // Note: Label pool is destroyed earlier to prevent race conditions
       if (textureAtlasRef.current) {
         textureAtlasRef.current.destroy();
         textureAtlasRef.current = null;
       }
 
-      // Clear all timers
-      if (performanceTimerRef.current) clearInterval(performanceTimerRef.current);
-      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
-      if (uiTimerRef.current) clearInterval(uiTimerRef.current);
-      if (throttledFrameUpdate.current) clearTimeout(throttledFrameUpdate.current);
+      // ✅ REMOVED: TextLabelPool late cleanup check - no longer used
+
+      // Clean up performance timer
+      if (performanceTimerRef.current) {
+        clearInterval(performanceTimerRef.current);
+        performanceTimerRef.current = null;
+      }
+
+      // Clean up animation timer
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
+
+      // Clean up UI timer
+      if (uiTimerRef.current) {
+        clearInterval(uiTimerRef.current);
+        uiTimerRef.current = null;
+      }
+
+      // Clean up throttled frame timer
+      if (throttledFrameUpdate.current) {
+        clearTimeout(throttledFrameUpdate.current);
+        throttledFrameUpdate.current = null;
+      }
     };
-  }, [initializePixi]);
+  }, [initializePixi, startAnimation]);
 
   // Initialize simulation and zoom after PIXI is ready
   useEffect(() => {
@@ -2629,25 +2715,53 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
       switch (event.key.toLowerCase()) {
         case 'd':
-          setShowDebugInfo(prev => !prev);
+          // Toggle debug mode
+          setShowDebugInfo(prev => {
+            const newValue = !prev;
+            if (newValue) {
+              console.group('🔍 Debug Information');
+              console.groupEnd();
+
+              // Enable hit area debugging
+              (window as any).DEBUG_HIT_AREAS = true;
+            } else {
+              (window as any).DEBUG_HIT_AREAS = false;
+            }
+            return newValue;
+          });
           break;
+
         case 'h':
-          console.log('Help: D=Debug, Space=Pause, Esc=Clear, Ctrl+A=Select All');
+          // Show keyboard shortcuts help
+          console.group('⌨️ Keyboard Shortcuts');
+          console.groupEnd();
           break;
+
         case ' ':
+          // Space bar - pause/resume animation
           event.preventDefault();
-          toggleSimulation();
+          const wasPaused = isSimulationPausedRef.current;
+          isSimulationPausedRef.current = !wasPaused;
           break;
+
         case 'escape':
+          // Clear all selections
           graph.clearSelection?.();
           break;
+
         case 'a':
           if (event.ctrlKey || event.metaKey) {
+            // Ctrl+A - Select all visible nodes
             event.preventDefault();
-            const allNodeIds = Array.from(enhancedNodesRef.current.keys());
-            graph.selectNodes(allNodeIds);
+            const visibleNodes = Array.from(enhancedNodesRef.current.values())
+              .filter(node => node.isVisible);
+
+            visibleNodes.forEach(node => {
+              graph.toggleNodeSelection(node.id);
+            });
           }
           break;
+
         case 'tab':
           // Tab navigation between selected nodes
           event.preventDefault();

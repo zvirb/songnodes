@@ -6,11 +6,13 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
-COPY requirements.txt .
+COPY graphql-api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY graphql-api/. .
+COPY common /app/common
+ENV PYTHONPATH="/app"
 
 # Expose port
 EXPOSE 8081

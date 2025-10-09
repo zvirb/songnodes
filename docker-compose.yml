@@ -33,8 +33,8 @@ services:
           memory: 1G
   db-connection-pool:
     build:
-      context: ./services/db-connection-pool
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: db-connection-pool/Dockerfile
     container_name: musicdb-connection-pool
     restart: always
     ports:
@@ -1045,8 +1045,8 @@ services:
           memory: 768M
   graphql-api:
     build:
-      context: ./services/graphql-api
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: graphql-api/Dockerfile
     container_name: graphql-api
     restart: always
     ports:

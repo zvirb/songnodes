@@ -24,7 +24,61 @@ export type TrackStatus = 'unplayed' | 'playing' | 'played' | 'queued';
 // PLAY mode: Simplified performance interface with cognitive offloading for live sets
 export type DJMode = 'plan' | 'play';
 
-import { Track } from './index';
+// Track interface with DJ-specific metadata
+export interface Track {
+  id: string;
+  name: string;
+  title?: string;   // Alias for name (for compatibility)
+  artist: string;
+  album?: string;
+  genre?: string;
+  year?: number;
+  release_year?: number; // Alias for year (for compatibility)
+
+  // DJ-critical metadata (optional for compatibility with graph data)
+  bpm?: number;
+  key?: string; // CamelotKey or other key notation
+  camelotKey?: string; // Alias for Camelot-specific key
+  energy?: number; // 0-1 float or 1-10 integer scale
+
+  // Timing
+  duration?: number; // in seconds
+  duration_seconds?: number; // Alias for duration (for compatibility)
+  intro?: number;   // intro length in beats
+  outro?: number;   // outro length in beats
+
+  // Visual data
+  waveform?: number[];
+  beatgrid?: number[];
+
+  // Status
+  status?: 'unplayed' | 'playing' | 'played' | 'queued';
+  lastPlayed?: Date | number; // Date or timestamp
+  playCount?: number;
+
+  // Platform IDs
+  isrc?: string;
+  spotify_id?: string;
+  apple_music_id?: string;
+  beatport_id?: string;
+
+  // Tags for filtering
+  tags?: string[];
+  mood?: string;
+
+  // User notes
+  notes?: string;
+  cuePoints?: CuePoint[];
+}
+
+// Cue point for marking important positions
+export interface CuePoint {
+  id: string;
+  position: number; // in seconds
+  label: string;
+  color: string;
+  type: 'intro' | 'buildup' | 'drop' | 'breakdown' | 'outro' | 'custom';
+}
 
 // Mix transition information
 export interface MixTransition {
