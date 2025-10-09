@@ -21,6 +21,7 @@ import {
   DEFAULT_CONSTRAINTS,
   AVAILABLE_ALGORITHMS,
 } from '../types/pathfinding';
+import { filterNodes, filterEdges } from '../utils/filterNodes';
 
 // Music service credentials interface
 interface MusicServiceCredentials {
@@ -583,85 +584,18 @@ export const useStore = create<StoreState>()(
             // Update filters
             get().search.setSearchFilters(filters);
 
-            // Apply filters to graph data
+            // Apply filters to graph data using unified filter utilities
             const state = get();
             const originalData = state.originalGraphData || state.graphData;
 
-            // Filter nodes based on SearchFilters
-            const filteredNodes = originalData.nodes.filter(node => {
-              // Only filter track nodes
-              if (node.type !== 'track' || !node.track) return true;
-
-              const track = node.track;
-
-              // Genre filter
-              if (filters.genre && filters.genre.length > 0) {
-                if (!track.genre || !filters.genre.includes(track.genre)) {
-                  return false;
-                }
-              }
-
-              // Key range filter
-              if (filters.keyRange && filters.keyRange.length > 0) {
-                if (!track.camelotKey || !filters.keyRange.includes(track.camelotKey)) {
-                  return false;
-                }
-              }
-
-              // BPM range filter
-              if (filters.bpmRange) {
-                if (!track.bpm || track.bpm < filters.bpmRange[0] || track.bpm > filters.bpmRange[1]) {
-                  return false;
-                }
-              }
-
-              // Energy range filter
-              if (filters.energyRange) {
-                if (!track.energy || track.energy < filters.energyRange[0] || track.energy > filters.energyRange[1]) {
-                  return false;
-                }
-              }
-
-              // Year range filter
-              if (filters.yearRange) {
-                const year = track.year || track.release_year;
-                if (!year || year < filters.yearRange[0] || year > filters.yearRange[1]) {
-                  return false;
-                }
-              }
-
-              // Artist filter
-              if (filters.artist && filters.artist.length > 0) {
-                if (!track.artist || !filters.artist.includes(track.artist)) {
-                  return false;
-                }
-              }
-
-              // Min popularity filter
-              if (filters.minPopularity !== undefined && filters.minPopularity > 0) {
-                if (!track.popularity || track.popularity < filters.minPopularity) {
-                  return false;
-                }
-              }
-
-              // Has preview filter
-              if (filters.hasPreview) {
-                if (!track.preview_url) {
-                  return false;
-                }
-              }
-
-              return true;
-            });
+            // Use unified filterNodes function for consistency with PathfinderPanel
+            const filteredNodes = filterNodes(originalData.nodes, filters);
 
             // Create a set of visible node IDs for edge filtering
             const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
 
-            // Filter edges - only keep edges where both source and target are visible
-            const filteredEdges = originalData.edges.filter(edge =>
-              visibleNodeIds.has(edge.source.toString()) &&
-              visibleNodeIds.has(edge.target.toString())
-            );
+            // Use unified filterEdges function for consistency with PathfinderPanel
+            const filteredEdges = filterEdges(originalData.edges, visibleNodeIds);
 
             // Update graph data with filtered results
             get().graph.setGraphData({

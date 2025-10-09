@@ -1032,12 +1032,84 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // ──────────────────────────────────────────────────────────────────
       .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.02))
 
+      // ──────────────────────────────────────────────────────────────────
+      // 5. EDGE REPULSION: Spread edges evenly around nodes
+      // ──────────────────────────────────────────────────────────────────
+      .force('edgeRepulsion', (alpha) => {
+        // Custom force: edges that share a node repel each other
+        // This creates more even distribution of edges around a node
+        const edges = Array.from(enhancedEdgesRef.current.values());
+        const edgeRepulsionStrength = 15; // Moderate repulsion force
+        const maxRepulsionDistance = 100; // Only repel nearby edges
+
+        // Build adjacency map: node -> array of connected edges
+        const nodeToEdges = new Map<string, EnhancedGraphEdge[]>();
+        edges.forEach(edge => {
+          const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+          const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+          if (!nodeToEdges.has(sourceId)) nodeToEdges.set(sourceId, []);
+          if (!nodeToEdges.has(targetId)) nodeToEdges.set(targetId, []);
+
+          nodeToEdges.get(sourceId)!.push(edge);
+          nodeToEdges.get(targetId)!.push(edge);
+        });
+
+        // For each node with multiple edges, apply repulsion between those edges
+        nodeToEdges.forEach((nodeEdges, nodeId) => {
+          if (nodeEdges.length < 2) return; // Need at least 2 edges to repel
+
+          // Compare each pair of edges connected to this node
+          for (let i = 0; i < nodeEdges.length; i++) {
+            for (let j = i + 1; j < nodeEdges.length; j++) {
+              const edge1 = nodeEdges[i];
+              const edge2 = nodeEdges[j];
+
+              // Get the "other" node for each edge (the one not matching nodeId)
+              const source1 = typeof edge1.source === 'object' ? edge1.source : enhancedNodesRef.current.get(edge1.source);
+              const target1 = typeof edge1.target === 'object' ? edge1.target : enhancedNodesRef.current.get(edge1.target);
+              const source2 = typeof edge2.source === 'object' ? edge2.source : enhancedNodesRef.current.get(edge2.source);
+              const target2 = typeof edge2.target === 'object' ? edge2.target : enhancedNodesRef.current.get(edge2.target);
+
+              if (!source1 || !target1 || !source2 || !target2) continue;
+
+              // Get the endpoints opposite to the shared node
+              const otherNode1 = source1.id === nodeId ? target1 : source1;
+              const otherNode2 = source2.id === nodeId ? target2 : source2;
+
+              // Calculate distance between the "other" endpoints
+              const dx = (otherNode2.x || 0) - (otherNode1.x || 0);
+              const dy = (otherNode2.y || 0) - (otherNode1.y || 0);
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              if (distance === 0 || distance > maxRepulsionDistance) continue;
+
+              // Apply repulsive force proportional to 1/distance
+              // Closer edges repel more strongly
+              const force = (edgeRepulsionStrength * alpha) / (distance * distance);
+              const fx = (dx / distance) * force;
+              const fy = (dy / distance) * force;
+
+              // Apply force to the "other" nodes (push them apart)
+              if (otherNode1.vx !== undefined && otherNode1.vy !== undefined) {
+                otherNode1.vx -= fx;
+                otherNode1.vy -= fy;
+              }
+              if (otherNode2.vx !== undefined && otherNode2.vy !== undefined) {
+                otherNode2.vx += fx;
+                otherNode2.vy += fy;
+              }
+            }
+          }
+        });
+      })
+
       // ✅ REMOVED: edgeAvoidance force - O(N×E) complexity was causing severe performance issues
       // The combination of forceManyBody (charge) + forceCollide provides sufficient node separation
       // For graphs with 1000 nodes and 3000 edges, this eliminates 3M calculations per tick!
 
       // ──────────────────────────────────────────────────────────────────
-      // 5. TIMING: Extended settling (30 seconds for cluster formation)
+      // 6. TIMING: Extended settling (30 seconds for cluster formation)
       // ──────────────────────────────────────────────────────────────────
       .velocityDecay(0.4)    // Lower friction allows more exploration
       .alphaDecay(0.004)     // Slower cooldown = ~1800 iterations (~30 seconds @ 60fps)
@@ -1111,6 +1183,64 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         .strength(0.7) // Stronger collision (was 0.3)
         .iterations(2) // More iterations for better initial separation (was 1)
       )
+      // Edge repulsion for pre-computation (simplified version)
+      .force('edgeRepulsion', (alpha) => {
+        const edges = Array.from(enhancedEdgesRef.current.values());
+        const edgeRepulsionStrength = 10; // Slightly weaker for faster convergence
+        const maxRepulsionDistance = 80; // Shorter range for pre-computation
+
+        const nodeToEdges = new Map<string, EnhancedGraphEdge[]>();
+        edges.forEach(edge => {
+          const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+          const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+          if (!nodeToEdges.has(sourceId)) nodeToEdges.set(sourceId, []);
+          if (!nodeToEdges.has(targetId)) nodeToEdges.set(targetId, []);
+
+          nodeToEdges.get(sourceId)!.push(edge);
+          nodeToEdges.get(targetId)!.push(edge);
+        });
+
+        nodeToEdges.forEach((nodeEdges, nodeId) => {
+          if (nodeEdges.length < 2) return;
+
+          for (let i = 0; i < nodeEdges.length; i++) {
+            for (let j = i + 1; j < nodeEdges.length; j++) {
+              const edge1 = nodeEdges[i];
+              const edge2 = nodeEdges[j];
+
+              const source1 = typeof edge1.source === 'object' ? edge1.source : enhancedNodesRef.current.get(edge1.source);
+              const target1 = typeof edge1.target === 'object' ? edge1.target : enhancedNodesRef.current.get(edge1.target);
+              const source2 = typeof edge2.source === 'object' ? edge2.source : enhancedNodesRef.current.get(edge2.source);
+              const target2 = typeof edge2.target === 'object' ? edge2.target : enhancedNodesRef.current.get(edge2.target);
+
+              if (!source1 || !target1 || !source2 || !target2) continue;
+
+              const otherNode1 = source1.id === nodeId ? target1 : source1;
+              const otherNode2 = source2.id === nodeId ? target2 : source2;
+
+              const dx = (otherNode2.x || 0) - (otherNode1.x || 0);
+              const dy = (otherNode2.y || 0) - (otherNode1.y || 0);
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              if (distance === 0 || distance > maxRepulsionDistance) continue;
+
+              const force = (edgeRepulsionStrength * alpha) / (distance * distance);
+              const fx = (dx / distance) * force;
+              const fy = (dy / distance) * force;
+
+              if (otherNode1.vx !== undefined && otherNode1.vy !== undefined) {
+                otherNode1.vx -= fx;
+                otherNode1.vy -= fy;
+              }
+              if (otherNode2.vx !== undefined && otherNode2.vy !== undefined) {
+                otherNode2.vx += fx;
+                otherNode2.vy += fy;
+              }
+            }
+          }
+        });
+      })
       .velocityDecay(0.7)   // OPTIMIZED: High friction
       .alphaDecay(0.1)      // OPTIMIZED: Fast cooldown
       .alphaMin(0.05)       // OPTIMIZED: Stop early

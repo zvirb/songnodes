@@ -219,3 +219,10 @@ secrets/
 # Temporary debug/test HTML files
 frontend/public/debug*.html
 frontend/public/test*.html
+
+# Debug scripts (root level)
+debug_*.py
+debug_*.js
+
+# Unfinished/experimental services
+services/track-deduplication/

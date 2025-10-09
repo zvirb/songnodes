@@ -12,6 +12,7 @@ import { PathfinderPanel } from './PathfinderPanel';
 import { KeyMoodPanel } from './KeyMoodPanel';
 import TargetTracksManager from './TargetTracksManager';
 import GraphFilterPanel from './GraphFilterPanel';
+import { ArtistAttributionManager } from './ArtistAttributionManager';
 // Import removed - PipelineMonitoringDashboard has missing dependencies
 import { Track as DJTrack, DJMode } from '../types/dj';
 import { Track } from '../types/index';
@@ -189,6 +190,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
     runs: [],
     error: null
   });
+
+  // Artist Attribution Manager state
+  const [showArtistAttribution, setShowArtistAttribution] = useState(false);
 
   // Prometheus metrics state
   const [prometheusMetrics, setPrometheusMetrics] = useState<{
@@ -757,6 +761,33 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
           </button>
 
           <button
+            onClick={() => setShowArtistAttribution(true)}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(231,76,60,0.2)',
+              border: '1px solid rgba(231,76,60,0.4)',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              marginRight: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(231,76,60,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(231,76,60,0.2)';
+            }}
+          >
+            🎨 Fix Artist Attribution
+          </button>
+
+          <button
             onClick={() => setShowGraphFilters(true)}
             style={{
               padding: '8px 12px',
@@ -877,7 +908,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
         <main style={{
           flex: 1,
           display: 'grid',
-          gridTemplateRows: mode === 'play' ? 'minmax(150px, auto) 1fr' : '1fr',
+          gridTemplateRows: '1fr',
           gap: '16px',
           padding: '16px',
           overflow: 'hidden'
@@ -885,24 +916,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
         {/* PLAY Mode Layout */}
         {mode === 'play' && (
           <>
-            {/* Now Playing Section - Compact Primary Focus */}
-            <section
-              className="now-playing-section"
-              style={{
-                maxWidth: '100%',
-                width: '100%',
-                minHeight: '150px',
-                maxHeight: '220px',
-                overflow: 'hidden'
-              }}
-            >
-              <NowPlayingDeck
-                track={nowPlaying as any}
-                onTrackSelect={() => {}} // No direct selection from NowPlayingDeck
-              />
-            </section>
-
-            {/* Bottom Section - Graph and Browser */}
+            {/* Graph and Browser Section - Full Height */}
             <section
               className="visualization-section"
               style={{
@@ -1990,6 +2004,13 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
         isOpen={showGraphFilters}
         onClose={() => setShowGraphFilters(false)}
       />
+
+      {/* Artist Attribution Manager */}
+      {showArtistAttribution && (
+        <ArtistAttributionManager
+          onClose={() => setShowArtistAttribution(false)}
+        />
+      )}
     </div>
   );
 };

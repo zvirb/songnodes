@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
 
@@ -14,6 +14,7 @@ interface PathSegment {
   connection_strength?: number;
   key_compatible: boolean;
   cumulative_duration_ms: number;
+  is_synthetic_edge?: boolean;
 }
 
 interface PathfinderResult {
@@ -32,10 +33,13 @@ interface PathfinderResult {
 const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
 export const PathfinderPanel: React.FC = () => {
-  const { graphData, pathfindingState, pathfinding } = useStore();
+  // Use store's graphData which includes any applied filters
+  // This ensures pathfinder and visualization use the SAME filtered node set
+  const { graphData, pathfindingState, pathfinding, searchFilters } = useStore();
 
-  // Get tracks from store selections
-  const tracks = graphData?.nodes || [];
+  const tracks = graphData.nodes;
+  const edges = graphData.edges;
+
   const startTrack = tracks.find(t => t.id === pathfindingState.startTrackId) || null;
   const endTrack = tracks.find(t => t.id === pathfindingState.endTrackId) || null;
   const waypoints = tracks.filter(t => pathfindingState.selectedWaypoints.has(t.id));
@@ -49,11 +53,11 @@ export const PathfinderPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTrackSelector, setShowTrackSelector] = useState<'start' | 'end' | 'waypoint' | null>(null);
 
-  // Filter tracks for selector
+  // Filter tracks for selector based on search query
   const filteredTracks = tracks.filter(track => {
     const query = searchQuery.toLowerCase();
-    const name = track.name?.toLowerCase() || '';
-    const artist = track.artist?.toLowerCase() || '';
+    const name = (track.name || track.title || '').toLowerCase();
+    const artist = (track.artist || '').toLowerCase();
     return name.includes(query) || artist.includes(query);
   });
 
@@ -80,8 +84,8 @@ export const PathfinderPanel: React.FC = () => {
       return;
     }
 
-    if (!graphData?.nodes || !graphData?.edges) {
-      setError('No graph data available');
+    if (tracks.length === 0) {
+      setError('No tracks available. Please wait for data to load.');
       return;
     }
 
@@ -89,38 +93,37 @@ export const PathfinderPanel: React.FC = () => {
       setIsSearching(true);
       setError(null);
 
-      // Prepare tracks data - handle both nested track format and flat node format
-      const tracksData = graphData.nodes.map(node => {
-        const track = node.track || node;
-        return {
-          id: node.id,
-          name: track.name || node.name || node.title || node.label || 'Unknown',
-          artist: track.artist || node.artist || 'Unknown',
-          duration_ms: ((track.duration || node.duration || 180) * 1000), // Convert seconds to ms, default 3min
-          camelot_key: track.camelotKey || node.camelot_key || node.metadata?.camelot_key,
-          bpm: track.bpm || node.bpm || node.metadata?.bpm,
-          energy: track.energy || node.energy || node.metadata?.energy
-        };
-      });
+      // Use the store's filtered tracks and edges directly
+      // This ensures pathfinder uses the same data as the visualization
+      const tracksData = tracks.map((track: any) => ({
+        id: track.id,
+        name: track.name || track.title || 'Unknown',
+        artist: track.artist || 'Unknown',
+        duration_ms: 180000, // Default 3 minutes
+        camelot_key: track.track?.camelotKey || track.metadata?.musical_key,
+        bpm: track.track?.bpm || track.metadata?.bpm,
+        energy: track.track?.energy || track.metadata?.energy
+      }));
 
-      // Prepare edges data
-      const edgesData = graphData.edges.map(edge => ({
+      const edgesData = edges.map((edge: any) => ({
         from_id: edge.source,
         to_id: edge.target,
         weight: edge.weight || 1.0,
-        connection_type: edge.type
+        connection_type: edge.type || 'sequential'
       }));
 
       const requestBody = {
         start_track_id: startTrack.id,
         end_track_id: endTrack?.id || null,
-        target_duration_ms: targetDuration * 60 * 1000, // Convert minutes to ms
+        target_duration_ms: targetDuration * 60 * 1000,
         waypoint_track_ids: waypoints.map(w => w.id),
         tracks: tracksData,
         edges: edgesData,
-        tolerance_ms: tolerance * 60 * 1000, // Convert minutes to ms
+        tolerance_ms: tolerance * 60 * 1000,
         prefer_key_matching: preferKeyMatching
       };
+
+      console.log(`🔍 Pathfinder request: ${tracksData.length} tracks, ${edgesData.length} edges`);
 
       const response = await fetch(`${REST_API_BASE}/api/v1/pathfinder/find-path`, {
         method: 'POST',
@@ -174,13 +177,18 @@ export const PathfinderPanel: React.FC = () => {
             >
               <div className="font-medium">{track.name || track.title}</div>
               <div className="text-sm text-gray-600">{track.artist}</div>
-              {track.camelot_key && (
+              {track.track?.camelotKey && (
                 <div className="text-xs text-gray-500 mt-1">
-                  Key: {track.camelot_key} {track.bpm && `• ${track.bpm} BPM`}
+                  Key: {track.track.camelotKey} {track.track.bpm && `• ${track.track.bpm} BPM`}
                 </div>
               )}
             </div>
           ))}
+          {filteredTracks.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No tracks found
+            </div>
+          )}
         </div>
 
         <button
@@ -200,6 +208,13 @@ export const PathfinderPanel: React.FC = () => {
         <p className="text-sm text-gray-600 mb-4">
           Create intelligent DJ sets using graph connections and harmonic mixing
         </p>
+        {tracks.length === 0 && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              Loading tracks... Please wait for the graph visualization to load data.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-6 pr-2">
@@ -225,7 +240,8 @@ export const PathfinderPanel: React.FC = () => {
             ) : (
               <button
                 onClick={() => setShowTrackSelector('start')}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800"
+                disabled={tracks.length === 0}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 + Select Start Track
               </button>
@@ -252,7 +268,8 @@ export const PathfinderPanel: React.FC = () => {
             ) : (
               <button
                 onClick={() => setShowTrackSelector('end')}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800"
+                disabled={tracks.length === 0}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 + Select End Track
               </button>
@@ -281,7 +298,8 @@ export const PathfinderPanel: React.FC = () => {
             </div>
             <button
               onClick={() => setShowTrackSelector('waypoint')}
-              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800 text-sm"
+              disabled={tracks.length === 0}
+              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               + Add Waypoint Track
             </button>
@@ -346,7 +364,7 @@ export const PathfinderPanel: React.FC = () => {
         {/* Find Path Button */}
         <button
           onClick={findPath}
-          disabled={!startTrack || isSearching}
+          disabled={!startTrack || isSearching || tracks.length === 0}
           className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {isSearching ? 'Finding Path...' : 'Find Path'}
@@ -372,6 +390,18 @@ export const PathfinderPanel: React.FC = () => {
                 <p>Avg Connection Strength: {result.average_connection_strength.toFixed(2)}</p>
                 <p>Key Compatibility: {(result.key_compatibility_score * 100).toFixed(0)}%</p>
               </div>
+
+              {/* Show info if synthetic edges were used */}
+              {result.path.some((segment: any) => segment.is_synthetic_edge) && (
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <div className="flex items-center gap-2 text-sm text-yellow-800">
+                    <span className="text-yellow-600 font-bold">⚡</span>
+                    <div>
+                      <span className="font-semibold">Harmonic Links Used:</span> Some tracks weren't directly connected in playlists, so we used harmonic key compatibility to bridge the gap.
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Path Display */}
@@ -391,6 +421,9 @@ export const PathfinderPanel: React.FC = () => {
                           {segment.track.camelot_key}
                           {segment.key_compatible && index > 0 && (
                             <span className="ml-2 text-green-600">✓ Compatible</span>
+                          )}
+                          {segment.is_synthetic_edge && index > 0 && (
+                            <span className="ml-2 text-yellow-600 font-semibold">⚡ Harmonic Link</span>
                           )}
                         </div>
                       )}
