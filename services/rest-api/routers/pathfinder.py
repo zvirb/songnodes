@@ -80,6 +80,7 @@ class PathSegment(BaseModel):
     connection_strength: Optional[float] = None
     key_compatible: bool = False
     cumulative_duration_ms: int = 0
+    is_synthetic_edge: bool = False  # True if this transition uses a harmonic fallback edge
 
 class PathfinderResponse(BaseModel):
     """Response from pathfinding"""
@@ -125,18 +126,21 @@ def calculate_heuristic(
     avg_track_duration: int
 ) -> float:
     """
-    Heuristic for A* search
+    Improved heuristic for A* search (2025 best practices)
 
-    Estimates cost to reach goal:
-    - Duration difference penalty
-    - Waypoint penalty (must visit remaining waypoints)
+    Uses admissible heuristic that doesn't overestimate:
+    - Duration difference (scaled down to not dominate)
+    - Waypoint estimation (minimum tracks needed, not penalized)
     """
-    duration_diff = abs(target_duration - current_duration)
+    # Calculate minimum additional duration needed
+    duration_remaining = max(0, target_duration - current_duration)
 
-    # Penalty for unvisited waypoints
-    waypoint_penalty = len(remaining_waypoints) * avg_track_duration * 2
+    # Estimate minimum tracks needed for remaining waypoints
+    # Use more conservative estimate to avoid over-penalizing
+    min_waypoint_duration = len(remaining_waypoints) * avg_track_duration
 
-    return duration_diff + waypoint_penalty
+    # Return admissible heuristic (will not overestimate actual cost)
+    return max(duration_remaining, min_waypoint_duration) / avg_track_duration
 
 # ===========================================
 # Pathfinding Algorithm
@@ -147,7 +151,7 @@ class PathfinderState:
     def __init__(
         self,
         current_track_id: str,
-        path: List[Tuple[str, float, bool]],  # (track_id, connection_strength, key_compatible)
+        path: List[Tuple[str, float, bool, bool]],  # (track_id, connection_strength, key_compatible, is_synthetic)
         visited: Set[str],
         duration: int,
         remaining_waypoints: Set[str],
@@ -175,15 +179,19 @@ def find_path(
     waypoint_ids: Set[str],
     tracks_dict: Dict[str, TrackNode],
     adjacency: Dict[str, List[Tuple[str, float]]],  # {from_id: [(to_id, weight), ...]}
-    prefer_key_matching: bool
-) -> Optional[List[Tuple[str, float, bool]]]:
+    prefer_key_matching: bool,
+    synthetic_edges: Optional[Set[Tuple[str, str]]] = None  # Set of (from_id, to_id) synthetic edges
+) -> Optional[List[Tuple[str, float, bool, bool]]]:
     """
     Modified A* pathfinding with constraints
 
-    Returns: List of (track_id, connection_strength, key_compatible) or None if no path found
+    Returns: List of (track_id, connection_strength, key_compatible, is_synthetic) or None if no path found
     """
     if start_id not in tracks_dict:
         return None
+
+    if synthetic_edges is None:
+        synthetic_edges = set()
 
     # Calculate average track duration for heuristic
     avg_duration = sum(t.duration_ms for t in tracks_dict.values()) / len(tracks_dict)
@@ -192,7 +200,7 @@ def find_path(
     start_track = tracks_dict[start_id]
     initial_state = PathfinderState(
         current_track_id=start_id,
-        path=[(start_id, 0.0, False)],
+        path=[(start_id, 0.0, False, False)],  # Added is_synthetic=False
         visited={start_id},
         duration=start_track.duration_ms,
         remaining_waypoints=waypoint_ids - {start_id},
@@ -213,6 +221,12 @@ def find_path(
 
         current_state = heapq.heappop(open_set)
 
+        # DEBUG: Log state
+        if iterations <= 5:  # Only log first 5 iterations
+            logger.info(f"DEBUG iter {iterations}: current={current_state.current_track_id}, "
+                       f"duration={current_state.duration}ms, visited={len(current_state.visited)}, "
+                       f"remaining_waypoints={len(current_state.remaining_waypoints)}")
+
         # Check if we've reached a valid end state
         duration_diff = abs(current_state.duration - target_duration)
         is_within_tolerance = duration_diff <= tolerance
@@ -228,25 +242,34 @@ def find_path(
 
         # Expand neighbors
         if current_state.current_track_id not in adjacency:
+            if iterations <= 5:
+                logger.warning(f"DEBUG iter {iterations}: Node {current_state.current_track_id} has NO neighbors in adjacency list")
             continue
 
         current_track = tracks_dict[current_state.current_track_id]
+
+        if iterations <= 5:
+            logger.info(f"DEBUG iter {iterations}: Expanding {len(adjacency[current_state.current_track_id])} neighbors")
 
         for neighbor_id, edge_weight in adjacency[current_state.current_track_id]:
             # Skip visited tracks
             if neighbor_id in current_state.visited:
                 continue
 
-            # Skip if already over duration (with some buffer)
+            # Skip if already over duration (with generous buffer to allow exploration)
             neighbor_track = tracks_dict[neighbor_id]
             new_duration = current_state.duration + neighbor_track.duration_ms
-            if new_duration > target_duration + tolerance:
+            # Allow 2x tolerance buffer to explore paths that might work
+            if new_duration > target_duration + (tolerance * 2):
                 continue
 
             # Calculate key compatibility
             key_compatible = False
             if prefer_key_matching:
                 key_compatible = is_key_compatible(current_track.camelot_key, neighbor_track.camelot_key)
+
+            # Check if this is a synthetic edge
+            is_synthetic = (current_state.current_track_id, neighbor_id) in synthetic_edges
 
             # Calculate cost
             # Edge weight is the base cost (lower = stronger connection)
@@ -270,7 +293,7 @@ def find_path(
             # Create new state
             new_state = PathfinderState(
                 current_track_id=neighbor_id,
-                path=current_state.path + [(neighbor_id, edge_weight, key_compatible)],
+                path=current_state.path + [(neighbor_id, edge_weight, key_compatible, is_synthetic)],
                 visited=current_state.visited | {neighbor_id},
                 duration=new_duration,
                 remaining_waypoints=new_remaining_waypoints,
@@ -316,6 +339,31 @@ async def find_dj_path(request: PathfinderRequest):
         for edge in request.edges:
             adjacency[edge.from_id].append((edge.to_id, edge.weight))
 
+        # 2025 ENHANCEMENT: Add synthetic harmonic edges for disconnected tracks
+        # This creates a "safety net" when tracks aren't connected via playlists
+        synthetic_edges_added = 0
+        synthetic_edge_set = set()  # Track which edges are synthetic (from_id, to_id)
+
+        for track1 in request.tracks:
+            for track2 in request.tracks:
+                if track1.id == track2.id:
+                    continue
+
+                # Only add synthetic edge if no real edge exists
+                if track2.id not in [neighbor_id for neighbor_id, _ in adjacency[track1.id]]:
+                    # Check if keys are harmonically compatible
+                    if track1.camelot_key and track2.camelot_key:
+                        if is_key_compatible(track1.camelot_key, track2.camelot_key):
+                            # Add synthetic edge with higher weight (lower priority)
+                            # Real edges have weight ~1-5, synthetic edges get weight 10 (lower priority)
+                            synthetic_weight = 10.0 - (get_key_compatibility_bonus(track1.camelot_key, track2.camelot_key) * 3.0)
+                            adjacency[track1.id].append((track2.id, synthetic_weight))
+                            synthetic_edge_set.add((track1.id, track2.id))
+                            synthetic_edges_added += 1
+
+        if synthetic_edges_added > 0:
+            logger.info(f"Added {synthetic_edges_added} synthetic harmonic edges for disconnected tracks")
+
         # Validate waypoints
         waypoint_ids = set(request.waypoint_track_ids)
         invalid_waypoints = waypoint_ids - set(tracks_dict.keys())
@@ -328,17 +376,63 @@ async def find_dj_path(request: PathfinderRequest):
         logger.info(f"Starting pathfinding: start={request.start_track_id}, end={request.end_track_id}, "
                    f"target_duration={request.target_duration_ms}ms, waypoints={len(waypoint_ids)}")
 
-        # Run pathfinding algorithm
-        path = find_path(
-            start_id=request.start_track_id,
-            end_id=request.end_track_id,
-            target_duration=request.target_duration_ms,
-            tolerance=request.tolerance_ms,
-            waypoint_ids=waypoint_ids,
-            tracks_dict=tracks_dict,
-            adjacency=adjacency,
-            prefer_key_matching=request.prefer_key_matching
-        )
+        # DEBUG: Log adjacency list info
+        logger.info(f"DEBUG: Total tracks: {len(tracks_dict)}, Total edges: {len(request.edges)}")
+        logger.info(f"DEBUG: Adjacency list size: {len(adjacency)}")
+        if request.start_track_id in adjacency:
+            logger.info(f"DEBUG: Start node has {len(adjacency[request.start_track_id])} neighbors")
+            logger.info(f"DEBUG: First 3 neighbors: {adjacency[request.start_track_id][:3]}")
+        else:
+            logger.warning(f"DEBUG: Start node {request.start_track_id} NOT in adjacency list!")
+
+        # DEBUG: Log track metadata for start node
+        if request.start_track_id in tracks_dict:
+            start_track = tracks_dict[request.start_track_id]
+            logger.info(f"DEBUG: Start track duration: {start_track.duration_ms}ms")
+        else:
+            logger.warning(f"DEBUG: Start track {request.start_track_id} NOT in tracks_dict!")
+
+        # Progressive relaxation strategy (2025 best practice)
+        # Try with increasing tolerance levels if strict search fails
+        tolerance_multipliers = [1.0, 1.5, 2.0, 3.0]
+        path = None
+
+        for multiplier in tolerance_multipliers:
+            adjusted_tolerance = int(request.tolerance_ms * multiplier)
+            logger.info(f"Attempting pathfinding with tolerance={adjusted_tolerance}ms (multiplier={multiplier})")
+
+            path = find_path(
+                start_id=request.start_track_id,
+                end_id=request.end_track_id,
+                target_duration=request.target_duration_ms,
+                tolerance=adjusted_tolerance,
+                waypoint_ids=waypoint_ids,
+                tracks_dict=tracks_dict,
+                adjacency=adjacency,
+                prefer_key_matching=request.prefer_key_matching,
+                synthetic_edges=synthetic_edge_set
+            )
+
+            if path:
+                logger.info(f"Path found with tolerance multiplier {multiplier}")
+                break
+
+        if not path:
+            # Final fallback: Try without requiring all waypoints (best-effort)
+            logger.info("Attempting best-effort pathfinding without strict waypoint requirement")
+
+            # Run with no waypoints, then check which ones we hit
+            path = find_path(
+                start_id=request.start_track_id,
+                end_id=request.end_track_id,
+                target_duration=request.target_duration_ms,
+                tolerance=request.tolerance_ms * 3,  # More generous tolerance
+                waypoint_ids=set(),  # No strict waypoint requirement
+                tracks_dict=tracks_dict,
+                adjacency=adjacency,
+                prefer_key_matching=request.prefer_key_matching,
+                synthetic_edges=synthetic_edge_set
+            )
 
         if not path:
             return PathfinderResponse(
@@ -351,7 +445,7 @@ async def find_dj_path(request: PathfinderRequest):
                 waypoints_missed=list(waypoint_ids),
                 average_connection_strength=0.0,
                 key_compatibility_score=0.0,
-                message="No valid path found within constraints. Try adjusting duration tolerance or waypoints."
+                message="No valid path found. Graph may be disconnected or constraints too strict. Try: (1) Remove end track requirement, (2) Increase tolerance significantly, (3) Remove some waypoints."
             )
 
         # Build response
@@ -362,7 +456,7 @@ async def find_dj_path(request: PathfinderRequest):
         total_connections = len(path) - 1
         total_connection_strength = 0.0
 
-        for i, (track_id, connection_strength, key_compatible) in enumerate(path):
+        for i, (track_id, connection_strength, key_compatible, is_synthetic) in enumerate(path):
             track = tracks_dict[track_id]
             total_duration += track.duration_ms
 
@@ -379,7 +473,8 @@ async def find_dj_path(request: PathfinderRequest):
                 track=track,
                 connection_strength=connection_strength if i > 0 else None,
                 key_compatible=key_compatible,
-                cumulative_duration_ms=total_duration
+                cumulative_duration_ms=total_duration,
+                is_synthetic_edge=is_synthetic if i > 0 else False  # First track has no incoming edge
             ))
 
         missed_waypoints = list(waypoint_ids - set(visited_waypoints))
