@@ -103,7 +103,9 @@ class DiscogsAPISpider(scrapy.Spider):
         # Pipeline
         'ITEM_PIPELINES': {
             'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
-            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
+            'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validation
+            'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Enrichment
+            'pipelines.persistence_pipeline.PersistencePipeline': 300,  # Modern async persistence
         },
 
         # Logging
@@ -494,11 +496,8 @@ class DiscogsAPISpider(scrapy.Spider):
         loader.add_value('is_remix', self._is_remix(track_title))
         loader.add_value('is_live', self._is_live(track_title))
 
-        # Remix detection
-        if self._is_remix(track_title):
-            remix_type = self._extract_remix_type(track_title)
-            if remix_type:
-                loader.add_value('remix_type', remix_type)
+        # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
+        # which uses the sophisticated TrackTitleParser (2025 Best Practice)
 
         # Metadata (rich context for future analysis)
         metadata = {
@@ -691,39 +690,6 @@ class DiscogsAPISpider(scrapy.Spider):
         live_indicators = ['live', 'live at', 'recorded live', 'concert']
         title_lower = track_title.lower()
         return any(indicator in title_lower for indicator in live_indicators)
-
-    def _extract_remix_type(self, track_title: str) -> Optional[str]:
-        """
-        Extract remix type from track title.
-
-        Args:
-            track_title: Track title string
-
-        Returns:
-            Remix type (e.g., "Original Mix", "Radio Edit") or None
-        """
-        import re
-
-        remix_patterns = {
-            r'\(Original Mix\)': 'Original Mix',
-            r'\(Radio Edit\)': 'Radio Edit',
-            r'\(Extended Mix\)': 'Extended Mix',
-            r'\(Club Mix\)': 'Club Mix',
-            r'\(VIP Mix\)': 'VIP Mix',
-            r'\(Remix\)': 'Remix',
-            r'\(Edit\)': 'Edit',
-            r'\(Dub Mix\)': 'Dub Mix',
-            r'\((\w+)\s+Remix\)': lambda m: f"{m.group(1)} Remix"
-        }
-
-        for pattern, remix_type in remix_patterns.items():
-            match = re.search(pattern, track_title, re.IGNORECASE)
-            if match:
-                if callable(remix_type):
-                    return remix_type(match)
-                return remix_type
-
-        return None
 
     def handle_api_error(self, failure):
         """Handle API errors with comprehensive logging"""

@@ -53,7 +53,7 @@ try:
         EnhancedTrackArtistItem,
     )
     from ...item_loaders import TrackLoader, ArtistLoader
-    from ...track_id_generator import generate_track_id, extract_remix_type
+    from ...track_id_generator import generate_track_id
     from ...utils.memory_monitor import MemoryMonitor
 except ImportError:
     # Fallback for standalone execution
@@ -65,7 +65,7 @@ except ImportError:
         EnhancedTrackArtistItem,
     )
     from item_loaders import TrackLoader, ArtistLoader
-    from track_id_generator import generate_track_id, extract_remix_type
+    from track_id_generator import generate_track_id
     from utils.memory_monitor import MemoryMonitor
 
 
@@ -121,7 +121,9 @@ class BeatportSpider(scrapy.Spider):
         # Pipeline
         'ITEM_PIPELINES': {
             'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
-            'database_pipeline.DatabasePipeline': 300,  # Legacy persistence
+            'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validation
+            'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Enrichment
+            'pipelines.persistence_pipeline.PersistencePipeline': 300,  # Modern async persistence
         },
 
         # Playwright for JavaScript rendering
@@ -707,7 +709,9 @@ class BeatportSpider(scrapy.Spider):
 
             # Determine remix info
             is_remix = 'remix' in track_name.lower() or 'edit' in track_name.lower()
-            remix_type = extract_remix_type(track_name) if is_remix else None
+            # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
+            # which uses the sophisticated TrackTitleParser (2025 Best Practice)
+            remix_type = None  # Will be populated by enrichment pipeline
 
             # Generate deterministic track_id
             track_id = generate_track_id(
