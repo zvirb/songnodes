@@ -391,7 +391,7 @@ async def get_graph_nodes(
                                     'node_type', 'song',
                                     'category', t.genre,
                                     'genre', t.genre,
-                                    'release_year', t.release_year,
+                                    'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
                                     'bpm', t.bpm,
                                     'key', t.key
                                 ) as metadata,
@@ -415,7 +415,7 @@ async def get_graph_nodes(
                                     'node_type', 'song',
                                     'category', t.genre,
                                     'genre', t.genre,
-                                    'release_year', t.release_year,
+                                    'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
                                     'bpm', t.bpm,
                                     'key', t.key
                                 ) as metadata,
@@ -996,11 +996,11 @@ async def get_edges(
 async def get_graph_data():
     """Get combined nodes and edges data for frontend visualization."""
     try:
-        # First, get all edges to know which nodes we need
+        # EDGE-FIRST APPROACH: Get edges first, then get nodes that participate in those edges
+        # This ensures the graph is always connected
         logger.info("Fetching adjacency relationships from database")
         async with async_session() as session:
-            # Get all edges (adjacencies)
-            # NOTE: Using LEFT JOINs to include edges even when songs don't exist yet
+            # Get all edges (adjacencies) - these define which nodes we need
             edges_query = text("""
                 SELECT
                        ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
@@ -1012,7 +1012,7 @@ async def get_graph_data():
                 FROM song_adjacency sa
                 WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
                 ORDER BY occurrence_count DESC
-                LIMIT 5000  -- Increased limit to show more connections
+                LIMIT 5000  -- Top 5000 most common adjacencies
             """)
             edges_result = await session.execute(edges_query)
 
@@ -1040,13 +1040,14 @@ async def get_graph_data():
 
             logger.info(f"Found {len(edges)} edges referencing {len(referenced_node_ids)} unique nodes")
 
-            # Now get nodes - prioritize nodes that have edges, then add more up to limit
+            # Now get nodes - just get nodes that are referenced by edges (those with artists)
             if referenced_node_ids:
-                # Get all nodes that are referenced by edges PLUS additional nodes
+                # Get all nodes that are referenced by edges
                 # IMPORTANT: Only include songs with artist relationships (unusable otherwise)
+                # Extract UUIDs from 'song_<uuid>' format
+                clean_ids = [nid.replace('song_', '') for nid in referenced_node_ids]
+
                 nodes_query = text("""
-                    WITH edge_nodes AS (
-                        -- First priority: nodes that have edges AND have artists
                         SELECT
                             'song_' || t.id::text as id,
                             t.id::text as track_id,
@@ -1054,66 +1055,39 @@ async def get_graph_data():
                             0 as y_position,
                             json_build_object(
                                 'title', t.title,
-                                'artist', a.name,
+                                'artist', COALESCE(
+                                    -- Try to get first valid artist
+                                    (SELECT a.name FROM track_artists ta
+                                     INNER JOIN artists a ON ta.artist_id = a.artist_id
+                                     WHERE ta.track_id = t.id
+                                       AND ta.role = 'primary'
+                                       AND a.name IS NOT NULL
+                                       AND a.name != ''
+                                       AND a.name != 'Unknown'
+                                     ORDER BY ta.position ASC, ta.created_at ASC
+                                     LIMIT 1),
+                                    -- Fallback: any primary artist
+                                    (SELECT a.name FROM track_artists ta
+                                     INNER JOIN artists a ON ta.artist_id = a.artist_id
+                                     WHERE ta.track_id = t.id AND ta.role = 'primary'
+                                     ORDER BY ta.position ASC, ta.created_at ASC
+                                     LIMIT 1),
+                                    'Unknown'
+                                ),
                                 'node_type', 'song',
                                 'category', t.genre,
                                 'genre', t.genre,
-                                'release_year', t.release_year,
+                                'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
                                 'bpm', t.bpm,
                                 'musical_key', t.key
-                            ) as metadata,
-                            1 as priority
+                            ) as metadata
                         FROM tracks t
-                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                        INNER JOIN artists a ON ta.artist_id = a.artist_id
-                        WHERE ('song_' || t.id::text) = ANY(:node_ids)
-                          AND a.name IS NOT NULL
-                          AND a.name != ''
-                          AND a.name != 'Unknown'
-                    ),
-                    other_nodes AS (
-                        -- Second priority: other nodes to fill up to limit (with artists only)
-                        -- CRITICAL FIX: Use NOT (... = ANY()) for proper array exclusion
-                        SELECT
-                            'song_' || t.id::text as id,
-                            t.id::text as track_id,
-                            0 as x_position,
-                            0 as y_position,
-                            json_build_object(
-                                'title', t.title,
-                                'artist', a.name,
-                                'node_type', 'song',
-                                'category', t.genre,
-                                'genre', t.genre,
-                                'release_year', t.release_year,
-                                'bpm', t.bpm,
-                                'musical_key', t.key
-                            ) as metadata,
-                            2 as priority
-                        FROM tracks t
-                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                        INNER JOIN artists a ON ta.artist_id = a.artist_id
-                        WHERE NOT (('song_' || t.id::text) = ANY(:node_ids))
-                          AND a.name IS NOT NULL
-                          AND a.name != ''
-                          AND a.name != 'Unknown'
-                        ORDER BY t.created_at DESC
-                        LIMIT :remaining_limit
-                    )
-                    SELECT * FROM (
-                        SELECT * FROM edge_nodes
-                        UNION  -- CRITICAL FIX: Changed from UNION ALL to UNION for automatic deduplication
-                        SELECT * FROM other_nodes
-                    ) combined
-                    ORDER BY priority
+                        WHERE t.id::text = ANY(:node_ids)
+                        -- NO LIMIT: Return ALL nodes referenced by edges to ensure graph connectivity
                 """)
 
-                # Calculate how many additional nodes to fetch
-                remaining_limit = max(0, 1000 - len(referenced_node_ids))
-
                 nodes_result = await session.execute(nodes_query, {
-                    "node_ids": list(referenced_node_ids),
-                    "remaining_limit": remaining_limit
+                    "node_ids": clean_ids
                 })
             else:
                 # No edges, just get top nodes (with artists only)
