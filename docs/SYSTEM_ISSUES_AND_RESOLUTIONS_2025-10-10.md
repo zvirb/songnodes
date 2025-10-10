@@ -273,49 +273,19 @@ async def _search_discogs_fuzzy(self, query: str, limit: int = 5) -> List[FuzzyC
 
 ### 4.3 P2 - Medium Priority (UX Improvements)
 
-**Total**: 15 remaining (3 were fixed by agents)
+**Total**: 12 remaining (6 were fixed by agents)
 
 **Fixed by Agents**:
 1. ✅ SetlistBuilder Error Messages - ui-regression-debugger
 2. ✅ InfoCard Copy Success Toast - ui-regression-debugger
 3. ✅ Camelot Key Conversion - general-purpose
+4. ✅ SetlistBuilder Track Edit Modal - general-purpose (commit: e185864)
+5. ✅ Context Menu Center on Track - general-purpose (commit: 14538ad)
+6. ✅ Context Menu Filter Edges by Type - general-purpose (commit: 4667376)
 
 **Remaining P2 Items**:
 
-#### 1. SetlistBuilder - Track Editing Modal
-**File**: `frontend/src/components/SetlistBuilder.tsx:372`
-```tsx
-const handleEditTrack = useCallback((trackId: string) => {
-  // TODO: Open track editing modal/panel
-}, []);
-```
-**Impact**: Users cannot edit track metadata within setlist builder
-**Workaround**: Users can edit from main track view
-**Estimated Effort**: 4-6 hours
-
-#### 2. ContextMenu - Center Graph on Track
-**File**: `frontend/src/components/ContextMenu.tsx:237`
-```tsx
-action: () => {
-  // TODO: Center graph on this track
-  onClose();
-}
-```
-**Impact**: Users cannot center viewport on selected track
-**Estimated Effort**: 2-3 hours
-
-#### 3. ContextMenu - Filter Edges by Type
-**File**: `frontend/src/components/ContextMenu.tsx:313`
-```tsx
-action: () => {
-  // TODO: Filter edges by type
-  onClose();
-}
-```
-**Impact**: Users cannot filter relationship types in graph view
-**Estimated Effort**: 3-4 hours
-
-#### 4-15. Frontend Search/Filter Components
+#### 1-12. Frontend Search/Filter Components
 **Files**: Various frontend components
 **Total**: 12 items
 
@@ -454,13 +424,11 @@ $ docker compose ps
 2. ✅ Copy Success Toasts (30 minutes) - **DONE**
 3. ✅ SetlistBuilder Error Messages (30 minutes) - **DONE**
 4. ✅ Camelot Key Conversion (1-2 hours) - **DONE**
+5. ✅ SetlistBuilder Track Edit Modal (4-6 hours) - **DONE** (commit: e185864)
+6. ✅ Context Menu Center on Track (2-3 hours) - **DONE** (commit: 14538ad)
+7. ✅ Context Menu Filter Edges (3-4 hours) - **DONE** (commit: 4667376)
 
-**Remaining Quick Wins**:
-1. SetlistBuilder Track Edit Modal (4-6 hours)
-2. Context Menu Center on Track (2-3 hours)
-3. Context Menu Filter Edges (3-4 hours)
-
-**Total Estimated Effort for Remaining**: 9-13 hours
+**Status**: ✅ **ALL P2 QUICK WINS COMPLETE**
 
 ---
 
