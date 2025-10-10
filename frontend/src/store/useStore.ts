@@ -3,6 +3,7 @@ import { devtools, persist, subscribeWithSelector, createJSONStorage } from 'zus
 import {
   GraphData,
   GraphNode,
+  GraphEdge,
   Track,
   SearchFilters,
   SearchResult,
@@ -112,6 +113,7 @@ interface ViewActions {
   toggleEdges: () => void;
   setNodeSize: (size: number) => void;
   setEdgeOpacity: (opacity: number) => void;
+  toggleEdgeTypeVisibility: (edgeType: GraphEdge['type']) => void;
   resetView: () => void;
   navigateToNode: (nodeId: string, options?: { highlight?: boolean; openModal?: boolean; selectNode?: boolean }) => void;
 }
@@ -244,6 +246,7 @@ const initialState: AppState = {
     colorBy: 'genre',
     sizeBy: 'uniform',
     edgeDisplay: 'all',
+    hiddenEdgeTypes: new Set(), // Track which edge types are hidden
     performanceMode: 'balanced',
     showStats: false,
     navigationRequest: null,
@@ -492,6 +495,29 @@ export const useStore = create<StoreState>()(
             }), false, 'view/setEdgeOpacity');
           },
 
+          toggleEdgeTypeVisibility: (edgeType) => {
+            set((state) => {
+              const newHiddenTypes = new Set(state.viewState.hiddenEdgeTypes);
+
+              if (newHiddenTypes.has(edgeType)) {
+                newHiddenTypes.delete(edgeType);
+              } else {
+                newHiddenTypes.add(edgeType);
+              }
+
+              return {
+                ...state,
+                viewState: {
+                  ...state.viewState,
+                  hiddenEdgeTypes: newHiddenTypes,
+                },
+              };
+            }, false, 'view/toggleEdgeTypeVisibility');
+
+            // Re-apply current filters to update graph with new edge type visibility
+            get().search.applyFilters(get().searchFilters);
+          },
+
           resetView: () => {
             set((state) => ({
               ...state,
@@ -634,8 +660,12 @@ export const useStore = create<StoreState>()(
             // Create a set of visible node IDs for edge filtering
             const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
 
-            // Use unified filterEdges function for consistency with PathfinderPanel
-            const filteredEdges = filterEdges(originalData.edges, visibleNodeIds);
+            // Use unified filterEdges function with edge type filtering
+            const filteredEdges = filterEdges(
+              originalData.edges,
+              visibleNodeIds,
+              state.viewState.hiddenEdgeTypes
+            );
 
             // Update graph data with filtered results
             get().graph.setGraphData({
@@ -1392,6 +1422,7 @@ export const useStore = create<StoreState>()(
             viewState: {
               ...state.viewState,
               selectedNodes: [], // Convert Set to Array for JSON serialization
+              hiddenEdgeTypes: Array.from(state.viewState.hiddenEdgeTypes || []), // Convert Set to Array
               hoveredNode: null, // Don't persist hover state
             },
             searchFilters: state.searchFilters,
@@ -1424,6 +1455,12 @@ export const useStore = create<StoreState>()(
             if (state) {
               if (Array.isArray(state.viewState?.selectedNodes)) {
                 state.viewState.selectedNodes = new Set(state.viewState.selectedNodes);
+              }
+              if (Array.isArray(state.viewState?.hiddenEdgeTypes)) {
+                state.viewState.hiddenEdgeTypes = new Set(state.viewState.hiddenEdgeTypes);
+              } else if (!state.viewState?.hiddenEdgeTypes) {
+                // Initialize if not present (for migration from old versions)
+                state.viewState.hiddenEdgeTypes = new Set();
               }
               if (Array.isArray(state.pathfindingState?.selectedWaypoints)) {
                 state.pathfindingState.selectedWaypoints = new Set(state.pathfindingState.selectedWaypoints);

@@ -170,6 +170,7 @@ export interface ViewState {
   colorBy?: 'genre' | 'bpm' | 'energy' | 'key' | 'artist';
   sizeBy?: 'degree' | 'popularity' | 'energy' | 'uniform';
   edgeDisplay?: 'all' | 'strong' | 'selected' | 'none';
+  hiddenEdgeTypes?: Set<GraphEdge['type']>; // Track which edge types are hidden
   performanceMode?: 'high' | 'balanced' | 'low';
   showStats?: boolean;
   navigationRequest?: NavigationRequest | null;
