@@ -20,8 +20,44 @@ import threading
 import logging
 from typing import Optional, Dict
 from enum import Enum
+from prometheus_client import Gauge
 
 logger = logging.getLogger(__name__)
+
+# Prometheus metrics
+from prometheus_client import Counter, Histogram
+
+api_gateway_rate_limit_requests_total = Counter(
+    'api_gateway_rate_limit_requests_total',
+    'Total number of rate limit requests',
+    ['provider']
+)
+
+api_gateway_rate_limit_tokens = Gauge(
+    'api_gateway_rate_limit_tokens',
+    'Current number of available rate limit tokens',
+    ['provider']
+)
+
+api_gateway_rate_limit_wait_seconds = Histogram(
+    'api_gateway_rate_limit_wait_seconds',
+    'Rate limit wait time in seconds',
+    ['provider'],
+    buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0)
+)
+
+# Rate limit prediction metrics
+rate_limit_exhaustion_predicted_seconds = Gauge(
+    'api_gateway_rate_limit_exhaustion_predicted_seconds',
+    'Predicted seconds until rate limit exhaustion',
+    ['provider']
+)
+
+rate_limit_token_bucket_fill_ratio = Gauge(
+    'api_gateway_rate_limit_token_bucket_fill_ratio',
+    'Current token bucket fill ratio (0.0 to 1.0)',
+    ['provider']
+)
 
 
 class RateLimitExceeded(Exception):
@@ -59,6 +95,10 @@ class TokenBucket:
         self.last_update = time.time()
         self.lock = threading.Lock()
 
+        # Rate tracking for prediction
+        self.consumption_history = []  # List of (timestamp, tokens_consumed)
+        self.consumption_window = 300  # 5 minutes window for rate calculation
+
         logger.info(
             f"TokenBucket '{name}' initialized: "
             f"rate={rate} tokens/sec, capacity={capacity}"
@@ -80,12 +120,26 @@ class TokenBucket:
             RateLimitExceeded: If tokens unavailable and blocking=False
         """
         start_time = time.time()
+        wait_time_for_metrics = 0
 
         with self.lock:
             self._refill()
 
+            # Track request
+            api_gateway_rate_limit_requests_total.labels(provider=self.name).inc()
+
+            # Update token gauge
+            api_gateway_rate_limit_tokens.labels(provider=self.name).set(self.tokens)
+
             if self.tokens >= tokens:
                 self.tokens -= tokens
+
+                # Track consumption for rate prediction
+                self._track_consumption(tokens)
+
+                # Update token gauge after consumption
+                api_gateway_rate_limit_tokens.labels(provider=self.name).set(self.tokens)
+
                 logger.debug(
                     f"TokenBucket '{self.name}': Acquired {tokens} token(s), "
                     f"{self.tokens:.2f} remaining"
@@ -95,6 +149,7 @@ class TokenBucket:
             elif blocking:
                 # Calculate wait time
                 wait_time = (tokens - self.tokens) / self.rate
+                wait_time_for_metrics = wait_time
 
                 # Check timeout
                 if timeout is not None and wait_time > timeout:
@@ -121,7 +176,14 @@ class TokenBucket:
                 self._refill()
                 self.tokens = max(0, self.tokens - tokens)
 
+                # Update token gauge
+                api_gateway_rate_limit_tokens.labels(provider=self.name).set(self.tokens)
+
                 elapsed = time.time() - start_time
+
+                # Track wait time
+                api_gateway_rate_limit_wait_seconds.labels(provider=self.name).observe(wait_time_for_metrics)
+
                 logger.debug(
                     f"TokenBucket '{self.name}': Acquired {tokens} token(s) after {elapsed:.2f}s wait"
                 )
@@ -149,6 +211,83 @@ class TokenBucket:
         with self.lock:
             self._refill()
             return self.tokens
+
+    def _track_consumption(self, tokens: int):
+        """Track token consumption for rate prediction."""
+        now = time.time()
+        self.consumption_history.append((now, tokens))
+
+        # Remove old entries outside the window
+        cutoff_time = now - self.consumption_window
+        self.consumption_history = [
+            (ts, count) for ts, count in self.consumption_history
+            if ts > cutoff_time
+        ]
+
+    def get_consumption_rate(self) -> float:
+        """
+        Calculate current consumption rate (tokens/second).
+
+        Returns:
+            Average consumption rate over the tracking window
+        """
+        if not self.consumption_history:
+            return 0.0
+
+        now = time.time()
+        cutoff_time = now - self.consumption_window
+
+        # Calculate total tokens consumed in window
+        total_consumed = sum(
+            count for ts, count in self.consumption_history
+            if ts > cutoff_time
+        )
+
+        # Calculate actual time span
+        if self.consumption_history:
+            oldest_timestamp = min(ts for ts, _ in self.consumption_history)
+            time_span = now - oldest_timestamp
+            if time_span > 0:
+                return total_consumed / time_span
+
+        return 0.0
+
+    def predict_exhaustion_time(self) -> Optional[float]:
+        """
+        Predict time in seconds until rate limit exhaustion.
+
+        Returns:
+            Seconds until exhaustion, None if not applicable (consumption < refill rate)
+        """
+        with self.lock:
+            self._refill()
+
+            consumption_rate = self.get_consumption_rate()
+
+            # If consumption rate is less than or equal to refill rate, no exhaustion
+            if consumption_rate <= self.rate:
+                return None
+
+            # Net depletion rate (consumption - refill)
+            net_depletion_rate = consumption_rate - self.rate
+
+            # Time until exhaustion: current_tokens / net_depletion_rate
+            if net_depletion_rate > 0 and self.tokens > 0:
+                exhaustion_seconds = self.tokens / net_depletion_rate
+                return exhaustion_seconds
+
+            return 0.0  # Already exhausted or will exhaust immediately
+
+    def get_fill_ratio(self) -> float:
+        """
+        Get current bucket fill ratio.
+
+        Returns:
+            Ratio from 0.0 (empty) to 1.0 (full)
+        """
+        with self.lock:
+            self._refill()
+            return self.tokens / self.capacity
 
     def adjust_rate(self, new_rate: float):
         """
@@ -303,3 +442,32 @@ class RateLimiter:
                 'available_tokens': bucket.get_available_tokens()
             }
         return stats
+
+    def update_prediction_metrics(self):
+        """
+        Update Prometheus metrics for rate limit prediction.
+
+        This should be called periodically (e.g., every 10 seconds) to update
+        prediction metrics for monitoring and alerting.
+        """
+        for provider, bucket in self.buckets.items():
+            # Update fill ratio metric
+            fill_ratio = bucket.get_fill_ratio()
+            rate_limit_token_bucket_fill_ratio.labels(provider=provider).set(fill_ratio)
+
+            # Update exhaustion prediction metric
+            exhaustion_time = bucket.predict_exhaustion_time()
+            if exhaustion_time is not None:
+                rate_limit_exhaustion_predicted_seconds.labels(provider=provider).set(exhaustion_time)
+
+                # Log warning if exhaustion predicted within 5 minutes
+                if exhaustion_time < 300:
+                    logger.warning(
+                        f"Rate limit exhaustion predicted for {provider}",
+                        provider=provider,
+                        exhaustion_in_seconds=exhaustion_time,
+                        fill_ratio=fill_ratio
+                    )
+            else:
+                # No exhaustion predicted - set to a high value or clear
+                rate_limit_exhaustion_predicted_seconds.labels(provider=provider).set(-1)

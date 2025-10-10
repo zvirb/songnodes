@@ -21,8 +21,28 @@ from enum import Enum
 from typing import Callable, Any, Optional, Dict
 from datetime import datetime, timedelta
 from functools import wraps
+from prometheus_client import Gauge, Counter
 
 logger = logging.getLogger(__name__)
+
+# Prometheus Metrics - Module-level definitions
+api_gateway_circuit_breaker_state = Gauge(
+    'api_gateway_circuit_breaker_state',
+    'Circuit breaker state (0=CLOSED, 1=HALF_OPEN, 2=OPEN)',
+    ['provider']
+)
+
+api_gateway_circuit_breaker_failures_total = Counter(
+    'api_gateway_circuit_breaker_failures_total',
+    'Total number of circuit breaker failures',
+    ['provider']
+)
+
+api_gateway_circuit_breaker_opens_total = Counter(
+    'api_gateway_circuit_breaker_opens_total',
+    'Total number of circuit breaker opens',
+    ['provider']
+)
 
 
 class CircuitState(Enum):
@@ -89,6 +109,9 @@ class CircuitBreaker:
 
         self.lock = threading.Lock()
 
+        # Initialize Prometheus gauge for this provider
+        api_gateway_circuit_breaker_state.labels(provider=name).set(0)  # CLOSED
+
         logger.info(
             f"CircuitBreaker '{name}' initialized: "
             f"failure_threshold={failure_threshold}, timeout={timeout}s"
@@ -152,6 +175,9 @@ class CircuitBreaker:
                 self.failure_count += 1
                 self.last_failure_time = datetime.utcnow()
 
+                # Track failure in Prometheus
+                api_gateway_circuit_breaker_failures_total.labels(provider=self.name).inc()
+
                 logger.warning(
                     f"CircuitBreaker '{self.name}': Failure caught "
                     f"({self.failure_count}/{self.failure_threshold}) - {type(e).__name__}: {e}"
@@ -192,6 +218,18 @@ class CircuitBreaker:
         old_state = self.state
         self.state = new_state
         self.last_state_change = datetime.utcnow()
+
+        # Update Prometheus gauge (0=CLOSED, 1=HALF_OPEN, 2=OPEN)
+        state_value = {
+            CircuitState.CLOSED: 0,
+            CircuitState.HALF_OPEN: 1,
+            CircuitState.OPEN: 2
+        }[new_state]
+        api_gateway_circuit_breaker_state.labels(provider=self.name).set(state_value)
+
+        # Track circuit breaker opens
+        if new_state == CircuitState.OPEN:
+            api_gateway_circuit_breaker_opens_total.labels(provider=self.name).inc()
 
         # Reset counters on state transition
         if new_state == CircuitState.CLOSED:
