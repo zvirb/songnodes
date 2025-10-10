@@ -8,6 +8,7 @@ Centralized gateway using common/api_gateway library with:
 - Unified Redis caching (from common.api_gateway)
 - Circuit breaker protection (from common.api_gateway)
 - Comprehensive Prometheus metrics (from common.api_gateway)
+- OpenTelemetry distributed tracing (NEW)
 
 All resilience patterns are now provided by the common/api_gateway library,
 eliminating code duplication and ensuring consistent behavior.
@@ -23,6 +24,16 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 import redis
 from prometheus_client import make_asgi_app
+
+# OpenTelemetry imports
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.trace import Status, StatusCode
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,14 +57,125 @@ cache_manager: Optional[CacheManager] = None
 rate_limiter: Optional[RateLimiter] = None
 circuit_breakers: Dict[str, CircuitBreaker] = {}
 adapters: Dict[str, Any] = {}
+tracer: Optional[trace.Tracer] = None
+
+
+def initialize_tracing():
+    """Initialize OpenTelemetry tracing with Tempo backend."""
+    global tracer
+
+    # Get Tempo endpoint from environment
+    tempo_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://tempo:4317")
+
+    # Create resource identifying this service
+    resource = Resource.create({
+        "service.name": "api-gateway-internal",
+        "service.version": "1.0.0",
+        "deployment.environment": os.getenv("ENVIRONMENT", "production")
+    })
+
+    # Create tracer provider
+    tracer_provider = TracerProvider(resource=resource)
+
+    # Configure OTLP exporter (gRPC to Tempo)
+    otlp_exporter = OTLPSpanExporter(
+        endpoint=tempo_endpoint,
+        insecure=True  # Use insecure for internal network
+    )
+
+    # Add batch span processor for efficient export
+    span_processor = BatchSpanProcessor(otlp_exporter)
+    tracer_provider.add_span_processor(span_processor)
+
+    # Set global tracer provider
+    trace.set_tracer_provider(tracer_provider)
+
+    # Get tracer for this module
+    tracer = trace.get_tracer(__name__)
+
+    # Auto-instrument FastAPI and requests
+    RequestsInstrumentor().instrument()
+
+    logger.info(
+        "OpenTelemetry tracing initialized",
+        tempo_endpoint=tempo_endpoint,
+        service_name="api-gateway-internal"
+    )
+
+    return tracer
+
+
+async def warm_cache():
+    """
+    Warm cache on startup with popular queries.
+
+    This pre-populates the cache with commonly accessed data to improve
+    initial response times and reduce load on external APIs.
+    """
+    if not adapters:
+        logger.warning("No adapters available for cache warming")
+        return
+
+    with tracer.start_as_current_span("cache_warming") as span:
+        warmed_count = 0
+
+        # Popular artists to warm cache with
+        popular_queries = [
+            {"artist": "Deadmau5", "title": "Strobe"},
+            {"artist": "Daft Punk", "title": "One More Time"},
+            {"artist": "Skrillex", "title": "Scary Monsters and Nice Sprites"},
+            {"artist": "Calvin Harris", "title": "Summer"},
+            {"artist": "Martin Garrix", "title": "Animals"},
+        ]
+
+        span.set_attribute("cache_warming.query_count", len(popular_queries))
+
+        logger.info("Starting cache warming", query_count=len(popular_queries))
+
+        # Warm Spotify cache if available
+        if "spotify" in adapters:
+            spotify = adapters["spotify"]
+            for query in popular_queries:
+                try:
+                    with tracer.start_as_current_span("cache_warming.spotify_search") as search_span:
+                        search_span.set_attribute("artist", query["artist"])
+                        search_span.set_attribute("title", query["title"])
+
+                        await spotify.search_track(
+                            artist=query["artist"],
+                            title=query["title"],
+                            limit=1
+                        )
+                        warmed_count += 1
+
+                        search_span.set_status(Status(StatusCode.OK))
+
+                except Exception as e:
+                    logger.warning(
+                        "Cache warming failed for query",
+                        query=query,
+                        error=str(e)
+                    )
+
+        span.set_attribute("cache_warming.warmed_count", warmed_count)
+        span.set_status(Status(StatusCode.OK))
+
+        logger.info(
+            "Cache warming complete",
+            warmed_count=warmed_count,
+            total_queries=len(popular_queries)
+        )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
-    global redis_client, cache_manager, rate_limiter, circuit_breakers, adapters
+    global redis_client, cache_manager, rate_limiter, circuit_breakers, adapters, tracer
 
     logger.info("Initializing API Gateway with unified common/api_gateway library")
+
+    # Initialize OpenTelemetry tracing
+    tracer = initialize_tracing()
 
     # Initialize Redis
     redis_config = get_redis_config()
@@ -126,6 +248,13 @@ async def lifespan(app: FastAPI):
         implementation="common/api_gateway"
     )
 
+    # Warm cache with popular queries
+    try:
+        await warm_cache()
+    except Exception as e:
+        logger.error("Cache warming failed", error=str(e))
+        # Don't fail startup if cache warming fails
+
     yield
 
     # Cleanup
@@ -138,10 +267,14 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title="API Integration Gateway",
-    description="Centralized gateway for external API interactions",
+    description="Centralized gateway for external API interactions with distributed tracing",
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Auto-instrument FastAPI with OpenTelemetry
+# This will create spans for all HTTP requests automatically
+FastAPIInstrumentor.instrument_app(app)
 
 # Mount Prometheus metrics
 metrics_app = make_asgi_app()
@@ -204,7 +337,7 @@ async def unified_search(
     priority: int = Query(5, ge=1, le=10, description="Request priority")
 ):
     """
-    Unified search endpoint.
+    Unified search endpoint with distributed tracing.
 
     Features:
     - Token bucket rate limiting
@@ -212,17 +345,27 @@ async def unified_search(
     - Circuit breaker protection
     - Response caching (Redis)
     - Prometheus metrics
+    - OpenTelemetry distributed tracing
     """
     adapter = get_adapter(provider)
 
-    try:
-        # Route to appropriate adapter method
-        if provider == "spotify":
-            results = await adapter.search_track(
-                artist=query.artist,
-                title=query.title,
-                limit=query.limit
-            )
+    # Create custom span for this search operation
+    with tracer.start_as_current_span("api_search") as span:
+        # Add contextual attributes to span
+        span.set_attribute("provider", provider)
+        span.set_attribute("artist", query.artist)
+        span.set_attribute("title", query.title)
+        span.set_attribute("limit", query.limit)
+        span.set_attribute("priority", priority)
+
+        try:
+            # Route to appropriate adapter method
+            if provider == "spotify":
+                results = await adapter.search_track(
+                    artist=query.artist,
+                    title=query.title,
+                    limit=query.limit
+                )
         elif provider == "musicbrainz":
             # MusicBrainz uses different search pattern
             results = []
@@ -241,25 +384,33 @@ async def unified_search(
                 artist=query.artist,
                 title=query.title
             )
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Search not supported for provider: {provider}"
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Search not supported for provider: {provider}"
+                )
+
+            # Set span status to OK and add result count
+            span.set_status(Status(StatusCode.OK))
+            span.set_attribute("result_count", len(results) if isinstance(results, list) else 1)
+
+            return {
+                "provider": provider,
+                "query": query.dict(),
+                "results": results
+            }
+
+        except Exception as e:
+            # Set span status to ERROR
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.record_exception(e)
+
+            logger.error(
+                "Search failed",
+                provider=provider,
+                error=str(e)
             )
-
-        return {
-            "provider": provider,
-            "query": query.dict(),
-            "results": results
-        }
-
-    except Exception as e:
-        logger.error(
-            "Search failed",
-            provider=provider,
-            error=str(e)
-        )
-        raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/{provider}/track/{track_id}")

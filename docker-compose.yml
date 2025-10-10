@@ -939,6 +939,9 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus
+      # OpenTelemetry / Distributed Tracing
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+      ENVIRONMENT: ${ENVIRONMENT:-production}
       # API credentials for external services
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
@@ -947,6 +950,7 @@ services:
       DISCOGS_TOKEN: ${DISCOGS_TOKEN}
     depends_on:
     - redis
+    - tempo
     networks:
     - musicdb-backend
     - musicdb-monitoring

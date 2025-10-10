@@ -51,6 +51,45 @@ groups:
           summary: "Rate limiter for {{ $labels.provider }} completely exhausted"
           description: "{{ $labels.provider }} has NO available tokens. All requests are being blocked or delayed. Check if rate limits need adjustment."
 
+      # Rate Limit Prediction Alerts (NEW)
+      - alert: RateLimitExhaustionPredictedSoon
+        expr: |
+          api_gateway_rate_limit_exhaustion_predicted_seconds > 0
+          and api_gateway_rate_limit_exhaustion_predicted_seconds < 300
+        for: 1m
+        labels:
+          severity: warning
+          component: api_gateway
+          pattern: rate_limiter_prediction
+        annotations:
+          summary: "Rate limit exhaustion predicted within 5 minutes for {{ $labels.provider }}"
+          description: "{{ $labels.provider }} rate limit will be exhausted in approximately {{ $value }} seconds based on current consumption patterns. Consider throttling requests or increasing rate limits."
+          runbook_url: "https://docs.songnodes.com/runbooks/rate-limit-prediction"
+
+      - alert: RateLimitExhaustionImminent
+        expr: |
+          api_gateway_rate_limit_exhaustion_predicted_seconds > 0
+          and api_gateway_rate_limit_exhaustion_predicted_seconds < 60
+        for: 30s
+        labels:
+          severity: critical
+          component: api_gateway
+          pattern: rate_limiter_prediction
+        annotations:
+          summary: "CRITICAL: Rate limit exhaustion imminent for {{ $labels.provider }}"
+          description: "{{ $labels.provider }} rate limit will be exhausted in {{ $value }} seconds! Immediate action required: throttle requests, pause scraping, or increase rate limits."
+
+      - alert: TokenBucketFillRatioCritical
+        expr: api_gateway_rate_limit_token_bucket_fill_ratio < 0.2
+        for: 2m
+        labels:
+          severity: warning
+          component: api_gateway
+          pattern: rate_limiter_prediction
+        annotations:
+          summary: "Token bucket for {{ $labels.provider }} below 20% capacity"
+          description: "{{ $labels.provider }} token bucket is at {{ $value | humanizePercentage }} capacity. Rate limit may be under sustained high load."
+
       # Cache Performance Alerts
       - alert: CacheHitRateLow
         expr: |

@@ -206,6 +206,8 @@ def get_api_keys() -> Dict[str, str]:
         "reddit_client_secret": get_secret("REDDIT_CLIENT_SECRET", ""),
         "tidal_client_id": get_secret("TIDAL_CLIENT_ID", ""),
         "tidal_client_secret": get_secret("TIDAL_CLIENT_SECRET", ""),
+        "lastfm_api_key": get_secret("LASTFM_API_KEY", ""),
+        "lastfm_api_secret": get_secret("LASTFM_API_SECRET", ""),
         "jwt_secret": get_secret("JWT_SECRET", ""),
         "api_key": get_secret("API_KEY", ""),
         "rapidapi_key": get_secret("RAPIDAPI_KEY", ""),

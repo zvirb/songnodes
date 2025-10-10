@@ -16,10 +16,32 @@ import redis
 import json
 import hashlib
 import logging
+import time
 from typing import Optional, Callable, Any
 from functools import wraps
+from prometheus_client import Counter, Histogram
 
 logger = logging.getLogger(__name__)
+
+# Prometheus Metrics - Module-level definitions
+api_gateway_cache_hits_total = Counter(
+    'api_gateway_cache_hits_total',
+    'Total number of cache hits',
+    ['provider']
+)
+
+api_gateway_cache_misses_total = Counter(
+    'api_gateway_cache_misses_total',
+    'Total number of cache misses',
+    ['provider']
+)
+
+api_gateway_cache_operation_seconds = Histogram(
+    'api_gateway_cache_operation_seconds',
+    'Cache operation duration in seconds',
+    ['provider', 'operation'],
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0)
+)
 
 
 class CacheManager:
@@ -87,11 +109,23 @@ class CacheManager:
 
                 cache_key = f"{key_prefix}:{key_suffix}"
 
+                # Extract provider from cache key (format: "provider:...")
+                provider = key_prefix.split(':')[0] if ':' in key_prefix else 'unknown'
+
                 # Try cache first
                 try:
+                    start_time = time.time()
                     cached_result = self.redis.get(cache_key)
+                    duration = time.time() - start_time
+
+                    api_gateway_cache_operation_seconds.labels(
+                        provider=provider,
+                        operation='get'
+                    ).observe(duration)
+
                     if cached_result:
                         self.stats['hits'] += 1
+                        api_gateway_cache_hits_total.labels(provider=provider).inc()
                         logger.debug(f"Cache HIT: {cache_key}")
                         return json.loads(cached_result)
                 except Exception as e:
@@ -100,6 +134,7 @@ class CacheManager:
 
                 # Cache miss - call function
                 self.stats['misses'] += 1
+                api_gateway_cache_misses_total.labels(provider=provider).inc()
                 logger.debug(f"Cache MISS: {cache_key}")
 
                 result = func(*args, **kwargs)
@@ -107,11 +142,19 @@ class CacheManager:
                 # Store result if not None
                 if result is not None:
                     try:
+                        start_time = time.time()
                         self.redis.setex(
                             cache_key,
                             ttl or self.default_ttl,
                             json.dumps(result)
                         )
+                        duration = time.time() - start_time
+
+                        api_gateway_cache_operation_seconds.labels(
+                            provider=provider,
+                            operation='set'
+                        ).observe(duration)
+
                         logger.debug(f"Cache WRITE: {cache_key} (TTL: {ttl or self.default_ttl}s)")
                     except Exception as e:
                         logger.warning(f"Cache write error for {cache_key}: {e}")
