@@ -8,6 +8,7 @@ All resilience patterns, rate limiting (1 req/sec), and caching are handled by t
 
 import sys
 import os
+import asyncio
 from typing import Dict, List, Optional, Any
 import structlog
 
@@ -36,7 +37,9 @@ class MusicBrainzAdapter:
     def __init__(
         self,
         user_agent: str,
-        redis_client,
+        cache_manager,
+        rate_limiter,
+        circuit_breaker,
         **kwargs
     ):
         """
@@ -44,11 +47,15 @@ class MusicBrainzAdapter:
 
         Args:
             user_agent: User agent string for MusicBrainz API
-            redis_client: Redis client for caching
+            cache_manager: CacheManager from common.api_gateway
+            rate_limiter: RateLimiter from common.api_gateway
+            circuit_breaker: CircuitBreaker from common.api_gateway
         """
         self.client = MusicBrainzClient(
             user_agent=user_agent,
-            redis_client=redis_client
+            cache_manager=cache_manager,
+            rate_limiter=rate_limiter,
+            circuit_breaker=circuit_breaker
         )
         logger.info("MusicBrainz adapter initialized with unified client")
 
@@ -65,7 +72,9 @@ class MusicBrainzAdapter:
         Returns:
             Recording metadata or None
         """
-        return await self.client.search_by_isrc(
+        # Run synchronous client method in thread pool
+        return await asyncio.to_thread(
+            self.client.search_by_isrc,
             isrc=isrc,
             use_cache=True
         )
@@ -85,7 +94,9 @@ class MusicBrainzAdapter:
         Returns:
             Recording metadata or None
         """
-        return await self.client.search_recording(
+        # Run synchronous client method in thread pool
+        return await asyncio.to_thread(
+            self.client.search_recording,
             artist=artist,
             title=title,
             use_cache=True
