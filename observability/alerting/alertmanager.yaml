@@ -25,6 +25,57 @@ route:
       group_wait: 10s
       repeat_interval: 30m
 
+    # Enrichment pipeline alerts
+    - match:
+        component: enrichment_pipeline
+      receiver: 'enrichment-team'
+      group_by: ['alertname', 'provider', 'field_category']
+      group_interval: 5m
+      routes:
+        # Critical enrichment issues
+        - match:
+            severity: critical
+          receiver: 'critical-alerts'
+          group_wait: 10s
+        # Waterfall efficiency warnings
+        - match:
+            category: efficiency
+          receiver: 'enrichment-team'
+          group_interval: 10m
+
+    # API Gateway and resilience alerts
+    - match:
+        component: api_gateway
+      receiver: 'api-team'
+      group_by: ['alertname', 'provider']
+      group_interval: 3m
+      routes:
+        # Circuit breaker events
+        - match:
+            category: resilience
+          receiver: 'api-team'
+          group_wait: 30s
+
+    # DLQ management alerts
+    - match:
+        component: dlq_manager
+      receiver: 'dlq-team'
+      group_by: ['alertname', 'queue_name']
+      group_interval: 5m
+      routes:
+        # Critical DLQ depth
+        - match:
+            severity: critical
+          receiver: 'critical-alerts'
+          group_wait: 10s
+
+    # Medallion architecture alerts
+    - match_re:
+        alertname: '(BronzeToSilverLagHigh|SilverToGoldLagHigh|SilverDataQualityLow)'
+      receiver: 'data-engineering-team'
+      group_by: ['alertname', 'layer']
+      group_interval: 10m
+
     # Infrastructure alerts
     - match:
         component: infrastructure
@@ -42,6 +93,19 @@ route:
         component: api
       receiver: 'backend-team'
       group_interval: 10m
+
+    # Cost monitoring alerts
+    - match:
+        category: cost
+      receiver: 'finance-team'
+      group_interval: 30m
+      repeat_interval: 12h
+
+    # Data quality alerts
+    - match:
+        category: data_quality
+      receiver: 'data-quality-team'
+      group_interval: 15m
 
     # Info level alerts (batched)
     - match:
@@ -63,6 +127,36 @@ receivers:
   - name: 'critical-alerts'
     # Development: No notifications configured
     # For production: Add email_configs and webhook_configs here
+
+  # Enrichment pipeline team
+  - name: 'enrichment-team'
+    # Development: No notifications configured
+    # For production: Add email_configs for enrichment team
+
+  # API Gateway team
+  - name: 'api-team'
+    # Development: No notifications configured
+    # For production: Add email_configs for API team
+
+  # DLQ management team
+  - name: 'dlq-team'
+    # Development: No notifications configured
+    # For production: Add email_configs for DLQ team
+
+  # Data engineering team (Medallion architecture)
+  - name: 'data-engineering-team'
+    # Development: No notifications configured
+    # For production: Add email_configs for data engineering team
+
+  # Finance team (cost alerts)
+  - name: 'finance-team'
+    # Development: No notifications configured
+    # For production: Add email_configs for finance team
+
+  # Data quality team
+  - name: 'data-quality-team'
+    # Development: No notifications configured
+    # For production: Add email_configs for data quality team
 
   # Infrastructure team notifications
   - name: 'infrastructure-team'
@@ -107,6 +201,59 @@ inhibit_rules:
     target_match:
       alertname: ScraperLowActivity
     equal: ['scraper']
+
+  # Circuit breaker inhibitions
+  # If circuit breaker is open, don't alert on API errors for same provider
+  - source_match:
+      alertname: CircuitBreakerOpen
+    target_match_re:
+      alertname: '(EnrichmentAPIHighErrorRate|ProviderResponseTimeSlow)'
+    equal: ['provider']
+
+  # If circuit breaker is flapping, suppress related alerts
+  - source_match:
+      alertname: CircuitBreakerFlapping
+    target_match:
+      alertname: CircuitBreakerOpen
+    equal: ['provider']
+
+  # DLQ inhibitions
+  # If DLQ depth is critical, don't alert on high depth warning
+  - source_match:
+      alertname: DLQDepthCritical
+    target_match:
+      alertname: DLQDepthHigh
+    equal: ['queue']
+
+  # If DLQ is full, don't alert on replay failures
+  - source_match:
+      alertname: DLQDepthCritical
+    target_match:
+      alertname: DLQReplayFailureRateHigh
+    equal: ['queue']
+
+  # Enrichment pipeline inhibitions
+  # If provider is completely failing, suppress related warnings
+  - source_match:
+      alertname: WaterfallProviderFailure
+    target_match_re:
+      alertname: '(WaterfallFallbackRateHigh|EnrichmentAPIHighErrorRate)'
+    equal: ['provider']
+
+  # If data quality is critically low, suppress completeness warnings
+  - source_match:
+      alertname: SilverDataQualityLow
+      severity: critical
+    target_match:
+      alertname: EnrichmentCompletenessCritical
+    equal: ['layer']
+
+  # If Bronze->Silver lag is critical, suppress Gold materialization lag
+  - source_match:
+      alertname: BronzeToSilverLagHigh
+      severity: critical
+    target_match:
+      alertname: SilverToGoldLagHigh
 
 # Templates for custom formatting
 templates:

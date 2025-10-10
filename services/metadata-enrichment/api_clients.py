@@ -15,7 +15,12 @@ import aiohttp
 import redis.asyncio as aioredis
 import structlog
 
-from circuit_breaker import CircuitBreaker
+# Use shared circuit breaker from common module
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from common.circuit_breaker import CircuitBreaker
+
 from retry_handler import fetch_with_exponential_backoff, RetryExhausted
 from abbreviation_expander import get_abbreviation_expander
 

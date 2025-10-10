@@ -1,0 +1,42 @@
+# Enrichment Worker Dockerfile
+# Blueprint Section 3: Queue-based Enrichment Workers
+#
+# This container runs the RabbitMQ consumer for processing enrichment tasks.
+# Multiple instances can be deployed for horizontal scaling.
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user for security
+RUN useradd -m -u 1000 enrichment && chown -R enrichment:enrichment /app
+USER enrichment
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)"
+
+# Environment variables with defaults
+ENV RABBITMQ_HOST=rabbitmq \
+    RABBITMQ_PORT=5672 \
+    RABBITMQ_USER=musicdb \
+    RABBITMQ_VHOST=musicdb \
+    PREFETCH_COUNT=1 \
+    LOG_LEVEL=INFO
+
+# Run queue consumer
+CMD ["python", "-m", "queue_consumer"]

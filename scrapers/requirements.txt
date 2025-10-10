@@ -9,6 +9,9 @@ SQLAlchemy>=2.0.23
 # Redis for state management
 redis>=5.0.1
 
+# RabbitMQ for queue-based enrichment
+pika>=1.3.2  # Synchronous RabbitMQ client for Scrapy pipelines
+
 # HTTP and networking
 requests>=2.31.0
 httpx>=0.25.0

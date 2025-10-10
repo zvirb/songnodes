@@ -1,0 +1,114 @@
+# API Gateway Configuration
+# =========================
+
+# Rate Limits (requests per second and burst capacity)
+rate_limits:
+  spotify:
+    requests_per_second: 10.0
+    burst_capacity: 20
+    max_queue_size: 100
+
+  musicbrainz:
+    requests_per_second: 1.0  # 1 req/sec per MusicBrainz guidelines
+    burst_capacity: 2
+    max_queue_size: 50
+
+  lastfm:
+    requests_per_second: 5.0
+    burst_capacity: 10
+    max_queue_size: 100
+
+  beatport:
+    requests_per_second: 2.0
+    burst_capacity: 5
+    max_queue_size: 50
+
+  discogs:
+    requests_per_second: 1.0  # 60 req/min = 1 req/sec
+    burst_capacity: 5
+    max_queue_size: 50
+
+  acousticbrainz:
+    requests_per_second: 5.0
+    burst_capacity: 10
+    max_queue_size: 100
+
+# Circuit Breaker Settings
+circuit_breakers:
+  default:
+    failure_threshold: 5      # Open after 5 failures
+    timeout_seconds: 60       # Wait 60s before attempting reset
+    success_threshold: 2      # Close after 2 successes in half-open
+
+  # Provider-specific overrides
+  spotify:
+    failure_threshold: 10     # Spotify is more reliable
+    timeout_seconds: 30
+
+  musicbrainz:
+    failure_threshold: 3      # Be more conservative
+    timeout_seconds: 120
+
+# Cache TTL Policies (in seconds)
+cache_ttl:
+  # Spotify
+  spotify_track_metadata: 2592000    # 30 days
+  spotify_search_results: 604800     # 7 days
+  spotify_audio_features: 7776000    # 90 days (stable)
+
+  # MusicBrainz
+  musicbrainz_isrc: 7776000          # 90 days (stable)
+  musicbrainz_artist: 5184000        # 60 days
+
+  # Beatport
+  beatport_bpm: 5184000              # 60 days
+  beatport_track: 2592000            # 30 days
+
+  # Last.fm
+  lastfm_genre: 1209600              # 14 days
+  lastfm_artist: 1209600             # 14 days
+
+  # Discogs
+  discogs_release: 5184000           # 60 days
+  discogs_master: 7776000            # 90 days (stable)
+
+  # AcousticBrainz
+  acousticbrainz_features: 7776000   # 90 days (stable)
+
+  # Default
+  default: 604800                    # 7 days
+
+# Retry Strategy
+retry:
+  max_retries: 5
+  initial_delay: 1.0        # seconds
+  max_delay: 60.0           # seconds
+  exponential_base: 2.0
+  jitter_percentage: 0.2    # ±20%
+
+  # HTTP status codes to retry
+  retry_on_status_codes:
+    - 429  # Too Many Requests
+    - 500  # Internal Server Error
+    - 502  # Bad Gateway
+    - 503  # Service Unavailable
+    - 504  # Gateway Timeout
+
+# Timeouts
+timeouts:
+  default_request: 30       # seconds
+  spotify_auth: 10          # seconds
+  long_running: 120         # seconds for complex queries
+
+# Monitoring
+monitoring:
+  enable_metrics: true
+  metrics_port: 8100
+  health_check_interval: 30  # seconds
+
+# Logging
+logging:
+  level: INFO
+  format: json
+  enable_request_logging: true
+  enable_response_logging: false  # Can be verbose

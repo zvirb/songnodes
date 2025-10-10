@@ -119,7 +119,7 @@ async def lifespan(app: FastAPI):
             max_queries=50000,  # Recycle connections after 50k queries
             max_inactive_connection_lifetime=1800  # Close idle connections after 30 min
         )
-        logger.info("Database connection pool created")
+        logger.info("Database connection pool created successfully")
 
         # Initialize resource monitor
         if ResourceMonitor:
@@ -437,7 +437,7 @@ async def is_track_analyzed(track_id: str) -> bool:
     """Check if track has already been analyzed"""
     async with db_pool.acquire() as conn:
         result = await conn.fetchval(
-            "SELECT EXISTS(SELECT 1 FROM tracks_audio_analysis WHERE track_id = $1)",
+            "SELECT EXISTS(SELECT 1 FROM musicdb.tracks_audio_analysis WHERE track_id = $1)",
             track_id
         )
         return result
@@ -453,7 +453,7 @@ async def get_existing_analysis(track_id: str) -> AudioAnalysisResult:
                    bpm, timbre_features as timbre, rhythm_features as rhythm,
                    mood_features as mood, genre_prediction as genre,
                    spotify_features, analysis_version, analyzed_at, status, error_message
-            FROM tracks_audio_analysis
+            FROM musicdb.tracks_audio_analysis
             WHERE track_id = $1
             """,
             track_id
@@ -470,7 +470,7 @@ async def store_analysis_result(result: AudioAnalysisResult):
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO tracks_audio_analysis (
+            INSERT INTO musicdb.tracks_audio_analysis (
                 track_id, intro_duration_seconds, outro_duration_seconds,
                 breakdown_timestamps, vocal_segments, energy_curve, beat_grid,
                 bpm, timbre_features, rhythm_features, mood_features, genre_prediction,
@@ -517,7 +517,7 @@ async def store_failed_analysis(track_id: str, error_message: str):
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO tracks_audio_analysis (
+            INSERT INTO musicdb.tracks_audio_analysis (
                 track_id, status, error_message, analyzed_at, analysis_version
             ) VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (track_id) DO UPDATE SET
@@ -529,7 +529,7 @@ async def store_failed_analysis(track_id: str, error_message: str):
             "failed",
             error_message,
             datetime.utcnow(),
-            "1.0.0"
+            "2.0.0"
         )
 
 

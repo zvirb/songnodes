@@ -1,0 +1,399 @@
+# Tempo Distributed Tracing Configuration for Enrichment Pipeline
+# Defines trace queries and configurations for end-to-end observability
+
+# ========================================================================
+# TRACE QUERY DEFINITIONS
+# ========================================================================
+
+trace_queries:
+  # Full Enrichment Pipeline Trace
+  - name: "Full Enrichment Trace"
+    description: "Complete trace from scraping through enrichment to database persistence"
+    service: "metadata-enrichment"
+    operation: "enrich_track"
+    tags:
+      - track_id
+      - correlation_id
+      - artist
+      - title
+    expected_spans:
+      - "bronze_ingestion"
+      - "waterfall_enrichment"
+      - "api_gateway_call"
+      - "silver_promotion"
+      - "database_write"
+
+  # Waterfall Provider Call Chain
+  - name: "Waterfall Provider Calls"
+    description: "Trace waterfall enrichment showing provider fallback chain"
+    service: "api-gateway-internal"
+    operation: "call_provider"
+    tags:
+      - provider
+      - field_name
+      - attempt
+      - cache_hit
+    expected_spans:
+      - "rate_limiter_acquire"
+      - "circuit_breaker_check"
+      - "http_request"
+      - "response_processing"
+      - "cache_write"
+
+  # DLQ Processing Trace
+  - name: "DLQ Message Lifecycle"
+    description: "Track a message from failure through DLQ to replay"
+    service: "dlq-manager"
+    operation: "process_message"
+    tags:
+      - message_id
+      - queue_name
+      - error_type
+      - replay_status
+    expected_spans:
+      - "message_receive"
+      - "error_classification"
+      - "dlq_publish"
+      - "dlq_store"
+      - "replay_attempt"
+
+  # Medallion Data Flow
+  - name: "Bronze to Gold Flow"
+    description: "Trace data progression through Medallion layers"
+    service: "metadata-enrichment"
+    operation: "medallion_flow"
+    tags:
+      - bronze_id
+      - silver_id
+      - gold_id
+      - source
+    expected_spans:
+      - "bronze_validation"
+      - "enrichment_execution"
+      - "silver_quality_check"
+      - "analytics_computation"
+      - "gold_materialization"
+
+  # API Provider Request
+  - name: "External API Call"
+    description: "Detailed trace of single API provider call"
+    service: "api-gateway-internal"
+    operation: "provider_request"
+    tags:
+      - provider
+      - endpoint
+      - http_status
+      - response_time
+    expected_spans:
+      - "request_preparation"
+      - "authentication"
+      - "http_call"
+      - "response_parsing"
+      - "error_handling"
+
+# ========================================================================
+# TRACE SAMPLING CONFIGURATION
+# ========================================================================
+
+sampling:
+  # Always sample errors and slow requests
+  always_sample:
+    - condition: "span.status == ERROR"
+    - condition: "span.duration > 5s"
+    - condition: "span.attributes.circuit_breaker_state == 'open'"
+    - condition: "span.attributes.dlq_published == 'true'"
+
+  # Probabilistic sampling for normal operations
+  probabilistic:
+    - service: "metadata-enrichment"
+      sample_rate: 0.1  # 10% of enrichment traces
+
+    - service: "api-gateway-internal"
+      sample_rate: 0.05  # 5% of API calls
+
+    - service: "dlq-manager"
+      sample_rate: 1.0  # 100% of DLQ operations (low volume)
+
+  # Head-based sampling
+  head_sampling:
+    - name: "enrichment_errors"
+      sample_rate: 1.0
+      policy:
+        - type: "status_code"
+          status_code: "ERROR"
+
+    - name: "slow_enrichments"
+      sample_rate: 1.0
+      policy:
+        - type: "latency"
+          threshold_ms: 5000
+
+    - name: "normal_operations"
+      sample_rate: 0.1
+
+# ========================================================================
+# SPAN ATTRIBUTES TO CAPTURE
+# ========================================================================
+
+span_attributes:
+  enrichment_spans:
+    - "track.id"
+    - "track.artist"
+    - "track.title"
+    - "track.source"
+    - "enrichment.fields_requested"
+    - "enrichment.fields_enriched"
+    - "enrichment.providers_used"
+    - "enrichment.cache_hits"
+    - "enrichment.cache_misses"
+    - "data_quality.score"
+
+  api_gateway_spans:
+    - "provider.name"
+    - "provider.endpoint"
+    - "http.method"
+    - "http.status_code"
+    - "http.response_time_ms"
+    - "rate_limiter.tokens_available"
+    - "rate_limiter.tokens_consumed"
+    - "circuit_breaker.state"
+    - "circuit_breaker.failures"
+    - "retry.attempt"
+    - "retry.max_attempts"
+    - "cache.hit"
+    - "cache.key"
+
+  dlq_spans:
+    - "dlq.queue_name"
+    - "dlq.message_id"
+    - "dlq.error_type"
+    - "dlq.error_message"
+    - "dlq.retry_count"
+    - "dlq.max_retries"
+    - "dlq.message_age_seconds"
+    - "dlq.replay_status"
+
+  medallion_spans:
+    - "medallion.layer"  # bronze, silver, gold
+    - "medallion.bronze_id"
+    - "medallion.silver_id"
+    - "medallion.gold_id"
+    - "medallion.lag_seconds"
+    - "medallion.data_quality"
+    - "medallion.completeness"
+
+# ========================================================================
+# TRACE CONTEXT PROPAGATION
+# ========================================================================
+
+context_propagation:
+  # W3C Trace Context (primary)
+  - format: "w3c"
+    headers:
+      - "traceparent"
+      - "tracestate"
+
+  # Jaeger (fallback)
+  - format: "jaeger"
+    headers:
+      - "uber-trace-id"
+
+  # Custom correlation headers
+  - format: "custom"
+    headers:
+      - "x-correlation-id"
+      - "x-request-id"
+      - "x-track-id"
+
+# ========================================================================
+# SERVICE DEPENDENCY MAP
+# ========================================================================
+
+service_dependencies:
+  metadata-enrichment:
+    depends_on:
+      - api-gateway-internal
+      - postgres
+      - redis
+    operations:
+      - enrich_track
+      - waterfall_enrichment
+      - medallion_promotion
+
+  api-gateway-internal:
+    depends_on:
+      - redis  # for caching
+      - external_apis
+    operations:
+      - call_provider
+      - circuit_breaker_check
+      - rate_limiter_check
+
+  dlq-manager:
+    depends_on:
+      - rabbitmq
+      - postgres
+    operations:
+      - publish_message
+      - replay_message
+      - get_statistics
+
+  scraper-orchestrator:
+    depends_on:
+      - metadata-enrichment
+      - postgres
+      - rabbitmq
+    operations:
+      - scrape_source
+      - bronze_ingestion
+
+# ========================================================================
+# TRACE ANALYTICS QUERIES
+# ========================================================================
+
+analytics_queries:
+  - name: "Enrichment Success Rate"
+    description: "Calculate success rate across all enrichment operations"
+    query: |
+      {
+        service.name="metadata-enrichment" &&
+        span.name="enrich_track"
+      }
+      | rate(status=OK) / rate(*)
+
+  - name: "Provider Performance Comparison"
+    description: "Compare average response time by provider"
+    query: |
+      {
+        service.name="api-gateway-internal" &&
+        span.name="provider_request"
+      }
+      | avg(duration) by provider.name
+
+  - name: "Waterfall Fallback Frequency"
+    description: "How often does waterfall need to fallback"
+    query: |
+      {
+        service.name="metadata-enrichment" &&
+        span.name="waterfall_enrichment"
+      }
+      | count(enrichment.fallback_occurred=true) / count(*)
+
+  - name: "DLQ Replay Success Rate"
+    description: "Success rate of DLQ message replays"
+    query: |
+      {
+        service.name="dlq-manager" &&
+        span.name="replay_message"
+      }
+      | rate(dlq.replay_status=success) / rate(*)
+
+  - name: "Medallion Layer Lag"
+    description: "P95 lag between medallion layers"
+    query: |
+      {
+        service.name="metadata-enrichment" &&
+        span.name="medallion_promotion"
+      }
+      | histogram_quantile(0.95, medallion.lag_seconds) by medallion.layer
+
+# ========================================================================
+# GRAFANA TRACE VISUALIZATION
+# ========================================================================
+
+grafana_integration:
+  datasource_uid: "tempo"
+
+  dashboard_panels:
+    - panel_type: "trace_search"
+      title: "Recent Enrichment Traces"
+      query: "{service.name=\"metadata-enrichment\"}"
+      time_range: "1h"
+
+    - panel_type: "service_graph"
+      title: "Enrichment Service Dependencies"
+      services:
+        - metadata-enrichment
+        - api-gateway-internal
+        - dlq-manager
+
+    - panel_type: "trace_table"
+      title: "Failed Enrichments"
+      query: "{service.name=\"metadata-enrichment\" && status=ERROR}"
+      columns:
+        - trace_id
+        - duration
+        - span_count
+        - error_type
+
+# ========================================================================
+# EXEMPLAR CONFIGURATION (Link Metrics to Traces)
+# ========================================================================
+
+exemplars:
+  # Link high-latency metrics to traces
+  - metric: "enrichment_api_duration_seconds"
+    trace_id_label: "trace_id"
+    sample_rate: 0.1
+
+  # Link error metrics to traces
+  - metric: "enrichment_api_errors_total"
+    trace_id_label: "trace_id"
+    sample_rate: 1.0  # Always capture error exemplars
+
+  # Link DLQ metrics to traces
+  - metric: "dlq_messages_total"
+    trace_id_label: "trace_id"
+    sample_rate: 1.0
+
+  # Link circuit breaker events to traces
+  - metric: "api_gateway_circuit_breaker_state"
+    trace_id_label: "trace_id"
+    sample_rate: 1.0
+
+# ========================================================================
+# TRACE RETENTION AND STORAGE
+# ========================================================================
+
+retention:
+  # Keep all error traces for 30 days
+  - condition: "span.status == ERROR"
+    retention_days: 30
+
+  # Keep slow traces for 14 days
+  - condition: "span.duration > 5s"
+    retention_days: 14
+
+  # Keep DLQ traces for 30 days
+  - condition: "service.name == 'dlq-manager'"
+    retention_days: 30
+
+  # Normal traces for 7 days
+  - condition: "default"
+    retention_days: 7
+
+# ========================================================================
+# ALERTING INTEGRATION
+# ========================================================================
+
+trace_alerts:
+  - name: "HighErrorRateInTraces"
+    description: "Alert when error rate in traces exceeds threshold"
+    condition: |
+      rate(span.status=ERROR) / rate(span.*) > 0.1
+    duration: "5m"
+    severity: "warning"
+
+  - name: "SlowEnrichmentTraces"
+    description: "Alert on consistently slow enrichment operations"
+    condition: |
+      histogram_quantile(0.95, span.duration) > 10s
+    duration: "10m"
+    severity: "warning"
+
+  - name: "CircuitBreakerOpenInTraces"
+    description: "Alert when circuit breaker opens"
+    condition: |
+      span.attributes.circuit_breaker_state == "open"
+    duration: "1m"
+    severity: "critical"
