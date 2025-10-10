@@ -13,6 +13,8 @@ rule_files:
   - "alert_rules.yml"
   - "alerts/enhanced-visualization-alerts.yml"
   - "alerts/alert-rules.yaml"  # Modern observability alerts
+  - "alerts/enrichment-alerts.yml"  # Enrichment pipeline and Medallion architecture alerts
+  - "alerts/api-gateway-alerts.yml"  # API Gateway resilience patterns alerts (Circuit Breaker, Rate Limiter, DLQ)
   - "browser-collector-alerts.yml"  # Browser automation service alerts
 
 # Scrape configuration
@@ -89,6 +91,18 @@ scrape_configs:
     static_configs:
       - targets: ['browser-collector:8030']
     scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'dlq-manager'
+    static_configs:
+      - targets: ['dlq-manager:8024']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'api-gateway-internal'
+    static_configs:
+      - targets: ['api-gateway-internal:8100']
+    scrape_interval: 15s
     metrics_path: /metrics
 
   # Redis metrics via the exporter
