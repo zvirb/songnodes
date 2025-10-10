@@ -1,0 +1,166 @@
+{
+  "dashboard": {
+    "title": "API Gateway Monitoring",
+    "tags": ["api-gateway", "infrastructure"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate by Provider",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(api_gateway_rate_limit_requests_total[5m])) by (provider)",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 2,
+        "title": "Circuit Breaker State",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "api_gateway_circuit_breaker_state",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name",
+          "mappings": [
+            {"type": "value", "value": "0", "text": "CLOSED", "color": "green"},
+            {"type": "value", "value": "1", "text": "HALF_OPEN", "color": "yellow"},
+            {"type": "value", "value": "2", "text": "OPEN", "color": "red"}
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(api_gateway_cache_hits_total[5m])) by (provider) / (sum(rate(api_gateway_cache_hits_total[5m])) by (provider) + sum(rate(api_gateway_cache_misses_total[5m])) by (provider))",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 4,
+        "title": "Rate Limit Tokens Available",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "api_gateway_rate_limit_tokens",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 5,
+        "title": "Retry Attempts",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(api_gateway_retry_attempts_total[5m])) by (provider, error_type)",
+            "legendFormat": "{{provider}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}
+      },
+      {
+        "id": 6,
+        "title": "Response Time (p50, p95, p99)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(api_gateway_cache_operation_seconds_bucket[5m])) by (provider, le))",
+            "legendFormat": "{{provider}} - p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(api_gateway_cache_operation_seconds_bucket[5m])) by (provider, le))",
+            "legendFormat": "{{provider}} - p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(api_gateway_cache_operation_seconds_bucket[5m])) by (provider, le))",
+            "legendFormat": "{{provider}} - p99"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8}
+      },
+      {
+        "id": 7,
+        "title": "Circuit Breaker Opens",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(api_gateway_circuit_breaker_opens_total[1h])) by (provider)",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 24, "w": 6, "h": 4}
+      },
+      {
+        "id": 8,
+        "title": "Total Failures",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(api_gateway_circuit_breaker_failures_total[1h])) by (provider)",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": {"x": 6, "y": 24, "w": 6, "h": 4}
+      },
+      {
+        "id": 9,
+        "title": "Retry Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "sum(rate(api_gateway_retry_success_total[5m])) by (provider) / (sum(rate(api_gateway_retry_success_total[5m])) by (provider) + sum(rate(api_gateway_retry_failures_total[5m])) by (provider))",
+            "legendFormat": "{{provider}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 24, "w": 12, "h": 4}
+      },
+      {
+        "id": 10,
+        "title": "Cache Operations per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(api_gateway_cache_hits_total[5m])) by (provider)",
+            "legendFormat": "{{provider}} - Hits"
+          },
+          {
+            "expr": "sum(rate(api_gateway_cache_misses_total[5m])) by (provider)",
+            "legendFormat": "{{provider}} - Misses"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 28, "w": 12, "h": 8}
+      },
+      {
+        "id": 11,
+        "title": "Rate Limit Wait Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(api_gateway_rate_limit_wait_seconds_bucket[5m])) by (provider, le))",
+            "legendFormat": "{{provider}} - p95"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 28, "w": 12, "h": 8}
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 38,
+    "version": 1
+  }
+}

@@ -11,6 +11,9 @@
 -- - key: Musical key (0-11, where 0=C, 1=C#, ..., 11=B)
 -- - mode: Major (1) or Minor (0)
 
+-- Set search path to match base schema
+SET search_path TO musicdb, public;
+
 -- Add spotify_features column
 ALTER TABLE tracks_audio_analysis
 ADD COLUMN IF NOT EXISTS spotify_features JSONB;

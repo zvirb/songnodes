@@ -1,0 +1,488 @@
+# Enrichment Pipeline Alert Rules
+# Blueprint Section 6.3: Monitoring and Alerting for Enrichment Pipeline
+#
+# These alert rules monitor the health, performance, and cost of the API enrichment
+# pipeline to ensure optimal operation and prevent budget overruns.
+
+groups:
+  - name: enrichment_pipeline
+    interval: 1m
+    rules:
+      # ========================================================================
+      # CACHE PERFORMANCE ALERTS (Blueprint Section 4)
+      # ========================================================================
+
+      - alert: EnrichmentCacheHitRateLow
+        expr: |
+          (
+            rate(enrichment_cache_hits_total[10m]) /
+            (rate(enrichment_cache_hits_total[10m]) +
+             rate(enrichment_cache_misses_total[10m]))
+          ) < 0.3
+        for: 10m
+        labels:
+          severity: warning
+          component: enrichment
+          category: performance
+        annotations:
+          summary: "Enrichment cache hit rate below 30%"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}. This increases API costs and latency. Consider increasing cache TTL or cache size."
+          runbook_url: "https://docs.songnodes.local/runbooks/enrichment-cache-low"
+
+      - alert: EnrichmentCacheHitRateCritical
+        expr: |
+          (
+            rate(enrichment_cache_hits_total[10m]) /
+            (rate(enrichment_cache_hits_total[10m]) +
+             rate(enrichment_cache_misses_total[10m]))
+          ) < 0.15
+        for: 5m
+        labels:
+          severity: critical
+          component: enrichment
+          category: performance
+        annotations:
+          summary: "Enrichment cache hit rate critically low"
+          description: "Cache hit rate is only {{ $value | humanizePercentage }}. API costs are 5-6x higher than optimal. Immediate investigation required."
+
+      # ========================================================================
+      # API COST MONITORING (Blueprint Section 6.3)
+      # ========================================================================
+
+      - alert: EnrichmentAPIMonthlyBudgetExceeded
+        expr: sum(increase(enrichment_api_cost_estimate_usd[30d])) > 100
+        for: 1m
+        labels:
+          severity: warning
+          component: enrichment
+          category: cost
+        annotations:
+          summary: "Enrichment API monthly budget exceeded"
+          description: "Estimated monthly API cost is ${{ $value | humanize }}. Budget threshold is $100/month."
+          runbook_url: "https://docs.songnodes.local/runbooks/enrichment-cost-exceeded"
+
+      - alert: EnrichmentAPIDailyCostSpike
+        expr: |
+          sum(increase(enrichment_api_cost_estimate_usd[1h]))
+          >
+          sum(increase(enrichment_api_cost_estimate_usd[1h] offset 24h)) * 2
+        for: 15m
+        labels:
+          severity: warning
+          component: enrichment
+          category: cost
+        annotations:
+          summary: "Enrichment API cost spike detected"
+          description: "Hourly API cost is 2x higher than yesterday. Current: ${{ $value | humanize }}/hour. Investigate for runaway enrichment jobs."
+
+      # ========================================================================
+      # RATE LIMIT ALERTS (Blueprint Section 3.4)
+      # ========================================================================
+
+      - alert: SpotifyRateLimitApproaching
+        expr: enrichment_rate_limit_remaining{provider="spotify"} < 100
+        for: 5m
+        labels:
+          severity: warning
+          component: enrichment
+          category: rate-limit
+        annotations:
+          summary: "Spotify API rate limit approaching"
+          description: "Only {{ $value }} Spotify API calls remaining in current window. Throttling may be needed."
+
+      - alert: EnrichmentRateLimitViolations
+        expr: rate(enrichment_api_calls_total{status="rate_limited"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: enrichment
+          category: rate-limit
+        annotations:
+          summary: "Enrichment API rate limit violations detected"
+          description: "{{ $labels.provider }} API is returning 429 rate limit errors. Enrichment workers may need throttling."
+
+      # ========================================================================
+      # ERROR RATE ALERTS (Blueprint Section 6.1)
+      # ========================================================================
+
+      - alert: EnrichmentAPIHighErrorRate
+        expr: |
+          (
+            rate(enrichment_api_errors_total[5m]) /
+            rate(enrichment_api_calls_total[5m])
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: enrichment
+          category: reliability
+        annotations:
+          summary: "{{ $labels.provider }} API error rate above 10%"
+          description: "Error rate is {{ $value | humanizePercentage }}. Check API health and network connectivity."
+
+      - alert: EnrichmentAPICompleteFail
+        expr: |
+          rate(enrichment_api_calls_total{status="success"}[5m]) == 0
+          AND
+          rate(enrichment_api_calls_total[5m]) > 0
+        for: 3m
+        labels:
+          severity: critical
+          component: enrichment
+          category: reliability
+        annotations:
+          summary: "{{ $labels.provider }} API enrichment completely failing"
+          description: "Zero successful enrichments in last 5 minutes despite active attempts. Immediate investigation required."
+
+      - alert: EnrichmentDLQBacklog
+        expr: |
+          sum(increase(enrichment_api_calls_total{status="dlq_published"}[1h])) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: enrichment
+          category: reliability
+        annotations:
+          summary: "High number of enrichments sent to DLQ"
+          description: "{{ $value }} enrichments failed and were sent to DLQ in the last hour. Check DLQ for patterns."
+
+      # ========================================================================
+      # LATENCY ALERTS (Blueprint Section 6.3)
+      # ========================================================================
+
+      - alert: EnrichmentAPIHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(enrichment_api_duration_seconds_bucket[5m])) by (le, provider)
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: enrichment
+          category: performance
+        annotations:
+          summary: "{{ $labels.provider }} API latency p95 above 5s"
+          description: "95th percentile latency is {{ $value }}s. This may indicate API performance degradation or network issues."
+
+      # ========================================================================
+      # SUCCESS RATE ALERTS
+      # ========================================================================
+
+      - alert: EnrichmentSuccessRateLow
+        expr: |
+          (
+            sum(rate(enrichment_api_calls_total{status="success"}[10m])) /
+            sum(rate(enrichment_api_calls_total[10m]))
+          ) < 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: enrichment
+          category: quality
+        annotations:
+          summary: "Enrichment success rate below 85%"
+          description: "Only {{ $value | humanizePercentage }} of enrichment attempts are successful. Check API errors and data quality."
+
+      # ========================================================================
+      # PROVIDER-SPECIFIC ALERTS
+      # ========================================================================
+
+      - alert: SpotifyAPIDown
+        expr: |
+          rate(enrichment_api_errors_total{provider="spotify",http_status=~"5.."}[5m])
+          /
+          rate(enrichment_api_calls_total{provider="spotify"}[5m])
+          > 0.5
+        for: 5m
+        labels:
+          severity: critical
+          component: enrichment
+          category: external-dependency
+        annotations:
+          summary: "Spotify API experiencing service disruptions"
+          description: "Over 50% of Spotify API calls are returning 5xx errors. Check Spotify API status page."
+
+      - alert: MusicBrainzRateLimitIssue
+        expr: rate(enrichment_api_calls_total{provider="musicbrainz",status="rate_limited"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: enrichment
+          category: rate-limit
+        annotations:
+          summary: "MusicBrainz rate limiting active"
+          description: "MusicBrainz is rate limiting requests (>1 req/sec). Throttling is working but may slow enrichment."
+
+      # ========================================================================
+      # COST EFFICIENCY ALERTS
+      # ========================================================================
+
+      - alert: EnrichmentInefficiency
+        expr: |
+          sum(rate(enrichment_cache_misses_total{provider="spotify"}[1h]))
+          /
+          sum(rate(enrichment_api_calls_total{provider="spotify"}[1h]))
+          > 0.9
+        for: 1h
+        labels:
+          severity: info
+          component: enrichment
+          category: optimization
+        annotations:
+          summary: "Enrichment cache miss rate very high"
+          description: "Over 90% of Spotify enrichments are cache misses. This suggests new/unique tracks or cache eviction issues."
+
+      # ========================================================================
+      # DATA FRESHNESS ALERTS (Blueprint Section 5)
+      # ========================================================================
+
+      - alert: EnrichmentDataStale
+        expr: |
+          (
+            (time() - max(timestamp(enrichment_api_calls_total{status="success"})))
+          ) > 3600
+        for: 5m
+        labels:
+          severity: warning
+          component: enrichment
+          category: staleness
+        annotations:
+          summary: "No successful enrichments in last hour"
+          description: "Last successful enrichment was {{ $value | humanizeDuration }} ago. Check if spiders are running."
+
+  # ========================================================================
+  # MEDALLION ARCHITECTURE ALERTS
+  # ========================================================================
+
+  - name: medallion_architecture
+    interval: 1m
+    rules:
+      - alert: BronzeToSilverLagHigh
+        expr: |
+          histogram_quantile(0.95,
+            rate(medallion_bronze_to_silver_lag_seconds_bucket[10m])
+          ) > 3600
+        for: 15m
+        labels:
+          severity: warning
+          component: enrichment_pipeline
+          category: performance
+        annotations:
+          summary: "Bronze to Silver processing lag exceeds 1 hour"
+          description: "P95 lag between bronze ingestion and silver enrichment is {{ $value | humanizeDuration }}. Expected < 1 hour."
+          runbook_url: "https://docs.songnodes.local/runbooks/medallion-lag"
+
+      - alert: SilverToGoldLagHigh
+        expr: |
+          histogram_quantile(0.95,
+            rate(medallion_silver_to_gold_lag_seconds_bucket[10m])
+          ) > 1800
+        for: 15m
+        labels:
+          severity: warning
+          component: enrichment_pipeline
+          category: performance
+        annotations:
+          summary: "Silver to Gold materialization lag exceeds 30 minutes"
+          description: "P95 lag between silver enrichment and gold materialization is {{ $value | humanizeDuration }}. Expected < 30 minutes."
+
+      - alert: SilverDataQualityLow
+        expr: medallion_data_quality_score{layer="silver"} < 0.6
+        for: 30m
+        labels:
+          severity: warning
+          component: enrichment_pipeline
+          category: data_quality
+        annotations:
+          summary: "Silver layer data quality score below 60%"
+          description: "Silver data quality score is {{ $value | humanizePercentage }}. Investigate enrichment failures."
+
+      - alert: EnrichmentCompletenessCritical
+        expr: medallion_enrichment_completeness < 0.4
+        for: 30m
+        labels:
+          severity: critical
+          component: enrichment_pipeline
+          category: data_quality
+        annotations:
+          summary: "{{ $labels.field_category }} enrichment completeness below 40%"
+          description: "Only {{ $value | humanizePercentage }} of {{ $labels.field_category }} fields are enriched. Critical data gap."
+
+  # ========================================================================
+  # WATERFALL ENRICHMENT ALERTS
+  # ========================================================================
+
+  - name: waterfall_enrichment
+    interval: 1m
+    rules:
+      - alert: WaterfallFallbackRateHigh
+        expr: |
+          sum(rate(waterfall_fallback_count_total[10m])) by (field_name) /
+          sum(rate(waterfall_provider_wins_total[10m])) by (field_name) > 0.5
+        for: 15m
+        labels:
+          severity: warning
+          component: enrichment_pipeline
+          category: efficiency
+        annotations:
+          summary: "High fallback rate for {{ $labels.field_name }} enrichment"
+          description: "{{ $value | humanizePercentage }} of {{ $labels.field_name }} enrichments require fallback. Primary provider may be degraded."
+
+      - alert: WaterfallProviderFailure
+        expr: |
+          rate(waterfall_provider_wins_total{provider!=""}[30m]) == 0
+          AND
+          rate(waterfall_provider_wins_total{provider!=""} offset 1h[30m]) > 0
+        for: 10m
+        labels:
+          severity: critical
+          component: enrichment_pipeline
+          category: reliability
+        annotations:
+          summary: "{{ $labels.provider }} stopped enriching {{ $labels.field_name }}"
+          description: "{{ $labels.provider }} has not successfully enriched any {{ $labels.field_name }} fields in 30m, but was active 1h ago."
+
+      - alert: WaterfallFieldsEnrichedLow
+        expr: |
+          histogram_quantile(0.50,
+            rate(waterfall_fields_enriched_per_run_bucket[15m])
+          ) < 10
+        for: 30m
+        labels:
+          severity: warning
+          component: enrichment_pipeline
+          category: performance
+        annotations:
+          summary: "Low number of fields enriched per waterfall run"
+          description: "Median waterfall run only enriches {{ $value }} fields. Expected > 10 fields per run. Check provider health."
+
+  # ========================================================================
+  # CIRCUIT BREAKER AND RESILIENCE ALERTS
+  # ========================================================================
+
+  - name: circuit_breaker_resilience
+    interval: 30s
+    rules:
+      - alert: CircuitBreakerOpen
+        expr: api_gateway_circuit_breaker_state == 2
+        for: 5m
+        labels:
+          severity: warning
+          component: api_gateway
+          category: resilience
+        annotations:
+          summary: "Circuit breaker is OPEN for {{ $labels.provider }}"
+          description: "{{ $labels.provider }} circuit breaker has been open for 5+ minutes. API calls are being blocked."
+          runbook_url: "https://docs.songnodes.local/runbooks/circuit-breaker-open"
+
+      - alert: CircuitBreakerFlapping
+        expr: |
+          changes(api_gateway_circuit_breaker_state[15m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          component: api_gateway
+          category: reliability
+        annotations:
+          summary: "{{ $labels.provider }} circuit breaker is flapping"
+          description: "Circuit breaker changed state {{ $value }} times in 15m. Indicates unstable API connection."
+
+      - alert: HighRetryRate
+        expr: |
+          sum(rate(api_gateway_retry_attempts_total{attempt!="1"}[5m])) by (provider) /
+          sum(rate(api_gateway_retry_attempts_total[5m])) by (provider) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          component: api_gateway
+          category: performance
+        annotations:
+          summary: "High retry rate for {{ $labels.provider }}"
+          description: "{{ $value | humanizePercentage }} of {{ $labels.provider }} requests require retries. Check API health."
+
+  # ========================================================================
+  # DLQ MANAGEMENT ALERTS
+  # ========================================================================
+
+  - name: dlq_management
+    interval: 1m
+    rules:
+      - alert: DLQDepthHigh
+        expr: dlq_messages_total > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: dlq_manager
+          category: reliability
+        annotations:
+          summary: "DLQ depth is high ({{ $value }} messages)"
+          description: "Dead-letter queue {{ $labels.queue }} has {{ $value }} failed enrichments. Investigate error patterns."
+          runbook_url: "https://docs.songnodes.local/runbooks/dlq-high-depth"
+
+      - alert: DLQDepthCritical
+        expr: dlq_messages_total > 500
+        for: 5m
+        labels:
+          severity: critical
+          component: dlq_manager
+          category: reliability
+        annotations:
+          summary: "DLQ depth is CRITICAL ({{ $value }} messages)"
+          description: "Urgent: {{ $value }} failed enrichments in DLQ {{ $labels.queue }}. Data pipeline severely degraded."
+
+      - alert: DLQMessageAgeOld
+        expr: dlq_message_age_seconds{quantile="0.99"} > 86400
+        for: 30m
+        labels:
+          severity: warning
+          component: dlq_manager
+          category: staleness
+        annotations:
+          summary: "Old messages in DLQ ({{ $value | humanizeDuration }})"
+          description: "P99 message age in DLQ is {{ $value | humanizeDuration }}. Messages may be unrecoverable."
+
+      - alert: DLQReplayFailureRateHigh
+        expr: |
+          rate(dlq_replay_total{status="error"}[10m]) /
+          rate(dlq_replay_total[10m]) > 0.5
+        for: 15m
+        labels:
+          severity: warning
+          component: dlq_manager
+          category: reliability
+        annotations:
+          summary: "High DLQ replay failure rate"
+          description: "{{ $value | humanizePercentage }} of DLQ replay attempts are failing. Root cause may not be resolved."
+
+  # ========================================================================
+  # CONFIGURATION MANAGEMENT ALERTS
+  # ========================================================================
+
+  - name: configuration_management
+    interval: 1m
+    rules:
+      - alert: EnrichmentConfigReloadFailed
+        expr: |
+          rate(enrichment_configuration_reload_total{status="error"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: enrichment_pipeline
+          category: configuration
+        annotations:
+          summary: "Enrichment configuration reload failed"
+          description: "Configuration reload is failing. Pipeline may be using stale configuration."
+          runbook_url: "https://docs.songnodes.local/runbooks/config-reload-failed"
+
+      - alert: NoConfigReloadInLongTime
+        expr: |
+          (time() - max(timestamp(enrichment_configuration_reload_total{status="success"})))
+          > 86400
+        for: 10m
+        labels:
+          severity: info
+          component: enrichment_pipeline
+          category: configuration
+        annotations:
+          summary: "No configuration reload in 24+ hours"
+          description: "Configuration has not been reloaded in {{ $value | humanizeDuration }}. May be using outdated provider settings."

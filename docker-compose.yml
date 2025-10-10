@@ -184,6 +184,43 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+  dlq-manager:
+    build:
+      context: ./services/dlq-manager
+      dockerfile: Dockerfile
+    container_name: dlq-manager
+    restart: always
+    ports:
+    - 8024:8024
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-musicdb}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-rabbitmq_secure_pass_2024}
+      RABBITMQ_VHOST: musicdb
+    depends_on:
+    - rabbitmq
+    networks:
+    - musicdb-backend
+    - musicdb-monitoring
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8024/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
   scraper-1001tracklists:
     build:
       context: ./scrapers
@@ -202,6 +239,8 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Metadata enrichment service (delegation mode)
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
       # Database credentials for loading API keys
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
@@ -216,6 +255,7 @@ services:
     depends_on:
     - scraper-orchestrator
     - nlp-processor
+    - metadata-enrichment
     networks:
     - musicdb-backend
     healthcheck:
@@ -257,9 +297,12 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Metadata enrichment service (delegation mode)
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     depends_on:
     - scraper-orchestrator
     - nlp-processor
+    - metadata-enrichment
     networks:
     - musicdb-backend
     healthcheck:
@@ -302,9 +345,12 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Metadata enrichment service (delegation mode)
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     depends_on:
     - scraper-orchestrator
     - nlp-processor
+    - metadata-enrichment
     networks:
     - musicdb-backend
     healthcheck:
@@ -345,9 +391,12 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Metadata enrichment service (delegation mode)
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     depends_on:
     - scraper-orchestrator
     - nlp-processor
+    - metadata-enrichment
     networks:
     - musicdb-backend
     healthcheck:
@@ -386,9 +435,12 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Metadata enrichment service (delegation mode)
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     depends_on:
     - scraper-orchestrator
     - nlp-processor
+    - metadata-enrichment
     networks:
     - musicdb-backend
     healthcheck:
@@ -547,9 +599,12 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Metadata enrichment service (delegation mode)
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     depends_on:
     - scraper-orchestrator
     - nlp-processor
+    - metadata-enrichment
     networks:
     - musicdb-backend
     healthcheck:
@@ -587,9 +642,12 @@ services:
       NLP_PROCESSOR_URL: http://nlp-processor:8021
       ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
       NLP_FALLBACK_TIMEOUT: 60
+      # Metadata enrichment service (delegation mode)
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     depends_on:
     - scraper-orchestrator
     - nlp-processor
+    - metadata-enrichment
     networks:
     - musicdb-backend
     healthcheck:
@@ -855,6 +913,49 @@ services:
       - curl
       - -f
       - http://127.0.0.1:8020/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  api-gateway-internal:
+    build:
+      context: ./services/api-gateway-internal
+      dockerfile: Dockerfile
+    container_name: api-gateway-internal
+    restart: always
+    ports:
+    - 8100:8100
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus
+      # API credentials for external services
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      LASTFM_API_KEY: ${LASTFM_API_KEY}
+      MUSICBRAINZ_USER_AGENT: ${MUSICBRAINZ_USER_AGENT:-SongNodes/1.0}
+      DISCOGS_TOKEN: ${DISCOGS_TOKEN}
+    depends_on:
+    - redis
+    networks:
+    - musicdb-backend
+    - musicdb-monitoring
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8100/health
       interval: 30s
       timeout: 10s
       retries: 3

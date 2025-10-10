@@ -39,6 +39,8 @@ from api_clients import (
     GetSongBPMClient
 )
 from enrichment_pipeline import MetadataEnrichmentPipeline
+from config_loader import EnrichmentConfigLoader
+from config_driven_enrichment import ConfigDrivenEnricher
 from circuit_breaker import CircuitBreaker, CircuitBreakerState
 from db_api_keys import initialize_api_key_helper, get_service_keys, close_api_key_helper
 
@@ -218,12 +220,14 @@ class EnrichmentConnectionManager:
 connection_manager = EnrichmentConnectionManager()
 scheduler = AsyncIOScheduler()
 enrichment_pipeline = None
+config_loader = None
+config_driven_enricher = None
 resource_monitor = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
-    global enrichment_pipeline, resource_monitor
+    global enrichment_pipeline, config_loader, config_driven_enricher, resource_monitor
 
     logger.info("Starting Metadata Enrichment Service")
 
@@ -329,6 +333,21 @@ async def lifespan(app: FastAPI):
             getsongbpm_client = None
             logger.warning("GetSongBPM client NOT initialized - no API key (get from https://getsongbpm.com/api)")
 
+        # Initialize configuration loader (for dynamic waterfall priorities)
+        config_loader = EnrichmentConfigLoader(
+            db_session_factory=connection_manager.session_factory
+        )
+
+        # Load initial configuration
+        try:
+            await config_loader.load_configuration()
+            logger.info("✅ Enrichment configuration loaded successfully")
+        except Exception as e:
+            logger.warning(
+                "⚠️ Failed to load enrichment configuration - waterfall will use defaults",
+                error=str(e)
+            )
+
         # Initialize enrichment pipeline
         enrichment_pipeline = MetadataEnrichmentPipeline(
             spotify_client=spotify_client,
@@ -341,6 +360,23 @@ async def lifespan(app: FastAPI):
             db_session_factory=connection_manager.session_factory,
             redis_client=connection_manager.redis_client
         )
+
+        # Initialize configuration-driven enricher
+        api_clients = {
+            'spotify': spotify_client,
+            'musicbrainz': musicbrainz_client,
+            'discogs': discogs_client,
+            'beatport': beatport_client,
+            'lastfm': lastfm_client,
+            'acousticbrainz': acousticbrainz_client,
+            'getsongbpm': getsongbpm_client
+        }
+
+        config_driven_enricher = ConfigDrivenEnricher(
+            config_loader=config_loader,
+            api_clients=api_clients
+        )
+        logger.info("✅ Configuration-driven enricher initialized")
 
         # Initialize resource monitor (memory and Redis monitoring, no DB pool for SQLAlchemy)
         if ResourceMonitor:
@@ -1056,6 +1092,295 @@ async def get_enrichment_stats():
     except Exception as e:
         logger.error("Failed to get enrichment stats", error=str(e))
         raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+# ============================================================================
+# CONFIGURATION MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.get("/admin/config")
+async def get_enrichment_config():
+    """
+    Get current enrichment configuration
+
+    Returns:
+        Dictionary with waterfall configuration for all fields
+    """
+    if not config_loader:
+        raise HTTPException(
+            status_code=503,
+            detail="Configuration loader not initialized"
+        )
+
+    try:
+        config_summary = config_loader.get_config_summary()
+        return {
+            "status": "success",
+            "configuration": config_summary,
+            "note": "Configuration is reloaded automatically every 5 minutes"
+        }
+    except Exception as e:
+        logger.error("Failed to get configuration", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get configuration: {str(e)}"
+        )
+
+
+@app.post("/admin/config/reload")
+async def reload_config():
+    """
+    Force reload of enrichment configuration from database
+
+    Returns:
+        Reload status and configuration summary
+    """
+    if not config_loader:
+        raise HTTPException(
+            status_code=503,
+            detail="Configuration loader not initialized"
+        )
+
+    try:
+        await config_loader.force_reload()
+
+        config_summary = config_loader.get_config_summary()
+
+        logger.info("Configuration reloaded manually")
+
+        return {
+            "status": "reloaded",
+            "timestamp": datetime.utcnow().isoformat(),
+            "configuration": config_summary
+        }
+    except Exception as e:
+        logger.error("Failed to reload configuration", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reload configuration: {str(e)}"
+        )
+
+
+@app.get("/admin/config/field/{field_name}")
+async def get_field_config(field_name: str):
+    """
+    Get waterfall configuration for a specific metadata field
+
+    Args:
+        field_name: Metadata field name (e.g., 'bpm', 'spotify_id', 'genre')
+
+    Returns:
+        Waterfall priorities and configuration for the field
+    """
+    if not config_loader:
+        raise HTTPException(
+            status_code=503,
+            detail="Configuration loader not initialized"
+        )
+
+    try:
+        priorities = config_loader.get_providers_for_field(field_name)
+        enabled = config_loader.is_field_enabled(field_name)
+
+        if not priorities and not enabled:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Field '{field_name}' not found in configuration"
+            )
+
+        return {
+            "field": field_name,
+            "enabled": enabled,
+            "waterfall_priorities": [
+                {
+                    "priority": idx + 1,
+                    "provider": provider,
+                    "min_confidence": confidence
+                }
+                for idx, (provider, confidence) in enumerate(priorities)
+            ],
+            "provider_count": len(priorities)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to get field configuration", error=str(e), field=field_name)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get field configuration: {str(e)}"
+        )
+
+
+@app.put("/admin/config/field/{field_name}")
+async def update_field_config(
+    field_name: str,
+    priority_1_provider: Optional[str] = None,
+    priority_1_confidence: Optional[float] = None,
+    priority_2_provider: Optional[str] = None,
+    priority_2_confidence: Optional[float] = None,
+    priority_3_provider: Optional[str] = None,
+    priority_3_confidence: Optional[float] = None,
+    priority_4_provider: Optional[str] = None,
+    priority_4_confidence: Optional[float] = None,
+    enabled: Optional[bool] = None
+):
+    """
+    Update waterfall configuration for a specific field
+
+    Args:
+        field_name: Metadata field to update
+        priority_1_provider: Highest priority provider
+        priority_1_confidence: Minimum confidence for priority 1
+        ... (up to priority 4)
+        enabled: Enable/disable enrichment for this field
+
+    Returns:
+        Updated configuration
+    """
+    if not config_loader:
+        raise HTTPException(
+            status_code=503,
+            detail="Configuration loader not initialized"
+        )
+
+    try:
+        # Build update query
+        updates = []
+        params = {'field_name': field_name}
+
+        if priority_1_provider is not None:
+            updates.append("priority_1_provider = :p1_provider")
+            params['p1_provider'] = priority_1_provider
+
+        if priority_1_confidence is not None:
+            updates.append("priority_1_confidence = :p1_confidence")
+            params['p1_confidence'] = priority_1_confidence
+
+        if priority_2_provider is not None:
+            updates.append("priority_2_provider = :p2_provider")
+            params['p2_provider'] = priority_2_provider
+
+        if priority_2_confidence is not None:
+            updates.append("priority_2_confidence = :p2_confidence")
+            params['p2_confidence'] = priority_2_confidence
+
+        if priority_3_provider is not None:
+            updates.append("priority_3_provider = :p3_provider")
+            params['p3_provider'] = priority_3_provider
+
+        if priority_3_confidence is not None:
+            updates.append("priority_3_confidence = :p3_confidence")
+            params['p3_confidence'] = priority_3_confidence
+
+        if priority_4_provider is not None:
+            updates.append("priority_4_provider = :p4_provider")
+            params['p4_provider'] = priority_4_provider
+
+        if priority_4_confidence is not None:
+            updates.append("priority_4_confidence = :p4_confidence")
+            params['p4_confidence'] = priority_4_confidence
+
+        if enabled is not None:
+            updates.append("enabled = :enabled")
+            params['enabled'] = enabled
+
+        if not updates:
+            raise HTTPException(
+                status_code=400,
+                detail="No update parameters provided"
+            )
+
+        updates.append("last_updated = CURRENT_TIMESTAMP")
+
+        # Execute update
+        async with connection_manager.session_factory() as session:
+            query = text(f"""
+                UPDATE metadata_enrichment_config
+                SET {', '.join(updates)}
+                WHERE metadata_field = :field_name
+            """)
+
+            result = await session.execute(query, params)
+            await session.commit()
+
+            if result.rowcount == 0:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Field '{field_name}' not found in configuration"
+                )
+
+        # Reload configuration
+        await config_loader.force_reload()
+
+        logger.info(
+            "Field configuration updated",
+            field=field_name,
+            updates=list(params.keys())
+        )
+
+        # Return updated configuration
+        return await get_field_config(field_name)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to update field configuration", error=str(e), field=field_name)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update field configuration: {str(e)}"
+        )
+
+
+@app.get("/admin/config/providers")
+async def get_available_providers():
+    """
+    Get list of available enrichment providers
+
+    Returns:
+        List of providers with their capabilities and status
+    """
+    try:
+        async with connection_manager.session_factory() as session:
+            query = text("""
+                SELECT
+                    provider_name,
+                    provider_type,
+                    supported_fields,
+                    enabled,
+                    health_status,
+                    avg_confidence_score,
+                    success_rate,
+                    last_health_check
+                FROM enrichment_providers
+                ORDER BY provider_name
+            """)
+
+            result = await session.execute(query)
+            providers = result.fetchall()
+
+            return {
+                "providers": [
+                    {
+                        "name": p.provider_name,
+                        "type": p.provider_type,
+                        "supported_fields": p.supported_fields,
+                        "enabled": p.enabled,
+                        "health_status": p.health_status,
+                        "avg_confidence": float(p.avg_confidence_score) if p.avg_confidence_score else None,
+                        "success_rate": float(p.success_rate) if p.success_rate else None,
+                        "last_health_check": p.last_health_check.isoformat() if p.last_health_check else None
+                    }
+                    for p in providers
+                ],
+                "total_providers": len(providers)
+            }
+
+    except Exception as e:
+        logger.error("Failed to get providers", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get providers: {str(e)}"
+        )
+
 
 if __name__ == "__main__":
     import uvicorn
