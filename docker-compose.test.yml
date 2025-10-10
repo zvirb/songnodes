@@ -1,0 +1,159 @@
+version: '3.8'
+
+# Docker Compose configuration for integration testing
+# Isolated test environment with minimal services
+
+services:
+  # Test PostgreSQL database
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: songnodes-postgres-test
+    environment:
+      POSTGRES_DB: musicdb_test
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: musicdb_secure_pass_2024
+    ports:
+      - "5434:5432"  # Different port to avoid conflict
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./sql/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U musicdb_user -d musicdb_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Test Redis instance
+  redis-test:
+    image: redis:7-alpine
+    container_name: songnodes-redis-test
+    command: redis-server --requirepass redis_secure_pass_2024 --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6381:6379"  # Different port to avoid conflict
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Test RabbitMQ message broker
+  rabbitmq-test:
+    image: rabbitmq:3-management-alpine
+    container_name: songnodes-rabbitmq-test
+    environment:
+      RABBITMQ_DEFAULT_USER: songnodes
+      RABBITMQ_DEFAULT_PASS: rabbitmq_secure_pass_2024
+    ports:
+      - "5673:5672"   # AMQP port (different)
+      - "15673:15672" # Management UI (different)
+    volumes:
+      - rabbitmq_test_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # API Integration Gateway (Test)
+  api-gateway-test:
+    build:
+      context: ./services/api-gateway-internal
+      dockerfile: Dockerfile
+    container_name: songnodes-api-gateway-test
+    environment:
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_secure_pass_2024
+      LOG_LEVEL: DEBUG
+      ENVIRONMENT: test
+    ports:
+      - "8101:8000"  # Different port
+    depends_on:
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Metadata Enrichment Service (Test)
+  metadata-enrichment-test:
+    build:
+      context: ./services/metadata-enrichment
+      dockerfile: Dockerfile
+    container_name: songnodes-metadata-enrichment-test
+    environment:
+      POSTGRES_HOST: postgres-test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: musicdb_test
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: musicdb_secure_pass_2024
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_secure_pass_2024
+      RABBITMQ_HOST: rabbitmq-test
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: songnodes
+      RABBITMQ_PASS: rabbitmq_secure_pass_2024
+      API_GATEWAY_URL: http://api-gateway-test:8000
+      LOG_LEVEL: DEBUG
+      ENVIRONMENT: test
+    ports:
+      - "8021:8000"  # Different port
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      rabbitmq-test:
+        condition: service_healthy
+      api-gateway-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # DLQ Manager (Test)
+  dlq-manager-test:
+    build:
+      context: ./services/dlq-manager
+      dockerfile: Dockerfile
+    container_name: songnodes-dlq-manager-test
+    environment:
+      POSTGRES_HOST: postgres-test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: musicdb_test
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: musicdb_secure_pass_2024
+      RABBITMQ_HOST: rabbitmq-test
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: songnodes
+      RABBITMQ_PASS: rabbitmq_secure_pass_2024
+      LOG_LEVEL: DEBUG
+      ENVIRONMENT: test
+    ports:
+      - "8025:8000"  # Different port
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      rabbitmq-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_test_data:
+  redis_test_data:
+  rabbitmq_test_data:
+
+networks:
+  default:
+    name: songnodes-test-network

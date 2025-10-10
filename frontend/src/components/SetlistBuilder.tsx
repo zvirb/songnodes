@@ -287,6 +287,23 @@ const SetlistBuilder: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importData, setImportData] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Auto-dismiss error messages after 7 seconds
+  React.useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  // Helper function to show error messages
+  const showError = useCallback((message: string) => {
+    setErrorMessage(message);
+    console.error('SetlistBuilder Error:', message);
+  }, []);
 
   // Initialize setlist name when currentSetlist changes
   React.useEffect(() => {
@@ -324,22 +341,53 @@ const SetlistBuilder: React.FC = () => {
   }, [bpmProgression]);
 
   const handleCreateSetlist = useCallback(() => {
-    const name = setlistName || 'New Setlist';
-    setlist.createNewSetlist(name);
-    setSetlistName(name);
-  }, [setlistName, setlist]);
+    const name = setlistName.trim() || 'New Setlist';
+
+    if (name.length > 100) {
+      showError('Create failed: Setlist name is too long (max 100 characters).');
+      return;
+    }
+
+    try {
+      setlist.createNewSetlist(name);
+      setSetlistName(name);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Create failed: Could not create setlist. ${errorMsg}`);
+      console.error('Create setlist error:', error);
+    }
+  }, [setlistName, setlist, showError]);
 
   const handleUpdateSetlistName = useCallback(() => {
-    if (!currentSetlist || !setlistName.trim()) return;
+    if (!currentSetlist) {
+      showError('Update failed: No setlist to update. Please create a setlist first.');
+      return;
+    }
 
-    // Update the setlist name through store
-    const updatedSetlist = {
-      ...currentSetlist,
-      name: setlistName.trim(),
-      updated_at: new Date(),
-    };
-    setlist.loadSetlist(updatedSetlist);
-  }, [currentSetlist, setlistName, setlist]);
+    if (!setlistName.trim()) {
+      showError('Update failed: Setlist name cannot be empty.');
+      return;
+    }
+
+    if (setlistName.trim().length > 100) {
+      showError('Update failed: Setlist name is too long (max 100 characters).');
+      return;
+    }
+
+    try {
+      // Update the setlist name through store
+      const updatedSetlist = {
+        ...currentSetlist,
+        name: setlistName.trim(),
+        updated_at: new Date(),
+      };
+      setlist.loadSetlist(updatedSetlist);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Update failed: Could not update setlist name. ${errorMsg}`);
+      console.error('Update setlist name error:', error);
+    }
+  }, [currentSetlist, setlistName, setlist, showError]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const activeTrackItem = currentSetlist?.tracks.find(t => t.id === event.active.id);
@@ -365,18 +413,38 @@ const SetlistBuilder: React.FC = () => {
   }, [currentSetlist, setlist]);
 
   const handleRemoveTrack = useCallback((trackId: string) => {
-    setlist.removeTrackFromSetlist(trackId);
-  }, [setlist]);
+    try {
+      setlist.removeTrackFromSetlist(trackId);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Remove failed: Could not remove track from setlist. ${errorMsg}`);
+      console.error('Remove track error:', error);
+    }
+  }, [setlist, showError]);
 
   const handleEditTrack = useCallback((trackId: string) => {
     // TODO: Open track editing modal/panel
   }, []);
 
   const handleSaveSetlist = useCallback(() => {
-    if (currentSetlist) {
-      setlist.saveCurrentSetlist();
+    if (!currentSetlist) {
+      showError('Save failed: No setlist to save. Please create a setlist first.');
+      return;
     }
-  }, [currentSetlist, setlist]);
+
+    if (!currentSetlist.tracks || currentSetlist.tracks.length === 0) {
+      showError('Save failed: Cannot save an empty setlist. Add at least one track before saving.');
+      return;
+    }
+
+    try {
+      setlist.saveCurrentSetlist();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Save failed: Could not save setlist. ${errorMsg}`);
+      console.error('Save error:', error);
+    }
+  }, [currentSetlist, setlist, showError]);
 
   const handleClearSetlist = useCallback(() => {
     setlist.clearSetlist();
@@ -384,76 +452,191 @@ const SetlistBuilder: React.FC = () => {
   }, [setlist]);
 
   const handleExportSetlist = useCallback(() => {
-    if (!currentSetlist) return;
+    if (!currentSetlist) {
+      showError('Export failed: No setlist to export. Please create a setlist first.');
+      return;
+    }
 
-    const exportData = {
-      name: currentSetlist.name,
-      tracks: currentSetlist.tracks.map(st => ({
-        track: st.track,
-        position: st.position,
-        transition_notes: st.transition_notes,
-        key_shift: st.key_shift,
-        tempo_change: st.tempo_change,
-        mix_cue_in: st.mix_cue_in,
-        mix_cue_out: st.mix_cue_out,
-      })),
-      created_at: currentSetlist.created_at,
-      duration: totalDuration,
-      metadata: {
-        totalTracks: currentSetlist.tracks.length,
-        averageBpm,
-        exportedAt: new Date(),
-      }
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json',
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${currentSetlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_setlist.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    setShowExportModal(false);
-  }, [currentSetlist, totalDuration, averageBpm]);
-
-  const handleImportSetlist = useCallback(() => {
-    if (!importData.trim()) return;
+    if (!currentSetlist.tracks || currentSetlist.tracks.length === 0) {
+      showError('Export failed: Setlist has no tracks. Add tracks before exporting.');
+      return;
+    }
 
     try {
-      const data = JSON.parse(importData);
+      const exportData = {
+        name: currentSetlist.name,
+        tracks: currentSetlist.tracks.map(st => ({
+          track: st.track,
+          position: st.position,
+          transition_notes: st.transition_notes,
+          key_shift: st.key_shift,
+          tempo_change: st.tempo_change,
+          mix_cue_in: st.mix_cue_in,
+          mix_cue_out: st.mix_cue_out,
+        })),
+        created_at: currentSetlist.created_at,
+        duration: totalDuration,
+        metadata: {
+          totalTracks: currentSetlist.tracks.length,
+          averageBpm,
+          exportedAt: new Date(),
+        }
+      };
 
-      if (!data.name || !Array.isArray(data.tracks)) {
-        throw new Error('Invalid setlist format');
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json',
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentSetlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_setlist.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setShowExportModal(false);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Export failed: Could not create export file. ${errorMsg}`);
+      console.error('Export error:', error);
+    }
+  }, [currentSetlist, totalDuration, averageBpm, showError]);
+
+  const handleImportSetlist = useCallback(() => {
+    if (!importData.trim()) {
+      showError('Import failed: No data provided. Please paste your setlist JSON data.');
+      return;
+    }
+
+    try {
+      // Parse JSON data
+      let data;
+      try {
+        data = JSON.parse(importData);
+      } catch (parseError) {
+        showError('Import failed: Invalid JSON format. Please check your data and try again.');
+        return;
+      }
+
+      // Validate required fields
+      if (!data || typeof data !== 'object') {
+        showError('Import failed: Invalid setlist format. Data must be a valid JSON object.');
+        return;
+      }
+
+      if (!data.name || typeof data.name !== 'string') {
+        showError('Import failed: Missing or invalid setlist name. Please ensure the JSON includes a valid "name" field.');
+        return;
+      }
+
+      if (!Array.isArray(data.tracks)) {
+        showError('Import failed: Missing or invalid tracks array. Please ensure the JSON includes a "tracks" array.');
+        return;
+      }
+
+      // Validate track data
+      if (data.tracks.length === 0) {
+        showError('Import failed: Setlist contains no tracks. Please import a setlist with at least one track.');
+        return;
+      }
+
+      // Check file size (rough estimate: 1MB limit)
+      const dataSize = new Blob([importData]).size;
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (dataSize > maxSize) {
+        showError(`Import failed: File is too large (${(dataSize / 1024 / 1024).toFixed(2)}MB). Maximum size is 10MB.`);
+        return;
+      }
+
+      // Validate track structure
+      let validTracks = 0;
+      for (let i = 0; i < data.tracks.length; i++) {
+        const trackData = data.tracks[i];
+        if (!trackData.track || typeof trackData.track !== 'object') {
+          console.warn(`Track at position ${i + 1} has invalid structure, skipping`);
+          continue;
+        }
+
+        if (!trackData.track.id || !trackData.track.name || !trackData.track.artist) {
+          console.warn(`Track at position ${i + 1} missing required fields (id, name, artist), skipping`);
+          continue;
+        }
+
+        validTracks++;
+      }
+
+      if (validTracks === 0) {
+        showError('Import failed: No valid tracks found in the data. Each track must have id, name, and artist fields.');
+        return;
       }
 
       // Create new setlist from imported data
-      setlist.createNewSetlist(data.name);
+      try {
+        setlist.createNewSetlist(data.name);
+      } catch (createError) {
+        showError('Import failed: Could not create setlist. Please try again or contact support.');
+        console.error('Setlist creation error:', createError);
+        return;
+      }
 
       // Add tracks
+      let addedCount = 0;
       data.tracks.forEach((trackData: any, index: number) => {
-        if (trackData.track) {
-          setlist.addTrackToSetlist(trackData.track, index);
+        if (trackData.track && trackData.track.id && trackData.track.name && trackData.track.artist) {
+          try {
+            setlist.addTrackToSetlist(trackData.track, index);
+            addedCount++;
+          } catch (addError) {
+            console.warn(`Failed to add track at position ${index + 1}:`, addError);
+          }
         }
       });
 
+      if (addedCount === 0) {
+        showError('Import failed: Could not add any tracks to the setlist. Please check the data format.');
+        setlist.clearSetlist();
+        return;
+      }
+
+      // Success
       setImportData('');
       setShowImportModal(false);
+
+      // Show success feedback (if some tracks were skipped)
+      if (addedCount < data.tracks.length) {
+        console.warn(`Import partially successful: ${addedCount} of ${data.tracks.length} tracks imported`);
+      }
+
     } catch (error) {
-      console.error('Import failed:', error);
-      // TODO: Show error message
+      // Catch any unexpected errors
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Import failed: An unexpected error occurred. ${errorMsg}`);
+      console.error('Unexpected import error:', error);
     }
-  }, [importData, setlist]);
+  }, [importData, setlist, showError]);
 
   const sortableTrackIds = currentSetlist?.tracks.map(t => t.id) || [];
 
   return (
     <div className="setlist-builder">
+      {/* Error Message Display */}
+      {errorMessage && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+          <div className="flex items-start justify-between">
+            <p className="text-red-800 text-sm flex-1">{errorMessage}</p>
+            <button
+              className="ml-2 text-red-600 hover:text-red-800 font-bold"
+              onClick={() => setErrorMessage(null)}
+              title="Dismiss error"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="setlist-header">
         <div className="input-group">
           <label className="input-label">Setlist Name</label>

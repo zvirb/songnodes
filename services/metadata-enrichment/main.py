@@ -320,7 +320,7 @@ async def lifespan(app: FastAPI):
         logger.info("AcousticBrainz client initialized (free, no API key)")
 
         # GetSongBPM - requires API key (free with attribution)
-        # TODO: Add to frontend API settings: GETSONGBPM_API_KEY
+        # API key can be configured via frontend API settings
         getsongbpm_keys = await get_service_keys('getsongbpm')
         getsongbpm_api_key = getsongbpm_keys.get('api_key') or os.getenv("GETSONGBPM_API_KEY")
         if getsongbpm_api_key:

@@ -186,8 +186,8 @@ services:
           memory: 512M
   dlq-manager:
     build:
-      context: ./services/dlq-manager
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: dlq-manager/Dockerfile
     container_name: dlq-manager
     restart: always
     ports:
@@ -927,8 +927,8 @@ services:
           memory: 512M
   api-gateway-internal:
     build:
-      context: ./services/api-gateway-internal
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/api-gateway-internal/Dockerfile
     container_name: api-gateway-internal
     restart: always
     ports:

@@ -48,11 +48,11 @@ SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
 
 # ===========================================
-# OAUTH STATE STORAGE (In-memory for development)
+# OAUTH STATE STORAGE (Redis-based for production)
 # ===========================================
-# In-memory storage for OAuth state/PKCE parameters
-# TODO: Replace with Redis for production (distributed systems)
-oauth_state_store: Dict[str, Dict[str, Any]] = {}
+# Redis-based storage for OAuth state/PKCE parameters
+# Supports multi-instance deployments (horizontal scaling)
+# Note: oauth_state_store dictionary REMOVED - all flows use Redis
 
 # ===========================================
 # REDIS CONNECTION FOR OAUTH STATE STORAGE
@@ -1098,13 +1098,24 @@ async def init_tidal_device_flow(client_id: str = Query(...), client_secret: str
                 if response.status == 200:
                     result = await response.json()
 
-                    # Store device code for polling
+                    # Store device code for polling in Redis (10 minutes TTL)
+                    # Device code flow uses longer TTL than auth code (user must manually authorize)
                     device_code = result['device_code']
-                    oauth_state_store[device_code] = {
+                    r = await get_redis()
+                    oauth_data = {
                         'client_id': client_id,
                         'client_secret': client_secret,
-                        'created_at': time.time()
+                        'created_at': time.time(),
+                        'service': 'tidal',
+                        'flow_type': 'device_code'
                     }
+                    await r.setex(
+                        f"oauth:tidal:device:{device_code}",  # Namespace for device code flow
+                        600,  # 10 minutes TTL (IETF Best Practice)
+                        json.dumps(oauth_data)
+                    )
+
+                    logger.info(f"🎵 [TIDAL DEVICE] Stored device code in Redis with key: oauth:tidal:device:{device_code[:8]}...")
 
                     return TidalDeviceCodeResponse(**result)
                 else:
@@ -1127,15 +1138,24 @@ async def poll_tidal_device_token(device_code: str = Query(...)):
     Returns tokens when authorization is complete
     """
     try:
-        if device_code not in oauth_state_store:
-            raise HTTPException(status_code=400, detail="Invalid or expired device code")
+        # Retrieve device code data from Redis
+        r = await get_redis()
+        oauth_data_json = await r.get(f"oauth:tidal:device:{device_code}")
 
-        stored_data = oauth_state_store[device_code]
+        if not oauth_data_json:
+            logger.error(f"🎵 [TIDAL DEVICE] Device code not found or expired: {device_code[:8]}...")
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or expired device code. Please restart the device authentication flow."
+            )
+
+        oauth_data = json.loads(oauth_data_json)
+        logger.info(f"🎵 [TIDAL DEVICE] Retrieved device code from Redis: {device_code[:8]}...")
 
         token_url = "https://auth.tidal.com/v1/oauth2/token"
         data = {
-            'client_id': stored_data['client_id'],
-            'client_secret': stored_data['client_secret'],
+            'client_id': oauth_data['client_id'],
+            'client_secret': oauth_data['client_secret'],
             'device_code': device_code,
             'grant_type': 'urn:ietf:params:oauth:grant-type:device_code'
         }
@@ -1150,8 +1170,9 @@ async def poll_tidal_device_token(device_code: str = Query(...)):
                 result = await response.json()
 
                 if response.status == 200:
-                    # Success! Clean up device code
-                    del oauth_state_store[device_code]
+                    # Success! Clean up device code from Redis (one-time use, IETF Best Practice)
+                    await r.delete(f"oauth:tidal:device:{device_code}")
+                    logger.info(f"🎵 [TIDAL DEVICE] Deleted device code from Redis (authorization successful)")
 
                     return JSONResponse(content={
                         'success': True,
