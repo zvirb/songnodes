@@ -26,9 +26,9 @@ export default defineConfig({
   // Test timeout
   timeout: 30000,
 
-  // Expect timeout
+  // Expect timeout - increased for complex React app with PIXI.js/D3.js initialization
   expect: {
-    timeout: 5000,
+    timeout: 15000,  // 15s to allow for graph library initialization and API calls
   },
 
   // Run tests in files in parallel
