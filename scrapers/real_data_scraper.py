@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-# DEPRECATED: This file uses the removed database_pipeline. Use modern pipelines instead.
 """
 Real Data Scraper - Searches for actual playlists/setlists containing target tracks
 and builds genuine adjacency relationships from scraped data.
 
-⚠️  WARNING: This file imports the deprecated database_pipeline.DatabasePipeline
-    which has been replaced by pipelines.persistence_pipeline.PersistencePipeline.
-    This scraper may require refactoring to use the modern pipeline architecture.
+This file uses the modern pipelines.persistence_pipeline.PersistencePipeline architecture.
 """
 
 import os
