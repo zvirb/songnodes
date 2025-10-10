@@ -704,80 +704,65 @@ class PersistencePipeline:
 
     async def _insert_songs_batch(self, conn, batch: List[Dict[str, Any]]):
         """
-        Insert tracks batch with upsert logic.
+        Insert tracks batch to silver_enriched_tracks (medallion architecture).
 
-        NOTE: Schema uses 'tracks' table with columns matching actual database.
-        Artist relationships are handled separately via track_artists junction table.
+        MEDALLION SCHEMA: Writes to silver_enriched_tracks with required validation fields.
+        Artist relationships are denormalized (artist_name column, no FK).
         """
         await conn.executemany("""
-            INSERT INTO tracks (
-                title, normalized_title, genre, subgenre, bpm, key,
-                duration_ms, spotify_id, apple_music_id, tidal_id,
-                musicbrainz_id, soundcloud_id, beatport_id, deezer_id, youtube_music_id,
-                energy, danceability, valence, acousticness, instrumentalness,
-                liveness, speechiness, loudness, popularity_score,
-                is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit
+            INSERT INTO silver_enriched_tracks (
+                artist_name, track_title, spotify_id, isrc, release_date, duration_ms,
+                bpm, key, genre, energy, valence, danceability,
+                validation_status, data_quality_score, enrichment_metadata
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
-            ON CONFLICT (title, normalized_title) DO UPDATE SET
-                genre = COALESCE(EXCLUDED.genre, tracks.genre),
-                subgenre = COALESCE(EXCLUDED.subgenre, tracks.subgenre),
-                bpm = COALESCE(EXCLUDED.bpm, tracks.bpm),
-                key = COALESCE(EXCLUDED.key, tracks.key),
-                duration_ms = COALESCE(EXCLUDED.duration_ms, tracks.duration_ms),
-                spotify_id = COALESCE(EXCLUDED.spotify_id, tracks.spotify_id),
-                apple_music_id = COALESCE(EXCLUDED.apple_music_id, tracks.apple_music_id),
-                tidal_id = COALESCE(EXCLUDED.tidal_id, tracks.tidal_id),
-                musicbrainz_id = COALESCE(EXCLUDED.musicbrainz_id, tracks.musicbrainz_id),
-                soundcloud_id = COALESCE(EXCLUDED.soundcloud_id, tracks.soundcloud_id),
-                beatport_id = COALESCE(EXCLUDED.beatport_id, tracks.beatport_id),
-                deezer_id = COALESCE(EXCLUDED.deezer_id, tracks.deezer_id),
-                youtube_music_id = COALESCE(EXCLUDED.youtube_music_id, tracks.youtube_music_id),
-                energy = COALESCE(EXCLUDED.energy, tracks.energy),
-                danceability = COALESCE(EXCLUDED.danceability, tracks.danceability),
-                valence = COALESCE(EXCLUDED.valence, tracks.valence),
-                acousticness = COALESCE(EXCLUDED.acousticness, tracks.acousticness),
-                instrumentalness = COALESCE(EXCLUDED.instrumentalness, tracks.instrumentalness),
-                liveness = COALESCE(EXCLUDED.liveness, tracks.liveness),
-                speechiness = COALESCE(EXCLUDED.speechiness, tracks.speechiness),
-                loudness = COALESCE(EXCLUDED.loudness, tracks.loudness),
-                popularity_score = COALESCE(EXCLUDED.popularity_score, tracks.popularity_score),
-                updated_at = CURRENT_TIMESTAMP
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         """, [
             (
-                item.get('track_name') or item.get('title'),  # title
-                (item.get('normalized_title') or (item.get('track_name') or item.get('title', '')).lower().strip()),  # normalized_title
-                item.get('genre'),  # genre
-                item.get('subgenre'),  # subgenre
+                item.get('artist_name', 'Unknown Artist'),  # artist_name (REQUIRED, denormalized)
+                item.get('track_name') or item.get('title'),  # track_title
+                item.get('spotify_id'),  # spotify_id
+                item.get('isrc'),  # isrc
+                None,  # release_date (TODO: parse from item if available)
+                int(item.get('duration_ms', 0)) if item.get('duration_ms') else None,  # duration_ms
                 float(item.get('bpm')) if item.get('bpm') else None,  # bpm
                 item.get('key') or item.get('musical_key'),  # key
-                int(item.get('duration_ms', 0)) if item.get('duration_ms') else None,  # duration_ms
-                item.get('spotify_id'),  # spotify_id
-                item.get('apple_music_id'),  # apple_music_id
-                int(item.get('tidal_id')) if item.get('tidal_id') else None,  # tidal_id (INTEGER)
-                item.get('musicbrainz_id'),  # musicbrainz_id
-                item.get('soundcloud_id'),  # soundcloud_id
-                item.get('beatport_id'),  # beatport_id
-                item.get('deezer_id'),  # deezer_id
-                item.get('youtube_music_id'),  # youtube_music_id
-                # Audio features
-                float(item.get('energy')) if item.get('energy') is not None else None,
-                float(item.get('danceability')) if item.get('danceability') is not None else None,
-                float(item.get('valence')) if item.get('valence') is not None else None,
-                float(item.get('acousticness')) if item.get('acousticness') is not None else None,
-                float(item.get('instrumentalness')) if item.get('instrumentalness') is not None else None,
-                float(item.get('liveness')) if item.get('liveness') is not None else None,
-                float(item.get('speechiness')) if item.get('speechiness') is not None else None,
-                float(item.get('loudness')) if item.get('loudness') is not None else None,
-                int(item.get('popularity_score', 0)) if item.get('popularity_score') is not None else None,  # popularity_score
-                item.get('is_remix', False),
-                item.get('is_mashup', False),
-                item.get('is_live', False),
-                item.get('is_cover', False),
-                item.get('is_instrumental', False),
-                item.get('is_explicit', False)
+                [item.get('genre')] if item.get('genre') else None,  # genre[] array
+                float(item.get('energy')) if item.get('energy') is not None else None,  # energy
+                float(item.get('valence')) if item.get('valence') is not None else None,  # valence
+                float(item.get('danceability')) if item.get('danceability') is not None else None,  # danceability
+                'valid',  # validation_status (REQUIRED)
+                self._calculate_quality_score(item),  # data_quality_score (REQUIRED)
+                '{}'  # enrichment_metadata (REQUIRED JSONB, empty for now)
             ) for item in batch
         ])
+
+    def _calculate_quality_score(self, item: Dict[str, Any]) -> float:
+        """Calculate data quality score based on field completeness (0.00-1.00)."""
+        score = 0.0
+        # Critical fields (40% weight)
+        if item.get('track_name') or item.get('title'):
+            score += 0.20
+        if item.get('artist_name'):
+            score += 0.20
+        # Important fields (40% weight)
+        if item.get('bpm'):
+            score += 0.10
+        if item.get('key') or item.get('musical_key'):
+            score += 0.10
+        if item.get('energy') is not None:
+            score += 0.10
+        if item.get('spotify_id'):
+            score += 0.10
+        # Optional fields (20% weight)
+        if item.get('genre'):
+            score += 0.05
+        if item.get('duration_ms'):
+            score += 0.05
+        if item.get('valence') is not None:
+            score += 0.05
+        if item.get('danceability') is not None:
+            score += 0.05
+        return min(1.0, score)
 
     async def _insert_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
         """Insert playlists batch with validation fields and conflict handling."""
