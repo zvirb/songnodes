@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { select } from 'd3-selection';
 import { zoomIdentity } from 'd3-zoom';
 import 'd3-transition'; // Adds .transition() method to selections
 import { useStore } from '../store/useStore';
-import { Track, GraphNode } from '../types';
+import { Track, GraphNode, GraphEdge } from '../types';
 import { findDJPath } from '../utils/pathfinding';
 import { DEFAULT_CONSTRAINTS } from '../types/pathfinding';
+import { EdgeDetailsModal } from './EdgeDetailsModal';
 import {
   Play,
   Plus,
@@ -51,6 +52,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   targetData
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [viewingEdge, setViewingEdge] = useState<GraphEdge | null>(null);
 
   // Store actions
   const selectNode = useStore(state => state.graph.selectNode);
@@ -327,7 +329,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         break;
 
       case 'edge':
-        const edge = targetData as any; // Edge data passed from context menu trigger
+        const edge = targetData as GraphEdge; // Edge data passed from context menu trigger
 
         // Get the store action
         const toggleEdgeType = useStore.getState().view.toggleEdgeTypeVisibility;
@@ -337,8 +339,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: 'View Connection Details',
             icon: <Info size={16} />,
             action: () => {
-              // TODO: Implement edge details modal
-              console.log('📊 Edge details:', edge);
+              setViewingEdge(edge);
               onClose();
             }
           },
@@ -389,102 +390,112 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const position = calculatePosition();
   const menuItems = getMenuItems();
 
-  return createPortal(
-    <div
-      ref={menuRef}
-      className="context-menu"
-      style={{
-        position: 'fixed',
-        left: position.left,
-        top: position.top,
-        zIndex: 10000,
-        minWidth: '200px',
-        backgroundColor: 'rgba(30, 30, 40, 0.98)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '8px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(10px)',
-        padding: '4px',
-        animation: 'fadeIn 0.15s ease-out'
-      }}
-    >
-      {menuItems.map((item, index) => {
-        if (item.divider) {
-          return (
-            <div
-              key={index}
-              style={{
-                height: '1px',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                margin: '4px 0'
-              }}
-            />
-          );
-        }
+  return (
+    <>
+      {createPortal(
+        <div
+          ref={menuRef}
+          className="context-menu"
+          style={{
+            position: 'fixed',
+            left: position.left,
+            top: position.top,
+            zIndex: 10000,
+            minWidth: '200px',
+            backgroundColor: 'rgba(30, 30, 40, 0.98)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(10px)',
+            padding: '4px',
+            animation: 'fadeIn 0.15s ease-out'
+          }}
+        >
+          {menuItems.map((item, index) => {
+            if (item.divider) {
+              return (
+                <div
+                  key={index}
+                  style={{
+                    height: '1px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    margin: '4px 0'
+                  }}
+                />
+              );
+            }
 
-        return (
-          <button
-            key={index}
-            className="context-menu-item"
-            onClick={item.action}
-            disabled={item.disabled}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              padding: '8px 12px',
-              backgroundColor: 'transparent',
-              color: item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: item.disabled ? 'not-allowed' : 'pointer',
-              fontSize: '13px',
-              transition: 'all 0.15s ease',
-              textAlign: 'left'
-            }}
-            onMouseEnter={(e) => {
-              if (!item.disabled) {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.color = '#fff';
+            return (
+              <button
+                key={index}
+                className="context-menu-item"
+                onClick={item.action}
+                disabled={item.disabled}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  padding: '8px 12px',
+                  backgroundColor: 'transparent',
+                  color: item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: item.disabled ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  transition: 'all 0.15s ease',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={(e) => {
+                  if (!item.disabled) {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.color = '#fff';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)';
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {item.icon}
+                  {item.label}
+                </span>
+                {item.shortcut && (
+                  <span style={{
+                    fontSize: '11px',
+                    opacity: 0.6,
+                    marginLeft: '20px'
+                  }}>
+                    {item.shortcut}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          <style>{`
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+                transform: scale(0.95);
               }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)';
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {item.icon}
-              {item.label}
-            </span>
-            {item.shortcut && (
-              <span style={{
-                fontSize: '11px',
-                opacity: 0.6,
-                marginLeft: '20px'
-              }}>
-                {item.shortcut}
-              </span>
-            )}
-          </button>
-        );
-      })}
+              to {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+          `}</style>
+        </div>,
+        document.body
+      )}
 
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
-    </div>,
-    document.body
+      {/* Edge Details Modal */}
+      <EdgeDetailsModal
+        edge={viewingEdge}
+        onClose={() => setViewingEdge(null)}
+      />
+    </>
   );
 };
 
