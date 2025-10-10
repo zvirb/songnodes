@@ -2321,6 +2321,68 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     });
   }, []);
 
+  // Helper function to center view on a specific node
+  const centerOnNode = useCallback((nodeId: string, zoomLevel: number = 2.0) => {
+    if (!zoomBehaviorRef.current || !containerRef.current) {
+      console.warn('⚠️ Cannot center on node: zoom behavior or container not found');
+      return;
+    }
+
+    const node = enhancedNodesRef.current.get(nodeId);
+    if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') {
+      console.warn('⚠️ Cannot center on node: node not found or missing position', nodeId);
+      return;
+    }
+
+    // Clamp zoom to reasonable bounds
+    const clampedZoom = Math.max(
+      DEFAULT_CONFIG.ui.minZoom,
+      Math.min(zoomLevel, DEFAULT_CONFIG.ui.maxZoom)
+    );
+
+    const viewport = viewportRef.current;
+
+    // Calculate transform to center the node at the specified zoom level
+    // Transform formula: screen = world * zoom + translate
+    // We want: screen_center = node_position * zoom + translate
+    // So: translate = screen_center - node_position * zoom
+    const translateX = viewport.width / 2 - node.x * clampedZoom;
+    const translateY = viewport.height / 2 - node.y * clampedZoom;
+
+    // Apply transform with smooth animation
+    const div = select(containerRef.current);
+    (div as any).transition()
+      .duration(750)
+      .ease((t: number) => t * (2 - t)) // easeOutQuad
+      .call(
+        zoomBehaviorRef.current.transform,
+        zoomIdentity.translate(translateX, translateY).scale(clampedZoom)
+      );
+
+    console.log('🎯 Centered on node:', {
+      nodeId,
+      label: node.label,
+      position: { x: node.x, y: node.y },
+      zoom: clampedZoom,
+      translate: { x: translateX, y: translateY }
+    });
+  }, []);
+
+  // Listen for custom event to center on a node (from context menu)
+  useEffect(() => {
+    const handleCenterOnNode = (e: Event) => {
+      const customEvent = e as CustomEvent<{ nodeId: string; zoomLevel?: number }>;
+      const { nodeId, zoomLevel } = customEvent.detail;
+      centerOnNode(nodeId, zoomLevel);
+    };
+
+    window.addEventListener('centerOnNode', handleCenterOnNode);
+
+    return () => {
+      window.removeEventListener('centerOnNode', handleCenterOnNode);
+    };
+  }, [centerOnNode]);
+
   // Handle node interactions
   const handleNodeClick = useCallback((nodeId: string) => {
     const tool = viewState.selectedTool;
@@ -3020,10 +3082,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         enhancedEdgesRef,
         zoomBehaviorRef,
         containerRef,
-        fitToContent,  // ✅ NEW: Pass fitToContent function
+        fitToContent,  // ✅ Pass fitToContent function
+        centerOnNode,  // ✅ Pass centerOnNode function
       });
     }
-  }, [openContextMenu, forceSettings, setForceSettings, useSpriteMode, setUseSpriteMode, fitToContent]);
+  }, [openContextMenu, forceSettings, setForceSettings, useSpriteMode, setUseSpriteMode, fitToContent, centerOnNode]);
 
   // Handle left-click on canvas to close context menu
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
