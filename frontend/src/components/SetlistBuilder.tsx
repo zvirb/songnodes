@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/utilities';
 import { useStore } from '../store/useStore';
 import { Track, SetlistTrack } from '../types';
+import { TrackEditModal } from './TrackEditModal';
 
 // Camelot Wheel mapping for key compatibility
 const CAMELOT_WHEEL: Record<string, { number: number; letter: string; compatibles: string[] }> = {
@@ -288,6 +289,7 @@ const SetlistBuilder: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importData, setImportData] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [editingTrack, setEditingTrack] = useState<SetlistTrack | null>(null);
 
   // Auto-dismiss error messages after 7 seconds
   React.useEffect(() => {
@@ -423,8 +425,22 @@ const SetlistBuilder: React.FC = () => {
   }, [setlist, showError]);
 
   const handleEditTrack = useCallback((trackId: string) => {
-    // TODO: Open track editing modal/panel
-  }, []);
+    if (!currentSetlist) return;
+    const track = currentSetlist.tracks.find(t => t.id === trackId);
+    if (track) {
+      setEditingTrack(track);
+    }
+  }, [currentSetlist]);
+
+  const handleSaveTrackEdits = useCallback((trackId: string, updates: Partial<SetlistTrack>) => {
+    try {
+      setlist.updateSetlistTrack(trackId, updates);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Update failed: Could not update track. ${errorMsg}`);
+      console.error('Update track error:', error);
+    }
+  }, [setlist, showError]);
 
   const handleSaveSetlist = useCallback(() => {
     if (!currentSetlist) {
@@ -848,6 +864,13 @@ const SetlistBuilder: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Track Edit Modal */}
+      <TrackEditModal
+        track={editingTrack}
+        onClose={() => setEditingTrack(null)}
+        onSave={handleSaveTrackEdits}
+      />
     </div>
   );
 };
