@@ -764,6 +764,35 @@ class PersistencePipeline:
             score += 0.05
         return min(1.0, score)
 
+    def _extract_artist_from_playlist_name(self, playlist_name: str) -> str:
+        """
+        Extract artist/DJ name from playlist name.
+
+        Common patterns:
+        - "2009-04-25 - John B @ Luxor, Arnhem (John B Podcast 066)"
+        - "2015-02-13 - Annie Mac, Axwell & Ingrosso - Mash Up"
+
+        Returns artist name or "Unknown DJ" if parsing fails.
+        """
+        try:
+            # Split on " - " and take the second part
+            parts = playlist_name.split(' - ', 2)
+            if len(parts) >= 2:
+                # Second part contains artist, potentially with venue/event
+                artist_part = parts[1]
+                # Remove venue (after @) or event details
+                if ' @ ' in artist_part:
+                    artist_part = artist_part.split(' @ ')[0]
+                elif '(' in artist_part:
+                    artist_part = artist_part.split('(')[0]
+
+                artist_name = artist_part.strip()
+                if artist_name:
+                    return artist_name
+        except Exception:
+            pass
+        return "Unknown DJ"
+
     def _calculate_playlist_quality_score(self, item: Dict[str, Any]) -> float:
         """Calculate playlist quality score based on completeness (0.00-1.00)."""
         score = 0.0
@@ -790,6 +819,9 @@ class PersistencePipeline:
 
         MEDALLION SCHEMA: Writes to silver_enriched_playlists with required validation fields.
         Artist name is denormalized (no FK to artists table).
+
+        NOTE: Artist name is extracted from playlist name as a temporary solution.
+        TODO: Update spiders to extract artist_name/dj_name as a separate field.
         """
         await conn.executemany("""
             INSERT INTO silver_enriched_playlists (
@@ -800,7 +832,7 @@ class PersistencePipeline:
         """, [
             (
                 item.get('name'),  # playlist_name (REQUIRED)
-                item.get('source', 'Unknown DJ'),  # artist_name (REQUIRED - use source as DJ name for now)
+                self._extract_artist_from_playlist_name(item.get('name', '')),  # artist_name (parsed from name)
                 item.get('event_date'),  # event_date (optional)
                 item.get('tracklist_count', 0),  # track_count
                 'valid' if item.get('tracklist_count', 0) > 0 else 'invalid',  # validation_status
