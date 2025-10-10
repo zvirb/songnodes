@@ -79,6 +79,7 @@ deployment/
 
 # SSL certificates (keep examples, exclude actual keys)
 nginx/ssl/*.key
+nginx/ssl/*.pem
 !nginx/ssl/generate-ssl-cert.sh
 
 # Monitoring data
