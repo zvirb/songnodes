@@ -883,8 +883,8 @@ services:
           memory: 1G
   metadata-enrichment:
     build:
-      context: ./services/metadata-enrichment
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/metadata-enrichment/Dockerfile
     container_name: metadata-enrichment
     restart: always
     ports:

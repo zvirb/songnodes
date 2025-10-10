@@ -38,3 +38,4 @@ lxml==5.3.0
 splink==3.9.13
 rapidfuzz==3.10.1
 aio-pika==9.3.1  # RabbitMQ async client for queue consumers
+requests==2.31.0  # Required by common/api_gateway module

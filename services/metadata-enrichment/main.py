@@ -41,8 +41,7 @@ from api_clients import (
 from enrichment_pipeline import MetadataEnrichmentPipeline
 from config_loader import EnrichmentConfigLoader
 from config_driven_enrichment import ConfigDrivenEnricher
-from common.api_gateway import CircuitBreaker
-from common.api_gateway.circuit_breaker import CircuitState as CircuitBreakerState
+from common.api_gateway.circuit_breaker import CircuitBreaker, CircuitState as CircuitBreakerState
 from db_api_keys import initialize_api_key_helper, get_service_keys, close_api_key_helper
 
 # Import health monitoring module

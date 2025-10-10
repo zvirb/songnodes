@@ -1,8 +1,20 @@
+# ============================================================================
+# LEGACY FILE - NOT USED IN PRODUCTION
+# ============================================================================
+# This file is part of the legacy scraper_api_* family which is NOT used in
+# docker-compose.yml. These files have been superseded by modern Scrapy-based
+# spiders in the spiders/ directory.
+#
+# Retained for historical reference and potential future migration.
+# See: /mnt/my_external_drive/programming/songnodes/scrapers/LEGACY_SCRAPERS_README.md
+# ============================================================================
 """
 FastAPI wrapper for YouTube scraper
 Uses YouTube Data API v3 with quota management + NLP for tracklist parsing
 
 This file uses the modern pipelines.persistence_pipeline.PersistencePipeline architecture.
+
+LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
