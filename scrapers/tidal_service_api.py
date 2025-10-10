@@ -1,11 +1,8 @@
-# DEPRECATED: This file uses the removed database_pipeline. Use modern pipelines instead.
 """
 FastAPI service for Tidal music integration
 Provides endpoints for authentication, playlist creation, and track availability checking
 
-⚠️  WARNING: This file imports the deprecated database_pipeline.DatabasePipeline
-    which has been replaced by pipelines.persistence_pipeline.PersistencePipeline.
-    This service may require refactoring to use the modern pipeline architecture.
+This file uses the modern pipelines.persistence_pipeline.PersistencePipeline architecture.
 """
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware

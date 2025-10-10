@@ -9,11 +9,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY services/metadata-enrichment/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy shared common libraries
+COPY common /app/common
+
 # Copy application code
-COPY . .
+COPY services/metadata-enrichment /app
 
 # Create non-root user
 RUN useradd -m -u 1000 enrichment && chown -R enrichment:enrichment /app

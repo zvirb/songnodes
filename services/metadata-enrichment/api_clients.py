@@ -16,7 +16,7 @@ import redis.asyncio as aioredis
 import structlog
 
 # Use shared circuit breaker from common module
-from common.api_gateway import CircuitBreaker
+from common.api_gateway.circuit_breaker import CircuitBreaker
 
 from retry_handler import fetch_with_exponential_backoff, RetryExhausted
 from abbreviation_expander import get_abbreviation_expander
