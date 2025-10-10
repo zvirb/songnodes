@@ -79,11 +79,13 @@ class AudioAnalysisResult(BaseModel):
     energy_curve: list
     beat_grid: list
     bpm: Optional[float]
-    # Advanced features (NEW)
+    # Advanced features
     timbre: Optional[Dict[str, Any]] = None
     rhythm: Optional[Dict[str, Any]] = None
     mood: Optional[Dict[str, Any]] = None
     genre: Optional[Dict[str, Any]] = None
+    # Spotify-equivalent features (NEW - replaces deprecated Spotify API)
+    spotify_features: Optional[Dict[str, Any]] = None
     analysis_version: str
     analyzed_at: datetime
     status: str
@@ -417,6 +419,8 @@ async def process_track_analysis(
         rhythm=advanced_features.get('rhythm'),
         mood=advanced_features.get('mood'),
         genre=advanced_features.get('genre'),
+        # Add Spotify-equivalent features (NEW)
+        spotify_features=advanced_features.get('spotify_features'),
         analysis_version="2.0.0",  # Updated version
         analyzed_at=datetime.utcnow(),
         status="completed"
@@ -446,7 +450,9 @@ async def get_existing_analysis(track_id: str) -> AudioAnalysisResult:
             """
             SELECT track_id, intro_duration_seconds, outro_duration_seconds,
                    breakdown_timestamps, vocal_segments, energy_curve, beat_grid,
-                   bpm, analysis_version, analyzed_at, status, error_message
+                   bpm, timbre_features as timbre, rhythm_features as rhythm,
+                   mood_features as mood, genre_prediction as genre,
+                   spotify_features, analysis_version, analyzed_at, status, error_message
             FROM tracks_audio_analysis
             WHERE track_id = $1
             """,
@@ -468,8 +474,8 @@ async def store_analysis_result(result: AudioAnalysisResult):
                 track_id, intro_duration_seconds, outro_duration_seconds,
                 breakdown_timestamps, vocal_segments, energy_curve, beat_grid,
                 bpm, timbre_features, rhythm_features, mood_features, genre_prediction,
-                analysis_version, analyzed_at, status
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                spotify_features, analysis_version, analyzed_at, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             ON CONFLICT (track_id) DO UPDATE SET
                 intro_duration_seconds = EXCLUDED.intro_duration_seconds,
                 outro_duration_seconds = EXCLUDED.outro_duration_seconds,
@@ -482,6 +488,7 @@ async def store_analysis_result(result: AudioAnalysisResult):
                 rhythm_features = EXCLUDED.rhythm_features,
                 mood_features = EXCLUDED.mood_features,
                 genre_prediction = EXCLUDED.genre_prediction,
+                spotify_features = EXCLUDED.spotify_features,
                 analysis_version = EXCLUDED.analysis_version,
                 analyzed_at = EXCLUDED.analyzed_at,
                 status = EXCLUDED.status
@@ -498,6 +505,7 @@ async def store_analysis_result(result: AudioAnalysisResult):
             json.dumps(result.rhythm) if result.rhythm else None,
             json.dumps(result.mood) if result.mood else None,
             json.dumps(result.genre) if result.genre else None,
+            json.dumps(result.spotify_features) if result.spotify_features else None,
             result.analysis_version,
             result.analyzed_at,
             result.status

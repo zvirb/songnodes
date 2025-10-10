@@ -154,6 +154,12 @@ services:
       DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
       SCRAPERS_DIR: /app/scrapers
+      # API enrichment credentials
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      LASTFM_API_KEY: ${LASTFM_API_KEY}
+      MUSICBRAINZ_USER_AGENT: ${MUSICBRAINZ_USER_AGENT}
+      DISCOGS_TOKEN: ${DISCOGS_TOKEN}
     depends_on:
     - postgres
     - redis
