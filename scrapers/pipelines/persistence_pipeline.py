@@ -764,69 +764,58 @@ class PersistencePipeline:
             score += 0.05
         return min(1.0, score)
 
+    def _calculate_playlist_quality_score(self, item: Dict[str, Any]) -> float:
+        """Calculate playlist quality score based on completeness (0.00-1.00)."""
+        score = 0.0
+        # Critical fields (60% weight)
+        if item.get('name'):
+            score += 0.30
+        if item.get('tracklist_count', 0) > 0:
+            score += 0.30
+        # Important fields (30% weight)
+        if item.get('source'):
+            score += 0.15
+        if item.get('event_date'):
+            score += 0.15
+        # Optional fields (10% weight)
+        if item.get('source_url'):
+            score += 0.05
+        if item.get('playlist_type'):
+            score += 0.05
+        return min(1.0, score)
+
     async def _insert_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert playlists batch with validation fields and conflict handling."""
-        # Check if playlists already exist first
-        for item in batch:
-            existing = await conn.fetchval(
-                "SELECT playlist_id FROM playlists WHERE name = $1 AND source = $2",
-                item['name'], item.get('source', 'scraped_data')
+        """
+        Insert playlists batch to silver_enriched_playlists (medallion architecture).
+
+        MEDALLION SCHEMA: Writes to silver_enriched_playlists with required validation fields.
+        Artist name is denormalized (no FK to artists table).
+        """
+        await conn.executemany("""
+            INSERT INTO silver_enriched_playlists (
+                playlist_name, artist_name, event_date, track_count,
+                validation_status, data_quality_score, enrichment_metadata
             )
-            if not existing:
-                try:
-                    await conn.execute("""
-                        INSERT INTO playlists (
-                            name, source, source_url, playlist_type, event_date,
-                            tracklist_count, scrape_error, last_scrape_attempt, parsing_version
-                        )
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                    """,
-                        item['name'],
-                        item.get('source', 'scraped_data'),
-                        item.get('source_url'),
-                        item.get('playlist_type'),
-                        item.get('event_date'),
-                        item.get('tracklist_count', 0),          # NEW
-                        item.get('scrape_error'),                # NEW
-                        item.get('last_scrape_attempt'),         # NEW
-                        item.get('parsing_version')              # NEW
-                    )
-                except Exception as e:
-                    # Log constraint violations explicitly
-                    if 'chk_tracklist_count_valid' in str(e):
-                        self.logger.error(
-                            f"❌ Database constraint violation: Playlist '{item['name']}' "
-                            f"has tracklist_count={item.get('tracklist_count', 0)} "
-                            f"with scrape_error={item.get('scrape_error')}"
-                        )
-                    raise
-            else:
-                # Update existing playlist with new scrape data
-                try:
-                    await conn.execute("""
-                        UPDATE playlists
-                        SET tracklist_count = $1,
-                            scrape_error = $2,
-                            last_scrape_attempt = $3,
-                            parsing_version = $4,
-                            source_url = $5
-                        WHERE name = $6 AND source = $7
-                    """,
-                        item.get('tracklist_count', 0),
-                        item.get('scrape_error'),
-                        item.get('last_scrape_attempt'),
-                        item.get('parsing_version'),
-                        item.get('source_url'),
-                        item['name'],
-                        item.get('source', 'scraped_data')
-                    )
-                    self.logger.info(f"✓ Updated playlist '{item['name']}' with tracklist_count={item.get('tracklist_count', 0)}")
-                except Exception as e:
-                    self.logger.error(f"Failed to update playlist '{item['name']}': {e}")
-                    raise
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        """, [
+            (
+                item.get('name'),  # playlist_name (REQUIRED)
+                item.get('source', 'Unknown DJ'),  # artist_name (REQUIRED - use source as DJ name for now)
+                item.get('event_date'),  # event_date (optional)
+                item.get('tracklist_count', 0),  # track_count
+                'valid' if item.get('tracklist_count', 0) > 0 else 'invalid',  # validation_status
+                self._calculate_playlist_quality_score(item),  # data_quality_score
+                '{}'  # enrichment_metadata (REQUIRED JSONB, empty for now)
+            ) for item in batch
+        ])
 
     async def _insert_playlist_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert playlist tracks batch with upsert logic."""
+        """
+        Insert playlist tracks batch to silver_playlist_tracks (medallion architecture).
+
+        MEDALLION SCHEMA: Writes to silver_playlist_tracks using UUID foreign keys.
+        Requires playlists and tracks to exist in medallion tables first.
+        """
         for item in batch:
             try:
                 # Handle both playlist_name and setlist_name
@@ -841,41 +830,46 @@ class PersistencePipeline:
                     self.logger.warning(f"Missing position/track_order in item: {item}")
                     continue
 
-                # Get playlist ID
+                # Get playlist ID from medallion table
                 playlist_result = await conn.fetchrow(
-                    "SELECT playlist_id FROM playlists WHERE name = $1 LIMIT 1",
+                    "SELECT id FROM silver_enriched_playlists WHERE playlist_name = $1 LIMIT 1",
                     playlist_name
                 )
 
                 if not playlist_result:
-                    self.logger.warning(f"Playlist not found: {playlist_name}")
+                    self.logger.warning(f"Playlist not found in silver_enriched_playlists: {playlist_name}")
                     continue
 
-                # Get track ID
+                # Get track ID from medallion table (match by artist_name + track_title for better accuracy)
+                track_name = item.get('track_name')
+                artist_name = item.get('artist_name', 'Unknown Artist')
+
                 track_result = await conn.fetchrow(
-                    "SELECT id FROM tracks WHERE title = $1 LIMIT 1",
-                    item['track_name']
+                    "SELECT id FROM silver_enriched_tracks WHERE track_title = $1 AND artist_name = $2 LIMIT 1",
+                    track_name,
+                    artist_name
                 )
 
                 if not track_result:
-                    self.logger.warning(f"Track not found: {item['track_name']}")
+                    self.logger.warning(f"Track not found in silver_enriched_tracks: {artist_name} - {track_name}")
                     continue
 
-                # Insert playlist track
+                # Insert playlist track (with upsert on conflict)
                 await conn.execute("""
-                    INSERT INTO playlist_tracks (playlist_id, position, song_id)
-                    VALUES ($1, $2, $3)
-                    ON CONFLICT (playlist_id, position) DO UPDATE SET
-                        song_id = EXCLUDED.song_id
+                    INSERT INTO silver_playlist_tracks (playlist_id, track_id, position, cue_time_ms)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (playlist_id, track_id, position) DO UPDATE SET
+                        cue_time_ms = EXCLUDED.cue_time_ms
                 """,
-                    playlist_result['playlist_id'],
+                    playlist_result['id'],
+                    track_result['id'],
                     position,
-                    track_result['id']
+                    item.get('cue_time_ms')  # Optional cue time
                 )
 
             except Exception as e:
                 self.logger.warning(
-                    f"Could not insert playlist track {item['track_name']} at position {item['position']}: {e}"
+                    f"Could not insert playlist track {item.get('track_name')} at position {position}: {e}"
                 )
 
     async def _insert_adjacency_batch(self, conn, batch: List[Dict[str, Any]]):
