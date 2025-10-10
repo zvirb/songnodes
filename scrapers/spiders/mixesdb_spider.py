@@ -811,6 +811,7 @@ class MixesdbSpider(scrapy.Spider):
                 track_item = {
                     'track_id': track_id,  # Deterministic ID for matching across sources
                     'track_name': parsed_track['track_name'],
+                    'artist_name': primary_artists[0] if primary_artists else '',  # MEDALLION FIX: Denormalize primary artist
                     'normalized_title': parsed_track['track_name'].lower().strip(),
                     'is_remix': is_remix,
                     'is_mashup': parsed_track.get('is_mashup', False),
