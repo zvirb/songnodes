@@ -214,6 +214,35 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
       case 'track':
         const track = targetData as Track;
+
+        // Helper to find and center on track's node in graph
+        const centerOnTrack = () => {
+          // Get graph data from store to find the node
+          const graphData = useStore.getState().graphData;
+          if (!graphData || !graphData.nodes) {
+            console.warn('⚠️ Cannot center on track: graph data not available');
+            return;
+          }
+
+          // Find first node with matching track_id
+          // Note: A track may appear multiple times (different artists), we center on first match
+          const trackNode = graphData.nodes.find(n => n.track_id === track.id);
+
+          if (trackNode && trackNode.id) {
+            // Select the node and center view on it
+            selectNode(trackNode.id);
+            console.log('🎯 Centering on track node:', trackNode.id, track.title);
+
+            // Trigger graph center via custom event
+            // The GraphVisualization component will handle this
+            window.dispatchEvent(new CustomEvent('centerOnNode', {
+              detail: { nodeId: trackNode.id, zoomLevel: 2.0 }
+            }));
+          } else {
+            console.warn('⚠️ Track not found in graph:', track.id, track.title);
+          }
+        };
+
         items.push(
           {
             label: 'Play Preview',
@@ -234,7 +263,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: 'View in Graph',
             icon: <Layers size={16} />,
             action: () => {
-              // TODO: Center graph on this track
+              centerOnTrack();
               onClose();
             }
           }
