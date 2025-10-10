@@ -127,16 +127,16 @@ class PersistencePipeline:
         self.batch_size = 50
         self.item_batches = {
             'artists': [],
-            'songs': [],
+            'tracks': [],  # Changed from 'songs' to 'tracks' for medallion architecture
             'playlists': [],
             'playlist_tracks': [],
-            'song_adjacency': []
+            # Note: adjacency removed - auto-populated by DB triggers from playlist_tracks
         }
 
         # Track processed items to avoid duplicates within same scraping session
         self.processed_items = {
             'artists': set(),
-            'songs': set(),
+            'tracks': set(),  # Changed from 'songs' to 'tracks'
             'playlists': set()
         }
 
@@ -349,10 +349,10 @@ class PersistencePipeline:
             return
 
         track_key = f"{track_name}::{item.get('artist_name', '')}"
-        if track_key in self.processed_items['songs']:
+        if track_key in self.processed_items['tracks']:
             return
 
-        self.processed_items['songs'].add(track_key)
+        self.processed_items['tracks'].add(track_key)
 
         # Update Prometheus metric for tracks extracted
         if METRICS_AVAILABLE:
@@ -364,7 +364,7 @@ class PersistencePipeline:
         if artist_name and artist_name not in self.processed_items['artists']:
             await self._process_artist_item({'artist_name': artist_name, 'genre': item.get('genre')})
 
-        self.item_batches['songs'].append({
+        self.item_batches['tracks'].append({
             'track_id': item.get('track_id'),
             'title': track_name,
             'artist_name': artist_name,
@@ -404,8 +404,8 @@ class PersistencePipeline:
             'popularity_score': item.get('popularity_score')
         })
 
-        if len(self.item_batches['songs']) >= self.batch_size:
-            await self._flush_batch('songs')
+        if len(self.item_batches['tracks']) >= self.batch_size:
+            await self._flush_batch('tracks')
 
     async def _process_playlist_item(self, item: Dict[str, Any]):
         """
@@ -661,14 +661,13 @@ class PersistencePipeline:
                 async with conn.transaction():
                     if batch_type == 'artists':
                         await self._insert_artists_batch(conn, batch)
-                    elif batch_type == 'songs':
+                    elif batch_type == 'tracks':
                         await self._insert_songs_batch(conn, batch)
                     elif batch_type == 'playlists':
                         await self._insert_playlists_batch(conn, batch)
                     elif batch_type == 'playlist_tracks':
                         await self._insert_playlist_tracks_batch(conn, batch)
-                    elif batch_type == 'song_adjacency':
-                        await self._insert_adjacency_batch(conn, batch)
+                    # Note: song_adjacency removed - auto-populated by DB triggers
 
             self.stats['persisted_items'] += len(batch)
             self.logger.info(f"✓ Flushed {len(batch)} {batch_type} items to database")
@@ -974,7 +973,8 @@ class PersistencePipeline:
         so we flush in this order: artists → songs → playlists → playlist_tracks → song_adjacency
         """
         # Define flush order to respect foreign key dependencies
-        flush_order = ['artists', 'songs', 'playlists', 'playlist_tracks', 'song_adjacency']
+        # Note: song_adjacency removed - auto-populated by DB triggers from playlist_tracks
+        flush_order = ['artists', 'tracks', 'playlists', 'playlist_tracks']
 
         for batch_type in flush_order:
             if batch_type not in self.item_batches:

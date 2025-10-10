@@ -48,7 +48,7 @@ class SpotifyClient:
         self.user_token_mode = db_session_factory is not None  # Use user tokens if DB available
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
-            timeout_seconds=60,
+            timeout=60,
             name="spotify"
         )
         self.rate_limiter = RateLimiter(requests_per_second=3)
@@ -638,7 +638,7 @@ class MusicBrainzClient:
         self.base_url = "https://musicbrainz.org/ws/2"
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=3,
-            timeout_seconds=120,
+            timeout=120,
             name="musicbrainz"
         )
         self.rate_limiter = RateLimiter(requests_per_second=0.9)  # Slightly under 1/sec
@@ -791,7 +791,7 @@ class DiscogsClient:
         self.base_url = "https://api.discogs.com"
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
-            timeout_seconds=60,
+            timeout=60,
             name="discogs"
         )
         self.rate_limiter = RateLimiter(requests_per_second=0.9)  # 60/min = 1/sec
@@ -867,7 +867,7 @@ class BeatportClient:
         self.base_url = "https://www.beatport.com"
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
-            timeout_seconds=60,
+            timeout=60,
             name="beatport"
         )
         self.rate_limiter = RateLimiter(requests_per_second=0.5)
@@ -891,7 +891,7 @@ class LastFMClient:
         self.base_url = "http://ws.audioscrobbler.com/2.0"
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
-            timeout_seconds=60,
+            timeout=60,
             name="lastfm"
         )
         self.rate_limiter = RateLimiter(requests_per_second=0.5)
@@ -964,7 +964,7 @@ class AcousticBrainzClient:
         self.base_url = "https://acousticbrainz.org/api/v1"
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
-            timeout_seconds=60,
+            timeout=60,
             name="acousticbrainz"
         )
         self.rate_limiter = RateLimiter(requests_per_second=2)
@@ -1046,7 +1046,7 @@ class GetSongBPMClient:
         self.base_url = "https://api.getsongbpm.com"
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
-            timeout_seconds=60,
+            timeout=60,
             name="getsongbpm"
         )
         self.rate_limiter = RateLimiter(requests_per_second=1)  # Conservative rate
