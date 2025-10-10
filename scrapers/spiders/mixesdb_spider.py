@@ -69,6 +69,7 @@ class MixesdbSpider(scrapy.Spider):
             'pipelines.raw_data_storage_pipeline.RawDataStoragePipeline': 50,  # Raw data archive
             'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validation
             'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Enrichment
+            'pipelines.api_enrichment_pipeline.APIEnrichmentPipeline': 250,  # API enrichment (Spotify, MusicBrainz, Last.fm)
             'pipelines.persistence_pipeline.PersistencePipeline': 300,  # Modern async persistence
         }
     }

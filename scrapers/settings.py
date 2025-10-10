@@ -87,8 +87,9 @@ DOWNLOAD_HANDLERS = {
 ITEM_PIPELINES = {
    'pipelines.observability_wrapper_pipeline.ObservabilityWrapperPipeline': 50,  # Track scraping runs (FIRST)
    'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validate items using Pydantic models
-   'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Enrich with API data (Spotify, MusicBrainz, etc.)
-   'nlp_fallback_pipeline.NLPFallbackPipeline': 250,  # NLP fallback for tracklist extraction
+   'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Remix parsing, genre normalization
+   'pipelines.api_enrichment_pipeline.APIEnrichmentPipeline': 250,  # General API enrichment (Spotify, MusicBrainz, Last.fm) for ALL tracks
+   'nlp_fallback_pipeline.NLPFallbackPipeline': 260,  # NLP fallback for tracklist extraction
    'pipelines.persistence_pipeline.PersistencePipeline': 300,  # Modern persistence pipeline (asyncpg)
    'pipelines.discogs_enrichment_pipeline.DiscogsEnrichmentPipeline': 400,  # Framework Section 2.2: MixesDB→Discogs bridge
    'pipelines.reddit_validation_pipeline.RedditValidationPipeline': 450,  # Framework Section 2.4: Reddit→Spotify validation

@@ -465,6 +465,342 @@ class AdvancedAudioAnalyzer:
                 return "neutral/ambient"
 
 
+    def analyze_spotify_equivalent_features(self, audio_data: np.ndarray, sr: int, bpm: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Extract Spotify-equivalent audio features to replace deprecated API.
+
+        This method provides drop-in replacements for Spotify's Audio Features API:
+        - danceability: Rhythm regularity + beat strength + tempo suitability
+        - acousticness: Non-electronic instrument detection via HPSS
+        - instrumentalness: Inverse of vocal presence
+        - liveness: Audience/crowd noise detection
+        - speechiness: Speech-like content detection
+        - key: Musical key detection (0-11, C=0)
+        - mode: Major (1) or Minor (0)
+
+        Args:
+            audio_data: Audio time series
+            sr: Sample rate
+            bpm: Optional BPM (detected if not provided)
+
+        Returns:
+            Dictionary with Spotify-compatible features (0.0-1.0 scales)
+        """
+        logger.info("Analyzing Spotify-equivalent features")
+
+        try:
+            # Detect BPM if not provided
+            if bpm is None:
+                tempo, _ = librosa.beat.beat_track(y=audio_data, sr=sr)
+                bpm = float(tempo)
+
+            # DANCEABILITY: Rhythm regularity + beat strength + tempo suitability
+            danceability = self._calculate_danceability(audio_data, sr, bpm)
+
+            # ACOUSTICNESS: Acoustic instrument detection via HPSS
+            acousticness = self._calculate_acousticness(audio_data, sr)
+
+            # INSTRUMENTALNESS: Inverse of vocal presence
+            instrumentalness = self._calculate_instrumentalness(audio_data, sr)
+
+            # LIVENESS: Audience/crowd noise detection
+            liveness = self._calculate_liveness(audio_data, sr)
+
+            # SPEECHINESS: Speech-like content detection
+            speechiness = self._calculate_speechiness(audio_data, sr)
+
+            # KEY DETECTION: Pitch class (0-11) and mode (0=minor, 1=major)
+            key, mode, key_confidence = self._detect_key(audio_data, sr)
+
+            return {
+                "danceability": float(danceability),
+                "acousticness": float(acousticness),
+                "instrumentalness": float(instrumentalness),
+                "liveness": float(liveness),
+                "speechiness": float(speechiness),
+                "key": int(key),
+                "mode": int(mode),
+                "key_confidence": float(key_confidence),
+                "note": "Self-hosted analysis via Librosa/Essentia - no Spotify API dependency"
+            }
+
+        except Exception as e:
+            logger.error(f"Spotify-equivalent feature analysis failed: {e}")
+            return {}
+
+    def _calculate_danceability(self, audio_data: np.ndarray, sr: int, bpm: float) -> float:
+        """
+        Calculate danceability score (0-1) based on rhythm regularity and tempo.
+
+        Danceability combines:
+        - Beat strength and regularity
+        - Tempo suitability for dancing (90-140 BPM ideal)
+        - Rhythm stability
+        """
+        # Beat tracking
+        onset_env = librosa.onset.onset_strength(y=audio_data, sr=sr)
+        beat_frames = librosa.util.peak_pick(
+            onset_env,
+            pre_max=3, post_max=3, pre_avg=3, post_avg=5,
+            delta=0.5, wait=10
+        )
+
+        # Beat regularity (coefficient of variation of inter-beat intervals)
+        if len(beat_frames) > 2:
+            intervals = np.diff(beat_frames)
+            cv = np.std(intervals) / (np.mean(intervals) + 1e-10)
+            beat_regularity = 1.0 / (1.0 + cv)
+        else:
+            beat_regularity = 0.0
+
+        # Beat strength (mean onset strength)
+        beat_strength = np.mean(onset_env) / (np.max(onset_env) + 1e-10)
+
+        # Tempo suitability (peak at 120 BPM, fall off outside 90-140)
+        if 90 <= bpm <= 140:
+            tempo_score = 1.0 - abs(bpm - 120) / 30  # Peak at 120, linear decay
+        else:
+            tempo_score = max(0, 1.0 - abs(bpm - 115) / 100)  # Penalize extreme tempos
+
+        # Pulse clarity from tempogram
+        tempogram = librosa.feature.tempogram(onset_envelope=onset_env, sr=sr)
+        pulse_clarity = self._calculate_pulse_clarity(tempogram)
+
+        # Weighted combination
+        danceability = (
+            beat_regularity * 0.35 +
+            beat_strength * 0.25 +
+            tempo_score * 0.25 +
+            pulse_clarity * 0.15
+        )
+
+        return np.clip(danceability, 0, 1)
+
+    def _calculate_acousticness(self, audio_data: np.ndarray, sr: int) -> float:
+        """
+        Calculate acousticness (0-1) - likelihood of acoustic (non-electronic) instruments.
+
+        Uses Harmonic-Percussive Source Separation (HPSS) to detect acoustic characteristics:
+        - High harmonic-to-percussive ratio
+        - Natural spectral envelope (vs synthetic)
+        - Absence of electronic timbres
+        """
+        # HPSS - separate harmonic and percussive components
+        harmonic, percussive = librosa.effects.hpss(audio_data)
+
+        # Harmonic-to-percussive energy ratio
+        harmonic_energy = np.sum(harmonic ** 2)
+        percussive_energy = np.sum(percussive ** 2)
+        total_energy = harmonic_energy + percussive_energy + 1e-10
+
+        harmonic_ratio = harmonic_energy / total_energy
+
+        # Spectral flatness (low = tonal/acoustic, high = noisy/electronic)
+        flatness = librosa.feature.spectral_flatness(y=audio_data)[0]
+        tonality = 1 - np.mean(flatness)
+
+        # Spectral rolloff (acoustic instruments have lower rolloff)
+        rolloff = librosa.feature.spectral_rolloff(y=audio_data, sr=sr)[0]
+        rolloff_score = 1 - np.clip(np.mean(rolloff) / (sr / 2), 0, 1)
+
+        # Zero-crossing rate (acoustic has moderate ZCR, electronic can be very low or high)
+        zcr = librosa.feature.zero_crossing_rate(audio_data)[0]
+        zcr_mean = np.mean(zcr)
+        zcr_score = 1 - abs(zcr_mean - 0.1) / 0.1  # Peak at ~0.1
+        zcr_score = np.clip(zcr_score, 0, 1)
+
+        # Weighted combination
+        acousticness = (
+            harmonic_ratio * 0.4 +
+            tonality * 0.3 +
+            rolloff_score * 0.2 +
+            zcr_score * 0.1
+        )
+
+        return np.clip(acousticness, 0, 1)
+
+    def _calculate_instrumentalness(self, audio_data: np.ndarray, sr: int) -> float:
+        """
+        Calculate instrumentalness (0-1) - likelihood of no vocals.
+
+        Uses vocal detection techniques inversely:
+        - Low harmonic content in vocal frequency range
+        - Absence of pitch-tracked melodic lines
+        - Low spectral centroid variance (vocals vary)
+        """
+        # HPSS to separate harmonic (melodic/vocal) from percussive
+        harmonic, _ = librosa.effects.hpss(audio_data)
+
+        # Vocal frequency range analysis (80 Hz - 1100 Hz for human voice)
+        stft = librosa.stft(audio_data)
+        freqs = librosa.fft_frequencies(sr=sr)
+        vocal_freq_mask = (freqs >= 80) & (freqs <= 1100)
+
+        # Energy in vocal frequency range
+        vocal_band_energy = np.sum(np.abs(stft[vocal_freq_mask, :]) ** 2)
+        total_energy = np.sum(np.abs(stft) ** 2) + 1e-10
+        vocal_ratio = vocal_band_energy / total_energy
+
+        # Spectral centroid variance (vocals have high variance)
+        centroid = librosa.feature.spectral_centroid(y=audio_data, sr=sr)[0]
+        centroid_variance = np.std(centroid) / (np.mean(centroid) + 1e-10)
+
+        # Harmonic energy in harmonic component (vocals are very harmonic)
+        harmonic_energy_ratio = np.sum(harmonic ** 2) / (np.sum(audio_data ** 2) + 1e-10)
+
+        # Inverse of vocal indicators
+        instrumentalness = (
+            (1 - np.clip(vocal_ratio * 3, 0, 1)) * 0.4 +
+            (1 - np.clip(centroid_variance / 0.5, 0, 1)) * 0.3 +
+            (1 - np.clip(harmonic_energy_ratio, 0, 1)) * 0.3
+        )
+
+        return np.clip(instrumentalness, 0, 1)
+
+    def _calculate_liveness(self, audio_data: np.ndarray, sr: int) -> float:
+        """
+        Calculate liveness (0-1) - likelihood of live audience presence.
+
+        Detects:
+        - Audience noise (crowd ambience, applause, cheering)
+        - Reverberation (large venue acoustics)
+        - Background noise level
+        """
+        # Spectral flatness - live recordings have more ambient noise
+        flatness = librosa.feature.spectral_flatness(y=audio_data)[0]
+        noise_floor = np.mean(flatness)
+
+        # RMS energy variance - live has more dynamic variation
+        rms = librosa.feature.rms(y=audio_data)[0]
+        energy_variance = np.std(rms) / (np.mean(rms) + 1e-10)
+
+        # High-frequency content (crowd noise, applause)
+        stft = librosa.stft(audio_data)
+        freqs = librosa.fft_frequencies(sr=sr)
+        high_freq_mask = freqs > 4000
+        high_freq_energy = np.mean(np.abs(stft[high_freq_mask, :]))
+        total_energy = np.mean(np.abs(stft)) + 1e-10
+        high_freq_ratio = high_freq_energy / total_energy
+
+        # Spectral flux (live recordings have more abrupt spectral changes)
+        spectral_flux = np.mean(np.diff(np.abs(stft), axis=1) ** 2)
+
+        # Weighted combination
+        liveness = (
+            np.clip(noise_floor * 5, 0, 1) * 0.3 +
+            np.clip(energy_variance / 2, 0, 1) * 0.3 +
+            np.clip(high_freq_ratio * 5, 0, 1) * 0.2 +
+            np.clip(spectral_flux / 100, 0, 1) * 0.2
+        )
+
+        return np.clip(liveness, 0, 1)
+
+    def _calculate_speechiness(self, audio_data: np.ndarray, sr: int) -> float:
+        """
+        Calculate speechiness (0-1) - likelihood of spoken words.
+
+        Speech characteristics:
+        - Moderate spectral centroid (1000-3000 Hz)
+        - High zero-crossing rate
+        - Low harmonic stability (speech is less tonal than singing)
+        - Rhythmic patterns (syllabic)
+        """
+        # Spectral centroid - speech peaks around 1000-3000 Hz
+        centroid = librosa.feature.spectral_centroid(y=audio_data, sr=sr)[0]
+        centroid_mean = np.mean(centroid)
+
+        # Speech typically 1000-3000 Hz
+        if 1000 <= centroid_mean <= 3000:
+            centroid_score = 1.0
+        else:
+            centroid_score = max(0, 1.0 - abs(centroid_mean - 2000) / 2000)
+
+        # Zero-crossing rate - speech has higher ZCR than music
+        zcr = librosa.feature.zero_crossing_rate(audio_data)[0]
+        zcr_score = np.clip(np.mean(zcr) / 0.15, 0, 1)
+
+        # Harmonic stability - speech is less stable than singing
+        tonnetz = librosa.feature.tonnetz(y=audio_data, sr=sr)
+        harmonic_instability = np.std(tonnetz)
+        instability_score = np.clip(harmonic_instability / 0.5, 0, 1)
+
+        # Spectral flatness - speech is flatter than music
+        flatness = librosa.feature.spectral_flatness(y=audio_data)[0]
+        flatness_score = np.mean(flatness)
+
+        # MFCC variance - speech has distinct MFCC patterns
+        mfccs = librosa.feature.mfcc(y=audio_data, sr=sr, n_mfcc=13)
+        mfcc_variance = np.mean(np.std(mfccs, axis=1))
+        mfcc_score = np.clip(mfcc_variance / 50, 0, 1)
+
+        # Weighted combination
+        speechiness = (
+            centroid_score * 0.25 +
+            zcr_score * 0.25 +
+            instability_score * 0.2 +
+            flatness_score * 0.15 +
+            mfcc_score * 0.15
+        )
+
+        return np.clip(speechiness, 0, 1)
+
+    def _detect_key(self, audio_data: np.ndarray, sr: int) -> Tuple[int, int, float]:
+        """
+        Detect musical key using chroma features.
+
+        Returns:
+            (key, mode, confidence) where:
+            - key: 0-11 (C, C#, D, ..., B)
+            - mode: 0 (minor) or 1 (major)
+            - confidence: 0-1
+        """
+        # Compute chromagram
+        chroma = librosa.feature.chroma_cqt(y=audio_data, sr=sr)
+
+        # Average chroma over time
+        chroma_mean = np.mean(chroma, axis=1)
+
+        # Normalize
+        chroma_mean = chroma_mean / (np.sum(chroma_mean) + 1e-10)
+
+        # Major and minor key profiles (Krumhansl-Schmuckler)
+        major_profile = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
+        minor_profile = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+
+        # Normalize profiles
+        major_profile = major_profile / np.sum(major_profile)
+        minor_profile = minor_profile / np.sum(minor_profile)
+
+        # Correlate with all 12 keys in major and minor
+        max_correlation = -1
+        best_key = 0
+        best_mode = 1
+
+        for shift in range(12):
+            # Rotate profiles
+            major_rotated = np.roll(major_profile, shift)
+            minor_rotated = np.roll(minor_profile, shift)
+
+            # Correlation
+            major_corr = np.corrcoef(chroma_mean, major_rotated)[0, 1]
+            minor_corr = np.corrcoef(chroma_mean, minor_rotated)[0, 1]
+
+            if major_corr > max_correlation:
+                max_correlation = major_corr
+                best_key = shift
+                best_mode = 1
+
+            if minor_corr > max_correlation:
+                max_correlation = minor_corr
+                best_key = shift
+                best_mode = 0
+
+        # Confidence is the correlation strength
+        confidence = np.clip((max_correlation + 1) / 2, 0, 1)  # Map [-1,1] to [0,1]
+
+        return best_key, best_mode, confidence
+
+
 def analyze_advanced_features(audio_data: np.ndarray, sr: int, bpm: Optional[float] = None) -> Dict[str, Any]:
     """
     Convenience function to run all advanced analysis modules.
@@ -484,9 +820,13 @@ def analyze_advanced_features(audio_data: np.ndarray, sr: int, bpm: Optional[flo
     mood = analyzer.analyze_mood(audio_data, sr, bpm)
     genre = analyzer.classify_genre(audio_data, sr, timbre, rhythm)
 
+    # NEW: Add Spotify-equivalent features
+    spotify_features = analyzer.analyze_spotify_equivalent_features(audio_data, sr, bpm)
+
     return {
         "timbre": timbre,
         "rhythm": rhythm,
         "mood": mood,
-        "genre": genre
+        "genre": genre,
+        "spotify_features": spotify_features  # NEW
     }
