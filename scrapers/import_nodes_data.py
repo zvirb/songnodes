@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from database_pipeline import EnhancedMusicDatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 
 # Setup logging
 logging.basicConfig(
@@ -148,7 +148,7 @@ class NodesDataImporter:
         logger.info(f"Database config: host={database_config['host']}, port={database_config['port']}")
 
         # Initialize pipeline
-        self.pipeline = EnhancedMusicDatabasePipeline(database_config)
+        self.pipeline = PersistencePipeline(database_config)
         await self.pipeline.open_spider(None)
 
         try:

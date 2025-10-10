@@ -16,7 +16,7 @@ import sys
 import uuid
 from datetime import datetime
 from typing import Dict, List, Any
-from database_pipeline import EnhancedMusicDatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 
 # Configure logging
 logging.basicConfig(
@@ -485,7 +485,7 @@ class SetlistDataImporter:
         }
 
         # Initialize the database pipeline
-        self.db_pipeline = EnhancedMusicDatabasePipeline(self.db_config)
+        self.db_pipeline = PersistencePipeline(self.db_config)
 
     def convert_setlist_to_pipeline_items(self, setlist: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Convert a setlist to database pipeline items"""

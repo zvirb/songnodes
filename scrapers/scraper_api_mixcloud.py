@@ -19,7 +19,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 from bs4 import BeautifulSoup
 
-from database_pipeline import DatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 from nlp_fallback_utils import extract_via_nlp, extract_text_from_html
 
 # Configure logging
@@ -219,9 +219,9 @@ async def scrape_mixcloud_mix(url: str) -> Dict[str, Any]:
 
 async def save_to_database(mix_data: Dict[str, Any], spider_context: Any = None):
     """
-    Save scraped mix data to database using DatabasePipeline
+    Save scraped mix data to database using PersistencePipeline
     """
-    db_pipeline = DatabasePipeline(DATABASE_CONFIG)
+    db_pipeline = PersistencePipeline(DATABASE_CONFIG)
 
     try:
         await db_pipeline.open_spider(spider_context)

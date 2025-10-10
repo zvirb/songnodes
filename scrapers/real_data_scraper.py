@@ -16,7 +16,7 @@ import asyncio
 import asyncpg
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Set
-from database_pipeline import DatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 from raw_data_store import RawDataStore
 import random
 import time
@@ -45,7 +45,7 @@ class RealDataScraper:
             'user': os.getenv('DATABASE_USER', 'musicdb_user'),
             'password': os.getenv('DATABASE_PASSWORD', '7D82_xqNs55tGyk')  # Use actual database password
         }
-        self.db_pipeline = DatabasePipeline(db_config)
+        self.db_pipeline = PersistencePipeline(db_config)
 
         # Initialize raw data store for playlist backup
         self.raw_data_store = RawDataStore(

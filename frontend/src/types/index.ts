@@ -173,6 +173,7 @@ export interface ViewState {
   performanceMode?: 'high' | 'balanced' | 'low';
   showStats?: boolean;
   navigationRequest?: NavigationRequest | null;
+  viewMode?: '2d' | '3d' | '3d-helix'; // Graph visualization mode
 }
 
 export interface PanelState {
@@ -320,6 +321,33 @@ export type Color = {
   b: number;
   a?: number;
 };
+
+// Camelot Wheel types
+export interface CamelotKey {
+  id: string;           // '1A', '2B', etc.
+  musical: string;      // 'C Major', 'A Minor', etc.
+  openKey: string;      // '1d', '2m', etc. (alternative notation)
+  position: number;     // 0-11 around circle
+  mode: 'major' | 'minor';
+  energy: number;       // 1-10 energy level
+  mood: string;         // 'uplifting', 'melancholic', etc.
+  color: string;        // Base color
+  energyColor: string;  // Energy-based color
+  compatible: string[]; // Adjacent and opposite keys for harmonic mixing
+}
+
+export interface TrackConnection {
+  sourceKey: string;
+  targetKey: string;
+  weight: number;
+  isPlaylistEdge: boolean; // True if from existing graph edges
+  isHarmonicSuggestion: boolean; // True if harmonic compatibility
+  trackPairs: Array<{
+    source: GraphNode;
+    target: GraphNode;
+    edge?: GraphEdge;
+  }>;
+}
 
 // Export default app configuration
 export const DEFAULT_CONFIG: AppConfig = {

@@ -26,7 +26,7 @@ from tidal_api_client import (
     create_tidal_client,
     test_tidal_oauth
 )
-from database_pipeline import DatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 # Global client instance
 tidal_client: Optional[TidalAPIClient] = None
-db_pipeline: Optional[DatabasePipeline] = None
+db_pipeline: Optional[PersistencePipeline] = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
 
     # Startup
     try:
-        db_pipeline = DatabasePipeline()
+        db_pipeline = PersistencePipeline()
         tidal_client = create_tidal_client(db_pipeline)
         logger.info("Tidal service initialized")
     except Exception as e:
