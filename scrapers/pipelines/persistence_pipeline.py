@@ -126,9 +126,11 @@ class PersistencePipeline:
         # Batch processing configuration
         self.batch_size = 50
         self.item_batches = {
+            'bronze_tracks': [],  # NEW: Bronze layer for raw track data
+            'bronze_playlists': [],  # NEW: Bronze layer for raw playlist data
             'artists': [],
-            'tracks': [],  # Changed from 'songs' to 'tracks' for medallion architecture
-            'playlists': [],
+            'tracks': [],  # Silver layer tracks
+            'playlists': [],  # Silver layer playlists
             'playlist_tracks': [],
             # Note: adjacency removed - auto-populated by DB triggers from playlist_tracks
         }
@@ -339,7 +341,9 @@ class PersistencePipeline:
 
     async def _process_track_item(self, item: Dict[str, Any]):
         """
-        Process track/song item and add to batch.
+        Process track/song item and add to BOTH bronze and silver batches.
+
+        Medallion architecture: Raw data → Bronze → Silver
 
         Args:
             item: Track item
@@ -364,7 +368,11 @@ class PersistencePipeline:
         if artist_name and artist_name not in self.processed_items['artists']:
             await self._process_artist_item({'artist_name': artist_name, 'genre': item.get('genre')})
 
-        self.item_batches['tracks'].append({
+        # MEDALLION: Add to BRONZE batch (raw data preservation)
+        self.item_batches['bronze_tracks'].append(item)  # Store complete raw item
+
+        # MEDALLION: Add to SILVER batch (enriched data)
+        silver_item = {
             'track_id': item.get('track_id'),
             'title': track_name,
             'artist_name': artist_name,
@@ -401,8 +409,15 @@ class PersistencePipeline:
             'is_explicit': item.get('is_explicit', False),
             # Normalized fields
             'normalized_title': item.get('normalized_title'),
-            'popularity_score': item.get('popularity_score')
-        })
+            'popularity_score': item.get('popularity_score'),
+            # MEDALLION: Reference to raw data (will be set during flush)
+            '_raw_item': item  # Keep reference to get bronze_id later
+        }
+        self.item_batches['tracks'].append(silver_item)
+
+        # Flush bronze if batch full (bronze must flush before silver)
+        if len(self.item_batches['bronze_tracks']) >= self.batch_size:
+            await self._flush_batch('bronze_tracks')
 
         if len(self.item_batches['tracks']) >= self.batch_size:
             await self._flush_batch('tracks')
@@ -489,17 +504,28 @@ class PersistencePipeline:
         elif not isinstance(event_date, date):
             event_date = None
 
-        self.item_batches['playlists'].append({
+        # MEDALLION: Add to BRONZE batch (raw data preservation)
+        self.item_batches['bronze_playlists'].append(item)  # Store complete raw item
+
+        # MEDALLION: Add to SILVER batch (enriched data)
+        silver_playlist = {
             'name': playlist_name,
             'source': source,
             'source_url': item.get('source_url'),
             'playlist_type': item.get('playlist_type') or item.get('event_type'),
             'event_date': event_date,
-            'tracklist_count': tracklist_count,              # ADD
-            'scrape_error': scrape_error,                    # ADD
-            'last_scrape_attempt': datetime.utcnow(),        # ADD
-            'parsing_version': parsing_version               # ADD
-        })
+            'tracklist_count': tracklist_count,
+            'scrape_error': scrape_error,
+            'last_scrape_attempt': datetime.utcnow(),
+            'parsing_version': parsing_version,
+            # MEDALLION: Reference to raw data (will be set during flush)
+            '_raw_item': item  # Keep reference to get bronze_id later
+        }
+        self.item_batches['playlists'].append(silver_playlist)
+
+        # Flush bronze if batch full (bronze must flush before silver)
+        if len(self.item_batches['bronze_playlists']) >= self.batch_size:
+            await self._flush_batch('bronze_playlists')
 
         if len(self.item_batches['playlists']) >= self.batch_size:
             await self._flush_batch('playlists')
@@ -649,6 +675,10 @@ class PersistencePipeline:
         """
         Flush a specific batch to database.
 
+        For medallion architecture:
+        - Bronze batches return bronze_ids for FK linkage
+        - Silver batches use bronze_ids if available
+
         Args:
             batch_type: Type of batch to flush
         """
@@ -659,7 +689,16 @@ class PersistencePipeline:
         try:
             async with self.connection_pool.acquire() as conn:
                 async with conn.transaction():
-                    if batch_type == 'artists':
+                    if batch_type == 'bronze_tracks':
+                        results = await self._insert_bronze_tracks_batch(conn, batch)
+                        # Store bronze_ids in items for silver layer linkage
+                        for result in results:
+                            result['item']['_bronze_id'] = result['bronze_id']
+                    elif batch_type == 'bronze_playlists':
+                        results = await self._insert_bronze_playlists_batch(conn, batch)
+                        for result in results:
+                            result['item']['_bronze_id'] = result['bronze_id']
+                    elif batch_type == 'artists':
                         await self._insert_artists_batch(conn, batch)
                     elif batch_type == 'tracks':
                         await self._insert_songs_batch(conn, batch)
@@ -676,6 +715,112 @@ class PersistencePipeline:
         except Exception as e:
             self.logger.error(f"Error flushing {batch_type} batch: {e}")
             raise
+
+    async def _insert_bronze_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
+        """
+        Insert raw track data to bronze_scraped_tracks (medallion layer 1).
+
+        Preserves complete raw item data in raw_json for replay capability.
+        Returns list of bronze IDs for linking to silver layer.
+        """
+        import json
+
+        results = []
+        for item in batch:
+            # Get source metadata
+            source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
+            source_url = item.get('source_url', 'unknown')
+            source_track_id = item.get('source_track_id') or item.get('track_id')
+            scraper_version = item.get('scraper_version', 'v1.0.0')
+
+            # Serialize complete item as raw_json
+            raw_json = json.dumps(item, default=str)
+
+            # Extract fields for indexing
+            artist_name = item.get('artist_name', '')
+            track_title = item.get('track_name') or item.get('title', '')
+
+            # Insert with RETURNING id
+            bronze_id = await conn.fetchval("""
+                INSERT INTO bronze_scraped_tracks (
+                    source, source_url, source_track_id, scraper_version,
+                    raw_json, artist_name, track_title
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (source, source_url, source_track_id) DO UPDATE SET
+                    raw_json = EXCLUDED.raw_json,
+                    artist_name = EXCLUDED.artist_name,
+                    track_title = EXCLUDED.track_title,
+                    scraped_at = NOW()
+                RETURNING id
+            """, source, source_url, source_track_id, scraper_version, raw_json, artist_name, track_title)
+
+            results.append({'item': item, 'bronze_id': bronze_id})
+
+        self.logger.info(f"✓ Inserted {len(results)} tracks to bronze layer")
+        return results
+
+    async def _insert_bronze_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
+        """
+        Insert raw playlist data to bronze_scraped_playlists (medallion layer 1).
+
+        Preserves complete raw item data in raw_json for replay capability.
+        Returns list of bronze IDs for linking to silver layer.
+        """
+        import json
+
+        results = []
+        for item in batch:
+            # Get source metadata
+            source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
+            source_url = item.get('source_url', 'unknown')
+            source_playlist_id = item.get('source_playlist_id') or item.get('playlist_id') or item.get('setlist_id')
+            scraper_version = item.get('scraper_version', 'v1.0.0')
+
+            # Serialize complete item as raw_json
+            raw_json = json.dumps(item, default=str)
+
+            # Extract fields for indexing
+            playlist_name = item.get('setlist_name') or item.get('name', '')
+            artist_name = self._extract_artist_from_playlist_name(playlist_name)
+            event_name = item.get('event_name')
+
+            # Parse event_date
+            event_date = item.get('set_date') or item.get('playlist_date') or item.get('event_date')
+            if event_date and isinstance(event_date, str):
+                try:
+                    from datetime import datetime
+                    if 'T' in event_date:
+                        event_date = datetime.fromisoformat(event_date.replace('Z', '+00:00').split('.')[0]).date()
+                    else:
+                        event_date = datetime.strptime(event_date, '%Y-%m-%d').date()
+                except Exception:
+                    event_date = None
+            elif isinstance(event_date, datetime):
+                event_date = event_date.date()
+
+            # Insert with RETURNING id
+            bronze_id = await conn.fetchval("""
+                INSERT INTO bronze_scraped_playlists (
+                    source, source_url, source_playlist_id, scraper_version,
+                    raw_json, playlist_name, artist_name, event_name, event_date
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                ON CONFLICT (source, source_url, source_playlist_id) DO UPDATE SET
+                    raw_json = EXCLUDED.raw_json,
+                    playlist_name = EXCLUDED.playlist_name,
+                    artist_name = EXCLUDED.artist_name,
+                    event_name = EXCLUDED.event_name,
+                    event_date = EXCLUDED.event_date,
+                    scraped_at = NOW()
+                RETURNING id
+            """, source, source_url, source_playlist_id, scraper_version, raw_json,
+                 playlist_name, artist_name, event_name, event_date)
+
+            results.append({'item': item, 'bronze_id': bronze_id})
+
+        self.logger.info(f"✓ Inserted {len(results)} playlists to bronze layer")
+        return results
 
     async def _insert_artists_batch(self, conn, batch: List[Dict[str, Any]]):
         """Insert artists batch with upsert logic."""
@@ -706,19 +851,25 @@ class PersistencePipeline:
         """
         Insert tracks batch to silver_enriched_tracks (medallion architecture).
 
-        MEDALLION SCHEMA: Writes to silver_enriched_tracks with required validation fields.
-        Artist relationships are denormalized (artist_name column, no FK).
+        MEDALLION SCHEMA: Writes to silver_enriched_tracks with:
+        - bronze_id FK linking to bronze_scraped_tracks
+        - Required validation fields
+        - Denormalized artist_name
+
+        Args:
+            batch: List of silver layer track items (with _raw_item reference for bronze_id)
         """
         await conn.executemany("""
             INSERT INTO silver_enriched_tracks (
-                artist_name, track_title, spotify_id, isrc, release_date, duration_ms,
+                bronze_id, artist_name, track_title, spotify_id, isrc, release_date, duration_ms,
                 bpm, key, genre, energy, valence, danceability,
                 validation_status, data_quality_score, enrichment_metadata
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         """, [
             (
-                item.get('artist_name', 'Unknown Artist'),  # artist_name (REQUIRED, denormalized)
+                item.get('_raw_item', {}).get('_bronze_id'),  # bronze_id FK (links to raw data)
+                item.get('artist_name') or 'Unknown Artist',  # artist_name (REQUIRED, denormalized)
                 item.get('track_name') or item.get('title'),  # track_title
                 item.get('spotify_id'),  # spotify_id
                 item.get('isrc'),  # isrc
@@ -817,20 +968,26 @@ class PersistencePipeline:
         """
         Insert playlists batch to silver_enriched_playlists (medallion architecture).
 
-        MEDALLION SCHEMA: Writes to silver_enriched_playlists with required validation fields.
-        Artist name is denormalized (no FK to artists table).
+        MEDALLION SCHEMA: Writes to silver_enriched_playlists with:
+        - bronze_id FK linking to bronze_scraped_playlists
+        - Required validation fields
+        - Denormalized artist_name
 
         NOTE: Artist name is extracted from playlist name as a temporary solution.
         TODO: Update spiders to extract artist_name/dj_name as a separate field.
+
+        Args:
+            batch: List of silver layer playlist items (with _raw_item reference for bronze_id)
         """
         await conn.executemany("""
             INSERT INTO silver_enriched_playlists (
-                playlist_name, artist_name, event_date, track_count,
+                bronze_id, playlist_name, artist_name, event_date, track_count,
                 validation_status, data_quality_score, enrichment_metadata
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         """, [
             (
+                item.get('_raw_item', {}).get('_bronze_id'),  # bronze_id FK (links to raw data)
                 item.get('name'),  # playlist_name (REQUIRED)
                 self._extract_artist_from_playlist_name(item.get('name', '')),  # artist_name (parsed from name)
                 item.get('event_date'),  # event_date (optional)
@@ -980,12 +1137,25 @@ class PersistencePipeline:
         Each batch flush is wrapped in try-except to ensure one failing
         batch doesn't prevent other batches from being persisted.
 
-        IMPORTANT: Flush order matters! Adjacencies require tracks to exist,
-        so we flush in this order: artists → songs → playlists → playlist_tracks → song_adjacency
+        IMPORTANT: Flush order matters for medallion architecture!
+        Bronze layer MUST be flushed before silver to establish FK linkage.
+
+        Flush order:
+        1. Bronze layer (raw data, returns bronze_ids)
+        2. Legacy/lookup tables (artists)
+        3. Silver layer (enriched data, references bronze_ids)
+        4. Junction tables (playlist_tracks, triggers adjacency)
         """
         # Define flush order to respect foreign key dependencies
-        # Note: song_adjacency removed - auto-populated by DB triggers from playlist_tracks
-        flush_order = ['artists', 'tracks', 'playlists', 'playlist_tracks']
+        # CRITICAL: Bronze before silver for medallion architecture
+        flush_order = [
+            'bronze_tracks',      # 1. Bronze layer tracks (raw data)
+            'bronze_playlists',   # 2. Bronze layer playlists (raw data)
+            'artists',            # 3. Legacy artists table
+            'tracks',             # 4. Silver layer tracks (links to bronze via bronze_id)
+            'playlists',          # 5. Silver layer playlists (links to bronze via bronze_id)
+            'playlist_tracks'     # 6. Junction table (triggers adjacency via DB triggers)
+        ]
 
         for batch_type in flush_order:
             if batch_type not in self.item_batches:
@@ -998,6 +1168,8 @@ class PersistencePipeline:
                 raise
             except Exception as e:
                 self.logger.error(f"Error flushing {batch_type} batch (continuing with other batches): {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
                 # Clear the failed batch to prevent retry loops
                 self.item_batches[batch_type] = []
 
