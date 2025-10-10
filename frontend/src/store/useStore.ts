@@ -22,6 +22,7 @@ import {
   AVAILABLE_ALGORITHMS,
 } from '../types/pathfinding';
 import { filterNodes, filterEdges } from '../utils/filterNodes';
+import { Community, CommunityDetectionResult } from '../utils/communityDetection';
 
 // Music service credentials interface
 interface MusicServiceCredentials {
@@ -72,6 +73,19 @@ interface AppState {
 
   // Music service credentials
   musicCredentials: MusicServiceCredentials;
+
+  // Community detection state
+  communityState: {
+    communities: Community[];
+    nodesCommunityMap: Map<string, number>;
+    modularity: number;
+    communityCount: number;
+    expandedCommunities: Set<number>;
+    highlightedNode: string | null;
+    highlightedNeighbors: Set<string>;
+    isDetecting: boolean;
+    lastDetectionTime: number | null;
+  };
 
   // Loading and error states
   isLoading: boolean;
@@ -164,6 +178,18 @@ interface GeneralActions {
   resetState: () => void;
 }
 
+interface CommunityActions {
+  detectCommunities: (resolution?: number) => void;
+  setCommunityResults: (results: CommunityDetectionResult) => void;
+  toggleCommunityExpanded: (communityId: number) => void;
+  expandCommunity: (communityId: number) => void;
+  collapseCommunity: (communityId: number) => void;
+  highlightNeighborhood: (nodeId: string, neighborIds: string[]) => void;
+  clearHighlight: () => void;
+  filterByCommunities: (communityIds: number[]) => void;
+  resetCommunities: () => void;
+}
+
 // Combined store interface
 interface StoreState extends AppState {
   // Actions
@@ -176,6 +202,7 @@ interface StoreState extends AppState {
   performance: PerformanceActions;
   general: GeneralActions;
   credentials: CredentialActions;
+  community: CommunityActions;
 
   // Legacy compatibility properties for components
   viewSettings: ViewState;
@@ -220,6 +247,7 @@ const initialState: AppState = {
     performanceMode: 'balanced',
     showStats: false,
     navigationRequest: null,
+    viewMode: '2d', // Default to 2D view
   },
 
   panelState: {
@@ -264,6 +292,18 @@ const initialState: AppState = {
   },
 
   musicCredentials: {},
+
+  communityState: {
+    communities: [],
+    nodesCommunityMap: new Map(),
+    modularity: 0,
+    communityCount: 0,
+    expandedCommunities: new Set(),
+    highlightedNode: null,
+    highlightedNeighbors: new Set(),
+    isDetecting: false,
+    lastDetectionTime: null,
+  },
 
   isLoading: false,
   error: null,
@@ -1094,6 +1134,153 @@ export const useStore = create<StoreState>()(
                 }
               }
             }, 100);
+          },
+        },
+
+        // Community detection actions
+        community: {
+          detectCommunities: async (resolution = 1.0) => {
+            set((state) => ({
+              ...state,
+              communityState: {
+                ...state.communityState,
+                isDetecting: true,
+              },
+            }), false, 'community/detectStart');
+
+            try {
+              // Import detection function dynamically
+              const { detectCommunities } = await import('../utils/communityDetection');
+
+              const graphData = get().graphData;
+              const result = detectCommunities(graphData, { resolution });
+
+              get().community.setCommunityResults(result);
+            } catch (error) {
+              console.error('Community detection failed:', error);
+              set((state) => ({
+                ...state,
+                communityState: {
+                  ...state.communityState,
+                  isDetecting: false,
+                },
+                error: error instanceof Error ? error.message : 'Community detection failed',
+              }), false, 'community/detectError');
+            }
+          },
+
+          setCommunityResults: (results) => {
+            set((state) => ({
+              ...state,
+              communityState: {
+                ...state.communityState,
+                communities: results.communities,
+                nodesCommunityMap: results.nodesCommunityMap,
+                modularity: results.modularity,
+                communityCount: results.communityCount,
+                isDetecting: false,
+                lastDetectionTime: Date.now(),
+              },
+            }), false, 'community/setResults');
+          },
+
+          toggleCommunityExpanded: (communityId) => {
+            set((state) => {
+              const newExpanded = new Set(state.communityState.expandedCommunities);
+
+              if (newExpanded.has(communityId)) {
+                newExpanded.delete(communityId);
+              } else {
+                newExpanded.add(communityId);
+              }
+
+              return {
+                ...state,
+                communityState: {
+                  ...state.communityState,
+                  expandedCommunities: newExpanded,
+                },
+              };
+            }, false, 'community/toggleExpanded');
+          },
+
+          expandCommunity: (communityId) => {
+            set((state) => ({
+              ...state,
+              communityState: {
+                ...state.communityState,
+                expandedCommunities: new Set([...state.communityState.expandedCommunities, communityId]),
+              },
+            }), false, 'community/expand');
+          },
+
+          collapseCommunity: (communityId) => {
+            set((state) => {
+              const newExpanded = new Set(state.communityState.expandedCommunities);
+              newExpanded.delete(communityId);
+
+              return {
+                ...state,
+                communityState: {
+                  ...state.communityState,
+                  expandedCommunities: newExpanded,
+                },
+              };
+            }, false, 'community/collapse');
+          },
+
+          highlightNeighborhood: (nodeId, neighborIds) => {
+            set((state) => ({
+              ...state,
+              communityState: {
+                ...state.communityState,
+                highlightedNode: nodeId,
+                highlightedNeighbors: new Set(neighborIds),
+              },
+            }), false, 'community/highlightNeighborhood');
+          },
+
+          clearHighlight: () => {
+            set((state) => ({
+              ...state,
+              communityState: {
+                ...state.communityState,
+                highlightedNode: null,
+                highlightedNeighbors: new Set(),
+              },
+            }), false, 'community/clearHighlight');
+          },
+
+          filterByCommunities: async (communityIds) => {
+            try {
+              const { filterByCommunities } = await import('../utils/communityDetection');
+
+              const state = get();
+              const originalData = state.originalGraphData || state.graphData;
+
+              const filteredData = filterByCommunities(
+                originalData,
+                communityIds,
+                state.communityState.nodesCommunityMap
+              );
+
+              get().graph.setGraphData(filteredData);
+            } catch (error) {
+              console.error('Failed to filter by communities:', error);
+              set((state) => ({
+                ...state,
+                error: error instanceof Error ? error.message : 'Failed to filter communities',
+              }), false, 'community/filterError');
+            }
+          },
+
+          resetCommunities: () => {
+            set((state) => ({
+              ...state,
+              communityState: {
+                ...initialState.communityState,
+              },
+            }), false, 'community/reset');
           },
         },
 

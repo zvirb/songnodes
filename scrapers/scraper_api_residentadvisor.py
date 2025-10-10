@@ -21,7 +21,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from prometheus_client import Counter
 
-from database_pipeline import DatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 from nlp_fallback_utils import extract_text_from_html, extract_via_nlp
 
 # Configure logging
@@ -422,7 +422,7 @@ async def scrape_ra_artist(url: str) -> Dict[str, Any]:
 
 async def save_event_to_database(event_data: Dict[str, Any], spider_context: Any = None):
     """Save RA event data as a playlist with artist context"""
-    db_pipeline = DatabasePipeline(DATABASE_CONFIG)
+    db_pipeline = PersistencePipeline(DATABASE_CONFIG)
 
     try:
         await db_pipeline.open_spider(spider_context)
@@ -457,7 +457,7 @@ async def save_event_to_database(event_data: Dict[str, Any], spider_context: Any
 
 async def save_artist_to_database(artist_data: Dict[str, Any], spider_context: Any = None):
     """Save RA artist data"""
-    db_pipeline = DatabasePipeline(DATABASE_CONFIG)
+    db_pipeline = PersistencePipeline(DATABASE_CONFIG)
 
     try:
         await db_pipeline.open_spider(spider_context)

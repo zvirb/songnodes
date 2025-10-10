@@ -18,7 +18,7 @@ import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
-from database_pipeline import DatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -155,8 +155,8 @@ async def scrape_ia_item(identifier: str) -> Dict[str, Any]:
     return mix_data
 
 async def save_to_database(mix_data: Dict[str, Any], spider_context: Any = None):
-    """Save scraped mix data to database using DatabasePipeline"""
-    db_pipeline = DatabasePipeline(DATABASE_CONFIG)
+    """Save scraped mix data to database using PersistencePipeline"""
+    db_pipeline = PersistencePipeline(DATABASE_CONFIG)
 
     try:
         await db_pipeline.open_spider(spider_context)

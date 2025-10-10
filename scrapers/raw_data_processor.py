@@ -34,7 +34,7 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from common.secrets_manager import get_database_config, validate_secrets
-from database_pipeline import DatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 
 # Import track string parser for artist extraction
 try:
@@ -76,7 +76,7 @@ class RawDataProcessor:
             self.db_config = get_database_config()
 
         self.connection_pool = None
-        self.pipeline = DatabasePipeline(self.db_config)
+        self.pipeline = PersistencePipeline(self.db_config)
 
     async def initialize(self):
         """Initialize database connections"""

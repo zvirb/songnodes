@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse
 import uuid
 
-from database_pipeline import EnhancedMusicDatabasePipeline
+from pipelines.persistence_pipeline import PersistencePipeline
 from pipeline_observability import (
     PipelineObservabilityTracker,
     PipelineMetric,
@@ -28,7 +28,7 @@ from pipeline_observability import (
 
 logger = logging.getLogger(__name__)
 
-class ObservableMusicPipeline(EnhancedMusicDatabasePipeline):
+class ObservableMusicPipeline(PersistencePipeline):
     """Enhanced database pipeline with comprehensive observability tracking"""
 
     def __init__(self, database_config: Dict[str, Any], **kwargs):

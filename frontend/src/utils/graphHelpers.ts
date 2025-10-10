@@ -309,7 +309,8 @@ export function calculateDistance(p1: Point, p2: Point): number {
 }
 
 /**
- * Find nodes within a circular area
+ * Find nodes within a circular area (Linear O(n) - Use SpatialIndex for O(log n))
+ * @deprecated Use SpatialIndex.findNodesInRadius for better performance with large graphs
  */
 export function findNodesInRadius(
   nodes: GraphNode[],
@@ -325,7 +326,8 @@ export function findNodesInRadius(
 }
 
 /**
- * Find nodes within a rectangular selection
+ * Find nodes within a rectangular selection (Linear O(n) - Use SpatialIndex for O(log n))
+ * @deprecated Use SpatialIndex.findNodesInRectangle for better performance with large graphs
  */
 export function findNodesInRectangle(
   nodes: GraphNode[],
