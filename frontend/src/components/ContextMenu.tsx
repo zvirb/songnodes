@@ -327,21 +327,34 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         break;
 
       case 'edge':
+        const edge = targetData as any; // Edge data passed from context menu trigger
+
+        // Get the store action
+        const toggleEdgeType = useStore.getState().view.toggleEdgeTypeVisibility;
+
         items.push(
           {
             label: 'View Connection Details',
             icon: <Info size={16} />,
             action: () => {
+              // TODO: Implement edge details modal
+              console.log('📊 Edge details:', edge);
               onClose();
             }
           },
           {
-            label: 'Hide Similar Edges',
+            label: edge?.type ? `Hide ${edge.type} edges` : 'Hide Similar Edges',
             icon: <Filter size={16} />,
             action: () => {
-              // TODO: Filter edges by type
+              if (edge?.type) {
+                toggleEdgeType(edge.type);
+                console.log(`🔇 Hiding ${edge.type} edges`);
+              } else {
+                console.warn('⚠️ Cannot hide edges: edge type not available');
+              }
               onClose();
-            }
+            },
+            disabled: !edge?.type
           }
         );
         break;

@@ -1,4 +1,4 @@
-import { GraphNode, SearchFilters } from '../types';
+import { GraphNode, GraphEdge, SearchFilters } from '../types';
 
 /**
  * Unified node filtering logic used by both visualization and pathfinder
@@ -78,10 +78,22 @@ export function filterNodes(nodes: GraphNode[], filters: SearchFilters): GraphNo
 
 /**
  * Filter edges to only include those where both endpoints are in the filtered node set
+ * and the edge type is not hidden
  */
-export function filterEdges(edges: any[], visibleNodeIds: Set<string>): any[] {
-  return edges.filter(edge =>
-    visibleNodeIds.has(edge.source.toString()) &&
-    visibleNodeIds.has(edge.target.toString())
-  );
+export function filterEdges(
+  edges: GraphEdge[],
+  visibleNodeIds: Set<string>,
+  hiddenEdgeTypes?: Set<GraphEdge['type']>
+): GraphEdge[] {
+  return edges.filter(edge => {
+    // Check if both endpoints are visible
+    const endpointsVisible =
+      visibleNodeIds.has(edge.source.toString()) &&
+      visibleNodeIds.has(edge.target.toString());
+
+    // Check if edge type is not hidden
+    const typeVisible = !hiddenEdgeTypes || !hiddenEdgeTypes.has(edge.type);
+
+    return endpointsVisible && typeVisible;
+  });
 }
