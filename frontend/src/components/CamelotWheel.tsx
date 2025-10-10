@@ -79,34 +79,154 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
 
   // Camelot wheel data - industry standard mapping
   const camelotKeys: CamelotKey[] = useMemo(() => [
-    // Major keys (outer ring)
-    { id: '1A', musical: 'C Major', openKey: '8d', position: 0, mode: 'major', energy: 6, mood: 'uplifting', color: '#3b82f6', energyColor: '#60a5fa', compatible: ['12A', '2A', '1B'] },
-    { id: '2A', musical: 'G Major', openKey: '9d', position: 1, mode: 'major', energy: 8, mood: 'bright', color: '#10b981', energyColor: '#34d399', compatible: ['1A', '3A', '2B'] },
-    { id: '3A', musical: 'D Major', openKey: '10d', position: 2, mode: 'major', energy: 9, mood: 'energetic', color: '#f59e0b', energyColor: '#fbbf24', compatible: ['2A', '4A', '3B'] },
-    { id: '4A', musical: 'A Major', openKey: '11d', position: 3, mode: 'major', energy: 8, mood: 'triumphant', color: '#f97316', energyColor: '#fb923c', compatible: ['3A', '5A', '4B'] },
-    { id: '5A', musical: 'E Major', openKey: '12d', position: 4, mode: 'major', energy: 9, mood: 'powerful', color: '#ef4444', energyColor: '#f87171', compatible: ['4A', '6A', '5B'] },
-    { id: '6A', musical: 'B Major', openKey: '1d', position: 5, mode: 'major', energy: 7, mood: 'intense', color: '#ec4899', energyColor: '#f472b6', compatible: ['5A', '7A', '6B'] },
-    { id: '7A', musical: 'F# Major', openKey: '2d', position: 6, mode: 'major', energy: 8, mood: 'driving', color: '#a855f7', energyColor: '#c084fc', compatible: ['6A', '8A', '7B'] },
-    { id: '8A', musical: 'C# Major', openKey: '3d', position: 7, mode: 'major', energy: 6, mood: 'ethereal', color: '#8b5cf6', energyColor: '#a78bfa', compatible: ['7A', '9A', '8B'] },
-    { id: '9A', musical: 'G# Major', openKey: '4d', position: 8, mode: 'major', energy: 7, mood: 'mysterious', color: '#6366f1', energyColor: '#818cf8', compatible: ['8A', '10A', '9B'] },
-    { id: '10A', musical: 'D# Major', openKey: '5d', position: 9, mode: 'major', energy: 8, mood: 'exotic', color: '#06b6d4', energyColor: '#22d3ee', compatible: ['9A', '11A', '10B'] },
-    { id: '11A', musical: 'A# Major', openKey: '6d', position: 10, mode: 'major', energy: 9, mood: 'bold', color: '#0891b2', energyColor: '#0ea5e9', compatible: ['10A', '12A', '11B'] },
-    { id: '12A', musical: 'F Major', openKey: '7d', position: 11, mode: 'major', energy: 5, mood: 'warm', color: '#059669', energyColor: '#10b981', compatible: ['11A', '1A', '12B'] },
+    // Major keys (outer ring - 'B' suffix)
+    { id: '8B', musical: 'C Major', openKey: '8d', position: 0, mode: 'major', energy: 6, mood: 'uplifting', color: '#3b82f6', energyColor: '#60a5fa', compatible: ['7B', '9B', '8A'] },
+    { id: '9B', musical: 'G Major', openKey: '9d', position: 1, mode: 'major', energy: 8, mood: 'bright', color: '#10b981', energyColor: '#34d399', compatible: ['8B', '10B', '9A'] },
+    { id: '10B', musical: 'D Major', openKey: '10d', position: 2, mode: 'major', energy: 9, mood: 'energetic', color: '#f59e0b', energyColor: '#fbbf24', compatible: ['9B', '11B', '10A'] },
+    { id: '11B', musical: 'A Major', openKey: '11d', position: 3, mode: 'major', energy: 8, mood: 'triumphant', color: '#f97316', energyColor: '#fb923c', compatible: ['10B', '12B', '11A'] },
+    { id: '12B', musical: 'E Major', openKey: '12d', position: 4, mode: 'major', energy: 9, mood: 'powerful', color: '#ef4444', energyColor: '#f87171', compatible: ['11B', '1B', '12A'] },
+    { id: '1B', musical: 'B Major', openKey: '1d', position: 5, mode: 'major', energy: 7, mood: 'intense', color: '#ec4899', energyColor: '#f472b6', compatible: ['12B', '2B', '1A'] },
+    { id: '2B', musical: 'F# Major', openKey: '2d', position: 6, mode: 'major', energy: 8, mood: 'driving', color: '#a855f7', energyColor: '#c084fc', compatible: ['1B', '3B', '2A'] },
+    { id: '3B', musical: 'C# Major', openKey: '3d', position: 7, mode: 'major', energy: 6, mood: 'ethereal', color: '#8b5cf6', energyColor: '#a78bfa', compatible: ['2B', '4B', '3A'] },
+    { id: '4B', musical: 'G# Major', openKey: '4d', position: 8, mode: 'major', energy: 7, mood: 'mysterious', color: '#6366f1', energyColor: '#818cf8', compatible: ['3B', '5B', '4A'] },
+    { id: '5B', musical: 'D# Major', openKey: '5d', position: 9, mode: 'major', energy: 8, mood: 'exotic', color: '#06b6d4', energyColor: '#22d3ee', compatible: ['4B', '6B', '5A'] },
+    { id: '6B', musical: 'A# Major', openKey: '6d', position: 10, mode: 'major', energy: 9, mood: 'bold', color: '#0891b2', energyColor: '#0ea5e9', compatible: ['5B', '7B', '6A'] },
+    { id: '7B', musical: 'F Major', openKey: '7d', position: 11, mode: 'major', energy: 5, mood: 'warm', color: '#059669', energyColor: '#10b981', compatible: ['6B', '8B', '7A'] },
 
-    // Minor keys (inner ring)
-    { id: '1B', musical: 'A Minor', openKey: '8m', position: 0, mode: 'minor', energy: 4, mood: 'melancholic', color: '#374151', energyColor: '#6b7280', compatible: ['12B', '2B', '1A'] },
-    { id: '2B', musical: 'E Minor', openKey: '9m', position: 1, mode: 'minor', energy: 6, mood: 'contemplative', color: '#475569', energyColor: '#64748b', compatible: ['1B', '3B', '2A'] },
-    { id: '3B', musical: 'B Minor', openKey: '10m', position: 2, mode: 'minor', energy: 7, mood: 'dramatic', color: '#581c87', energyColor: '#7c3aed', compatible: ['2B', '4B', '3A'] },
-    { id: '4B', musical: 'F# Minor', openKey: '11m', position: 3, mode: 'minor', energy: 6, mood: 'introspective', color: '#7c2d12', energyColor: '#dc2626', compatible: ['3B', '5B', '4A'] },
-    { id: '5B', musical: 'C# Minor', openKey: '12m', position: 4, mode: 'minor', energy: 7, mood: 'passionate', color: '#92400e', energyColor: '#ea580c', compatible: ['4B', '6B', '5A'] },
-    { id: '6B', musical: 'G# Minor', openKey: '1m', position: 5, mode: 'minor', energy: 5, mood: 'haunting', color: '#991b1b', energyColor: '#dc2626', compatible: ['5B', '7B', '6A'] },
-    { id: '7B', musical: 'D# Minor', openKey: '2m', position: 6, mode: 'minor', energy: 6, mood: 'dark', color: '#be185d', energyColor: '#ec4899', compatible: ['6B', '8B', '7A'] },
-    { id: '8B', musical: 'A# Minor', openKey: '3m', position: 7, mode: 'minor', energy: 4, mood: 'mysterious', color: '#7c3aed', energyColor: '#a855f7', compatible: ['7B', '9B', '8A'] },
-    { id: '9B', musical: 'E# Minor', openKey: '4m', position: 8, mode: 'minor', energy: 5, mood: 'ethereal', color: '#4338ca', energyColor: '#6366f1', compatible: ['8B', '10B', '9A'] },
-    { id: '10B', musical: 'B# Minor', openKey: '5m', position: 9, mode: 'minor', energy: 6, mood: 'sad', color: '#0e7490', energyColor: '#06b6d4', compatible: ['9B', '11B', '10A'] },
-    { id: '11B', musical: 'F## Minor', openKey: '6m', position: 10, mode: 'minor', energy: 7, mood: 'somber', color: '#047857', energyColor: '#059669', compatible: ['10B', '12B', '11A'] },
-    { id: '12B', musical: 'D Minor', openKey: '7m', position: 11, mode: 'minor', energy: 3, mood: 'gentle', color: '#365314', energyColor: '#65a30d', compatible: ['11B', '1B', '12A'] }
+    // Minor keys (inner ring - 'A' suffix)
+    { id: '8A', musical: 'A Minor', openKey: '8m', position: 0, mode: 'minor', energy: 4, mood: 'melancholic', color: '#374151', energyColor: '#6b7280', compatible: ['7A', '9A', '8B'] },
+    { id: '9A', musical: 'E Minor', openKey: '9m', position: 1, mode: 'minor', energy: 6, mood: 'contemplative', color: '#475569', energyColor: '#64748b', compatible: ['8A', '10A', '9B'] },
+    { id: '10A', musical: 'B Minor', openKey: '10m', position: 2, mode: 'minor', energy: 7, mood: 'dramatic', color: '#581c87', energyColor: '#7c3aed', compatible: ['9A', '11A', '10B'] },
+    { id: '11A', musical: 'F# Minor', openKey: '11m', position: 3, mode: 'minor', energy: 6, mood: 'introspective', color: '#7c2d12', energyColor: '#dc2626', compatible: ['10A', '12A', '11B'] },
+    { id: '12A', musical: 'C# Minor', openKey: '12m', position: 4, mode: 'minor', energy: 7, mood: 'passionate', color: '#92400e', energyColor: '#ea580c', compatible: ['11A', '1A', '12B'] },
+    { id: '1A', musical: 'G# Minor', openKey: '1m', position: 5, mode: 'minor', energy: 5, mood: 'haunting', color: '#991b1b', energyColor: '#dc2626', compatible: ['12A', '2A', '1B'] },
+    { id: '2A', musical: 'D# Minor', openKey: '2m', position: 6, mode: 'minor', energy: 6, mood: 'dark', color: '#be185d', energyColor: '#ec4899', compatible: ['1A', '3A', '2B'] },
+    { id: '3A', musical: 'A# Minor', openKey: '3m', position: 7, mode: 'minor', energy: 4, mood: 'mysterious', color: '#7c3aed', energyColor: '#a855f7', compatible: ['2A', '4A', '3B'] },
+    { id: '4A', musical: 'F Minor', openKey: '4m', position: 8, mode: 'minor', energy: 5, mood: 'ethereal', color: '#4338ca', energyColor: '#6366f1', compatible: ['3A', '5A', '4B'] },
+    { id: '5A', musical: 'C Minor', openKey: '5m', position: 9, mode: 'minor', energy: 6, mood: 'sad', color: '#0e7490', energyColor: '#06b6d4', compatible: ['4A', '6A', '5B'] },
+    { id: '6A', musical: 'G Minor', openKey: '6m', position: 10, mode: 'minor', energy: 7, mood: 'somber', color: '#047857', energyColor: '#059669', compatible: ['5A', '7A', '6B'] },
+    { id: '7A', musical: 'D Minor', openKey: '7m', position: 11, mode: 'minor', energy: 3, mood: 'gentle', color: '#365314', energyColor: '#65a30d', compatible: ['6A', '8A', '7B'] }
   ], []);
+
+  /**
+   * Converts musical key notation to Camelot notation
+   *
+   * @param key - Musical key string (e.g., "C Major", "A Minor", "C# Maj", "Db", etc.)
+   * @returns Camelot notation (e.g., "8B", "8A") or null if invalid
+   *
+   * Standard Camelot Wheel Mapping (Industry Standard):
+   * Major keys (B suffix): 8B=C, 3B=C#/Db, 10B=D, 5B=D#/Eb, 12B=E, 7B=F, 2B=F#/Gb, 9B=G, 4B=G#/Ab, 11B=A, 6B=A#/Bb, 1B=B
+   * Minor keys (A suffix): 8A=Am, 3A=A#m/Bbm, 10A=Bm, 5A=Cm, 12A=C#m, 7A=Dm, 2A=D#m/Ebm, 9A=Em, 4A=Fm, 11A=F#m, 6A=Gm, 1A=G#m
+   *
+   * Supports multiple input formats:
+   * - Full notation: "C Major", "A Minor", "Db major"
+   * - Abbreviated: "C Maj", "A min"
+   * - Short form: "Cm", "Am", "C#m" (note + 'm' for minor)
+   * - Note only: "C", "Db" (assumes major if mode not specified)
+   * - Case insensitive, handles extra whitespace
+   * - Normalizes enharmonic equivalents (Db = C#, Eb = D#, etc.)
+   */
+  const musicalKeyToCamelot = useCallback((key: string): string | null => {
+    if (!key || typeof key !== 'string') return null;
+
+    // Normalize: trim, lowercase for pattern matching
+    const normalized = key.trim().toLowerCase();
+
+    // Extract note and mode
+    let note = '';
+    let mode: 'major' | 'minor' | null = null;
+
+    // Match patterns like "C Major", "C# Minor", "Db Maj", "C", "Am", "C#m"
+    const patterns = [
+      // Full notation: "C Major", "C# Minor", "Db major"
+      /^([a-g][#b]?)\s*(major|minor|maj|min)/i,
+      // Short notation with mode suffix: "Cm", "C#m", "Dbm" (minor)
+      /^([a-g][#b]?)m$/i,
+      // Just note: "C", "C#", "Db" (assume major)
+      /^([a-g][#b]?)$/i
+    ];
+
+    let match = null;
+    for (const pattern of patterns) {
+      match = normalized.match(pattern);
+      if (match) break;
+    }
+
+    if (!match) return null;
+
+    // Extract note (first capture group)
+    note = match[1].toUpperCase();
+
+    // Determine mode
+    if (match[2]) {
+      // Full notation with explicit mode
+      mode = match[2].toLowerCase().startsWith('maj') ? 'major' : 'minor';
+    } else if (normalized.endsWith('m')) {
+      // Short notation with 'm' suffix (e.g., "Cm", "Am")
+      mode = 'minor';
+    } else {
+      // No mode specified, assume major
+      mode = 'major';
+    }
+
+    // Normalize sharp/flat equivalents to sharp for consistency
+    const noteMap: Record<string, string> = {
+      'C': 'C',
+      'C#': 'C#', 'DB': 'C#',
+      'D': 'D',
+      'D#': 'D#', 'EB': 'D#',
+      'E': 'E',
+      'F': 'F',
+      'F#': 'F#', 'GB': 'F#',
+      'G': 'G',
+      'G#': 'G#', 'AB': 'G#',
+      'A': 'A',
+      'A#': 'A#', 'BB': 'A#',
+      'B': 'B', 'CB': 'B'
+    };
+
+    const canonicalNote = noteMap[note];
+    if (!canonicalNote) return null;
+
+    // Camelot wheel mapping (industry standard)
+    // Major keys use 'B' suffix (8B = C Major)
+    // Minor keys use 'A' suffix (8A = A Minor)
+    const majorMap: Record<string, string> = {
+      'C': '8B',
+      'C#': '3B',
+      'D': '10B',
+      'D#': '5B',
+      'E': '12B',
+      'F': '7B',
+      'F#': '2B',
+      'G': '9B',
+      'G#': '4B',
+      'A': '11B',
+      'A#': '6B',
+      'B': '1B'
+    };
+
+    const minorMap: Record<string, string> = {
+      'A': '8A',
+      'A#': '3A',
+      'B': '10A',
+      'C': '5A',
+      'C#': '12A',
+      'D': '7A',
+      'D#': '2A',
+      'E': '9A',
+      'F': '4A',
+      'F#': '11A',
+      'G': '6A',
+      'G#': '1A'
+    };
+
+    if (mode === 'major') {
+      return majorMap[canonicalNote] || null;
+    } else {
+      return minorMap[canonicalNote] || null;
+    }
+  }, []);
 
   // Get track key from various sources
   const getTrackKey = useCallback((node: GraphNode): string | null => {
@@ -129,9 +249,9 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
       return mode === 'd' ? `${((num + 7) % 12) + 1}A` : `${((num + 7) % 12) + 1}B`;
     }
 
-    // TODO: Add musical key to Camelot conversion (C Major -> 1A, etc.)
-    return null;
-  }, []);
+    // Convert musical key to Camelot (C Major -> 8B, A Minor -> 8A, etc.)
+    return musicalKeyToCamelot(key);
+  }, [musicalKeyToCamelot]);
 
   // Analyze tracks by key
   const tracksByKey = useMemo(() => {

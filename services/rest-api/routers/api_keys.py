@@ -69,7 +69,7 @@ class APIKeyCreate(BaseModel):
         allowed_services = [
             'spotify', 'discogs', 'lastfm', 'beatport',
             'musicbrainz', 'youtube', 'setlistfm', 'reddit',
-            '1001tracklists'
+            '1001tracklists', 'getsongbpm'
         ]
         if v.lower() not in allowed_services:
             raise ValueError(f'Service must be one of: {", ".join(allowed_services)}')
@@ -386,6 +386,8 @@ async def _test_api_key_by_service(
         return await _test_reddit_key(key_value, key_name, conn)
     elif service_name == '1001tracklists':
         return await _test_1001tracklists_key(key_value, key_name, conn)
+    elif service_name == 'getsongbpm':
+        return await _test_getsongbpm_key(key_value)
     else:
         return {
             'valid': False,
@@ -988,5 +990,77 @@ async def _test_1001tracklists_key(username: str, key_name: str, conn: asyncpg.C
         return {
             'valid': False,
             'message': f'1001tracklists test failed: {str(e)}',
+            'error': str(e)
+        }
+
+async def _test_getsongbpm_key(api_key: str) -> Dict[str, Any]:
+    """Test GetSongBPM API key"""
+    try:
+        # Test with a well-known song (Daft Punk - One More Time)
+        params = {
+            'api_key': api_key,
+            'artist': 'Daft Punk',
+            'title': 'One More Time'
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                'https://api.getsongbpm.com/search/',
+                params=params,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+
+                    # Check if we got valid results
+                    if data.get('search'):
+                        return {
+                            'valid': True,
+                            'message': 'GetSongBPM API key is valid',
+                            'details': {
+                                'results_count': len(data.get('search', [])),
+                                'note': 'Free API key from getsongbpm.com'
+                            }
+                        }
+                    else:
+                        return {
+                            'valid': True,
+                            'message': 'GetSongBPM API key is valid (no results for test query)',
+                            'details': {
+                                'note': 'API key works but test query returned no results'
+                            }
+                        }
+                elif response.status == 401:
+                    return {
+                        'valid': False,
+                        'message': 'Invalid GetSongBPM API key',
+                        'error': 'Authentication failed - check your API key'
+                    }
+                elif response.status == 403:
+                    return {
+                        'valid': False,
+                        'message': 'GetSongBPM API key forbidden',
+                        'error': 'API key lacks required permissions or is expired'
+                    }
+                elif response.status == 429:
+                    return {
+                        'valid': True,
+                        'message': 'GetSongBPM API key is valid (rate limit exceeded)',
+                        'details': {
+                            'note': 'API key works but rate limit reached'
+                        }
+                    }
+                else:
+                    error_text = await response.text()
+                    return {
+                        'valid': False,
+                        'message': f'GetSongBPM API error: {response.status}',
+                        'error': error_text
+                    }
+
+    except Exception as e:
+        return {
+            'valid': False,
+            'message': f'GetSongBPM test failed: {str(e)}',
             'error': str(e)
         }

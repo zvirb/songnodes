@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GraphNode, Track, PerformanceMetrics } from '../types';
 import { useStore } from '../store/useStore';
+import { useToast, ToastContainer } from '../hooks/useToast';
 import {
   Music,
   User,
@@ -55,6 +56,9 @@ export const InfoCard: React.FC<InfoCardProps> = ({
   const [isExpanded, setIsExpanded] = useState(!compact);
   const [isAnimating, setIsAnimating] = useState(true);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Toast notifications
+  const { toasts, showToast, hideToast } = useToast();
 
   // Store state
   const performanceMetrics = useStore(state => state.performanceMetrics);
@@ -251,9 +255,20 @@ export const InfoCard: React.FC<InfoCardProps> = ({
 
   const infoFields = getInfoFields();
 
-  const handleCopy = (value: string) => {
-    navigator.clipboard.writeText(value.toString());
-    // TODO: Show toast notification
+  const handleCopy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value.toString());
+
+      // Truncate long values for display
+      const displayValue = value.length > 30
+        ? `${value.substring(0, 30)}...`
+        : value;
+
+      showToast(`Copied: ${displayValue}`, 'success', 2500);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      showToast('Failed to copy to clipboard', 'error', 2500);
+    }
   };
 
   const getCardTitle = () => {
@@ -494,6 +509,9 @@ export const InfoCard: React.FC<InfoCardProps> = ({
           </button>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={hideToast} position="bottom-right" />
     </div>
   );
 };

@@ -240,7 +240,12 @@ UNION ALL
 SELECT
     '1001tracklists', 'password', '1001Tracklists Password',
     'Your 1001tracklists.com account password for authenticated scraping',
-    TRUE, 'https://www.1001tracklists.com/register.php', 13;
+    TRUE, 'https://www.1001tracklists.com/register.php', 13
+UNION ALL
+SELECT
+    'getsongbpm', 'api_key', 'GetSongBPM API Key',
+    'Free API key from getsongbpm.com - provides BPM and key detection',
+    FALSE, 'https://getsongbpm.com/api', 14;
 
 -- ===========================================
 -- AUDIT LOG
