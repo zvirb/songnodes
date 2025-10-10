@@ -42,7 +42,8 @@ class APIEnrichmentPipeline:
                  spotify_client_id: str = None,
                  spotify_client_secret: str = None,
                  lastfm_api_key: str = None,
-                 musicbrainz_user_agent: str = None):
+                 musicbrainz_user_agent: str = None,
+                 audio_analysis_url: str = None):
 
         # Spotify credentials
         self.spotify_client_id = spotify_client_id or self._get_credential('SPOTIFY_CLIENT_ID')
@@ -56,6 +57,9 @@ class APIEnrichmentPipeline:
         # MusicBrainz user agent (required, no API key needed)
         self.musicbrainz_user_agent = musicbrainz_user_agent or self._get_credential('MUSICBRAINZ_USER_AGENT')
 
+        # Audio Analysis service URL (self-hosted, replaces Spotify Audio Features API)
+        self.audio_analysis_url = audio_analysis_url or 'http://audio-analysis:8020'
+
         # MusicBrainz rate limiting (1 request per second)
         self.last_musicbrainz_request = 0
 
@@ -63,7 +67,7 @@ class APIEnrichmentPipeline:
         self.stats = {
             'total_tracks': 0,
             'spotify_enriched': 0,
-            'audio_features_added': 0,
+            'audio_analysis_queued': 0,  # UPDATED: Queued for async processing
             'musicbrainz_fallback': 0,
             'lastfm_genre_added': 0,
             'api_failures': 0,
@@ -141,7 +145,7 @@ class APIEnrichmentPipeline:
         # Clean title for API search (remove common artifacts)
         title = self._clean_title_for_search(title, artist)
 
-        # Try Spotify first (most comprehensive data)
+        # Try Spotify first (metadata only - audio features handled by audio-analysis service)
         try:
             spotify_track = self._search_spotify(artist, title)
             if spotify_track:
@@ -149,11 +153,17 @@ class APIEnrichmentPipeline:
                 self.stats['spotify_enriched'] += 1
                 logger.debug(f"✓ Spotify enriched: {artist} - {title}")
 
-                # Get audio features (BPM, key, energy, etc.)
-                audio_features = self._get_audio_features(spotify_track['id'])
-                if audio_features:
-                    self._apply_audio_features(adapter, audio_features)
-                    self.stats['audio_features_added'] += 1
+                # Queue track for audio analysis (async, self-hosted)
+                # This replaces the deprecated Spotify Audio Features API
+                preview_url = spotify_track.get('preview_url')
+                if preview_url and adapter.get('track_id'):
+                    queued = self._queue_audio_analysis(
+                        track_id=adapter.get('track_id'),
+                        spotify_preview_url=preview_url
+                    )
+                    if queued:
+                        self.stats['audio_analysis_queued'] += 1
+                        logger.debug(f"✓ Audio analysis queued: {artist} - {title}")
 
                 # Success - return early
                 return item
@@ -315,33 +325,45 @@ class APIEnrichmentPipeline:
             logger.error(f"Spotify search error: {e}")
             return None
 
-    def _get_audio_features(self, spotify_id: str) -> Optional[Dict]:
-        """Get Spotify audio features (BPM, key, energy, etc.)"""
-        token = self._get_spotify_token()
-        if not token:
-            return None
+    def _queue_audio_analysis(self, track_id: str, spotify_preview_url: str) -> bool:
+        """
+        Queue track for self-hosted audio analysis (replaces deprecated Spotify API).
 
-        headers = {
-            'Authorization': f'Bearer {token}'
-        }
+        Sends track to audio-analysis microservice for async processing.
+        Features extracted: BPM, key, energy, danceability, valence, acousticness,
+        instrumentalness, liveness, speechiness, and more.
 
+        Args:
+            track_id: UUID of the track
+            spotify_preview_url: Spotify preview URL (30s clip)
+
+        Returns:
+            True if successfully queued, False otherwise
+        """
         try:
-            response = requests.get(
-                f'https://api.spotify.com/v1/audio-features/{spotify_id}',
-                headers=headers,
-                timeout=10
+            # Post to audio-analysis service /analyze endpoint
+            response = requests.post(
+                f'{self.audio_analysis_url}/analyze',
+                json={
+                    'track_id': track_id,
+                    'spotify_preview_url': spotify_preview_url
+                },
+                timeout=5  # Quick timeout - this is async
             )
 
-            if response.status_code == 429:
-                logger.warning("Spotify rate limit hit on audio features")
-                return None
-
-            response.raise_for_status()
-            return response.json()
+            if response.status_code == 200:
+                logger.debug(f"✓ Track {track_id} queued for audio analysis")
+                return True
+            elif response.status_code == 503:
+                logger.warning(f"Audio analysis service unavailable (track {track_id})")
+                return False
+            else:
+                logger.warning(f"Audio analysis queue failed: {response.status_code}")
+                return False
 
         except requests.RequestException as e:
-            logger.error(f"Spotify audio features error: {e}")
-            return None
+            logger.warning(f"Could not queue audio analysis (service may be down): {e}")
+            return False
 
     def _apply_spotify_data(self, adapter: ItemAdapter, spotify_data: Dict):
         """Apply Spotify track data to item"""
@@ -381,7 +403,17 @@ class APIEnrichmentPipeline:
         adapter['external_urls'] = json.dumps(external_urls)
 
     def _apply_audio_features(self, adapter: ItemAdapter, features: Dict):
-        """Apply Spotify audio features to item"""
+        """
+        Apply audio features to item (DEPRECATED - kept for backward compatibility).
+
+        NOTE: This method is no longer called in the normal pipeline flow.
+        Audio features are now extracted by the self-hosted audio-analysis service
+        and stored directly in the tracks_audio_analysis table.
+
+        This method remains for:
+        1. Legacy Spotify API users with extended access
+        2. Testing and validation purposes
+        """
         # Musical attributes
         adapter['bpm'] = features.get('tempo')  # Tempo in BPM
 
@@ -595,9 +627,12 @@ class APIEnrichmentPipeline:
             f"Total tracks processed:     {self.stats['total_tracks']}\n"
             f"Already enriched:           {self.stats['already_enriched']}\n"
             f"Spotify enriched:           {self.stats['spotify_enriched']}\n"
-            f"Audio features added:       {self.stats['audio_features_added']}\n"
+            f"Audio analysis queued:      {self.stats['audio_analysis_queued']} (self-hosted)\n"
             f"MusicBrainz fallback:       {self.stats['musicbrainz_fallback']}\n"
             f"Last.fm genre added:        {self.stats['lastfm_genre_added']}\n"
             f"API failures:               {self.stats['api_failures']}\n"
+            f"{'='*60}\n"
+            f"NOTE: Audio features are processed asynchronously by the\n"
+            f"      audio-analysis service and stored in tracks_audio_analysis table.\n"
             f"{'='*60}\n"
         )
