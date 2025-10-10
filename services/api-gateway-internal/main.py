@@ -3,11 +3,11 @@ API Integration Gateway Service - Unified Implementation
 =========================================================
 
 Centralized gateway using common/api_gateway library with:
-- Token bucket rate limiting (built into clients)
-- Exponential backoff retries (built into clients)
-- Unified Redis caching (built into clients)
-- Circuit breaker protection (built into clients)
-- Comprehensive Prometheus metrics (built into clients)
+- Token bucket rate limiting (from common.api_gateway)
+- Exponential backoff retries (from common.api_gateway)
+- Unified Redis caching (from common.api_gateway)
+- Circuit breaker protection (from common.api_gateway)
+- Comprehensive Prometheus metrics (from common.api_gateway)
 
 All resilience patterns are now provided by the common/api_gateway library,
 eliminating code duplication and ensuring consistent behavior.
@@ -21,12 +21,13 @@ from typing import Optional, Dict, Any
 import structlog
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
-import redis.asyncio as redis
+import redis
 from prometheus_client import make_asgi_app
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.secrets_manager import get_redis_config, get_api_keys
+from common.api_gateway import CacheManager, RateLimiter, CircuitBreaker
 
 from adapters import (
     SpotifyAdapter,
@@ -41,15 +42,18 @@ logger = structlog.get_logger(__name__)
 
 # Global instances
 redis_client: Optional[redis.Redis] = None
+cache_manager: Optional[CacheManager] = None
+rate_limiter: Optional[RateLimiter] = None
+circuit_breakers: Dict[str, CircuitBreaker] = {}
 adapters: Dict[str, Any] = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
-    global redis_client, adapters
+    global redis_client, cache_manager, rate_limiter, circuit_breakers, adapters
 
-    logger.info("Initializing API Gateway with unified clients")
+    logger.info("Initializing API Gateway with unified common/api_gateway library")
 
     # Initialize Redis
     redis_config = get_redis_config()
@@ -61,26 +65,47 @@ async def lifespan(app: FastAPI):
     )
 
     # Test Redis connection
-    await redis_client.ping()
-    logger.info("Redis connection established")
+    redis_client.ping()
+    logger.info("✅ Redis connection established")
+
+    # Initialize unified components from common/api_gateway
+    cache_manager = CacheManager(redis_client)
+    rate_limiter = RateLimiter()
+
+    # Configure provider-specific rate limits
+    rate_limiter.configure_provider("spotify", rate=10.0, capacity=10)  # 10 req/sec
+    rate_limiter.configure_provider("musicbrainz", rate=1.0, capacity=1)  # 1 req/sec (strict)
+    rate_limiter.configure_provider("lastfm", rate=5.0, capacity=5)  # 5 req/sec
+
+    logger.info("✅ Initialized CacheManager and RateLimiter from common.api_gateway")
+
+    # Create circuit breakers for each provider
+    circuit_breakers["spotify"] = CircuitBreaker(name="spotify", failure_threshold=5, timeout=60)
+    circuit_breakers["musicbrainz"] = CircuitBreaker(name="musicbrainz", failure_threshold=5, timeout=60)
+    circuit_breakers["lastfm"] = CircuitBreaker(name="lastfm", failure_threshold=5, timeout=60)
+    logger.info("✅ Created circuit breakers for all providers")
 
     # Load API keys
     api_keys = get_api_keys()
 
-    # Initialize unified adapters (resilience patterns built-in)
+    # Initialize unified adapters with shared components
     # Spotify
     if api_keys.get("spotify_client_id"):
         adapters["spotify"] = SpotifyAdapter(
             client_id=api_keys["spotify_client_id"],
             client_secret=api_keys["spotify_client_secret"],
-            redis_client=redis_client
+            cache_manager=cache_manager,
+            rate_limiter=rate_limiter,
+            circuit_breaker=circuit_breakers["spotify"]
         )
         logger.info("✅ Spotify adapter initialized with unified client")
 
     # MusicBrainz
     adapters["musicbrainz"] = MusicBrainzAdapter(
         user_agent=os.getenv("MUSICBRAINZ_USER_AGENT", "SongNodes/1.0 (https://songnodes.com)"),
-        redis_client=redis_client
+        cache_manager=cache_manager,
+        rate_limiter=rate_limiter,
+        circuit_breaker=circuit_breakers["musicbrainz"]
     )
     logger.info("✅ MusicBrainz adapter initialized with unified client")
 
@@ -88,14 +113,17 @@ async def lifespan(app: FastAPI):
     if api_keys.get("lastfm_api_key"):
         adapters["lastfm"] = LastFMAdapter(
             api_key=api_keys["lastfm_api_key"],
-            redis_client=redis_client
+            cache_manager=cache_manager,
+            rate_limiter=rate_limiter,
+            circuit_breaker=circuit_breakers["lastfm"]
         )
         logger.info("✅ Last.fm adapter initialized with unified client")
 
     logger.info(
         "API Gateway initialized",
         adapters=list(adapters.keys()),
-        unified_clients=True
+        unified_clients=True,
+        implementation="common/api_gateway"
     )
 
     yield
@@ -104,7 +132,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down API Gateway")
 
     if redis_client:
-        await redis_client.close()
+        redis_client.close()
 
 
 # Create FastAPI app
@@ -149,7 +177,7 @@ async def health_check():
     """Health check endpoint."""
     try:
         # Check Redis
-        await redis_client.ping()
+        redis_client.ping()
 
         # Get circuit breaker states from unified clients
         breaker_states = {}

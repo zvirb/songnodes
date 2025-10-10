@@ -8,6 +8,7 @@ All resilience patterns, OAuth, caching, and metrics are handled by the common c
 
 import sys
 import os
+import asyncio
 from typing import Dict, List, Optional, Any
 import structlog
 
@@ -37,7 +38,9 @@ class SpotifyAdapter:
         self,
         client_id: str,
         client_secret: str,
-        redis_client,
+        cache_manager,
+        rate_limiter,
+        circuit_breaker,
         **kwargs
     ):
         """
@@ -46,12 +49,16 @@ class SpotifyAdapter:
         Args:
             client_id: Spotify client ID
             client_secret: Spotify client secret
-            redis_client: Redis client for caching
+            cache_manager: CacheManager from common.api_gateway
+            rate_limiter: RateLimiter from common.api_gateway
+            circuit_breaker: CircuitBreaker from common.api_gateway
         """
         self.client = SpotifyClient(
             client_id=client_id,
             client_secret=client_secret,
-            redis_client=redis_client
+            cache_manager=cache_manager,
+            rate_limiter=rate_limiter,
+            circuit_breaker=circuit_breaker
         )
         logger.info("Spotify adapter initialized with unified client")
 
@@ -72,7 +79,9 @@ class SpotifyAdapter:
         Returns:
             List of track objects
         """
-        result = await self.client.search_track(
+        # Run synchronous client method in thread pool
+        result = await asyncio.to_thread(
+            self.client.search_track,
             artist=artist,
             title=title,
             use_cache=True
@@ -93,8 +102,10 @@ class SpotifyAdapter:
         Returns:
             Track metadata
         """
-        return await self.client.get_track_by_id(
-            track_id=track_id,
+        # Run synchronous client method in thread pool
+        return await asyncio.to_thread(
+            self.client.get_track,
+            spotify_id=track_id,
             use_cache=True
         )
 
@@ -108,8 +119,10 @@ class SpotifyAdapter:
         Returns:
             Audio features (tempo, key, energy, etc.)
         """
-        return await self.client.get_audio_features(
-            track_id=track_id,
+        # Run synchronous client method in thread pool
+        return await asyncio.to_thread(
+            self.client.get_audio_features,
+            spotify_id=track_id,
             use_cache=True
         )
 

@@ -121,7 +121,7 @@ class BaseAPIClient(ABC):
             total=3,  # Maximum 3 retries
             backoff_factor=1,  # Exponential backoff: 1s, 2s, 4s
             status_forcelist=[500, 502, 503, 504],  # Retry on server errors
-            method_whitelist=["GET", "POST"],  # Only retry safe methods
+            allowed_methods=["GET", "POST"],  # Only retry safe methods
             raise_on_status=False  # Don't raise on retry exhaustion
         )
 

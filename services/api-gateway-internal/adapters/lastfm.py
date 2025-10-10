@@ -8,6 +8,7 @@ All resilience patterns, rate limiting, and caching are handled by the common cl
 
 import sys
 import os
+import asyncio
 from typing import Dict, List, Optional, Any
 import structlog
 
@@ -37,7 +38,9 @@ class LastFMAdapter:
     def __init__(
         self,
         api_key: str,
-        redis_client,
+        cache_manager,
+        rate_limiter,
+        circuit_breaker,
         **kwargs
     ):
         """
@@ -45,11 +48,15 @@ class LastFMAdapter:
 
         Args:
             api_key: Last.fm API key
-            redis_client: Redis client for caching
+            cache_manager: CacheManager from common.api_gateway
+            rate_limiter: RateLimiter from common.api_gateway
+            circuit_breaker: CircuitBreaker from common.api_gateway
         """
         self.client = LastFmClient(
             api_key=api_key,
-            redis_client=redis_client
+            cache_manager=cache_manager,
+            rate_limiter=rate_limiter,
+            circuit_breaker=circuit_breaker
         )
         logger.info("Last.fm adapter initialized with unified client")
 
@@ -68,7 +75,9 @@ class LastFMAdapter:
         Returns:
             Track metadata including tags, playcount, listeners
         """
-        return await self.client.get_track_info(
+        # Run synchronous client method in thread pool
+        return await asyncio.to_thread(
+            self.client.get_track_info,
             artist=artist,
             track=track,
             use_cache=True
