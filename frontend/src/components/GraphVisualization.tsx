@@ -13,7 +13,7 @@ import {
   Simulation,
   ForceLink,
 } from 'd3-force';
-import { zoom, zoomIdentity, ZoomBehavior, ZoomTransform } from 'd3-zoom';
+import { zoom, zoomIdentity, zoomTransform, ZoomBehavior, ZoomTransform } from 'd3-zoom';
 import { select } from 'd3-selection';
 import 'd3-transition'; // Adds .transition() method to selections
 import useStore from '../store/useStore';
@@ -1864,9 +1864,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         }
       }
 
-      // Show context menu with node information (logging removed for cleaner console)
-
-      // TODO: Show visual context menu
+      // Show context menu with node information
+      handleNodeRightClick(nodeId, event);
     });
 
     // Main click processing function
@@ -1892,8 +1891,40 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
             // Multi-select: toggle this node based on its actual current state
             graph.toggleNodeSelection(nodeId);
           } else if (isShiftClick) {
-            // Range select: select all nodes between last selected and this one
-            // TODO: Implement range selection
+            // Range select: select all nodes in bounding box between last selected and this one
+            const selectedNodes = useStore.getState().viewState.selectedNodes;
+            const lastSelectedId = Array.from(selectedNodes).pop();
+
+            if (lastSelectedId && lastSelectedId !== nodeId) {
+              const lastNode = enhancedNodesRef.current.get(lastSelectedId);
+              const currentNode = enhancedNodesRef.current.get(nodeId);
+
+              if (lastNode && currentNode && lastNode.x !== undefined && lastNode.y !== undefined &&
+                  currentNode.x !== undefined && currentNode.y !== undefined) {
+                // Calculate bounding box
+                const minX = Math.min(lastNode.x, currentNode.x);
+                const maxX = Math.max(lastNode.x, currentNode.x);
+                const minY = Math.min(lastNode.y, currentNode.y);
+                const maxY = Math.max(lastNode.y, currentNode.y);
+
+                // Select all nodes within bounding box
+                enhancedNodesRef.current.forEach((n) => {
+                  if (n.x !== undefined && n.y !== undefined &&
+                      n.x >= minX && n.x <= maxX &&
+                      n.y >= minY && n.y <= maxY) {
+                    graph.toggleNodeSelection(n.id, true); // Force select
+                  }
+                });
+
+                console.log(`📦 Range selected ${useStore.getState().viewState.selectedNodes.size} nodes`);
+              } else {
+                // Fallback: just select both nodes
+                graph.toggleNodeSelection(nodeId, true);
+              }
+            } else {
+              // No last selected node, just select this one
+              graph.toggleNodeSelection(nodeId, true);
+            }
           } else {
             // Single select: clear others ONLY if this node isn't the only one selected
             if (!isCurrentlySelected || useStore.getState().viewState.selectedNodes.size > 1) {
@@ -1925,7 +1956,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           break;
 
         case 'setlist':
-          // TODO: Implement setlist functionality
+          // Add track to setlist when clicking node in setlist mode
+          if (node?.track) {
+            useStore.getState().setlist.addTrackToSetlist(node.track);
+            console.log('✅ Added to setlist:', node.track.name);
+          }
           break;
 
         default:
@@ -2443,8 +2478,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         break;
       case 'setlist':
         if (node?.track) {
-          // TODO: Add to setlist functionality
-        } else {
+          useStore.getState().setlist.addTrackToSetlist(node.track);
+          console.log('✅ Added to setlist:', node.track.name);
         }
         break;
       default:
@@ -2467,15 +2502,27 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     if (showDebugInfo) {
       console.group(`🎵 Node Right-Click Detected`);
-
       const node = enhancedNodesRef.current.get(nodeId);
       if (node) {
+        console.log('Node:', node);
       }
-
-      // TODO: Show context menu
       console.groupEnd();
     }
-  }, [showDebugInfo]);
+
+    // Show context menu for node
+    const node = enhancedNodesRef.current.get(nodeId);
+    if (node) {
+      // Create synthetic React MouseEvent from PIXI event
+      const syntheticEvent = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        preventDefault: () => event.preventDefault(),
+        stopPropagation: () => event.stopPropagation(),
+      } as React.MouseEvent;
+
+      openContextMenu(syntheticEvent, 'node', node);
+    }
+  }, [showDebugInfo, openContextMenu]);
 
   // Handle window resize
   const handleResize = useCallback(() => {
@@ -2987,7 +3034,34 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         case 'arrowleft':
         case 'arrowright':
           event.preventDefault();
-          // TODO: Implement viewport panning
+
+          // Pan viewport using arrow keys
+          if (zoomBehaviorRef.current && containerRef.current) {
+            const panAmount = 50; // pixels to pan
+            const currentTransform = zoomTransform(containerRef.current);
+
+            let dx = 0, dy = 0;
+            switch (event.key.toLowerCase()) {
+              case 'arrowup':
+                dy = panAmount;
+                break;
+              case 'arrowdown':
+                dy = -panAmount;
+                break;
+              case 'arrowleft':
+                dx = panAmount;
+                break;
+              case 'arrowright':
+                dx = -panAmount;
+                break;
+            }
+
+            const newTransform = currentTransform.translate(dx, dy);
+            select(containerRef.current)
+              .transition()
+              .duration(200)
+              .call(zoomBehaviorRef.current.transform, newTransform);
+          }
           break;
 
         case '+':
