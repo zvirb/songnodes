@@ -366,24 +366,24 @@ async def unified_search(
                     title=query.title,
                     limit=query.limit
                 )
-        elif provider == "musicbrainz":
-            # MusicBrainz uses different search pattern
-            results = []
-        elif provider == "lastfm":
-            results = await adapter.get_track_info(
-                artist=query.artist,
-                track=query.title
-            )
-        elif provider == "beatport":
-            results = await adapter.search_track(
-                artist=query.artist,
-                title=query.title
-            )
-        elif provider == "discogs":
-            results = await adapter.search_release(
-                artist=query.artist,
-                title=query.title
-            )
+            elif provider == "musicbrainz":
+                # MusicBrainz uses different search pattern
+                results = []
+            elif provider == "lastfm":
+                results = await adapter.get_track_info(
+                    artist=query.artist,
+                    track=query.title
+                )
+            elif provider == "beatport":
+                results = await adapter.search_track(
+                    artist=query.artist,
+                    title=query.title
+                )
+            elif provider == "discogs":
+                results = await adapter.search_release(
+                    artist=query.artist,
+                    title=query.title
+                )
             else:
                 raise HTTPException(
                     status_code=400,
