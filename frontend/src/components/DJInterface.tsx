@@ -615,7 +615,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
 
   return (
     <div
-      className="dj-interface"
+      className="app-container dj-interface"
       style={{
         display: 'flex',
         flexDirection: 'column',

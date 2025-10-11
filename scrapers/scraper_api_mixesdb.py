@@ -16,7 +16,7 @@ LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory
 """
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import subprocess
+import asyncio
 import json
 import os
 import logging
@@ -77,34 +77,54 @@ async def scrape_url(request: ScrapeRequest):
 
         logger.info(f"Executing command: {' '.join(cmd)}")
 
-        # Run the spider with extended timeout
+        # Run the spider with extended timeout using async subprocess
         # MixesDB has 15s download delay + parsing time, so we need longer timeout
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd="/app",
-            timeout=900  # 15 minute timeout to accommodate download delays and parsing
-        )
+        # Using async subprocess allows health checks to respond during scraping
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd="/app"
+            )
+
+            # Wait for completion with timeout (15 minutes)
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                process.communicate(),
+                timeout=900
+            )
+
+            # Decode output
+            result_stdout = stdout_bytes.decode('utf-8') if stdout_bytes else ""
+            result_stderr = stderr_bytes.decode('utf-8') if stderr_bytes else ""
+            result_returncode = process.returncode
+
+        except asyncio.TimeoutError:
+            logger.error(f"Spider timeout for task {task_id}")
+            return {
+                "status": "timeout",
+                "task_id": task_id,
+                "error": "Spider execution timeout after 15 minutes"
+            }
 
         # Log output for debugging (only first/last portions to avoid log spam)
-        if result.stdout:
-            logger.info(f"Spider stdout (first 500 chars): {result.stdout[:500]}")
-        if result.stderr:
-            logger.warning(f"Spider stderr (first 500 chars): {result.stderr[:500]}")
-            logger.info(f"Spider stderr (last 1000 chars): {result.stderr[-1000:]}")
+        if result_stdout:
+            logger.info(f"Spider stdout (first 500 chars): {result_stdout[:500]}")
+        if result_stderr:
+            logger.warning(f"Spider stderr (first 500 chars): {result_stderr[:500]}")
+            logger.info(f"Spider stderr (last 1000 chars): {result_stderr[-1000:]}")
 
         # Check if spider ran successfully
-        if result.returncode != 0:
-            error_msg = result.stderr or result.stdout or "Unknown error"
-            logger.error(f"Scrapy failed with code {result.returncode}: {error_msg}")
+        if result_returncode != 0:
+            error_msg = result_stderr or result_stdout or "Unknown error"
+            logger.error(f"Scrapy failed with code {result_returncode}: {error_msg}")
 
             # Don't raise 500 error, return structured response
             return {
                 "status": "error",
                 "task_id": task_id,
                 "error": f"Spider execution failed: {error_msg[:200]}",
-                "returncode": result.returncode
+                "returncode": result_returncode
             }
 
         # Parse Scrapy stats from FULL stderr (Scrapy logs to stderr, not stdout!)
@@ -115,7 +135,7 @@ async def scrape_url(request: ScrapeRequest):
         items_processed_db = 0  # From database pipeline stats
 
         # Combine stdout and stderr for parsing (check both just in case)
-        combined_output = (result.stdout or "") + "\n" + (result.stderr or "")
+        combined_output = (result_stdout or "") + "\n" + (result_stderr or "")
 
         # Look for stats in FULL combined output
         for line in combined_output.split('\n'):
@@ -150,13 +170,6 @@ async def scrape_url(request: ScrapeRequest):
             "message": f"Spider executed, {final_count} items processed ({items_processed_db} via database pipeline, {items_scraped} total scraped)"
         }
 
-    except subprocess.TimeoutExpired:
-        logger.error(f"Spider timeout for task {task_id}")
-        return {
-            "status": "timeout",
-            "task_id": task_id,
-            "error": "Spider execution timeout after 15 minutes"
-        }
     except Exception as e:
         logger.error(f"Error executing spider: {str(e)}")
         return {
