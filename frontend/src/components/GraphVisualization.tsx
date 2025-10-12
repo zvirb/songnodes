@@ -586,27 +586,17 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Memoized color functions
   const getNodeColor = useCallback((node: EnhancedGraphNode): number => {
-    // Pathfinding states take highest priority for visual clarity
+    const { currentPath, startTrackId, endTrackId } = pathfindingState;
 
-    // Start point - bright green
-    if (pathfindingState.startTrackId === node.id) {
-      return COLOR_SCHEMES.node.startPoint;
-    }
+    // Create sets for efficient lookup from the final, calculated path
+    const pathNodeIds = new Set(currentPath?.path.map(p => p.track.id) || []);
+    const waypointIds = new Set(currentPath?.waypoints_visited || []);
 
-    // End point - bright red
-    if (pathfindingState.endTrackId === node.id) {
-      return COLOR_SCHEMES.node.endPoint;
-    }
-
-    // Intermediate waypoints - amber
-    if (pathfindingState.selectedWaypoints.has(node.id)) {
-      return COLOR_SCHEMES.node.waypoint;
-    }
-
-    // Nodes in calculated path - purple
-    if (pathfindingState.currentPath?.path.some(p => p.id === node.id)) {
-      return COLOR_SCHEMES.node.path;
-    }
+    // Pathfinding states take highest priority
+    if (node.id === startTrackId) return COLOR_SCHEMES.node.startPoint;
+    if (node.id === endTrackId) return COLOR_SCHEMES.node.endPoint;
+    if (waypointIds.has(node.id)) return COLOR_SCHEMES.node.waypoint;
+    if (pathNodeIds.has(node.id)) return COLOR_SCHEMES.node.path;
 
     // Regular selection states
     if (viewState.selectedNodes.has(node.id)) {
@@ -616,9 +606,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       return COLOR_SCHEMES.node.hovered;
     }
 
-    // Standard layout uses default coloring
+    // Fallback to default color
     return COLOR_SCHEMES.node.default;
-  }, [viewState.selectedNodes, viewState.hoveredNode, pathfindingState, getGenreColor]);
+  }, [viewState.selectedNodes, viewState.hoveredNode, pathfindingState]);
 
   const getEdgeColor = useCallback((edge: EnhancedGraphEdge): number => {
     if (pathfindingState.currentPath?.path.some((p, i) => {
@@ -626,8 +616,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
       const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
       return next && (
-        (p.id === sourceId && next.id === targetId) ||
-        (p.id === targetId && next.id === sourceId)
+        (p.track.id === sourceId && next.track.id === targetId) ||
+        (p.track.id === targetId && next.track.id === sourceId)
       );
     })) {
       return COLOR_SCHEMES.edge.path;
@@ -2057,11 +2047,14 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     }
 
     // Check if this edge is part of the calculated path
+    const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+    const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
     const isPathEdge = pathfindingState.currentPath?.path.some((p, i) => {
       const next = pathfindingState.currentPath!.path[i + 1];
       return next && (
-        (p.id === edge.source && next.id === edge.target) ||
-        (p.id === edge.target && next.id === edge.source)
+        (p.track.id === sourceId && next.track.id === targetId) ||
+        (p.track.id === targetId && next.track.id === sourceId)
       );
     });
 
