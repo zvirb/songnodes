@@ -35,6 +35,7 @@ Before contributing, ensure you have:
 - Read the [Developer Guide](docs/DEVELOPER_GUIDE.md)
 - Set up the development environment
 - Familiarized yourself with the project architecture
+- Reviewed the repository practices in [AGENTS.md](AGENTS.md)
 
 ### First-Time Contributors
 1. **Fork the repository** on GitHub

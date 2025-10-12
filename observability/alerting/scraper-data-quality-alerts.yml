@@ -155,9 +155,7 @@ groups:
             in the last 24 hours.
 
             Coverage change:
-            - Current: {{ $value }}%
-            - 24h ago: {{ $value | humanize }}%
-            - Drop: {{ printf "%.2f" (sub $value (scraper_artist_coverage_percent offset 24h)) }}%
+            - Drop: {{ printf "%.2f" $value }}%
 
             Possible causes:
             - Artists removed from source
