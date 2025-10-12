@@ -16,6 +16,8 @@ rule_files:
   - "alerts/enrichment-alerts.yml"  # Enrichment pipeline and Medallion architecture alerts
   - "alerts/api-gateway-alerts.yml"  # API Gateway resilience patterns alerts (Circuit Breaker, Rate Limiter, DLQ)
   - "browser-collector-alerts.yml"  # Browser automation service alerts
+  - "alerts/scraper-data-quality-alerts.yml"  # Scraper data quality and item creation monitoring
+  - "alerts/scraper-health-alerts.yml"  # Scraper health, performance, and resource monitoring
 
 # Scrape configuration
 scrape_configs:
@@ -84,6 +86,67 @@ scrape_configs:
   - job_name: 'scraper-orchestrator'
     static_configs:
       - targets: ['scraper-orchestrator:8001']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Individual scraper services metrics
+  - job_name: 'scraper-1001tracklists'
+    static_configs:
+      - targets: ['scraper-1001tracklists:8011']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-mixesdb'
+    static_configs:
+      - targets: ['scraper-mixesdb:8012']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-setlistfm'
+    static_configs:
+      - targets: ['scraper-setlistfm:8013']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-reddit'
+    static_configs:
+      - targets: ['scraper-reddit:8014']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-mixcloud'
+    static_configs:
+      - targets: ['scraper-mixcloud:8015']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-soundcloud'
+    static_configs:
+      - targets: ['scraper-soundcloud:8016']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-youtube'
+    static_configs:
+      - targets: ['scraper-youtube:8017']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-internetarchive'
+    static_configs:
+      - targets: ['scraper-internetarchive:8018']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-livetracklist'
+    static_configs:
+      - targets: ['scraper-livetracklist:8019']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  - job_name: 'scraper-residentadvisor'
+    static_configs:
+      - targets: ['scraper-residentadvisor:8023']
     scrape_interval: 30s
     metrics_path: /metrics
 
