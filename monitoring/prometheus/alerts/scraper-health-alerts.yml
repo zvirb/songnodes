@@ -1,0 +1,403 @@
+groups:
+  - name: scraper-container-health
+    interval: 30s
+    rules:
+      # ========================================================================
+      # CRITICAL: Container Unhealthy
+      # ========================================================================
+      - alert: ScraperContainerUnhealthy
+        expr: |
+          scraper_container_health_status == 0
+        for: 15m
+        labels:
+          severity: critical
+          component: infrastructure
+          team: platform
+          priority: P1
+        annotations:
+          summary: "CRITICAL: {{ $labels.scraper_name }} container is unhealthy"
+          description: |
+            Scraper container {{ $labels.scraper_name }} ({{ $labels.container_id }})
+            has been unhealthy for more than 15 minutes.
+
+            This indicates:
+            - Container failing healthchecks
+            - Service not responding
+            - Critical internal errors
+
+            IMMEDIATE ACTIONS REQUIRED:
+            1. Check container logs: docker logs {{ $labels.container_id }}
+            2. Inspect container health: docker inspect {{ $labels.container_id }}
+            3. Review recent deployments
+            4. Consider container restart if needed
+          runbook_url: "https://docs.songnodes.com/runbooks/container-unhealthy"
+          dashboard_url: "http://grafana:3000/d/scraper-health"
+
+      # ========================================================================
+      # CRITICAL: AsyncIO Event Loop Warnings Accumulating
+      # ========================================================================
+      - alert: ScraperAsyncIOWarningsAccumulating
+        expr: |
+          increase(scraper_asyncio_warnings_total[30m]) > 10
+        for: 10m
+        labels:
+          severity: critical
+          component: scraper
+          team: data-platform
+          priority: P1
+        annotations:
+          summary: "AsyncIO warnings accumulating for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} has logged {{ $value }} AsyncIO warnings
+            in the last 30 minutes.
+
+            Warning type: {{ $labels.warning_type }}
+
+            Common causes:
+            - Event loop not properly closed
+            - Async resources not cleaned up
+            - Pending tasks not awaited
+            - Memory leaks in async code
+
+            IMMEDIATE ACTIONS:
+            1. Check event loop cleanup in spider close()
+            2. Review async resource management
+            3. Verify all tasks are properly awaited
+            4. Check for unclosed connections
+            5. Consider restarting container to clear state
+          runbook_url: "https://docs.songnodes.com/runbooks/asyncio-warnings"
+
+      # ========================================================================
+      # WARNING: No Successful Scrapes Recently
+      # ========================================================================
+      - alert: ScraperNoRecentSuccess
+        expr: |
+          (time() - scraper_last_success_timestamp) > 7200
+        for: 1h
+        labels:
+          severity: warning
+          component: scraper
+          team: data-platform
+          priority: P2
+        annotations:
+          summary: "No successful scrapes for {{ $labels.scraper_name }} in 2 hours"
+          description: |
+            {{ $labels.scraper_name }} has not completed a successful scrape
+            in over 2 hours ({{ $value | humanizeDuration }} ago).
+
+            Possible causes:
+            - Scraper is stuck
+            - Continuous failures
+            - Not scheduled to run
+            - Container issues
+
+            ACTIONS:
+            1. Check scraper schedule/cron
+            2. Review recent error logs
+            3. Verify container is running
+            4. Check for blocking issues
+
+  - name: scraper-performance
+    interval: 30s
+    rules:
+      # ========================================================================
+      # WARNING: High Pipeline Flush Latency
+      # ========================================================================
+      - alert: ScraperHighPipelineFlushLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(scraper_pipeline_flush_duration_seconds_bucket[10m])
+          ) > 30
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+          team: data-platform
+          priority: P2
+        annotations:
+          summary: "High pipeline flush latency for {{ $labels.scraper_name }}"
+          description: |
+            Pipeline flush operations for {{ $labels.scraper_name }} are taking
+            {{ $value | humanizeDuration }} at the 95th percentile.
+
+            Pipeline stage: {{ $labels.pipeline_stage }}
+
+            This indicates:
+            - Database performance issues
+            - Connection pool exhaustion
+            - Large batch sizes
+            - Network latency
+
+            ACTIONS:
+            1. Check database performance metrics
+            2. Review connection pool usage
+            3. Optimize batch sizes
+            4. Check network latency
+          runbook_url: "https://docs.songnodes.com/runbooks/pipeline-latency"
+
+      # ========================================================================
+      # WARNING: Slow HTTP Requests
+      # ========================================================================
+      - alert: ScraperSlowRequests
+        expr: |
+          histogram_quantile(0.95,
+            rate(scraper_request_duration_seconds_bucket[10m])
+          ) > 10
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+          team: data-platform
+          priority: P3
+        annotations:
+          summary: "Slow HTTP requests for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} is experiencing slow HTTP requests.
+            95th percentile: {{ $value | humanizeDuration }}
+
+            Domain: {{ $labels.domain }}
+            Status code: {{ $labels.status_code }}
+
+            Possible causes:
+            - Target website slowdown
+            - Network issues
+            - Rate limiting
+            - Geographic routing issues
+
+            ACTIONS:
+            1. Check target website status
+            2. Verify network connectivity
+            3. Review rate limiting settings
+            4. Consider proxy rotation
+
+      # ========================================================================
+      # WARNING: Low Processing Rate
+      # ========================================================================
+      - alert: ScraperLowProcessingRate
+        expr: |
+          scraper_items_processing_rate < 0.1
+        for: 30m
+        labels:
+          severity: warning
+          component: performance
+          team: data-platform
+          priority: P3
+        annotations:
+          summary: "Low item processing rate for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} is processing items at only
+            {{ $value | humanize }} items/second (expected > 0.1).
+
+            Possible causes:
+            - Performance degradation
+            - Resource constraints
+            - Database bottleneck
+            - Network issues
+
+            ACTIONS:
+            1. Check CPU/memory usage
+            2. Review database query performance
+            3. Check for resource contention
+            4. Monitor connection pools
+
+  - name: scraper-resource-usage
+    interval: 60s
+    rules:
+      # ========================================================================
+      # WARNING: High Database Connection Pool Usage
+      # ========================================================================
+      - alert: ScraperHighDBConnectionPoolUsage
+        expr: |
+          scraper_db_connection_pool_usage > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+          team: platform
+          priority: P2
+        annotations:
+          summary: "High database connection pool usage for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} is using {{ $value | humanizePercentage }}
+            of its database connection pool.
+
+            Pool type: {{ $labels.pool_type }}
+
+            This indicates:
+            - High database activity
+            - Potential connection leaks
+            - Insufficient pool size
+            - Long-running queries
+
+            ACTIONS:
+            1. Review active connections
+            2. Check for connection leaks
+            3. Optimize query patterns
+            4. Consider increasing pool size
+          runbook_url: "https://docs.songnodes.com/runbooks/connection-pool"
+
+      # ========================================================================
+      # CRITICAL: Database Connection Pool Exhausted
+      # ========================================================================
+      - alert: ScraperDBConnectionPoolExhausted
+        expr: |
+          scraper_db_connection_pool_usage >= 1.0
+        for: 5m
+        labels:
+          severity: critical
+          component: database
+          team: platform
+          priority: P1
+        annotations:
+          summary: "Database connection pool EXHAUSTED for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} has exhausted its database connection pool.
+
+            This will cause:
+            - Failed database operations
+            - Request timeouts
+            - Data loss potential
+
+            IMMEDIATE ACTIONS:
+            1. Identify and close idle connections
+            2. Check for connection leaks
+            3. Temporarily increase pool size
+            4. Review query execution times
+            5. Consider circuit breaker activation
+
+      # ========================================================================
+      # WARNING: High Memory Usage
+      # ========================================================================
+      - alert: ScraperHighMemoryUsage
+        expr: |
+          scraper_memory_usage_bytes > 800000000
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+          team: platform
+          priority: P2
+        annotations:
+          summary: "High memory usage for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} is using {{ $value | humanize1024 }}B
+            of memory (threshold: 800MB).
+
+            Possible causes:
+            - Memory leaks
+            - Large in-memory buffers
+            - Unbounded caching
+            - Resource accumulation
+
+            ACTIONS:
+            1. Review memory usage patterns
+            2. Check for memory leaks
+            3. Optimize cache sizes
+            4. Clear unnecessary buffers
+            5. Consider container restart
+
+      # ========================================================================
+      # WARNING: High Items in Queue
+      # ========================================================================
+      - alert: ScraperHighQueueSize
+        expr: |
+          scraper_items_in_queue > 1000
+        for: 15m
+        labels:
+          severity: warning
+          component: pipeline
+          team: data-platform
+          priority: P2
+        annotations:
+          summary: "High queue size for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} has {{ $value }} items in queue
+            (threshold: 1000).
+
+            Queue type: {{ $labels.queue_type }}
+
+            This indicates:
+            - Processing slower than ingestion
+            - Pipeline bottleneck
+            - Consumer issues
+
+            ACTIONS:
+            1. Check pipeline processing rate
+            2. Review consumer health
+            3. Optimize processing logic
+            4. Consider scaling consumers
+
+  - name: scraper-extraction-failures
+    interval: 60s
+    rules:
+      # ========================================================================
+      # WARNING: High Extraction Failure Rate
+      # ========================================================================
+      - alert: ScraperHighExtractionFailureRate
+        expr: |
+          rate(scraper_extraction_failures_total[15m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: extraction
+          team: data-platform
+          priority: P2
+        annotations:
+          summary: "High extraction failure rate for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} is experiencing {{ $value | humanize }}
+            extraction failures per second.
+
+            Failure details:
+            - Failure reason: {{ $labels.failure_reason }}
+            - URL pattern: {{ $labels.url_pattern }}
+
+            Common causes:
+            - Website structure changes
+            - Selector/XPath issues
+            - Anti-scraping measures
+            - JavaScript rendering issues
+
+            ACTIONS:
+            1. Review extraction selectors
+            2. Check website structure
+            3. Verify JavaScript rendering
+            4. Update scraping logic
+          runbook_url: "https://docs.songnodes.com/runbooks/extraction-failures"
+
+      # ========================================================================
+      # CRITICAL: All Extractions Failing
+      # ========================================================================
+      - alert: ScraperAllExtractionsFailing
+        expr: |
+          (
+            rate(scraper_extraction_failures_total[10m]) > 0
+          )
+          AND
+          (
+            rate(scraper_items_created_total[10m]) == 0
+          )
+        for: 15m
+        labels:
+          severity: critical
+          component: extraction
+          team: data-platform
+          priority: P1
+        annotations:
+          summary: "CRITICAL: All extractions failing for {{ $labels.scraper_name }}"
+          description: |
+            {{ $labels.scraper_name }} is experiencing complete extraction failure.
+            No items are being created despite extraction attempts.
+
+            This indicates:
+            - Complete website structure change
+            - Scraper blocked/banned
+            - Critical scraper bug
+            - Infrastructure issue
+
+            IMMEDIATE ACTIONS REQUIRED:
+            1. Check if website is accessible
+            2. Verify scraper is not blocked
+            3. Review recent website changes
+            4. Check scraper logs for errors
+            5. Consider emergency rollback
