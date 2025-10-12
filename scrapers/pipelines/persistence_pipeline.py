@@ -101,14 +101,30 @@ class PersistencePipeline:
             logger.info("✅ Using centralized secrets manager for database configuration")
         except ImportError:
             # Fallback to environment variables
-            db_config = {
-                'host': os.getenv('DATABASE_HOST', 'postgres'),
-                'port': int(os.getenv('DATABASE_PORT', '5432')),
-                'database': os.getenv('DATABASE_NAME', 'musicdb'),
-                'user': os.getenv('DATABASE_USER', 'musicdb_user'),
-                'password': os.getenv('DATABASE_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024'))
-            }
-            logger.info("⚠️ Secrets manager not available - using environment variables")
+            # First try parsing DATABASE_URL if available (common in containers)
+            database_url = os.getenv('DATABASE_URL')
+            if database_url and database_url.startswith('postgresql'):
+                # Parse postgresql://user:password@host:port/database
+                from urllib.parse import urlparse
+                parsed = urlparse(database_url)
+                db_config = {
+                    'host': parsed.hostname or 'postgres',
+                    'port': parsed.port or 5432,
+                    'database': parsed.path.lstrip('/') or 'musicdb',
+                    'user': parsed.username or 'musicdb_user',
+                    'password': parsed.password or 'musicdb_secure_pass_2024'
+                }
+                logger.info(f"✅ Using DATABASE_URL: {parsed.hostname}:{parsed.port}/{parsed.path.lstrip('/')}")
+            else:
+                # Fall back to individual env vars
+                db_config = {
+                    'host': os.getenv('DATABASE_HOST', 'postgres'),
+                    'port': int(os.getenv('DATABASE_PORT', '5432')),
+                    'database': os.getenv('DATABASE_NAME', 'musicdb'),
+                    'user': os.getenv('DATABASE_USER', 'musicdb_user'),
+                    'password': os.getenv('DATABASE_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024'))
+                }
+                logger.info("⚠️ Secrets manager not available - using environment variables")
 
         return cls(db_config)
 
@@ -183,17 +199,15 @@ class PersistencePipeline:
                 f"postgresql://{self.config['user']}:{self.config['password']}"
                 f"@{self.config['host']}:{self.config['port']}/{self.config['database']}"
             )
+            # Note: server_settings removed as PgBouncer doesn't support them at connection time
+            # Timeout settings should be applied per-transaction if needed
             self.connection_pool = loop.run_until_complete(asyncpg.create_pool(
                 connection_string,
                 min_size=5,
                 max_size=15,
                 command_timeout=30,
                 max_queries=50000,
-                max_inactive_connection_lifetime=1800,
-                server_settings={
-                    'statement_timeout': '30000',
-                    'idle_in_transaction_session_timeout': '300000'
-                }
+                max_inactive_connection_lifetime=1800
             ))
             self.logger.info("✓ Database connection pool initialized in persistent thread")
             self._pool_ready.set()  # Signal that pool is ready
