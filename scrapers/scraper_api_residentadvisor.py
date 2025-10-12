@@ -17,7 +17,7 @@ This file uses the modern pipelines.persistence_pipeline.PersistencePipeline arc
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 import httpx
 import asyncio
@@ -28,10 +28,11 @@ import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from bs4 import BeautifulSoup
-from prometheus_client import Counter
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
 from pipelines.persistence_pipeline import PersistencePipeline
 from nlp_fallback_utils import extract_text_from_html, extract_via_nlp
+from monitoring_metrics import track_item_creation, track_schema_error, record_successful_scrape
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -490,6 +491,14 @@ async def save_artist_to_database(artist_data: Dict[str, Any], spider_context: A
 async def health_check():
     return {"status": "healthy", "scraper": "resident_advisor"}
 
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
+
 @app.post("/scrape")
 async def scrape_url(request: ScrapeRequest):
     """Execute scraping task for Resident Advisor page"""
@@ -515,6 +524,30 @@ async def scrape_url(request: ScrapeRequest):
             extraction_method = event_data.get('extraction_method', 'unknown')
             confidence = event_data.get('confidence', 0.0)
 
+            # Track item creation for event
+            event_item = {
+                'item_type': 'playlist',
+                'name': event_data['name'],
+                'platform': 'resident_advisor'
+            }
+            track_item_creation('residentadvisor', 'EnhancedTrackItem', 'residentadvisor.net', event_item)
+
+            # Track each artist in lineup
+            for artist_name in event_data.get('lineup', []):
+                artist_item = {
+                    'item_type': 'artist',
+                    'artist_name': artist_name
+                }
+                track_item_creation('residentadvisor', 'EnhancedTrackItem', 'residentadvisor.net', artist_item)
+
+            # Track each track if available
+            for track in event_data.get('tracks', []):
+                track_item_creation('residentadvisor', 'EnhancedTrackItem', 'residentadvisor.net', track)
+
+            # Record successful scrape
+            if lineup_count > 0:
+                record_successful_scrape('residentadvisor')
+
             return {
                 "status": "success",
                 "task_id": task_id,
@@ -534,6 +567,16 @@ async def scrape_url(request: ScrapeRequest):
             artist_data = await scrape_ra_artist(request.url)
             await save_artist_to_database(artist_data)
 
+            # Track artist item creation
+            artist_item = {
+                'item_type': 'artist',
+                'artist_name': artist_data['name']
+            }
+            track_item_creation('residentadvisor', 'EnhancedTrackItem', 'residentadvisor.net', artist_item)
+
+            # Record successful scrape
+            record_successful_scrape('residentadvisor')
+
             return {
                 "status": "success",
                 "task_id": task_id,
@@ -548,6 +591,8 @@ async def scrape_url(request: ScrapeRequest):
 
     except httpx.HTTPError as e:
         logger.error(f"HTTP error scraping {request.url}: {e}")
+        # Track HTTP error
+        track_schema_error('residentadvisor', 'http_error', 'EnhancedTrackItem')
         return {
             "status": "error",
             "task_id": task_id,
@@ -555,6 +600,8 @@ async def scrape_url(request: ScrapeRequest):
         }
     except Exception as e:
         logger.error(f"Error scraping {request.url}: {e}")
+        # Track general exception
+        track_schema_error('residentadvisor', 'general_exception', 'EnhancedTrackItem')
         return {
             "status": "error",
             "task_id": task_id,

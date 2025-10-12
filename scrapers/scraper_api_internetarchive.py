@@ -16,7 +16,7 @@ This file uses the modern pipelines.persistence_pipeline.PersistencePipeline arc
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 import httpx
 import asyncio
@@ -26,6 +26,8 @@ import logging
 import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from monitoring_metrics import track_item_creation, track_schema_error, record_successful_scrape
 
 from pipelines.persistence_pipeline import PersistencePipeline
 
@@ -224,6 +226,14 @@ async def save_to_database(mix_data: Dict[str, Any], spider_context: Any = None)
 async def health_check():
     return {"status": "healthy", "scraper": "internet_archive"}
 
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
+
 @app.get("/search")
 async def search(collection: str, query: str = "*:*", rows: int = 50):
     """Search Internet Archive collection"""
@@ -262,6 +272,14 @@ async def scrape_url(request: ScrapeRequest):
         # Save to database
         await save_to_database(mix_data)
 
+        # Track item creation for each track
+        for track in mix_data.get('tracklist', []):
+            track_item_creation('internetarchive', 'EnhancedTrackItem', 'archive.org', track)
+
+        # Record successful scrape if tracks were found
+        if mix_data.get('tracklist'):
+            record_successful_scrape('internetarchive')
+
         return {
             "status": "success",
             "task_id": task_id,
@@ -274,6 +292,7 @@ async def scrape_url(request: ScrapeRequest):
 
     except httpx.HTTPError as e:
         logger.error(f"HTTP error scraping {request.url}: {e}")
+        track_schema_error('internetarchive', 'http_error', 'EnhancedTrackItem')
         return {
             "status": "error",
             "task_id": task_id,
@@ -281,6 +300,7 @@ async def scrape_url(request: ScrapeRequest):
         }
     except Exception as e:
         logger.error(f"Error scraping {request.url}: {e}")
+        track_schema_error('internetarchive', 'general_exception', 'EnhancedTrackItem')
         return {
             "status": "error",
             "task_id": task_id,
