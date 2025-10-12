@@ -16,7 +16,7 @@ This file uses the modern pipelines.persistence_pipeline.PersistencePipeline arc
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 import httpx
 import asyncio
@@ -28,6 +28,8 @@ import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime, date
 from urllib.parse import urlparse, parse_qs
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from monitoring_metrics import track_item_creation, track_schema_error, record_successful_scrape
 
 from pipelines.persistence_pipeline import PersistencePipeline
 
@@ -340,6 +342,7 @@ async def save_to_database(mix_data: Dict[str, Any], spider_context: Any = None)
         }
 
         await db_pipeline.process_item(playlist_item, spider_context)
+        track_item_creation('youtube', 'playlist', 'youtube.com', playlist_item)
 
         # Process each track
         for track_data in mix_data.get('tracklist', []):
@@ -350,6 +353,7 @@ async def save_to_database(mix_data: Dict[str, Any], spider_context: Any = None)
                     'artist_name': track_data['artist_name']
                 }
                 await db_pipeline.process_item(artist_item, spider_context)
+                track_item_creation('youtube', 'artist', 'youtube.com', artist_item)
 
             # Create track item
             if track_data.get('track_name'):
@@ -360,6 +364,7 @@ async def save_to_database(mix_data: Dict[str, Any], spider_context: Any = None)
                     'youtube_music_id': track_data.get('youtube_music_id')
                 }
                 await db_pipeline.process_item(track_item, spider_context)
+                track_item_creation('youtube', 'track', 'youtube.com', track_item)
 
                 # Create playlist track item
                 playlist_track_item = {
@@ -371,6 +376,7 @@ async def save_to_database(mix_data: Dict[str, Any], spider_context: Any = None)
                     'source': 'youtube'
                 }
                 await db_pipeline.process_item(playlist_track_item, spider_context)
+                track_item_creation('youtube', 'playlist_track', 'youtube.com', playlist_track_item)
 
         # Flush remaining batches
         await db_pipeline.flush_all_batches()
@@ -395,6 +401,14 @@ async def health_check():
         status["status"] = "degraded"
 
     return status
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
 
 @app.get("/quota")
 async def get_quota_status():
@@ -450,6 +464,9 @@ async def scrape_url(request: ScrapeRequest):
         # Save to database
         await save_to_database(mix_data)
 
+        # Record successful scrape
+        record_successful_scrape('youtube')
+
         return {
             "status": "success",
             "task_id": task_id,
@@ -461,6 +478,7 @@ async def scrape_url(request: ScrapeRequest):
 
     except httpx.HTTPError as e:
         logger.error(f"HTTP error scraping {request.url}: {e}")
+        track_schema_error('youtube', 'http_error', 'youtube_video')
         return {
             "status": "error",
             "task_id": task_id,
@@ -468,6 +486,7 @@ async def scrape_url(request: ScrapeRequest):
         }
     except Exception as e:
         logger.error(f"Error scraping {request.url}: {e}")
+        track_schema_error('youtube', 'general_exception', 'youtube_video')
         return {
             "status": "error",
             "task_id": task_id,
