@@ -785,11 +785,10 @@ class PersistencePipeline:
             artist_name = self._extract_artist_from_playlist_name(playlist_name)
             event_name = item.get('event_name')
 
-            # Parse event_date
+            # Parse event_date (datetime already imported at module level, line 27)
             event_date = item.get('set_date') or item.get('playlist_date') or item.get('event_date')
             if event_date and isinstance(event_date, str):
                 try:
-                    from datetime import datetime
                     if 'T' in event_date:
                         event_date = datetime.fromisoformat(event_date.replace('Z', '+00:00').split('.')[0]).date()
                     else:
@@ -992,7 +991,7 @@ class PersistencePipeline:
                 self._extract_artist_from_playlist_name(item.get('name', '')),  # artist_name (parsed from name)
                 item.get('event_date'),  # event_date (optional)
                 item.get('tracklist_count', 0),  # track_count
-                'valid' if item.get('tracklist_count', 0) > 0 else 'invalid',  # validation_status
+                'valid' if item.get('tracklist_count', 0) > 0 else 'failed',  # validation_status (constraint allows: valid, warning, needs_review, failed)
                 self._calculate_playlist_quality_score(item),  # data_quality_score
                 '{}'  # enrichment_metadata (REQUIRED JSONB, empty for now)
             ) for item in batch

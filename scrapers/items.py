@@ -52,7 +52,11 @@ class EnhancedTrackItem(scrapy.Item):
     track_name = scrapy.Field()
     artist_name = scrapy.Field()  # Denormalized primary artist (for medallion architecture)
     normalized_title = scrapy.Field()
+    parsed_title = scrapy.Field()  # Parsed/cleaned title for matching (optional)
     duration_ms = scrapy.Field()
+
+    # Medallion architecture fields (internal, set by pipeline)
+    _bronze_id = scrapy.Field()  # FK to bronze_scraped_tracks (set after bronze insert)
 
     # External platform IDs
     isrc = scrapy.Field()
@@ -78,6 +82,7 @@ class EnhancedTrackItem(scrapy.Item):
     # Music metadata
     release_date = scrapy.Field()
     genre = scrapy.Field()
+    original_genre = scrapy.Field()  # Genre before normalization (optional)
     subgenre = scrapy.Field()
     record_label = scrapy.Field()
     catalog_number = scrapy.Field()  # Label catalog number (for Discogs linking)
