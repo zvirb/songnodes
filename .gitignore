@@ -227,3 +227,9 @@ debug_*.js
 
 # Unfinished/experimental services
 services/track-deduplication/
+
+# Files to ignore from user request
+CURRENT_STATUS.md
+monitoring/phoenix-alertmanager-bridge/
+services/data-transformer/silver_to_gold_etl.py
+setup-phoenix-integration.sh
