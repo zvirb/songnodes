@@ -129,6 +129,8 @@ songnodes/
 
 ## 🚀 Quick Start
 
+For day-to-day contributor expectations, review [AGENTS.md](./AGENTS.md).
+
 ### Prerequisites
 
 - Docker 20.10+
