@@ -14,7 +14,7 @@ Handles both targeted and URL-based scraping modes
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 import asyncio
 import json
@@ -22,6 +22,8 @@ import os
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from monitoring_metrics import track_item_creation, track_schema_error, record_successful_scrape
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +40,14 @@ class ScrapeRequest(BaseModel):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "scraper": "mixesdb"}
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
 
 @app.post("/scrape")
 async def scrape_url(request: ScrapeRequest):
@@ -101,6 +111,8 @@ async def scrape_url(request: ScrapeRequest):
 
         except asyncio.TimeoutError:
             logger.error(f"Spider timeout for task {task_id}")
+            # Track timeout error
+            track_schema_error('mixesdb', 'spider_timeout', 'EnhancedTrackItem')
             return {
                 "status": "timeout",
                 "task_id": task_id,
@@ -118,6 +130,9 @@ async def scrape_url(request: ScrapeRequest):
         if result_returncode != 0:
             error_msg = result_stderr or result_stdout or "Unknown error"
             logger.error(f"Scrapy failed with code {result_returncode}: {error_msg}")
+
+            # Track spider execution error
+            track_schema_error('mixesdb', 'spider_execution_failed', 'EnhancedTrackItem')
 
             # Don't raise 500 error, return structured response
             return {
@@ -159,6 +174,14 @@ async def scrape_url(request: ScrapeRequest):
         # Use database pipeline count if available (more accurate), fallback to scrapy stats
         final_count = items_processed_db if items_processed_db > 0 else items_scraped
 
+        # Track metrics for successfully scraped items
+        for _ in range(final_count):
+            track_item_creation('mixesdb', 'EnhancedTrackItem', 'mixesdb.com')
+
+        # Record successful scrape timestamp
+        if final_count > 0:
+            record_successful_scrape('mixesdb')
+
         return {
             "status": "success",
             "task_id": task_id,
@@ -172,6 +195,8 @@ async def scrape_url(request: ScrapeRequest):
 
     except Exception as e:
         logger.error(f"Error executing spider: {str(e)}")
+        # Track general exception
+        track_schema_error('mixesdb', 'general_exception', 'EnhancedTrackItem')
         return {
             "status": "error",
             "task_id": task_id,
