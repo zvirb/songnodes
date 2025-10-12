@@ -14,7 +14,7 @@ Handles both targeted and URL-based scraping modes
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 import asyncio
 import json
@@ -22,6 +22,8 @@ import os
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from monitoring_metrics import track_item_creation, track_schema_error, record_successful_scrape
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +40,14 @@ class ScrapeRequest(BaseModel):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "scraper": "setlistfm"}
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
 
 @app.post("/scrape")
 async def scrape_url(request: ScrapeRequest):
@@ -125,6 +135,9 @@ async def scrape_url(request: ScrapeRequest):
                 error_msg = stderr_text or stdout_text or "Unknown error"
                 logger.error(f"Scrapy failed with code {process.returncode}: {error_msg}")
 
+                # Track spider execution error
+                track_schema_error('setlistfm', 'spider_execution_failed', 'EnhancedTrackItem')
+
                 # Don't raise 500 error, return structured response
                 return {
                     "status": "error",
@@ -137,6 +150,24 @@ async def scrape_url(request: ScrapeRequest):
             output_exists = os.path.exists(output_file)
             output_size = os.path.getsize(output_file) if output_exists else 0
 
+            # Parse output file to count items and track metrics
+            items_count = 0
+            if output_exists and output_size > 0:
+                try:
+                    with open(output_file, 'r') as f:
+                        items = json.load(f)
+                        if isinstance(items, list):
+                            items_count = len(items)
+                            # Track each item creation
+                            for item in items:
+                                track_item_creation('setlistfm', 'EnhancedTrackItem', 'setlist.fm', item)
+                except Exception as e:
+                    logger.warning(f"Failed to parse output file for metrics: {e}")
+
+            # Record successful scrape timestamp
+            if items_count > 0:
+                record_successful_scrape('setlistfm')
+
             return {
                 "status": "success",
                 "task_id": task_id,
@@ -144,11 +175,14 @@ async def scrape_url(request: ScrapeRequest):
                 "mode": "targeted",
                 "output_file": output_file if output_exists else None,
                 "output_size": output_size,
-                "message": "Spider executed in targeted mode using target_tracks_for_scraping.json"
+                "items_count": items_count,
+                "message": f"Spider executed in targeted mode, {items_count} items processed"
             }
 
         except asyncio.TimeoutError:
             logger.error(f"Spider timeout for task {task_id}")
+            # Track timeout error
+            track_schema_error('setlistfm', 'spider_timeout', 'EnhancedTrackItem')
             # Try to kill the process if it's still running
             try:
                 process.terminate()
@@ -165,6 +199,8 @@ async def scrape_url(request: ScrapeRequest):
             }
     except Exception as e:
         logger.error(f"Error executing spider: {str(e)}")
+        # Track general exception
+        track_schema_error('setlistfm', 'general_exception', 'EnhancedTrackItem')
         return {
             "status": "error",
             "task_id": task_id,
