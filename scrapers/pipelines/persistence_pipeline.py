@@ -1262,10 +1262,38 @@ class PersistencePipeline:
                 except Exception as e:
                     self.logger.error(f"Error closing connection pool: {e}")
 
-            # Now close the persistent event loop
+            # Gracefully shutdown the persistent event loop
             if self._persistent_loop:
-                self._persistent_loop.call_soon_threadsafe(self._persistent_loop.stop)
-                self.logger.info("✓ Persistent event loop stopped")
+                try:
+                    # Cancel all pending tasks in the loop
+                    def cancel_pending_tasks():
+                        pending = asyncio.all_tasks(loop=self._persistent_loop)
+                        if pending:
+                            self.logger.info(f"Cancelling {len(pending)} pending asyncio tasks...")
+                            for task in pending:
+                                task.cancel()
+                            # Wait for tasks to finish cancellation
+                            return asyncio.gather(*pending, return_exceptions=True)
+                        return None
+
+                    # Schedule task cancellation in the persistent loop
+                    import concurrent.futures
+                    future = asyncio.run_coroutine_threadsafe(
+                        cancel_pending_tasks() or asyncio.sleep(0),
+                        self._persistent_loop
+                    )
+                    # Wait for cancellation to complete (with short timeout)
+                    try:
+                        future.result(timeout=2.0)
+                        self.logger.info("✓ All pending tasks cancelled")
+                    except concurrent.futures.TimeoutError:
+                        self.logger.warning("⚠️ Timeout cancelling tasks, forcing shutdown")
+
+                    # Now stop the event loop
+                    self._persistent_loop.call_soon_threadsafe(self._persistent_loop.stop)
+                    self.logger.info("✓ Persistent event loop stopped")
+                except Exception as e:
+                    self.logger.error(f"Error shutting down event loop: {e}")
 
             self.logger.info("✓ Persistence pipeline closed successfully")
 

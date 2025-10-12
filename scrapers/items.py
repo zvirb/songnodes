@@ -50,6 +50,7 @@ class EnhancedTrackItem(scrapy.Item):
     # Basic track info
     track_id = scrapy.Field()  # Deterministic ID for cross-source deduplication
     track_name = scrapy.Field()
+    artist_name = scrapy.Field()  # Denormalized primary artist (for medallion architecture)
     normalized_title = scrapy.Field()
     duration_ms = scrapy.Field()
 
