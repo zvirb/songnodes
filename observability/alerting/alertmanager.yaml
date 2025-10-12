@@ -107,6 +107,53 @@ route:
       receiver: 'data-quality-team'
       group_interval: 15m
 
+    # Scraper health and performance alerts
+    - match:
+        component: scraper
+      receiver: 'scraper-team'
+      group_by: ['alertname', 'scraper_name', 'severity']
+      group_wait: 1m
+      repeat_interval: 2h
+
+    # Scraper extraction failures
+    - match:
+        component: extraction
+      receiver: 'extraction-team'
+      group_by: ['alertname', 'scraper_name', 'failure_reason']
+      group_wait: 1m
+      repeat_interval: 2h
+
+    # Service down alerts - immediate notification
+    - match:
+        alertname: ServiceDown
+      receiver: 'service-down-team'
+      group_wait: 10s
+      repeat_interval: 10m
+
+    # Database alerts
+    - match:
+        component: database
+      receiver: 'database-team'
+      group_by: ['alertname', 'severity']
+      group_wait: 30s
+      repeat_interval: 30m
+
+    # Performance alerts
+    - match:
+        component: performance
+      receiver: 'performance-team'
+      group_by: ['alertname', 'service']
+      group_interval: 5m
+      repeat_interval: 2h
+
+    # Warning alerts (less urgent)
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 2m
+      group_interval: 10m
+      repeat_interval: 6h
+
     # Info level alerts (batched)
     - match:
         severity: info
@@ -114,69 +161,383 @@ route:
       group_interval: 15m
       repeat_interval: 12h
 
-# Alert receivers/notification channels - Development Mode
-# All notifications disabled for development environment
-# Alerts are logged in Alertmanager UI only
+# ===============================================================================
+# RECEIVERS - Slack Integration Enabled
+# ===============================================================================
+# Configure SLACK_WEBHOOK_URL in .env file to enable notifications
+# Supports channel-specific webhooks for optimal routing
 receivers:
-  # Default receiver (fallback)
+  # ---------------------------------------------------------------------------
+  # Default receiver (fallback for unmatched alerts)
+  # ---------------------------------------------------------------------------
   - name: 'default-receiver'
-    # Development: No email configured
-    # For production: Add email_configs here
+    slack_configs:
+      - channel: '#songnodes-alerts'
+        username: 'Alertmanager'
+        icon_emoji: ':bell:'
+        title: '{{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          {{ if .Labels.component }}*Component:* {{ .Labels.component }}{{ end }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}'
 
-  # Critical alerts - multiple channels
+  # ---------------------------------------------------------------------------
+  # Critical alerts - multiple channels with @channel mention
+  # ---------------------------------------------------------------------------
   - name: 'critical-alerts'
-    # Development: No notifications configured
-    # For production: Add email_configs and webhook_configs here
+    slack_configs:
+      - channel: '#songnodes-critical'
+        username: 'Critical Alert'
+        icon_emoji: ':rotating_light:'
+        color: 'danger'
+        title: ':rotating_light: CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          <!channel> *CRITICAL ALERT FIRED*
 
+          {{ range .Alerts }}
+          ---
+          *Alert:* {{ .Annotations.summary }}
+          *Priority:* {{ .Labels.priority | default "P1" }}
+          *Team:* {{ .Labels.team | default "platform" }}
+          {{ if .Labels.component }}*Component:* {{ .Labels.component }}{{ end }}
+
+          *Description:*
+          {{ .Annotations.description }}
+
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ if .Annotations.dashboard_url }}*Dashboard:* {{ .Annotations.dashboard_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_CRITICAL:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
+
+  # ---------------------------------------------------------------------------
   # Enrichment pipeline team
+  # ---------------------------------------------------------------------------
   - name: 'enrichment-team'
-    # Development: No notifications configured
-    # For production: Add email_configs for enrichment team
+    slack_configs:
+      - channel: '#songnodes-enrichment'
+        username: 'Enrichment Monitor'
+        icon_emoji: ':sparkles:'
+        title: 'Enrichment Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ if .Labels.provider }}*Provider:* {{ .Labels.provider }}{{ end }}
+          {{ if .Labels.field_category }}*Field Category:* {{ .Labels.field_category }}{{ end }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_ENRICHMENT:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # API Gateway team
+  # ---------------------------------------------------------------------------
   - name: 'api-team'
-    # Development: No notifications configured
-    # For production: Add email_configs for API team
+    slack_configs:
+      - channel: '#songnodes-api-gateway'
+        username: 'API Gateway Monitor'
+        icon_emoji: ':electric_plug:'
+        title: 'API Gateway Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ if .Labels.provider }}*Provider:* {{ .Labels.provider }}{{ end }}
+          {{ if .Labels.category }}*Category:* {{ .Labels.category }}{{ end }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_API_GATEWAY:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # DLQ management team
+  # ---------------------------------------------------------------------------
   - name: 'dlq-team'
-    # Development: No notifications configured
-    # For production: Add email_configs for DLQ team
+    slack_configs:
+      - channel: '#songnodes-dlq'
+        username: 'DLQ Monitor'
+        icon_emoji: ':outbox_tray:'
+        title: 'DLQ Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ if .Labels.queue_name }}*Queue:* {{ .Labels.queue_name }}{{ end }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_DLQ:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # Data engineering team (Medallion architecture)
+  # ---------------------------------------------------------------------------
   - name: 'data-engineering-team'
-    # Development: No notifications configured
-    # For production: Add email_configs for data engineering team
+    slack_configs:
+      - channel: '#songnodes-data-engineering'
+        username: 'Data Engineering Monitor'
+        icon_emoji: ':building_construction:'
+        title: 'Data Pipeline Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ if .Labels.layer }}*Layer:* {{ .Labels.layer }}{{ end }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_DATA_ENG:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # Finance team (cost alerts)
+  # ---------------------------------------------------------------------------
   - name: 'finance-team'
-    # Development: No notifications configured
-    # For production: Add email_configs for finance team
+    slack_configs:
+      - channel: '#songnodes-cost-alerts'
+        username: 'Cost Monitor'
+        icon_emoji: ':moneybag:'
+        title: 'Cost Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_FINANCE:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # Data quality team
+  # ---------------------------------------------------------------------------
   - name: 'data-quality-team'
-    # Development: No notifications configured
-    # For production: Add email_configs for data quality team
+    slack_configs:
+      - channel: '#songnodes-data-quality'
+        username: 'Data Quality Monitor'
+        icon_emoji: ':bar_chart:'
+        title: 'Data Quality Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_DATA_QUALITY:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # Infrastructure team notifications
+  # ---------------------------------------------------------------------------
   - name: 'infrastructure-team'
-    # Development: No notifications configured
-    # For production: Add email_configs here
+    slack_configs:
+      - channel: '#songnodes-infrastructure'
+        username: 'Infrastructure Monitor'
+        icon_emoji: ':gear:'
+        title: 'Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Severity:* {{ .Labels.severity }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Labels.instance }}*Instance:* {{ .Labels.instance }}{{ end }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_INFRA:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # Data platform team notifications
+  # ---------------------------------------------------------------------------
   - name: 'data-platform-team'
-    # Development: No notifications configured
-    # For production: Add email_configs here
+    slack_configs:
+      - channel: '#songnodes-data-platform'
+        username: 'Data Platform Monitor'
+        icon_emoji: ':floppy_disk:'
+        title: 'Data Platform Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_DATA_PLATFORM:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
   # Backend team for API issues
+  # ---------------------------------------------------------------------------
   - name: 'backend-team'
-    # Development: No notifications configured
-    # For production: Add email_configs here
+    slack_configs:
+      - channel: '#songnodes-backend'
+        username: 'Backend Monitor'
+        icon_emoji: ':computer:'
+        title: 'Backend Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_BACKEND:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
+  # ---------------------------------------------------------------------------
+  # Scraper team (scraper health and performance)
+  # ---------------------------------------------------------------------------
+  - name: 'scraper-team'
+    slack_configs:
+      - channel: '#songnodes-scraper-alerts'
+        username: 'Scraper Monitor'
+        icon_emoji: ':spider_web:'
+        title: 'Scraper Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          *Scraper:* {{ .GroupLabels.scraper_name | default "Unknown" }}
+          *Severity:* {{ .GroupLabels.severity }}
+
+          {{ range .Alerts }}
+          ---
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Labels.source }}*Source:* {{ .Labels.source }}{{ end }}
+          {{ if .Labels.container_id }}*Container:* {{ .Labels.container_id }}{{ end }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_SCRAPERS:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
+
+  # ---------------------------------------------------------------------------
+  # Extraction team (scraping failures and extraction issues)
+  # ---------------------------------------------------------------------------
+  - name: 'extraction-team'
+    slack_configs:
+      - channel: '#songnodes-extraction-alerts'
+        username: 'Extraction Monitor'
+        icon_emoji: ':mag:'
+        title: 'Extraction Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          *Scraper:* {{ .GroupLabels.scraper_name | default "Unknown" }}
+          {{ if .GroupLabels.failure_reason }}*Failure Reason:* {{ .GroupLabels.failure_reason }}{{ end }}
+
+          {{ range .Alerts }}
+          ---
+          *Summary:* {{ .Annotations.summary }}
+          {{ if .Labels.url_pattern }}*URL Pattern:* {{ .Labels.url_pattern }}{{ end }}
+          {{ if .Labels.extraction_type }}*Extraction Type:* {{ .Labels.extraction_type }}{{ end }}
+
+          *Description:*
+          {{ .Annotations.description }}
+
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_EXTRACTION:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
+
+  # ---------------------------------------------------------------------------
+  # Service down team
+  # ---------------------------------------------------------------------------
+  - name: 'service-down-team'
+    slack_configs:
+      - channel: '#songnodes-service-down'
+        username: 'Service Monitor'
+        icon_emoji: ':x:'
+        color: 'danger'
+        title: ':x: SERVICE DOWN: {{ .GroupLabels.alertname }}'
+        text: |
+          <!here> *SERVICE DOWN DETECTED*
+
+          {{ range .Alerts }}
+          *Service:* {{ .Labels.job }}
+          *Instance:* {{ .Labels.instance }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_SERVICE_DOWN:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
+
+  # ---------------------------------------------------------------------------
+  # Database team
+  # ---------------------------------------------------------------------------
+  - name: 'database-team'
+    slack_configs:
+      - channel: '#songnodes-database-alerts'
+        username: 'Database Monitor'
+        icon_emoji: ':floppy_disk:'
+        title: 'Database Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Severity:* {{ .Labels.severity }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Labels.pool_type }}*Pool Type:* {{ .Labels.pool_type }}{{ end }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_DATABASE:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
+
+  # ---------------------------------------------------------------------------
+  # Performance team
+  # ---------------------------------------------------------------------------
+  - name: 'performance-team'
+    slack_configs:
+      - channel: '#songnodes-performance'
+        username: 'Performance Monitor'
+        icon_emoji: ':chart_with_upwards_trend:'
+        title: 'Performance Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ if .Labels.service }}*Service:* {{ .Labels.service }}{{ end }}
+          {{ if .Annotations.threshold }}*Threshold:* {{ .Annotations.threshold }}{{ end }}
+          {{ if .Annotations.current_value }}*Current Value:* {{ .Annotations.current_value }}{{ end }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_PERFORMANCE:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
+
+  # ---------------------------------------------------------------------------
+  # Warning alerts
+  # ---------------------------------------------------------------------------
+  - name: 'warning-alerts'
+    slack_configs:
+      - channel: '#songnodes-warnings'
+        username: 'Warning Monitor'
+        icon_emoji: ':warning:'
+        color: 'warning'
+        title: ':warning: Warning: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ if .Labels.component }}*Component:* {{ .Labels.component }}{{ end }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_WARNINGS:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
+
+  # ---------------------------------------------------------------------------
   # Info alerts - batched summary
+  # ---------------------------------------------------------------------------
   - name: 'info-alerts'
-    # Development: No notifications configured
-    # For production: Add email_configs here
+    slack_configs:
+      - channel: '#songnodes-info'
+        username: 'Info Monitor'
+        icon_emoji: ':information_source:'
+        color: 'good'
+        title: ':information_source: Info: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ if .Labels.component }}*Component:* {{ .Labels.component }}{{ end }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+        api_url: '${SLACK_WEBHOOK_URL_INFO:-${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/PLACEHOLDER_REPLACE_ME}}'
 
 # Inhibition rules to reduce noise
 inhibit_rules:

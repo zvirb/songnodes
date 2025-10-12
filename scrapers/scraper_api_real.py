@@ -14,20 +14,42 @@ Handles both targeted and URL-based scraping modes
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter, Histogram
 import subprocess
 import json
 import os
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="1001Tracklists Scraper", version="2.0.0")
+
+# Prometheus metrics
+scrape_requests_total = Counter(
+    'scraper_1001tl_requests_total',
+    'Total scrape requests',
+    ['status']
+)
+
+scrape_duration_seconds = Histogram(
+    'scraper_1001tl_duration_seconds',
+    'Scrape request duration',
+    ['status'],
+    buckets=[1, 5, 10, 30, 60, 120, 300, 600]
+)
+
+items_scraped_total = Counter(
+    'scraper_1001tl_items_total',
+    'Total items scraped',
+    ['mode']
+)
 
 class ScrapeRequest(BaseModel):
     url: Optional[str] = None
@@ -39,6 +61,14 @@ class ScrapeRequest(BaseModel):
 async def health_check():
     return {"status": "healthy", "scraper": "1001tracklists"}
 
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
+
 @app.post("/scrape")
 async def scrape_url(request: ScrapeRequest):
     """
@@ -46,6 +76,8 @@ async def scrape_url(request: ScrapeRequest):
     Works in URL mode when URL is provided, otherwise targeted mode
     """
     task_id = request.task_id or f"1001tl_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    start_time = time.time()
+    status = "error"
 
     try:
         # Build scrapy command
@@ -120,6 +152,11 @@ async def scrape_url(request: ScrapeRequest):
             error_msg = result.stderr or result.stdout or "Unknown error"
             logger.error(f"Scrapy failed with code {result.returncode}: {error_msg}")
 
+            # Track error metrics
+            duration = time.time() - start_time
+            scrape_requests_total.labels(status='error').inc()
+            scrape_duration_seconds.labels(status='error').observe(duration)
+
             # Don't raise 500 error, return structured response
             return {
                 "status": "error",
@@ -132,6 +169,23 @@ async def scrape_url(request: ScrapeRequest):
         output_exists = os.path.exists(output_file)
         output_size = os.path.getsize(output_file) if output_exists else 0
 
+        # Count items if output file exists
+        items_count = 0
+        if output_exists and output_size > 0:
+            try:
+                with open(output_file, 'r') as f:
+                    data = json.load(f)
+                    items_count = len(data) if isinstance(data, list) else 1
+                    items_scraped_total.labels(mode='targeted').inc(items_count)
+            except Exception as e:
+                logger.warning(f"Could not count items in output file: {e}")
+
+        # Track success metrics
+        status = "success"
+        duration = time.time() - start_time
+        scrape_requests_total.labels(status='success').inc()
+        scrape_duration_seconds.labels(status='success').observe(duration)
+
         return {
             "status": "success",
             "task_id": task_id,
@@ -139,11 +193,15 @@ async def scrape_url(request: ScrapeRequest):
             "mode": "targeted",
             "output_file": output_file if output_exists else None,
             "output_size": output_size,
+            "items_count": items_count,
             "message": "Spider executed successfully with proper artist extraction"
         }
 
     except subprocess.TimeoutExpired:
         logger.error(f"Spider timeout for task {task_id}")
+        duration = time.time() - start_time
+        scrape_requests_total.labels(status='timeout').inc()
+        scrape_duration_seconds.labels(status='timeout').observe(duration)
         return {
             "status": "timeout",
             "task_id": task_id,
@@ -151,6 +209,9 @@ async def scrape_url(request: ScrapeRequest):
         }
     except Exception as e:
         logger.error(f"Error executing spider: {str(e)}")
+        duration = time.time() - start_time
+        scrape_requests_total.labels(status='error').inc()
+        scrape_duration_seconds.labels(status='error').observe(duration)
         return {
             "status": "error",
             "task_id": task_id,

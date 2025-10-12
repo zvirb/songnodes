@@ -1256,6 +1256,57 @@ async def test_nodes():
         logger.error(f"Test endpoint error: {e}")
         return {"error": str(e)}
 
+# =============================================================================
+# Container-Aware Memory Monitoring
+# =============================================================================
+
+def get_container_memory_usage() -> float:
+    """
+    Get container memory usage percentage (cgroup-aware).
+
+    Returns container memory usage if running in Docker, otherwise falls back
+    to host memory usage. Fixes the health check anti-pattern where containers
+    reported "unhealthy" based on host memory instead of their allocated limits.
+
+    Returns:
+        float: Memory usage as percentage (0-100)
+    """
+    from pathlib import Path
+
+    try:
+        # Try cgroup v2 first (newer Docker versions)
+        memory_current = Path("/sys/fs/cgroup/memory.current")
+        memory_max = Path("/sys/fs/cgroup/memory.max")
+
+        if memory_current.exists() and memory_max.exists():
+            current = int(memory_current.read_text().strip())
+            limit = memory_max.read_text().strip()
+
+            if limit != "max":
+                return (current / int(limit)) * 100
+    except (FileNotFoundError, ValueError, PermissionError):
+        pass
+
+    try:
+        # Fall back to cgroup v1 (older Docker versions)
+        usage_file = Path("/sys/fs/cgroup/memory/memory.usage_in_bytes")
+        limit_file = Path("/sys/fs/cgroup/memory/memory.limit_in_bytes")
+
+        if usage_file.exists() and limit_file.exists():
+            current = int(usage_file.read_text().strip())
+            limit = int(limit_file.read_text().strip())
+
+            # Sanity check: limit shouldn't be absurdly high
+            # (some systems report very large limits for "unlimited")
+            if limit < (1024 ** 4):  # Less than 1TB = reasonable limit
+                return (current / limit) * 100
+    except (FileNotFoundError, ValueError, PermissionError):
+        pass
+
+    # Not in container or cgroup unavailable, fall back to host memory
+    import psutil
+    return psutil.virtual_memory().percent
+
 @app.get("/health")
 async def health_check():
     """
@@ -1289,8 +1340,8 @@ async def health_check():
             # Pool doesn't have expected attributes
             pool_usage = 0
 
-        # Check system memory
-        memory_percent = psutil.virtual_memory().percent
+        # Check container memory (cgroup-aware)
+        memory_percent = get_container_memory_usage()
         if memory_percent > 85:
             raise HTTPException(
                 status_code=503,
