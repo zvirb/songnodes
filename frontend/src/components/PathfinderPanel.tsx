@@ -140,6 +140,7 @@ export const PathfinderPanel: React.FC = () => {
 
       const resultData: PathfinderResult = await response.json();
       setResult(resultData);
+      pathfinding.setCurrentPath(resultData); // <-- ADD THIS LINE
 
       if (!resultData.success) {
         setError(resultData.message);
@@ -408,31 +409,38 @@ export const PathfinderPanel: React.FC = () => {
             <div>
               <h3 className="font-semibold mb-2">Generated Path</h3>
               <div className="space-y-1">
-                {result.path.map((segment, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{segment.track.name}</div>
-                      <div className="text-sm text-gray-600 truncate">{segment.track.artist}</div>
-                      {segment.track.camelot_key && (
-                        <div className="text-xs text-gray-500">
-                          {segment.track.camelot_key}
-                          {segment.key_compatible && index > 0 && (
-                            <span className="ml-2 text-green-600">✓ Compatible</span>
-                          )}
-                          {segment.is_synthetic_edge && index > 0 && (
-                            <span className="ml-2 text-yellow-600 font-semibold">⚡ Harmonic Link</span>
-                          )}
+                {(() => {
+                  const waypointsVisitedSet = new Set(result.waypoints_visited);
+                  return result.path.map((segment, index) => {
+                    const isWaypoint = waypointsVisitedSet.has(segment.track.id);
+                    return (
+                      <div key={index} className={`flex items-center gap-2 p-2 rounded ${isWaypoint ? 'bg-yellow-100 border-l-4 border-yellow-400' : 'bg-gray-50'}`}>
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${isWaypoint ? 'bg-yellow-500 text-white' : 'bg-blue-600 text-white'}`}>
+                          {index + 1}
                         </div>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatDuration(segment.track.duration_ms)}
-                    </div>
-                  </div>
-                ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{segment.track.name}</div>
+                          <div className="text-sm text-gray-600 truncate">{segment.track.artist}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {isWaypoint && (
+                              <span className="mr-2 px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded-full text-xs font-semibold">Waypoint</span>
+                            )}
+                            {segment.track.camelot_key}
+                            {segment.key_compatible && index > 0 && (
+                              <span className="ml-2 text-green-600">✓ Compatible</span>
+                            )}
+                            {segment.is_synthetic_edge && index > 0 && (
+                              <span className="ml-2 text-yellow-600 font-semibold">⚡ Harmonic Link</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatDuration(segment.track.duration_ms)}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
