@@ -9,7 +9,8 @@ import {
   Track,
   SearchResult,
   SearchFilters,
-  DEFAULT_CONFIG
+  DEFAULT_CONFIG,
+  GraphNode
 } from '../types';
 
 // Musical key mappings for filtering
@@ -76,33 +77,33 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     searchQuery,
     searchResults,
     searchFilters,
-    isLoading,
     viewState,
     currentSetlist,
     pathfindingState,
     setSearchQuery,
     setSearchResults,
     setSearchFilters,
-    setLoading,
     selectNode,
     addTrackToSetlist,
-    addWaypoint
+    addWaypoint,
+    navigateToNode
   } = useStore((state) => ({
     searchQuery: state.searchQuery,
     searchResults: state.searchResults,
     searchFilters: state.searchFilters,
-    isLoading: state.isLoading,
     viewState: state.viewState,
     currentSetlist: state.currentSetlist,
     pathfindingState: state.pathfindingState,
     setSearchQuery: state.search.setSearchQuery,
     setSearchResults: state.search.setSearchResults,
     setSearchFilters: state.search.setSearchFilters,
-    setLoading: state.general.setLoading,
     selectNode: state.graph.selectNode,
     addTrackToSetlist: state.setlist.addTrackToSetlist,
-    addWaypoint: state.pathfinding.addWaypoint
+    addWaypoint: state.pathfinding.addWaypoint,
+    navigateToNode: state.view.navigateToNode
   }));
+
+  const graphNodes = useStore((state) => state.graphData.nodes);
 
   // Local state
   const [localQuery, setLocalQuery] = useState(searchQuery);
