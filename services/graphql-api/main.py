@@ -1,5 +1,5 @@
 """GraphQL API Service for SongNodes"""
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import strawberry
 from strawberry.asgi import GraphQL
@@ -7,6 +7,9 @@ from typing import List, Optional
 import logging
 import sys
 import os
+
+from prometheus_client import generate_latest
+from starlette.responses import PlainTextResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -61,7 +64,9 @@ class GraphLink:
 class Query:
     @strawberry.field
     def artists(self, limit: int = 100) -> List[Artist]:
-        """Get list of artists"""
+        """
+        Get list of artists
+        """
         return [
             Artist(id=1, name="Example Artist 1", genre="Electronic"),
             Artist(id=2, name="Example Artist 2", genre="House")
@@ -69,12 +74,16 @@ class Query:
     
     @strawberry.field
     def artist(self, id: int) -> Optional[Artist]:
-        """Get specific artist by ID"""
+        """
+        Get specific artist by ID
+        """
         return Artist(id=id, name=f"Artist {id}", genre="Electronic")
     
     @strawberry.field
     def tracks(self, artist_id: Optional[int] = None) -> List[Track]:
-        """Get list of tracks"""
+        """
+        Get list of tracks
+        """
         tracks = [
             Track(id=1, title="Track 1", artist_id=1, bpm=128),
             Track(id=2, title="Track 2", artist_id=1, bpm=125)
@@ -85,7 +94,9 @@ class Query:
     
     @strawberry.field
     def mixes(self, dj_id: Optional[int] = None) -> List[Mix]:
-        """Get list of mixes"""
+        """
+        Get list of mixes
+        """
         return [
             Mix(id=1, name="Summer Mix 2024", dj_id=1, venue="Club XYZ"),
             Mix(id=2, name="Festival Set", dj_id=2, venue="Festival ABC")
@@ -93,7 +104,9 @@ class Query:
     
     @strawberry.field
     def graph_nodes(self) -> List[GraphNode]:
-        """Get graph visualization nodes"""
+        """
+        Get graph visualization nodes
+        """
         return [
             GraphNode(id="artist1", label="Artist 1", type="artist", size=30),
             GraphNode(id="artist2", label="Artist 2", type="artist", size=25),
@@ -102,7 +115,9 @@ class Query:
     
     @strawberry.field
     def graph_links(self) -> List[GraphLink]:
-        """Get graph visualization links"""
+        """
+        Get graph visualization links
+        """
         return [
             GraphLink(source="artist1", target="track1", type="performed"),
             GraphLink(source="artist1", target="artist2", type="collaborated")
@@ -112,7 +127,9 @@ class Query:
 class Mutation:
     @strawberry.mutation
     def trigger_scrape(self, source: str = "1001tracklists") -> str:
-        """Trigger web scraping job"""
+        """
+        Trigger web scraping job
+        """
         return f"Scraping job initiated for {source}"
 
 # Create GraphQL schema
@@ -134,6 +151,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Metrics app
+metrics_app = FastAPI()
+
+@metrics_app.get("/metrics")
+async def metrics_endpoint():
+    return PlainTextResponse("Metrics are here!", media_type="text/plain")
+
+app.mount("/metrics", metrics_app)
 
 # =============================================================================
 # Container-Aware Memory Monitoring

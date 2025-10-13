@@ -233,3 +233,5 @@ CURRENT_STATUS.md
 monitoring/phoenix-alertmanager-bridge/
 services/data-transformer/silver_to_gold_etl.py
 setup-phoenix-integration.sh
+.gemini/
+gha-creds-*.json

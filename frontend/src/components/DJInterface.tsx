@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { HelpCircle } from 'lucide-react';
 import { NowPlayingDeck } from './NowPlayingDeck';
 import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
@@ -20,6 +21,7 @@ import useStore from '../store/useStore';
 import { useDataLoader } from '../hooks/useDataLoader';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { prometheusService, ScraperMetrics, PipelineMetrics, SystemMetrics } from '../services/prometheusService';
+import { OnboardingOverlay } from './OnboardingOverlay';
 
 /**
  * DJInterface - Main container implementing dual-mode interface
@@ -34,6 +36,8 @@ interface DJInterfaceProps {
 // Stable constants and utility functions (moved outside component for performance)
 const CAMELOT_KEYS = ['1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A', '11A', '12A',
                       '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'];
+
+const ONBOARDING_STORAGE_KEY = 'songnodes-onboarding-dismissed';
 
 // Deterministic hash function for stable random values
 const getStableHashValue = (str: string, min: number, max: number): number => {
@@ -172,6 +176,10 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
   // Settings panel state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Orientation overlay state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+
   // Graph filter panel state
   const [showGraphFilters, setShowGraphFilters] = useState(false);
 
@@ -228,6 +236,22 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
 
   // Load data and credentials
   useDataLoader();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const dismissed = window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+      setOnboardingDismissed(dismissed);
+      if (!dismissed) {
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      console.warn('[DJInterface] Unable to read onboarding preference:', error);
+    }
+  }, []);
 
   // Listen for openSettings event from child components (e.g., TidalPlaylistManager)
   useEffect(() => {
@@ -351,6 +375,26 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
   const toggleMode = () => {
     setMode(mode === 'play' ? 'plan' : 'play');
   };
+
+  const handleOnboardingDismiss = useCallback(() => {
+    setShowOnboarding(false);
+  }, []);
+
+  const handleOnboardingDisable = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+      } catch (error) {
+        console.warn('[DJInterface] Unable to persist onboarding preference:', error);
+      }
+    }
+    setOnboardingDismissed(true);
+    setShowOnboarding(false);
+  }, []);
+
+  const onboardingTooltip = onboardingDismissed
+    ? 'Open the orientation guide again'
+    : 'Show a quick orientation guide';
 
   // Memoized event handlers to prevent child re-renders
   const handleTrackInspect = useCallback((track: Track) => {
@@ -838,6 +882,34 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
             }}
           >
             ⚙️ Settings
+          </button>
+
+          <button
+            onClick={() => setShowOnboarding(true)}
+            title={onboardingTooltip}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(69,90,100,0.2)',
+              border: '1px solid rgba(69,90,100,0.4)',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(69,90,100,0.32)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(69,90,100,0.2)';
+            }}
+          >
+            <HelpCircle size={18} strokeWidth={1.8} />
+            Quick Tour
           </button>
         </div>
       </header>
@@ -2011,6 +2083,12 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
           onClose={() => setShowArtistAttribution(false)}
         />
       )}
+
+      <OnboardingOverlay
+        open={showOnboarding}
+        onClose={handleOnboardingDismiss}
+        onDisable={handleOnboardingDisable}
+      />
     </div>
   );
 };

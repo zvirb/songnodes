@@ -1,8 +1,11 @@
 import React, { useEffect, useCallback, useState } from 'react';
+import { BarChart3, Crosshair, ListMusic, MousePointer2, Pause, Play, RefreshCw, RotateCcw, Route, Search as SearchIcon, Settings, SlidersHorizontal, Target } from 'lucide-react';
+
 import { useStore } from './store/useStore';
 import { api } from './services/api';
 import { PanelState } from './types';
 import './styles/global.css';
+import { QuickSearch } from './components/QuickSearch';
 
 // Lazy load components for performance
 const GraphVisualization = React.lazy(() => import('./components/GraphVisualization'));
@@ -16,24 +19,10 @@ const DJInterface = React.lazy(() => import('./components/DJInterface').then(mod
 const TargetTracksManager = React.lazy(() => import('./components/TargetTracksManager'));
 const OAuthCallback = React.lazy(() => import('./components/OAuthCallback'));
 
-// Toolbar icons (using text for now - replace with SVG icons in production)
-const icons = {
-  search: '🔍',
-  path: '🛤️',
-  setlist: '🎵',
-  filter: '🔧',
-  stats: '📊',
-  targets: '🎯',
-  play: '▶️',
-  pause: '⏸️',
-  restart: '🔄',
-  settings: '⚙️',
-  help: '❓',
-};
-
 interface ToolbarButtonProps {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
+  tooltip?: string;
   active?: boolean;
   onClick: () => void;
   disabled?: boolean;
@@ -42,19 +31,24 @@ interface ToolbarButtonProps {
 const ToolbarButton: React.FC<ToolbarButtonProps> = ({
   icon,
   label,
+  tooltip,
   active,
   onClick,
   disabled
 }) => (
   <button
-    className={`btn btn-icon ${active ? 'btn-primary' : ''}`}
+    type="button"
+    className={`toolbar-button ${active ? 'is-active' : ''}`}
     onClick={onClick}
     disabled={disabled}
-    title={label}
-    aria-label={label}
+    title={tooltip ?? label}
+    aria-label={tooltip ?? label}
     aria-pressed={active}
   >
-    {icon}
+    <span className="toolbar-button__icon" aria-hidden="true">
+      {icon}
+    </span>
+    <span className="toolbar-button__label">{label}</span>
   </button>
 );
 
@@ -390,39 +384,46 @@ const App: React.FC = () => {
 
   if (error) {
     return (
-      <div className="app-container">
-        <div className="loading-overlay">
-          <div style={{ textAlign: 'center', color: 'var(--color-accent-secondary)' }}>
-            <h2>Error Loading SongNodes</h2>
-            <p>{error}</p>
-            <button className="btn btn-primary" onClick={loadGraphData}>
-              Retry
-            </button>
+      <>
+        <div className="app-container">
+          <div className="loading-overlay">
+            <div style={{ textAlign: 'center', color: 'var(--color-accent-secondary)' }}>
+              <h2>Error Loading SongNodes</h2>
+              <p>{error}</p>
+              <button className="btn btn-primary" onClick={loadGraphData}>
+                Retry
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+        <QuickSearch />
+      </>
     );
   }
 
   // Render DJ Interface if enabled
   if (djModeEnabled) {
     return (
-      <React.Suspense fallback={
-        <div className="app-container">
-          <div className="loading-overlay">
-            <div className="loading-spinner" />
-            <div>Loading DJ Interface...</div>
+      <>
+        <React.Suspense fallback={
+          <div className="app-container">
+            <div className="loading-overlay">
+              <div className="loading-spinner" />
+              <div>Loading DJ Interface...</div>
+            </div>
           </div>
-        </div>
-      }>
-        <DJInterface />
-      </React.Suspense>
+        }>
+          <DJInterface />
+        </React.Suspense>
+        <QuickSearch />
+      </>
     );
   }
 
   // Classic interface
   return (
-    <div className="app-container">
+    <>
+      <div className="app-container">
       {/* Skip link for keyboard users */}
       <a href="#main-content" className="skip-link">
         Skip to main content
@@ -456,14 +457,20 @@ const App: React.FC = () => {
 
           {/* Quick Actions */}
           <button className="btn btn-small" onClick={loadGraphData} disabled={isLoading}>
-            {isLoading ? '⟳' : '↻'} Refresh
+            <RefreshCw
+              size={16}
+              aria-hidden="true"
+              className={isLoading ? 'icon-spin' : ''}
+            />
+            <span style={{ marginLeft: '6px' }}>Refresh</span>
           </button>
 
           <button
             className="btn btn-small"
             onClick={() => setShowPerformanceMonitor(!showPerformanceMonitor)}
           >
-            {icons.settings} Debug
+            <Settings size={16} aria-hidden="true" />
+            <span style={{ marginLeft: '6px' }}>Debug</span>
           </button>
         </div>
       </header>
@@ -472,26 +479,30 @@ const App: React.FC = () => {
       <div className="toolbar">
         <div style={{ display: 'flex', gap: '4px' }}>
           <ToolbarButton
-            icon="👆"
-            label="Select Tool (1)"
+            icon={<MousePointer2 size={18} />}
+            label="Select"
+            tooltip="Select Tool (1)"
             active={viewState.selectedTool === 'select'}
             onClick={() => handleToolChange('select')}
           />
           <ToolbarButton
-            icon={icons.path}
-            label="Path Builder (2)"
+            icon={<Route size={18} />}
+            label="Path"
+            tooltip="Path Builder (2)"
             active={viewState.selectedTool === 'path'}
             onClick={() => handleToolChange('path')}
           />
           <ToolbarButton
-            icon={icons.setlist}
-            label="Setlist Builder (3)"
+            icon={<ListMusic size={18} />}
+            label="Setlist"
+            tooltip="Setlist Builder (3)"
             active={viewState.selectedTool === 'setlist'}
             onClick={() => handleToolChange('setlist')}
           />
           <ToolbarButton
-            icon={icons.filter}
-            label="Filter Tool (4)"
+            icon={<SlidersHorizontal size={18} />}
+            label="Filter"
+            tooltip="Filter Tool (4)"
             active={viewState.selectedTool === 'filter'}
             onClick={() => handleToolChange('filter')}
           />
@@ -501,20 +512,23 @@ const App: React.FC = () => {
 
         <div style={{ display: 'flex', gap: '4px' }}>
           <ToolbarButton
-            icon={icons.search}
-            label="Search Tracks (Ctrl+F)"
+            icon={<SearchIcon size={18} />}
+            label="Search"
+            tooltip="Search Tracks (Ctrl+F)"
             active={panelState.leftPanel === 'search'}
             onClick={() => handleToggleLeftPanel('search')}
           />
           <ToolbarButton
-            icon={icons.targets}
-            label="Target Tracks"
+            icon={<Target size={18} />}
+            label="Targets"
+            tooltip="Target Tracks"
             active={panelState.leftPanel === 'targets'}
             onClick={() => handleToggleLeftPanel('targets')}
           />
           <ToolbarButton
-            icon={icons.stats}
-            label="Statistics"
+            icon={<BarChart3 size={18} />}
+            label="Stats"
+            tooltip="Statistics"
             active={panelState.rightPanel === 'stats'}
             onClick={() => handleToggleRightPanel('stats')}
           />
@@ -530,7 +544,7 @@ const App: React.FC = () => {
             title={isAnimationPaused ? 'Resume graph animation' : 'Pause graph animation'}
             data-testid="animation-toggle-button"
           >
-            {isAnimationPaused ? icons.play : icons.pause}
+            {isAnimationPaused ? (<Play size={16} aria-hidden="true" />) : (<Pause size={16} aria-hidden="true" />)}
           </button>
           <button
             className="btn btn-icon-small"
@@ -538,7 +552,7 @@ const App: React.FC = () => {
             title="Restart graph animation"
             data-testid="animation-restart-button"
           >
-            {icons.restart}
+            <RotateCcw size={16} aria-hidden="true" />
           </button>
 
           {/* Labels and edges permanently enabled - toggles removed */}
@@ -547,7 +561,7 @@ const App: React.FC = () => {
             onClick={view.resetView}
             title="Reset View"
           >
-            🎯
+            <Crosshair size={16} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -601,13 +615,15 @@ const App: React.FC = () => {
       </div>
 
       {/* Graph Filter Modal */}
-      <React.Suspense fallback={null}>
-        <GraphFilterPanel
-          isOpen={showGraphFilters}
-          onClose={() => setShowGraphFilters(false)}
-        />
-      </React.Suspense>
-    </div>
+        <React.Suspense fallback={null}>
+          <GraphFilterPanel
+            isOpen={showGraphFilters}
+            onClose={() => setShowGraphFilters(false)}
+          />
+        </React.Suspense>
+      </div>
+      <QuickSearch />
+    </>
   );
 };
 

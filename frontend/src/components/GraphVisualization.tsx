@@ -19,6 +19,7 @@ import 'd3-transition'; // Adds .transition() method to selections
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge, DEFAULT_CONFIG, Bounds, Track } from '../types';
 import { ContextMenu, useContextMenu } from './ContextMenu';
+import { GraphMiniMap } from './GraphMiniMap'; // Import the new mini-map component
 
 // Performance constants - updated for 2025 best practices
 const PERFORMANCE_THRESHOLDS = {
@@ -523,6 +524,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const [isInitialized, setIsInitialized] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [animationTimer, setAnimationTimer] = useState<number>(0);
+  const [mainGraphWidth, setMainGraphWidth] = useState(0); // State for main graph width
+  const [mainGraphHeight, setMainGraphHeight] = useState(0); // State for main graph height
 
   // Force layout settings for standard visualization
   const [forceSettings, setForceSettings] = useState<ForceSettings>({
@@ -611,6 +614,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   }, [viewState.selectedNodes, viewState.hoveredNode, pathfindingState]);
 
   const getEdgeColor = useCallback((edge: EnhancedGraphEdge): number => {
+    // Check if edge is part of the pathfinding result
     if (pathfindingState.currentPath?.path.some((p, i) => {
       const next = pathfindingState.currentPath!.path[i + 1];
       const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
@@ -622,11 +626,25 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     })) {
       return COLOR_SCHEMES.edge.path;
     }
+
+    // Check if either source or target node is selected
+    const isSourceSelected = viewState.selectedNodes.has(
+      typeof edge.source === 'object' ? edge.source.id : edge.source
+    );
+    const isTargetSelected = viewState.selectedNodes.has(
+      typeof edge.target === 'object' ? edge.target.id : edge.target
+    );
+
+    if (isSourceSelected || isTargetSelected) {
+      return COLOR_SCHEMES.edge.selected; // Highlight if connected to a selected node
+    }
+
+    // Default color logic
     if (edge.weight > 0.7) {
       return COLOR_SCHEMES.edge.strong;
     }
     return COLOR_SCHEMES.edge.default;
-  }, [pathfindingState]);
+  }, [pathfindingState, viewState.selectedNodes]); // Added viewState.selectedNodes to dependencies
 
   // Initialize PIXI application
   const initializePixi = useCallback(async () => {
@@ -838,6 +856,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     viewportRef.current.width = rect.width;
     viewportRef.current.height = rect.height;
 
+    // Set initial main graph dimensions for mini-map
+    setMainGraphWidth(rect.width);
+    setMainGraphHeight(rect.height);
+
     // Initialize LOD system
     lodSystemRef.current = new LODSystem(viewportRef.current);
 
@@ -907,7 +929,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // Set initialized to true to prevent infinite retry
       setIsInitialized(true);
     }
-  }, []);
+  }, [setMainGraphWidth, setMainGraphHeight]);
 
   // Handle D3 simulation tick with throttling
   const lastSimulationTickRef = useRef<number>(0);
@@ -1997,6 +2019,26 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Update position
     node.pixiNode.position.set(node.x || 0, node.y || 0);
 
+    // Add/Update glow effect for hovered/selected nodes
+    let glow = node.pixiNode.getChildByName('glow') as PIXI.Graphics;
+    const isHoveredOrSelected = viewState.hoveredNode === node.id || viewState.selectedNodes.has(node.id);
+
+    if (isHoveredOrSelected && lodLevel < 2) { // Only show glow for full/reduced detail
+      if (!glow) {
+        glow = new PIXI.Graphics();
+        glow.name = 'glow';
+        node.pixiNode.addChildAt(glow, 0); // Add behind the main circle
+      }
+      glow.clear();
+      glow.circle(0, 0, screenRadius + 6); // Slightly larger than node
+      glow.fill({ color: isHoveredOrSelected ? COLOR_SCHEMES.node.hovered : COLOR_SCHEMES.node.selected, alpha: 0.15 }); // Subtle glow
+      glow.visible = true;
+    } else {
+      if (glow) {
+        glow.visible = false;
+      }
+    }
+
     // Update visual based on rendering mode (2025 optimization)
     if (node.pixiCircle instanceof PIXI.Sprite) {
       // SPRITE MODE: Update texture if color/selection changed
@@ -2530,12 +2572,14 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     viewportRef.current.width = rect.width;
     viewportRef.current.height = rect.height;
 
+    setMainGraphWidth(rect.width);
+    setMainGraphHeight(rect.height);
+
     if (lodSystemRef.current) {
       lodSystemRef.current.updateViewport(viewportRef.current);
     }
 
-    frameRef.current++;
-  }, []);
+  }, [setMainGraphWidth, setMainGraphHeight]);
 
   // Detect data changes to trigger animation
   const generateDataHash = useCallback((nodes: GraphNode[], edges: GraphEdge[]): string => {
@@ -3192,6 +3236,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         </div>
       )}
 
+
+      {isInitialized && mainGraphWidth > 0 && mainGraphHeight > 0 && (
+        <GraphMiniMap mainGraphWidth={mainGraphWidth} mainGraphHeight={mainGraphHeight} />
+      )}
 
       {/* Debug overlay */}
       {showDebugInfo && (

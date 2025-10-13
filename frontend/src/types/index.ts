@@ -175,6 +175,7 @@ export interface ViewState {
   showStats?: boolean;
   navigationRequest?: NavigationRequest | null;
   viewMode?: '2d' | '3d' | '3d-helix'; // Graph visualization mode
+  activeGenreFilter?: string | null; // New: Filter nodes by genre
 }
 
 export interface PanelState {
