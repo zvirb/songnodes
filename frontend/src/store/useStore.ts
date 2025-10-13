@@ -116,6 +116,7 @@ interface ViewActions {
   toggleEdgeTypeVisibility: (edgeType: GraphEdge['type']) => void;
   resetView: () => void;
   navigateToNode: (nodeId: string, options?: { highlight?: boolean; openModal?: boolean; selectNode?: boolean }) => void;
+  setGenreFilter: (genre: string | null) => void; // New: Set active genre filter
 }
 
 interface PanelActions {
@@ -251,6 +252,7 @@ const initialState: AppState = {
     showStats: false,
     navigationRequest: null,
     viewMode: '2d', // Default to 2D view
+    activeGenreFilter: null,
   },
 
   panelState: {
@@ -543,6 +545,23 @@ export const useStore = create<StoreState>()(
                 },
               },
             }), false, 'view/navigateToNode');
+          },
+
+          setGenreFilter: (genre) => {
+            set((state) => ({
+              ...state,
+              viewState: {
+                ...state.viewState,
+                activeGenreFilter: genre,
+              },
+            }), false, 'view/setGenreFilter');
+
+            // Re-apply current filters to update graph with new genre filter
+            // This will trigger a re-render of the graph with filtered data
+            get().search.applyFilters({
+              ...get().searchFilters,
+              genre: genre ? [genre] : undefined, // Convert single genre string to array for SearchFilters
+            });
           },
         },
 

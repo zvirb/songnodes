@@ -363,10 +363,12 @@ async def get_pool_stats():
     stats = await pool_manager.get_pool_stats()
     return {"pools": stats, "timestamp": time.time()}
 
+from fastapi.responses import JSONResponse, PlainTextResponse
+# ... (rest of the file)
 @app.get("/metrics")
 async def get_metrics():
     """Prometheus metrics endpoint"""
-    return JSONResponse(
+    return PlainTextResponse(
         content=generate_latest().decode('utf-8'),
         media_type="text/plain"
     )
