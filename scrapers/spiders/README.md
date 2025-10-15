@@ -30,6 +30,7 @@ spiders/
 - `jambase` - Jambase.com event listings
 - `setlistfm` - Setlist.fm concert setlists
 - `watchthedj` - WatchTheDJ.com DJ schedules
+- `bbc_sounds_rave_forever` - BBC Radio 6 Music Rave Forever tracklists
 
 ### Community & Social Spiders
 - `reddit` - Reddit music subreddits

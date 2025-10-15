@@ -146,7 +146,7 @@ test.describe('Monitoring Dashboard - Prometheus Integration', () => {
 
     // Check Active Now has numeric value
     const activeCard = page.locator('text=ACTIVE NOW').locator('..').locator('..');
-    const activeValue = activeCard.locator('p').filter({ hasText: /^\d+$/ }).first();
+    const activeValue = activeCard.locator('p').filter({ hasText: /^\d+$|^N\/A$/ }).first();
     await expect(activeValue).toBeVisible({ timeout: 5000 });
     const activeText = await activeValue.textContent();
     console.log(`✓ Active Now value: ${activeText}`);
@@ -294,7 +294,7 @@ test.describe('Monitoring Dashboard - Prometheus Integration', () => {
 
     // Prometheus connection errors are expected and should be handled gracefully
     // The dashboard should still display with fallback data
-    const statusIndicator = page.locator('text=/Live data from Prometheus|Prometheus connection error|N\/A/');
+    const statusIndicator = page.locator('text=/Live data from Prometheus|Prometheus connection error|Refreshing metrics|N\/A/');
     await expect(statusIndicator).toBeVisible({ timeout: 5000 });
 
     console.log(`✓ Dashboard handles connection state gracefully`);

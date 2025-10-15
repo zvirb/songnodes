@@ -101,7 +101,8 @@ async def startup_event():
             "1001tracklists": os.getenv("SCRAPER_1001TRACKLISTS_URL", "http://scraper-1001tracklists:8011"),
             "mixesdb": os.getenv("SCRAPER_MIXESDB_URL", "http://scraper-mixesdb:8012"),
             "setlistfm": os.getenv("SCRAPER_SETLISTFM_URL", "http://scraper-setlistfm:8013"),
-            "reddit": os.getenv("SCRAPER_REDDIT_URL", "http://scraper-reddit:8014")
+            "reddit": os.getenv("SCRAPER_REDDIT_URL", "http://scraper-reddit:8014"),
+            "bbc_sounds_rave_forever": os.getenv("SCRAPER_BBC_SOUNDS_URL", "http://scraper-bbc-sounds:8026"),
         }
 
         # Initialize automated scheduler

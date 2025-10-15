@@ -15,7 +15,7 @@ import os
 import time
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -363,6 +363,20 @@ async def lifespan(app: FastAPI):
             misfire_grace_time=3600  # 1 hour grace period
         )
 
+        scheduler.add_job(
+            scheduled_bbc_sounds_weekly,
+            trigger=CronTrigger(day_of_week='mon', hour=5, minute=0, timezone=timezone.utc),
+            id="bbc_sounds_weekly",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3600
+        )
+
+        async def run_initial_bbc_seed():
+            await run_bbc_sounds_scrape(all_episodes=True)
+
+        asyncio.create_task(run_initial_bbc_seed())
+
         logger.info("Scraper Orchestrator started successfully")
 
     except Exception as e:
@@ -490,6 +504,83 @@ async def scheduled_reddit_monitor():
     except Exception as e:
         logger.error("Reddit monitoring failed", error=str(e))
         search_operations.labels(platform="reddit", status="error").inc()
+
+
+async def run_bbc_sounds_scrape(all_episodes: bool, correlation_id: Optional[str] = None):
+    """Trigger the BBC Sounds scraper service."""
+
+    correlation_id = correlation_id or str(uuid.uuid4())[:8]
+
+    structlog.contextvars.bind_contextvars(
+        operation="bbc_sounds_scrape",
+        correlation_id=correlation_id
+    )
+
+    start_time = time.time()
+
+    payload = {
+        "task_id": f"bbc_sounds_{int(time.time())}"
+    }
+    mode = "full"
+    if not all_episodes:
+        payload["max_pages"] = 1
+        mode = "weekly"
+
+    try:
+        async with asyncio.timeout(900):
+            response = await connection_manager.http_client.post(
+                "http://scraper-bbc-sounds:8026/scrape",
+                json=payload,
+                timeout=600
+            )
+
+        if response.status_code == 200:
+            duration = time.time() - start_time
+            body = response.json()
+            items = body.get("items_processed", 0)
+            scraping_tasks_total.labels(scraper="bbc_sounds_rave_forever", status="success").inc()
+            scraping_duration.labels(scraper="bbc_sounds_rave_forever").observe(duration)
+            logger.info(
+                "BBC Sounds scrape completed",
+                mode=mode,
+                items_processed=items,
+                payload=payload
+            )
+        else:
+            duration = time.time() - start_time
+            scraping_tasks_total.labels(scraper="bbc_sounds_rave_forever", status="error").inc()
+            logger.error(
+                "BBC Sounds scrape failed",
+                mode=mode,
+                status_code=response.status_code,
+                response_body=response.text[:500]
+            )
+
+    except (httpx.RequestError, asyncio.TimeoutError) as exc:
+        duration = time.time() - start_time
+        scraping_tasks_total.labels(scraper="bbc_sounds_rave_forever", status="error").inc()
+        scraping_duration.labels(scraper="bbc_sounds_rave_forever").observe(duration)
+        logger.error(
+            "BBC Sounds scrape encountered network error",
+            mode=mode,
+            error=str(exc)
+        )
+    except Exception as exc:  # pragma: no cover
+        duration = time.time() - start_time
+        scraping_tasks_total.labels(scraper="bbc_sounds_rave_forever", status="error").inc()
+        scraping_duration.labels(scraper="bbc_sounds_rave_forever").observe(duration)
+        logger.error(
+            "Unexpected BBC Sounds scrape failure",
+            mode=mode,
+            error=str(exc)
+        )
+
+
+async def scheduled_bbc_sounds_weekly():
+    """Weekly incremental scrape for BBC Sounds."""
+
+    correlation_id = str(uuid.uuid4())[:8]
+    await run_bbc_sounds_scrape(all_episodes=False, correlation_id=correlation_id)
 
 async def health_monitor():
     """Monitor system health and update metrics"""
@@ -938,6 +1029,7 @@ async def get_scrapers_status():
             {"name": "internetarchive", "url": "http://scraper-internetarchive:8018", "health_endpoint": "/health"},
             {"name": "livetracklist", "url": "http://scraper-livetracklist:8019", "health_endpoint": "/health"},
             {"name": "residentadvisor", "url": "http://scraper-residentadvisor:8023", "health_endpoint": "/health"},
+            {"name": "bbc_sounds_rave_forever", "url": "http://scraper-bbc-sounds:8026", "health_endpoint": "/health"},
         ]
 
         scrapers_status = []
