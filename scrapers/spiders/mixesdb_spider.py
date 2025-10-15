@@ -168,9 +168,10 @@ class MixesdbSpider(scrapy.Spider):
         host = os.getenv('SCRAPER_STATE_REDIS_HOST', os.getenv('REDIS_HOST', 'localhost'))
         port = int(os.getenv('SCRAPER_STATE_REDIS_PORT', os.getenv('REDIS_PORT', 6379)))
         db = int(os.getenv('SCRAPER_STATE_REDIS_DB', os.getenv('REDIS_DB', 0)))
+        password = os.getenv('SCRAPER_STATE_REDIS_PASSWORD', os.getenv('REDIS_PASSWORD', None))
 
         try:
-            client = redis.Redis(host=host, port=port, db=db, decode_responses=True, socket_timeout=2)
+            client = redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True, socket_timeout=2)
             client.ping()
             self.redis_client = client
             self.logger.info(
@@ -728,19 +729,24 @@ class MixesdbSpider(scrapy.Spider):
         track_elements = []
 
         if tracklist_heading:
-            # Try mw-parser-output first (MediaWiki standard wrapper - most common)
-            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="mw-parser-output"][1]//ol/li')
-            self.logger.info(f"🔍 [DEBUG] XPath pattern 1 (mw-parser-output): {len(track_elements)} elements")
+            # Pattern 1 (Primary): Modern MediaWiki with data-testid attributes (2025 structure)
+            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@data-testid="playlist-track-list"][1]//li')
+            self.logger.info(f"🔍 Attempting XPath pattern 1 (data-testid): Found {len(track_elements)} elements")
 
             if not track_elements:
-                # Fallback 1: try div.list wrapper (older MixesDB pages)
+                # Pattern 2 (Fallback): MediaWiki standard wrapper (most common)
+                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="mw-parser-output"][1]//ol/li')
+                self.logger.info(f"🔍 Attempting XPath pattern 2 (mw-parser-output): Found {len(track_elements)} elements")
+
+            if not track_elements:
+                # Pattern 3 (Fallback): Older div.list wrapper
                 track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="list"][1]//ol/li')
-                self.logger.info(f"🔍 [DEBUG] XPath pattern 2 (div.list): {len(track_elements)} elements")
+                self.logger.info(f"🔍 Attempting XPath pattern 3 (div.list): Found {len(track_elements)} elements")
 
             if not track_elements:
-                # Fallback 2: try direct sibling
+                # Pattern 4 (Fallback): Direct sibling <ol>
                 track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
-                self.logger.info(f"🔍 [DEBUG] XPath pattern 3 (direct sibling): {len(track_elements)} elements")
+                self.logger.info(f"🔍 Attempting XPath pattern 4 (direct sibling): Found {len(track_elements)} elements")
         else:
             self.logger.warning(f"🔍 [DEBUG] No Tracklist heading found on page!")
 
