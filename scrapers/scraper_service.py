@@ -32,7 +32,8 @@ AVAILABLE_SPIDERS = {
     'musicbrainz': 'spiders.musicbrainz_spider.MusicBrainzSpider',
     'beatport': 'spiders.beatport_spider.BeatportSpider',
     'spotify': 'spiders.stores.spotify_spider.SpotifySpider',
-    'mixesdb': 'spiders.mixesdb_spider.MixesdbSpider'
+    'mixesdb': 'spiders.mixesdb_spider.MixesdbSpider',
+    'bbc_sounds_rave_forever': 'spiders.bbc_sounds_rave_forever_spider.BBCSoundsRaveForeverSpider'
 }
 
 # Active crawls tracking
@@ -99,6 +100,11 @@ async def list_spiders():
                 "name": "mixesdb",
                 "description": "Contextual setlist data and co-occurrence",
                 "layer": "Contextual (Section 1.3)"
+            },
+            {
+                "name": "bbc_sounds_rave_forever",
+                "description": "BBC Sounds Rave Forever radio tracklists",
+                "layer": "Broadcast (Radio)"
             }
         ]
     }

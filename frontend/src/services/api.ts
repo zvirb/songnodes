@@ -404,6 +404,10 @@ export const trackApi = {
   async getTracks(trackIds: string[]): Promise<ApiResponse<Track[]>> {
     return apiClient.post('/v1/tracks/batch', { trackIds });
   },
+
+  async getTrackPreview(trackId: string): Promise<ApiResponse<{ previewUrl: string }>> {
+    return apiClient.get(`/v1/tracks/${trackId}/preview`);
+  },
 };
 
 // Pathfinding API

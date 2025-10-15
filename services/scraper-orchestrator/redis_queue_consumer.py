@@ -56,7 +56,8 @@ class RedisQueueConsumer:
             'youtube': 'http://scraper-youtube:8017/scrape',
             'internetarchive': 'http://scraper-internetarchive:8018/scrape',
             'livetracklist': 'http://scraper-livetracklist:8019/scrape',
-            'residentadvisor': 'http://scraper-residentadvisor:8023/scrape'
+            'residentadvisor': 'http://scraper-residentadvisor:8023/scrape',
+            'bbc_sounds_rave_forever': 'http://scraper-bbc-sounds:8026/scrape'
         }
 
         self.running = True

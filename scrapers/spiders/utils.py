@@ -5,6 +5,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# MixesDB and other sources frequently emit en/em dashes (and related variants) between
+# artist and title. Normalise those to a plain hyphen before parsing so the downstream
+# split logic remains robust even when the source HTML changes typography.
+_DASH_NORMALISER = re.compile(r"[\u2010-\u2015\u2212]")
+
+
+def _normalise_dashes(value: str) -> str:
+    if not value:
+        return value
+    return _DASH_NORMALISER.sub("-", value)
+
 def parse_track_string(track_string):
     """
     Parses a complex track string to extract primary artists, featured artists,
@@ -30,7 +41,8 @@ def parse_track_string(track_string):
     version_type = None
 
     original_string = track_string.strip()
-    temp_string = original_string
+    normalised_string = _normalise_dashes(original_string)
+    temp_string = normalised_string
 
     # STEP 1: Extract Mix Version (MUST BE FIRST per Table 1.1)
     # Pattern: \((?P<version>[^)]*(?:Original|Extended|Radio|Club|VIP|Instrumental|Acapella|Intro|Dub)[^)]*)\)
@@ -76,18 +88,18 @@ def parse_track_string(track_string):
         # STEP 3a: Mashup detected - handle separately
         component1 = vs_match.group(1).strip()
         component2 = vs_match.group(2).strip()
-        mashup_components.extend([comp.strip() for comp in re.split(r'\s*vs\.\s*', original_string) if comp.strip()])
+        mashup_components.extend([comp.strip() for comp in re.split(r'\s*vs\.\s*', normalised_string) if comp.strip()])
         track_name = f"{component1} vs. {component2}"
         is_mashup = True
 
         # Try to parse artists from the full original string if it's a mashup
-        artist_track_match = re.search(r"^(.*?)\s*-\s*(.*)$", original_string)
+        artist_track_match = re.search(r"^(.*?)\s*-\s*(.*)$", normalised_string)
         if artist_track_match:
             # Universal Artist Parser Phase 2: Split by &, vs., feat., ft., comma, /
             primary_artists.extend([a.strip() for a in re.split(r'\s*(?:&|vs\.?|feat\.?|ft\.?|,|/)\s*', artist_track_match.group(1))])
         else:
             # Fallback for multi-artist mashups where artists are part of the 'vs.' string
-            all_artists_in_mashup_string = re.findall(r"([A-Za-z0-9\s\.]+)(?:\s*vs\.|\s*ft\.|\s*&|\s*-\s*|$)", original_string)
+            all_artists_in_mashup_string = re.findall(r"([A-Za-z0-9\s\.]+)(?:\s*vs\.|\s*ft\.|\s*&|\s*-\s*|$)", normalised_string)
             primary_artists.extend([a.strip() for a in all_artists_in_mashup_string if a.strip()])
 
     else:

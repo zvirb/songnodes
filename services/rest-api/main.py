@@ -83,6 +83,16 @@ except ImportError as e:
         error: str
         detail: Optional[str] = None
 
+
+class TrackPreviewResponse(BaseModel):
+    """Response payload describing preview availability for a track."""
+    track_id: str
+    preview_url: Optional[str] = None
+    source: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    message: Optional[str] = None
+    streaming_options: Dict[str, Optional[str]] = Field(default_factory=dict)
+
 # Database connection - use secrets_manager if available
 try:
     DATABASE_URL = get_database_url(async_driver=True, use_connection_pool=True)
@@ -726,6 +736,68 @@ async def get_track_by_id(track_id: str):
     except Exception as e:
         logger.error(f"Failed to fetch track {track_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/tracks/{track_id}/preview", response_model=TrackPreviewResponse)
+async def get_track_preview(track_id: str):
+    """Return preview metadata for a track, falling back to streaming IDs when audio isn't stored."""
+
+    if not db_pool:
+        raise HTTPException(status_code=503, detail="Database connection not ready")
+
+    normalized_id = track_id
+    if track_id.startswith('song_'):
+        normalized_id = track_id[len('song_'):]
+
+    try:
+        async with db_pool.acquire() as conn:
+            query = """
+            SELECT
+                id::text AS song_id,
+                track_id,
+                title,
+                preview_url,
+                spotify_id,
+                tidal_id,
+                apple_music_id,
+                updated_at
+            FROM tracks
+            WHERE id::text = $1 OR track_id = $1 OR spotify_id = $1
+            LIMIT 1
+            """
+
+            row = await conn.fetchrow(query, normalized_id)
+
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Track '{track_id}' not found")
+
+            preview_url = row['preview_url']
+            source = 'stored' if preview_url else None
+
+            message: Optional[str] = None
+            if not preview_url:
+                message = (
+                    "No cached preview available. Use the streaming IDs to request a 30s clip "
+                    "from Spotify or Tidal, or trigger re-enrichment via metadata services."
+                )
+
+            return TrackPreviewResponse(
+                track_id=row['song_id'],
+                preview_url=preview_url,
+                source=source,
+                expires_at=None,
+                message=message,
+                streaming_options={
+                    'spotify_id': row['spotify_id'],
+                    'tidal_id': row['tidal_id'],
+                    'apple_music_id': row['apple_music_id'],
+                }
+            )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Failed to fetch preview for track {track_id}: {exc}")
+        raise HTTPException(status_code=500, detail="Failed to fetch track preview")
 
 @app.get("/api/v1/setlists", response_model=List[SetlistResponse])
 async def get_setlists(dj_id: Optional[int] = None, limit: int = 100, offset: int = 0):

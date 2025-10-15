@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Fuse from 'fuse.js';
 import { useDebounce } from 'react-use';
 import clsx from 'clsx';
+import { LocateFixed, ListPlus, Route } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { api } from '../services/api';
 import {
@@ -64,6 +65,52 @@ const DEFAULT_FILTERS: FilterState = {
   hasPreview: false,
 };
 
+const convertFiltersToSearchFilters = (filters: FilterState): SearchFilters => ({
+  bpmRange: filters.bpmRange,
+  keyRange: filters.keys,
+  genre: filters.genres,
+  yearRange: filters.yearRange,
+  energyRange: filters.energyRange,
+  minPopularity: filters.minPopularity,
+  hasPreview: filters.hasPreview
+});
+
+const applyLocalFilters = (results: SearchResult[], filters: FilterState): SearchResult[] => {
+  return results.filter(result => {
+    const track = result.track;
+
+    if (track.bpm && (track.bpm < filters.bpmRange[0] || track.bpm > filters.bpmRange[1])) {
+      return false;
+    }
+
+    if (filters.keys.length > 0 && track.camelotKey && !filters.keys.includes(track.camelotKey)) {
+      return false;
+    }
+
+    if (filters.genres.length > 0 && track.genre && !filters.genres.includes(track.genre)) {
+      return false;
+    }
+
+    if (track.year && (track.year < filters.yearRange[0] || track.year > filters.yearRange[1])) {
+      return false;
+    }
+
+    if (track.energy !== undefined && (track.energy < filters.energyRange[0] || track.energy > filters.energyRange[1])) {
+      return false;
+    }
+
+    if (track.popularity !== undefined && track.popularity < filters.minPopularity) {
+      return false;
+    }
+
+    if (filters.hasPreview && !track.preview_url) {
+      return false;
+    }
+
+    return true;
+  });
+};
+
 const TrackSearch: React.FC<TrackSearchProps> = ({
   className,
   placeholder = "Search tracks, artists, albums...",
@@ -114,6 +161,8 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [allTracks, setAllTracks] = useState<Track[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -151,93 +200,56 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
 
   // Load all tracks for local search (fallback when API is unavailable)
   useEffect(() => {
-    const loadTracks = async () => {
-      try {
-        // This would typically come from the API
-        // For now, we'll use mock data or existing graph data
-        const mockTracks: Track[] = [
-          {
-            id: '1',
-            name: 'Strobe',
-            artist: 'Deadmau5',
-            album: 'For Lack of a Better Name',
-            bpm: 128,
-            key: 'A minor',
-            camelotKey: '8A',
-            genre: 'Progressive House',
-            year: 2009,
-            energy: 0.7,
-            danceability: 0.8,
-            valence: 0.6,
-            popularity: 85
-          },
-          {
-            id: '2',
-            name: 'Ghosts \'n\' Stuff',
-            artist: 'Deadmau5',
-            album: 'For Lack of a Better Name',
-            bpm: 128,
-            key: 'G minor',
-            camelotKey: '6A',
-            genre: 'Electro House',
-            year: 2009,
-            energy: 0.9,
-            danceability: 0.85,
-            valence: 0.7,
-            popularity: 90
-          },
-          {
-            id: '3',
-            name: 'Animals',
-            artist: 'Martin Garrix',
-            bpm: 128,
-            key: 'C# minor',
-            camelotKey: '4A',
-            genre: 'Big Room House',
-            year: 2013,
-            energy: 0.95,
-            danceability: 0.9,
-            valence: 0.8,
-            popularity: 95
-          },
-          {
-            id: '4',
-            name: 'Clarity',
-            artist: 'Zedd',
-            album: 'Clarity',
-            bpm: 128,
-            key: 'G major',
-            camelotKey: '9B',
-            genre: 'Electro House',
-            year: 2012,
-            energy: 0.8,
-            danceability: 0.75,
-            valence: 0.65,
-            popularity: 88
-          },
-          {
-            id: '5',
-            name: 'Levels',
-            artist: 'Avicii',
-            bpm: 126,
-            key: 'C# minor',
-            camelotKey: '4A',
-            genre: 'Progressive House',
-            year: 2011,
-            energy: 0.9,
-            danceability: 0.85,
-            valence: 0.9,
-            popularity: 92
-          }
-        ];
-        setAllTracks(mockTracks);
-      } catch (error) {
-        console.error('Error loading tracks:', error);
+    const normaliseNodeToTrack = (node: GraphNode): Track | null => {
+      const metadata = node.metadata || {};
+      const baseTrack = node.track as Track | undefined;
+
+      const name = baseTrack?.name || baseTrack?.title || node.title || metadata.title || node.label;
+      const artist = baseTrack?.artist || metadata.artist || node.artist;
+
+      if (!name || !artist) {
+        return null;
       }
+
+      const trackId = baseTrack?.id ?? node.id;
+
+      return {
+        id: trackId,
+        name,
+        title: name,
+        artist,
+        album: baseTrack?.album ?? metadata.album ?? node.metadata?.album,
+        bpm: baseTrack?.bpm ?? metadata.bpm ?? node.bpm,
+        key: baseTrack?.key ?? metadata.key ?? node.key,
+        camelotKey: baseTrack?.camelotKey ?? metadata.camelotKey ?? metadata.camelot_key ?? node.camelot_key,
+        genre: baseTrack?.genre ?? metadata.genre ?? node.genre,
+        year: baseTrack?.year ?? metadata.year ?? node.year ?? metadata.release_year,
+        energy: baseTrack?.energy ?? metadata.energy ?? node.energy,
+        duration: baseTrack?.duration ?? metadata.duration ?? node.duration,
+        preview_url: baseTrack?.preview_url ?? metadata.preview_url ?? metadata.previewUrl,
+        popularity: baseTrack?.popularity ?? metadata.popularity ?? node.popularity,
+        danceability: baseTrack?.danceability ?? metadata.danceability,
+        valence: baseTrack?.valence ?? metadata.valence,
+      };
     };
 
-    loadTracks();
-  }, []);
+    const unique = new Map<string, Track>();
+
+    graphNodes.forEach((node) => {
+      const track = normaliseNodeToTrack(node);
+      if (track && !unique.has(track.id)) {
+        unique.set(track.id, track);
+      }
+    });
+
+    const sortedTracks = Array.from(unique.values()).sort((a, b) => {
+      const artistCompare = (a.artist || '').localeCompare(b.artist || '');
+      if (artistCompare !== 0) return artistCompare;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    setAllTracks(sortedTracks);
+  }, [graphNodes]);
 
   // Fuse.js configuration for fuzzy search
   const fuseOptions = {
@@ -274,113 +286,66 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
   }, [recentSearches]);
 
   // Search function
-  const performSearch = useCallback(async (query: string) => {
-      if (query.trim().length < 2) {
-        setSearchResults([]);
-        setShowDropdown(false);
-        return;
+  const performSearch = useCallback(async (rawQuery: string) => {
+    const query = rawQuery.trim();
+
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      setSearchError(null);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowDropdown(true);
+    setSearchError(null);
+
+    let resultsToPersist: SearchResult[] = [];
+
+    try {
+      const apiResponse = await api.search.searchTracks(query, convertFiltersToSearchFilters(filters));
+
+      if (apiResponse.status === 'success') {
+        const apiResults = (apiResponse.data || []).slice(0, maxResults);
+        setSearchResults(apiResults);
+        resultsToPersist = apiResults;
+      } else {
+        throw new Error(apiResponse.message || 'Search service error');
       }
+    } catch (error) {
+      console.warn('API search failed, falling back to local graph data:', error);
+      const fuseResults = fuse.search(query).slice(0, maxResults);
 
-      setLoading(true);
-      setShowDropdown(true);
+      const fallbackResults: SearchResult[] = fuseResults.map(result => ({
+        track: result.item,
+        score: result.score ? 1 - result.score : 1,
+        matches: (result.matches || []).map(match => ({
+          field: match.key || '',
+          value: match.value || '',
+          indices: (match.indices || []).map(range => [range[0], range[1]])
+        }))
+      }));
 
-      try {
-        // Try API search first
-        const apiResponse = await api.search.searchTracks(query, convertFiltersToSearchFilters(filters));
-
-        if (apiResponse.status === 'success') {
-          setSearchResults(apiResponse.data);
-        } else {
-          throw new Error('API search failed');
-        }
-      } catch (error) {
-        // Fallback to local fuzzy search
-        console.warn('API search failed, using local search:', error);
-        const fuseResults = fuse.search(query).slice(0, maxResults);
-
-        const searchResults: SearchResult[] = fuseResults.map(result => ({
-          track: result.item,
-          score: 1 - (result.score || 0),
-          matches: (result.matches || []).map(match => ({
-            field: match.key || '',
-            value: match.value || '',
-            indices: (match.indices || []).map(range => [range[0], range[1]])
-          }))
-        }));
-
-        setSearchResults(applyLocalFilters(searchResults, filters));
-      }
-
-      setLoading(false);
+      const filtered = applyLocalFilters(fallbackResults, filters);
+      setSearchResults(filtered);
+      resultsToPersist = filtered;
+      setSearchError('Realtime search is temporarily unavailable. Showing matches from the loaded graph.');
+    } finally {
+      setIsSearching(false);
       setSelectedIndex(0);
 
-      // Save to recent searches
-      if (query.trim()) {
-        saveToRecentSearches(query, searchResults.length);
+      if (query) {
+        saveToRecentSearches(query, resultsToPersist.length);
       }
-  }, [fuse, filters, maxResults, saveToRecentSearches, setLoading, setSearchResults]);
+    }
+  }, [fuse, filters, maxResults, saveToRecentSearches, setSearchResults]);
 
   // Debounced search effect
   useDebounce(() => {
     if (localQuery.trim()) {
       performSearch(localQuery);
     }
-  }, DEFAULT_CONFIG.ui.debounceDelay, [localQuery]);
-
-  // Convert local filters to API filters
-  const convertFiltersToSearchFilters = (filters: FilterState): SearchFilters => ({
-    bpmRange: filters.bpmRange,
-    keyRange: filters.keys,
-    genre: filters.genres,
-    yearRange: filters.yearRange,
-    energyRange: filters.energyRange,
-    minPopularity: filters.minPopularity,
-    hasPreview: filters.hasPreview
-  });
-
-  // Apply local filters to search results
-  const applyLocalFilters = (results: SearchResult[], filters: FilterState): SearchResult[] => {
-    return results.filter(result => {
-      const track = result.track;
-
-      // BPM filter
-      if (track.bpm && (track.bpm < filters.bpmRange[0] || track.bpm > filters.bpmRange[1])) {
-        return false;
-      }
-
-      // Key filter
-      if (filters.keys.length > 0 && track.camelotKey && !filters.keys.includes(track.camelotKey)) {
-        return false;
-      }
-
-      // Genre filter
-      if (filters.genres.length > 0 && track.genre && !filters.genres.includes(track.genre)) {
-        return false;
-      }
-
-      // Year filter
-      if (track.year && (track.year < filters.yearRange[0] || track.year > filters.yearRange[1])) {
-        return false;
-      }
-
-      // Energy filter
-      if (track.energy !== undefined && (track.energy < filters.energyRange[0] || track.energy > filters.energyRange[1])) {
-        return false;
-      }
-
-      // Popularity filter
-      if (track.popularity !== undefined && track.popularity < filters.minPopularity) {
-        return false;
-      }
-
-      // Preview filter
-      if (filters.hasPreview && !track.preview_url) {
-        return false;
-      }
-
-      return true;
-    });
-  };
+  }, DEFAULT_CONFIG.ui.debounceDelay, [localQuery, performSearch]);
 
 
   // Handle search input change
@@ -388,6 +353,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     const query = e.target.value;
     setLocalQuery(query);
     setSearchQuery(query);
+    setSearchError(null);
 
     if (query.trim().length === 0) {
       setShowDropdown(false);
@@ -455,6 +421,15 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
 
   // Handle track selection
   const handleTrackSelect = (track: Track) => {
+    selectNode(track.id);
+    navigateToNode(track.id, { highlight: true, selectNode: true });
+    setShowDropdown(false);
+    onTrackSelect?.(track);
+  };
+
+  const handleFocusTrack = (e: React.MouseEvent, track: Track) => {
+    e.stopPropagation();
+    navigateToNode(track.id, { highlight: true, selectNode: true });
     selectNode(track.id);
     setShowDropdown(false);
     onTrackSelect?.(track);
@@ -581,29 +556,35 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           </div>
 
           <div className="flex items-center space-x-1 ml-3">
-            {/* Add to setlist button */}
+            <button
+              onClick={(e) => handleFocusTrack(e, track)}
+              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="Focus in graph"
+            >
+              <LocateFixed size={16} strokeWidth={1.8} />
+            </button>
+
             <button
               onClick={(e) => handleAddToSetlist(e, track)}
               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-              title="Add to setlist"
+              title={currentSetlist ? 'Add to setlist' : 'Create a setlist to store this track'}
               disabled={!currentSetlist}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <ListPlus size={16} strokeWidth={1.8} />
             </button>
 
-            {/* Add to waypoints button */}
             <button
               onClick={(e) => handleAddToWaypoints(e, track)}
-              className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
-              title="Add to path waypoints"
+              className={clsx(
+                'p-1.5 rounded transition-colors',
+                pathfindingState.selectedWaypoints.has(track.id)
+                  ? 'text-purple-500 bg-purple-50'
+                  : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+              )}
+              title={pathfindingState.selectedWaypoints.has(track.id) ? 'Waypoint added' : 'Add to path waypoints'}
               disabled={pathfindingState.selectedWaypoints.has(track.id)}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <Route size={16} strokeWidth={1.8} />
             </button>
           </div>
         </div>
@@ -722,7 +703,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
         />
 
         {/* Loading indicator */}
-        {isLoading && (
+        {isSearching && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
             <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -755,6 +736,20 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           ref={dropdownRef}
           className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-hidden"
         >
+          {searchError && (
+            <div
+              style={{
+                padding: '10px 16px',
+                backgroundColor: 'rgba(251, 191, 36, 0.15)',
+                borderBottom: '1px solid rgba(251, 191, 36, 0.35)',
+                color: '#965400',
+                fontSize: '12px'
+              }}
+            >
+              {searchError}
+            </div>
+          )}
+
           {/* Recent Searches */}
           {showRecentSearches && recentSearches.length > 0 && (
             <>
@@ -782,7 +777,26 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           )}
 
           {/* Search Results */}
-          {!showRecentSearches && searchResults.length > 0 && (
+          {!showRecentSearches && isSearching && (
+            <div className="px-4 py-4 space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`skeleton-${index}`}
+                  className="animate-pulse rounded-lg border border-gray-200 bg-gray-100 px-4 py-3"
+                >
+                  <div className="h-4 w-1/2 bg-gray-200 rounded mb-2" />
+                  <div className="h-3 w-2/3 bg-gray-200 rounded mb-2" />
+                  <div className="flex gap-2">
+                    <div className="h-3 w-16 bg-gray-200 rounded" />
+                    <div className="h-3 w-14 bg-gray-200 rounded" />
+                    <div className="h-3 w-12 bg-gray-200 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!showRecentSearches && !isSearching && searchResults.length > 0 && (
             <>
               <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
                 <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
@@ -802,12 +816,23 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           )}
 
           {/* No Results */}
-          {!showRecentSearches && !isLoading && localQuery && searchResults.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-500">
+          {!showRecentSearches && !isSearching && localQuery && searchResults.length === 0 && (
+            <div className="px-5 py-8 text-center text-gray-500 space-y-2">
               <svg className="mx-auto h-8 w-8 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <p className="text-sm">No tracks found for "{localQuery}"</p>
+              <p className="text-sm">No tracks found for “{localQuery}”.</p>
+              {allTracks.length === 0 ? (
+                <p className="text-xs text-gray-400">
+                  The library looks empty. Start the gateway stack with
+                  <span className="font-mono"> docker compose up -d postgres redis rest-api api-gateway</span>
+                  {' '}and feed targets to scrape.
+                </p>
+              ) : (
+                <p className="text-xs text-gray-400">
+                  Try widening your filters or queue new material in Target Tracks, then trigger the scrapers from the dashboard.
+                </p>
+              )}
             </div>
           )}
         </div>

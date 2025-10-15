@@ -35,6 +35,7 @@ class DataSource(str, Enum):
     DEEZER = "deezer"
     MUSICBRAINZ = "musicbrainz"
     DISCOGS = "discogs"
+    BBC_SOUNDS = "bbc_sounds"
 
 
 class ArtistRole(str, Enum):

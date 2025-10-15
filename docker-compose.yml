@@ -667,6 +667,52 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+  scraper-bbc-sounds:
+    build:
+      context: ./scrapers
+      dockerfile: Dockerfile.bbc_sounds
+    restart: always
+    ports:
+    - '8026:8026'
+    environment:
+      SCRAPER_NAME: bbc_sounds_rave_forever
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      DATABASE_URL: postgresql://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
+      BBC_SOUNDS_USERNAME: ${BBC_SOUNDS_USERNAME:-}
+      BBC_SOUNDS_PASSWORD: ${BBC_SOUNDS_PASSWORD:-}
+      NLP_PROCESSOR_URL: http://nlp-processor:8021
+      ENABLE_NLP_FALLBACK: ${ENABLE_NLP_FALLBACK:-true}
+      NLP_FALLBACK_TIMEOUT: 60
+      METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
+    depends_on:
+    - scraper-orchestrator
+    - nlp-processor
+    - metadata-enrichment
+    networks:
+    - musicdb-backend
+    secrets:
+    - bbc_sounds_username
+    - bbc_sounds_password
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://127.0.0.1:8026/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   data-transformer:
     build:
       context: ./services
@@ -1872,3 +1918,9 @@ volumes:
       type: none
       o: bind
       device: ./data/browser-screenshots
+
+secrets:
+  bbc_sounds_username:
+    file: ./secrets/bbc_sounds_username
+  bbc_sounds_password:
+    file: ./secrets/bbc_sounds_password
