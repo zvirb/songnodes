@@ -572,21 +572,21 @@ async def get_tracks_without_artist(
             if sort_by == "alphabetical":
                 order_clause = "ORDER BY t.title"
             else:
-                order_clause = "ORDER BY setlist_count DESC, t.title"
+                # Sort by creation date for importance (newer tracks first)
+                order_clause = "ORDER BY t.created_at DESC, t.title"
 
             # Query tracks without primary artist from Gold layer
+            # Note: Using creation date as importance metric since setlist_tracks table doesn't exist yet
             query = f"""
             SELECT
                 t.id::text as track_id,
                 t.title,
-                COUNT(DISTINCT st.setlist_id) as setlist_count,
+                0 as setlist_count,
                 t.created_at,
                 t.updated_at
             FROM tracks t
             LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-            LEFT JOIN setlist_tracks st ON t.id = st.track_id
             WHERE ta.artist_id IS NULL
-            GROUP BY t.id, t.title, t.created_at, t.updated_at
             {order_clause}
             LIMIT $1 OFFSET $2
             """
@@ -631,7 +631,7 @@ async def search_artists(query: str, limit: int = 20):
             # Fuzzy search with ILIKE pattern matching
             search_query = """
             SELECT
-                a.id::text as artist_id,
+                a.artist_id::text as artist_id,
                 a.name,
                 a.spotify_id,
                 a.genres,
@@ -643,9 +643,9 @@ async def search_artists(query: str, limit: int = 20):
                     ELSE 0.5
                 END as match_score
             FROM artists a
-            LEFT JOIN track_artists ta ON a.id = ta.artist_id
+            LEFT JOIN track_artists ta ON a.artist_id = ta.artist_id
             WHERE a.name ILIKE $2
-            GROUP BY a.id, a.name, a.spotify_id, a.genres
+            GROUP BY a.artist_id, a.name, a.spotify_id, a.genres
             ORDER BY match_score DESC, track_count DESC, a.name
             LIMIT $3
             """
@@ -698,7 +698,7 @@ async def assign_artist_to_track(track_id: str, request: AssignArtistRequest):
 
             # Verify artist exists
             artist_exists = await conn.fetchval(
-                "SELECT EXISTS(SELECT 1 FROM artists WHERE id = $1::uuid)",
+                "SELECT EXISTS(SELECT 1 FROM artists WHERE artist_id = $1::uuid)",
                 request.artist_id
             )
             if not artist_exists:
