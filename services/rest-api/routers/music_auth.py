@@ -363,7 +363,10 @@ async def spotify_authorize(
     state: Optional[str] = Query(None, description="Optional state parameter for CSRF protection")
 ):
     """
-    Step 1: Redirect user to Spotify authorization page
+    Step 1: Redirect user to Spotify authorization page with PKCE
+
+    SECURITY: Uses PKCE (Proof Key for Code Exchange) to prevent authorization code interception attacks.
+    This is required by Spotify for SPAs and mobile apps as of OAuth 2.1 best practices.
 
     Credentials are loaded from environment variables (SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
 
@@ -393,10 +396,14 @@ async def spotify_authorize(
     if not state:
         state = secrets.token_urlsafe(32)
 
-    # Store state in Redis with service-specific namespace (2025 Best Practice)
+    # Generate PKCE pair for authorization code flow security (OAuth 2.1 Best Practice)
+    code_verifier, code_challenge = generate_pkce_pair()
+
+    # Store state and PKCE verifier in Redis with service-specific namespace (2025 Best Practice)
     # This prevents state collisions between Spotify and Tidal OAuth flows
     r = await get_redis()
     oauth_data = {
+        'code_verifier': code_verifier,  # PKCE verifier for token exchange
         'client_id': SPOTIFY_CLIENT_ID,
         'client_secret': SPOTIFY_CLIENT_SECRET,  # Store securely server-side
         'redirect_uri': redirect_uri,
@@ -409,7 +416,7 @@ async def spotify_authorize(
         json.dumps(oauth_data)
     )
 
-    logger.info(f"🎵 [SPOTIFY] Stored OAuth state in Redis with key: oauth:spotify:{state[:8]}...")
+    logger.info(f"🎵 [SPOTIFY] Stored OAuth state with PKCE in Redis: oauth:spotify:{state[:8]}...")
 
     # Spotify authorization scopes
     scopes = [
@@ -436,19 +443,21 @@ async def spotify_authorize(
         'user-read-recently-played'
     ]
 
-    # Build authorization URL
+    # Build authorization URL with PKCE parameters
     auth_params = {
         'client_id': SPOTIFY_CLIENT_ID,
         'response_type': 'code',
         'redirect_uri': redirect_uri,
         'state': state,
         'scope': ' '.join(scopes),
+        'code_challenge': code_challenge,       # PKCE challenge (SHA256 of verifier)
+        'code_challenge_method': 'S256',       # PKCE method (SHA256)
         'show_dialog': 'false'  # Set to 'true' to force re-approval
     }
 
     auth_url = f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(auth_params)}"
 
-    logger.info(f"🎵 [SPOTIFY] Redirecting to authorization with client_id: {SPOTIFY_CLIENT_ID[:10]}...")
+    logger.info(f"🎵 [SPOTIFY] Redirecting to authorization with PKCE (client_id: {SPOTIFY_CLIENT_ID[:10]}...)")
     return RedirectResponse(url=auth_url)
 
 @router.get("/spotify/callback")
@@ -458,10 +467,14 @@ async def spotify_callback(
     error: Optional[str] = Query(None, description="Error from Spotify if authorization failed")
 ):
     """
-    Step 2: Handle Spotify OAuth callback
+    Step 2: Handle Spotify OAuth callback with PKCE
 
     This endpoint receives the authorization code from Spotify and exchanges it for access tokens.
-    SECURITY: Client secret retrieved from environment, never exposed to frontend.
+
+    SECURITY:
+    - Client secret retrieved from Redis (stored server-side), never exposed to frontend
+    - PKCE code_verifier retrieved from Redis for secure token exchange
+    - State parameter validated to prevent CSRF attacks
     """
     try:
         # Handle authorization errors
@@ -518,7 +531,8 @@ async def spotify_callback(
         data = {
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': redirect_uri
+            'redirect_uri': redirect_uri,
+            'code_verifier': oauth_data['code_verifier']  # PKCE verifier from Redis
         }
 
         async with aiohttp.ClientSession() as session:
@@ -651,10 +665,15 @@ async def spotify_exchange_token(
     redirect_uri: str = Query(..., description="Same redirect URI used in authorization")
 ):
     """
-    Step 3: Exchange authorization code for access and refresh tokens
+    Step 3: Exchange authorization code for access and refresh tokens (DEPRECATED - Manual Flow)
+
+    ⚠️ WARNING: This endpoint does NOT support PKCE and should only be used for testing.
+    For production, use the main OAuth flow (/spotify/authorize -> /spotify/callback) which includes PKCE.
 
     Credentials are loaded from environment variables (SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
     Call this endpoint with the authorization code received in the callback.
+
+    SECURITY LIMITATION: Without PKCE, this flow is vulnerable to authorization code interception.
     """
     # Validate credentials are configured
     if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
@@ -729,19 +748,29 @@ async def spotify_exchange_token(
 
 @router.post("/spotify/refresh")
 async def spotify_refresh_token(
-    refresh_token: str = Query(..., description="Spotify refresh token"),
-    client_id: str = Query(..., description="Spotify Client ID"),
-    client_secret: str = Query(..., description="Spotify Client Secret")
+    refresh_token: str = Query(..., description="Spotify refresh token")
 ):
     """
     Refresh Spotify access token using refresh token
 
+    SECURITY: Credentials loaded from backend environment variables only.
+    Client secret is NEVER exposed to frontend - retrieved from SPOTIFY_CLIENT_SECRET env var.
+
     Access tokens expire after 1 hour. Use this endpoint to get a new access token.
+    The refresh token must be provided by the frontend (stored securely in their session).
     """
+    # Validate backend has credentials configured
+    if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Spotify credentials not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables."
+        )
+
     try:
         token_url = 'https://accounts.spotify.com/api/token'
 
-        auth_str = f"{client_id}:{client_secret}"
+        # Use backend credentials from environment variables (NEVER from frontend)
+        auth_str = f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}"
         auth_bytes = auth_str.encode('utf-8')
         auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
 
@@ -765,7 +794,32 @@ async def spotify_refresh_token(
                 result = await response.json()
 
                 if response.status == 200:
-                    logger.info("Successfully refreshed Spotify access token")
+                    logger.info("🎵 [SPOTIFY] Successfully refreshed access token")
+
+                    # Store refreshed tokens in database for enrichment service
+                    try:
+                        db_pool = await get_db_pool()
+                        expires_at = datetime.now() + timedelta(seconds=result['expires_in'])
+
+                        async with db_pool.acquire() as conn:
+                            await conn.execute("""
+                                UPDATE user_oauth_tokens
+                                SET access_token = $1,
+                                    expires_at = $2,
+                                    token_type = $3,
+                                    scope = $4,
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE service = 'spotify' AND user_id = 'default_user'
+                            """,
+                                result['access_token'],
+                                expires_at,
+                                result['token_type'],
+                                result.get('scope')
+                            )
+                        logger.info("🎵 [SPOTIFY] Updated tokens in database")
+                    except Exception as db_error:
+                        logger.error(f"Failed to update Spotify tokens in database: {db_error}")
+                        # Don't fail the request, tokens are still returned to frontend
 
                     return JSONResponse({
                         "success": True,
@@ -776,12 +830,14 @@ async def spotify_refresh_token(
                     })
                 else:
                     error_msg = result.get('error_description', result.get('error', 'Unknown error'))
-                    logger.error(f"Token refresh failed: {error_msg}")
+                    logger.error(f"🎵 [SPOTIFY] Token refresh failed: {error_msg}")
                     raise HTTPException(
                         status_code=response.status,
                         detail=f"Token refresh failed: {error_msg}"
                     )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error refreshing Spotify token: {str(e)}")
         raise HTTPException(

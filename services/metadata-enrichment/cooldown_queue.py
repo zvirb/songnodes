@@ -44,7 +44,7 @@ class CoolDownQueue:
     Manages the cool-down queue for failed enrichments
 
     Tracks are moved through states:
-        failed → pending_re_enrichment → (wait) → pending → (retry) → completed/failed
+        failed → cooldown → (wait) → pending → (retry) → completed/failed
     """
 
     def __init__(
@@ -103,7 +103,7 @@ class CoolDownQueue:
             query = text("""
                 UPDATE enrichment_status
                 SET
-                    status = 'pending_re_enrichment',
+                    status = 'cooldown',
                     retry_after = :retry_after,
                     retry_count = :retry_count,
                     cooldown_reason = :cooldown_reason,
@@ -176,7 +176,7 @@ class CoolDownQueue:
                 LEFT JOIN artists a ON ta.artist_id = a.artist_id
                 JOIN enrichment_status es ON t.id = es.track_id
                 WHERE
-                    es.status = 'pending_re_enrichment'
+                    es.status = 'cooldown'
                     AND es.retry_after <= CURRENT_TIMESTAMP
                 ORDER BY es.retry_after ASC
                 LIMIT :limit
@@ -221,7 +221,7 @@ class CoolDownQueue:
                     last_attempt = NULL,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE track_id = :track_id
-                  AND status = 'pending_re_enrichment'
+                  AND status = 'cooldown'
             """)
 
             result = await db_session.execute(query, {'track_id': track_id})
@@ -379,7 +379,7 @@ class CoolDownQueue:
                     MIN(retry_after) as next_retry_time,
                     AVG(retry_count) as avg_retry_attempts
                 FROM enrichment_status
-                WHERE status = 'pending_re_enrichment'
+                WHERE status = 'cooldown'
             """)
 
             result = await db_session.execute(query)
@@ -574,7 +574,7 @@ ADD COLUMN IF NOT EXISTS cooldown_strategy VARCHAR(20);
 -- Create index for efficient cool-down queue queries
 CREATE INDEX IF NOT EXISTS idx_enrichment_cooldown_ready
 ON enrichment_status(retry_after)
-WHERE status = 'pending_re_enrichment' AND retry_after IS NOT NULL;
+WHERE status = 'cooldown' AND retry_after IS NOT NULL;
 
 -- Create view for cool-down queue monitoring
 CREATE OR REPLACE VIEW cooldown_queue_summary AS
@@ -586,7 +586,7 @@ SELECT
     MIN(retry_after) as next_retry,
     MAX(retry_after) as last_retry
 FROM enrichment_status
-WHERE status = 'pending_re_enrichment'
+WHERE status = 'cooldown'
 GROUP BY cooldown_strategy;
 
 COMMENT ON VIEW cooldown_queue_summary IS
