@@ -345,16 +345,16 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
     // ============================================================================
 
     const applyCleanName = async (dirtyArtist: DirtyArtist) => {
-        if (dirtyArtist.has_conflict) {
-            setError('Cannot auto-clean: Suggested name already exists. Manual merge required.');
-            return;
-        }
-
         setAssigning(true);
         setError(null);
 
         try {
-            const response = await fetch(`/api/v1/artists/${dirtyArtist.artist_id}/rename`, {
+            // Use merge endpoint if there's a conflict, otherwise use rename
+            const endpoint = dirtyArtist.has_conflict
+                ? `/api/v1/artists/${dirtyArtist.artist_id}/merge`
+                : `/api/v1/artists/${dirtyArtist.artist_id}/rename`;
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -364,10 +364,11 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to rename artist');
+                throw new Error(errorData.detail || `Failed to ${dirtyArtist.has_conflict ? 'merge' : 'rename'} artist`);
             }
 
-            setSuccessMessage(`Successfully cleaned: ${dirtyArtist.current_name} → ${dirtyArtist.suggested_clean_name}`);
+            const successAction = dirtyArtist.has_conflict ? 'merged into' : 'renamed to';
+            setSuccessMessage(`Successfully ${successAction}: ${dirtyArtist.current_name} → ${dirtyArtist.suggested_clean_name}`);
             setTimeout(() => setSuccessMessage(null), 3000);
 
             // Refresh the dirty artists list
@@ -376,6 +377,38 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to apply clean name');
             console.error('Error applying clean name:', err);
+        } finally {
+            setAssigning(false);
+        }
+    };
+
+    const deleteArtist = async (dirtyArtist: DirtyArtist) => {
+        if (!confirm(`Are you sure you want to delete "${dirtyArtist.current_name}"? This will remove the artist and all its track associations.`)) {
+            return;
+        }
+
+        setAssigning(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`/api/v1/artists/${dirtyArtist.artist_id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to delete artist');
+            }
+
+            setSuccessMessage(`Successfully deleted: ${dirtyArtist.current_name}`);
+            setTimeout(() => setSuccessMessage(null), 3000);
+
+            // Refresh the dirty artists list
+            await fetchDirtyArtists();
+            setSelectedDirtyArtist(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to delete artist');
+            console.error('Error deleting artist:', err);
         } finally {
             setAssigning(false);
         }
@@ -1269,47 +1302,72 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                                                 gap: '6px'
                                             }}>
                                                 <AlertCircle size={14} />
-                                                <span>Name conflict - manual merge required</span>
+                                                <span>Name conflict - will merge into existing artist</span>
                                             </div>
                                         )}
 
-                                        {/* Action Button */}
-                                        <button
-                                            onClick={() => applyCleanName(artist)}
-                                            disabled={artist.has_conflict || assigning}
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px',
-                                                backgroundColor: artist.has_conflict
-                                                    ? 'rgba(255, 255, 255, 0.1)'
-                                                    : 'rgba(126, 211, 33, 0.3)',
-                                                border: `1px solid ${artist.has_conflict
-                                                    ? 'rgba(255, 255, 255, 0.2)'
-                                                    : 'rgba(126, 211, 33, 0.5)'}`,
-                                                borderRadius: '6px',
-                                                color: '#FFFFFF',
-                                                fontSize: '13px',
-                                                fontWeight: 600,
-                                                cursor: (artist.has_conflict || assigning) ? 'not-allowed' : 'pointer',
-                                                opacity: (artist.has_conflict || assigning) ? 0.5 : 1,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '6px'
-                                            }}
-                                        >
-                                            {assigning ? (
-                                                <>
-                                                    <Loader2 size={14} className="animate-spin" />
-                                                    Applying...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Check size={14} />
-                                                    Apply Clean Name
-                                                </>
-                                            )}
-                                        </button>
+                                        {/* Action Buttons */}
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button
+                                                onClick={() => applyCleanName(artist)}
+                                                disabled={assigning}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '10px',
+                                                    backgroundColor: artist.has_conflict
+                                                        ? 'rgba(255, 152, 0, 0.3)'
+                                                        : 'rgba(126, 211, 33, 0.3)',
+                                                    border: `1px solid ${artist.has_conflict
+                                                        ? 'rgba(255, 152, 0, 0.5)'
+                                                        : 'rgba(126, 211, 33, 0.5)'}`,
+                                                    borderRadius: '6px',
+                                                    color: '#FFFFFF',
+                                                    fontSize: '13px',
+                                                    fontWeight: 600,
+                                                    cursor: assigning ? 'not-allowed' : 'pointer',
+                                                    opacity: assigning ? 0.5 : 1,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px'
+                                                }}
+                                            >
+                                                {assigning ? (
+                                                    <>
+                                                        <Loader2 size={14} className="animate-spin" />
+                                                        {artist.has_conflict ? 'Merging...' : 'Applying...'}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Check size={14} />
+                                                        {artist.has_conflict ? 'Merge into Existing' : 'Apply Clean Name'}
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            <button
+                                                onClick={() => deleteArtist(artist)}
+                                                disabled={assigning}
+                                                style={{
+                                                    padding: '10px',
+                                                    backgroundColor: 'rgba(231, 76, 60, 0.3)',
+                                                    border: '1px solid rgba(231, 76, 60, 0.5)',
+                                                    borderRadius: '6px',
+                                                    color: '#FFFFFF',
+                                                    fontSize: '13px',
+                                                    fontWeight: 600,
+                                                    cursor: assigning ? 'not-allowed' : 'pointer',
+                                                    opacity: assigning ? 0.5 : 1,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px'
+                                                }}
+                                                title="Delete this artist and remove all track associations"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

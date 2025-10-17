@@ -8,7 +8,7 @@ COPY rest-api/requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy shared common directory with secrets_manager
+# Copy shared common directory with secrets_manager and artist_name_cleaner
 COPY common /app/common
 
 # Copy application code (includes pydantic_models.py copied from scrapers directory)

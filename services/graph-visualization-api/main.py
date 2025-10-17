@@ -941,7 +941,7 @@ async def metrics_middleware(request: Request, call_next):
 # API Routes
 @app.get("/api/graph/nodes")
 async def get_nodes(
-    limit: int = 100,
+    limit: int = 5000,  # Increased from 100 to show full graph
     offset: int = 0,
     center_node_id: Optional[str] = None,
     max_depth: int = 3
@@ -967,7 +967,7 @@ async def get_nodes(
 
 @app.get("/api/graph/edges")
 async def get_edges(
-    limit: int = 1000,
+    limit: int = 50000,  # Increased from 1000 to show full graph
     offset: int = 0,
     node_ids: Optional[str] = None
 ):
@@ -1114,7 +1114,7 @@ async def get_graph_data():
                       AND a.name != ''
                       AND a.name != 'Unknown'
                     ORDER BY t.created_at DESC
-                    LIMIT 1000
+                    LIMIT 5000  # Increased from 1000 for fuller graph display
                 """)
                 nodes_result = await session.execute(nodes_query)
 

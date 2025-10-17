@@ -547,6 +547,164 @@ async def rename_artist(artist_id: str, request: RenameArtistRequest):
         logger.error(f"Failed to rename artist {artist_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/v1/artists/{duplicate_id}/merge")
+async def merge_artist(duplicate_id: str, request: RenameArtistRequest):
+    """
+    Merge a duplicate artist into an existing artist with the target name.
+
+    This endpoint:
+    1. Finds the existing artist with the target name
+    2. Moves all track relationships from duplicate to existing artist
+    3. Deletes conflicting relationships (same track + same role)
+    4. Deletes the duplicate artist
+
+    Use this when a dirty artist name should be merged with an existing clean artist.
+    """
+    try:
+        target_name = request.new_name
+        async with db_pool.acquire() as conn:
+            # Find the existing artist with target name
+            existing_artist = await conn.fetchrow(
+                "SELECT artist_id, name FROM artists WHERE name = $1",
+                target_name
+            )
+
+            if not existing_artist:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Target artist '{target_name}' not found. Use rename endpoint instead."
+                )
+
+            target_id = existing_artist['artist_id']
+
+            if str(target_id) == duplicate_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot merge artist with itself"
+                )
+
+            # Start transaction
+            async with conn.transaction():
+                # Delete conflicting track_artists (same track + same role)
+                deleted_conflicts = await conn.fetchval(
+                    """
+                    DELETE FROM track_artists
+                    WHERE artist_id = $1::uuid
+                      AND EXISTS (
+                          SELECT 1 FROM track_artists ta
+                          WHERE ta.track_id = track_artists.track_id
+                            AND ta.artist_id = $2::uuid
+                            AND ta.role = track_artists.role
+                      )
+                    RETURNING COUNT(*)
+                    """,
+                    duplicate_id, target_id
+                )
+
+                # Move remaining track_artists to target artist
+                moved_tracks = await conn.fetchval(
+                    """
+                    UPDATE track_artists
+                    SET artist_id = $1::uuid
+                    WHERE artist_id = $2::uuid
+                    RETURNING COUNT(*)
+                    """,
+                    target_id, duplicate_id
+                )
+
+                # Delete the duplicate artist
+                deleted_artist = await conn.fetchrow(
+                    """
+                    DELETE FROM artists
+                    WHERE artist_id = $1::uuid
+                    RETURNING artist_id, name
+                    """,
+                    duplicate_id
+                )
+
+                if not deleted_artist:
+                    raise HTTPException(status_code=404, detail="Duplicate artist not found")
+
+                logger.info(
+                    f"Merged artist '{deleted_artist['name']}' ({duplicate_id}) into '{target_name}' ({target_id}): "
+                    f"moved {moved_tracks or 0} tracks, deleted {deleted_conflicts or 0} conflicts"
+                )
+
+                return {
+                    "merged_from": {
+                        "artist_id": duplicate_id,
+                        "name": deleted_artist['name']
+                    },
+                    "merged_into": {
+                        "artist_id": str(target_id),
+                        "name": target_name
+                    },
+                    "tracks_moved": moved_tracks or 0,
+                    "conflicts_resolved": deleted_conflicts or 0
+                }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to merge artist {duplicate_id} into '{target_name}': {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/v1/artists/{artist_id}")
+async def delete_artist(artist_id: str):
+    """
+    Delete an artist and all its track associations.
+
+    This endpoint:
+    1. Deletes all track_artists relationships for this artist
+    2. Deletes the artist record
+
+    Use this for artists that cannot be cleaned or merged (e.g., "[unknown]").
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Start transaction
+            async with conn.transaction():
+                # Get artist info before deleting
+                artist = await conn.fetchrow(
+                    "SELECT artist_id, name FROM artists WHERE artist_id = $1::uuid",
+                    artist_id
+                )
+
+                if not artist:
+                    raise HTTPException(status_code=404, detail="Artist not found")
+
+                # Delete all track_artists relationships
+                deleted_tracks = await conn.fetchval(
+                    """
+                    DELETE FROM track_artists
+                    WHERE artist_id = $1::uuid
+                    RETURNING COUNT(*)
+                    """,
+                    artist_id
+                )
+
+                # Delete the artist
+                await conn.execute(
+                    "DELETE FROM artists WHERE artist_id = $1::uuid",
+                    artist_id
+                )
+
+                logger.info(
+                    f"Deleted artist '{artist['name']}' ({artist_id}) and {deleted_tracks or 0} track associations"
+                )
+
+                return {
+                    "artist_id": artist_id,
+                    "name": artist['name'],
+                    "tracks_removed": deleted_tracks or 0
+                }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete artist {artist_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # =============================================================================
 # Artist Attribution Manager Endpoints
 # =============================================================================
