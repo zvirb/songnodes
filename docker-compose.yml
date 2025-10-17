@@ -794,6 +794,42 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+  silver-to-gold-processor:
+    build:
+      context: ./services
+      dockerfile: data-transformer/Dockerfile
+    container_name: silver-to-gold-processor
+    restart: always
+    command: python /app/silver_to_gold_scheduler.py
+    environment:
+      # Database configuration
+      POSTGRES_HOST: db-connection-pool
+      POSTGRES_PORT: 6432
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: musicdb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
+      # Scheduler configuration
+      SILVER_TO_GOLD_INTERVAL_HOURS: 1  # Run every hour (was 24h)
+      SILVER_TO_GOLD_BATCH_SIZE: 10000  # Process 10K tracks per cycle (was 1K)
+      STARTUP_DELAY_SECONDS: 90
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-connection-pool:
+        condition: service_healthy
+      raw-data-processor:
+        condition: service_started
+    networks:
+    - musicdb-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   nlp-processor:
     build:
       context: ./services/nlp-processor

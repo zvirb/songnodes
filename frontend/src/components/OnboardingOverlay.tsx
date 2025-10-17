@@ -29,12 +29,23 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ open, onCl
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
+  // TEMPORARY: Disable overlay entirely until we fix the interaction issue
+  // This allows you to use the app while we debug
+  return null;
+
+  /* COMMENTED OUT - Will fix and re-enable
   if (!open) {
     return null;
   }
 
   return (
-    <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <div
+      className="onboarding-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-title"
+      style={{ zIndex: 9999 }}
+    >
       <div className="onboarding-backdrop" onClick={onClose} />
       <div className="onboarding-card" onClick={(event) => event.stopPropagation()}>
         <button type="button" className="onboarding-close" onClick={onClose} aria-label="Close orientation guide">
@@ -114,4 +125,5 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ open, onCl
       </div>
     </div>
   );
+  */
 };

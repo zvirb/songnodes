@@ -44,6 +44,7 @@ class MetadataEnrichmentPipeline:
         lastfm_client,
         acousticbrainz_client,
         getsongbpm_client,
+        tidal_client,
         db_session_factory: async_sessionmaker,
         redis_client: aioredis.Redis
     ):
@@ -54,6 +55,7 @@ class MetadataEnrichmentPipeline:
         self.lastfm_client = lastfm_client
         self.acousticbrainz_client = acousticbrainz_client
         self.getsongbpm_client = getsongbpm_client
+        self.tidal_client = tidal_client
         self.db_session_factory = db_session_factory
         self.redis_client = redis_client
 
@@ -62,7 +64,7 @@ class MetadataEnrichmentPipeline:
             spotify_client=spotify_client,
             musicbrainz_client=musicbrainz_client,
             discogs_client=discogs_client,
-            tidal_client=None  # Not currently using Tidal
+            tidal_client=tidal_client  # Now integrated
         )
 
         # Initialize artist populator
@@ -240,16 +242,14 @@ class MetadataEnrichmentPipeline:
                             isrc = spotify_data['isrc']
                             logger.info("✓ ISRC populated from Spotify", isrc=isrc)
 
-                        # Get audio features - DISABLED due to Spotify API restrictions (Nov 2024)
-                        # Spotify restricted audio-features endpoint to existing extended mode apps only
-                        # See: https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api
-                        # if self.spotify_client:
-                        #     audio_features = await self.spotify_client.get_audio_features(
-                        #         task.existing_spotify_id
-                        #     )
-                        #     if audio_features:
-                        #         metadata['audio_features'] = audio_features
-                        #         logger.info("Spotify audio features retrieved")
+                        # Get audio features (user OAuth tokens have access)
+                        if self.spotify_client:
+                            audio_features = await self.spotify_client.get_audio_features(
+                                task.existing_spotify_id
+                            )
+                            if audio_features:
+                                metadata['audio_features'] = audio_features
+                                logger.info("✓ Spotify audio features retrieved")
                 except Exception as e:
                     logger.warning(
                         "Spotify enrichment failed - continuing with other sources",
@@ -273,14 +273,14 @@ class MetadataEnrichmentPipeline:
                             sources_used.append(EnrichmentSource.SPOTIFY)
                             metadata.update(spotify_isrc_data)
 
-                            # Get audio features - DISABLED (Spotify API restricted Nov 2024)
-                            # if spotify_isrc_data.get('spotify_id'):
-                            #     audio_features = await self.spotify_client.get_audio_features(
-                            #         spotify_isrc_data['spotify_id']
-                            #     )
-                            #     if audio_features:
-                            #         metadata['audio_features'] = audio_features
-                            pass
+                            # Get audio features (user OAuth tokens have access)
+                            if spotify_isrc_data.get('spotify_id'):
+                                audio_features = await self.spotify_client.get_audio_features(
+                                    spotify_isrc_data['spotify_id']
+                                )
+                                if audio_features:
+                                    metadata['audio_features'] = audio_features
+                                    logger.info("✓ Spotify audio features retrieved (ISRC search)")
                     except Exception as e:
                         logger.warning(
                             "Spotify ISRC search failed - continuing with other sources",
@@ -288,6 +288,25 @@ class MetadataEnrichmentPipeline:
                             isrc=isrc
                         )
                         errors.append(f"Spotify ISRC search error: {str(e)}")
+
+                # Tidal enrichment via ISRC - INDEPENDENT (business critical)
+                if self.tidal_client and EnrichmentSource.TIDAL not in sources_used:
+                    try:
+                        tidal_isrc_data = await self.tidal_client.search_by_isrc(isrc)
+                        if tidal_isrc_data:
+                            sources_used.append(EnrichmentSource.TIDAL)
+                            metadata.update(tidal_isrc_data)
+                            logger.info("✓ Tidal ISRC enrichment successful")
+                    except Exception as e:
+                        logger.warning(
+                            "Tidal ISRC search failed - continuing with other sources",
+                            error=str(e),
+                            isrc=isrc
+                        )
+                        errors.append(f"Tidal ISRC error: {str(e)}")
+                else:
+                    if not self.tidal_client:
+                        logger.debug("Skipping Tidal ISRC enrichment - no client available (missing token)")
 
                 # MusicBrainz enrichment via ISRC - INDEPENDENT (fails gracefully)
                 try:
@@ -324,14 +343,14 @@ class MetadataEnrichmentPipeline:
                             metadata.update(spotify_search)
                             logger.info("✓ Spotify text search successful")
 
-                            # Get audio features - DISABLED (Spotify API restricted Nov 2024)
-                            # if spotify_search.get('spotify_id'):
-                            #     audio_features = await self.spotify_client.get_audio_features(
-                            #         spotify_search['spotify_id']
-                            #     )
-                            #     if audio_features:
-                            #         metadata['audio_features'] = audio_features
-                            pass
+                            # Get audio features (user OAuth tokens have access)
+                            if spotify_search.get('spotify_id'):
+                                audio_features = await self.spotify_client.get_audio_features(
+                                    spotify_search['spotify_id']
+                                )
+                                if audio_features:
+                                    metadata['audio_features'] = audio_features
+                                    logger.info("✓ Spotify audio features retrieved (text search)")
                     except Exception as e:
                         logger.warning(
                             "Spotify text search failed - continuing with other sources",
@@ -340,6 +359,29 @@ class MetadataEnrichmentPipeline:
                             title=task.track_title
                         )
                         errors.append(f"Spotify text search error: {str(e)}")
+
+                # Try Tidal search - INDEPENDENT (business critical)
+                if self.tidal_client and EnrichmentSource.TIDAL not in sources_used:
+                    try:
+                        tidal_search = await self.tidal_client.search_track(
+                            task.artist_name,
+                            task.track_title
+                        )
+                        if tidal_search:
+                            sources_used.append(EnrichmentSource.TIDAL)
+                            metadata.update(tidal_search)
+                            logger.info("✓ Tidal text search successful")
+                    except Exception as e:
+                        logger.warning(
+                            "Tidal text search failed - continuing with other sources",
+                            error=str(e),
+                            artist=task.artist_name,
+                            title=task.track_title
+                        )
+                        errors.append(f"Tidal text search error: {str(e)}")
+                else:
+                    if not self.tidal_client and EnrichmentSource.TIDAL not in sources_used:
+                        logger.debug("Skipping Tidal text search - no client available (missing token)")
 
                 # Update ISRC if we got it from search
                 if metadata.get('isrc') and not isrc:
@@ -599,6 +641,10 @@ class MetadataEnrichmentPipeline:
                 if metadata.get('spotify_id'):
                     updates.append("spotify_id = :spotify_id")
                     params['spotify_id'] = metadata['spotify_id']
+
+                if metadata.get('tidal_id'):
+                    updates.append("tidal_id = :tidal_id")
+                    params['tidal_id'] = metadata['tidal_id']
 
                 if metadata.get('isrc'):
                     updates.append("isrc = :isrc")

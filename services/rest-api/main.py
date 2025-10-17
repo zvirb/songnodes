@@ -500,9 +500,10 @@ async def get_tracks(
     offset: int = 0
 ):
     """
-    Get list of tracks with comprehensive validation and filtering.
+    Get list of tracks from Gold layer with comprehensive validation and filtering.
 
-    Supports filtering by artist, BPM range. All tracks validated by Pydantic.
+    Uses Gold medallion layer (tracks + artists + track_artists) for normalized,
+    high-quality data with proper artist attribution.
     """
     try:
         async with db_pool.acquire() as conn:
@@ -512,35 +513,45 @@ async def get_tracks(
             param_num = 1
 
             if artist_id:
-                conditions.append(f"primary_artist_id = ${param_num}")
+                conditions.append(f"ta.artist_id = ${param_num}::uuid")
                 params.append(artist_id)
                 param_num += 1
 
             if min_bpm:
-                conditions.append(f"bpm >= ${param_num}")
+                conditions.append(f"t.bpm >= ${param_num}")
                 params.append(min_bpm)
                 param_num += 1
 
             if max_bpm:
-                conditions.append(f"bpm <= ${param_num}")
+                conditions.append(f"t.bpm <= ${param_num}")
                 params.append(max_bpm)
                 param_num += 1
 
             where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
+            # Query Gold layer with proper artist joins
             query = f"""
-            SELECT song_id::text, track_id, track_name, normalized_title, duration_ms,
-                   isrc, spotify_id, apple_music_id, youtube_id, soundcloud_id, musicbrainz_id,
-                   bpm, musical_key, energy, danceability, valence, acousticness,
-                   instrumentalness, liveness, speechiness, loudness,
-                   release_date, genre, subgenre, record_label,
-                   is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
-                   remix_type, original_artist, remixer, mashup_components,
-                   popularity_score, play_count, track_type, source_context, position_in_source,
-                   data_source, scrape_timestamp, primary_artist_id::text, created_at, updated_at
-            FROM tracks
+            SELECT DISTINCT ON (t.id)
+                   t.id::text as song_id, t.id::text as track_id, t.title as track_name,
+                   t.normalized_title, t.duration_ms,
+                   t.isrc, t.spotify_id, t.apple_music_id, t.youtube_music_id as youtube_id,
+                   t.soundcloud_id, t.musicbrainz_id,
+                   t.bpm, t.key as musical_key, t.energy, t.danceability, t.valence,
+                   t.acousticness, t.instrumentalness, t.liveness,
+                   t.speechiness, t.loudness,
+                   EXTRACT(YEAR FROM t.release_date)::int as release_date,
+                   t.genre, NULL as subgenre, NULL as record_label,
+                   false as is_remix, false as is_mashup, false as is_live, false as is_cover,
+                   false as is_instrumental, false as is_explicit,
+                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
+                   NULL::integer as popularity_score, NULL::integer as play_count, NULL as track_type,
+                   NULL as source_context, NULL::integer as position_in_source,
+                   'gold' as data_source, t.created_at as scrape_timestamp,
+                   ta.artist_id::text as primary_artist_id, t.created_at, t.updated_at
+            FROM tracks t
+            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary' AND ta.position = 0
             {where_clause}
-            ORDER BY track_name
+            ORDER BY t.id, ta.position
             LIMIT ${param_num} OFFSET ${param_num + 1}
             """
             params.extend([limit, offset])
@@ -635,37 +646,44 @@ async def search_tracks(
     offset: int = 0
 ):
     """
-    Search tracks by name with fuzzy matching.
+    Search tracks by name or artist with fuzzy matching (Gold layer).
 
-    Uses PostgreSQL's trigram similarity for fuzzy text search.
-    Results ordered by similarity score (most relevant first).
+    Uses PostgreSQL's ILIKE for pattern matching against Gold layer tracks
+    with proper artist attribution via track_artists junction table.
+    Results ordered by relevance (exact matches first).
     """
     try:
         async with db_pool.acquire() as conn:
-            # Use ILIKE pattern matching for fuzzy search
-            # Note: Database uses 'title' but Pydantic models use 'track_name'
+            # Search Gold layer with artist joins
             search_query = """
-            SELECT id::text as song_id, id::text as track_id, title as track_name, normalized_title,
-                   duration_ms,
-                   isrc, spotify_id, apple_music_id, NULL as youtube_id,
-                   NULL as soundcloud_id, NULL as musicbrainz_id,
-                   bpm, key as musical_key, energy, danceability, valence, acousticness,
-                   instrumentalness, liveness, speechiness, loudness,
-                   EXTRACT(YEAR FROM release_date)::int as release_date, genre, subgenre, NULL as record_label,
-                   is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
-                   NULL as remix_type, NULL as original_artist, NULL as remixer, mashup_components,
-                   popularity_score, play_count, NULL as track_type,
-                   NULL as source_context, NULL as position_in_source,
-                   'mixesdb' as data_source, created_at as scrape_timestamp,
-                   NULL as primary_artist_id, created_at, updated_at
-            FROM tracks
-            WHERE title ILIKE $1 OR normalized_title ILIKE $1
-            ORDER BY
+            SELECT DISTINCT ON (t.id)
+                   t.id::text as song_id, t.id::text as track_id, t.title as track_name,
+                   t.normalized_title, t.duration_ms,
+                   t.isrc, t.spotify_id, t.apple_music_id, t.youtube_music_id as youtube_id,
+                   t.soundcloud_id, t.musicbrainz_id,
+                   t.bpm, t.key as musical_key, t.energy, t.danceability, t.valence,
+                   t.acousticness, t.instrumentalness, t.liveness,
+                   t.speechiness, t.loudness,
+                   EXTRACT(YEAR FROM t.release_date)::int as release_date,
+                   t.genre, NULL as subgenre, NULL as record_label,
+                   false as is_remix, false as is_mashup, false as is_live, false as is_cover,
+                   false as is_instrumental, false as is_explicit,
+                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
+                   NULL::integer as popularity_score, NULL::integer as play_count, NULL as track_type,
+                   NULL as source_context, NULL::integer as position_in_source,
+                   'gold' as data_source, t.created_at as scrape_timestamp,
+                   ta.artist_id::text as primary_artist_id, t.created_at, t.updated_at
+            FROM tracks t
+            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary' AND ta.position = 0
+            LEFT JOIN artists a ON ta.artist_id = a.artist_id
+            WHERE t.title ILIKE $1 OR t.normalized_title ILIKE $1 OR a.name ILIKE $1
+            ORDER BY t.id,
                 CASE
-                    WHEN title ILIKE $2 THEN 1
-                    WHEN title ILIKE $1 THEN 2
-                    ELSE 3
-                END, title
+                    WHEN t.title ILIKE $2 THEN 1
+                    WHEN t.title ILIKE $1 THEN 2
+                    WHEN a.name ILIKE $1 THEN 3
+                    ELSE 4
+                END
             LIMIT $3 OFFSET $4
             """
 
@@ -682,7 +700,7 @@ async def search_tracks(
                     logger.warning(f"Track {row['song_id']} failed validation: {ve}")
                     continue
 
-            logger.info(f"Search for '{query}' returned {len(tracks)} tracks")
+            logger.info(f"Gold layer search for '{query}' returned {len(tracks)} tracks")
             return tracks
 
     except Exception as e:
@@ -692,37 +710,40 @@ async def search_tracks(
 @app.get("/api/tracks/{track_id}", response_model=TrackResponse)
 async def get_track_by_id(track_id: str):
     """
-    Get a single track by its song_id or track_id.
+    Get a single track by its ID from Gold layer.
 
-    Supports both UUID-based song_id and deterministic track_id lookups.
+    Returns track with proper artist attribution from normalized Gold tables.
     """
     try:
         async with db_pool.acquire() as conn:
-            # Try to find by song_id (UUID) or track_id (deterministic hash)
-            # Note: Database uses 'title' but Pydantic models use 'track_name'
+            # Query Gold layer with artist joins
             query = """
-            SELECT id::text as song_id, id::text as track_id, title as track_name, normalized_title,
-                   duration_ms,
-                   isrc, spotify_id, apple_music_id, NULL as youtube_id,
-                   NULL as soundcloud_id, NULL as musicbrainz_id,
-                   bpm, key as musical_key, energy, danceability, valence, acousticness,
-                   instrumentalness, liveness, speechiness, loudness,
-                   EXTRACT(YEAR FROM release_date)::int as release_date, genre, subgenre, NULL as record_label,
-                   is_remix, is_mashup, is_live, is_cover, is_instrumental, is_explicit,
-                   NULL as remix_type, NULL as original_artist, NULL as remixer, mashup_components,
-                   popularity_score, play_count, NULL as track_type,
-                   NULL as source_context, NULL as position_in_source,
-                   'mixesdb' as data_source, created_at as scrape_timestamp,
-                   NULL as primary_artist_id, created_at, updated_at
-            FROM tracks
-            WHERE id::text = $1
+            SELECT t.id::text as song_id, t.id::text as track_id, t.title as track_name,
+                   t.normalized_title, t.duration_ms,
+                   t.isrc, t.spotify_id, t.apple_music_id, t.youtube_music_id as youtube_id,
+                   t.soundcloud_id, t.musicbrainz_id,
+                   t.bpm, t.key as musical_key, t.energy, t.danceability, t.valence,
+                   t.acousticness, t.instrumentalness, t.liveness,
+                   t.speechiness, t.loudness,
+                   EXTRACT(YEAR FROM t.release_date)::int as release_date,
+                   t.genre, NULL as subgenre, NULL as record_label,
+                   false as is_remix, false as is_mashup, false as is_live, false as is_cover,
+                   false as is_instrumental, false as is_explicit,
+                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
+                   NULL::integer as popularity_score, NULL::integer as play_count, NULL as track_type,
+                   NULL as source_context, NULL::integer as position_in_source,
+                   'gold' as data_source, t.created_at as scrape_timestamp,
+                   ta.artist_id::text as primary_artist_id, t.created_at, t.updated_at
+            FROM tracks t
+            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary' AND ta.position = 0
+            WHERE t.id::text = $1
             LIMIT 1
             """
 
             row = await conn.fetchrow(query, track_id)
 
             if not row:
-                raise HTTPException(status_code=404, detail=f"Track with ID '{track_id}' not found")
+                raise HTTPException(status_code=404, detail=f"Track with ID '{track_id}' not found in Gold layer")
 
             try:
                 track = TrackResponse(**dict(row))
@@ -737,9 +758,116 @@ async def get_track_by_id(track_id: str):
         logger.error(f"Failed to fetch track {track_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class TrackUpdateRequest(BaseModel):
+    """Request model for manual track metadata updates"""
+    artist_name: Optional[str] = None
+    track_title: Optional[str] = None
+    bpm: Optional[float] = None
+    key: Optional[str] = None
+    genre: Optional[str] = None
+
+@app.patch("/api/tracks/{track_id}")
+async def update_track_metadata(track_id: str, update_data: TrackUpdateRequest):
+    """
+    Update track metadata in Silver layer for manual corrections.
+
+    Allows users to manually correct artist attribution, track title, and audio features
+    when automated extraction/enrichment produces incorrect results.
+
+    Updates are applied to silver_enriched_tracks (Silver layer), not Gold layer.
+    Gold layer remains read-only and reflects the canonical, fully-enriched state.
+
+    Args:
+        track_id: Track ID (with or without 'song_' prefix)
+        update_data: Fields to update (at least one required)
+
+    Returns:
+        Updated track metadata
+    """
+    try:
+        # Validate at least one field is being updated
+        if not any([update_data.artist_name, update_data.track_title,
+                   update_data.bpm, update_data.key, update_data.genre]):
+            raise HTTPException(
+                status_code=400,
+                detail="At least one field must be updated"
+            )
+
+        # Strip 'song_' prefix if present for database query
+        normalized_id = track_id.replace('song_', '')
+
+        async with db_pool.acquire() as conn:
+            # Build dynamic UPDATE query
+            set_clauses = []
+            params = []
+            param_num = 1
+
+            if update_data.artist_name is not None:
+                set_clauses.append(f"artist_name = ${param_num}")
+                params.append(update_data.artist_name)
+                param_num += 1
+
+            if update_data.track_title is not None:
+                set_clauses.append(f"track_title = ${param_num}")
+                params.append(update_data.track_title)
+                param_num += 1
+
+            if update_data.bpm is not None:
+                set_clauses.append(f"bpm = ${param_num}")
+                params.append(update_data.bpm)
+                param_num += 1
+
+            if update_data.key is not None:
+                set_clauses.append(f"key = ${param_num}")
+                params.append(update_data.key)
+                param_num += 1
+
+            if update_data.genre is not None:
+                set_clauses.append(f"genre = ${param_num}")
+                params.append(update_data.genre)
+                param_num += 1
+
+            # Add updated_at timestamp
+            set_clauses.append("updated_at = NOW()")
+
+            # Execute update on Silver layer
+            query = f"""
+            UPDATE silver_enriched_tracks
+            SET {', '.join(set_clauses)}
+            WHERE id::text = ${param_num}
+            RETURNING id, track_title, artist_name, bpm, key, genre, updated_at
+            """
+            params.append(normalized_id)
+
+            row = await conn.fetchrow(query, *params)
+
+            if not row:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Track '{track_id}' not found in Silver layer"
+                )
+
+            logger.info(f"✅ Updated track {track_id}: artist='{row['artist_name']}', title='{row['track_title']}'")
+
+            return {
+                "track_id": f"song_{row['id']}",
+                "artist_name": row['artist_name'],
+                "track_title": row['track_title'],
+                "bpm": float(row['bpm']) if row['bpm'] is not None else None,
+                "key": row['key'],
+                "genre": row['genre'],
+                "updated_at": row['updated_at'].isoformat() if row['updated_at'] else None
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update track {track_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/tracks/{track_id}/preview", response_model=TrackPreviewResponse)
 async def get_track_preview(track_id: str):
-    """Return preview metadata for a track, falling back to streaming IDs when audio isn't stored."""
+    """Return preview metadata for a track from Gold layer, falling back to streaming IDs when audio isn't stored."""
 
     if not db_pool:
         raise HTTPException(status_code=503, detail="Database connection not ready")
@@ -750,25 +878,26 @@ async def get_track_preview(track_id: str):
 
     try:
         async with db_pool.acquire() as conn:
+            # Query Gold layer for preview data
             query = """
             SELECT
-                id::text AS song_id,
-                track_id,
-                title,
-                preview_url,
-                spotify_id,
-                tidal_id,
-                apple_music_id,
-                updated_at
-            FROM tracks
-            WHERE id::text = $1 OR track_id = $1 OR spotify_id = $1
+                t.id::text AS song_id,
+                t.id::text as track_id,
+                t.title,
+                NULL as preview_url,
+                t.spotify_id,
+                t.tidal_id,
+                t.apple_music_id,
+                t.updated_at
+            FROM tracks t
+            WHERE t.id::text = $1 OR t.spotify_id = $1
             LIMIT 1
             """
 
             row = await conn.fetchrow(query, normalized_id)
 
             if not row:
-                raise HTTPException(status_code=404, detail=f"Track '{track_id}' not found")
+                raise HTTPException(status_code=404, detail=f"Track '{track_id}' not found in Gold layer")
 
             preview_url = row['preview_url']
             source = 'stored' if preview_url else None
@@ -846,24 +975,34 @@ async def get_setlists(dj_id: Optional[int] = None, limit: int = 100, offset: in
 
 @app.get("/api/graph/nodes")
 async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
-    """Get graph nodes - only songs with adjacencies"""
+    """
+    Get graph nodes with Gold-quality data and valid artist attribution.
+
+    Uses Silver layer for transition data (currently being migrated to Gold).
+    Only returns tracks with valid, non-generic artist names (Gold-ready).
+    """
     try:
         async with db_pool.acquire() as conn:
-            # Query only tracks that have adjacencies
+            # Hybrid approach: Silver transitions + Gold-quality validation
+            # As Silver-to-Gold ETL progresses, more tracks will be available
             query = """
-            SELECT DISTINCT t.id as track_id, t.title,
-                   a.name as artist_name, t.bpm, t.key,
-                   COUNT(DISTINCT sa.*) as connection_count
-            FROM tracks t
-            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-            LEFT JOIN artists a ON ta.artist_id = a.artist_id
+            SELECT DISTINCT t.id as track_id, t.track_title as title,
+                   t.artist_name,
+                   t.bpm, t.key, EXTRACT(YEAR FROM t.release_date)::int as release_year,
+                   false as is_remix,
+                   COUNT(DISTINCT tr.*) as connection_count
+            FROM silver_enriched_tracks t
             INNER JOIN (
-                SELECT song_id_1 as track_id FROM song_adjacency WHERE occurrence_count >= $1
+                SELECT from_track_id as track_id FROM silver_track_transitions WHERE occurrence_count >= $1
                 UNION
-                SELECT song_id_2 as track_id FROM song_adjacency WHERE occurrence_count >= $1
+                SELECT to_track_id as track_id FROM silver_track_transitions WHERE occurrence_count >= $1
             ) connected ON t.id = connected.track_id
-            LEFT JOIN song_adjacency sa ON (sa.song_id_1 = t.id OR sa.song_id_2 = t.id)
-            GROUP BY t.id, t.title, a.name, t.bpm, t.key
+            LEFT JOIN silver_track_transitions tr ON (tr.from_track_id = t.id OR tr.to_track_id = t.id)
+            WHERE t.artist_name IS NOT NULL
+              AND t.artist_name != ''
+              AND t.artist_name != 'Unknown Artist'
+              AND t.artist_name != 'Various Artists'
+            GROUP BY t.id, t.track_title, t.artist_name, t.bpm, t.key, EXTRACT(YEAR FROM t.release_date)
             LIMIT $2
             """
             rows = await conn.fetch(query, min_weight, limit)
@@ -872,12 +1011,14 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
             for row in rows:
                 artist = row['artist_name']
                 title = row['title']
+                year = row['release_year']
+                is_remix = row['is_remix']
                 nodes.append({
                     "id": f"song_{row['track_id']}",
                     "track_id": f"song_{row['track_id']}",
-                    # ✅ FIX: Add top-level artist and title fields for frontend
                     "artist": artist,
                     "title": title,
+                    "year": year,  # Add year at top level for easy access
                     "position": {"x": 0.0, "y": 0.0},
                     "metadata": {
                         "title": title,
@@ -885,7 +1026,9 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
                         "node_type": "song",
                         "category": None,
                         "genre": None,
-                        "release_year": None,
+                        "release_year": year,  # Include in metadata too
+                        "year": year,  # Alias for consistency
+                        "is_remix": is_remix,
                         "appearance_count": row['connection_count'],
                         "label": f"{artist} - {title}" if artist else title,
                         "bpm": row['bpm'],
@@ -893,6 +1036,7 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
                     }
                 })
 
+            logger.info(f"Fetched {len(nodes)} graph nodes (Gold-quality, validated artist attribution)")
             return {"nodes": nodes, "total": len(nodes), "limit": limit, "offset": 0}
     except Exception as e:
         logger.error(f"Failed to fetch graph nodes: {str(e)}")
@@ -900,17 +1044,31 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
 
 @app.get("/api/graph/edges")
 async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
-    """Get graph edges - adjacency relationships"""
+    """
+    Get graph edges with Gold-quality validation.
+
+    Uses Silver layer transitions with validated artist attribution.
+    Only returns edges where both tracks have valid, non-generic artist names.
+    """
     try:
         async with db_pool.acquire() as conn:
+            # Hybrid approach: Silver transitions + Gold-quality validation
             query = """
-            SELECT sa.song_id_1, sa.song_id_2, sa.occurrence_count as weight,
-                   t1.title as source_title, t2.title as target_title
-            FROM song_adjacency sa
-            JOIN tracks t1 ON sa.song_id_1 = t1.id
-            JOIN tracks t2 ON sa.song_id_2 = t2.id
-            WHERE sa.occurrence_count >= $1
-            ORDER BY sa.occurrence_count DESC
+            SELECT tr.from_track_id, tr.to_track_id, tr.occurrence_count as weight,
+                   tr.transition_quality_score as quality,
+                   tr.avg_bpm_difference as bpm_diff,
+                   tr.avg_key_compatibility as key_compat,
+                   tr.avg_energy_difference as energy_diff,
+                   t1.track_title as source_title, t2.track_title as target_title
+            FROM silver_track_transitions tr
+            JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
+            JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
+            WHERE tr.occurrence_count >= $1
+              AND t1.artist_name IS NOT NULL AND t1.artist_name != ''
+              AND t1.artist_name != 'Unknown Artist' AND t1.artist_name != 'Various Artists'
+              AND t2.artist_name IS NOT NULL AND t2.artist_name != ''
+              AND t2.artist_name != 'Unknown Artist' AND t2.artist_name != 'Various Artists'
+            ORDER BY tr.occurrence_count DESC
             LIMIT $2
             """
             rows = await conn.fetch(query, min_weight, limit)
@@ -918,20 +1076,25 @@ async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
             edges = []
             for row in rows:
                 # Create IDs with song_ prefix to match node IDs
-                source_id = f"song_{row['song_id_1']}"
-                target_id = f"song_{row['song_id_2']}"
+                source_id = f"song_{row['from_track_id']}"
+                target_id = f"song_{row['to_track_id']}"
                 edge_id = f"{source_id}__{target_id}"
                 edges.append({
                     "id": edge_id,
                     "source": source_id,
                     "target": target_id,
                     "weight": row['weight'],
-                    "type": "adjacency",
-                    "edge_type": "adjacency",
+                    "type": "transition",
+                    "edge_type": "transition",
                     "source_label": row['source_title'],
-                    "target_label": row['target_title']
+                    "target_label": row['target_title'],
+                    "quality_score": float(row['quality']) if row['quality'] is not None else None,
+                    "bpm_difference": float(row['bpm_diff']) if row['bpm_diff'] is not None else None,
+                    "key_compatibility": float(row['key_compat']) if row['key_compat'] is not None else None,
+                    "energy_difference": float(row['energy_diff']) if row['energy_diff'] is not None else None
                 })
 
+            logger.info(f"Fetched {len(edges)} graph edges (Gold-quality, validated both endpoints)")
             return {"edges": edges, "total": len(edges), "limit": limit, "offset": 0}
     except Exception as e:
         logger.error(f"Failed to fetch graph edges: {str(e)}")

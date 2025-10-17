@@ -1141,3 +1141,335 @@ class RateLimiter:
             await asyncio.sleep(self.min_interval - time_since_last_call)
 
         self.last_call = time.time()
+
+# ===================
+# TIDAL CLIENT
+# ===================
+class TidalClient:
+    """Tidal API client for metadata enrichment with OAuth token support"""
+
+    def __init__(self, redis_client: aioredis.Redis, db_session_factory=None):
+        self.redis_client = redis_client
+        self.db_session_factory = db_session_factory
+        self.base_url = "https://openapi.tidal.com"
+        self.circuit_breaker = CircuitBreaker(
+            failure_threshold=5,
+            timeout=60,
+            name="tidal"
+        )
+        self.rate_limiter = RateLimiter(requests_per_second=1)  # Conservative rate
+
+    async def _get_user_token_from_db(self) -> Optional[str]:
+        """Get user OAuth token from database with automatic refresh"""
+        if not self.db_session_factory:
+            return None
+
+        try:
+            from sqlalchemy import text
+            from datetime import datetime, timedelta
+
+            async with self.db_session_factory() as session:
+                # Get token with refresh capability
+                result = await session.execute(
+                    text("""
+                        SELECT access_token, refresh_token, expires_at
+                        FROM user_oauth_tokens
+                        WHERE service = 'tidal' AND user_id = 'default_user'
+                        ORDER BY expires_at DESC
+                        LIMIT 1
+                    """)
+                )
+                row = result.fetchone()
+
+                if not row:
+                    logger.warning("⚠️ No Tidal user token found in database")
+                    return None
+
+                # Check if token is still valid (with 5-minute buffer)
+                expires_at = row.expires_at
+                now_utc = datetime.now(expires_at.tzinfo) if expires_at.tzinfo else datetime.now()
+                if expires_at > now_utc + timedelta(minutes=5):
+                    logger.debug("✅ Retrieved valid Tidal user token from database")
+                    return row.access_token
+
+                # Token expired or expiring soon - try to refresh
+                if row.refresh_token:
+                    logger.info("🔄 Tidal user token expired/expiring, attempting refresh...")
+                    new_token = await self._refresh_user_token(row.refresh_token)
+                    if new_token:
+                        logger.info("✅ Successfully refreshed Tidal user token")
+                        return new_token
+                    else:
+                        logger.warning("⚠️ Failed to refresh Tidal user token")
+                        return None
+                else:
+                    logger.warning("⚠️ Tidal user token expired and no refresh token available")
+                    return None
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve Tidal user token from database: {e}")
+            return None
+
+    async def _refresh_user_token(self, refresh_token: str) -> Optional[str]:
+        """Refresh expired user OAuth token and update database"""
+        try:
+            from sqlalchemy import text
+            from datetime import datetime, timedelta
+
+            # Tidal OAuth token refresh endpoint
+            token_url = "https://auth.tidal.com/v1/oauth2/token"
+
+            headers = {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+
+            data = {
+                'grant_type': 'refresh_token',
+                'refresh_token': refresh_token,
+                'client_id': os.getenv('TIDAL_CLIENT_ID'),  # From environment
+                'client_secret': os.getenv('TIDAL_CLIENT_SECRET')  # From environment
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(token_url, headers=headers, data=data) as response:
+                    if response.status == 200:
+                        token_data = await response.json()
+                        new_access_token = token_data['access_token']
+                        new_refresh_token = token_data.get('refresh_token', refresh_token)
+                        expires_in = token_data['expires_in']
+                        expires_at = datetime.now() + timedelta(seconds=expires_in)
+
+                        # Update database with new token
+                        if self.db_session_factory:
+                            async with self.db_session_factory() as db_session:
+                                await db_session.execute(
+                                    text("""
+                                        UPDATE user_oauth_tokens
+                                        SET access_token = :access_token,
+                                            refresh_token = :refresh_token,
+                                            expires_at = :expires_at,
+                                            updated_at = CURRENT_TIMESTAMP
+                                        WHERE service = 'tidal' AND user_id = 'default_user'
+                                    """),
+                                    {
+                                        'access_token': new_access_token,
+                                        'refresh_token': new_refresh_token,
+                                        'expires_at': expires_at
+                                    }
+                                )
+                                await db_session.commit()
+                                logger.info(f"✅ Updated Tidal user token in database (expires: {expires_at.isoformat()})")
+
+                        return new_access_token
+                    else:
+                        error_data = await response.text()
+                        logger.error(f"Failed to refresh Tidal token: {response.status} - {error_data}")
+                        return None
+
+        except Exception as e:
+            logger.error(f"Error refreshing Tidal user token: {e}")
+            return None
+
+    async def search_by_isrc(self, isrc: str) -> Optional[Dict[str, Any]]:
+        """Search track by ISRC"""
+        await self.rate_limiter.wait()
+
+        cache_key = f"tidal:isrc:{isrc}"
+
+        # Check cache
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            logger.debug("Tidal ISRC cache hit", isrc=isrc)
+            return json.loads(cached)
+
+        async def _search_isrc():
+            token = await self._get_user_token_from_db()
+            if not token:
+                logger.warning("No Tidal token available - skipping ISRC search")
+                return None
+
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/vnd.tidal.v1+json'
+            }
+
+            # Tidal API endpoint for ISRC search
+            url = f"{self.base_url}/tracks?filter[isrc]={isrc}"
+
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        if response.status == 404:
+                            return None
+
+                        response.raise_for_status()
+                        data = await response.json()
+
+                        if data.get('data') and len(data['data']) > 0:
+                            track = data['data'][0]
+                            result = self._extract_track_metadata(track)
+
+                            # Cache for 90 days
+                            await self.redis_client.setex(
+                                cache_key,
+                                90 * 24 * 3600,
+                                json.dumps(result)
+                            )
+
+                            return result
+                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'tidal', 'method': 'search_by_isrc', 'isrc': isrc}
+            )
+
+        try:
+            return await self.circuit_breaker.call(_search_isrc)
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Tidal ISRC search failed", error=str(e), isrc=isrc)
+            return None
+
+    async def search_track(self, artist: str, title: str) -> Optional[Dict[str, Any]]:
+        """Search track by artist and title"""
+        await self.rate_limiter.wait()
+
+        query = f"{artist} {title}"
+        cache_key = f"tidal:search:{hashlib.md5(query.encode()).hexdigest()}"
+
+        # Check cache
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            logger.debug("Tidal search cache hit", query=query)
+            return json.loads(cached)
+
+        async def _search():
+            token = await self._get_user_token_from_db()
+            if not token:
+                logger.warning("No Tidal token available - skipping text search")
+                return None
+
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/vnd.tidal.v1+json'
+            }
+
+            url = f"{self.base_url}/search?query={quote(query)}&type=TRACKS&limit=1"
+
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        response.raise_for_status()
+                        data = await response.json()
+
+                        if data.get('tracks', {}).get('items') and len(data['tracks']['items']) > 0:
+                            track = data['tracks']['items'][0]
+                            result = self._extract_track_metadata(track)
+
+                            # Cache for 30 days
+                            await self.redis_client.setex(
+                                cache_key,
+                                30 * 24 * 3600,
+                                json.dumps(result)
+                            )
+
+                            return result
+                        return None
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'tidal', 'method': 'search_track', 'query': query}
+            )
+
+        try:
+            return await self.circuit_breaker.call(_search)
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Tidal text search failed", error=str(e), query=query)
+            return None
+
+    async def get_track_by_id(self, tidal_id: int) -> Optional[Dict[str, Any]]:
+        """Get track metadata by Tidal ID"""
+        await self.rate_limiter.wait()
+
+        cache_key = f"tidal:track:{tidal_id}"
+
+        # Check cache
+        cached = await self.redis_client.get(cache_key)
+        if cached:
+            logger.debug("Tidal track cache hit", tidal_id=tidal_id)
+            return json.loads(cached)
+
+        async def _get_track():
+            token = await self._get_user_token_from_db()
+            if not token:
+                logger.warning("No Tidal token available - skipping track lookup")
+                return None
+
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/vnd.tidal.v1+json'
+            }
+
+            url = f"{self.base_url}/tracks/{tidal_id}"
+
+            async def _api_call():
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        if response.status == 404:
+                            return None
+
+                        response.raise_for_status()
+                        track = await response.json()
+                        result = self._extract_track_metadata(track)
+
+                        # Cache for 30 days
+                        await self.redis_client.setex(
+                            cache_key,
+                            30 * 24 * 3600,
+                            json.dumps(result)
+                        )
+
+                        return result
+
+            return await fetch_with_exponential_backoff(
+                _api_call,
+                max_retries=API_MAX_RETRIES,
+                initial_delay=API_INITIAL_DELAY,
+                max_delay=API_MAX_DELAY,
+                logger_context={'api': 'tidal', 'method': 'get_track_by_id', 'tidal_id': tidal_id}
+            )
+
+        try:
+            return await self.circuit_breaker.call(_get_track)
+        except (RetryExhausted, aiohttp.ClientError) as e:
+            logger.error("Tidal get track failed", error=str(e), tidal_id=tidal_id)
+            return None
+
+    def _extract_track_metadata(self, track: Dict) -> Dict[str, Any]:
+        """Extract metadata from Tidal track object"""
+        return {
+            'tidal_id': track.get('id'),
+            'isrc': track.get('isrc'),
+            'title': track.get('title'),
+            'artists': [
+                {
+                    'name': artist.get('name'),
+                    'tidal_id': artist.get('id')
+                }
+                for artist in track.get('artists', [])
+            ],
+            'album': {
+                'name': track.get('album', {}).get('title'),
+                'tidal_id': track.get('album', {}).get('id'),
+                'release_date': track.get('streamStartDate')
+            },
+            'duration_ms': track.get('duration', 0) * 1000,  # Tidal returns seconds
+            'explicit': track.get('explicit', False),
+            'url': track.get('url')
+        }

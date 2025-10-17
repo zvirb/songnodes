@@ -24,7 +24,8 @@ import {
   Flag,
   FlagTriangleRight,
   RefreshCw,
-  MousePointer2
+  MousePointer2,
+  FileEdit
 } from 'lucide-react';
 
 interface ContextMenuProps {
@@ -196,6 +197,19 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             icon: <MousePointer2 size={16} />,
             action: () => {
               selectNode(node.id);
+              onClose();
+            }
+          },
+          {
+            label: 'View Track Info',
+            icon: <FileEdit size={16} />,
+            action: () => {
+              selectNode(node.id);
+              // Trigger track details modal via custom event
+              window.dispatchEvent(new CustomEvent('openTrackDetails', {
+                detail: { nodeId: node.id, track: node }
+              }));
+              console.log('📝 Opening track info for:', node.label);
               onClose();
             }
           },

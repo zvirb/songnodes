@@ -1697,49 +1697,94 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Create combined label - direct creation (no pooling)
     let combinedLabel!: PIXI.Text;
 
-    // Combine artist and title into one label
+    // Create multi-line, multi-color label with container
     const artistText = node.artist || node.metadata?.artist || 'Unknown Artist';
     const titleText = node.title || node.metadata?.title || node.metadata?.label || node.label || 'Unknown Title';
+
+    // Extract remix info from title (common pattern: "Track Name (Remix)" or "Track Name - Remix")
+    const remixMatch = titleText.match(/\((.*?(?:remix|edit|mix|version).*?)\)|-(.*?(?:remix|edit|mix|version).*?)$/i);
+    const remixText = remixMatch ? (remixMatch[1] || remixMatch[2] || '').trim() : '';
+
+    // Year can come from multiple sources
+    const yearText = node.year || node.metadata?.year || node.metadata?.release_year || node.metadata?.release_date || '';
     const hasError = artistText.includes('ERROR') || titleText.includes('ERROR');
 
-    // Format: "Artist - Title" on one line for better readability
-    const combinedText = `${artistText} - ${titleText}`;
+    // Create a container for multi-line label
+    const labelContainer = new PIXI.Container();
+    labelContainer.eventMode = 'none';  // Don't block events
+    labelContainer.visible = false; // Hidden by default
 
+    const baseStyle = {
+      fontFamily: 'Arial',
+      fontSize: 12,
+      fontWeight: '600',
+      dropShadow: true,
+      dropShadowColor: 0x000000,
+      dropShadowBlur: 4,
+      dropShadowAlpha: 0.9,
+      dropShadowDistance: 1.5,
+    };
+
+    // Line 1: Artist (purple: 0xa855f7)
+    const artistLabel = new PIXI.Text({
+      text: artistText,
+      style: { ...baseStyle, fill: hasError ? 0xff0000 : 0xa855f7, fontSize: 12, fontWeight: '700' },
+    });
+    artistLabel.anchor.set(0, 0.5); // Left-aligned
+    artistLabel.position.set(0, -18); // Above center
+    labelContainer.addChild(artistLabel);
+
+    // Line 2: Title (blue: 0x60a5fa)
+    const titleLabel = new PIXI.Text({
+      text: titleText,
+      style: { ...baseStyle, fill: hasError ? 0xff0000 : 0x60a5fa, fontSize: 11, fontWeight: '600' },
+    });
+    titleLabel.anchor.set(0, 0.5);
+    titleLabel.position.set(0, -6); // Slightly above center
+    labelContainer.addChild(titleLabel);
+
+    // Line 3: Remix (red: 0xef4444) - only if present
+    if (remixText) {
+      const remixLabel = new PIXI.Text({
+        text: remixText,
+        style: { ...baseStyle, fill: 0xef4444, fontSize: 10, fontWeight: '500' },
+      });
+      remixLabel.anchor.set(0, 0.5);
+      remixLabel.position.set(0, 6); // Below center
+      labelContainer.addChild(remixLabel);
+    }
+
+    // Line 4: Year (yellow: 0xfbbf24) - only if present
+    if (yearText) {
+      const yearLabel = new PIXI.Text({
+        text: String(yearText),
+        style: { ...baseStyle, fill: 0xfbbf24, fontSize: 10, fontWeight: '500' },
+      });
+      yearLabel.anchor.set(0, 0.5);
+      yearLabel.position.set(0, remixText ? 18 : 6); // Adjust based on remix presence
+      labelContainer.addChild(yearLabel);
+    }
+
+    container.addChild(labelContainer);
+
+    // Create a simple combined label for backward compatibility (used in some places)
     combinedLabel = new PIXI.Text({
-      text: combinedText,
+      text: `${artistText} - ${titleText}`,
       style: {
         fontFamily: 'Arial',
         fontSize: 11,
         fill: hasError ? 0xff0000 : 0xffffff,
         align: 'center',
         fontWeight: '500',
-        dropShadow: true,
-        dropShadowColor: 0x000000,
-        dropShadowBlur: 3,
-        dropShadowAlpha: 0.8,
-        dropShadowDistance: 1,
       },
     });
-
-    // Safety check: Ensure label was created successfully
-    if (!combinedLabel || !combinedLabel.anchor) {
-      console.error('❌ Failed to create text label for node', node.id);
-      // Create fallback label
-      combinedLabel = new PIXI.Text({
-        text: combinedText,
-        style: { fontSize: 11, fill: hasError ? 0xff0000 : 0xffffff },
-      });
-    }
-
-    combinedLabel.anchor.set(0.5, 0.5);  // Center anchor for better positioning
-    combinedLabel.visible = false; // Hidden by default
-    combinedLabel.eventMode = 'none';  // Don't block events
-    container.addChild(combinedLabel);
+    combinedLabel.visible = false; // Not used, kept for compatibility
 
     // Store references
     node.pixiNode = container;
     node.pixiCircle = circle;
-    node.pixiLabel = combinedLabel;  // Store the combined label
+    node.pixiLabel = combinedLabel;  // Keep for compatibility
+    (node as any).pixiLabelContainer = labelContainer;  // Store the new multi-line label
 
     // Enhanced interaction handlers with 2025 best practices
     const nodeId = node.id;
@@ -2065,17 +2110,24 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       (node.pixiCircle as PIXI.Graphics).fill({ color: color, alpha: alpha });
     }
 
-    // Show combined labels (artist + title) for better readability
+    // Show multi-line labels for better readability
     const shouldShowLabel = viewState.showLabels && lodLevel < 2; // LOD 0-1 only
 
-    node.pixiLabel.visible = shouldShowLabel;
+    // Use the new multi-line label container
+    const labelContainer = (node as any).pixiLabelContainer as PIXI.Container | undefined;
+    if (labelContainer) {
+      labelContainer.visible = shouldShowLabel;
 
-    // Only update label POSITION when visible (skip expensive style updates)
-    if (shouldShowLabel) {
-      // Position label to the RIGHT of the node, slightly above center
-      // This prevents overlap and makes connections easier to trace
-      node.pixiLabel.position.set(screenRadius + 4, -screenRadius * 0.3);
+      // Only update label POSITION when visible (skip expensive style updates)
+      if (shouldShowLabel) {
+        // Position label to the RIGHT of the node, aligned with top
+        // Nodes are now larger, so give more space
+        labelContainer.position.set(screenRadius + 8, -screenRadius * 0.5);
+      }
     }
+
+    // Keep old label hidden (backward compatibility)
+    node.pixiLabel.visible = false;
   }, [getNodeColor, viewState]);
 
   // Update edge visual appearance
@@ -2115,11 +2167,37 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       : (lodLevel > 1 ? 0.2 : Math.max(0.3, viewState.edgeOpacity || 0.4));
     const alpha = isPathEdge ? 1.0 : baseAlpha * Math.max(0.6, edge.opacity || 1);
 
+    // Calculate edge endpoints that stop at node boundaries
+    // Get node radii (use enhanced node data if available)
+    const sourceRadius = (edge.sourceNode as any).screenRadius || viewState.nodeSize || DEFAULT_CONFIG.graph.defaultRadius;
+    const targetRadius = (edge.targetNode as any).screenRadius || viewState.nodeSize || DEFAULT_CONFIG.graph.defaultRadius;
+
+    // Calculate direction vector from source to target
+    const dx = edge.targetNode.x - edge.sourceNode.x;
+    const dy = edge.targetNode.y - edge.sourceNode.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Avoid division by zero for nodes at the same position
+    if (distance < 0.01) {
+      edge.pixiEdge.clear(); // Don't draw edge for overlapping nodes
+      return;
+    }
+
+    // Normalize direction vector
+    const nx = dx / distance;
+    const ny = dy / distance;
+
+    // Calculate start and end points offset by node radii
+    const startX = edge.sourceNode.x + nx * sourceRadius;
+    const startY = edge.sourceNode.y + ny * sourceRadius;
+    const endX = edge.targetNode.x - nx * targetRadius;
+    const endY = edge.targetNode.y - ny * targetRadius;
+
     // Update graphics using PIXI v8 API
     edge.pixiEdge.clear();
     edge.pixiEdge.setStrokeStyle({ width: screenWidth, color: color, alpha: alpha });
-    edge.pixiEdge.moveTo(edge.sourceNode.x, edge.sourceNode.y);
-    edge.pixiEdge.lineTo(edge.targetNode.x, edge.targetNode.y);
+    edge.pixiEdge.moveTo(startX, startY);  // Start at source node boundary
+    edge.pixiEdge.lineTo(endX, endY);      // End at target node boundary
     edge.pixiEdge.stroke();
 
     // DEBUG: Edge rendering logging disabled (too noisy)
@@ -2590,6 +2668,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     return `${nodeHash}#${edgeHash}`;
   }, []);
 
+  // CRITICAL FIX: Memoize data hash to prevent unnecessary re-renders
+  // Only recompute when actual IDs change, not on every graphData reference change
+  const currentDataHash = useMemo(() =>
+    generateDataHash(graphData.nodes, graphData.edges),
+    [graphData.nodes.length, graphData.edges.length, generateDataHash]
+  );
+
   // Update graph data with intelligent diffing (2025 optimization)
   const updateGraphData = useCallback(() => {
     if (!simulationRef.current || !nodesContainerRef.current || !edgesContainerRef.current) return;
@@ -2969,11 +3054,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   }, [isInitialized, initializeSimulation, initializeZoom]);
 
   // Update graph data when it changes
+  // CRITICAL FIX: Use data hash to prevent unnecessary rebuilds
+  // Only rebuild when actual data changes (IDs), not on reference changes
   useEffect(() => {
     if (isInitialized && graphData.nodes.length > 0) {
       updateGraphData();
     }
-  }, [isInitialized, graphData, updateGraphData]); // Depend on actual data, not just length
+  }, [isInitialized, currentDataHash, updateGraphData]);
 
   // Handle window resize
   useEffect(() => {
@@ -3237,6 +3324,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       )}
 
 
+      {/* Mini-map with DOM-based events (doesn't block main graph) */}
       {isInitialized && mainGraphWidth > 0 && mainGraphHeight > 0 && (
         <GraphMiniMap mainGraphWidth={mainGraphWidth} mainGraphHeight={mainGraphHeight} />
       )}
