@@ -386,6 +386,140 @@ async def get_artists(limit: int = 100, offset: int = 0):
         logger.error(f"Failed to fetch artists: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =============================================================================
+# Dirty Artist Management - Data Quality
+# =============================================================================
+
+class DirtyArtistResponse(BaseModel):
+    """Artist with formatting artifacts that needs cleaning"""
+    artist_id: str
+    current_name: str
+    suggested_clean_name: str
+    track_count: int
+    has_conflict: bool = False
+    pattern_type: str
+
+@app.get("/api/v1/artists/dirty", response_model=List[DirtyArtistResponse])
+async def get_dirty_artists(limit: int = 50, offset: int = 0):
+    """
+    Get artists with formatting artifacts (dirty names).
+
+    Returns artists that contain:
+    - Timestamp prefixes: [40:54], [??:??]
+    - Numeric brackets: [420], [69]
+    - Special character prefixes: +, -, *
+    """
+    try:
+        # Import the cleaning function
+        import sys
+        sys.path.insert(0, '/app/common')
+        from artist_name_cleaner import clean_artist_name, has_formatting_artifacts
+
+        async with db_pool.acquire() as conn:
+            # Get dirty artists with track counts
+            query = """
+            SELECT
+                a.id::text as artist_id,
+                a.name,
+                COUNT(ta.track_id) as track_count
+            FROM artists a
+            LEFT JOIN track_artists ta ON a.id = ta.artist_id
+            WHERE a.name ~ '^\[' OR a.name ~ '^[+*-] '
+            GROUP BY a.id, a.name
+            ORDER BY COUNT(ta.track_id) DESC, a.name
+            LIMIT $1 OFFSET $2
+            """
+
+            rows = await conn.fetch(query, limit, offset)
+
+            dirty_artists = []
+            for row in rows:
+                current_name = row['name']
+                clean_name = clean_artist_name(current_name)
+
+                # Determine pattern type
+                if current_name.startswith('['):
+                    if ':' in current_name[:10]:
+                        pattern_type = "timestamp"
+                    else:
+                        pattern_type = "numeric_bracket"
+                elif current_name.startswith('+'):
+                    pattern_type = "plus_prefix"
+                elif current_name.startswith('-'):
+                    pattern_type = "dash_prefix"
+                elif current_name.startswith('*'):
+                    pattern_type = "asterisk_prefix"
+                else:
+                    pattern_type = "unknown"
+
+                # Check if clean name conflicts with existing artist
+                conflict_check = await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM artists WHERE name = $1 AND id != $2::uuid)",
+                    clean_name, row['artist_id']
+                )
+
+                dirty_artists.append(DirtyArtistResponse(
+                    artist_id=row['artist_id'],
+                    current_name=current_name,
+                    suggested_clean_name=clean_name,
+                    track_count=row['track_count'],
+                    has_conflict=conflict_check,
+                    pattern_type=pattern_type
+                ))
+
+            logger.info(f"Found {len(dirty_artists)} dirty artists (limit={limit}, offset={offset})")
+            return dirty_artists
+
+    except Exception as e:
+        logger.error(f"Failed to fetch dirty artists: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/artists/{artist_id}/rename")
+async def rename_artist(artist_id: str, new_name: str):
+    """
+    Rename an artist (for manual correction of dirty names).
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Check if new name conflicts with existing artist
+            existing = await conn.fetchval(
+                "SELECT id FROM artists WHERE name = $1 AND id != $2::uuid",
+                new_name, artist_id
+            )
+
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Artist '{new_name}' already exists. Use merge endpoint instead."
+                )
+
+            # Update artist name
+            result = await conn.fetchrow(
+                """
+                UPDATE artists
+                SET name = $1, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $2::uuid
+                RETURNING id, name, updated_at
+                """,
+                new_name, artist_id
+            )
+
+            if not result:
+                raise HTTPException(status_code=404, detail="Artist not found")
+
+            logger.info(f"Renamed artist {artist_id} to '{new_name}'")
+            return {
+                "artist_id": str(result['id']),
+                "name": result['name'],
+                "updated_at": result['updated_at'].isoformat()
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to rename artist {artist_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/artists/{artist_id}", response_model=ArtistResponse)
 async def get_artist(artist_id: str):
     """

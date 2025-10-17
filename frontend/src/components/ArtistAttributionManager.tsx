@@ -31,6 +31,15 @@ interface DataCompletenessStats {
     missing_artist_percentage: number;
 }
 
+interface DirtyArtist {
+    artist_id: string;
+    current_name: string;
+    suggested_clean_name: string;
+    track_count: number;
+    has_conflict: boolean;
+    pattern_type: string;
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -40,10 +49,17 @@ interface ArtistAttributionManagerProps {
 }
 
 export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> = ({ onClose }) => {
+    // Tab state
+    const [activeTab, setActiveTab] = useState<'missing' | 'dirty'>('missing');
+
     // State for tracks missing artists
     const [tracks, setTracks] = useState<TrackWithoutArtist[]>([]);
     const [selectedTrack, setSelectedTrack] = useState<TrackWithoutArtist | null>(null);
     const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
+
+    // State for dirty artists
+    const [dirtyArtists, setDirtyArtists] = useState<DirtyArtist[]>([]);
+    const [selectedDirtyArtist, setSelectedDirtyArtist] = useState<DirtyArtist | null>(null);
 
     // State for artist search
     const [searchQuery, setSearchQuery] = useState('');
@@ -143,6 +159,30 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             setSearching(false);
         }
     }, []);
+
+    const fetchDirtyArtists = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const offset = page * ITEMS_PER_PAGE;
+            const response = await fetch(
+                `/api/v1/artists/dirty?limit=${ITEMS_PER_PAGE}&offset=${offset}`
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch dirty artists: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setDirtyArtists(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch dirty artists');
+            console.error('Error fetching dirty artists:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [page]);
 
     // ============================================================================
     // Artist Assignment
@@ -301,13 +341,58 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
     };
 
     // ============================================================================
+    // Dirty Artist Correction
+    // ============================================================================
+
+    const applyCleanName = async (dirtyArtist: DirtyArtist) => {
+        if (dirtyArtist.has_conflict) {
+            setError('Cannot auto-clean: Suggested name already exists. Manual merge required.');
+            return;
+        }
+
+        setAssigning(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`/api/v1/artists/${dirtyArtist.artist_id}/rename`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ new_name: dirtyArtist.suggested_clean_name })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to rename artist');
+            }
+
+            setSuccessMessage(`Successfully cleaned: ${dirtyArtist.current_name} → ${dirtyArtist.suggested_clean_name}`);
+            setTimeout(() => setSuccessMessage(null), 3000);
+
+            // Refresh the dirty artists list
+            await fetchDirtyArtists();
+            setSelectedDirtyArtist(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to apply clean name');
+            console.error('Error applying clean name:', err);
+        } finally {
+            setAssigning(false);
+        }
+    };
+
+    // ============================================================================
     // Effects
     // ============================================================================
 
     useEffect(() => {
-        fetchTracks();
-        fetchStats();
-    }, [fetchTracks, fetchStats]);
+        if (activeTab === 'missing') {
+            fetchTracks();
+            fetchStats();
+        } else if (activeTab === 'dirty') {
+            fetchDirtyArtists();
+        }
+    }, [activeTab, fetchTracks, fetchStats, fetchDirtyArtists]);
 
     useEffect(() => {
         const debounce = setTimeout(() => {
@@ -369,49 +454,89 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             <div style={{
                 padding: '24px',
                 borderBottom: '1px solid rgba(126, 211, 33, 0.3)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
                 backgroundColor: 'rgba(0, 0, 0, 0.8)'
             }}>
-                <div>
-                    <h2 style={{
-                        margin: 0,
-                        color: '#7ED321',
-                        fontSize: '24px',
-                        fontWeight: 700,
-                        marginBottom: '8px'
-                    }}>
-                        Artist Attribution Manager
-                    </h2>
-                    {stats && (
-                        <p style={{
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '16px'
+                }}>
+                    <div>
+                        <h2 style={{
                             margin: 0,
-                            color: '#FFFFFF',
-                            fontSize: '14px',
-                            opacity: 0.8
+                            color: '#7ED321',
+                            fontSize: '24px',
+                            fontWeight: 700,
+                            marginBottom: '8px'
                         }}>
-                            {stats.missing_artist_count.toLocaleString()} tracks ({stats.missing_artist_percentage.toFixed(1)}%) missing artist attribution
-                        </p>
-                    )}
+                            Artist Attribution Manager
+                        </h2>
+                        {stats && activeTab === 'missing' && (
+                            <p style={{
+                                margin: 0,
+                                color: '#FFFFFF',
+                                fontSize: '14px',
+                                opacity: 0.8
+                            }}>
+                                {stats.missing_artist_count.toLocaleString()} tracks ({stats.missing_artist_percentage.toFixed(1)}%) missing artist attribution
+                            </p>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={onClose}
+                        style={{
+                            padding: '8px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: '#FFFFFF',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
 
-                <button
-                    onClick={onClose}
-                    style={{
-                        padding: '8px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        borderRadius: '8px',
-                        color: '#FFFFFF',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <X size={20} />
-                </button>
+                {/* Tab Navigation */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={() => setActiveTab('missing')}
+                        style={{
+                            padding: '10px 20px',
+                            backgroundColor: activeTab === 'missing' ? 'rgba(126, 211, 33, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                            border: `1px solid ${activeTab === 'missing' ? 'rgba(126, 211, 33, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
+                            borderRadius: '8px',
+                            color: '#FFFFFF',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        Missing Artists
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('dirty')}
+                        style={{
+                            padding: '10px 20px',
+                            backgroundColor: activeTab === 'dirty' ? 'rgba(126, 211, 33, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                            border: `1px solid ${activeTab === 'dirty' ? 'rgba(126, 211, 33, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
+                            borderRadius: '8px',
+                            color: '#FFFFFF',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        Dirty Artist Names
+                    </button>
+                </div>
             </div>
 
             {/* Messages */}
@@ -451,6 +576,8 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                 display: 'flex',
                 overflow: 'hidden'
             }}>
+                {activeTab === 'missing' ? (
+                    <>
                 {/* Left Panel - Track List */}
                 <div style={{
                     width: '50%',
@@ -1006,6 +1133,241 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                         </div>
                     )}
                 </div>
+                    </>
+                ) : (
+                    /* Dirty Artists Tab */
+                    <div style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        padding: '24px'
+                    }}>
+                        {loading ? (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '200px',
+                                color: '#FFFFFF',
+                                gap: '8px'
+                            }}>
+                                <Loader2 size={20} className="animate-spin" />
+                                <span>Loading dirty artists...</span>
+                            </div>
+                        ) : dirtyArtists.length === 0 ? (
+                            <div style={{
+                                textAlign: 'center',
+                                padding: '40px',
+                                color: '#FFFFFF',
+                                opacity: 0.6
+                            }}>
+                                🎉 No dirty artist names found! All artists are clean.
+                            </div>
+                        ) : (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+                                gap: '16px',
+                                overflowY: 'auto'
+                            }}>
+                                {dirtyArtists.map((artist) => (
+                                    <div
+                                        key={artist.artist_id}
+                                        style={{
+                                            padding: '16px',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                            border: `1px solid ${artist.has_conflict ? 'rgba(231, 76, 60, 0.5)' : 'rgba(126, 211, 33, 0.3)'}`,
+                                            borderRadius: '8px',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {/* Current Name */}
+                                        <div style={{
+                                            marginBottom: '12px',
+                                            paddingBottom: '12px',
+                                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                                        }}>
+                                            <div style={{
+                                                fontSize: '11px',
+                                                color: '#E74C3C',
+                                                fontWeight: 600,
+                                                marginBottom: '4px',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px'
+                                            }}>
+                                                Current (Dirty)
+                                            </div>
+                                            <div style={{
+                                                fontSize: '16px',
+                                                color: '#FFFFFF',
+                                                fontWeight: 600,
+                                                fontFamily: 'monospace'
+                                            }}>
+                                                {artist.current_name}
+                                            </div>
+                                        </div>
+
+                                        {/* Suggested Clean Name */}
+                                        <div style={{
+                                            marginBottom: '12px',
+                                            paddingBottom: '12px',
+                                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                                        }}>
+                                            <div style={{
+                                                fontSize: '11px',
+                                                color: '#7ED321',
+                                                fontWeight: 600,
+                                                marginBottom: '4px',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px'
+                                            }}>
+                                                Suggested Clean Name
+                                            </div>
+                                            <div style={{
+                                                fontSize: '16px',
+                                                color: '#FFFFFF',
+                                                fontWeight: 600
+                                            }}>
+                                                {artist.suggested_clean_name}
+                                            </div>
+                                        </div>
+
+                                        {/* Metadata */}
+                                        <div style={{
+                                            display: 'flex',
+                                            gap: '12px',
+                                            marginBottom: '12px',
+                                            fontSize: '12px',
+                                            color: '#FFFFFF',
+                                            opacity: 0.7
+                                        }}>
+                                            <span>🎵 {artist.track_count} tracks</span>
+                                            <span style={{
+                                                padding: '2px 8px',
+                                                backgroundColor: 'rgba(126, 211, 33, 0.2)',
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                                fontWeight: 600
+                                            }}>
+                                                {artist.pattern_type.replace('_', ' ')}
+                                            </span>
+                                        </div>
+
+                                        {/* Conflict Warning */}
+                                        {artist.has_conflict && (
+                                            <div style={{
+                                                padding: '8px',
+                                                backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                                                border: '1px solid rgba(231, 76, 60, 0.4)',
+                                                borderRadius: '6px',
+                                                color: '#E74C3C',
+                                                fontSize: '12px',
+                                                marginBottom: '12px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px'
+                                            }}>
+                                                <AlertCircle size={14} />
+                                                <span>Name conflict - manual merge required</span>
+                                            </div>
+                                        )}
+
+                                        {/* Action Button */}
+                                        <button
+                                            onClick={() => applyCleanName(artist)}
+                                            disabled={artist.has_conflict || assigning}
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px',
+                                                backgroundColor: artist.has_conflict
+                                                    ? 'rgba(255, 255, 255, 0.1)'
+                                                    : 'rgba(126, 211, 33, 0.3)',
+                                                border: `1px solid ${artist.has_conflict
+                                                    ? 'rgba(255, 255, 255, 0.2)'
+                                                    : 'rgba(126, 211, 33, 0.5)'}`,
+                                                borderRadius: '6px',
+                                                color: '#FFFFFF',
+                                                fontSize: '13px',
+                                                fontWeight: 600,
+                                                cursor: (artist.has_conflict || assigning) ? 'not-allowed' : 'pointer',
+                                                opacity: (artist.has_conflict || assigning) ? 0.5 : 1,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px'
+                                            }}
+                                        >
+                                            {assigning ? (
+                                                <>
+                                                    <Loader2 size={14} className="animate-spin" />
+                                                    Applying...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Check size={14} />
+                                                    Apply Clean Name
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Pagination for Dirty Artists */}
+                        {!loading && dirtyArtists.length > 0 && (
+                            <div style={{
+                                marginTop: '24px',
+                                display: 'flex',
+                                gap: '8px',
+                                justifyContent: 'center'
+                            }}>
+                                <button
+                                    onClick={() => setPage(Math.max(0, page - 1))}
+                                    disabled={page === 0}
+                                    style={{
+                                        padding: '8px 16px',
+                                        backgroundColor: 'rgba(126, 211, 33, 0.2)',
+                                        border: '1px solid rgba(126, 211, 33, 0.4)',
+                                        borderRadius: '6px',
+                                        color: '#FFFFFF',
+                                        fontSize: '13px',
+                                        cursor: page === 0 ? 'not-allowed' : 'pointer',
+                                        opacity: page === 0 ? 0.5 : 1
+                                    }}
+                                >
+                                    Previous
+                                </button>
+                                <div style={{
+                                    padding: '8px 16px',
+                                    color: '#FFFFFF',
+                                    fontSize: '13px',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}>
+                                    Page {page + 1}
+                                </div>
+                                <button
+                                    onClick={() => setPage(page + 1)}
+                                    disabled={dirtyArtists.length < ITEMS_PER_PAGE}
+                                    style={{
+                                        padding: '8px 16px',
+                                        backgroundColor: 'rgba(126, 211, 33, 0.2)',
+                                        border: '1px solid rgba(126, 211, 33, 0.4)',
+                                        borderRadius: '6px',
+                                        color: '#FFFFFF',
+                                        fontSize: '13px',
+                                        cursor: dirtyArtists.length < ITEMS_PER_PAGE ? 'not-allowed' : 'pointer',
+                                        opacity: dirtyArtists.length < ITEMS_PER_PAGE ? 0.5 : 1
+                                    }}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
