@@ -6,6 +6,7 @@ import { api } from './services/api';
 import { PanelState } from './types';
 import './styles/global.css';
 import { QuickSearch } from './components/QuickSearch';
+import { useTokenRefresh } from './hooks/useTokenRefresh';
 
 // Lazy load components for performance
 const GraphVisualization = React.lazy(() => import('./components/GraphVisualization'));
@@ -88,6 +89,9 @@ const App: React.FC = () => {
   const [djModeEnabled, setDjModeEnabled] = useState(true); // Default to DJ mode for testing
   const [isAnimationPaused, setIsAnimationPaused] = useState(false);
   const [showGraphFilters, setShowGraphFilters] = useState(false);
+
+  // Enable automatic token refresh for Spotify and Tidal
+  useTokenRefresh();
 
   // Load initial graph data
   const loadGraphData = useCallback(async () => {

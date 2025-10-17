@@ -315,9 +315,12 @@ export const graphApi = {
 // Search API
 export const searchApi = {
   // Search tracks
+  // NOTE: This endpoint doesn't exist on the backend yet, so this will fall back to
+  // local Fuse.js search in TrackSearch.tsx component. This is intentional because:
+  // 1. Local search only searches loaded graph nodes (required for camera centering)
+  // 2. Backend would search entire DB (~31k tracks) vs loaded nodes (~5k)
+  // 3. Camera centering requires the track to exist in the loaded graph data
   async searchTracks(query: string, filters?: SearchFilters): Promise<TrackSearchResponse> {
-    const startTime = Date.now();
-
     const response = await apiClient.post<Array<{
       track: Track;
       score: number;
@@ -331,14 +334,14 @@ export const searchApi = {
       filters,
     });
 
-    const searchTime = Date.now() - startTime;
-
     return {
-      ...response,
+      data: response.data || [],
+      status: response.status,
+      timestamp: Date.now(),
       metadata: {
         query,
-        totalResults: response.data.length,
-        searchTime,
+        totalResults: response.data?.length || 0,
+        searchTime: 0,
         filters,
       },
     };
