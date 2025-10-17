@@ -2788,8 +2788,19 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     graph.setHoveredNode(isHovering ? nodeId : null);
   }, [graph, showDebugInfo]);
 
+  // Ref to track if a node was just right-clicked (prevents double context menu)
+  const nodeRightClickedRef = useRef(false);
+
   const handleNodeRightClick = useCallback((nodeId: string, event: PIXI.FederatedPointerEvent) => {
     event.preventDefault();
+
+    // Set flag to prevent canvas context menu from also opening
+    nodeRightClickedRef.current = true;
+
+    // Clear the flag after a short delay to allow future clicks
+    setTimeout(() => {
+      nodeRightClickedRef.current = false;
+    }, 100);
 
     if (showDebugInfo) {
       console.group(`🎵 Node Right-Click Detected`);
@@ -3455,6 +3466,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Handle right-click on canvas to show context menu
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    // Check if a node was just right-clicked (prevents double context menu)
+    if (nodeRightClickedRef.current) {
+      e.preventDefault();
+      return; // Node context menu already opened, skip empty space menu
+    }
+
     // Only show context menu if clicking on empty space (not on a node)
     const target = e.target as HTMLElement;
     if (target.tagName === 'CANVAS' || target.classList.contains('graph-container')) {

@@ -263,6 +263,35 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
     return () => window.removeEventListener('openSettings', handleOpenSettings);
   }, []);
 
+  // Listen for openTrackDetails event from context menu
+  useEffect(() => {
+    const handleOpenTrackDetails = (event: CustomEvent) => {
+      const { track, nodeId } = event.detail;
+      if (track) {
+        // Transform node data to Track format if needed
+        const trackData: Track = {
+          id: track.id || nodeId,
+          name: track.name || track.label || track.title || 'Unknown Track',
+          title: track.name || track.label || track.title || 'Unknown Track',
+          artist: track.artist || 'Unknown Artist',
+          bpm: track.bpm,
+          key: track.key,
+          energy: track.energy,
+          duration: track.duration,
+          status: 'unplayed' as const,
+          genre: track.genre || track.category || 'Electronic',
+          isrc: track.isrc
+        };
+
+        setInspectedTrack(trackData);
+        setIsModalOpen(true);
+      }
+    };
+
+    window.addEventListener('openTrackDetails', handleOpenTrackDetails as EventListener);
+    return () => window.removeEventListener('openTrackDetails', handleOpenTrackDetails as EventListener);
+  }, []);
+
   // Credentials are now loaded automatically via Zustand onRehydrateStorage
   // No need to manually load on mount
 

@@ -80,7 +80,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
         try {
             const offset = page * ITEMS_PER_PAGE;
             const response = await fetch(
-                `http://localhost:8082/api/v1/tracks/missing-artist?limit=${ITEMS_PER_PAGE}&offset=${offset}&sort_by=${sortBy}`
+                `/api/v1/tracks/missing-artist?limit=${ITEMS_PER_PAGE}&offset=${offset}&sort_by=${sortBy}`
             );
 
             if (!response.ok) {
@@ -99,7 +99,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
 
     const fetchStats = useCallback(async () => {
         try {
-            const response = await fetch('http://localhost:8082/api/v1/observability/data-completeness');
+            const response = await fetch('/api/v1/observability/data-completeness');
 
             if (!response.ok) {
                 throw new Error('Failed to fetch stats');
@@ -127,7 +127,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
 
         try {
             const response = await fetch(
-                `http://localhost:8082/api/v1/artists/search?query=${encodeURIComponent(query)}&limit=20`
+                `/api/v1/artists/search?query=${encodeURIComponent(query)}&limit=20`
             );
 
             if (!response.ok) {
@@ -153,7 +153,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
         setError(null);
 
         try {
-            const response = await fetch(`http://localhost:8082/api/v1/tracks/${trackId}/assign-artist`, {
+            const response = await fetch(`/api/v1/tracks/${trackId}/assign-artist`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -202,7 +202,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
 
         for (const trackId of selectedTracks) {
             try {
-                const response = await fetch(`http://localhost:8082/api/v1/tracks/${trackId}/assign-artist`, {
+                const response = await fetch(`/api/v1/tracks/${trackId}/assign-artist`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:8082/api/v1/artists', {
+            const response = await fetch('/api/v1/artists', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

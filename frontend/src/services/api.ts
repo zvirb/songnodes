@@ -175,8 +175,8 @@ export const graphApi = {
     try {
       // Fetch nodes and edges separately from working endpoints
       const [nodesResponse, edgesResponse] = await Promise.all([
-        graphApiClient.get<{nodes: any[], total: number}>('/graph/nodes?limit=500'),
-        graphApiClient.get<{edges: any[], total: number}>('/graph/edges?limit=5000')
+        graphApiClient.get<{nodes: any[], total: number}>('/api/graph/nodes?limit=500'),
+        graphApiClient.get<{edges: any[], total: number}>('/api/graph/edges?limit=5000')
       ]);
 
       if (nodesResponse.status === 'error' || edgesResponse.status === 'error') {

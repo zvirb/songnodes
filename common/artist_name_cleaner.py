@@ -57,7 +57,10 @@ def clean_artist_name(name: str) -> str:
     cleaned = re.sub(r'^\[\d{1,2}:\d{2}\]\s*', '', cleaned)  # [MM:SS]
     cleaned = re.sub(r'^\[\?+:\?+:\?+\]\s*', '', cleaned)    # [?:??:??]
     cleaned = re.sub(r'^\[\?+:\?+\]\s*', '', cleaned)        # [??:??]
-    cleaned = re.sub(r'^\[\?+\]\s*', '', cleaned)            # [??]
+
+    # Remove any bracketed content (mixed digits/question marks, pure patterns)
+    # Handles: [0?], [1??], [2?], [420], [69], [??], etc.
+    cleaned = re.sub(r'^\[[\d\?]+\]\s*', '', cleaned)        # Any combo of digits/question marks
 
     # Remove special character prefixes
     # Common notations: + Artist (b2b), # Artist (featured)
@@ -171,7 +174,7 @@ def has_formatting_artifacts(name: str) -> bool:
     patterns = [
         r'^\[\d{1,2}:\d{2}\]',      # [MM:SS]
         r'^\[\?+:\?+',              # [??:??]
-        r'^\[\?+\]',                # [??]
+        r'^\[[\d\?]+\]',            # [0?], [1??], [420], [??]
         r'^\+\s*#\s*',              # + #
         r'^\+\s+',                  # +
         r'^-\s+',                   # -
