@@ -71,6 +71,12 @@ scrape_configs:
     scrape_interval: 60s
     metrics_path: /metrics
 
+  - job_name: 'metadata-enrichment'
+    static_configs:
+      - targets: ['metadata-enrichment:8020']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
   - job_name: 'graph-visualization-api'
     static_configs:
       - targets: ['graph-visualization-api:8084']

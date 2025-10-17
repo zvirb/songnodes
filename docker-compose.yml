@@ -988,6 +988,7 @@ services:
     - redis
     networks:
     - musicdb-backend
+    - musicdb-monitoring
     healthcheck:
       test:
       - CMD
