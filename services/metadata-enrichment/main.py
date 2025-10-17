@@ -31,6 +31,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 # Import enrichment components
 from api_clients import (
     SpotifyClient,
+    TidalClient,
     MusicBrainzClient,
     DiscogsClient,
     BeatportClient,
@@ -94,6 +95,7 @@ class EnrichmentStatus(str, Enum):
 
 class EnrichmentSource(str, Enum):
     SPOTIFY = "spotify"
+    TIDAL = "tidal"
     MUSICBRAINZ = "musicbrainz"
     DISCOGS = "discogs"
     BEATPORT = "beatport"
@@ -256,6 +258,7 @@ async def lifespan(app: FastAPI):
 
         # Retrieve API keys from database (with fallback to environment variables)
         spotify_keys = await get_service_keys('spotify')
+        tidal_keys = await get_service_keys('tidal')
         musicbrainz_keys = await get_service_keys('musicbrainz')
         discogs_keys = await get_service_keys('discogs')
         lastfm_keys = await get_service_keys('lastfm')
@@ -275,6 +278,13 @@ async def lifespan(app: FastAPI):
         else:
             spotify_client = None
             logger.warning("Spotify client NOT initialized - no credentials found (this is OK if not using Spotify)")
+
+        # Tidal - uses user OAuth tokens (no client credentials needed)
+        tidal_client = TidalClient(
+            redis_client=connection_manager.redis_client,
+            db_session_factory=connection_manager.session_factory
+        )
+        logger.info("Tidal client initialized (uses user OAuth tokens)")
 
         # MusicBrainz - always initialize (user_agent has default value)
         musicbrainz_client = MusicBrainzClient(
@@ -357,6 +367,7 @@ async def lifespan(app: FastAPI):
             lastfm_client=lastfm_client,
             acousticbrainz_client=acousticbrainz_client,
             getsongbpm_client=getsongbpm_client,
+            tidal_client=tidal_client,
             db_session_factory=connection_manager.session_factory,
             redis_client=connection_manager.redis_client
         )
@@ -364,6 +375,7 @@ async def lifespan(app: FastAPI):
         # Initialize configuration-driven enricher
         api_clients = {
             'spotify': spotify_client,
+            'tidal': tidal_client,
             'musicbrainz': musicbrainz_client,
             'discogs': discogs_client,
             'beatport': beatport_client,
@@ -557,6 +569,7 @@ async def update_circuit_breaker_metrics():
     if enrichment_pipeline:
         for api_name, client in [
             ('spotify', enrichment_pipeline.spotify_client),
+            ('tidal', enrichment_pipeline.tidal_client),
             ('musicbrainz', enrichment_pipeline.musicbrainz_client),
             ('discogs', enrichment_pipeline.discogs_client),
             ('beatport', enrichment_pipeline.beatport_client),
@@ -621,6 +634,7 @@ async def health_check():
         if enrichment_pipeline:
             health_status['api_clients'] = {
                 'spotify': 'healthy' if enrichment_pipeline.spotify_client else 'no_credentials',
+                'tidal': 'healthy' if enrichment_pipeline.tidal_client else 'unavailable',
                 'musicbrainz': 'healthy' if enrichment_pipeline.musicbrainz_client else 'unavailable',
                 'discogs': 'healthy' if enrichment_pipeline.discogs_client else 'no_credentials',
                 'beatport': 'healthy' if enrichment_pipeline.beatport_client else 'unavailable',

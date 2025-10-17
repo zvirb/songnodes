@@ -106,6 +106,21 @@ class EnrichmentPipeline:
         self.fuzzy_medium_threshold = 80
         self.fuzzy_low_threshold = 70
 
+        # Fuzzy Artist Matcher configuration (NEW - runs BEFORE Spotify/MusicBrainz lookup)
+        try:
+            from fuzzy_matcher import FuzzyArtistMatcher
+            self.fuzzy_artist_matcher = FuzzyArtistMatcher()
+            self.enable_fuzzy_artist = True
+            logger.info("✅ FuzzyArtistMatcher initialized for artist extraction")
+        except ImportError:
+            self.fuzzy_artist_matcher = None
+            self.enable_fuzzy_artist = False
+            logger.warning("⚠️ FuzzyArtistMatcher not available - fuzzy artist matching disabled")
+
+        # Artist database cache (loaded lazily on first use)
+        self.known_artists_cache = None
+        self.cache_loaded = False
+
         # Statistics
         self.stats = {
             'total_items': 0,
@@ -114,6 +129,8 @@ class EnrichmentPipeline:
             'timestamp_added': 0,
             'text_normalized': 0,
             'remix_parsed': 0,
+            'artist_extracted': 0,
+            'artist_fuzzy_matched': 0,
         }
 
         if self.enable_remix_parser:
@@ -148,6 +165,7 @@ class EnrichmentPipeline:
 
         # Apply enrichment operations
         item = self._add_timestamps(item)
+        item = self._extract_artist_from_title(item)  # NEW: Extract artist from track title FIRST
         item = self._normalize_text_fields(item)
         item = self._parse_remix_info(item)  # NEW: Parse remix/version/label info
         item = self._normalize_genre(item)
@@ -158,6 +176,209 @@ class EnrichmentPipeline:
             item = self._enrich_with_nlp_if_needed(item, spider)
 
         return item
+
+    def _extract_artist_from_title(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract artist name from track title using multi-stage approach.
+
+        This is CRITICAL for data quality - runs BEFORE external API enrichment.
+
+        Multi-stage approach:
+        1. Regex parsing (parse_track_string) - extracts "Artist - Title" format
+        2. Fuzzy matching against known artists database (FuzzyArtistMatcher)
+        3. Confidence scoring and validation
+
+        Args:
+            item: Item to extract artist from
+
+        Returns:
+            Item with artist_name populated (if extraction succeeded)
+        """
+        # Only process track items that are missing artist attribution
+        if item.get('item_type') not in ['track', 'enhancedtrack']:
+            return item
+
+        # Skip if artist already exists and is valid
+        existing_artist = item.get('artist_name', '')
+        if existing_artist and existing_artist not in ['', 'Unknown Artist']:
+            return item
+
+        # Try to extract from track_name or track_title
+        title_field = item.get('track_name') or item.get('track_title') or item.get('title')
+        if not title_field or not isinstance(title_field, str):
+            return item
+
+        try:
+            # STAGE 1: Regex parsing with parse_track_string
+            try:
+                from spiders.utils import parse_track_string
+            except ImportError:
+                import sys
+                from pathlib import Path
+                sys.path.insert(0, str(Path(__file__).parent.parent / 'spiders'))
+                from utils import parse_track_string
+
+            parsed = parse_track_string(title_field)
+            extracted_artist = None
+            clean_title = title_field
+
+            if parsed and parsed.get('primary_artists'):
+                # Extract ALL primary artists (handle collaborations)
+                artists = parsed['primary_artists']
+                if len(artists) == 1:
+                    extracted_artist = artists[0]
+                else:
+                    # Multiple artists - join with " / " (collaboration separator)
+                    extracted_artist = " / ".join(artists)
+                    logger.debug(f"Multiple artists extracted: {extracted_artist}")
+
+                clean_title = parsed.get('track_name', title_field)
+
+            # STAGE 2: Fuzzy matching against known artists (if available)
+            if extracted_artist:
+                matched_artist = self._fuzzy_match_artist(extracted_artist)
+
+                if matched_artist:
+                    # Use the matched canonical artist name from database
+                    final_artist = matched_artist['name']
+                    confidence = matched_artist.get('confidence', 1.0)
+                    self.stats['artist_fuzzy_matched'] += 1
+                    logger.debug(
+                        f"✓ Fuzzy matched artist: '{extracted_artist}' → '{final_artist}' "
+                        f"(confidence: {confidence:.2f})"
+                    )
+                else:
+                    # No fuzzy match, use extracted artist as-is
+                    final_artist = extracted_artist
+
+                # Update item with extracted/matched artist
+                try:
+                    item['artist_name'] = final_artist
+                    self.stats['artist_extracted'] += 1
+                    logger.debug(f"✓ Extracted artist: '{final_artist}' from '{title_field}'")
+                except KeyError:
+                    pass  # Item schema doesn't support artist_name field
+
+                # Update track_name to clean version
+                if clean_title != title_field:
+                    try:
+                        item['track_name'] = clean_title
+                    except KeyError:
+                        pass
+
+        except Exception as e:
+            logger.debug(f"Could not extract artist from '{title_field}': {e}")
+
+        return item
+
+    def _fuzzy_match_artist(self, artist_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Fuzzy match extracted artist name against known artists database.
+
+        Uses FuzzyArtistMatcher with multi-stage cascade:
+        - Exact match (normalized)
+        - Token set ratio (word reordering)
+        - Jaro-Winkler (prefix matching)
+        - Levenshtein (typos)
+
+        Args:
+            artist_name: Extracted artist name to match
+
+        Returns:
+            Matched artist dict with 'name' and 'confidence', or None
+        """
+        if not self.enable_fuzzy_artist or not self.fuzzy_artist_matcher:
+            return None
+
+        try:
+            # Load known artists cache if not already loaded
+            if not self.cache_loaded:
+                self._load_known_artists()
+
+            if not self.known_artists_cache or len(self.known_artists_cache) == 0:
+                return None
+
+            # Match against known artists
+            match_result = self.fuzzy_artist_matcher.match_artist(
+                scraped_name=artist_name,
+                db_candidates=self.known_artists_cache
+            )
+
+            return match_result
+
+        except Exception as e:
+            logger.debug(f"Error during fuzzy artist matching: {e}")
+            return None
+
+    def _load_known_artists(self):
+        """
+        Load known artists from database into cache for fuzzy matching.
+
+        Loads from:
+        1. silver_enriched_tracks (tracks with valid artist names)
+        2. bronze_scraped_tracks (scraped artist names)
+        3. artists table (if exists)
+
+        Builds a deduplicated list of known artist names with aliases.
+        """
+        try:
+            # Import database utilities
+            import asyncio
+            import asyncpg
+            from pathlib import Path
+            import sys
+
+            # Add common module to path
+            common_path = Path(__file__).parent.parent.parent / 'common'
+            if str(common_path) not in sys.path:
+                sys.path.insert(0, str(common_path))
+
+            from secrets_manager import get_database_config
+
+            # Get database config
+            db_config = get_database_config()
+
+            # Connect and fetch known artists
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            try:
+                async def fetch_artists():
+                    conn = await asyncpg.connect(
+                        user=db_config['user'],
+                        password=db_config['password'],
+                        host=db_config['host'],
+                        port=db_config['port'],
+                        database=db_config['database']
+                    )
+
+                    try:
+                        # Fetch distinct artists from silver layer
+                        rows = await conn.fetch("""
+                            SELECT DISTINCT artist_name as name
+                            FROM silver_enriched_tracks
+                            WHERE artist_name IS NOT NULL
+                              AND artist_name != ''
+                              AND artist_name != 'Unknown Artist'
+                            LIMIT 10000
+                        """)
+
+                        return [{'name': row['name'], 'aliases': []} for row in rows]
+
+                    finally:
+                        await conn.close()
+
+                self.known_artists_cache = loop.run_until_complete(fetch_artists())
+                self.cache_loaded = True
+                logger.info(f"✅ Loaded {len(self.known_artists_cache)} known artists for fuzzy matching")
+
+            finally:
+                loop.close()
+
+        except Exception as e:
+            logger.warning(f"⚠️ Could not load known artists cache: {e}")
+            self.known_artists_cache = []
+            self.cache_loaded = True
 
     def _add_timestamps(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -565,6 +786,8 @@ class EnrichmentPipeline:
         logger.info("=" * 80)
         logger.info(f"  Spider: {spider.name}")
         logger.info(f"  Total items processed: {self.stats['total_items']}")
+        logger.info(f"  🎤 Artists extracted from titles: {self.stats['artist_extracted']}")
+        logger.info(f"  🎯 Artists fuzzy matched to known artists: {self.stats['artist_fuzzy_matched']}")
         logger.info(f"  🎧 Remix info parsed: {self.stats['remix_parsed']}")
         logger.info(f"  🔧 NLP enriched: {self.stats['nlp_enriched']}")
         logger.info(f"  🎵 Genres normalized: {self.stats['genre_normalized']}")
@@ -573,8 +796,12 @@ class EnrichmentPipeline:
 
         # Calculate enrichment rates
         if self.stats['total_items'] > 0:
+            artist_rate = (self.stats['artist_extracted'] / self.stats['total_items']) * 100
+            fuzzy_rate = (self.stats['artist_fuzzy_matched'] / self.stats['total_items']) * 100
             remix_rate = (self.stats['remix_parsed'] / self.stats['total_items']) * 100
             nlp_rate = (self.stats['nlp_enriched'] / self.stats['total_items']) * 100
+            logger.info(f"  📈 Artist extraction rate: {artist_rate:.2f}%")
+            logger.info(f"  📈 Fuzzy matching rate: {fuzzy_rate:.2f}%")
             logger.info(f"  📈 Remix parsing rate: {remix_rate:.2f}%")
             logger.info(f"  📈 NLP enrichment rate: {nlp_rate:.2f}%")
 

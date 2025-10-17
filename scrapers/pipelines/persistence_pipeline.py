@@ -1175,7 +1175,12 @@ class PersistencePipeline:
                 continue
 
             try:
-                await self._flush_batch(batch_type)
+                # Shield the flush operation from cancellation to ensure data persistence
+                await asyncio.shield(self._flush_batch(batch_type))
+            except asyncio.CancelledError:
+                # Task was cancelled - log but allow to continue to other batches
+                self.logger.warning(f"⚠️ Flush of {batch_type} batch was cancelled - batch may be incomplete")
+                # Don't clear batch - retry on next flush
             except (GeneratorExit, KeyboardInterrupt, SystemExit):
                 # Don't catch these - they indicate shutdown/cancellation
                 raise

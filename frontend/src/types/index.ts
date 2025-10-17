@@ -362,9 +362,9 @@ export const DEFAULT_CONFIG: AppConfig = {
   graph: {
     maxNodes: 5000,
     maxEdges: 10000,
-    defaultRadius: 8,
-    minRadius: 4,
-    maxRadius: 20,
+    defaultRadius: 16,  // Increased from 8 to 16 for better label background
+    minRadius: 8,       // Increased from 4 to 8
+    maxRadius: 32,      // Increased from 20 to 32
     edgeThreshold: 0.1,
     animationDuration: 300,
   },

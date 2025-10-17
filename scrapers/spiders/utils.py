@@ -128,8 +128,20 @@ def parse_track_string(track_string):
 
             # STEP 4: Primary Artist(s) & Track Title extraction
             # Universal Artist Parser Phase 2: Split primary artists by &, comma, /
-            primary_artists.extend([a.strip() for a in re.split(r'\s*(?:&|,|/)\s*', artist_part)])
-            track_name = title_part
+            # Clean up label brackets from artist names before splitting
+            artist_part_clean = re.sub(r'\s*\[[^\]]+\]', '', artist_part)
+
+            # Split by collaboration delimiters (&, comma, /)
+            artist_candidates = re.split(r'\s*(?:&|,|/)\s*', artist_part_clean)
+
+            # Add each cleaned artist to primary_artists
+            for artist in artist_candidates:
+                cleaned_artist = artist.strip()
+                if cleaned_artist:  # Only add non-empty artists
+                    primary_artists.append(cleaned_artist)
+
+            # Clean track title by removing label brackets
+            track_name = re.sub(r'\s*\[[^\]]+\]', '', title_part).strip()
         else:
             # No " - " separator found
             track_name = temp_string.strip()
