@@ -88,6 +88,13 @@ interface AppState {
     lastDetectionTime: number | null;
   };
 
+  // Simulation state for performance optimization
+  simulationState: {
+    alpha: number;
+    isSettled: boolean;
+    lastAlphaUpdate: number;
+  };
+
   // Loading and error states
   isLoading: boolean;
   error: string | null;
@@ -193,6 +200,11 @@ interface CommunityActions {
   resetCommunities: () => void;
 }
 
+interface SimulationActions {
+  updateSimulationAlpha: (alpha: number) => void;
+  setSimulationSettled: (settled: boolean) => void;
+}
+
 // Combined store interface
 interface StoreState extends AppState {
   // Actions
@@ -206,6 +218,7 @@ interface StoreState extends AppState {
   general: GeneralActions;
   credentials: CredentialActions;
   community: CommunityActions;
+  simulation: SimulationActions;
 
   // Legacy compatibility properties for components
   viewSettings: ViewState;
@@ -308,6 +321,12 @@ const initialState: AppState = {
     highlightedNeighbors: new Set(),
     isDetecting: false,
     lastDetectionTime: null,
+  },
+
+  simulationState: {
+    alpha: 1.0,
+    isSettled: false,
+    lastAlphaUpdate: Date.now(),
   },
 
   isLoading: false,
@@ -1330,6 +1349,33 @@ export const useStore = create<StoreState>()(
                 ...initialState.communityState,
               },
             }), false, 'community/reset');
+          },
+        },
+
+        // Simulation actions
+        simulation: {
+          updateSimulationAlpha: (alpha) => {
+            const ALPHA_SETTLED_THRESHOLD = 0.001;
+            const isSettled = alpha < ALPHA_SETTLED_THRESHOLD;
+
+            set((state) => ({
+              ...state,
+              simulationState: {
+                alpha,
+                isSettled,
+                lastAlphaUpdate: Date.now(),
+              },
+            }), false, 'simulation/updateAlpha');
+          },
+
+          setSimulationSettled: (settled) => {
+            set((state) => ({
+              ...state,
+              simulationState: {
+                ...state.simulationState,
+                isSettled: settled,
+              },
+            }), false, 'simulation/setSettled');
           },
         },
 
