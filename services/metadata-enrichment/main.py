@@ -144,11 +144,12 @@ class EnrichmentConnectionManager:
 
         self.db_engine = create_async_engine(
             database_url,
-            pool_size=15,
-            max_overflow=25,
+            pool_size=20,              # Increased from 15 to handle concurrent batch operations
+            max_overflow=30,            # Increased from 25 for better burst capacity
             pool_timeout=30,
-            pool_recycle=3600,
-            pool_pre_ping=True,
+            pool_recycle=1800,          # Decreased from 3600 (30 min instead of 1 hour) to match PgBouncer
+            pool_pre_ping=True,         # Verify connections before use
+            pool_reset_on_return='rollback',  # Ensure clean state on return
             echo=False,
             future=True
         )
@@ -225,11 +226,12 @@ enrichment_pipeline = None
 config_loader = None
 config_driven_enricher = None
 resource_monitor = None
+discogs_client = None  # Initialize Discogs client as global variable
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
-    global enrichment_pipeline, config_loader, config_driven_enricher, resource_monitor
+    global enrichment_pipeline, config_loader, config_driven_enricher, resource_monitor, discogs_client
 
     logger.info("Starting Metadata Enrichment Service")
 
@@ -825,6 +827,7 @@ async def reset_circuit_breaker_failures(service: str):
 async def process_pending_enrichments_manual(limit: int, correlation_id: str):
     """Process tracks pending enrichment (manual trigger)"""
     try:
+        # Fetch tracks to enrich - session is closed immediately after query
         async with connection_manager.session_factory() as session:
             # Find tracks that need enrichment
             # Priority: retriable failures (circuit breaker) > pending > failed with retries < 3
@@ -865,56 +868,57 @@ async def process_pending_enrichments_manual(limit: int, correlation_id: str):
 
             result = await session.execute(query)
             pending_tracks = result.fetchall()
+        # Session is now closed - connection returned to pool
 
-            logger.info(f"Found {len(pending_tracks)} tracks pending enrichment")
+        logger.info(f"Found {len(pending_tracks)} tracks pending enrichment")
 
-            # Process in batches
-            batch_size = 10
-            for i in range(0, len(pending_tracks), batch_size):
-                batch = pending_tracks[i:i+batch_size]
-                tasks = []
+        # Process in batches - each enrichment task will create its own session as needed
+        batch_size = 10
+        for i in range(0, len(pending_tracks), batch_size):
+            batch = pending_tracks[i:i+batch_size]
+            tasks = []
 
-                for track in batch:
-                    task = EnrichmentTask(
-                        track_id=str(track.id),
-                        artist_name=track.artist_name,
-                        track_title=track.title,
-                        existing_spotify_id=track.spotify_id,
-                        existing_isrc=track.isrc,
-                        existing_musicbrainz_id=track.musicbrainz_id,
-                        correlation_id=correlation_id
-                    )
-                    tasks.append(enrichment_pipeline.enrich_track(task))
+            for track in batch:
+                task = EnrichmentTask(
+                    track_id=str(track.id),
+                    artist_name=track.artist_name,
+                    track_title=track.title,
+                    existing_spotify_id=track.spotify_id,
+                    existing_isrc=track.isrc,
+                    existing_musicbrainz_id=track.musicbrainz_id,
+                    correlation_id=correlation_id
+                )
+                tasks.append(enrichment_pipeline.enrich_track(task))
 
-                # Execute batch
-                results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Execute batch
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
-                # Log results
-                success_count = 0
-                for idx, r in enumerate(results):
-                    if isinstance(r, EnrichmentResult):
-                        logger.debug(f"Result {idx}: status={r.status}, sources={len(r.sources_used)}")
-                        if r.status == EnrichmentStatus.COMPLETED:
-                            success_count += 1
-                        else:
-                            track = batch[idx]
-                            logger.warning(
-                                f"Track enrichment not completed: status={r.status}",
-                                track_id=str(track.id),
-                                status=r.status.value
-                            )
-                    elif isinstance(r, Exception):
+            # Log results
+            success_count = 0
+            for idx, r in enumerate(results):
+                if isinstance(r, EnrichmentResult):
+                    logger.debug(f"Result {idx}: status={r.status}, sources={len(r.sources_used)}")
+                    if r.status == EnrichmentStatus.COMPLETED:
+                        success_count += 1
+                    else:
                         track = batch[idx]
-                        logger.error(
-                            "Track enrichment raised exception",
+                        logger.warning(
+                            f"Track enrichment not completed: status={r.status}",
                             track_id=str(track.id),
-                            error=str(r)
+                            status=r.status.value
                         )
+                elif isinstance(r, Exception):
+                    track = batch[idx]
+                    logger.error(
+                        "Track enrichment raised exception",
+                        track_id=str(track.id),
+                        error=str(r)
+                    )
 
-                logger.info(f"Batch processed: {success_count}/{len(batch)} successful")
+            logger.info(f"Batch processed: {success_count}/{len(batch)} successful")
 
-                # Add delay between batches to respect rate limits
-                await asyncio.sleep(2)
+            # Add delay between batches to respect rate limits
+            await asyncio.sleep(2)
 
     except Exception as e:
         logger.error("Manual enrichment processing failed", error=str(e))
