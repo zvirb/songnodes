@@ -35,7 +35,7 @@ const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:808
 export const PathfinderPanel: React.FC = () => {
   // Use store's graphData which includes any applied filters
   // This ensures pathfinder and visualization use the SAME filtered node set
-  const { graphData, pathfindingState, pathfinding, searchFilters } = useStore();
+  const { graphData, pathfindingState, pathfinding, viewState } = useStore();
 
   const tracks = graphData.nodes;
   const edges = graphData.edges;
@@ -44,31 +44,39 @@ export const PathfinderPanel: React.FC = () => {
   const endTrack = tracks.find(t => t.id === pathfindingState.endTrackId) || null;
   const waypoints = tracks.filter(t => pathfindingState.selectedWaypoints.has(t.id));
 
+  // Get currently selected track from graph visualization
+  const selectedNodeIds = Array.from(viewState.selectedNodes);
+  const currentlySelectedTrack = selectedNodeIds.length > 0
+    ? tracks.find(t => t.id === selectedNodeIds[0]) || null
+    : null;
+
   const [targetDuration, setTargetDuration] = useState<number>(120); // minutes
   const [tolerance, setTolerance] = useState<number>(5); // minutes
   const [preferKeyMatching, setPreferKeyMatching] = useState<boolean>(true);
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<PathfinderResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showTrackSelector, setShowTrackSelector] = useState<'start' | 'end' | 'waypoint' | null>(null);
-
-  // Filter tracks for selector based on search query
-  const filteredTracks = tracks.filter(track => {
-    const query = searchQuery.toLowerCase();
-    const name = (track.name || track.title || '').toLowerCase();
-    const artist = (track.artist || '').toLowerCase();
-    return name.includes(query) || artist.includes(query);
-  });
-
-  const addWaypoint = (track: Track) => {
-    pathfinding.addWaypoint(track.id);
-    setShowTrackSelector(null);
-    setSearchQuery('');
-  };
 
   const removeWaypoint = (trackId: string) => {
     pathfinding.removeWaypoint(trackId);
+  };
+
+  const useSelectedTrackAsStart = () => {
+    if (currentlySelectedTrack) {
+      pathfinding.setStartTrack(currentlySelectedTrack.id);
+    }
+  };
+
+  const useSelectedTrackAsEnd = () => {
+    if (currentlySelectedTrack) {
+      pathfinding.setEndTrack(currentlySelectedTrack.id);
+    }
+  };
+
+  const useSelectedTrackAsWaypoint = () => {
+    if (currentlySelectedTrack) {
+      pathfinding.addWaypoint(currentlySelectedTrack.id);
+    }
   };
 
   const formatDuration = (ms: number): string => {
@@ -154,56 +162,8 @@ export const PathfinderPanel: React.FC = () => {
     }
   };
 
-  // Track Selector Modal
-  const TrackSelector = ({ onSelect, onClose }: { onSelect: (track: Track) => void; onClose: () => void }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Select Track</h3>
-
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search tracks..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-          autoFocus
-        />
-
-        <div className="flex-1 overflow-y-auto">
-          {filteredTracks.map(track => (
-            <div
-              key={track.id}
-              onClick={() => onSelect(track as any)}
-              className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200"
-            >
-              <div className="font-medium">{track.name || track.title}</div>
-              <div className="text-sm text-gray-600">{track.artist}</div>
-              {track.track?.camelotKey && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Key: {track.track.camelotKey} {track.track.bpm && `• ${track.track.bpm} BPM`}
-                </div>
-              )}
-            </div>
-          ))}
-          {filteredTracks.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No tracks found
-            </div>
-          )}
-        </div>
-
-        <button
-          onClick={onClose}
-          className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="h-full flex flex-col space-y-4 overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0">
         <h2 className="text-xl font-semibold mb-4">DJ Set Pathfinder</h2>
         <p className="text-sm text-gray-600 mb-4">
@@ -218,7 +178,16 @@ export const PathfinderPanel: React.FC = () => {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+      {/* Currently Selected Track Info */}
+      {currentlySelectedTrack && (
+        <div className="flex-shrink-0 p-3 bg-purple-50 border border-purple-200 rounded-md">
+          <div className="text-xs font-semibold text-purple-700 mb-1">Currently Selected Track:</div>
+          <div className="font-medium text-sm">{currentlySelectedTrack.name || currentlySelectedTrack.title}</div>
+          <div className="text-xs text-gray-600">{currentlySelectedTrack.artist}</div>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
         {/* Track Selection */}
         <div className="space-y-3">
           <div>
@@ -227,24 +196,24 @@ export const PathfinderPanel: React.FC = () => {
             </label>
             {startTrack ? (
               <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
-                <div>
-                  <div className="font-medium">{startTrack.name || startTrack.title}</div>
-                  <div className="text-sm text-gray-600">{startTrack.artist}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{startTrack.name || startTrack.title}</div>
+                  <div className="text-sm text-gray-600 truncate">{startTrack.artist}</div>
                 </div>
                 <button
                   onClick={() => pathfinding.setStartTrack(null as any)}
-                  className="text-red-600 hover:text-red-800"
+                  className="ml-2 px-2 py-1 text-xs text-red-600 hover:text-red-800"
                 >
                   Remove
                 </button>
               </div>
             ) : (
               <button
-                onClick={() => setShowTrackSelector('start')}
-                disabled={tracks.length === 0}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={useSelectedTrackAsStart}
+                disabled={!currentlySelectedTrack || tracks.length === 0}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-green-400 hover:text-green-800 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                + Select Start Track
+                {currentlySelectedTrack ? '✓ Use Selected Track as Start' : 'Select a track on the graph first'}
               </button>
             )}
           </div>
@@ -255,24 +224,24 @@ export const PathfinderPanel: React.FC = () => {
             </label>
             {endTrack ? (
               <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <div>
-                  <div className="font-medium">{endTrack.name || endTrack.title}</div>
-                  <div className="text-sm text-gray-600">{endTrack.artist}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{endTrack.name || endTrack.title}</div>
+                  <div className="text-sm text-gray-600 truncate">{endTrack.artist}</div>
                 </div>
                 <button
                   onClick={() => pathfinding.setEndTrack(null as any)}
-                  className="text-red-600 hover:text-red-800"
+                  className="ml-2 px-2 py-1 text-xs text-red-600 hover:text-red-800"
                 >
                   Remove
                 </button>
               </div>
             ) : (
               <button
-                onClick={() => setShowTrackSelector('end')}
-                disabled={tracks.length === 0}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={useSelectedTrackAsEnd}
+                disabled={!currentlySelectedTrack || tracks.length === 0}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-400 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                + Select End Track
+                {currentlySelectedTrack ? '✓ Use Selected Track as End' : 'Select a track on the graph first'}
               </button>
             )}
           </div>
@@ -284,13 +253,13 @@ export const PathfinderPanel: React.FC = () => {
             <div className="space-y-2 mb-2">
               {waypoints.map(waypoint => (
                 <div key={waypoint.id} className="flex items-center justify-between p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <div className="text-sm">
-                    <div className="font-medium">{waypoint.name || waypoint.title}</div>
-                    <div className="text-gray-600">{waypoint.artist}</div>
+                  <div className="text-sm flex-1 min-w-0">
+                    <div className="font-medium truncate">{waypoint.name || waypoint.title}</div>
+                    <div className="text-gray-600 truncate">{waypoint.artist}</div>
                   </div>
                   <button
                     onClick={() => removeWaypoint(waypoint.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
+                    className="ml-2 px-2 py-1 text-xs text-red-600 hover:text-red-800"
                   >
                     Remove
                   </button>
@@ -298,11 +267,11 @@ export const PathfinderPanel: React.FC = () => {
               ))}
             </div>
             <button
-              onClick={() => setShowTrackSelector('waypoint')}
-              disabled={tracks.length === 0}
-              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={useSelectedTrackAsWaypoint}
+              disabled={!currentlySelectedTrack || tracks.length === 0}
+              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-yellow-400 hover:text-yellow-800 hover:bg-yellow-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              + Add Waypoint Track
+              {currentlySelectedTrack ? '✓ Use Selected Track as Waypoint' : 'Select a track on the graph first'}
             </button>
           </div>
         </div>
@@ -446,27 +415,6 @@ export const PathfinderPanel: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Track Selector Modal */}
-      {showTrackSelector && (
-        <TrackSelector
-          onSelect={(track) => {
-            if (showTrackSelector === 'start') {
-              pathfinding.setStartTrack(track.id);
-            } else if (showTrackSelector === 'end') {
-              pathfinding.setEndTrack(track.id);
-            } else if (showTrackSelector === 'waypoint') {
-              addWaypoint(track);
-            }
-            setShowTrackSelector(null);
-            setSearchQuery('');
-          }}
-          onClose={() => {
-            setShowTrackSelector(null);
-            setSearchQuery('');
-          }}
-        />
-      )}
     </div>
   );
 };
