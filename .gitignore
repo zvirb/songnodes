@@ -183,11 +183,16 @@ fix_main_py.py
 run_playwright_test.py
 test-data-integrity.js
 playwright.ci.config.js
+
 # Test results and screenshots
 *.png
 frontend/tests/reports/
 frontend-tests/
 test-*.js
+final-test-results/
+
+# Archived documentation
+docs/reports/archive*/
 
 
 # Test reports
