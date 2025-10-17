@@ -423,6 +423,10 @@ class AssignArtistRequest(BaseModel):
     artist_id: str
     role: str = "primary"
 
+class RenameArtistRequest(BaseModel):
+    """Request to rename an artist"""
+    new_name: str
+
 @app.get("/api/v1/artists/dirty", response_model=List[DirtyArtistResponse])
 async def get_dirty_artists(limit: int = 50, offset: int = 0):
     """
@@ -476,7 +480,7 @@ async def get_dirty_artists(limit: int = 50, offset: int = 0):
 
                 # Check if clean name conflicts with existing artist
                 conflict_check = await conn.fetchval(
-                    "SELECT EXISTS(SELECT 1 FROM artists WHERE name = $1 AND id != $2::uuid)",
+                    "SELECT EXISTS(SELECT 1 FROM artists WHERE name = $1 AND artist_id != $2::uuid)",
                     clean_name, row['artist_id']
                 )
 
@@ -497,15 +501,16 @@ async def get_dirty_artists(limit: int = 50, offset: int = 0):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/artists/{artist_id}/rename")
-async def rename_artist(artist_id: str, new_name: str):
+async def rename_artist(artist_id: str, request: RenameArtistRequest):
     """
     Rename an artist (for manual correction of dirty names).
     """
     try:
+        new_name = request.new_name
         async with db_pool.acquire() as conn:
             # Check if new name conflicts with existing artist
             existing = await conn.fetchval(
-                "SELECT id FROM artists WHERE name = $1 AND id != $2::uuid",
+                "SELECT artist_id FROM artists WHERE name = $1 AND artist_id != $2::uuid",
                 new_name, artist_id
             )
 
@@ -520,8 +525,8 @@ async def rename_artist(artist_id: str, new_name: str):
                 """
                 UPDATE artists
                 SET name = $1, updated_at = CURRENT_TIMESTAMP
-                WHERE id = $2::uuid
-                RETURNING id, name, updated_at
+                WHERE artist_id = $2::uuid
+                RETURNING artist_id, name, updated_at
                 """,
                 new_name, artist_id
             )
@@ -531,7 +536,7 @@ async def rename_artist(artist_id: str, new_name: str):
 
             logger.info(f"Renamed artist {artist_id} to '{new_name}'")
             return {
-                "artist_id": str(result['id']),
+                "artist_id": str(result["artist_id"]),
                 "name": result['name'],
                 "updated_at": result['updated_at'].isoformat()
             }
