@@ -11,9 +11,14 @@ Best Practices:
 - Return None to filter out invalid values
 """
 import re
+import sys
 from datetime import datetime
 from typing import Optional, Union
 from urllib.parse import urlparse, urljoin
+
+# Add common directory to path for shared utilities
+sys.path.insert(0, '/app/common')
+from artist_name_cleaner import normalize_artist_name as _normalize_artist_name
 
 
 # ============================================================================
@@ -338,29 +343,29 @@ def extract_domain(value: str) -> Optional[str]:
 
 def normalize_artist_name(value: str) -> str:
     """
-    Normalize artist name for matching.
+    Normalize artist name for matching and remove tracklist formatting artifacts.
 
-    - Remove "The " prefix
-    - Strip whitespace
-    - Normalize separators
+    This is a wrapper around the shared artist_name_cleaner module
+    to ensure consistency across scraping, enrichment, and cleanup scripts.
 
-    Example:
-        "The Chemical Brothers" -> "Chemical Brothers"
-        "Daft  Punk" -> "Daft Punk"
+    Removes:
+    - Timestamp prefixes: [40:54], [??:??], [?:??:??]
+    - Special character prefixes: +, + #, *, -
+    - Bracketed placeholders: [??]
+    - "The " prefix (for matching)
+
+    Normalizes:
+    - Whitespace
+    - Ampersands (&  → and)
+
+    Examples:
+        "[40:54] Laurent Wolf" → "Laurent Wolf"
+        "+ # Deadmau5" → "Deadmau5"
+        "[??] ARTBAT" → "ARTBAT"
+        "The Chemical Brothers" → "Chemical Brothers"
+        "Daft  Punk" → "Daft Punk"
     """
-    if not value:
-        return value
-
-    normalized = strip_text(value)
-
-    # Remove "The " prefix (case-insensitive)
-    if normalized.lower().startswith('the '):
-        normalized = normalized[4:]
-
-    # Normalize ampersands
-    normalized = normalized.replace(' & ', ' and ')
-
-    return normalized.strip()
+    return _normalize_artist_name(value) if value else value
 
 
 def clean_track_title(value: str) -> str:

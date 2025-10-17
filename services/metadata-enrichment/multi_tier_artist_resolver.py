@@ -10,6 +10,7 @@ Author: Metadata Enrichment System
 """
 
 import re
+import sys
 import asyncio
 from typing import Optional, List, Dict, Tuple, Set
 from dataclasses import dataclass
@@ -18,6 +19,10 @@ import structlog
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# Add common directory to path for shared utilities
+sys.path.insert(0, '/app/common')
+from artist_name_cleaner import clean_artist_name, normalize_artist_name
 
 logger = structlog.get_logger(__name__)
 
@@ -179,17 +184,17 @@ class MultiTierArtistResolver:
         async with self.db_session_factory() as session:
             query = text("""
                 SELECT
-                    t.label,
+                    t.metadata->>'label' as label,
                     a.name as artist_name,
                     COUNT(*) as track_count
                 FROM tracks t
                 JOIN track_artists ta ON t.id = ta.track_id
                 JOIN artists a ON ta.artist_id = a.artist_id
-                WHERE t.label IS NOT NULL
+                WHERE t.metadata->>'label' IS NOT NULL
                   AND ta.role = 'primary'
-                GROUP BY t.label, a.name
+                GROUP BY t.metadata->>'label', a.name
                 HAVING COUNT(*) >= 2  -- Only include artists with 2+ tracks on label
-                ORDER BY t.label, track_count DESC
+                ORDER BY t.metadata->>'label', track_count DESC
             """)
             
             result = await session.execute(query)
@@ -266,7 +271,7 @@ class MultiTierArtistResolver:
                     SELECT
                         t.id,
                         t.title,
-                        t.label,
+                        t.metadata->>'label' as label,
                         t.spotify_id,
                         t.isrc,
                         a.name as artist_name,
@@ -345,7 +350,7 @@ class MultiTierArtistResolver:
                 search_query = text("""
                     SELECT
                         t.title,
-                        t.label,
+                        t.metadata->>'label' as label,
                         STRING_AGG(a.name, ', ') as artist_names,
                         MAX(similarity(t.normalized_title, :search_title)) as similarity
                     FROM tracks t
@@ -353,7 +358,7 @@ class MultiTierArtistResolver:
                     JOIN artists a ON ta.artist_id = a.artist_id
                     WHERE ta.role = 'primary'
                       AND similarity(t.normalized_title, :search_title) > 0.7
-                    GROUP BY t.id, t.title, t.label
+                    GROUP BY t.id, t.title, t.metadata->>'label'
                     ORDER BY similarity DESC
                     LIMIT 1
                 """)
@@ -667,6 +672,9 @@ class MultiTierArtistResolver:
         
         async with self.db_session_factory() as session:
             for artist_name in candidate.artist_names:
+                # Clean artist name to remove tracklist formatting artifacts
+                clean_name = clean_artist_name(artist_name)
+
                 # Get or create artist
                 artist_query = text("""
                     INSERT INTO artists (name, normalized_name)
@@ -675,12 +683,12 @@ class MultiTierArtistResolver:
                     SET name = EXCLUDED.name
                     RETURNING artist_id
                 """)
-                
+
                 result = await session.execute(
                     artist_query,
                     {
-                        'name': artist_name,
-                        'normalized_name': artist_name.lower().strip()
+                        'name': clean_name,
+                        'normalized_name': normalize_artist_name(clean_name)
                     }
                 )
                 artist_id = result.scalar()
@@ -704,10 +712,15 @@ class MultiTierArtistResolver:
             if candidate.label:
                 update_label_query = text("""
                     UPDATE tracks
-                    SET label = :label
-                    WHERE id = :track_id AND label IS NULL
+                    SET metadata = jsonb_set(
+                        COALESCE(metadata, '{}'::jsonb),
+                        '{label}',
+                        to_jsonb(:label::text),
+                        true
+                    )
+                    WHERE id = :track_id AND (metadata->>'label' IS NULL OR metadata->>'label' = '')
                 """)
-                
+
                 await session.execute(
                     update_label_query,
                     {'track_id': track_id, 'label': candidate.label}
@@ -855,7 +868,7 @@ async def enrich_failed_tracks_with_multi_tier_resolver(
             SELECT
                 t.id,
                 t.title,
-                t.label,
+                t.metadata->>'label' as label,
                 COALESCE(
                     (SELECT string_agg(a.name, ', ')
                      FROM track_artists ta
