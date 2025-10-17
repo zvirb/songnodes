@@ -399,6 +399,30 @@ class DirtyArtistResponse(BaseModel):
     has_conflict: bool = False
     pattern_type: str
 
+class TrackWithoutArtistResponse(BaseModel):
+    """Track missing primary artist attribution"""
+    track_id: str
+    title: str
+    importance: float = 0.0
+    setlist_count: int = 0
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+class ArtistSearchResult(BaseModel):
+    """Artist search result with match scoring"""
+    artist_id: str
+    name: str
+    match_score: float = 1.0
+    track_count: int = 0
+    spotify_id: Optional[str] = None
+    genres: Optional[List[str]] = None
+
+class AssignArtistRequest(BaseModel):
+    """Request to assign artist to track"""
+    track_id: str
+    artist_id: str
+    role: str = "primary"
+
 @app.get("/api/v1/artists/dirty", response_model=List[DirtyArtistResponse])
 async def get_dirty_artists(limit: int = 50, offset: int = 0):
     """
@@ -410,22 +434,20 @@ async def get_dirty_artists(limit: int = 50, offset: int = 0):
     - Special character prefixes: +, -, *
     """
     try:
-        # Import the cleaning function
-        import sys
-        sys.path.insert(0, '/app/common')
-        from artist_name_cleaner import clean_artist_name, has_formatting_artifacts
+        # Import the cleaning function from common module
+        from common.artist_name_cleaner import clean_artist_name, has_formatting_artifacts
 
         async with db_pool.acquire() as conn:
             # Get dirty artists with track counts
             query = """
             SELECT
-                a.id::text as artist_id,
+                a.artist_id::text as artist_id,
                 a.name,
                 COUNT(ta.track_id) as track_count
             FROM artists a
-            LEFT JOIN track_artists ta ON a.id = ta.artist_id
+            LEFT JOIN track_artists ta ON a.artist_id = ta.artist_id
             WHERE a.name ~ '^\[' OR a.name ~ '^[+*-] '
-            GROUP BY a.id, a.name
+            GROUP BY a.artist_id, a.name
             ORDER BY COUNT(ta.track_id) DESC, a.name
             LIMIT $1 OFFSET $2
             """
@@ -518,6 +540,219 @@ async def rename_artist(artist_id: str, new_name: str):
         raise
     except Exception as e:
         logger.error(f"Failed to rename artist {artist_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# =============================================================================
+# Artist Attribution Manager Endpoints
+# =============================================================================
+
+@app.get("/api/v1/tracks/missing-artist", response_model=List[TrackWithoutArtistResponse])
+async def get_tracks_without_artist(
+    limit: int = 50,
+    offset: int = 0,
+    sort_by: str = "importance"
+):
+    """
+    Get tracks without primary artist attribution from Gold layer.
+
+    These tracks block the enrichment pipeline and need manual artist assignment.
+    Sorted by importance (setlist count) to prioritize high-value tracks.
+
+    Args:
+        limit: Maximum number of tracks to return
+        offset: Number of tracks to skip for pagination
+        sort_by: Sort order - 'importance' (setlist count) or 'alphabetical' (title)
+
+    Returns:
+        List of tracks missing primary artist attribution
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Sort clause based on parameter
+            if sort_by == "alphabetical":
+                order_clause = "ORDER BY t.title"
+            else:
+                order_clause = "ORDER BY setlist_count DESC, t.title"
+
+            # Query tracks without primary artist from Gold layer
+            query = f"""
+            SELECT
+                t.id::text as track_id,
+                t.title,
+                COUNT(DISTINCT st.setlist_id) as setlist_count,
+                t.created_at,
+                t.updated_at
+            FROM tracks t
+            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+            LEFT JOIN setlist_tracks st ON t.id = st.track_id
+            WHERE ta.artist_id IS NULL
+            GROUP BY t.id, t.title, t.created_at, t.updated_at
+            {order_clause}
+            LIMIT $1 OFFSET $2
+            """
+
+            rows = await conn.fetch(query, limit, offset)
+
+            tracks = []
+            for row in rows:
+                tracks.append(TrackWithoutArtistResponse(
+                    track_id=row['track_id'],
+                    title=row['title'],
+                    importance=float(row['setlist_count']),
+                    setlist_count=row['setlist_count'],
+                    created_at=row['created_at'],
+                    updated_at=row['updated_at']
+                ))
+
+            logger.info(f"Found {len(tracks)} tracks without primary artist (limit={limit}, offset={offset}, sort={sort_by})")
+            return tracks
+
+    except Exception as e:
+        logger.error(f"Failed to fetch tracks without artist: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/artists/search", response_model=List[ArtistSearchResult])
+async def search_artists(query: str, limit: int = 20):
+    """
+    Search artists by name with fuzzy matching.
+
+    Uses PostgreSQL ILIKE for pattern matching, returning results sorted by
+    match quality (exact matches first, then partial matches).
+
+    Args:
+        query: Artist name search query
+        limit: Maximum number of results to return
+
+    Returns:
+        List of matching artists with track counts
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Fuzzy search with ILIKE pattern matching
+            search_query = """
+            SELECT
+                a.id::text as artist_id,
+                a.name,
+                a.spotify_id,
+                a.genres,
+                COUNT(DISTINCT ta.track_id) as track_count,
+                CASE
+                    WHEN LOWER(a.name) = LOWER($1) THEN 1.0
+                    WHEN LOWER(a.name) LIKE LOWER($1 || '%') THEN 0.9
+                    WHEN LOWER(a.name) LIKE LOWER('%' || $1 || '%') THEN 0.7
+                    ELSE 0.5
+                END as match_score
+            FROM artists a
+            LEFT JOIN track_artists ta ON a.id = ta.artist_id
+            WHERE a.name ILIKE $2
+            GROUP BY a.id, a.name, a.spotify_id, a.genres
+            ORDER BY match_score DESC, track_count DESC, a.name
+            LIMIT $3
+            """
+
+            search_pattern = f"%{query}%"
+            rows = await conn.fetch(search_query, query, search_pattern, limit)
+
+            results = []
+            for row in rows:
+                results.append(ArtistSearchResult(
+                    artist_id=row['artist_id'],
+                    name=row['name'],
+                    match_score=float(row['match_score']),
+                    track_count=row['track_count'],
+                    spotify_id=row['spotify_id'],
+                    genres=row['genres'] if row['genres'] else None
+                ))
+
+            logger.info(f"Artist search for '{query}' returned {len(results)} results")
+            return results
+
+    except Exception as e:
+        logger.error(f"Failed to search artists: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/tracks/{track_id}/assign-artist")
+async def assign_artist_to_track(track_id: str, request: AssignArtistRequest):
+    """
+    Assign an artist to a track via the track_artists junction table.
+
+    Creates a primary artist relationship for the track. If the track already
+    has a primary artist, this will fail with a 409 conflict.
+
+    Args:
+        track_id: Track ID (UUID format)
+        request: Artist assignment details (artist_id, role)
+
+    Returns:
+        Success status and created relationship details
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            # Verify track exists
+            track_exists = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM tracks WHERE id = $1::uuid)",
+                track_id
+            )
+            if not track_exists:
+                raise HTTPException(status_code=404, detail=f"Track '{track_id}' not found")
+
+            # Verify artist exists
+            artist_exists = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM artists WHERE id = $1::uuid)",
+                request.artist_id
+            )
+            if not artist_exists:
+                raise HTTPException(status_code=404, detail=f"Artist '{request.artist_id}' not found")
+
+            # Check if primary artist already assigned
+            if request.role == "primary":
+                existing_primary = await conn.fetchval(
+                    """
+                    SELECT EXISTS(
+                        SELECT 1 FROM track_artists
+                        WHERE track_id = $1::uuid AND role = 'primary'
+                    )
+                    """,
+                    track_id
+                )
+                if existing_primary:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Track already has a primary artist. Remove existing attribution first."
+                    )
+
+            # Insert track_artists relationship
+            result = await conn.fetchrow(
+                """
+                INSERT INTO track_artists (track_id, artist_id, role, position)
+                VALUES ($1::uuid, $2::uuid, $3, 0)
+                ON CONFLICT (track_id, artist_id, role) DO NOTHING
+                RETURNING track_id, artist_id, role, position, created_at
+                """,
+                track_id, request.artist_id, request.role
+            )
+
+            if not result:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Artist already assigned to this track with this role"
+                )
+
+            logger.info(f"✅ Assigned artist {request.artist_id} to track {track_id} (role={request.role})")
+
+            return {
+                "success": True,
+                "track_id": str(result['track_id']),
+                "artist_id": str(result['artist_id']),
+                "role": result['role'],
+                "position": result['position'],
+                "created_at": result['created_at'].isoformat()
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to assign artist to track {track_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/artists/{artist_id}", response_model=ArtistResponse)
