@@ -14,8 +14,8 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [yearRange, setYearRange] = useState<[number, number]>([1990, new Date().getFullYear()]);
   const [minConnectionStrength, setMinConnectionStrength] = useState<number>(1);
-  const [maxNodes, setMaxNodes] = useState<number>(500);
-  const [maxEdges, setMaxEdges] = useState<number>(5000);
+  const [maxNodes, setMaxNodes] = useState<number>(15000);
+  const [maxEdges, setMaxEdges] = useState<number>(50000);
 
   // Extract available data
   const { genres, years, connectionStrengths, totalNodes, totalEdges } = useMemo(() => {
