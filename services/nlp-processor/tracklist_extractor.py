@@ -51,7 +51,7 @@ class TracklistExtractor:
         return self._deduplicate_tracks(tracks)
 
     def _extract_structured_patterns(self, text: str, extract_timestamps: bool) -> List[Dict]:
-        """Extract from well-formatted tracklists"""
+        """Extract from well-formatted tracklists using expanded pattern library"""
         tracks = []
 
         # Pattern 1: [00:00] Artist - Track
@@ -75,7 +75,7 @@ class TracklistExtractor:
                     'confidence': 0.9
                 })
 
-        # Pattern 3: 1. Artist - Track (numbered)
+        # Pattern 3: 1. Artist - Track (numbered with period)
         if not tracks:
             pattern3 = r'^\s*\d+\.\s+([^-\n]+)\s+-\s+([^\n]+)'
             for match in re.finditer(pattern3, text, re.MULTILINE):
@@ -85,10 +85,88 @@ class TracklistExtractor:
                     'confidence': 0.85
                 })
 
-        # Pattern 4: Artist - Track (ID) [Label]
+        # Pattern 4: 01) Artist - Track (numbered with parenthesis)
         if not tracks:
-            pattern4 = r'([A-Z][a-zA-Z\s&]+)\s+-\s+([^\[\(\n]+)(?:\s*\[([^\]]+)\])?(?:\s*\(([^\)]+)\))?'
-            for match in re.finditer(pattern4, text, re.MULTILINE):
+            pattern4_parens = r'^\s*\d+\)\s+([^-\n]+)\s+-\s+([^\n]+)'
+            for match in re.finditer(pattern4_parens, text, re.MULTILINE):
+                tracks.append({
+                    'artist': self._clean_text(match.group(1)),
+                    'title': self._clean_text(match.group(2)),
+                    'confidence': 0.85
+                })
+
+        # Pattern 5: Artist / Track (DJ-style slash separator)
+        if not tracks:
+            pattern5_slash = r'^\s*([A-Z][^/\n]{2,40})\s*/\s*([^\n]+)'
+            for match in re.finditer(pattern5_slash, text, re.MULTILINE):
+                tracks.append({
+                    'artist': self._clean_text(match.group(1)),
+                    'title': self._clean_text(match.group(2)),
+                    'confidence': 0.80
+                })
+
+        # Pattern 6: [CAT123] Artist - Track (catalog number prefix)
+        if not tracks:
+            pattern6_catalog = r'\[([^\]]+)\]\s+([^-\n]+)\s+-\s+([^\n]+)'
+            for match in re.finditer(pattern6_catalog, text, re.MULTILINE):
+                # Check if first group looks like catalog number
+                catalog = match.group(1)
+                if re.match(r'^[A-Z]{2,5}\d{2,6}$|^[A-Z]+\s*\d+$', catalog):
+                    tracks.append({
+                        'artist': self._clean_text(match.group(2)),
+                        'title': self._clean_text(match.group(3)),
+                        'catalog_number': self._clean_text(catalog),
+                        'confidence': 0.88
+                    })
+
+        # Pattern 7: Track 01: Artist - Track
+        if not tracks:
+            pattern7_track_prefix = r'Track\s+\d+:\s+([^-\n]+)\s+-\s+([^\n]+)'
+            for match in re.finditer(pattern7_track_prefix, text, re.MULTILINE | re.IGNORECASE):
+                tracks.append({
+                    'artist': self._clean_text(match.group(1)),
+                    'title': self._clean_text(match.group(2)),
+                    'confidence': 0.87
+                })
+
+        # Pattern 8: Artist – Track (em dash)
+        if not tracks:
+            pattern8_emdash = r'^\s*([A-Z][^–\n]{2,40})\s*–\s*([^\n]+)'
+            for match in re.finditer(pattern8_emdash, text, re.MULTILINE):
+                tracks.append({
+                    'artist': self._clean_text(match.group(1)),
+                    'title': self._clean_text(match.group(2)),
+                    'confidence': 0.83
+                })
+
+        # Pattern 9: [Label] Artist - Track
+        if not tracks:
+            pattern9_label_prefix = r'\[([A-Za-z\s&]+)\]\s+([^-\n]+)\s+-\s+([^\n]+)'
+            for match in re.finditer(pattern9_label_prefix, text, re.MULTILINE):
+                label = match.group(1).strip()
+                # Check if it looks like a label (not a catalog number or time)
+                if not re.match(r'^\d', label) and len(label) > 2:
+                    tracks.append({
+                        'artist': self._clean_text(match.group(2)),
+                        'title': self._clean_text(match.group(3)),
+                        'label': self._clean_text(label),
+                        'confidence': 0.84
+                    })
+
+        # Pattern 10: "Artist" - "Track" (quoted format)
+        if not tracks:
+            pattern10_quoted = r'\"([^\"]+)\"\s*-\s*\"([^\"]+)\"'
+            for match in re.finditer(pattern10_quoted, text, re.MULTILINE):
+                tracks.append({
+                    'artist': self._clean_text(match.group(1)),
+                    'title': self._clean_text(match.group(2)),
+                    'confidence': 0.86
+                })
+
+        # Pattern 11: Artist - Track (ID) [Label] (original Pattern 4 from before)
+        if not tracks:
+            pattern11 = r'([A-Z][a-zA-Z\s&]+)\s+-\s+([^\[\(\n]+)(?:\s*\[([^\]]+)\])?(?:\s*\(([^\)]+)\))?'
+            for match in re.finditer(pattern11, text, re.MULTILINE):
                 track = {
                     'artist': self._clean_text(match.group(1)),
                     'title': self._clean_text(match.group(2)),
@@ -99,6 +177,18 @@ class TracklistExtractor:
                 if match.group(4):  # ID/Remix info
                     track['remix_info'] = self._clean_text(match.group(4))
                 tracks.append(track)
+
+        # Pattern 12: Detect "ID - ID" or "Unknown - Unknown" (mark explicitly)
+        if not tracks:
+            pattern12_id = r'(?:ID|Unknown|TBD|TBA)\s*-\s*(?:ID|Unknown|TBD|TBA)'
+            for match in re.finditer(pattern12_id, text, re.MULTILINE | re.IGNORECASE):
+                # Mark these explicitly as unknown so we don't waste enrichment API calls
+                tracks.append({
+                    'artist': 'ID',
+                    'title': 'ID',
+                    'confidence': 0.99,  # High confidence that it's intentionally unknown
+                    'is_id': True  # Flag for special handling
+                })
 
         return tracks
 

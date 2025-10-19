@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator, constr,
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date, timezone
 from enum import Enum
+from uuid import UUID
 import re
 
 
@@ -432,7 +433,7 @@ class SetlistCreate(SetlistBase):
 
 class SetlistResponse(SetlistBase):
     """Setlist response model with database ID"""
-    playlist_id: int
+    playlist_id: UUID  # Database uses UUID, not int
     created_at: datetime
     updated_at: Optional[datetime] = None
 

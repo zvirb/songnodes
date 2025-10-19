@@ -87,6 +87,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
   const setError = useStore(state => state.general.setError);
   const setLoading = useStore(state => state.general.setLoading);
 
+  // ✅ NEW: Watch for authentication changes
+  const musicCredentials = useStore(state => state.musicCredentials);
+
   // Refs for cleanup
   const intervalRef = useRef<NodeJS.Timeout>();
   const websocketRef = useRef<WebSocket>();
@@ -265,10 +268,25 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       setLoading(true);
       const startTime = performance.now();
 
-      // Parallel fetch of nodes and edges
+      // ✅ NEW: Build authentication headers if credentials available
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add Tidal auth if available
+      if (musicCredentials.tidal?.accessToken && musicCredentials.tidal?.isConnected) {
+        headers['X-Tidal-Access-Token'] = musicCredentials.tidal.accessToken;
+      }
+
+      // Add Spotify auth if available
+      if (musicCredentials.spotify?.accessToken && musicCredentials.spotify?.isConnected) {
+        headers['X-Spotify-Access-Token'] = musicCredentials.spotify.accessToken;
+      }
+
+      // Parallel fetch of nodes and edges with auth headers
       const [nodesResponse, edgesResponse] = await Promise.all([
-        fetch('/api/graph/nodes?limit=1000'),
-        fetch('/api/graph/edges?limit=10000')
+        fetch('/api/graph/nodes?limit=1000', { headers }),
+        fetch('/api/graph/edges?limit=10000', { headers })
       ]);
 
       if (!nodesResponse.ok || !edgesResponse.ok) {
@@ -282,7 +300,14 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
 
       // Transform and validate data
       // ✅ FILTER: Exclude tracks without valid artist attribution
+      const allNodesCount = (nodesData.nodes || []).length;
       const validNodesData = (nodesData.nodes || []).filter((node: any) => hasValidArtist(node));
+      const filteredCount = allNodesCount - validNodesData.length;
+
+      // ✅ NEW: Log warning if nodes were filtered out
+      if (filteredCount > 0) {
+        console.warn(`⚠️ Filtered out ${filteredCount} nodes due to missing/invalid artist attribution (${allNodesCount} total → ${validNodesData.length} valid)`);
+      }
 
       const nodes: GraphNode[] = validNodesData.map((node: any) => ({
         id: node.id,
@@ -360,7 +385,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       setIsLoading(false);
       setLoading(false);
     }
-  }, [setGraphData, setLoading, setError, addRecentUpdate, onDataUpdate, onError]);
+  }, [musicCredentials, setGraphData, setLoading, setError, addRecentUpdate, onDataUpdate, onError]);
 
   // Start performance tracking
   const startPerformanceTracking = useCallback(() => {
@@ -420,6 +445,30 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       }
     };
   }, [autoStart, fetchGraphData, connectWebSocket, startPerformanceTracking, updateInterval]);
+
+  // ✅ NEW: Watch for authentication changes and reload graph data
+  useEffect(() => {
+    // Skip initial mount (already loaded by autoStart)
+    if (!autoStart) return;
+
+    // Check if either service is connected
+    const tidalConnected = musicCredentials.tidal?.isConnected ?? false;
+    const spotifyConnected = musicCredentials.spotify?.isConnected ?? false;
+    const hasAuth = tidalConnected || spotifyConnected;
+
+    // Only reload if we have authentication
+    if (hasAuth) {
+      console.log('🔄 Authentication status changed, reloading graph data with credentials...');
+      fetchGraphData();
+    }
+  }, [
+    musicCredentials.tidal?.isConnected,
+    musicCredentials.spotify?.isConnected,
+    musicCredentials.tidal?.accessToken,
+    musicCredentials.spotify?.accessToken,
+    autoStart,
+    fetchGraphData
+  ]);
 
   // Don't render status if disabled
   if (!showStatus) return null;

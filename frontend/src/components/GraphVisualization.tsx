@@ -2196,7 +2196,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     node.pixiNode.position.set(node.x || 0, node.y || 0);
 
     // GPU-OPTIMIZED: Cached glow sprite instead of Graphics
-    let glow = node.pixiNode.getChildByName('glow') as PIXI.Sprite;
+    let glow = node.pixiNode.getChildByLabel('glow') as PIXI.Sprite; // PixiJS v8: use getChildByLabel instead of getChildByName
     const isHoveredOrSelected = viewState.hoveredNode === node.id || viewState.selectedNodes.has(node.id);
 
     if (isHoveredOrSelected && lodLevel < 2) { // Only show glow for full/reduced detail
@@ -2205,7 +2205,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         const glowColor = COLOR_SCHEMES.node.hovered;
         const glowTexture = textureAtlasRef.current.generateGlowTexture(screenRadius, glowColor);
         glow = new PIXI.Sprite(glowTexture);
-        glow.name = 'glow';
+        glow.label = 'glow'; // PixiJS v8: use label instead of deprecated name property
         glow.anchor.set(0.5);
         glow.eventMode = 'none';
         glow.alpha = 0.15; // Subtle glow

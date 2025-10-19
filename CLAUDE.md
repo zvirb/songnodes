@@ -9,6 +9,53 @@ This document outlines the architecture, development workflow, and best practice
 - **Scalability:** The architecture is designed for growth, with a clear path toward distributed and cloud-native deployment.
 - **Data Integrity:** We prioritize accuracy and consistency through structured extraction, in-flight validation, and a canonical enrichment workflow.
 
+### Critical Data Quality Requirement: Artist Attribution
+
+**⚠️ MANDATORY FILTERING RULE**
+
+The graph visualization **REQUIRES** valid artist attribution on **BOTH endpoints** of every track transition (edge). Tracks with NULL, empty, or "Unknown Artist" attribution **MUST NOT** appear in the graph under any circumstances.
+
+**Why This Is Non-Negotiable:**
+- Artist names are the **primary data point** for the entire application
+- The graph's core value proposition is showing **who plays what together**
+- Without artist attribution, transitions are meaningless noise
+- User experience degrades catastrophically with unknown artists
+
+**Implementation Requirements:**
+
+All layers of the stack MUST enforce this rule:
+
+1. **Database Layer** (`graph_nodes` view): Returns NULL `artist_name` for tracks without valid `track_artists` relationships
+2. **API Layer** (Graph Visualization API): Filters edges where either endpoint has NULL/Unknown artist
+3. **Frontend Layer** (useDataLoader hook): Validates nodes have non-empty, non-unknown artist names
+4. **ETL Layer** (Silver-to-Gold): Creates `track_artists` entries ONLY for tracks with valid artist names
+
+**Valid Artist Names:**
+- ✅ Non-empty strings
+- ✅ Not "Unknown", "Unknown Artist", "Various Artists", "VA"
+- ✅ Not prefixed with "Unknown Artist @", "VA @", etc.
+
+**Invalid Artist Names (REJECT):**
+- ❌ NULL
+- ❌ Empty string ('')
+- ❌ "Unknown", "Unknown Artist"
+- ❌ "Various Artists", "Various", "VA"
+- ❌ Any string starting with the above patterns
+
+**Data Quality Strategy:**
+
+Instead of relaxing filters to show more tracks, we must **improve data quality upstream**:
+
+1. **Metadata Enrichment** (Section 5.1.5): Use Spotify/MusicBrainz APIs to backfill missing artists
+2. **NLP Pipeline Enhancement**: Fix artist name extraction at the scraping source
+3. **Manual Curation**: Tools for users to fix Unknown Artist tracks (ArtistAttributionManager)
+
+**DO NOT:**
+- ❌ Remove or relax artist name filters to "show more tracks"
+- ❌ Allow Unknown Artist tracks "temporarily" with plans to fix later
+- ❌ Create UI toggles to show/hide Unknown Artist tracks
+- ❌ Modify the graph API to accept NULL artists
+
 ---
 
 ## 1. Getting Started: Local Environment Setup

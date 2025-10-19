@@ -492,7 +492,34 @@ async def get_graph_nodes(
                                     'category', gn.category,
                                     'genre', gn.category,
                                     'release_year', gn.release_year,
-                                    'appearance_count', gn.appearance_count
+                                    'appearance_count', gn.appearance_count,
+                                    -- DJ-Critical Fields
+                                    'bpm', gn.bpm,
+                                    'musical_key', gn.musical_key,
+                                    'energy', gn.energy,
+                                    'danceability', gn.danceability,
+                                    'valence', gn.valence,
+                                    'duration_ms', gn.duration_ms,
+                                    -- Streaming Platform IDs
+                                    'spotify_id', gn.spotify_id,
+                                    'apple_music_id', gn.apple_music_id,
+                                    'beatport_id', gn.beatport_id,
+                                    'isrc', gn.isrc,
+                                    -- Track Characteristics
+                                    'is_remix', gn.is_remix,
+                                    'is_mashup', gn.is_mashup,
+                                    'is_live', gn.is_live,
+                                    'is_instrumental', gn.is_instrumental,
+                                    'popularity_score', gn.popularity_score,
+                                    -- Audio Features
+                                    'acousticness', gn.acousticness,
+                                    'instrumentalness', gn.instrumentalness,
+                                    'liveness', gn.liveness,
+                                    'speechiness', gn.speechiness,
+                                    'loudness', gn.loudness,
+                                    -- Release Information
+                                    'release_date', gn.release_date,
+                                    'subgenre', gn.subgenre
                                 ) as metadata,
                                 COUNT(*) OVER() as total_count
                             FROM graph_nodes gn
@@ -1078,8 +1105,33 @@ async def get_graph_data():
                                 'category', t.genre,
                                 'genre', t.genre,
                                 'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
+                                -- DJ-Critical Fields
                                 'bpm', t.bpm,
-                                'musical_key', t.key
+                                'musical_key', t.key,
+                                'energy', t.energy,
+                                'danceability', t.danceability,
+                                'valence', t.valence,
+                                'duration_ms', t.duration_ms,
+                                -- Streaming Platform IDs
+                                'spotify_id', t.spotify_id,
+                                'apple_music_id', t.apple_music_id,
+                                'beatport_id', t.beatport_id,
+                                'isrc', t.isrc,
+                                -- Track Characteristics
+                                'is_remix', t.is_remix,
+                                'is_mashup', t.is_mashup,
+                                'is_live', t.is_live,
+                                'is_instrumental', t.is_instrumental,
+                                'popularity_score', t.popularity_score,
+                                -- Audio Features
+                                'acousticness', t.acousticness,
+                                'instrumentalness', t.instrumentalness,
+                                'liveness', t.liveness,
+                                'speechiness', t.speechiness,
+                                'loudness', t.loudness,
+                                -- Release Information
+                                'release_date', t.release_date,
+                                'subgenre', t.subgenre
                             ) as metadata
                         FROM tracks t
                         WHERE t.id::text = ANY(:node_ids)
@@ -1165,6 +1217,94 @@ async def get_graph_data():
     except Exception as e:
         logger.error(f"Error in get_graph_data: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve graph data")
+
+@app.get("/api/graph/stats")
+async def get_graph_stats():
+    """Get graph statistics including node/edge counts and metadata distribution."""
+    try:
+        async with async_session() as session:
+            # Get comprehensive graph statistics
+            stats_query = text("""
+                WITH node_stats AS (
+                    SELECT
+                        COUNT(DISTINCT node_id) as total_nodes,
+                        COUNT(DISTINCT node_id) FILTER (WHERE node_type = 'song') as song_nodes,
+                        COUNT(DISTINCT node_id) FILTER (WHERE node_type = 'artist') as artist_nodes,
+                        COUNT(DISTINCT node_id) FILTER (WHERE artist_name IS NOT NULL AND artist_name != 'Unknown') as nodes_with_artists
+                    FROM graph_nodes
+                ),
+                edge_stats AS (
+                    SELECT
+                        COUNT(*) as total_edges,
+                        SUM(occurrence_count) as total_occurrences,
+                        AVG(occurrence_count) as avg_occurrence_count,
+                        MAX(occurrence_count) as max_occurrence_count
+                    FROM song_adjacency
+                ),
+                genre_stats AS (
+                    SELECT
+                        category as genre,
+                        COUNT(*) as count
+                    FROM graph_nodes
+                    WHERE category IS NOT NULL
+                    GROUP BY category
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 10
+                )
+                SELECT
+                    (SELECT json_build_object(
+                        'total_nodes', total_nodes,
+                        'song_nodes', song_nodes,
+                        'artist_nodes', artist_nodes,
+                        'nodes_with_artists', nodes_with_artists,
+                        'nodes_without_artists', total_nodes - nodes_with_artists
+                    ) FROM node_stats) as node_stats,
+                    (SELECT json_build_object(
+                        'total_edges', total_edges,
+                        'total_occurrences', total_occurrences,
+                        'avg_occurrence_count', ROUND(avg_occurrence_count::numeric, 2),
+                        'max_occurrence_count', max_occurrence_count
+                    ) FROM edge_stats) as edge_stats,
+                    (SELECT json_agg(json_build_object('genre', genre, 'count', count))
+                     FROM genre_stats) as top_genres
+            """)
+
+            result = await session.execute(stats_query)
+            row = result.fetchone()
+
+            # Also get database-wide stats
+            db_stats_query = text("""
+                SELECT
+                    (SELECT COUNT(*) FROM tracks) as total_tracks,
+                    (SELECT COUNT(*) FROM artists) as total_artists,
+                    (SELECT COUNT(*) FROM playlists) as total_playlists,
+                    (SELECT COUNT(*) FROM playlist_tracks) as total_playlist_tracks
+            """)
+
+            db_result = await session.execute(db_stats_query)
+            db_row = db_result.fetchone()
+
+            return {
+                "graph_stats": {
+                    "nodes": dict(row.node_stats) if row.node_stats else {},
+                    "edges": dict(row.edge_stats) if row.edge_stats else {},
+                    "top_genres": row.top_genres if row.top_genres else []
+                },
+                "database_stats": {
+                    "total_tracks": db_row.total_tracks,
+                    "total_artists": db_row.total_artists,
+                    "total_playlists": db_row.total_playlists,
+                    "total_playlist_tracks": db_row.total_playlist_tracks
+                },
+                "metadata": {
+                    "generated_at": datetime.utcnow().isoformat(),
+                    "cache_status": "fresh"
+                }
+            }
+
+    except Exception as e:
+        logger.error(f"Error in get_graph_stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve graph statistics")
 
 @app.get("/api/graph/search")
 async def search_graph(

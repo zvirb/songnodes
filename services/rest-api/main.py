@@ -1,5 +1,5 @@
 """REST API Service for SongNodes"""
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
 from typing import List, Optional, Dict, Any
@@ -984,13 +984,12 @@ async def create_artist(artist: ArtistCreate):
         async with db_pool.acquire() as conn:
             query = """
             INSERT INTO artists (
-                artist_name, normalized_name, aliases,
-                spotify_id, apple_music_id, youtube_channel_id, soundcloud_id,
-                discogs_id, musicbrainz_id, genre_preferences, country,
-                is_verified, follower_count, monthly_listeners, popularity_score,
-                data_source, scrape_timestamp
+                name, normalized_name, aliases,
+                spotify_id, apple_music_id, youtube_music_id,
+                musicbrainz_id, beatport_id, deezer_id, tidal_id,
+                genres, country, is_verified, popularity_score
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
             )
             RETURNING artist_id, created_at, updated_at
             """
@@ -998,11 +997,14 @@ async def create_artist(artist: ArtistCreate):
             row = await conn.fetchrow(
                 query,
                 artist.artist_name, artist.normalized_name, artist.aliases,
-                artist.spotify_id, artist.apple_music_id, artist.youtube_channel_id,
-                artist.soundcloud_id, artist.discogs_id, artist.musicbrainz_id,
-                artist.genre_preferences, artist.country, artist.is_verified,
-                artist.follower_count, artist.monthly_listeners, artist.popularity_score,
-                artist.data_source.value, artist.scrape_timestamp
+                artist.spotify_id, artist.apple_music_id,
+                getattr(artist, 'youtube_music_id', None),  # Use youtube_music_id instead of youtube_channel_id
+                artist.musicbrainz_id,
+                getattr(artist, 'beatport_id', None),
+                getattr(artist, 'deezer_id', None),
+                getattr(artist, 'tidal_id', None),
+                artist.genre_preferences if hasattr(artist, 'genre_preferences') else [],  # Map to genres column
+                artist.country, artist.is_verified, artist.popularity_score
             )
 
             # Return created artist with database-generated fields
@@ -1475,16 +1477,39 @@ async def get_setlists(dj_id: Optional[int] = None, limit: int = 100, offset: in
                 params.append(dj_id)
 
             query = f"""
-            SELECT playlist_id, setlist_name, normalized_name, description,
-                   dj_artist_name, dj_artist_id, supporting_artists,
-                   event_name, event_type, venue_name, venue_location, venue_capacity,
-                   set_date, set_start_time, set_end_time, duration_minutes,
-                   genre_tags, mood_tags, bpm_range, total_tracks,
-                   spotify_playlist_id, soundcloud_playlist_id, mixcloud_id, youtube_playlist_id,
-                   data_source, scrape_timestamp, created_at, updated_at
-            FROM playlists
+            SELECT
+                p.playlist_id,
+                p.name as setlist_name,
+                NULL as normalized_name,
+                NULL as description,
+                COALESCE(a.name, 'Unknown DJ') as dj_artist_name,
+                p.dj_artist_id::text as dj_artist_id,
+                NULL::text[] as supporting_artists,
+                p.event_name,
+                NULL as event_type,
+                NULL as venue_name,
+                NULL as venue_location,
+                NULL::integer as venue_capacity,
+                p.event_date as set_date,
+                NULL::timestamp as set_start_time,
+                NULL::timestamp as set_end_time,
+                p.duration_minutes,
+                NULL::text[] as genre_tags,
+                NULL::text[] as mood_tags,
+                NULL::jsonb as bpm_range,
+                p.tracklist_count as total_tracks,
+                NULL as spotify_playlist_id,
+                NULL as soundcloud_playlist_id,
+                NULL as mixcloud_id,
+                NULL as youtube_playlist_id,
+                p.source as data_source,
+                COALESCE(p.last_scrape_attempt, p.created_at) as scrape_timestamp,
+                p.created_at,
+                p.updated_at
+            FROM playlists p
+            LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
             {where_clause}
-            ORDER BY set_date DESC NULLS LAST, setlist_name
+            ORDER BY p.event_date DESC NULLS LAST, p.name
             LIMIT $1 OFFSET $2
             """
 
@@ -1503,6 +1528,91 @@ async def get_setlists(dj_id: Optional[int] = None, limit: int = 100, offset: in
 
     except Exception as e:
         logger.error(f"Failed to fetch setlists: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/playlists", response_model=List[SetlistResponse])
+async def get_playlists(
+    source: Optional[str] = Query(None, description="Filter by source (mixesdb, 1001tracklists, etc)"),
+    dj_id: Optional[str] = Query(None, description="Filter by DJ artist ID"),
+    limit: int = Query(100, ge=1, le=500, description="Max playlists to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset")
+):
+    """
+    Get playlists (DJ setlists/mixes) with filtering options.
+
+    Alias endpoint for /api/v1/setlists - queries the same playlists table.
+    Supports filtering by source platform and DJ artist.
+    """
+    try:
+        async with db_pool.acquire() as conn:
+            where_clauses = []
+            params = [limit, offset]
+            param_idx = 3
+
+            if source:
+                where_clauses.append(f"p.source = ${param_idx}")
+                params.append(source)
+                param_idx += 1
+
+            if dj_id:
+                where_clauses.append(f"p.dj_artist_id = ${param_idx}::uuid")
+                params.append(dj_id)
+                param_idx += 1
+
+            where_clause = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+            query = f"""
+            SELECT
+                p.playlist_id,
+                p.name as setlist_name,
+                NULL as normalized_name,
+                NULL as description,
+                COALESCE(a.name, 'Unknown DJ') as dj_artist_name,
+                p.dj_artist_id::text as dj_artist_id,
+                NULL::text[] as supporting_artists,
+                p.event_name,
+                NULL as event_type,
+                NULL as venue_name,
+                NULL as venue_location,
+                NULL::integer as venue_capacity,
+                p.event_date as set_date,
+                NULL::timestamp as set_start_time,
+                NULL::timestamp as set_end_time,
+                p.duration_minutes,
+                NULL::text[] as genre_tags,
+                NULL::text[] as mood_tags,
+                NULL::jsonb as bpm_range,
+                p.tracklist_count as total_tracks,
+                NULL as spotify_playlist_id,
+                NULL as soundcloud_playlist_id,
+                NULL as mixcloud_id,
+                NULL as youtube_playlist_id,
+                p.source as data_source,
+                COALESCE(p.last_scrape_attempt, p.created_at) as scrape_timestamp,
+                p.created_at,
+                p.updated_at
+            FROM playlists p
+            LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
+            {where_clause}
+            ORDER BY p.event_date DESC NULLS LAST, p.created_at DESC
+            LIMIT $1 OFFSET $2
+            """
+
+            rows = await conn.fetch(query, *params)
+
+            playlists = []
+            for row in rows:
+                try:
+                    playlist = SetlistResponse(**dict(row))
+                    playlists.append(playlist)
+                except ValidationError as ve:
+                    logger.warning(f"Playlist {row['playlist_id']} failed validation: {ve}")
+                    continue
+
+            return playlists
+
+    except Exception as e:
+        logger.error(f"Failed to fetch playlists: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/graph/nodes")
@@ -2109,31 +2219,32 @@ async def get_data_completeness():
                 COUNT(*) as total_artists,
                 COUNT(*) FILTER (WHERE spotify_id IS NOT NULL) as artists_with_spotify_id,
                 COUNT(*) FILTER (WHERE apple_music_id IS NOT NULL) as artists_with_apple_music_id,
-                COUNT(*) FILTER (WHERE soundcloud_id IS NOT NULL) as artists_with_soundcloud_id,
                 COUNT(*) FILTER (WHERE musicbrainz_id IS NOT NULL) as artists_with_musicbrainz_id,
+                COUNT(*) FILTER (WHERE beatport_id IS NOT NULL) as artists_with_beatport_id,
+                COUNT(*) FILTER (WHERE tidal_id IS NOT NULL) as artists_with_tidal_id,
                 COUNT(*) FILTER (WHERE metadata IS NOT NULL AND metadata != '{}') as artists_with_metadata,
                 -- Artists with tracks (active artists)
                 COUNT(*) FILTER (WHERE EXISTS (
-                    SELECT 1 FROM track_artists ta WHERE ta.artist_id = artists.id
+                    SELECT 1 FROM track_artists ta WHERE ta.artist_id = artists.artist_id
                 )) as artists_with_tracks
             FROM artists
             """
 
             artist_stats = await conn.fetchrow(artist_stats_query)
 
-            # Get playlist/setlist statistics
+            # Get playlist statistics
             playlist_stats_query = """
             SELECT
                 COUNT(*) as total_setlists,
                 COUNT(*) FILTER (WHERE source IS NOT NULL) as setlists_with_source,
-                COUNT(*) FILTER (WHERE is_complete = true) as complete_setlists,
-                COUNT(*) FILTER (WHERE performer_id IS NOT NULL) as setlists_with_performer,
-                COUNT(*) FILTER (WHERE set_date IS NOT NULL) as setlists_with_date,
-                -- Setlists with tracks
+                COUNT(*) FILTER (WHERE tracklist_count > 0) as complete_setlists,
+                COUNT(*) FILTER (WHERE dj_artist_id IS NOT NULL) as setlists_with_performer,
+                COUNT(*) FILTER (WHERE event_date IS NOT NULL) as setlists_with_date,
+                -- Playlists with tracks
                 COUNT(*) FILTER (WHERE EXISTS (
-                    SELECT 1 FROM setlist_tracks st WHERE st.setlist_id = setlists.id
+                    SELECT 1 FROM playlist_tracks pt WHERE pt.playlist_id = playlists.playlist_id
                 )) as setlists_with_tracks
-            FROM setlists
+            FROM playlists
             """
 
             playlist_stats = await conn.fetchrow(playlist_stats_query)

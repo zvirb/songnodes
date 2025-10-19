@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Setlist Graph Generator
-Transforms setlist track sequences into song adjacency graph data
+Playlist Graph Generator (formerly Setlist Graph Generator)
+Transforms playlist track sequences into song adjacency graph data
 Generates nodes for tracks and edges for song-to-song relationships
 """
 
@@ -27,7 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class SetlistGraphGenerator:
-    """Generate song adjacency graph from setlist data"""
+    """Generate song adjacency graph from playlist data (playlists table)"""
 
     def __init__(self):
         self.db_params = {
@@ -61,24 +61,25 @@ class SetlistGraphGenerator:
         logger.info("Database connection closed")
 
     def get_electronic_setlists(self, seed_terms: Optional[List[str]] = None, seed_specs: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
-        """Get setlists; optionally restrict by seeds.
+        """Get playlists from database; optionally restrict by seeds.
         Two modes supported:
           - seed_terms: list of track title terms (legacy)
           - seed_specs: list of objects { title: str, artists: [str, ...] }
         Seed match modes (env SEED_MATCH_MODE): exact | ilike (default ilike)
         """
-        # For now, get all setlists to test the visualization
-        if True:  # Temporarily bypass filters to get all setlists
+        # For now, get all playlists to test the visualization
+        if True:  # Temporarily bypass filters to get all playlists
             query = """
-                SELECT s.id, s.source_id, s.metadata, s.created_at, p.name as performer_name
-                FROM setlists s
-                JOIN performers p ON s.performer_id = p.id
-                ORDER BY s.created_at DESC
+                SELECT p.playlist_id as id, p.source as source_id, '{}'::jsonb as metadata,
+                       p.created_at, COALESCE(a.name, 'Unknown DJ') as performer_name
+                FROM playlists p
+                LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
+                ORDER BY p.created_at DESC
                 LIMIT 1000
             """
             self.cursor.execute(query)
             setlists = self.cursor.fetchall()
-            logger.info(f"Found {len(setlists)} electronic music setlists")
+            logger.info(f"Found {len(setlists)} electronic music playlists")
             return setlists
 
         if seed_specs:
@@ -116,25 +117,27 @@ class SetlistGraphGenerator:
             if not clauses:
                 # Fall back to no filtering if specs were empty after normalization
                 query = """
-                    SELECT s.id, s.source_id, s.metadata, s.created_at, p.name as performer_name
-                    FROM setlists s
-                    JOIN performers p ON s.performer_id = p.id
-                    ORDER BY s.created_at DESC
+                    SELECT p.playlist_id as id, p.source as source_id, '{}'::jsonb as metadata,
+                           p.created_at, COALESCE(a.name, 'Unknown DJ') as performer_name
+                    FROM playlists p
+                    LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
+                    ORDER BY p.created_at DESC
                     LIMIT 100
                 """
                 self.cursor.execute(query)
             else:
                 where_expr = " OR ".join(clauses)
                 query = f"""
-                    SELECT DISTINCT s.id, s.source_id, s.metadata, s.created_at, p.name as performer_name
-                    FROM setlists s
-                    JOIN performers p ON s.performer_id = p.id
-                    JOIN setlist_tracks st ON st.setlist_id = s.id
-                    JOIN tracks t ON t.id = st.track_id
+                    SELECT DISTINCT p.playlist_id as id, p.source as source_id, '{{}}'::jsonb as metadata,
+                           p.created_at, COALESCE(a.name, 'Unknown DJ') as performer_name
+                    FROM playlists p
+                    LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
+                    JOIN playlist_tracks pt ON pt.playlist_id = p.playlist_id
+                    JOIN tracks t ON t.id = pt.song_id
                     LEFT JOIN track_artists ta ON ta.track_id = t.id
-                    LEFT JOIN artists ar ON ar.id = ta.artist_id
-                    WHERE {where_expr}
-                    ORDER BY s.created_at DESC
+                    LEFT JOIN artists ar ON ar.artist_id = ta.artist_id
+                    WHERE {{where_expr}}
+                    ORDER BY p.created_at DESC
                     LIMIT 1000
                 """
                 self.cursor.execute(query, tuple(params))
@@ -147,46 +150,48 @@ class SetlistGraphGenerator:
                 clauses = " OR ".join(["t.normalized_title ILIKE %s" for _ in seed_terms])
                 params = tuple([f"%{term.lower()}%" for term in seed_terms])
             query = f"""
-                SELECT DISTINCT s.id, s.source_id, s.metadata, s.created_at, p.name as performer_name
-                FROM setlists s
-                JOIN performers p ON s.performer_id = p.id
-                JOIN setlist_tracks st ON st.setlist_id = s.id
-                JOIN tracks t ON t.id = st.track_id
-                WHERE ({clauses})
-                ORDER BY s.created_at DESC
+                SELECT DISTINCT p.playlist_id as id, p.source as source_id, '{{}}'::jsonb as metadata,
+                       p.created_at, COALESCE(a.name, 'Unknown DJ') as performer_name
+                FROM playlists p
+                LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
+                JOIN playlist_tracks pt ON pt.playlist_id = p.playlist_id
+                JOIN tracks t ON t.id = pt.song_id
+                WHERE ({{clauses}})
+                ORDER BY p.created_at DESC
                 LIMIT 500
             """
             self.cursor.execute(query, params)
         else:
             query = """
-                SELECT s.id, s.source_id, s.metadata, s.created_at, p.name as performer_name
-                FROM setlists s
-                JOIN performers p ON s.performer_id = p.id
-                ORDER BY s.created_at DESC
+                SELECT p.playlist_id as id, p.source as source_id, '{}'::jsonb as metadata,
+                       p.created_at, COALESCE(a.name, 'Unknown DJ') as performer_name
+                FROM playlists p
+                LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
+                ORDER BY p.created_at DESC
                 LIMIT 100
             """
             self.cursor.execute(query)
         setlists = self.cursor.fetchall()
-        logger.info(f"Found {len(setlists)} electronic music setlists")
+        logger.info(f"Found {len(setlists)} electronic music playlists")
         return [dict(setlist) for setlist in setlists]
 
     def get_setlist_track_sequences(self, setlist_id: int) -> List[Dict[str, Any]]:
-        """Get ordered track sequences for a setlist"""
+        """Get ordered track sequences for a playlist"""
         query = """
         SELECT
-            st.track_order as position,
-            st.track_id,
+            pt.position,
+            pt.song_id as track_id,
             t.title as track_title,
             t.normalized_title,
             -- Get first artist as primary
             (SELECT a.name FROM track_artists ta
-             JOIN artists a ON ta.artist_id = a.id
+             JOIN artists a ON ta.artist_id = a.artist_id
              WHERE ta.track_id = t.id
              LIMIT 1) as primary_artist
-        FROM setlist_tracks st
-        JOIN tracks t ON st.track_id = t.id
-        WHERE st.setlist_id = %s
-        ORDER BY st.track_order ASC
+        FROM playlist_tracks pt
+        JOIN tracks t ON pt.song_id = t.id
+        WHERE pt.playlist_id = %s
+        ORDER BY pt.position ASC
         """
 
         self.cursor.execute(query, (setlist_id,))
