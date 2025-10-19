@@ -57,17 +57,18 @@ class UnknownArtistEnricher:
     async def connect(self):
         """Initialize database connection pool"""
         if SECRETS_AVAILABLE:
-            db_config = get_database_config()
+            db_config = get_database_config(host_override='localhost', port_override=5433)
             logger.info("✅ Using centralized secrets manager for database configuration")
         else:
+            # Running from host - use localhost and external port
             db_config = {
-                'host': os.getenv('POSTGRES_HOST', 'db-connection-pool'),
-                'port': int(os.getenv('POSTGRES_PORT', '6432')),
+                'host': os.getenv('POSTGRES_HOST', 'localhost'),
+                'port': int(os.getenv('POSTGRES_PORT', '5433')),
                 'database': os.getenv('POSTGRES_DB', 'musicdb'),
                 'user': os.getenv('POSTGRES_USER', 'musicdb_user'),
                 'password': os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024')
             }
-            logger.info("⚠️ Secrets manager not available - using environment variables")
+            logger.info("⚠️ Secrets manager not available - using environment variables (localhost:5433)")
 
         self.pool = await asyncpg.create_pool(
             host=db_config['host'],
@@ -253,27 +254,50 @@ class UnknownArtistEnricher:
 
         try:
             async with self.pool.acquire() as conn:
-                # Query Unknown Artist tracks
+                # Query tracks with NO artist relationships
                 query = """
-                    SELECT id, track_title, artist_name
-                    FROM silver_enriched_tracks
-                    WHERE validation_status = 'valid'
-                      AND artist_name = 'Unknown Artist'
-                    ORDER BY created_at DESC
+                    SELECT
+                        t.id,
+                        t.title as track_title,
+                        t.spotify_id,
+                        t.isrc,
+                        es.status as enrichment_status,
+                        es.retry_count
+                    FROM tracks t
+                    LEFT JOIN track_artists ta ON t.id = ta.track_id
+                    LEFT JOIN enrichment_status es ON t.id = es.track_id
+                    WHERE ta.track_id IS NULL
+                    ORDER BY
+                        -- Prioritize tracks with Spotify ID or ISRC
+                        CASE WHEN t.spotify_id IS NOT NULL THEN 1
+                             WHEN t.isrc IS NOT NULL THEN 2
+                             ELSE 3
+                        END,
+                        -- Prioritize tracks that haven't been tried many times
+                        COALESCE(es.retry_count, 0) ASC
                 """
 
                 if limit:
                     query += f" LIMIT {limit}"
 
-                logger.info(f"Querying Unknown Artist tracks (limit={limit or 'none'})...")
+                logger.info(f"Querying tracks without artists (limit={limit or 'none'})...")
                 tracks = await conn.fetch(query)
                 total_tracks = len(tracks)
 
-                logger.info(f"Found {total_tracks} Unknown Artist tracks to enrich")
+                logger.info(f"Found {total_tracks} tracks without artist relationships to enrich")
 
                 if total_tracks == 0:
-                    logger.warning("No Unknown Artist tracks found!")
+                    logger.warning("No tracks without artists found!")
                     return
+
+                # Show sample
+                logger.info("\nSample tracks:")
+                for track in tracks[:5]:
+                    logger.info(
+                        f"  - {str(track['id'])[:8]}... | {track['track_title'][:50]:50} | "
+                        f"Spotify: {'YES' if track['spotify_id'] else 'NO':3} | "
+                        f"ISRC: {'YES' if track['isrc'] else 'NO':3}"
+                    )
 
                 # Process tracks
                 for idx, track in enumerate(tracks, 1):
@@ -302,17 +326,19 @@ class UnknownArtistEnricher:
                     else:
                         self.stats['enrichments_failed'] += 1
 
-                    # Update Silver layer if enrichment found artist
+                    # Note: The enrichment service handles updating the tracks table
+                    # and creating artist relationships automatically via the
+                    # enrichment pipeline. We don't need to manually update here.
                     if status in ['completed', 'partial']:
-                        async with conn.transaction():
-                            if await self.update_track_metadata(conn, track_id, result):
-                                self.stats['tracks_updated'] += 1
+                        self.stats['tracks_updated'] += 1
+                        logger.info(f"✅ Track enriched: {track_title}")
 
                     # Rate limiting
                     if idx % 10 == 0:
                         logger.info(
                             f"Progress: {idx}/{total_tracks} tracks, "
-                            f"{self.stats['tracks_updated']} updated"
+                            f"{self.stats['enrichments_successful']} successful, "
+                            f"{self.stats['enrichments_failed']} failed"
                         )
                         await asyncio.sleep(2)  # Respect rate limits
 
