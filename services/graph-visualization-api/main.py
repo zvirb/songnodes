@@ -452,11 +452,11 @@ async def get_graph_nodes(
                     songs_count = count_result.scalar()
 
                     if songs_count > 0:
-                        # EDGE-FIRST APPROACH: Only include nodes that participate in fully-valid edges
-                        # This ensures we show connected graphs where BOTH endpoints have artists
+                        # EDGE-FIRST APPROACH: Only include nodes that participate in valid edges
+                        # This ensures we show connected graphs where AT LEAST ONE endpoint has a valid artist
                         query = text("""
                             WITH valid_edges AS (
-                                -- Get edges where BOTH endpoints have valid artists
+                                -- Get edges where AT LEAST ONE endpoint has a valid artist
                                 SELECT DISTINCT
                                     sa.song_id_1,
                                     sa.song_id_2,
@@ -465,14 +465,14 @@ async def get_graph_nodes(
                                 INNER JOIN graph_nodes n1 ON 'song_' || sa.song_id_1::text = n1.node_id
                                 INNER JOIN graph_nodes n2 ON 'song_' || sa.song_id_2::text = n2.node_id
                                 WHERE n1.node_type = 'song'
-                                  AND n1.artist_name IS NOT NULL
-                                  AND n1.artist_name != ''
-                                  AND n1.artist_name != 'Unknown'
                                   AND n2.node_type = 'song'
-                                  AND n2.artist_name IS NOT NULL
-                                  AND n2.artist_name != ''
-                                  AND n2.artist_name != 'Unknown'
                                   AND sa.occurrence_count >= 1
+                                  -- At least ONE endpoint must have a valid artist
+                                  AND (
+                                    (n1.artist_name IS NOT NULL AND n1.artist_name != '' AND n1.artist_name != 'Unknown')
+                                    OR
+                                    (n2.artist_name IS NOT NULL AND n2.artist_name != '' AND n2.artist_name != 'Unknown')
+                                  )
                             ),
                             valid_node_ids AS (
                                 -- Get all unique node IDs that appear in valid edges

@@ -529,14 +529,15 @@ class MetadataEnrichmentPipeline:
             await self._update_track_in_database(task.track_id, metadata, sources_used)
 
             # CRITICAL FIX: Create artist relationships if we have artist data
-            if metadata.get('artists') and isinstance(metadata['artists'], list):
-                await self._create_artist_relationships(task.track_id, metadata['artists'])
-            elif metadata.get('spotify_id'):
-                # If we have Spotify ID but no artists array, fetch and populate artists
+            if metadata.get('spotify_id'):
+                # ALWAYS try to populate artists from Spotify ID first
                 await self.artist_populator.populate_artists_from_spotify(
                     track_id=UUID(task.track_id),
                     spotify_track_id=metadata['spotify_id']
                 )
+            elif metadata.get('artists') and isinstance(metadata['artists'], list):
+                # Fallback to metadata artists if no Spotify ID
+                await self._create_artist_relationships(task.track_id, metadata['artists'])
 
             # Update enrichment status
             await self._update_enrichment_status(
