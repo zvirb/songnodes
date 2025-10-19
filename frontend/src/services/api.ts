@@ -175,8 +175,8 @@ export const graphApi = {
     try {
       // Fetch nodes and edges separately from working endpoints
       const [nodesResponse, edgesResponse] = await Promise.all([
-        graphApiClient.get<{nodes: any[], total: number}>('/api/graph/nodes?limit=500'),
-        graphApiClient.get<{edges: any[], total: number}>('/api/graph/edges?limit=5000')
+        graphApiClient.get<{nodes: any[], total: number}>('/graph/nodes?limit=15000'),
+        graphApiClient.get<{edges: any[], total: number}>('/graph/edges?limit=50000')
       ]);
 
       if (nodesResponse.status === 'error' || edgesResponse.status === 'error') {
@@ -264,7 +264,7 @@ export const graphApi = {
 
   // Get graph data for specific tracks
   async getTrackGraph(trackIds: string[], maxDepth: number = 2): Promise<GraphApiResponse> {
-    const response = await graphApiClient.post<GraphData>('/api/graph/tracks', {
+    const response = await graphApiClient.post<GraphData>('/graph/tracks', {
       trackIds,
       maxDepth,
     });
@@ -281,7 +281,7 @@ export const graphApi = {
 
   // Get neighborhood around specific node
   async getNodeNeighborhood(nodeId: string, radius: number = 1): Promise<GraphApiResponse> {
-    const response = await graphApiClient.get<GraphData>(`/api/graph/neighborhood/${nodeId}`, {
+    const response = await graphApiClient.get<GraphData>(`/graph/neighborhood/${nodeId}`, {
       radius,
     });
 
@@ -297,7 +297,7 @@ export const graphApi = {
 
   // Update node positions (for layout persistence)
   async updateNodePositions(positions: Array<{ id: string; x: number; y: number }>): Promise<ApiResponse<boolean>> {
-    return graphApiClient.post<boolean>('/api/graph/positions', { positions });
+    return graphApiClient.post<boolean>('/graph/positions', { positions });
   },
 
   // Get graph statistics
@@ -308,7 +308,7 @@ export const graphApi = {
     density: number;
     components: number;
   }>> {
-    return graphApiClient.get('/api/graph/stats');
+    return graphApiClient.get('/graph/stats');
   },
 };
 
