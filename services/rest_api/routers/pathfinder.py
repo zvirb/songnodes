@@ -9,6 +9,8 @@ from typing import Optional, List, Dict, Any, Set, Tuple
 import heapq
 import logging
 from collections import defaultdict
+import math
+from annoy import AnnoyIndex
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +121,18 @@ def get_key_compatibility_bonus(from_key: Optional[str], to_key: Optional[str]) 
 
     return 0.0  # Not compatible = no bonus
 
+def get_bpm_difference(bpm1: Optional[float], bpm2: Optional[float]) -> float:
+    """Calculate the difference between two BPMs, considering half/double time."""
+    if bpm1 is None or bpm2 is None or bpm1 == 0 or bpm2 == 0:
+        return 1.0  # Max penalty if BPM is missing
+
+    diff = abs(bpm1 - bpm2)
+    diff_half = abs(bpm1 - bpm2 / 2)
+    diff_double = abs(bpm1 - bpm2 * 2)
+
+    # Return the minimum of the differences
+    return min(diff, diff_half, diff_double)
+
 def calculate_heuristic(
     current_duration: int,
     target_duration: int,
@@ -141,6 +155,82 @@ def calculate_heuristic(
 
     # Return admissible heuristic (will not overestimate actual cost)
     return max(duration_remaining, min_waypoint_duration) / avg_track_duration
+
+# ===========================================
+# ANN (Approximate Nearest Neighbors) Helpers
+# ===========================================
+
+def camelot_to_vector(key: Optional[str]) -> Tuple[float, float]:
+    """Convert Camelot key to a 2D vector for distance calculation"""
+    if not key:
+        return (0, 0)
+
+    # Map key to an angle on a circle and a radius for major/minor
+    letter = key[-1]
+    number = int(key[:-1])
+
+    angle = (number - 1) * (2 * math.pi / 12)  # 12 keys on the wheel
+    radius = 1.0 if letter == 'B' else 0.7  # Major keys on outer circle
+
+    x = radius * math.cos(angle)
+    y = radius * math.sin(angle)
+    return (x, y)
+
+def find_similar_tracks(
+    tracks: List[TrackNode],
+    n_neighbors: int = 10,
+    bpm_weight: float = 1.0,
+    key_weight: float = 1.0
+) -> Dict[str, List[Tuple[str, float]]]:
+    """
+    Find similar tracks using Annoy for approximate nearest neighbors.
+    Builds a multi-dimensional index and finds N closest tracks for each track.
+    """
+    track_map = {i: track for i, track in enumerate(tracks)}
+    track_id_to_idx = {track.id: i for i, track in track_map.items()}
+
+    # 3 dimensions: normalized BPM, and 2D vector for Camelot key
+    f = 3
+    t = AnnoyIndex(f, 'euclidean')
+
+    # Normalize BPM to a 0-1 range for indexing
+    bpms = [track.bpm for track in tracks if track.bpm]
+    min_bpm, max_bpm = min(bpms) if bpms else 0, max(bpms) if bpms else 1
+
+    for i, track in track_map.items():
+        # Normalize BPM
+        normalized_bpm = ((track.bpm - min_bpm) / (max_bpm - min_bpm)) if track.bpm and max_bpm > min_bpm else 0.5
+
+        # Convert Camelot key to vector
+        key_x, key_y = camelot_to_vector(track.camelot_key)
+
+        # Create feature vector with weighting
+        v = [
+            normalized_bpm * bpm_weight,
+            key_x * key_weight,
+            key_y * key_weight
+        ]
+        t.add_item(i, v)
+
+    t.build(10)  # 10 trees
+
+    adjacency = defaultdict(list)
+    for i, track in track_map.items():
+        # Find k nearest neighbors. We get k+1 because the track itself will be the closest.
+        neighbors_indices = t.get_nns_by_item(i, n_neighbors + 1)
+
+        for neighbor_idx in neighbors_indices:
+            if i == neighbor_idx:
+                continue
+
+            neighbor_track = track_map[neighbor_idx]
+
+            # Use Annoy's distance as the edge weight
+            distance = t.get_distance(i, neighbor_idx)
+            adjacency[track.id].append((neighbor_track.id, distance))
+
+    return adjacency
+
 
 # ===========================================
 # Pathfinding Algorithm
@@ -275,7 +365,13 @@ def find_path(
             # Edge weight is the base cost (lower = stronger connection)
             # Add key compatibility bonus (reduces cost if keys are compatible)
             key_bonus = get_key_compatibility_bonus(current_track.camelot_key, neighbor_track.camelot_key) * 0.3
-            transition_cost = edge_weight - key_bonus
+
+            # Add BPM similarity penalty
+            bpm_diff = get_bpm_difference(current_track.bpm, neighbor_track.bpm)
+            # Normalize penalty: 10 bpm diff = ~0.1 penalty. More than 20bpm diff gets heavily penalized.
+            bpm_penalty = (bpm_diff / 100) ** 2
+
+            transition_cost = edge_weight - key_bonus + bpm_penalty
 
             # Penalty for not visiting waypoints when we should
             waypoint_penalty = 0
@@ -334,35 +430,28 @@ async def find_dj_path(request: PathfinderRequest):
         # Build data structures
         tracks_dict = {track.id: track for track in request.tracks}
 
-        # Build adjacency list from edges
+        # Build adjacency list from existing edges
         adjacency: Dict[str, List[Tuple[str, float]]] = defaultdict(list)
         for edge in request.edges:
             adjacency[edge.from_id].append((edge.to_id, edge.weight))
 
-        # 2025 ENHANCEMENT: Add synthetic harmonic edges for disconnected tracks
-        # This creates a "safety net" when tracks aren't connected via playlists
+        # 2025 ENHANCEMENT: Use ANN to find similar tracks for a fallback graph
+        ann_adjacency = find_similar_tracks(request.tracks, n_neighbors=15, bpm_weight=1.5, key_weight=1.0)
+
         synthetic_edges_added = 0
-        synthetic_edge_set = set()  # Track which edges are synthetic (from_id, to_id)
+        synthetic_edge_set = set()
 
-        for track1 in request.tracks:
-            for track2 in request.tracks:
-                if track1.id == track2.id:
-                    continue
+        # Augment the graph with ANN edges where no real edge exists
+        for from_id, neighbors in ann_adjacency.items():
+            existing_neighbors = {to_id for to_id, _ in adjacency.get(from_id, [])}
+            for to_id, weight in neighbors:
+                if to_id not in existing_neighbors:
+                    # ANN distance is already a good weight, but we can scale it
+                    adjacency[from_id].append((to_id, weight * 5.0)) # Scale weight to be higher than typical real edges
+                    synthetic_edge_set.add((from_id, to_id))
+                    synthetic_edges_added += 1
 
-                # Only add synthetic edge if no real edge exists
-                if track2.id not in [neighbor_id for neighbor_id, _ in adjacency[track1.id]]:
-                    # Check if keys are harmonically compatible
-                    if track1.camelot_key and track2.camelot_key:
-                        if is_key_compatible(track1.camelot_key, track2.camelot_key):
-                            # Add synthetic edge with higher weight (lower priority)
-                            # Real edges have weight ~1-5, synthetic edges get weight 10 (lower priority)
-                            synthetic_weight = 10.0 - (get_key_compatibility_bonus(track1.camelot_key, track2.camelot_key) * 3.0)
-                            adjacency[track1.id].append((track2.id, synthetic_weight))
-                            synthetic_edge_set.add((track1.id, track2.id))
-                            synthetic_edges_added += 1
-
-        if synthetic_edges_added > 0:
-            logger.info(f"Added {synthetic_edges_added} synthetic harmonic edges for disconnected tracks")
+        logger.info(f"Added {synthetic_edges_added} synthetic edges from ANN similarity search")
 
         # Validate waypoints
         waypoint_ids = set(request.waypoint_track_ids)
