@@ -78,7 +78,8 @@ app.get('/api', (req, res) => {
 const serviceProxies = {
   '/api/v1/tracks': {
     target: 'http://rest-api:8082',
-    pathRewrite: { '^/api/v1/tracks': '/api/v1/tracks' }
+    pathRewrite: { '^/api/v1/tracks': '/api/v1/tracks' },
+    timeout: 120000  // 2 minutes for large tracklist imports
   },
   '/api/v1/artists': {
     target: 'http://rest-api:8082',

@@ -1213,8 +1213,13 @@ async def import_tracklist(request: TracklistImportRequest):
         "updated": 0,
         "failed": 0,
         "total": len(request.tracks),
-        "details": []
+        "details": [],
+        "transitions_created": 0
     }
+
+    # Track previous song_id for creating transitions
+    prev_song_id = None
+    imported_song_ids = []
 
     try:
         async with db_pool.acquire() as conn:
@@ -1229,10 +1234,10 @@ async def import_tracklist(request: TracklistImportRequest):
 
                     # 1. Upsert artist
                     artist_query = """
-                    INSERT INTO artists (artist_name, normalized_name, data_source)
-                    VALUES ($1, $2, 'manual_import')
+                    INSERT INTO artists (name, normalized_name)
+                    VALUES ($1, $2)
                     ON CONFLICT (normalized_name)
-                    DO UPDATE SET artist_name = EXCLUDED.artist_name
+                    DO UPDATE SET name = EXCLUDED.name
                     RETURNING artist_id
                     """
                     artist_row = await conn.fetchrow(
@@ -1242,80 +1247,98 @@ async def import_tracklist(request: TracklistImportRequest):
                     )
                     artist_id = artist_row['artist_id']
 
-                    # 2. Check if track exists (by track_id or by matching artist + title)
+                    # 2. Check if track exists (by matching normalized title + artist)
                     existing_track_query = """
-                    SELECT s.song_id, s.track_id
-                    FROM songs s
-                    WHERE s.track_id = $1
-                       OR (s.normalized_title = $2 AND EXISTS (
-                           SELECT 1 FROM track_artists ta
-                           WHERE ta.track_id = s.song_id AND ta.artist_id = $3
-                       ))
+                    SELECT t.id
+                    FROM tracks t
+                    JOIN track_artists ta ON ta.track_id = t.id
+                    WHERE t.normalized_title = $1 AND ta.artist_id = $2
                     LIMIT 1
                     """
                     existing = await conn.fetchrow(
                         existing_track_query,
-                        track_id,
                         normalized_title,
                         artist_id
                     )
 
                     if existing:
-                        # Track exists - update if needed
-                        song_id = existing['song_id']
+                        # Track exists - update title if needed
+                        track_id_uuid = existing['id']
                         update_query = """
-                        UPDATE songs
-                        SET track_name = $1,
-                            normalized_title = $2,
+                        UPDATE tracks
+                        SET title = $1,
                             updated_at = NOW()
-                        WHERE song_id = $3
+                        WHERE id = $2
                         """
                         await conn.execute(
                             update_query,
                             track_data.title.strip(),
-                            normalized_title,
-                            song_id
+                            track_id_uuid
                         )
                         stats["updated"] += 1
                         stats["details"].append({
                             "artist": track_data.artist,
                             "title": track_data.title,
                             "status": "updated",
-                            "song_id": song_id
+                            "track_id": str(track_id_uuid)
                         })
                     else:
                         # Track doesn't exist - create it
                         insert_query = """
-                        INSERT INTO songs (
-                            track_id, track_name, normalized_title, data_source
-                        ) VALUES ($1, $2, $3, 'manual_import')
-                        RETURNING song_id
+                        INSERT INTO tracks (
+                            title, normalized_title
+                        ) VALUES ($1, $2)
+                        RETURNING id
                         """
                         new_track = await conn.fetchrow(
                             insert_query,
-                            track_id,
                             track_data.title.strip(),
                             normalized_title
                         )
-                        song_id = new_track['song_id']
+                        track_id_uuid = new_track['id']
                         stats["created"] += 1
                         stats["details"].append({
                             "artist": track_data.artist,
                             "title": track_data.title,
                             "status": "created",
-                            "song_id": song_id,
-                            "track_id": track_id
+                            "track_id": str(track_id_uuid)
                         })
 
                     # 3. Ensure track_artists relationship exists
                     relationship_query = """
-                    INSERT INTO track_artists (track_id, artist_id, role, is_primary)
-                    VALUES ($1, $2, 'primary', true)
-                    ON CONFLICT (track_id, artist_id) DO NOTHING
+                    INSERT INTO track_artists (track_id, artist_id, role)
+                    VALUES ($1, $2, 'primary')
+                    ON CONFLICT (track_id, artist_id, role) DO NOTHING
                     """
-                    await conn.execute(relationship_query, song_id, artist_id)
+                    await conn.execute(relationship_query, track_id_uuid, artist_id)
 
-                    logger.info(f"✅ Imported: {track_data.artist} - {track_data.title} (song_id: {song_id})")
+                    # 4. Create transition edge if this is not the first track
+                    if prev_song_id is not None:
+                        try:
+                            # Use song_adjacency (requires song_id_1 < song_id_2)
+                            # Sort the IDs to meet the constraint
+                            if prev_song_id < track_id_uuid:
+                                sid_1, sid_2 = prev_song_id, track_id_uuid
+                            else:
+                                sid_1, sid_2 = track_id_uuid, prev_song_id
+
+                            transition_query = """
+                            INSERT INTO song_adjacency (song_id_1, song_id_2, occurrence_count)
+                            VALUES ($1, $2, 1)
+                            ON CONFLICT (song_id_1, song_id_2)
+                            DO UPDATE SET occurrence_count = song_adjacency.occurrence_count + 1
+                            """
+                            await conn.execute(transition_query, sid_1, sid_2)
+                            stats["transitions_created"] += 1
+                            logger.info(f"🔗 Created transition: {prev_song_id} → {track_id_uuid}")
+                        except Exception as trans_error:
+                            logger.warning(f"⚠️  Failed to create transition: {trans_error}")
+
+                    # Track this track for next iteration
+                    imported_song_ids.append(track_id_uuid)
+                    prev_song_id = track_id_uuid
+
+                    logger.info(f"✅ Imported: {track_data.artist} - {track_data.title} (track_id: {track_id_uuid})")
 
                 except Exception as track_error:
                     logger.error(f"❌ Failed to import {track_data.artist} - {track_data.title}: {track_error}")
