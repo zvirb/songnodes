@@ -123,13 +123,12 @@ const serviceProxies = {
 // Setup proxy middleware for each service
 Object.entries(serviceProxies).forEach(([path, config]) => {
   app.use(path, createProxyMiddleware({
-    ...config,
     changeOrigin: true,
     secure: false,
-    timeout: 30000,
+    ...config,  // Config last so it can override defaults
     onError: (err, req, res) => {
       logger.error(`Proxy error for ${path}:`, err.message);
-      res.status(503).json({ 
+      res.status(503).json({
         error: 'Service temporarily unavailable',
         message: 'The requested service is currently offline'
       });
