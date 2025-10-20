@@ -53,6 +53,7 @@ mcp_venv/
 backups/
 *.backup
 .last_dependency_backup
+*.sql.gz
 
 # Test artifacts and reports
 .coverage
