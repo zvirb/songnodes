@@ -937,7 +937,11 @@ app = FastAPI(
 )
 
 # Middleware - CORS configurable for security
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3006').split(',')
+# ✅ FIX: Allow both localhost and 127.0.0.1 origins for browser compatibility
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3006,http://127.0.0.1:3006,http://localhost:3000,http://127.0.0.1:3000'
+).split(',')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,
@@ -1027,7 +1031,8 @@ async def get_graph_data():
         # This ensures the graph is always connected
         logger.info("Fetching adjacency relationships from database")
         async with async_session() as session:
-            # Get all edges (adjacencies) - these define which nodes we need
+            # Get all edges (adjacencies) - only include edges where BOTH endpoints have valid artists
+            # This ensures the graph is always connected and all nodes are displayable
             edges_query = text("""
                 SELECT
                        ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
@@ -1037,9 +1042,18 @@ async def get_graph_data():
                        'sequential' as edge_type,
                        COUNT(*) OVER() as total_count
                 FROM song_adjacency sa
+                -- ✅ FIX: Ensure both endpoints have valid artist attribution
+                INNER JOIN tracks t1 ON sa.song_id_1 = t1.id
+                INNER JOIN track_artists ta1 ON t1.id = ta1.track_id AND ta1.role = 'primary'
+                INNER JOIN artists a1 ON ta1.artist_id = a1.artist_id
+                INNER JOIN tracks t2 ON sa.song_id_2 = t2.id
+                INNER JOIN track_artists ta2 ON t2.id = ta2.track_id AND ta2.role = 'primary'
+                INNER JOIN artists a2 ON ta2.artist_id = a2.artist_id
                 WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
+                  AND a1.name IS NOT NULL AND a1.name != '' AND a1.name != 'Unknown'
+                  AND a2.name IS NOT NULL AND a2.name != '' AND a2.name != 'Unknown'
                 ORDER BY occurrence_count DESC
-                LIMIT 5000  -- Top 5000 most common adjacencies
+                LIMIT 30000  -- Increased from 5000 to show full graph (current max: ~26k edges)
             """)
             edges_result = await session.execute(edges_query)
 
@@ -1082,25 +1096,7 @@ async def get_graph_data():
                             0 as y_position,
                             json_build_object(
                                 'title', t.title,
-                                'artist', COALESCE(
-                                    -- Try to get first valid artist
-                                    (SELECT a.name FROM track_artists ta
-                                     INNER JOIN artists a ON ta.artist_id = a.artist_id
-                                     WHERE ta.track_id = t.id
-                                       AND ta.role = 'primary'
-                                       AND a.name IS NOT NULL
-                                       AND a.name != ''
-                                       AND a.name != 'Unknown'
-                                     ORDER BY ta.position ASC, ta.created_at ASC
-                                     LIMIT 1),
-                                    -- Fallback: any primary artist
-                                    (SELECT a.name FROM track_artists ta
-                                     INNER JOIN artists a ON ta.artist_id = a.artist_id
-                                     WHERE ta.track_id = t.id AND ta.role = 'primary'
-                                     ORDER BY ta.position ASC, ta.created_at ASC
-                                     LIMIT 1),
-                                    'Unknown'
-                                ),
+                                'artist', a.name,
                                 'node_type', 'song',
                                 'category', t.genre,
                                 'genre', t.genre,
@@ -1134,7 +1130,13 @@ async def get_graph_data():
                                 'subgenre', t.subgenre
                             ) as metadata
                         FROM tracks t
+                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
+                        INNER JOIN artists a ON ta.artist_id = a.artist_id
                         WHERE t.id::text = ANY(:node_ids)
+                          -- ✅ FIX: Only return nodes with valid artist attribution
+                          AND a.name IS NOT NULL
+                          AND a.name != ''
+                          AND a.name != 'Unknown'
                         -- NO LIMIT: Return ALL nodes referenced by edges to ensure graph connectivity
                 """)
 

@@ -1477,3 +1477,172 @@ async def refresh_tidal_token(
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "music-auth"}
+
+@router.get("/spotify/token/status")
+async def get_spotify_token_status():
+    """
+    Check Spotify OAuth token status in database
+
+    Returns token expiry information without exposing sensitive data
+    """
+    try:
+        db_pool = await get_db_pool()
+
+        async with db_pool.acquire() as conn:
+            result = await conn.fetchrow("""
+                SELECT
+                    service,
+                    CASE WHEN expires_at > CURRENT_TIMESTAMP THEN 'valid' ELSE 'expired' END as status,
+                    expires_at,
+                    EXTRACT(EPOCH FROM (expires_at - CURRENT_TIMESTAMP)) / 3600 as hours_until_expiry,
+                    CASE WHEN refresh_token IS NOT NULL THEN true ELSE false END as has_refresh_token,
+                    updated_at
+                FROM user_oauth_tokens
+                WHERE service = 'spotify' AND user_id = 'default_user'
+                ORDER BY expires_at DESC
+                LIMIT 1
+            """)
+
+            if not result:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "status": "not_found",
+                        "message": "No Spotify OAuth token found in database. Please authenticate via /spotify/authorize endpoint."
+                    }
+                )
+
+            return {
+                "service": result['service'],
+                "status": result['status'],
+                "expires_at": result['expires_at'].isoformat(),
+                "hours_until_expiry": round(result['hours_until_expiry'], 2) if result['hours_until_expiry'] > 0 else 0,
+                "has_refresh_token": result['has_refresh_token'],
+                "last_updated": result['updated_at'].isoformat(),
+                "message": "Token is valid" if result['status'] == 'valid' else "Token is EXPIRED - use /spotify/token/refresh-manual to refresh"
+            }
+
+    except Exception as e:
+        logger.error(f"Failed to get Spotify token status: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get token status: {str(e)}"
+        )
+
+@router.post("/spotify/token/refresh-manual")
+async def manual_refresh_spotify_token():
+    """
+    Manually refresh Spotify OAuth token from database
+
+    This endpoint retrieves the refresh token from database and
+    exchanges it for a new access token. Useful for operators to
+    manually fix expired tokens.
+    """
+    try:
+        db_pool = await get_db_pool()
+
+        # Get current refresh token
+        async with db_pool.acquire() as conn:
+            result = await conn.fetchrow("""
+                SELECT refresh_token, expires_at
+                FROM user_oauth_tokens
+                WHERE service = 'spotify' AND user_id = 'default_user'
+                ORDER BY expires_at DESC
+                LIMIT 1
+            """)
+
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No Spotify OAuth token found. Please authenticate first."
+                )
+
+            if not result['refresh_token']:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No refresh token available. Please re-authenticate via /spotify/authorize"
+                )
+
+            refresh_token = result['refresh_token']
+
+        # Validate backend has credentials configured
+        if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
+            raise HTTPException(
+                status_code=500,
+                detail="Spotify credentials not configured on backend"
+            )
+
+        # Refresh the token
+        token_url = 'https://accounts.spotify.com/api/token'
+
+        auth_str = f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}"
+        auth_bytes = auth_str.encode('utf-8')
+        auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
+
+        headers = {
+            'Authorization': f'Basic {auth_base64}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+
+        data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                token_url,
+                headers=headers,
+                data=data,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                result_data = await response.json()
+
+                if response.status == 200:
+                    logger.info("🎵 [SPOTIFY] Successfully refreshed access token (manual)")
+
+                    # Store refreshed tokens in database
+                    expires_at = datetime.now() + timedelta(seconds=result_data['expires_in'])
+
+                    async with db_pool.acquire() as conn:
+                        await conn.execute("""
+                            UPDATE user_oauth_tokens
+                            SET access_token = $1,
+                                expires_at = $2,
+                                token_type = $3,
+                                scope = $4,
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE service = 'spotify' AND user_id = 'default_user'
+                        """,
+                            result_data['access_token'],
+                            expires_at,
+                            result_data['token_type'],
+                            result_data.get('scope')
+                        )
+
+                    logger.info("🎵 [SPOTIFY] Updated tokens in database")
+
+                    return JSONResponse({
+                        "success": True,
+                        "message": "Token refreshed successfully",
+                        "expires_at": expires_at.isoformat(),
+                        "expires_in_hours": round(result_data['expires_in'] / 3600, 2),
+                        "token_type": result_data['token_type'],
+                        "scope": result_data.get('scope')
+                    })
+                else:
+                    error_msg = result_data.get('error_description', result_data.get('error', 'Unknown error'))
+                    logger.error(f"🎵 [SPOTIFY] Manual token refresh failed: {error_msg}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Token refresh failed: {error_msg}"
+                    )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Manual token refresh failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Manual refresh failed: {str(e)}"
+        )

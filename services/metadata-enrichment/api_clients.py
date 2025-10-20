@@ -60,7 +60,7 @@ class SpotifyClient:
 
         try:
             from sqlalchemy import text
-            from datetime import datetime, timedelta
+            from datetime import datetime, timedelta, timezone
 
             async with self.db_session_factory() as session:
                 # Get token with refresh capability
@@ -79,26 +79,43 @@ class SpotifyClient:
                     logger.warning("⚠️ No Spotify user token found in database")
                     return None
 
-                # Check if token is still valid (with 5-minute buffer)
+                # Check if token is still valid (with 24-hour buffer for proactive refresh)
                 expires_at = row.expires_at
                 # Ensure both datetimes are timezone-aware for comparison
-                now_utc = datetime.now(expires_at.tzinfo) if expires_at.tzinfo else datetime.now()
-                if expires_at > now_utc + timedelta(minutes=5):
+                now_utc = datetime.now(timezone.utc) if expires_at.tzinfo else datetime.now()
+
+                # Proactive refresh: refresh if expiring within 24 hours
+                time_until_expiry = expires_at - now_utc
+
+                if time_until_expiry.total_seconds() > 24 * 3600:  # More than 24 hours remaining
                     logger.debug("✅ Retrieved valid Spotify user token from database")
                     return row.access_token
+                elif time_until_expiry.total_seconds() > 0:  # Expiring within 24 hours but not expired
+                    logger.info(f"⚠️ Spotify token expiring in {time_until_expiry.total_seconds() / 3600:.1f} hours, proactively refreshing...")
+                    if row.refresh_token:
+                        new_token = await self._refresh_user_token(row.refresh_token)
+                        if new_token:
+                            logger.info("✅ Successfully refreshed Spotify user token (proactive)")
+                            return new_token
+                        else:
+                            logger.warning("⚠️ Failed to refresh token, using existing token until expiry")
+                            return row.access_token  # Use existing token until it expires
+                    else:
+                        logger.warning("⚠️ No refresh token available, using existing token until expiry")
+                        return row.access_token
 
-                # Token expired or expiring soon - try to refresh
+                # Token expired - try to refresh
                 if row.refresh_token:
-                    logger.info("🔄 Spotify user token expired/expiring, attempting refresh...")
+                    logger.warning("❌ Spotify user token EXPIRED, attempting refresh...")
                     new_token = await self._refresh_user_token(row.refresh_token)
                     if new_token:
-                        logger.info("✅ Successfully refreshed Spotify user token")
+                        logger.info("✅ Successfully refreshed expired Spotify user token")
                         return new_token
                     else:
-                        logger.warning("⚠️ Failed to refresh Spotify user token")
+                        logger.error("❌ Failed to refresh expired Spotify user token")
                         return None
                 else:
-                    logger.warning("⚠️ Spotify user token expired and no refresh token available")
+                    logger.error("❌ Spotify user token expired and no refresh token available")
                     return None
 
         except Exception as e:
@@ -109,7 +126,7 @@ class SpotifyClient:
         """Refresh expired user OAuth token and update database"""
         try:
             from sqlalchemy import text
-            from datetime import datetime, timedelta
+            from datetime import datetime, timedelta, timezone
 
             # Request new access token using refresh token
             auth_str = f"{self.client_id}:{self.client_secret}"
@@ -133,7 +150,7 @@ class SpotifyClient:
                         new_access_token = token_data['access_token']
                         new_refresh_token = token_data.get('refresh_token', refresh_token)  # Spotify may not return new refresh token
                         expires_in = token_data['expires_in']
-                        expires_at = datetime.now() + timedelta(seconds=expires_in)
+                        expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
 
                         # Update database with new token
                         if self.db_session_factory:

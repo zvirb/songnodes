@@ -28,8 +28,14 @@ app.use(helmet({
 }));
 
 // CORS configuration
+// ✅ FIX: Allow both localhost and 127.0.0.1 origins for browser compatibility
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3006'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3006',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3006'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
@@ -95,7 +101,7 @@ const serviceProxies = {
     pathRewrite: { '^/api/v1/visualization': '/api/v1/visualization' }
   },
   '/api/graph': {
-    target: 'http://rest-api:8082',
+    target: 'http://graph-visualization-api:8084',
     pathRewrite: { '^/api/graph': '/api/graph' }
   },
   '/api/v1/scrapers': {
@@ -156,7 +162,12 @@ app.use((err, req, res, next) => {
 // Initialize Socket.io for real-time updates
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3006'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3006',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3006'
+    ],
     credentials: true
   }
 });

@@ -720,14 +720,15 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
         borderBottom: '1px solid rgba(255,255,255,0.1)',
         backdropFilter: 'blur(10px)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', overflow: 'hidden', width: '100%' }}>
           <h1 style={{
             margin: 0,
             fontSize: '24px',
             fontWeight: 700,
             background: 'linear-gradient(90deg, #4A90E2, #7ED321)',
             WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+            WebkitTextFillColor: 'transparent',
+            flexShrink: 0
           }}>
             🎵 SongNodes DJ
           </h1>
@@ -739,7 +740,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
             backgroundColor: 'rgba(0,0,0,0.3)',
             padding: '4px',
             borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0
           }}>
             <button
               onClick={() => setMode('play')}
@@ -788,14 +790,27 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', overflowX: 'auto', flexWrap: 'nowrap', maxWidth: '100%' }}>
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'center',
+          overflowX: 'auto',
+          flexWrap: 'nowrap',
+          flex: 1,
+          minWidth: 0,
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.3) transparent'
+        }}>
           <span style={{
             padding: '6px 12px',
             backgroundColor: 'rgba(74,144,226,0.2)',
             borderRadius: '12px',
             fontSize: '12px',
             color: '#4A90E2',
-            fontWeight: 600
+            fontWeight: 600,
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}>
             {tracks.length} Tracks Loaded
           </span>
@@ -805,7 +820,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
             borderRadius: '12px',
             fontSize: '12px',
             color: '#7ED321',
-            fontWeight: 600
+            fontWeight: 600,
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}>
             {graphData?.edges?.length || 0} Connections
           </span>
@@ -825,7 +842,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
               alignItems: 'center',
               gap: '6px',
               transition: 'all 0.2s',
-              marginRight: '8px'
+              marginRight: '8px',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(126,211,33,0.3)';
@@ -852,7 +871,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
               alignItems: 'center',
               gap: '6px',
               transition: 'all 0.2s',
-              marginRight: '8px'
+              marginRight: '8px',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(231,76,60,0.3)';
@@ -879,7 +900,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
               alignItems: 'center',
               gap: '6px',
               transition: 'all 0.2s',
-              marginRight: '8px'
+              marginRight: '8px',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(155,89,182,0.3)';
@@ -906,7 +929,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
               alignItems: 'center',
               gap: '6px',
               transition: 'all 0.2s',
-              marginRight: '8px'
+              marginRight: '8px',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
@@ -932,7 +957,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
@@ -959,7 +986,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(69,90,100,0.32)';

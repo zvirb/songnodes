@@ -5,15 +5,15 @@ Silver-to-Gold ETL Scheduler
 Automated scheduler that runs the Silver-to-Gold ETL transformation periodically.
 
 Schedule:
-- Runs every 24 hours (configurable via SILVER_TO_GOLD_INTERVAL env var)
-- Processes all valid Silver tracks to Gold layer
+- Runs every 2 hours (configurable via SILVER_TO_GOLD_INTERVAL_HOURS env var)
+- Processes 50,000 tracks per cycle (configurable via SILVER_TO_GOLD_BATCH_SIZE)
 - Creates artist attribution and track-artist relationships
 - Runs 1 minute after raw-data-processor completes its cycle
 
 Architecture Integration:
 - Completes the medallion architecture automation chain
 - Bronze → Silver (raw-data-processor, 30s interval)
-- Silver → Gold (this service, 24h interval)
+- Silver → Gold (this service, 2h interval, 50K batch size)
 """
 
 import asyncio
@@ -62,8 +62,8 @@ async def scheduler_loop():
     Runs the Silver-to-Gold ETL at configured intervals
     """
     # Configuration
-    interval_hours = int(os.getenv("SILVER_TO_GOLD_INTERVAL_HOURS", "24"))
-    batch_size = int(os.getenv("SILVER_TO_GOLD_BATCH_SIZE", "1000"))
+    interval_hours = int(os.getenv("SILVER_TO_GOLD_INTERVAL_HOURS", "2"))
+    batch_size = int(os.getenv("SILVER_TO_GOLD_BATCH_SIZE", "50000"))
     startup_delay_seconds = int(os.getenv("STARTUP_DELAY_SECONDS", "60"))
 
     interval_seconds = interval_hours * 3600

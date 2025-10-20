@@ -23,10 +23,10 @@ import { ContextMenu, useContextMenu } from './ContextMenu';
 
 // Performance constants - updated for 2025 best practices
 const PERFORMANCE_THRESHOLDS = {
-  NODE_COUNT_HIGH: 2000,
-  NODE_COUNT_MEDIUM: 1000,
-  EDGE_COUNT_HIGH: 5000,
-  EDGE_COUNT_MEDIUM: 3000,
+  NODE_COUNT_HIGH: 5000,  // ✅ FIX: Increased from 2000 to match new 4x larger spacing
+  NODE_COUNT_MEDIUM: 2500,  // ✅ FIX: Increased from 1000 to keep labels visible longer
+  EDGE_COUNT_HIGH: 12000,  // ✅ FIX: Increased proportionally
+  EDGE_COUNT_MEDIUM: 7000,  // ✅ FIX: Increased proportionally
   // Removed CULL_DISTANCE - using proper viewport bounds instead
   LOD_DISTANCE_1: 400, // Screen-space distance for detail levels
   LOD_DISTANCE_2: 800, // Screen-space distance for detail levels
@@ -206,12 +206,12 @@ class LODSystem {
     let threshold2 = 0.9; // ~90% of diagonal for minimal detail (was 0.8)
 
     // Only reduce thresholds for VERY large graphs to maintain visual quality
-    if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_HIGH * 2) { // 2000+ nodes
-      threshold1 *= 0.7; // Still more generous than before
-      threshold2 *= 0.8;
-    } else if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_HIGH) { // 1000-2000 nodes
-      threshold1 *= 0.85;
-      threshold2 *= 0.9;
+    if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_HIGH * 2) { // 10000+ nodes
+      threshold1 *= 0.85; // ✅ FIX: Less aggressive (was 0.7) with new spacing
+      threshold2 *= 0.9;  // ✅ FIX: Less aggressive (was 0.8) with new spacing
+    } else if (this.nodeCount > PERFORMANCE_THRESHOLDS.NODE_COUNT_HIGH) { // 5000-10000 nodes
+      threshold1 *= 0.95; // ✅ FIX: Much less aggressive (was 0.85) to keep labels visible
+      threshold2 *= 0.95; // ✅ FIX: Much less aggressive (was 0.9) to keep labels visible
     }
     // For < 1000 nodes, use full generous thresholds
 
@@ -1076,19 +1076,20 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         .distance(d => {
           // Exponential scaling for more dramatic weight differences
           const weight = d.weight || 1;
-          // Strong edges (weight 10): 25px apart (very tight clusters)
-          // Medium edges (weight 5): 80px apart
-          // Weak edges (weight 1): 180px apart (far separated)
-          const minDist = 25;
-          const maxDist = 180;
+          // ✅ REFINEMENT: Even larger distances for cleaner, less messy graph
+          // Strong edges (weight 10): 150px apart (tight clusters with clear separation)
+          // Medium edges (weight 5): 525px apart
+          // Weak edges (weight 1): 900px apart (dramatic separation)
+          const minDist = 150;
+          const maxDist = 900;
           const normalizedWeight = Math.min(weight / 10, 1.0);
           return maxDist - (normalizedWeight * normalizedWeight * (maxDist - minDist));
         })
         .strength(d => {
-          // Stronger pull for higher weight edges
+          // ✅ REFINEMENT: Reduced link strength for more elasticity/flexibility
           const weight = d.weight || 1;
           const normalizedWeight = Math.min(weight / 10, 1.0);
-          return normalizedWeight * 0.8 + 0.2; // Range: 0.2 to 1.0
+          return normalizedWeight * 0.6 + 0.1; // Range: 0.1 to 0.7 (more flexible)
         })
       )
 
@@ -1096,8 +1097,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // 2. CHARGE FORCE: Stronger repulsion for better node distribution
       // ──────────────────────────────────────────────────────────────────
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-500)  // Increased repulsion to prevent linear clustering
-        .distanceMax(500)  // Limit repulsion range for performance
+        .strength(-2500)  // ✅ REFINEMENT: 5x stronger repulsion (was -500) for cleaner graph
+        .distanceMax(2500)  // ✅ REFINEMENT: 5x larger repulsion range for dramatic separation
         // D3 defaults for distanceMin, theta - KEEP THEM
       )
 
@@ -1105,7 +1106,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // 3. COLLISION: Prevent overlap
       // ──────────────────────────────────────────────────────────────────
       .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || 8) + 10)  // Node radius + small padding
+        .radius(d => (d.radius || 8) + 50)  // ✅ REFINEMENT: Even larger padding (~58px total)
         // D3 defaults for strength and iterations - KEEP THEM
       )
 
@@ -1221,8 +1222,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         .distance(d => {
           // Use simplified weight-based distance for fast pre-computation
           const weight = d.weight || 1;
-          const minDistance = 60;
-          const maxDistance = 220;
+          const minDistance = 180;  // ✅ REFINEMENT: Match main simulation (150→180 for pre-comp)
+          const maxDistance = 950;  // ✅ REFINEMENT: Match main simulation (900→950 for pre-comp)
           const normalizedWeight = Math.log(weight + 1) / Math.log(13);
           return maxDistance - (normalizedWeight * (maxDistance - minDistance));
         })
@@ -1244,8 +1245,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         })
       )
       .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-500)  // Match main simulation's increased repulsion
-        .distanceMax(500)  // Match main simulation's repulsion range
+        .strength(-2500)  // ✅ REFINEMENT: Match main simulation's stronger repulsion
+        .distanceMax(2500)  // ✅ REFINEMENT: Match main simulation's larger repulsion range
         .theta(0.95) // OPTIMIZED: More approximation for speed
       )
       .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.02)) // Match main simulation's center force
@@ -2249,7 +2250,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     }
 
     // Show multi-line labels for better readability
-    const shouldShowLabel = viewState.showLabels && lodLevel < 2; // LOD 0-1 only
+    // ✅ FIX: Show labels for LOD 0-2 (only hide when culled at LOD 3)
+    const shouldShowLabel = viewState.showLabels && lodLevel < 3; // LOD 0-2 show labels
 
     // Use the new multi-line label container
     const labelContainer = (node as any).pixiLabelContainer as PIXI.Container | undefined;

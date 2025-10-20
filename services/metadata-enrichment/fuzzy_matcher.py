@@ -17,6 +17,14 @@ from difflib import SequenceMatcher
 
 logger = structlog.get_logger(__name__)
 
+# Try to import Levenshtein for better fuzzy matching
+try:
+    import Levenshtein
+    HAS_LEVENSHTEIN = True
+except ImportError:
+    HAS_LEVENSHTEIN = False
+    logger.warning("python-Levenshtein not available, using basic SequenceMatcher")
+
 
 @dataclass
 class MatchCandidate:
@@ -60,8 +68,9 @@ class LabelAwareFuzzyMatcher:
         self.TITLE_SIMILARITY_WEIGHT = 30
         self.YEAR_MATCH_WEIGHT = 20
         self.DURATION_MATCH_WEIGHT = 10
-        self.CONFIDENCE_THRESHOLD = 70  # Label match (40) + exact title (30) = 70%
-        self.MIN_LABEL_SIMILARITY = 0.5  # Require at least 50% label match
+        self.CONFIDENCE_THRESHOLD = 65  # Reduced from 70 to allow typos (40 + 85% title = 65.5)
+        self.MIN_LABEL_SIMILARITY = 0.4  # Reduced from 0.5 to allow partial label matches
+        self.MIN_TITLE_SIMILARITY = 0.75  # Minimum title similarity to count (allows for typos)
 
     def extract_label_hint(self, title: str) -> tuple[str, Optional[str]]:
         """
@@ -97,13 +106,21 @@ class LabelAwareFuzzyMatcher:
         """
         Calculate similarity between two titles (0.0 to 1.0).
 
-        Uses SequenceMatcher for fuzzy string matching.
+        Uses Levenshtein distance if available, otherwise SequenceMatcher.
         Normalizes titles by lowercasing and removing extra whitespace.
+
+        Levenshtein ratio provides better typo tolerance:
+        - "Televison" vs "Television" -> 0.9 similarity (vs 0.8 with SequenceMatcher)
         """
         t1 = ' '.join(title1.lower().split())
         t2 = ' '.join(title2.lower().split())
 
-        return SequenceMatcher(None, t1, t2).ratio()
+        if HAS_LEVENSHTEIN:
+            # Levenshtein.ratio() returns similarity 0.0-1.0
+            return Levenshtein.ratio(t1, t2)
+        else:
+            # Fallback to SequenceMatcher
+            return SequenceMatcher(None, t1, t2).ratio()
 
     def calculate_confidence_score(
         self,
@@ -164,6 +181,18 @@ class LabelAwareFuzzyMatcher:
 
         # 2. Title similarity (30 points)
         title_sim = self.calculate_title_similarity(scraped_title, candidate.title)
+
+        # REJECT if title similarity is too low (even with label match)
+        if title_sim < self.MIN_TITLE_SIMILARITY:
+            logger.warning(
+                "Title similarity below minimum threshold - rejecting",
+                scraped=scraped_title,
+                candidate=candidate.title,
+                similarity=f"{title_sim:.1%}",
+                min_required=f"{self.MIN_TITLE_SIMILARITY:.1%}"
+            )
+            return 0.0  # Automatic rejection
+
         title_score = self.TITLE_SIMILARITY_WEIGHT * title_sim
         score += title_score
 

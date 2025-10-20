@@ -103,6 +103,17 @@ class TitleNormalizer:
             re.IGNORECASE
         )
 
+        # Mashup patterns: "Artist A vs Artist B", "Track A / Track B"
+        self.mashup_vs_pattern = re.compile(r'\s+(?:vs\.?|versus)\s+', re.IGNORECASE)
+        self.mashup_slash_pattern = re.compile(r'\s+/\s+')
+
+        # Timestamp pattern: [MM:SS] or (MM:SS)
+        self.timestamp_pattern = re.compile(r'[\[\(]\d{1,2}:\d{2}[\]\)]')
+
+        # Additional label patterns (parentheses and dash at end)
+        self.label_pattern_parens = re.compile(r'\s*\(([^)]+)\)\s*$')
+        self.label_pattern_dash = re.compile(r'\s+-\s+([A-Z][A-Za-z\s]+(?:Records|Recordings|Music|Label)?)\s*$')
+
         # Whitespace normalization
         self.whitespace_pattern = re.compile(r'\s+')
 
@@ -197,6 +208,7 @@ class TitleNormalizer:
         Apply comprehensive normalization pipeline (Section IV).
 
         Normalization steps:
+        0. Remove timestamps and extra label patterns
         1. Lowercase conversion
         2. Abbreviation expansion
         3. Suffix stripping
@@ -210,8 +222,17 @@ class TitleNormalizer:
         Returns:
             Normalized title string
         """
+        # 0. Pre-processing: Remove timestamps [MM:SS] and additional label patterns
+        normalized = title
+
+        # Remove timestamps
+        normalized = self.timestamp_pattern.sub('', normalized)
+
+        # Remove label patterns at end (if not already handled)
+        normalized = self.label_pattern_dash.sub('', normalized)
+
         # 1. Lowercase
-        normalized = title.lower()
+        normalized = normalized.lower()
 
         # 2. Expand abbreviations
         for abbrev, expansion in self.ABBREVIATIONS.items():
@@ -243,6 +264,32 @@ class TitleNormalizer:
         normalized = normalized.strip()
 
         return normalized
+
+    def detect_mashup(self, title: str) -> tuple[bool, Optional[List[str]]]:
+        """
+        Detect if title is a mashup and extract component tracks.
+
+        Args:
+            title: Track title
+
+        Returns:
+            (is_mashup, component_tracks) tuple
+        """
+        # Check for "vs" pattern
+        if self.mashup_vs_pattern.search(title):
+            components = self.mashup_vs_pattern.split(title)
+            return True, [c.strip() for c in components if c.strip()]
+
+        # Check for slash pattern (but not in parentheses/brackets)
+        # Remove content in parentheses/brackets first
+        temp_title = re.sub(r'\([^)]*\)', '', title)
+        temp_title = re.sub(r'\[[^\]]*\]', '', temp_title)
+
+        if self.mashup_slash_pattern.search(temp_title):
+            components = self.mashup_slash_pattern.split(temp_title)
+            return True, [c.strip() for c in components if c.strip()]
+
+        return False, None
 
     def extract_artist_from_title(self, title: str) -> Optional[str]:
         """
