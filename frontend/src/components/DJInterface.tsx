@@ -14,6 +14,7 @@ import { KeyMoodPanel } from './KeyMoodPanel';
 import TargetTracksManager from './TargetTracksManager';
 import GraphFilterPanel from './GraphFilterPanel';
 import { ArtistAttributionManager } from './ArtistAttributionManager';
+import { TracklistImporter } from './TracklistImporter';
 // Import removed - PipelineMonitoringDashboard has missing dependencies
 import { Track as DJTrack, DJMode } from '../types/dj';
 import { Track } from '../types/index';
@@ -201,6 +202,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
 
   // Artist Attribution Manager state
   const [showArtistAttribution, setShowArtistAttribution] = useState(false);
+
+  // Tracklist Importer state
+  const [showTracklistImporter, setShowTracklistImporter] = useState(false);
 
   // Prometheus metrics state
   const [prometheusMetrics, setPrometheusMetrics] = useState<{
@@ -784,7 +788,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', overflowX: 'auto', flexWrap: 'nowrap', maxWidth: '100%' }}>
           <span style={{
             padding: '6px 12px',
             backgroundColor: 'rgba(74,144,226,0.2)',
@@ -858,6 +862,33 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
             }}
           >
             🎨 Fix Artist Attribution
+          </button>
+
+          <button
+            onClick={() => setShowTracklistImporter(true)}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(155,89,182,0.2)',
+              border: '1px solid rgba(155,89,182,0.4)',
+              borderRadius: '8px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              marginRight: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(155,89,182,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(155,89,182,0.2)';
+            }}
+          >
+            📝 Import Tracklist
           </button>
 
           <button
@@ -2110,6 +2141,13 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
       {showArtistAttribution && (
         <ArtistAttributionManager
           onClose={() => setShowArtistAttribution(false)}
+        />
+      )}
+
+      {/* Tracklist Importer */}
+      {showTracklistImporter && (
+        <TracklistImporter
+          onClose={() => setShowTracklistImporter(false)}
         />
       )}
 

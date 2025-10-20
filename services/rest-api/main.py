@@ -93,6 +93,28 @@ class TrackPreviewResponse(BaseModel):
     message: Optional[str] = None
     streaming_options: Dict[str, Optional[str]] = Field(default_factory=dict)
 
+
+class TracklistImportTrack(BaseModel):
+    """Model for a single track in a tracklist import request"""
+    artist: str
+    title: str
+    track_number: Optional[int] = None
+
+
+class TracklistImportRequest(BaseModel):
+    """Request payload for importing a tracklist"""
+    tracks: List[TracklistImportTrack]
+
+
+class TracklistImportResponse(BaseModel):
+    """Response payload for tracklist import operation"""
+    created: int = 0
+    updated: int = 0
+    failed: int = 0
+    total: int = 0
+    details: List[Dict[str, Any]] = Field(default_factory=list)
+
+
 # Database connection - use secrets_manager if available
 try:
     DATABASE_URL = get_database_url(async_driver=True, use_connection_pool=True)
@@ -1172,6 +1194,146 @@ async def create_track(track: TrackCreate):
     except Exception as e:
         logger.error(f"Failed to create track: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/tracks/import-tracklist", response_model=TracklistImportResponse)
+async def import_tracklist(request: TracklistImportRequest):
+    """
+    Import a tracklist from user-provided data.
+
+    Creates new tracks or updates existing ones based on artist + title matching.
+    Automatically creates artist records and track-artist relationships.
+
+    Returns statistics on created, updated, and failed imports.
+    """
+    import hashlib
+
+    stats = {
+        "created": 0,
+        "updated": 0,
+        "failed": 0,
+        "total": len(request.tracks),
+        "details": []
+    }
+
+    try:
+        async with db_pool.acquire() as conn:
+            for track_data in request.tracks:
+                try:
+                    # Generate stable track_id from artist + title hash
+                    content = f"{track_data.artist.lower().strip()}:{track_data.title.lower().strip()}"
+                    track_id = hashlib.md5(content.encode()).hexdigest()[:16]
+
+                    # Normalize title for search
+                    normalized_title = track_data.title.lower().strip()
+
+                    # 1. Upsert artist
+                    artist_query = """
+                    INSERT INTO artists (artist_name, normalized_name, data_source)
+                    VALUES ($1, $2, 'manual_import')
+                    ON CONFLICT (normalized_name)
+                    DO UPDATE SET artist_name = EXCLUDED.artist_name
+                    RETURNING artist_id
+                    """
+                    artist_row = await conn.fetchrow(
+                        artist_query,
+                        track_data.artist.strip(),
+                        track_data.artist.lower().strip()
+                    )
+                    artist_id = artist_row['artist_id']
+
+                    # 2. Check if track exists (by track_id or by matching artist + title)
+                    existing_track_query = """
+                    SELECT s.song_id, s.track_id
+                    FROM songs s
+                    WHERE s.track_id = $1
+                       OR (s.normalized_title = $2 AND EXISTS (
+                           SELECT 1 FROM track_artists ta
+                           WHERE ta.track_id = s.song_id AND ta.artist_id = $3
+                       ))
+                    LIMIT 1
+                    """
+                    existing = await conn.fetchrow(
+                        existing_track_query,
+                        track_id,
+                        normalized_title,
+                        artist_id
+                    )
+
+                    if existing:
+                        # Track exists - update if needed
+                        song_id = existing['song_id']
+                        update_query = """
+                        UPDATE songs
+                        SET track_name = $1,
+                            normalized_title = $2,
+                            updated_at = NOW()
+                        WHERE song_id = $3
+                        """
+                        await conn.execute(
+                            update_query,
+                            track_data.title.strip(),
+                            normalized_title,
+                            song_id
+                        )
+                        stats["updated"] += 1
+                        stats["details"].append({
+                            "artist": track_data.artist,
+                            "title": track_data.title,
+                            "status": "updated",
+                            "song_id": song_id
+                        })
+                    else:
+                        # Track doesn't exist - create it
+                        insert_query = """
+                        INSERT INTO songs (
+                            track_id, track_name, normalized_title, data_source
+                        ) VALUES ($1, $2, $3, 'manual_import')
+                        RETURNING song_id
+                        """
+                        new_track = await conn.fetchrow(
+                            insert_query,
+                            track_id,
+                            track_data.title.strip(),
+                            normalized_title
+                        )
+                        song_id = new_track['song_id']
+                        stats["created"] += 1
+                        stats["details"].append({
+                            "artist": track_data.artist,
+                            "title": track_data.title,
+                            "status": "created",
+                            "song_id": song_id,
+                            "track_id": track_id
+                        })
+
+                    # 3. Ensure track_artists relationship exists
+                    relationship_query = """
+                    INSERT INTO track_artists (track_id, artist_id, role, is_primary)
+                    VALUES ($1, $2, 'primary', true)
+                    ON CONFLICT (track_id, artist_id) DO NOTHING
+                    """
+                    await conn.execute(relationship_query, song_id, artist_id)
+
+                    logger.info(f"✅ Imported: {track_data.artist} - {track_data.title} (song_id: {song_id})")
+
+                except Exception as track_error:
+                    logger.error(f"❌ Failed to import {track_data.artist} - {track_data.title}: {track_error}")
+                    stats["failed"] += 1
+                    stats["details"].append({
+                        "artist": track_data.artist,
+                        "title": track_data.title,
+                        "status": "failed",
+                        "error": str(track_error)
+                    })
+
+        logger.info(f"📊 Tracklist import complete: {stats['created']} created, {stats['updated']} updated, {stats['failed']} failed")
+        return TracklistImportResponse(**stats)
+
+    except Exception as e:
+        logger.error(f"Failed to import tracklist: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
 
 @app.get("/api/search/tracks", response_model=List[TrackResponse])
 async def search_tracks(
