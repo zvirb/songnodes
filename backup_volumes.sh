@@ -141,7 +141,7 @@ volume_stats() {
     log "Volume Statistics:"
     echo "==================="
 
-    for volume in songnodes_postgres_data songnodes_redis_data songnodes_rabbitmq_data songnodes_grafana_data; do
+    for volume in songnodes_postgres_data songnodes_redis_data songnodes_rabbitmq_data songnodes_grafana_data songnodes_minio_data; do
         if docker volume inspect "$volume" >/dev/null 2>&1; then
             local size=$(docker run --rm -v "${volume}:/data:ro" alpine:latest du -sh /data | cut -f1)
             echo "$volume: $size"
@@ -159,6 +159,7 @@ case "${1:-}" in
         backup_volume "songnodes_redis_data" || warn "Redis backup failed"
         backup_volume "songnodes_rabbitmq_data" || warn "RabbitMQ backup failed"
         backup_volume "songnodes_grafana_data" || warn "Grafana backup failed"
+        backup_volume "songnodes_minio_data" || warn "MinIO backup failed"
 
         cleanup_old_backups
         log "✅ Backup process completed"

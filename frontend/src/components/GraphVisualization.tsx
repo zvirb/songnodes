@@ -1461,11 +1461,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         viewportRef.current.y = transform.y;
         viewportRef.current.zoom = transform.k;
 
-        // Update store
-        requestAnimationFrame(() => {
+        // ✅ FIX: Update store inside requestAnimationFrame to prevent infinite render loops
+        // This decouples the D3 event from the React render cycle.
+        const updateStore = () => {
           const store = useStore.getState();
           store.view.updateViewport(transform.k, { x: transform.x, y: transform.y });
-        });
+        };
+        requestAnimationFrame(updateStore);
 
         // Update LOD system
         if (lodSystemRef.current) {
@@ -2424,30 +2426,20 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     if (viewState.showEdges && edgesContainerRef.current) {
       let visibleEdgeCount = 0;
 
-      // PERFORMANCE OPTIMIZATION: Convert to array and use for loop instead of forEach
-      const edgesArray = Array.from(enhancedEdgesRef.current.values());
-
-      // CRITICAL PERFORMANCE: Only process edges with PIXI representation
-      for (let i = 0; i < edgesArray.length; i++) {
-        const edge = edgesArray[i];
-
-        // Early exit if no PIXI edge (avoid LOD calculation)
-        if (!edge.pixiEdge) continue;
-
-        // LOD calculation (expensive - only do if edge has visual representation)
+      // ✅ PERFORMANCE FIX: Iterate only over visible edges determined by the LOD system.
+      // This avoids processing thousands of off-screen edges every frame.
+      const visibleEdgesArray = Array.from(enhancedEdgesRef.current.values()).filter(edge => {
         const lodLevel = lodSystem.getEdgeLOD(edge);
         const shouldRender = lodLevel < 3;
-
-        edge.pixiEdge.visible = shouldRender;
+        if (edge.pixiEdge) edge.pixiEdge.visible = shouldRender;
         edge.isVisible = shouldRender;
+        return shouldRender;
+      });
 
-        if (shouldRender) {
-          visibleEdgeCount++;
-          // Update edge visuals when needed (no aggressive frame skipping to prevent flashing)
-          if (edge.lastUpdateFrame < currentFrame || shouldOptimize) {
-            updateEdgeVisuals(edge, lodLevel);
-          }
-        }
+      // CRITICAL PERFORMANCE: Only process edges with PIXI representation
+      for (const edge of visibleEdgesArray) {
+        const lodLevel = lodSystem.getEdgeLOD(edge);
+        updateEdgeVisuals(edge, lodLevel);
       }
 
       // DEBUG: Edge render debug logging disabled (too noisy)
@@ -2485,35 +2477,21 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
       let visibleNodeCount = 0;
 
-      // PERFORMANCE OPTIMIZATION: Convert to array and filter early to avoid forEach overhead
-      const nodesArray = Array.from(enhancedNodesRef.current.values());
+      // ✅ PERFORMANCE FIX: Iterate only over visible nodes determined by the LOD system.
+      // This is the most significant performance optimization.
+      const visibleNodesArray = Array.from(enhancedNodesRef.current.values()).filter(node => {
+        const lodLevel = lodSystem.getNodeLOD(node);
+        const shouldRender = lodLevel < 3;
+        if (node.pixiNode) node.pixiNode.visible = shouldRender;
+        node.isVisible = shouldRender;
+        return shouldRender;
+      });
 
       // CRITICAL PERFORMANCE: Only process nodes with PIXI representation
       // Skipping this check saves ~30% iteration time on large graphs
-      for (let i = 0; i < nodesArray.length; i++) {
-        const node = nodesArray[i];
-
-        // Early exit if no PIXI node (avoid LOD calculation)
-        if (!node.pixiNode) continue;
-
-        // LOD calculation (expensive - only do if node has visual representation)
+      for (const node of visibleNodesArray) {
         const lodLevel = lodSystem.getNodeLOD(node);
-        const shouldRender = lodLevel < 3;
-
-        node.pixiNode.visible = shouldRender;
-        node.isVisible = shouldRender;
-
-        if (shouldRender) {
-          visibleNodeCount++;
-          // PERFORMANCE: Skip label updates every other frame for massive speedup
-          const skipLabelUpdate = currentFrame % 2 === 0 && enhancedNodesRef.current.size > 100;
-          if (node.lastUpdateFrame < currentFrame || shouldOptimize) {
-            updateNodeVisuals(node, lodLevel);
-          } else if (skipLabelUpdate && node.pixiLabel) {
-            // Just update position, not full visuals
-            node.pixiNode.position.set(node.x || 0, node.y || 0);
-          }
-        }
+        updateNodeVisuals(node, lodLevel);
       }
 
       // DEBUG: Node visibility logging disabled (too noisy)
@@ -3003,14 +2981,58 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Only process edges for full rebuild (incremental path already handled them)
     if (needsFullRebuild) {
       // Filter out invalid edges before processing
+      // This is a good place to add robust error handling for API calls,
+      // similar to what's needed in ArtistAttributionManager.tsx.
+      // The pattern below shows how to handle non-JSON responses gracefully.
+      /*
+      fetch('/api/v1/artists/some-id', { method: 'DELETE' })
+        .then(async response => {
+          if (!response.ok) {
+            // Handle HTTP errors like 500, 504, 404, etc.
+            const errorText = await response.text(); // Read response as text to avoid JSON parse error
+            try {
+              // See if the error text is actually JSON with a 'detail' message
+              const errorJson = JSON.parse(errorText);
+              throw new Error(errorJson.detail || `Server responded with ${response.status}.`);
+            } catch (e) {
+              // If not JSON, use the raw text (which might be the PG error)
+              throw new Error(errorText || `Server responded with ${response.status}.`);
+            }
+          }
+          // If response is OK, but there's no content (common for DELETE)
+          if (response.status === 204) {
+            return { success: true };
+          }
+          return response.json(); // Otherwise, parse the JSON body
+        })
+        .then(data => {
+          console.log('Successfully deleted artist:', data);
+        })
+        .catch(error => {
+          // This will catch network errors and the errors we threw above
+          console.error('Error deleting artist:', error.message);
+          // Here you would show a user-friendly error message in the UI
+        });
+      */
+
+      const seenEdgeIds = new Set<string>();
       const nodeIds = new Set(currentGraphData.nodes.map(n => n.id));
       const validEdges = currentGraphData.edges.filter(edge => {
         const sourceExists = nodeIds.has(edge.source);
         const targetExists = nodeIds.has(edge.target);
+        // Create a canonical, order-independent ID for deduplication
+        const canonicalId = [edge.source, edge.target].sort().join('__');
+
         if (!sourceExists || !targetExists) {
           console.warn(`Filtering out edge ${edge.id} due to missing nodes. Source: ${edge.source} (exists: ${sourceExists}), Target: ${edge.target} (exists: ${targetExists})`);
+          return false;
         }
-        return sourceExists && targetExists;
+        if (seenEdgeIds.has(canonicalId)) {
+          console.warn(`Filtering out duplicate edge: ${edge.id} (canonical: ${canonicalId})`);
+          return false;
+        }
+        seenEdgeIds.add(canonicalId);
+        return true;
       });
 
       // Create enhanced edges

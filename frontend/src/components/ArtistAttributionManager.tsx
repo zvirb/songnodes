@@ -205,18 +205,32 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                 })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to assign artist');
+            // Handle immediate success for async job (202) or synchronous success (200, 204)
+            if (response.status === 202) {
+                // Backend accepted the job, but hasn't finished it.
+                // We can optimistically update the UI.
+            } else if (!response.ok) {
+                // Handle non-JSON responses like 504 Gateway Timeout
+                const errorText = await response.text();
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    throw new Error(errorJson.detail || `Server responded with ${response.status}`);
+                } catch (e) {
+                    // If parsing fails, it's likely an HTML error page from the gateway
+                    throw new Error(errorText.substring(0, 100) || `Server responded with ${response.status}`);
+                }
             }
 
             // Show success message
             setSuccessMessage(`Successfully assigned ${artistName} to track`);
             setTimeout(() => setSuccessMessage(null), 3000);
 
-            // Refresh the tracks list and stats
-            await fetchTracks();
-            await fetchStats();
+            // Optimistic UI Update: Remove the assigned track from the list locally
+            // This provides instant feedback without waiting for a full refresh.
+            setTracks(prevTracks => prevTracks.filter(t => t.track_id !== trackId));
+            if (stats) {
+                setStats(prevStats => prevStats ? { ...prevStats, missing_artist_count: prevStats.missing_artist_count - 1 } : null);
+            }
 
             // Clear selection
             setSelectedTrack(null);
