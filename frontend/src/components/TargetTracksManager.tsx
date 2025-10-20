@@ -54,10 +54,13 @@ const TargetTracksManager: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('/target-tracks');
-      setTracks(response.data);
+      // ✅ FIX: Ensure we always set an array, even if API returns undefined
+      setTracks(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       showNotification('error', 'Failed to load target tracks');
       console.error('Error loading tracks:', error);
+      // ✅ FIX: Set empty array on error to prevent undefined state
+      setTracks([]);
     } finally {
       setLoading(false);
     }
@@ -373,7 +376,7 @@ const TargetTracksManager: React.FC = () => {
           <h2 className="text-xl font-bold flex items-center gap-2">
             <span className="text-2xl">🎯</span>
             Target Tracks Manager
-            {tracks.length > 0 && (
+            {(tracks?.length ?? 0) > 0 && (
               <span className="text-sm text-gray-400 font-normal">({tracks.length} tracks)</span>
             )}
           </h2>
@@ -381,7 +384,7 @@ const TargetTracksManager: React.FC = () => {
             <button
               onClick={handleExportTracks}
               className="px-3 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all flex items-center gap-1 text-sm"
-              disabled={tracks.length === 0}
+              disabled={(tracks?.length ?? 0) === 0}
             >
               📤 Export
             </button>

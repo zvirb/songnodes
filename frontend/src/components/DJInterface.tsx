@@ -720,15 +720,14 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
         borderBottom: '1px solid rgba(255,255,255,0.1)',
         backdropFilter: 'blur(10px)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', overflow: 'hidden', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <h1 style={{
             margin: 0,
             fontSize: '24px',
             fontWeight: 700,
             background: 'linear-gradient(90deg, #4A90E2, #7ED321)',
             WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            flexShrink: 0
+            WebkitTextFillColor: 'transparent'
           }}>
             🎵 SongNodes DJ
           </h1>
@@ -740,8 +739,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
             backgroundColor: 'rgba(0,0,0,0.3)',
             padding: '4px',
             borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            flexShrink: 0
+            border: '1px solid rgba(255,255,255,0.1)'
           }}>
             <button
               onClick={() => setMode('play')}
@@ -1331,12 +1329,17 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
               {/* Tab Header */}
               <div style={{
                 display: 'flex',
-                borderBottom: '1px solid rgba(255,255,255,0.1)'
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                overflowX: 'auto',
+                flexWrap: 'nowrap',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(255,255,255,0.3) transparent'
               }}>
                 <button
                   onClick={() => setRightPanelTab('analysis')}
                   style={{
-                    flex: 1,
+                    flexShrink: 0,
                     padding: '12px 16px',
                     backgroundColor: rightPanelTab === 'analysis' ? 'rgba(74,144,226,0.2)' : 'transparent',
                     border: 'none',
@@ -1344,7 +1347,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   Track Analysis
@@ -1352,7 +1356,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                 <button
                   onClick={() => setRightPanelTab('keymood')}
                   style={{
-                    flex: 1,
+                    flexShrink: 0,
                     padding: '12px 16px',
                     backgroundColor: rightPanelTab === 'keymood' ? 'rgba(74,144,226,0.2)' : 'transparent',
                     border: 'none',
@@ -1360,7 +1364,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   🎭 Key & Mood
@@ -1368,7 +1373,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                 <button
                   onClick={() => setRightPanelTab('pathfinder')}
                   style={{
-                    flex: 1,
+                    flexShrink: 0,
                     padding: '12px 16px',
                     backgroundColor: rightPanelTab === 'pathfinder' ? 'rgba(138,43,226,0.2)' : 'transparent',
                     border: 'none',
@@ -1376,7 +1381,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   🗺️ Pathfinder
@@ -1384,7 +1390,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                 <button
                   onClick={() => setRightPanelTab('tidal')}
                   style={{
-                    flex: 1,
+                    flexShrink: 0,
                     padding: '12px 16px',
                     backgroundColor: rightPanelTab === 'tidal' ? 'rgba(74,144,226,0.2)' : 'transparent',
                     border: 'none',
@@ -1392,7 +1398,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   🎵 Tidal
@@ -1400,7 +1407,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                 <button
                   onClick={() => setRightPanelTab('spotify')}
                   style={{
-                    flex: 1,
+                    flexShrink: 0,
                     padding: '12px 16px',
                     backgroundColor: rightPanelTab === 'spotify' ? 'rgba(29,185,84,0.2)' : 'transparent',
                     border: 'none',
@@ -1408,7 +1415,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   🎧 Spotify
@@ -1416,7 +1424,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                 <button
                   onClick={() => setRightPanelTab('targets')}
                   style={{
-                    flex: 1,
+                    flexShrink: 0,
                     padding: '12px 16px',
                     backgroundColor: rightPanelTab === 'targets' ? 'rgba(74,144,226,0.2)' : 'transparent',
                     border: 'none',
@@ -1424,7 +1432,8 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   🎯 Targets
