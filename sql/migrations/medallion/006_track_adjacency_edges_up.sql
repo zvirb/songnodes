@@ -9,12 +9,7 @@
 -- Records every sequential track transition with context and quality metrics
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS silver_track_transitions (
-    -- Primary identifier
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-
-    -- Edge definition (DIRECTED: from_track → to_track)
-    from_track_id UUID NOT NULL REFERENCES silver_enriched_tracks(id) ON DELETE CASCADE,
-    to_track_id UUID NOT NULL REFERENCES silver_enriched_tracks(id) ON DELETE CASCADE,
 
     -- Occurrence tracking
     occurrence_count INTEGER NOT NULL DEFAULT 1,
@@ -44,9 +39,6 @@ CREATE TABLE IF NOT EXISTS silver_track_transitions (
 
     -- Constraints
     CONSTRAINT silver_transitions_self_loop CHECK (from_track_id != to_track_id),
-    CONSTRAINT silver_transitions_occurrence_positive CHECK (occurrence_count > 0),
-    CONSTRAINT silver_transitions_quality_range CHECK (
-        transition_quality_score IS NULL OR
         (transition_quality_score >= 0 AND transition_quality_score <= 1)
     ),
     CONSTRAINT silver_transitions_key_compat_range CHECK (
@@ -69,9 +61,6 @@ CREATE INDEX idx_silver_transitions_last_seen ON silver_track_transitions(last_s
 CREATE INDEX idx_silver_transitions_playlists ON silver_track_transitions USING gin(playlist_occurrences);
 
 -- Comments
-COMMENT ON TABLE silver_track_transitions IS 'Silver layer: Directed edges representing track-to-track transitions in playlists/mixes. Primary data source for DJ mixing recommendations and graph visualization.';
-COMMENT ON COLUMN silver_track_transitions.from_track_id IS 'Source track (plays first)';
-COMMENT ON COLUMN silver_track_transitions.to_track_id IS 'Destination track (plays second)';
 COMMENT ON COLUMN silver_track_transitions.occurrence_count IS 'Number of times this exact transition appears across all playlists';
 COMMENT ON COLUMN silver_track_transitions.playlist_occurrences IS 'JSON array of {playlist_id, position, date} for each occurrence';
 COMMENT ON COLUMN silver_track_transitions.transition_quality_score IS 'Composite metric: BPM compatibility × key compatibility × energy flow';
