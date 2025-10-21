@@ -16,6 +16,163 @@ export PGPASSWORD="$POSTGRES_PASSWORD"
 
 echou() { echo "[restore] $*"; }
 
+ensure_schema_migrations_table() {
+  python3 - <<'PY'
+import asyncio
+import asyncpg
+import os
+
+async def main():
+    conn = await asyncpg.connect(
+        host=os.getenv('POSTGRES_HOST', 'localhost'),
+        port=int(os.getenv('POSTGRES_PORT', '5433')),
+        user=os.getenv('POSTGRES_USER', 'musicdb_user'),
+        password=os.getenv('POSTGRES_PASSWORD', ''),
+        database=os.getenv('POSTGRES_DB', 'musicdb'),
+    )
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version TEXT PRIMARY KEY,
+            applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            description TEXT
+        )
+    """)
+    await conn.close()
+
+asyncio.run(main())
+PY
+}
+
+migration_applied() {
+  local version="$1"
+  MIG_VERSION="$version" python3 - <<'PY'
+import asyncio
+import asyncpg
+import os
+import sys
+
+async def main():
+    conn = await asyncpg.connect(
+        host=os.getenv('POSTGRES_HOST', 'localhost'),
+        port=int(os.getenv('POSTGRES_PORT', '5433')),
+        user=os.getenv('POSTGRES_USER', 'musicdb_user'),
+        password=os.getenv('POSTGRES_PASSWORD', ''),
+        database=os.getenv('POSTGRES_DB', 'musicdb'),
+    )
+    version = os.environ['MIG_VERSION']
+    exists = await conn.fetchval(
+        "SELECT 1 FROM schema_migrations WHERE version = $1",
+        version,
+    )
+    await conn.close()
+    if exists:
+        sys.exit(0)
+    sys.exit(1)
+
+asyncio.run(main())
+PY
+  return $?
+}
+
+record_migration() {
+  local version="$1"
+  local description="$2"
+  MIG_VERSION="$version" MIG_DESCRIPTION="$description" python3 - <<'PY'
+import asyncio
+import asyncpg
+import os
+
+async def main():
+    conn = await asyncpg.connect(
+        host=os.getenv('POSTGRES_HOST', 'localhost'),
+        port=int(os.getenv('POSTGRES_PORT', '5433')),
+        user=os.getenv('POSTGRES_USER', 'musicdb_user'),
+        password=os.getenv('POSTGRES_PASSWORD', ''),
+        database=os.getenv('POSTGRES_DB', 'musicdb'),
+    )
+    version = os.environ['MIG_VERSION']
+    description = os.environ.get('MIG_DESCRIPTION', '')
+    await conn.execute(
+        """
+        INSERT INTO schema_migrations (version, description)
+        VALUES ($1, $2)
+        ON CONFLICT (version) DO NOTHING
+        """,
+        version,
+        description,
+    )
+    await conn.close()
+
+asyncio.run(main())
+PY
+}
+
+detect_migration_artifacts() {
+  local version="$1"
+  local sql=""
+  case "$version" in
+    001) sql="SELECT to_regclass('public.bronze_scraped_tracks') IS NOT NULL";;
+    002) sql="SELECT to_regclass('public.silver_enriched_tracks') IS NOT NULL";;
+    003) sql="SELECT to_regclass('public.gold_track_analytics') IS NOT NULL";;
+    004) sql="SELECT to_regclass('public.metadata_enrichment_config') IS NOT NULL";;
+    005) sql="SELECT to_regclass('public.enrichment_pipeline_runs') IS NOT NULL";;
+    006) sql="SELECT to_regclass('public.silver_track_transitions') IS NOT NULL";;
+    007) sql="SELECT to_regclass('public.idx_playlists_source_url_unique_full') IS NOT NULL";;
+    008) sql="SELECT to_regclass('public.idx_gold_track_graph_track_id_unique') IS NOT NULL";;
+    *) sql="";;
+  esac
+
+  if [ -z "$sql" ]; then
+    return 1
+  fi
+
+  MIG_DETECT_SQL="$sql" python3 - <<'PY'
+import asyncio
+import asyncpg
+import os
+import sys
+
+async def main():
+    conn = await asyncpg.connect(
+        host=os.getenv('POSTGRES_HOST', 'localhost'),
+        port=int(os.getenv('POSTGRES_PORT', '5433')),
+        user=os.getenv('POSTGRES_USER', 'musicdb_user'),
+        password=os.getenv('POSTGRES_PASSWORD', ''),
+        database=os.getenv('POSTGRES_DB', 'musicdb'),
+    )
+    sql = os.environ['MIG_DETECT_SQL']
+    exists = await conn.fetchval(sql)
+    await conn.close()
+    if exists:
+        sys.exit(0)
+    sys.exit(1)
+
+asyncio.run(main())
+PY
+  return $?
+}
+
+bootstrap_migration_records() {
+  ensure_schema_migrations_table
+  local files=()
+  while IFS= read -r line; do
+    files+=("$line")
+  done < <(find sql/migrations/medallion -maxdepth 1 -type f -name '*_up.sql' | sort)
+
+  for f in "${files[@]}"; do
+    local base
+    base=$(basename "$f")
+    local version="${base%%_*}"
+    if migration_applied "$version"; then
+      continue
+    fi
+    if detect_migration_artifacts "$version"; then
+      echou "Recording already-applied migration ${base}"
+      record_migration "$version" "${base} (detected existing schema)"
+    fi
+  done
+}
+
 run_sql_file() {
   local file=$1
   echou "Running SQL file: $file"
@@ -37,9 +194,23 @@ PY
 
 apply_migrations() {
   echou "Applying medallion *_up.sql migrations in sql/migrations/medallion/"
-  for f in sql/migrations/medallion/*_up.sql; do
+  bootstrap_migration_records
+  local files=()
+  while IFS= read -r line; do
+    files+=("$line")
+  done < <(find sql/migrations/medallion -maxdepth 1 -type f -name '*_up.sql' | sort)
+
+  for f in "${files[@]}"; do
     [ -e "$f" ] || continue
+    local base
+    base=$(basename "$f")
+    local version="${base%%_*}"
+    if migration_applied "$version"; then
+      echou "Skipping $base; already recorded as applied"
+      continue
+    fi
     run_sql_file "$f"
+    record_migration "$version" "$base"
   done
 }
 
