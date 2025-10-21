@@ -11,6 +11,7 @@ import logging
 from collections import defaultdict
 import math
 from annoy import AnnoyIndex
+from ..utils.pathfinder_utils import find_pivots
 
 logger = logging.getLogger(__name__)
 
@@ -241,24 +242,28 @@ class PathfinderState:
     def __init__(
         self,
         current_track_id: str,
-        path: List[Tuple[str, float, bool, bool]],  # (track_id, connection_strength, key_compatible, is_synthetic)
+        path: List[Tuple[str, float, bool, bool]],
         visited: Set[str],
         duration: int,
         remaining_waypoints: Set[str],
         cost: float,
-        heuristic: float
+        heuristic: float,
+        pivot_score: int
     ):
         self.current_track_id = current_track_id
         self.path = path
         self.visited = visited
         self.duration = duration
         self.remaining_waypoints = remaining_waypoints
-        self.cost = cost  # g(n) - actual cost so far
-        self.heuristic = heuristic  # h(n) - estimated cost to goal
-        self.f_score = cost + heuristic  # f(n) = g(n) + h(n)
+        self.cost = cost
+        self.heuristic = heuristic
+        self.pivot_score = pivot_score
+        self.f_score = cost + heuristic
 
     def __lt__(self, other):
         """For priority queue ordering"""
+        if self.f_score == other.f_score:
+            return self.pivot_score > other.pivot_score
         return self.f_score < other.f_score
 
 def find_path(
@@ -270,6 +275,7 @@ def find_path(
     tracks_dict: Dict[str, TrackNode],
     adjacency: Dict[str, List[Tuple[str, float]]],  # {from_id: [(to_id, weight), ...]}
     prefer_key_matching: bool,
+    pivots: Set[str],
     synthetic_edges: Optional[Set[Tuple[str, str]]] = None  # Set of (from_id, to_id) synthetic edges
 ) -> Optional[List[Tuple[str, float, bool, bool]]]:
     """
@@ -290,12 +296,15 @@ def find_path(
     start_track = tracks_dict[start_id]
     initial_state = PathfinderState(
         current_track_id=start_id,
-        path=[(start_id, 0.0, False, False)],  # Added is_synthetic=False
+        path=[(start_id, 0.0, False, False)],
         visited={start_id},
         duration=start_track.duration_ms,
         remaining_waypoints=waypoint_ids - {start_id},
         cost=0.0,
-        heuristic=calculate_heuristic(start_track.duration_ms, target_duration, waypoint_ids - {start_id}, avg_duration)
+        heuristic=calculate_heuristic(
+            start_track.duration_ms, target_duration, waypoint_ids - {start_id}, avg_duration
+        ),
+        pivot_score=1 if start_id in pivots else 0
     )
 
     # Priority queue for A* search
@@ -394,7 +403,8 @@ def find_path(
                 duration=new_duration,
                 remaining_waypoints=new_remaining_waypoints,
                 cost=new_cost,
-                heuristic=new_heuristic
+                heuristic=new_heuristic,
+                pivot_score=current_state.pivot_score + (1 if neighbor_id in pivots else 0)
             )
 
             heapq.heappush(open_set, new_state)
@@ -481,6 +491,15 @@ async def find_dj_path(request: PathfinderRequest):
         else:
             logger.warning(f"DEBUG: Start track {request.start_track_id} NOT in tracks_dict!")
 
+        pivots = find_pivots(
+            tracks=request.tracks,
+            adjacency=adjacency,
+            start_id=request.start_track_id,
+            end_id=request.end_track_id,
+            waypoint_ids=waypoint_ids
+        )
+        logger.info(f"Identified {len(pivots)} pivot nodes to guide the search.")
+
         # Progressive relaxation strategy (2025 best practice)
         # Try with increasing tolerance levels if strict search fails
         tolerance_multipliers = [1.0, 1.5, 2.0, 3.0]
@@ -499,6 +518,7 @@ async def find_dj_path(request: PathfinderRequest):
                 tracks_dict=tracks_dict,
                 adjacency=adjacency,
                 prefer_key_matching=request.prefer_key_matching,
+                pivots=pivots,
                 synthetic_edges=synthetic_edge_set
             )
 
@@ -520,6 +540,7 @@ async def find_dj_path(request: PathfinderRequest):
                 tracks_dict=tracks_dict,
                 adjacency=adjacency,
                 prefer_key_matching=request.prefer_key_matching,
+                pivots=pivots,
                 synthetic_edges=synthetic_edge_set
             )
 
