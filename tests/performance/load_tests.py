@@ -108,7 +108,7 @@ class APIGatewayUser(FastHttpUser):
     """Performance tests for API Gateway."""
     
     wait_time = between(0.5, 2)
-    host = "http://localhost:8080"
+    host = "http://localhost:8088"
     
     @task(5)
     def health_check(self):

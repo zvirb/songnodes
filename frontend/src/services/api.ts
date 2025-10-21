@@ -552,7 +552,7 @@ export const healthApi = {
 
 // Create simple HTTP client for target tracks API
 const createTargetTracksClient = () => {
-  const baseURL = 'http://localhost:8080/api/v1';
+  const baseURL = 'http://localhost:8088/api/v1';
 
   const request = async (method: string, url: string, data?: any) => {
     const response = await fetch(`${baseURL}${url}`, {

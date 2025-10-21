@@ -100,7 +100,7 @@ scrape_configs:
   # Custom application metrics for ML workloads
   - job_name: 'ml-performance'
     static_configs:
-      - targets: ['localhost:8080']  # Custom ML metrics endpoint
+      - targets: ['localhost:8088']  # Custom ML metrics endpoint
     metrics_path: '/ml/metrics'
     scrape_interval: 30s
 

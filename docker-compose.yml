@@ -1149,7 +1149,7 @@ services:
     container_name: api-gateway
     restart: always
     ports:
-    - 8080:8080
+    - ${API_GATEWAY_PORT:-8080}:8080
     environment:
       JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_here}
       REDIS_HOST: redis

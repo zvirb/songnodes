@@ -54,6 +54,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+GENERIC_ARTIST_NAMES = {
+    "unknown dj",
+    "various artist",
+    "various artists",
+    "va",
+}
+
 
 class SilverPlaylistsToGoldETL:
     """
@@ -121,11 +128,15 @@ class SilverPlaylistsToGoldETL:
 
         Returns artist_id (UUID) from gold artists table if successful, None if failed.
         """
-        if not artist_name or artist_name.strip() == '' or artist_name == 'Unknown DJ':
+        if not artist_name or artist_name.strip() == '':
+            return None
+
+        normalized = artist_name.lower().strip()
+        if normalized in GENERIC_ARTIST_NAMES:
+            logger.debug(f"Skipping generic artist name '{artist_name}'")
             return None
 
         # Normalize artist name
-        normalized = artist_name.lower().strip()
         normalized = re.sub(r'\s+', ' ', normalized)
 
         try:

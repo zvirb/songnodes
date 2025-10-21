@@ -6,7 +6,7 @@
  * Tests fundamental functionality to identify where the system is failing:
  * 1. Frontend loading at localhost:3006
  * 2. React application mounting
- * 3. API connectivity (localhost:8080 and localhost:8084)
+ * 3. API connectivity (localhost:8088 and localhost:8084)
  * 4. Graph data loading
  * 5. PIXI canvas initialization
  * 6. WebGL context creation
@@ -30,8 +30,8 @@ const TIMEOUTS = {
 
 const URLS = {
   frontend: 'http://localhost:3006',
-  apiGateway: 'http://localhost:8080',
-  graphApi: 'http://localhost:8080' // Now proxied through API Gateway
+  apiGateway: 'http://localhost:8088',
+  graphApi: 'http://localhost:8088' // Now proxied through API Gateway
 };
 
 class DiagnosticResults {

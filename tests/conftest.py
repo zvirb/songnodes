@@ -192,7 +192,7 @@ def mock_scrapy_settings():
 def performance_test_config():
     """Configuration for performance tests."""
     return {
-        "target_host": "http://localhost:8080",
+        "target_host": "http://localhost:8088",
         "users": 10,
         "spawn_rate": 2,
         "run_time": "60s",

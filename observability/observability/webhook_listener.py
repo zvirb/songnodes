@@ -305,7 +305,7 @@ def test_alert():
                     "alertname": "TestAlert",
                     "severity": "warning",
                     "job": "test-service",
-                    "instance": "localhost:8080"
+                    "instance": "localhost:8088"
                 },
                 "annotations": {
                     "summary": "This is a test alert",

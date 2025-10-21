@@ -7,7 +7,7 @@ set -euo pipefail
 
 # Configuration
 API_BASE_URL="${API_BASE_URL:-https://localhost:8443}"
-API_GATEWAY_URL="${API_GATEWAY_URL:-http://localhost:8080}"
+API_GATEWAY_URL="${API_GATEWAY_URL:-http://localhost:8088}"
 VERBOSE="${VERBOSE:-false}"
 
 # Colors for output
@@ -384,7 +384,7 @@ usage() {
     echo ""
     echo "Environment variables:"
     echo "  API_BASE_URL     Base URL for HTTPS API tests (default: https://localhost:8443)"
-    echo "  API_GATEWAY_URL  URL for HTTP API tests (default: http://localhost:8080)"
+    echo "  API_GATEWAY_URL  URL for HTTP API tests (default: http://localhost:8088)"
     echo "  VERBOSE          Enable verbose output (default: false)"
     echo ""
     echo "Examples:"

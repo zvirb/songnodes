@@ -203,7 +203,7 @@ check_health() {
     echo "=================="
 
     endpoints=(
-        "http://localhost:8080/health:API Gateway"
+        "http://localhost:8088/health:API Gateway"
         "http://localhost:3006:Frontend"
         "http://localhost:3001:Grafana"
         "http://localhost:9091:Prometheus"
@@ -228,8 +228,8 @@ show_info() {
     echo ""
     echo "🌐 Application URLs:"
     echo "  Frontend:     http://localhost:3006"
-    echo "  API Gateway:  http://localhost:8080"
-    echo "  Nginx Proxy:  http://localhost:8088"
+    echo "  API Gateway:  http://localhost:8088"
+    echo "  Nginx Proxy:  https://localhost:8443"
     echo ""
     echo "📊 Monitoring URLs:"
     echo "  Grafana:      http://localhost:3001 (admin/admin)"

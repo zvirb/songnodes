@@ -68,10 +68,11 @@ export function setupRoutes(fastify: FastifyInstance): void {
       const connectionId = `ws_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       
       // Extract authentication token from request
-      const token = fastify.websocket.authService?.extractTokenFromRequest(
-        request.url || '',
+      const extracted = fastify.websocket.authService?.extractTokenFromRequest(
+        typeof request.url === 'string' ? request.url : '',
         request.headers as Record<string, string>
       );
+      const token = extracted ?? undefined;
       
       // Add connection with authentication
       fastify.websocket.addConnection(connectionId, connection.socket, token);

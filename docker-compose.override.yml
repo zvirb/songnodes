@@ -6,6 +6,8 @@ services:
   enhanced-visualization-service:
     build:
       target: production
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
   api-gateway:
     depends_on:
       - rest-api

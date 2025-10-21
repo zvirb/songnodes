@@ -5,8 +5,8 @@ async function analyzeGraphData() {
   try {
     // Fetch nodes and edges separately (same as frontend does)
     const [nodesResponse, edgesResponse] = await Promise.all([
-      fetch('http://localhost:8080/api/graph/nodes?limit=500').then(r => r.json()),
-      fetch('http://localhost:8080/api/graph/edges?limit=500').then(r => r.json())
+      fetch('http://localhost:8088/api/graph/nodes?limit=500').then(r => r.json()),
+      fetch('http://localhost:8088/api/graph/edges?limit=500').then(r => r.json())
     ]);
 
     const nodes = nodesResponse.nodes || [];

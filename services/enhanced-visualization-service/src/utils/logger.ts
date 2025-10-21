@@ -65,18 +65,25 @@ class EnhancedLogger {
       try {
         this.elasticsearchTransport = new ElasticsearchTransport({
           level: config.logging.level,
-          clientOpts: {
+          // Cast to any to accommodate optional TLS in certain client versions
+          clientOpts: ({
             node: process.env.ELASTICSEARCH_URL,
-            ...(process.env.ELASTICSEARCH_AUTH && {
+            ...(process.env.ELASTICSEARCH_AUTH ? {
               auth: {
                 username: process.env.ELASTICSEARCH_USERNAME || 'elastic',
                 password: process.env.ELASTICSEARCH_PASSWORD || '',
               }
-            }),
-            tls: {
-              rejectUnauthorized: process.env.ELASTICSEARCH_TLS_REJECT_UNAUTHORIZED !== 'false',
-            },
-          },
+            } : {}),
+            ...(typeof process.env.ELASTICSEARCH_TLS_REJECT_UNAUTHORIZED !== 'undefined' ? {
+              // Some client versions expect 'tls' while types may not include it
+              // Using type escape for compatibility
+              tls: {
+                rejectUnauthorized: process.env.ELASTICSEARCH_TLS_REJECT_UNAUTHORIZED !== 'false',
+              }
+            } : {}),
+          } as any),
+          // Provide optional APM config to satisfy types across versions
+          apm: (undefined as any),
           index: `enhanced-visualization-service-${config.env}`,
           transformer: (logData: any) => {
             // Transform log data for Elasticsearch
