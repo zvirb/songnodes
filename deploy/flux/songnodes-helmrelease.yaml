@@ -25,8 +25,6 @@ spec:
         name: songnodes
         namespace: flux-system
       version: 0.1.0
-  valuesFiles:
-    - values-dev.yaml
   values:
     namespace:
       create: false
@@ -34,3 +32,80 @@ spec:
       create: false
     global:
       namespace: songnodes
+
+    # Development overrides from values-dev.yaml
+    postgres:
+      persistence:
+        enabled: false
+    redis:
+      persistence:
+        enabled: false
+    rabbitmq:
+      persistence:
+        enabled: false
+
+    services:
+      restApi:
+        enabled: true
+        replicaCount: 1
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 256Mi
+            cpu: 300m
+
+      graphVisualization:
+        enabled: false
+
+      websocketApi:
+        enabled: true
+        replicaCount: 1
+        image:
+          pullPolicy: Always
+
+      nlpProcessor:
+        enabled: false
+
+      scraperOrchestrator:
+        enabled: false
+
+      metadataEnrichment:
+        enabled: true
+        replicaCount: 1
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 400m
+
+      seratoIntegration:
+        enabled: false
+        persistence:
+          enabled: false
+
+      frontend:
+        enabled: true
+        replicaCount: 1
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 30m
+          limits:
+            memory: 128Mi
+            cpu: 150m
+
+    autoscaling:
+      enabled: false
+
+    ingress:
+      enabled: false
