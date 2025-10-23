@@ -149,6 +149,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: scraper
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: enrichment
       ports:
         - protocol: TCP
           port: {{ .Values.postgres.service.port }}
@@ -174,6 +177,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: scraper
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: enrichment
       ports:
         - protocol: TCP
           port: {{ .Values.redis.service.port }}
@@ -199,6 +205,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: scraper
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: enrichment
       ports:
         - protocol: TCP
           port: {{ .Values.rabbitmq.service.ports.amqp }}
