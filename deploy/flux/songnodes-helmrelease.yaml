@@ -33,6 +33,11 @@ spec:
     global:
       namespace: songnodes
 
+    # Override POSTGRES_HOST to use FQDN for DNS resolution
+    configMap:
+      data:
+        POSTGRES_HOST: postgres-0.postgres-service.songnodes.svc.cluster.local
+
     # Development overrides from values-dev.yaml
     postgres:
       persistence:
