@@ -7,7 +7,7 @@ spec:
   interval: 1m
   secretRef:
     name: flux-system
-  url: https://github.com/zvirb/phoenix-digital-homestead.git
+  url: https://github.com/zvirb/songnodes.git
   ref:
     branch: main
   timeout: 5m
