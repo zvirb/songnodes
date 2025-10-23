@@ -34,7 +34,7 @@ spec:
       namespace: songnodes
 
     # Override POSTGRES_HOST to use FQDN for DNS resolution
-    configMap:
+    config:
       data:
         POSTGRES_HOST: postgres-0.postgres-service.songnodes.svc.cluster.local
 
