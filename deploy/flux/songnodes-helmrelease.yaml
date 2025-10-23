@@ -40,6 +40,11 @@ spec:
       data:
         POSTGRES_HOST: postgres-0.postgres-service.songnodes.svc.cluster.local
 
+    # Override DATABASE_URL to use FQDN for DNS resolution
+    secrets:
+      stringData:
+        DATABASE_URL: postgresql://musicdb_user:musicdb_secure_pass_2024@postgres-0.postgres-service.songnodes.svc.cluster.local:5432/musicdb
+
     # Development overrides from values-dev.yaml
     postgres:
       persistence:
