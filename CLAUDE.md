@@ -251,6 +251,35 @@ The Playwright E2E test suite **must pass with zero console errors** before any 
 - Console errors present
 - Components don't render
 
+### 4.2. Test Execution Guidelines
+
+**CRITICAL: Sequential Test Execution**
+
+Playwright tests **MUST** be run one at a time with a single worker to prevent resource conflicts and ensure reliable results.
+
+**Correct test execution**:
+```bash
+# Run tests with single worker (-j 1 or --workers=1)
+npx playwright test --workers=1
+
+# Run specific test file
+npx playwright test tests/e2e/design-system/button.spec.ts --workers=1
+
+# Run single test by name
+npx playwright test -g "should render all variants" --workers=1
+```
+
+**DO NOT**:
+- ❌ Run tests in parallel with multiple workers
+- ❌ Use default Playwright configuration (uses 8 workers)
+- ❌ Run multiple test commands simultaneously
+
+**Why this is mandatory**:
+- Prevents browser resource conflicts
+- Ensures consistent test results
+- Avoids memory issues with PIXI.js/WebGL tests
+- Allows proper cleanup between tests
+
 ---
 
 ## 5. Key Systems Deep Dive

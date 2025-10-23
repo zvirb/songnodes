@@ -428,10 +428,18 @@ const App: React.FC = () => {
   return (
     <>
       <div className="app-container">
-      {/* Skip link for keyboard users */}
-      <a href="#main-content" className="skip-link">
+      {/* Skip button for keyboard users */}
+      <button
+        type="button"
+        className="skip-link"
+        onClick={() => {
+          const mainContent = document.getElementById('main-content');
+          mainContent?.focus();
+          mainContent?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}
+      >
         Skip to main content
-      </a>
+      </button>
 
       {/* Header */}
       <header className="app-header">

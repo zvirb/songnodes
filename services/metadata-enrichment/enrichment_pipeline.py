@@ -45,6 +45,7 @@ class MetadataEnrichmentPipeline:
         acousticbrainz_client,
         getsongbpm_client,
         tidal_client,
+        serato_client,
         db_session_factory: async_sessionmaker,
         redis_client: aioredis.Redis
     ):
@@ -56,6 +57,7 @@ class MetadataEnrichmentPipeline:
         self.acousticbrainz_client = acousticbrainz_client
         self.getsongbpm_client = getsongbpm_client
         self.tidal_client = tidal_client
+        self.serato_client = serato_client
         self.db_session_factory = db_session_factory
         self.redis_client = redis_client
 
@@ -147,6 +149,33 @@ class MetadataEnrichmentPipeline:
                 'remix_type': parsed_title.remix_type,
                 'label': parsed_title.label
             }
+
+            # STEP 0.05: Serato file-based enrichment (if file_path available)
+            # Extract BPM, key, and other metadata directly from Serato tags in audio file
+            # This is FAST (local file read) and ACCURATE (DJ-grade analysis)
+            if self.serato_client and self.serato_client.is_available() and task.file_path:
+                logger.info("Step 0.05: Serato file extraction", file_path=task.file_path)
+                try:
+                    serato_data = await self.serato_client.extract_from_file(task.file_path)
+                    if serato_data:
+                        sources_used.append(EnrichmentSource.SERATO)
+                        metadata.update(serato_data)
+                        logger.info(
+                            "✓ Serato enrichment successful",
+                            bpm=serato_data.get('serato_bpm'),
+                            key=serato_data.get('serato_key_text'),
+                            has_cues=bool(serato_data.get('serato_cues')),
+                            has_loops=bool(serato_data.get('serato_loops'))
+                        )
+                    else:
+                        logger.debug("No Serato data found in file", file_path=task.file_path)
+                except Exception as e:
+                    logger.warning(
+                        "Serato enrichment failed",
+                        file_path=task.file_path,
+                        error=str(e)
+                    )
+                    errors.append(f"Serato extraction error: {str(e)}")
 
             # STEP 0.1: Check ISRC availability (CRITICAL for deduplication)
             isrc = task.existing_isrc or metadata.get('isrc')
@@ -290,13 +319,17 @@ class MetadataEnrichmentPipeline:
                         errors.append(f"Spotify ISRC search error: {str(e)}")
 
                 # Tidal enrichment via ISRC - INDEPENDENT (business critical)
+                logger.info(f"🔍 Tidal client check: client={self.tidal_client is not None}, TIDAL in sources={EnrichmentSource.TIDAL in sources_used}")
                 if self.tidal_client and EnrichmentSource.TIDAL not in sources_used:
+                    logger.info("🎵 Attempting Tidal ISRC enrichment", isrc=isrc)
                     try:
                         tidal_isrc_data = await self.tidal_client.search_by_isrc(isrc)
                         if tidal_isrc_data:
                             sources_used.append(EnrichmentSource.TIDAL)
                             metadata.update(tidal_isrc_data)
                             logger.info("✓ Tidal ISRC enrichment successful")
+                        else:
+                            logger.info("⚠️ Tidal ISRC search returned no results")
                     except Exception as e:
                         logger.warning(
                             "Tidal ISRC search failed - continuing with other sources",
@@ -306,7 +339,9 @@ class MetadataEnrichmentPipeline:
                         errors.append(f"Tidal ISRC error: {str(e)}")
                 else:
                     if not self.tidal_client:
-                        logger.debug("Skipping Tidal ISRC enrichment - no client available (missing token)")
+                        logger.info("⚠️ Skipping Tidal ISRC enrichment - no client available")
+                    if EnrichmentSource.TIDAL in sources_used:
+                        logger.info("ℹ️ Skipping Tidal ISRC enrichment - already enriched")
 
                 # MusicBrainz enrichment via ISRC - INDEPENDENT (fails gracefully)
                 try:

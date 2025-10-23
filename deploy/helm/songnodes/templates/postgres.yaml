@@ -92,6 +92,10 @@ spec:
             {{- toYaml (omit .Values.postgres.readinessProbe "enabled") | nindent 12 }}
           {{- end }}
       volumes:
+        {{- if not .Values.postgres.persistence.enabled }}
+        - name: postgres-storage
+          emptyDir: {}
+        {{- end }}
         {{- if .Values.postgres.initScripts.name }}
         - name: postgres-init
           configMap:

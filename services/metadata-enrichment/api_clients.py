@@ -1165,10 +1165,15 @@ class RateLimiter:
 class TidalClient:
     """Tidal API client for metadata enrichment with OAuth token support"""
 
-    def __init__(self, redis_client: aioredis.Redis, db_session_factory=None):
+    def __init__(self, redis_client: aioredis.Redis, db_session_factory=None, client_id: Optional[str] = None, client_secret: Optional[str] = None):
         self.redis_client = redis_client
         self.db_session_factory = db_session_factory
+        self.client_id = client_id or os.getenv("TIDAL_CLIENT_ID")
+        self.client_secret = client_secret or os.getenv("TIDAL_CLIENT_SECRET")
         self.base_url = "https://openapi.tidal.com"
+        self.token_url = "https://auth.tidal.com/v1/oauth2/token"
+        self.client_access_token = None
+        self.client_token_expires_at = 0
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
             timeout=60,
@@ -1287,6 +1292,62 @@ class TidalClient:
             logger.error(f"Error refreshing Tidal user token: {e}")
             return None
 
+    async def _get_client_credentials_token(self) -> Optional[str]:
+        """Get access token using client credentials flow for public catalog access"""
+        if not self.client_id or not self.client_secret:
+            logger.warning("⚠️ Tidal client credentials not configured")
+            return None
+
+        # Check if existing token is still valid
+        if self.client_access_token and time.time() < self.client_token_expires_at:
+            return self.client_access_token
+
+        try:
+            headers = {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+
+            data = {
+                'client_id': self.client_id,
+                'client_secret': self.client_secret,
+                'grant_type': 'client_credentials'
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.token_url, headers=headers, data=data) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error(f"Failed to get Tidal client credentials token: {error_text}")
+                        return None
+
+                    token_data = await response.json()
+                    self.client_access_token = token_data['access_token']
+                    # Set expiry with 5-minute buffer
+                    self.client_token_expires_at = time.time() + token_data.get('expires_in', 3600) - 300
+                    logger.info("✅ Successfully obtained Tidal client credentials token")
+                    return self.client_access_token
+
+        except Exception as e:
+            logger.error(f"Error getting Tidal client credentials token: {e}")
+            return None
+
+    async def _get_token(self) -> Optional[str]:
+        """Get the best available token (user token preferred, client credentials as fallback)"""
+        # Try user token first (for user-specific operations)
+        user_token = await self._get_user_token_from_db()
+        if user_token:
+            logger.debug("Using Tidal user OAuth token")
+            return user_token
+
+        # Fall back to client credentials for public catalog access
+        client_token = await self._get_client_credentials_token()
+        if client_token:
+            logger.debug("Using Tidal client credentials token (public catalog access)")
+            return client_token
+
+        logger.warning("⚠️ No Tidal authentication available (neither user token nor client credentials)")
+        return None
+
     async def search_by_isrc(self, isrc: str) -> Optional[Dict[str, Any]]:
         """Search track by ISRC"""
         await self.rate_limiter.wait()
@@ -1300,27 +1361,35 @@ class TidalClient:
             return json.loads(cached)
 
         async def _search_isrc():
-            token = await self._get_user_token_from_db()
+            token = await self._get_token()
             if not token:
-                logger.warning("No Tidal token available - skipping ISRC search")
+                logger.warning("No Tidal authentication available - skipping ISRC search")
                 return None
 
             headers = {
                 'Authorization': f'Bearer {token}',
-                'Content-Type': 'application/vnd.tidal.v1+json'
+                'Content-Type': 'application/vnd.tidal.v1+json',
+                'Accept': 'application/vnd.tidal.v1+json'
             }
 
-            # Tidal API endpoint for ISRC search
-            url = f"{self.base_url}/tracks?filter[isrc]={isrc}"
+            # Tidal API endpoint for ISRC search (requires countryCode)
+            url = f"{self.base_url}/tracks?filter[isrc]={isrc}&countryCode=US"
 
             async def _api_call():
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url, headers=headers) as response:
+                        logger.info(f"Tidal ISRC API response: status={response.status}, url={url}")
                         if response.status == 404:
+                            logger.info("Tidal ISRC: Track not found (404)")
                             return None
 
-                        response.raise_for_status()
+                        if response.status != 200:
+                            error_text = await response.text()
+                            logger.warning(f"Tidal ISRC API error: {response.status} - {error_text[:200]}")
+                            response.raise_for_status()
+
                         data = await response.json()
+                        logger.info(f"Tidal ISRC response data: {str(data)[:300]}")
 
                         if data.get('data') and len(data['data']) > 0:
                             track = data['data'][0]
@@ -1364,17 +1433,19 @@ class TidalClient:
             return json.loads(cached)
 
         async def _search():
-            token = await self._get_user_token_from_db()
+            token = await self._get_token()
             if not token:
-                logger.warning("No Tidal token available - skipping text search")
+                logger.warning("No Tidal authentication available - skipping text search")
                 return None
 
             headers = {
                 'Authorization': f'Bearer {token}',
-                'Content-Type': 'application/vnd.tidal.v1+json'
+                'Content-Type': 'application/vnd.tidal.v1+json',
+                'Accept': 'application/vnd.tidal.v1+json'
             }
 
-            url = f"{self.base_url}/search?query={quote(query)}&type=TRACKS&limit=1"
+            # Tidal API requires countryCode parameter
+            url = f"{self.base_url}/search?query={quote(query)}&limit=1&offset=0&countryCode=US"
 
             async def _api_call():
                 async with aiohttp.ClientSession() as session:
@@ -1423,9 +1494,9 @@ class TidalClient:
             return json.loads(cached)
 
         async def _get_track():
-            token = await self._get_user_token_from_db()
+            token = await self._get_token()
             if not token:
-                logger.warning("No Tidal token available - skipping track lookup")
+                logger.warning("No Tidal authentication available - skipping track lookup")
                 return None
 
             headers = {

@@ -1,0 +1,471 @@
+/**
+ * DJInterface Component Styles
+ *
+ * CSS Module using design tokens from src/styles/tokens.css
+ * Follows the design system's 8pt grid and color palette.
+ *
+ * Architecture:
+ * - BEM-like naming within component scope
+ * - Design tokens for all values (no magic numbers)
+ * - Responsive layouts with CSS Grid
+ * - WCAG AA compliant contrast ratios
+ */
+
+/* ============================================
+   CONTAINER & LAYOUT
+   ============================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  overflow: hidden;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-6);
+  background-color: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid var(--color-border-subtle);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(90deg, #4A90E2, #7ED321);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.headerRight {
+  display: flex;
+  gap: var(--space-4);  /* Increased from 12px to 16px for better spacing */
+  align-items: center;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  flex: 1;
+  min-width: 0;
+  padding-right: var(--space-4);  /* Prevent icon truncation */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* ============================================
+   MODE SELECTOR (Segmented Control)
+   ============================================ */
+
+.modeSelector {
+  display: flex;
+  gap: var(--space-2);
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-button);
+  opacity: 0.7;
+  min-height: var(--button-height-base);  /* Increased to 44px for WCAG 2.1 AA */
+}
+
+.modeButton:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.modeButton:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.modeButtonActive {
+  color: var(--color-text-primary);
+  opacity: 1;
+}
+
+.modeButton[data-mode="play"].modeButtonActive {
+  background-color: #7ED321;
+}
+
+.modeButton[data-mode="plan"].modeButtonActive {
+  background-color: #4A90E2;
+}
+
+/* ============================================
+   STAT BADGES
+   ============================================ */
+
+.statBadge {
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-brand-secondary-muted);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);  /* Increased from xs (11.1px) to sm (13.3px) for better readability */
+  color: var(--color-brand-secondary);
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: var(--button-height-base);  /* 44px for WCAG 2.1 AA touch targets */
+  display: flex;
+  align-items: center;
+}
+
+.statBadge.success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+/* ============================================
+   ACTION BUTTONS (Header)
+   ============================================ */
+
+.headerButton {
+  padding: var(--space-2) var(--space-3);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: var(--transition-button);
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: var(--button-height-base);  /* Increased to 44px for WCAG 2.1 AA */
+}
+
+.headerButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.headerButton:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.headerButton.danger {
+  background-color: rgba(231, 76, 60, 0.2);
+  border-color: rgba(231, 76, 60, 0.4);
+}
+
+.headerButton.danger:hover {
+  background-color: rgba(231, 76, 60, 0.3);
+}
+
+.headerButton.info {
+  background-color: rgba(155, 89, 182, 0.2);
+  border-color: rgba(155, 89, 182, 0.4);
+}
+
+.headerButton.info:hover {
+  background-color: rgba(155, 89, 182, 0.3);
+}
+
+/* ============================================
+   MAIN CONTENT AREA
+   ============================================ */
+
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-rows: 1fr;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+/* ============================================
+   PLAY MODE LAYOUT
+   ============================================ */
+
+.playModeLayout {
+  display: grid;
+  grid-template-columns: 1fr 480px;
+  gap: var(--space-4);
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
+}
+
+.graphContainer {
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+}
+
+.browserContainer {
+  overflow: auto;
+  max-height: 100%;
+}
+
+/* ============================================
+   PLAN MODE LAYOUT (3-column)
+   ============================================ */
+
+.planModeLayout {
+  display: grid;
+  grid-template-columns: 250px 1fr 350px;
+  gap: var(--space-5);
+  height: 100%;
+  overflow: hidden;
+}
+
+.libraryPanel {
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-subtle);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.libraryHeader {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--space-3) var(--space-8) var(--space-3) var(--space-3);
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+  transition: var(--transition-all);
+  margin-bottom: var(--space-3);
+}
+
+.searchInput:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: var(--glow-focus);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-placeholder);  /* Darkened for WCAG AA contrast (3.0:1) */
+}
+
+.trackList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.rightPanel {
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabHeader {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-subtle);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.tabButton {
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-4);
+  background-color: transparent;
+  border: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-color);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.tabButton:hover {
+  color: var(--color-text-secondary);
+}
+
+.tabButton.tabButtonActive {
+  color: var(--color-brand-primary);
+  background-color: var(--color-brand-primary-muted);
+  border-bottom-color: var(--color-brand-primary);
+}
+
+.tabContent {
+  flex: 1;
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+
+/* ============================================
+   LOADING & ERROR STATES
+   ============================================ */
+
+.loadingContainer,
+.errorContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  padding: var(--space-10);
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-brand-primary-muted);
+  border-top: 4px solid var(--color-brand-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--space-4);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorContainer {
+  color: var(--color-error);
+}
+
+.errorIcon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.errorTitle {
+  margin: 0 0 var(--space-2) 0;
+  color: var(--color-error);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.errorMessage {
+  margin: 0 0 var(--space-6) 0;
+  color: var(--color-text-tertiary);
+  max-width: 400px;
+  font-size: var(--font-size-sm);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .planModeLayout {
+    grid-template-columns: 220px 1fr 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .headerRight {
+    flex-wrap: wrap;
+  }
+
+  .playModeLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .browserContainer {
+    display: none; /* Hide on mobile, show MobileTrackExplorer instead */
+  }
+
+  .planModeLayout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .rightPanel {
+    grid-row: 3;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .modeButton,
+  .headerButton,
+  .tabButton {
+    border-width: 2px;
+  }
+
+  .modeButtonActive,
+  .tabButtonActive {
+    font-weight: var(--font-weight-bold);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .modeButton,
+  .headerButton,
+  .tabButton,
+  .searchInput {
+    transition: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+}
+
+/* Focus visible (keyboard navigation) */
+*:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}

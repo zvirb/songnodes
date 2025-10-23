@@ -1,0 +1,90 @@
+/**
+ * Minimap Component Styles
+ * Overview navigation for graph
+ */
+
+/* ============================================
+   MAIN CONTAINER
+   ============================================ */
+
+.minimap {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  padding: 8px;
+  background: var(--color-bg-elevated-1, rgba(26, 26, 26, 0.95));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  backdrop-filter: blur(8px);
+  z-index: 50;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.minimap.hovering {
+  transform: scale(1.02);
+  border-color: var(--color-brand-primary, #3B82F6);
+}
+
+/* ============================================
+   CANVAS
+   ============================================ */
+
+.canvas {
+  display: block;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-bg-base, #121212);
+}
+
+/* ============================================
+   LABEL
+   ============================================ */
+
+.label {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-tertiary, #6B7280);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+  .minimap {
+    bottom: 8px;
+    right: 8px;
+    padding: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .minimap {
+    display: none; /* Hide minimap on very small screens */
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Focus indicator */
+.minimap:focus-within {
+  outline: 2px solid var(--color-brand-primary, #3B82F6);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .minimap {
+    transition: none;
+  }
+
+  .minimap.hovering {
+    transform: none;
+  }
+}

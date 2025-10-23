@@ -100,6 +100,7 @@ class EnrichmentSource(str, Enum):
     DISCOGS = "discogs"
     BEATPORT = "beatport"
     LASTFM = "lastfm"
+    SERATO = "serato"
 
 class EnrichmentTask(BaseModel):
     track_id: str
@@ -108,6 +109,7 @@ class EnrichmentTask(BaseModel):
     existing_spotify_id: Optional[str] = None
     existing_isrc: Optional[str] = None
     existing_musicbrainz_id: Optional[str] = None
+    file_path: Optional[str] = None  # For Serato file-based enrichment
     priority: int = Field(default=5, ge=1, le=10)
     force_refresh: bool = False
     correlation_id: Optional[str] = None
@@ -281,12 +283,19 @@ async def lifespan(app: FastAPI):
             spotify_client = None
             logger.warning("Spotify client NOT initialized - no credentials found (this is OK if not using Spotify)")
 
-        # Tidal - uses user OAuth tokens (no client credentials needed)
+        # Tidal - supports both user OAuth tokens and client credentials
+        tidal_client_id = os.getenv("TIDAL_CLIENT_ID")
+        tidal_client_secret = os.getenv("TIDAL_CLIENT_SECRET")
         tidal_client = TidalClient(
             redis_client=connection_manager.redis_client,
-            db_session_factory=connection_manager.session_factory
+            db_session_factory=connection_manager.session_factory,
+            client_id=tidal_client_id,
+            client_secret=tidal_client_secret
         )
-        logger.info("Tidal client initialized (uses user OAuth tokens)")
+        if tidal_client_id and tidal_client_secret:
+            logger.info("Tidal client initialized (supports user OAuth tokens and client credentials)")
+        else:
+            logger.warning("Tidal client initialized without credentials - will only work if user OAuth tokens are available")
 
         # MusicBrainz - always initialize (user_agent has default value)
         musicbrainz_client = MusicBrainzClient(
@@ -345,6 +354,14 @@ async def lifespan(app: FastAPI):
             getsongbpm_client = None
             logger.warning("GetSongBPM client NOT initialized - no API key (get from https://getsongbpm.com/api)")
 
+        # Serato - file-based metadata extraction (no API, no credentials)
+        from serato_client import SeratoClient
+        serato_client = SeratoClient()
+        if serato_client.is_available():
+            logger.info("Serato client initialized successfully (file-based extraction from Serato Pro tags)")
+        else:
+            logger.warning("Serato client NOT available - serato_parser module not found")
+
         # Initialize configuration loader (for dynamic waterfall priorities)
         config_loader = EnrichmentConfigLoader(
             db_session_factory=connection_manager.session_factory
@@ -370,6 +387,7 @@ async def lifespan(app: FastAPI):
             acousticbrainz_client=acousticbrainz_client,
             getsongbpm_client=getsongbpm_client,
             tidal_client=tidal_client,
+            serato_client=serato_client,
             db_session_factory=connection_manager.session_factory,
             redis_client=connection_manager.redis_client
         )
@@ -382,6 +400,7 @@ async def lifespan(app: FastAPI):
             'discogs': discogs_client,
             'beatport': beatport_client,
             'lastfm': lastfm_client,
+            'serato': serato_client,
             'acousticbrainz': acousticbrainz_client,
             'getsongbpm': getsongbpm_client
         }

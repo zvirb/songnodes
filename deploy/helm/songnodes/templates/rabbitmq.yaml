@@ -91,6 +91,11 @@ spec:
           readinessProbe:
             {{- toYaml (omit .Values.rabbitmq.readinessProbe "enabled") | nindent 12 }}
           {{- end }}
+      volumes:
+        {{- if not .Values.rabbitmq.persistence.enabled }}
+        - name: rabbitmq-data
+          emptyDir: {}
+        {{- end }}
   {{- if .Values.rabbitmq.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

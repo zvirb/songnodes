@@ -978,6 +978,9 @@ services:
       # Spotify API credentials from .env
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      # Tidal API credentials from .env
+      TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID}
+      TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET}
       # NOTE: External API keys (Spotify, Discogs, Last.fm, etc.) should be configured
       # through the frontend Settings panel. They are stored encrypted in the database.
       # Environment variables are only used as fallback if database keys are not set.
@@ -1005,6 +1008,32 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+  serato-integration:
+    build:
+      context: ./services/serato-integration
+      dockerfile: Dockerfile
+    container_name: serato-integration
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql+asyncpg://musicdb_user:${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}@db-connection-pool:6432/musicdb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicdb_secure_pass_2024}
+    volumes:
+      - ./services/serato-integration:/app
+    depends_on:
+      - postgres
+      - db-connection-pool
+    networks:
+      - musicdb-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    profiles:
+      - tools
   api-gateway-internal:
     build:
       context: .

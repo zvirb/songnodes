@@ -1,0 +1,27 @@
+{{- if and .Values.services.seratoIntegration .Values.services.seratoIntegration.enabled .Values.services.seratoIntegration.persistence }}
+{{- if .Values.services.seratoIntegration.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: serato-music-library
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" $ "labels" (dict "app.kubernetes.io/name" "serato-integration" "app.kubernetes.io/component" "storage")) | nindent 4 }}
+spec:
+  accessModes:
+    {{- range .Values.services.seratoIntegration.persistence.accessModes }}
+    - {{ . }}
+    {{- end }}
+  {{- if .Values.services.seratoIntegration.persistence.storageClassName }}
+  storageClassName: {{ .Values.services.seratoIntegration.persistence.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.services.seratoIntegration.persistence.size }}
+  {{- if .Values.services.seratoIntegration.persistence.selector }}
+  selector:
+    {{- toYaml .Values.services.seratoIntegration.persistence.selector | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

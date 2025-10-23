@@ -48,6 +48,10 @@ spec:
         - name: {{ . | quote }}
         {{- end }}
       {{- end }}
+      {{- if $svc.initContainers }}
+      initContainers:
+        {{- toYaml $svc.initContainers | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ $svc.name }}
           image: {{ printf "%s:%s" $svc.image.repository $svc.image.tag }}

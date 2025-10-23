@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './styles/global.css';
+import './styles/tokens.css';
+import './styles/globals.css';
 
 // Disable right-click context menu for cleaner UX
 document.addEventListener('contextmenu', (e) => {

@@ -9,9 +9,11 @@ spec:
   targetNamespace: songnodes
   install:
     createNamespace: true
+    remediation:
+      retries: 3
   upgrade:
     remediation:
-      retry: true
+      retries: 3
       strategy: rollback
   chart:
     spec:

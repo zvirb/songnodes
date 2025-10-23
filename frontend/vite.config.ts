@@ -24,10 +24,14 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  define: {
+    '__HMR_CONFIG_NAME__': JSON.stringify('default'),
+  },
   server: {
     port: 3006,
     host: true,
     cors: true,
+    allowedHosts: ['alienware', 'localhost', '127.0.0.1', '.local'],
     headers: {
       // Completely disable caching
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

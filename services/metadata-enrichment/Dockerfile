@@ -2,10 +2,13 @@ FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (including audio file processing for Serato)
 RUN apt-get update && apt-get install -y \
     gcc \
     curl \
+    libsndfile1 \
+    libsndfile1-dev \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -14,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared common libraries
 COPY common /app/common
+
+# Copy Serato integration module (for serato_parser.py)
+COPY services/serato-integration /app/serato-integration
 
 # Copy application code
 COPY services/metadata-enrichment /app

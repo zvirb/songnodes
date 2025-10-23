@@ -5,6 +5,9 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m
-  url: https://github.com/your-org/songnodes.git
+  secretRef:
+    name: flux-system
+  url: https://github.com/zvirb/phoenix-digital-homestead.git
   ref:
     branch: main
+  timeout: 5m

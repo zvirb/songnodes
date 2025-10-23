@@ -26,6 +26,14 @@ build:
       context: services/scraper-orchestrator
       docker:
         dockerfile: Dockerfile
+    - image: songnodes/metadata-enrichment
+      context: .
+      docker:
+        dockerfile: services/metadata-enrichment/Dockerfile
+    - image: songnodes/serato-integration
+      context: services/serato-integration
+      docker:
+        dockerfile: Dockerfile
     - image: songnodes/frontend
       context: frontend
       docker:
@@ -40,19 +48,53 @@ deploy:
         valuesFiles:
           - deploy/helm/songnodes/values-dev.yaml
         setValueTemplates:
-          services.restApi.image.repository: "{{.IMAGE_NAME_SONGNODES_REST_API}}"
-          services.restApi.image.tag: "{{.IMAGE_TAG_SONGNODES_REST_API}}"
-          services.graphVisualization.image.repository: "{{.IMAGE_NAME_SONGNODES_GRAPH_VISUALIZATION_API}}"
-          services.graphVisualization.image.tag: "{{.IMAGE_TAG_SONGNODES_GRAPH_VISUALIZATION_API}}"
-          services.websocketApi.image.repository: "{{.IMAGE_NAME_SONGNODES_WEBSOCKET_API}}"
-          services.websocketApi.image.tag: "{{.IMAGE_TAG_SONGNODES_WEBSOCKET_API}}"
-          services.nlpProcessor.image.repository: "{{.IMAGE_NAME_SONGNODES_NLP_PROCESSOR}}"
-          services.nlpProcessor.image.tag: "{{.IMAGE_TAG_SONGNODES_NLP_PROCESSOR}}"
-          services.scraperOrchestrator.image.repository: "{{.IMAGE_NAME_SONGNODES_SCRAPER_ORCHESTRATOR}}"
-          services.scraperOrchestrator.image.tag: "{{.IMAGE_TAG_SONGNODES_SCRAPER_ORCHESTRATOR}}"
-          services.frontend.image.repository: "{{.IMAGE_NAME_SONGNODES_FRONTEND}}"
-          services.frontend.image.tag: "{{.IMAGE_TAG_SONGNODES_FRONTEND}}"
+          services.restApi.image.repository: "{{.IMAGE_NAME_songnodes_rest_api}}"
+          services.restApi.image.tag: "{{.IMAGE_TAG_songnodes_rest_api}}"
+          services.graphVisualization.image.repository: "{{.IMAGE_NAME_songnodes_graph_visualization_api}}"
+          services.graphVisualization.image.tag: "{{.IMAGE_TAG_songnodes_graph_visualization_api}}"
+          services.websocketApi.image.repository: "{{.IMAGE_NAME_songnodes_websocket_api}}"
+          services.websocketApi.image.tag: "{{.IMAGE_TAG_songnodes_websocket_api}}"
+          services.nlpProcessor.image.repository: "{{.IMAGE_NAME_songnodes_nlp_processor}}"
+          services.nlpProcessor.image.tag: "{{.IMAGE_TAG_songnodes_nlp_processor}}"
+          services.scraperOrchestrator.image.repository: "{{.IMAGE_NAME_songnodes_scraper_orchestrator}}"
+          services.scraperOrchestrator.image.tag: "{{.IMAGE_TAG_songnodes_scraper_orchestrator}}"
+          services.metadataEnrichment.image.repository: "{{.IMAGE_NAME_songnodes_metadata_enrichment}}"
+          services.metadataEnrichment.image.tag: "{{.IMAGE_TAG_songnodes_metadata_enrichment}}"
+          services.seratoIntegration.image.repository: "{{.IMAGE_NAME_songnodes_serato_integration}}"
+          services.seratoIntegration.image.tag: "{{.IMAGE_TAG_songnodes_serato_integration}}"
+          services.frontend.image.repository: "{{.IMAGE_NAME_songnodes_frontend}}"
+          services.frontend.image.tag: "{{.IMAGE_TAG_songnodes_frontend}}"
 profiles:
+  - name: dev-push
+    build:
+      local:
+        push: true
+    deploy:
+      helm:
+        releases:
+          - name: songnodes
+            namespace: songnodes
+            createNamespace: true
+            chartPath: deploy/helm/songnodes
+            valuesFiles:
+              - deploy/helm/songnodes/values-dev.yaml
+            setValueTemplates:
+              services.restApi.image.repository: "{{.IMAGE_NAME_songnodes_rest_api}}"
+              services.restApi.image.tag: "{{.IMAGE_TAG_songnodes_rest_api}}"
+              services.graphVisualization.image.repository: "{{.IMAGE_NAME_songnodes_graph_visualization_api}}"
+              services.graphVisualization.image.tag: "{{.IMAGE_TAG_songnodes_graph_visualization_api}}"
+              services.websocketApi.image.repository: "{{.IMAGE_NAME_songnodes_websocket_api}}"
+              services.websocketApi.image.tag: "{{.IMAGE_TAG_songnodes_websocket_api}}"
+              services.nlpProcessor.image.repository: "{{.IMAGE_NAME_songnodes_nlp_processor}}"
+              services.nlpProcessor.image.tag: "{{.IMAGE_TAG_songnodes_nlp_processor}}"
+              services.scraperOrchestrator.image.repository: "{{.IMAGE_NAME_songnodes_scraper_orchestrator}}"
+              services.scraperOrchestrator.image.tag: "{{.IMAGE_TAG_songnodes_scraper_orchestrator}}"
+              services.metadataEnrichment.image.repository: "{{.IMAGE_NAME_songnodes_metadata_enrichment}}"
+              services.metadataEnrichment.image.tag: "{{.IMAGE_TAG_songnodes_metadata_enrichment}}"
+              services.seratoIntegration.image.repository: "{{.IMAGE_NAME_songnodes_serato_integration}}"
+              services.seratoIntegration.image.tag: "{{.IMAGE_TAG_songnodes_serato_integration}}"
+              services.frontend.image.repository: "{{.IMAGE_NAME_songnodes_frontend}}"
+              services.frontend.image.tag: "{{.IMAGE_TAG_songnodes_frontend}}"
   - name: flux
     build:
       local:
@@ -70,15 +112,19 @@ profiles:
               namespace.create: false
               secrets.create: false
             setValueTemplates:
-              services.restApi.image.repository: "{{.IMAGE_NAME_SONGNODES_REST_API}}"
-              services.restApi.image.tag: "{{.IMAGE_TAG_SONGNODES_REST_API}}"
-              services.graphVisualization.image.repository: "{{.IMAGE_NAME_SONGNODES_GRAPH_VISUALIZATION_API}}"
-              services.graphVisualization.image.tag: "{{.IMAGE_TAG_SONGNODES_GRAPH_VISUALIZATION_API}}"
-              services.websocketApi.image.repository: "{{.IMAGE_NAME_SONGNODES_WEBSOCKET_API}}"
-              services.websocketApi.image.tag: "{{.IMAGE_TAG_SONGNODES_WEBSOCKET_API}}"
-              services.nlpProcessor.image.repository: "{{.IMAGE_NAME_SONGNODES_NLP_PROCESSOR}}"
-              services.nlpProcessor.image.tag: "{{.IMAGE_TAG_SONGNODES_NLP_PROCESSOR}}"
-              services.scraperOrchestrator.image.repository: "{{.IMAGE_NAME_SONGNODES_SCRAPER_ORCHESTRATOR}}"
-              services.scraperOrchestrator.image.tag: "{{.IMAGE_TAG_SONGNODES_SCRAPER_ORCHESTRATOR}}"
-              services.frontend.image.repository: "{{.IMAGE_NAME_SONGNODES_FRONTEND}}"
-              services.frontend.image.tag: "{{.IMAGE_TAG_SONGNODES_FRONTEND}}"
+              services.restApi.image.repository: "{{.IMAGE_NAME_songnodes_rest_api}}"
+              services.restApi.image.tag: "{{.IMAGE_TAG_songnodes_rest_api}}"
+              services.graphVisualization.image.repository: "{{.IMAGE_NAME_songnodes_graph_visualization_api}}"
+              services.graphVisualization.image.tag: "{{.IMAGE_TAG_songnodes_graph_visualization_api}}"
+              services.websocketApi.image.repository: "{{.IMAGE_NAME_songnodes_websocket_api}}"
+              services.websocketApi.image.tag: "{{.IMAGE_TAG_songnodes_websocket_api}}"
+              services.nlpProcessor.image.repository: "{{.IMAGE_NAME_songnodes_nlp_processor}}"
+              services.nlpProcessor.image.tag: "{{.IMAGE_TAG_songnodes_nlp_processor}}"
+              services.scraperOrchestrator.image.repository: "{{.IMAGE_NAME_songnodes_scraper_orchestrator}}"
+              services.scraperOrchestrator.image.tag: "{{.IMAGE_TAG_songnodes_scraper_orchestrator}}"
+              services.metadataEnrichment.image.repository: "{{.IMAGE_NAME_songnodes_metadata_enrichment}}"
+              services.metadataEnrichment.image.tag: "{{.IMAGE_TAG_songnodes_metadata_enrichment}}"
+              services.seratoIntegration.image.repository: "{{.IMAGE_NAME_songnodes_serato_integration}}"
+              services.seratoIntegration.image.tag: "{{.IMAGE_TAG_songnodes_serato_integration}}"
+              services.frontend.image.repository: "{{.IMAGE_NAME_songnodes_frontend}}"
+              services.frontend.image.tag: "{{.IMAGE_TAG_songnodes_frontend}}"

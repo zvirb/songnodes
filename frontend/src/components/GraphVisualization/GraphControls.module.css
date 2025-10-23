@@ -1,0 +1,177 @@
+/**
+ * GraphControls Component Styles
+ * UI controls for viewport and simulation
+ */
+
+/* ============================================
+   MAIN CONTAINER
+   ============================================ */
+
+.controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: var(--color-bg-elevated-1, rgba(26, 26, 26, 0.95));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  backdrop-filter: blur(8px);
+  z-index: 50;
+}
+
+/* ============================================
+   BUTTON GROUPS
+   ============================================ */
+
+.group {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-bg-elevated-2, rgba(55, 65, 81, 0.3));
+  border-radius: var(--radius-md, 6px);
+}
+
+.group:first-child {
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.05));
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+/* ============================================
+   BUTTON STATES
+   ============================================ */
+
+.active {
+  background: var(--color-brand-primary-muted, rgba(59, 130, 246, 0.2)) !important;
+  border-color: var(--color-brand-primary, #3B82F6) !important;
+}
+
+/* ============================================
+   STATISTICS PANEL
+   ============================================ */
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin-top: 4px;
+  background: var(--color-bg-elevated-2, rgba(55, 65, 81, 0.3));
+  border-radius: var(--radius-md, 6px);
+  min-width: 200px;
+  max-width: 250px;
+}
+
+.statGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-tertiary, #6B7280);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+/* Ensure badges wrap nicely */
+.statGroup > * {
+  display: inline-flex;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+/* ============================================
+   KEYBOARD SHORTCUTS HINT
+   ============================================ */
+
+.hint {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--color-bg-elevated-2, rgba(55, 65, 81, 0.3));
+  border-radius: var(--radius-md, 6px);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hint kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--color-bg-elevated-3, #374151);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-sm, 4px);
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 10px;
+  color: var(--color-text-secondary, #9CA3AF);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+  .controls {
+    top: 8px;
+    right: 8px;
+    padding: 6px;
+  }
+
+  .stats {
+    min-width: 180px;
+    max-width: 200px;
+    padding: 10px;
+  }
+
+  .hint {
+    display: none; /* Hide keyboard hints on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    top: auto;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .group {
+    flex: 1;
+    min-width: max-content;
+  }
+
+  .stats {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Focus indicators */
+.controls button:focus-visible {
+  outline: 2px solid var(--color-brand-primary, #3B82F6);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .stats,
+  .group,
+  .hint {
+    transition: none;
+  }
+}

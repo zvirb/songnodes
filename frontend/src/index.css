@@ -1,70 +1,119 @@
+/**
+ * SongNodes Design System - Main CSS Entry Point
+ * Version: 1.0.0
+ * Last Updated: 2025-10-23
+ *
+ * Import order:
+ * 1. Design tokens (CSS variables)
+ * 2. Global styles (resets, typography, utilities)
+ * 3. Tailwind layers (base, components, utilities)
+ * 4. Legacy global.css (for backward compatibility)
+ */
+
+/* Import design tokens FIRST */
+@import './styles/tokens.css';
+
+/* Import global styles */
+@import './styles/globals.css';
+
+/* Tailwind CSS layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global styles for DJ interface */
+/* Legacy global.css for backward compatibility */
+@import './styles/global.css';
+
+/* ============================================
+   TAILWIND LAYER OVERRIDES
+   ============================================ */
+
 @layer base {
-  html, body {
-    @apply h-full w-full overflow-hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  /* Ensure design system typography is applied */
+  html {
+    font-family: var(--font-family-base);
+    font-size: 16px; /* Base font size for rem calculations */
   }
 
-  /* Disable text selection on UI elements */
-  .no-select {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+  body {
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-base);
   }
+}
 
-  /* Custom scrollbar for panels */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-dj-black;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-dj-light-gray rounded-full;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-dj-accent;
-  }
-
-  /* Glass morphism effect for panels */
-  .glass {
-    background: rgba(26, 26, 26, 0.8);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  /* Glow effect for active elements */
-  .glow-accent {
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-  }
+@layer utilities {
+  /* Additional utility classes specific to DJ interface */
 
   /* Track node styles */
   .track-node {
-    transition: all 0.2s ease;
+    transition: var(--transition-all);
   }
 
   .track-node:hover {
     filter: brightness(1.2);
   }
 
-  /* Connection line pulse animation */
-  @keyframes connection-pulse {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
+  .track-node:active {
+    transform: scale(0.95);
   }
 
+  /* Connection animations */
   .connection-active {
-    animation: connection-pulse 2s infinite;
+    animation: connectionPulse var(--duration-slow) ease-in-out infinite;
+  }
+
+  /* Accessible skip link */
+  .skip-to-content {
+    @apply absolute -top-24 left-4 z-max;
+    @apply px-4 py-2 rounded-base;
+    @apply bg-brand-primary text-text-inverse;
+    @apply font-semibold;
+    @apply transition-all duration-base;
+  }
+
+  .skip-to-content:focus {
+    @apply top-4;
+  }
+
+  /* Focus ring for accessibility */
+  .focus-ring {
+    @apply focus-visible:outline-none;
+    @apply focus-visible:ring-2 focus-visible:ring-brand-primary;
+    @apply focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base;
+  }
+
+  /* Responsive container */
+  .container-responsive {
+    width: 100%;
+    max-width: var(--layout-content-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  /* Panel animations */
+  .panel-slide-left {
+    animation: slideInLeft var(--duration-base) var(--ease-out);
+  }
+
+  .panel-slide-right {
+    animation: slideInRight var(--duration-base) var(--ease-out);
+  }
+
+  .panel-slide-up {
+    animation: slideInUp var(--duration-base) var(--ease-out);
+  }
+
+  /* Modal animations */
+  .modal-enter {
+    animation: fadeIn var(--duration-base) var(--ease-out),
+               scaleIn var(--duration-base) var(--ease-spring);
+  }
+
+  .modal-exit {
+    animation: fadeOut var(--duration-base) var(--ease-out);
   }
 }
