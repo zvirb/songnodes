@@ -62,6 +62,7 @@ spec:
           limits:
             memory: 256Mi
             cpu: 300m
+        initContainers: []
 
       graphVisualization:
         enabled: false
@@ -90,6 +91,7 @@ spec:
           limits:
             memory: 512Mi
             cpu: 400m
+        initContainers: []
 
       seratoIntegration:
         enabled: false
