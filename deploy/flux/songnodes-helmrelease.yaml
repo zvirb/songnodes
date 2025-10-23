@@ -25,6 +25,8 @@ spec:
         name: songnodes
         namespace: flux-system
       version: 0.1.0
+      valuesFiles:
+        - values-dev.yaml
   values:
     namespace:
       create: false
