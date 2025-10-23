@@ -32,6 +32,8 @@ spec:
       create: false
     global:
       namespace: songnodes
+      # Use local registry for k3s cluster
+      imageRegistry: localhost:5000
 
     # Override POSTGRES_HOST to use FQDN for DNS resolution
     config:
@@ -54,24 +56,49 @@ spec:
         enabled: true
         replicaCount: 1
         image:
+          repository: localhost:5000/songnodes_rest-api
+          tag: latest
           pullPolicy: Always
         resources:
           requests:
-            memory: 128Mi
-            cpu: 50m
-          limits:
             memory: 256Mi
-            cpu: 300m
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
         initContainers: []
 
       graphVisualization:
-        enabled: false
+        enabled: true
+        replicaCount: 1
+        image:
+          repository: localhost:5000/songnodes_graph-visualization-api
+          tag: latest
+          pullPolicy: Always
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 250m
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+        initContainers: []
 
       websocketApi:
         enabled: true
         replicaCount: 1
         image:
+          repository: localhost:5000/songnodes_websocket-api
+          tag: latest
           pullPolicy: Always
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+        initContainers: []
 
       nlpProcessor:
         enabled: false
@@ -83,6 +110,8 @@ spec:
         enabled: true
         replicaCount: 1
         image:
+          repository: localhost:5000/songnodes_metadata-enrichment
+          tag: latest
           pullPolicy: Always
         resources:
           requests:
@@ -102,17 +131,22 @@ spec:
         enabled: true
         replicaCount: 1
         image:
+          repository: localhost:5000/songnodes_frontend
+          tag: latest
           pullPolicy: Always
         resources:
           requests:
-            memory: 64Mi
-            cpu: 30m
-          limits:
             memory: 128Mi
-            cpu: 150m
+            cpu: 50m
+          limits:
+            memory: 256Mi
+            cpu: 200m
 
     autoscaling:
       enabled: false
 
     ingress:
       enabled: false
+
+    networkPolicy:
+      enabled: true
