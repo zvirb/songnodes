@@ -260,7 +260,7 @@ services:
     component: backend
     replicaCount: 3
     image:
-      repository: songnodes/rest-api
+      repository: localhost:5000/songnodes_rest-api
       tag: latest
       pullPolicy: Always
     service:
@@ -376,7 +376,7 @@ services:
     component: backend
     replicaCount: 2
     image:
-      repository: songnodes/graph-visualization-api
+      repository: localhost:5000/songnodes_graph-visualization-api
       tag: latest
       pullPolicy: Always
     service:
@@ -426,7 +426,7 @@ services:
     component: backend
     replicaCount: 2
     image:
-      repository: songnodes/websocket-api
+      repository: localhost:5000/songnodes_websocket-api
       tag: latest
       pullPolicy: Always
     service:
@@ -469,7 +469,7 @@ services:
     component: backend
     replicaCount: 2
     image:
-      repository: songnodes/nlp-processor
+      repository: localhost:5000/songnodes_nlp-processor
       tag: latest
       pullPolicy: Always
     service:
@@ -512,7 +512,7 @@ services:
     component: scraper
     replicaCount: 2
     image:
-      repository: songnodes/scraper-orchestrator
+      repository: localhost:5000/songnodes_scraper-orchestrator
       tag: latest
       pullPolicy: Always
     service:
@@ -555,7 +555,7 @@ services:
     component: enrichment
     replicaCount: 2
     image:
-      repository: songnodes/metadata-enrichment
+      repository: localhost:5000/songnodes_metadata-enrichment
       tag: latest
       pullPolicy: Always
     service:
@@ -704,7 +704,7 @@ services:
     component: tools
     replicaCount: 1
     image:
-      repository: songnodes/serato-integration
+      repository: localhost:5000/songnodes_serato-integration
       tag: latest
       pullPolicy: Always
     service:
@@ -757,7 +757,7 @@ services:
     component: ui
     replicaCount: 3
     image:
-      repository: songnodes/frontend
+      repository: localhost:5000/songnodes_frontend
       tag: latest
       pullPolicy: Always
     service:
