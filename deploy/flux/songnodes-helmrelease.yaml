@@ -38,7 +38,7 @@ spec:
     # Override POSTGRES_HOST to use StatefulSet pod hostname for DNS resolution
     config:
       data:
-        POSTGRES_HOST: postgres-0.postgres-service
+        POSTGRES_HOST: postgres-0.postgres-service.songnodes.svc.cluster.local
 
     # Development overrides from values-dev.yaml
     postgres:
