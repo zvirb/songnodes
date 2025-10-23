@@ -486,8 +486,9 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     if (!search) return null;
 
     return (
-      <div
-        style={style}
+      <button
+        type="button"
+        style={{ ...style, width: '100%', textAlign: 'left' }}
         className={clsx(
           'px-4 py-2 cursor-pointer border-b border-gray-100 hover:bg-gray-50',
           index === selectedIndex && 'bg-blue-50'
@@ -503,7 +504,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           </div>
           <span className="text-xs text-gray-500">{search.resultCount} results</span>
         </div>
-      </div>
+      </button>
     );
   };
 
@@ -515,8 +516,9 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     const { track, score, matches } = searchResult;
 
     return (
-      <div
-        style={style}
+      <button
+        type="button"
+        style={{ ...style, width: '100%', textAlign: 'left' }}
         className={clsx(
           'px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors',
           index === selectedIndex && 'bg-blue-50',
@@ -588,7 +590,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
             </button>
           </div>
         </div>
-      </div>
+      </button>
     );
   };
 

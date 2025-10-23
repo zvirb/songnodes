@@ -165,7 +165,8 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
         Compatible Tracks ({currentKey})
       </h3>
       {sortedTracks.map(track => (
-        <div
+        <button
+          type="button"
           key={track.id}
           onClick={() => onTrackSelect?.(track.id)}
           style={{
@@ -175,7 +176,9 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
             padding: '8px',
             borderRadius: '4px',
             cursor: 'pointer',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
+            width: '100%',
+            textAlign: 'left'
           }}
         >
           <HarmonicCompatibility
@@ -196,7 +199,7 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
           }}>
             {track.key}
           </span>
-        </div>
+        </button>
       ))}
     </div>
   );
