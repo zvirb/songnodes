@@ -3,6 +3,7 @@ Ollama-powered HTML analyzer for dynamic CSS selector adaptation.
 Uses NLP to intelligently identify and adapt to website structure changes.
 """
 
+import os
 import requests
 import json
 import logging
@@ -19,9 +20,26 @@ class OllamaHTMLAnalyzer:
     the correct CSS selectors when websites change their structure.
     """
 
-    def __init__(self, ollama_host: str = "http://ollama:11434"):
-        self.ollama_host = ollama_host
+    def __init__(self, ollama_host: Optional[str] = None):
+        self.ollama_host = self._resolve_ollama_host(ollama_host)
         self.nlp_host = "http://nlp-processor:8021"
+
+    @staticmethod
+    def _resolve_ollama_host(override: Optional[str] = None) -> str:
+        if override:
+            return override
+
+        env_url = os.getenv("OLLAMA_URL")
+        if env_url:
+            return env_url
+
+        if os.getenv("KUBERNETES_SERVICE_HOST"):
+            return "http://ollama-maxwell.phoenix.svc.cluster.local:11434"
+
+        if os.path.exists("/.dockerenv"):
+            return "http://ollama:11434"
+
+        return "http://localhost:11434"
 
     def analyze_html_for_tracklists(self, html_content: str) -> Dict[str, Any]:
         """

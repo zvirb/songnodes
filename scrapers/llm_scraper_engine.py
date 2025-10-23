@@ -65,8 +65,15 @@ class LLMScraperEngine:
         if ollama_url:
             self.ollama_url = ollama_url
         else:
-            # Try Docker network first, then localhost
-            self.ollama_url = "http://ollama:11434" if os.path.exists("/.dockerenv") else "http://localhost:11434"
+            env_url = os.getenv("OLLAMA_URL")
+            if env_url:
+                self.ollama_url = env_url
+            elif os.getenv("KUBERNETES_SERVICE_HOST"):
+                self.ollama_url = "http://ollama-maxwell.phoenix.svc.cluster.local:11434"
+            elif os.path.exists("/.dockerenv"):
+                self.ollama_url = "http://ollama:11434"
+            else:
+                self.ollama_url = "http://localhost:11434"
         self.ollama_model = "llama3.2:3b"  # Default model
 
         if provider == "ollama" and REQUESTS_AVAILABLE:

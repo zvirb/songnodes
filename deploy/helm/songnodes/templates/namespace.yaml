@@ -1,0 +1,12 @@
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ default .Values.global.namespace .Values.namespace.name | quote }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" .Values.namespace.labels) | nindent 4 }}
+  {{- if or .Values.namespace.annotations .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.namespace.annotations) | nindent 4 }}
+  {{- end }}
+{{- end }}

@@ -37,10 +37,6 @@ resources:
   - ../services/scraper-orchestrator-deployment.yaml
   - ../services/frontend-deployment.yaml
 
-  # Monitoring
-  - ../monitoring/prometheus-deployment.yaml
-  - ../monitoring/grafana-deployment.yaml
-
   # Ingress
   - ../ingress/ingress.yaml
 

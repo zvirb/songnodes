@@ -5,6 +5,7 @@ Extracts structured data from raw HTML/text using local Ollama models
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -15,6 +16,17 @@ import structlog
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
+
+
+def _default_ollama_url() -> str:
+    env_url = os.getenv("OLLAMA_URL")
+    if env_url:
+        return env_url
+    if os.getenv("KUBERNETES_SERVICE_HOST"):
+        return "http://ollama-maxwell.phoenix.svc.cluster.local:11434"
+    if os.path.exists("/.dockerenv"):
+        return "http://ollama:11434"
+    return "http://localhost:11434"
 
 
 class ExtractionResult(BaseModel):
@@ -30,7 +42,7 @@ class ExtractionResult(BaseModel):
 
 class OllamaConfig(BaseModel):
     """Configuration for Ollama connection"""
-    base_url: str = "http://ollama:11434"
+    base_url: str = Field(default_factory=_default_ollama_url)
     default_model: str = "llama3.2:3b"  # Fast, capable 3B parameter model
     timeout: int = 120
     max_retries: int = 3

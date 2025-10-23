@@ -1,0 +1,131 @@
+{{- if .Values.postgres.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (merge (dict "app.kubernetes.io/name" "postgres" "app.kubernetes.io/component" "database") (.Values.postgres.labels | default dict))) | nindent 4 }}
+spec:
+  type: {{ .Values.postgres.service.type }}
+  {{- if .Values.postgres.service.headless }}
+  clusterIP: None
+  {{- end }}
+  ports:
+    - name: postgres
+      port: {{ .Values.postgres.service.port }}
+      targetPort: {{ .Values.postgres.service.port }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.postgres.nameOverride }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (merge (dict "app.kubernetes.io/name" "postgres" "app.kubernetes.io/component" "database") (.Values.postgres.labels | default dict))) | nindent 4 }}
+spec:
+  serviceName: postgres-service
+  replicas: {{ .Values.postgres.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "postgres" "app.kubernetes.io/component" "database")) | nindent 8 }}
+      {{- if or .Values.global.commonAnnotations .Values.postgres.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.postgres.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.global.imagePullSecrets }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: postgres
+          image: {{ printf "%s:%s" .Values.postgres.image.repository .Values.postgres.image.tag }}
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.postgres.service.port }}
+              name: postgres
+              protocol: TCP
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.global.secretName .Values.secrets.name }}
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: {{ .Values.postgres.env.pgdata | quote }}
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+            {{- if .Values.postgres.initScripts.name }}
+            - name: postgres-init
+              mountPath: /docker-entrypoint-initdb.d
+            {{- end }}
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          {{- if .Values.postgres.livenessProbe.enabled }}
+          livenessProbe:
+            {{- toYaml (omit .Values.postgres.livenessProbe "enabled") | nindent 12 }}
+          {{- end }}
+          {{- if .Values.postgres.readinessProbe.enabled }}
+          readinessProbe:
+            {{- toYaml (omit .Values.postgres.readinessProbe "enabled") | nindent 12 }}
+          {{- end }}
+      volumes:
+        {{- if .Values.postgres.initScripts.name }}
+        - name: postgres-init
+          configMap:
+            name: {{ .Values.postgres.initScripts.name }}
+        {{- end }}
+  {{- if .Values.postgres.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+      spec:
+        accessModes:
+          {{- range .Values.postgres.persistence.accessModes }}
+          - {{ . | quote }}
+          {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.persistence.size }}
+        {{- if .Values.postgres.persistence.storageClassName }}
+        storageClassName: {{ .Values.postgres.persistence.storageClassName }}
+        {{- end }}
+  {{- end }}
+{{- if and .Values.postgres.initScripts.createConfigMap .Values.postgres.initScripts.name }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.postgres.initScripts.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "postgres" "app.kubernetes.io/component" "database")) | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.postgres.initScripts.data }}
+  {{ $key }}: |
+{{ $value | indent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

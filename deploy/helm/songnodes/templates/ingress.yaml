@@ -1,0 +1,99 @@
+{{- if .Values.ingress.enabled }}
+{{- $annotations := .Values.ingress.annotations | default dict }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: songnodes-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "songnodes" "app.kubernetes.io/component" "ingress")) | nindent 4 }}
+  {{- if or $annotations .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "songnodes.annotations" (dict "ctx" . "annotations" $annotations) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range $host := .Values.ingress.hosts }}
+    - host: {{ $host.host }}
+      http:
+        paths:
+          {{- range $path := $host.paths }}
+          {{- $svc := index $.Values.services $path.service }}
+          {{- if not $svc }}
+          {{- fail (printf "ingress host %s references unknown service key %s" $host.host $path.service) }}
+          {{- end }}
+          {{- $svcPortKey := $path.port | default "http" }}
+          {{- $svcPorts := $svc.service.ports }}
+          {{- if not (hasKey $svcPorts $svcPortKey) }}
+          {{- fail (printf "ingress host %s path %s references unknown port key %s on service %s" $host.host $path.path $svcPortKey $path.service) }}
+          {{- end }}
+          {{- $svcPort := index $svcPorts $svcPortKey }}
+          {{- $backendServiceName := printf "%s-service" $svc.name }}
+          - path: {{ $path.path }}
+            pathType: {{ $path.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $backendServiceName }}
+                port:
+                  number: {{ $svcPort.port }}
+          {{- end }}
+    {{- end }}
+{{- if and .Values.ingress.additionalIngresses .Values.ingress.additionalIngresses.singleHost .Values.ingress.additionalIngresses.singleHost.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: songnodes-ingress-single-host
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "songnodes" "app.kubernetes.io/component" "ingress" "variant" "single-host")) | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/websocket-services: {{ printf "%s-service" .Values.services.websocketApi.name }}
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.additionalIngresses.singleHost.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ printf "%s-service" .Values.services.frontend.name }}
+                port:
+                  number: {{ .Values.services.frontend.service.ports.http.port }}
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ printf "%s-service" .Values.services.restApi.name }}
+                port:
+                  number: {{ .Values.services.restApi.service.ports.http.port }}
+          - path: /graph(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ printf "%s-service" .Values.services.graphVisualization.name }}
+                port:
+                  number: {{ .Values.services.graphVisualization.service.ports.http.port }}
+          - path: /ws(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ printf "%s-service" .Values.services.websocketApi.name }}
+                port:
+                  number: {{ .Values.services.websocketApi.service.ports.http.port }}
+{{- end }}
+{{- end }}

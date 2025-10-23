@@ -1,6 +1,66 @@
 # SongNodes Kubernetes Deployment
 
-Complete Kubernetes deployment manifests for the SongNodes music platform.
+> **Heads-up:** the manifests in `k8s/` are now considered reference material. The
+> live configuration is rendered from the Helm chart under
+> `deploy/helm/songnodes` and reconciled by Flux CD. Use Skaffold for local
+> development builds so that image tags and Helm values stay in sync.
+
+## ✳️ Current Workflow Overview
+
+| Scenario | Tooling | What Happens |
+| --- | --- | --- |
+| Local Iteration | `skaffold dev` | Builds all SongNodes service images locally and deploys the Helm chart with development overrides (single replicas, no HPAs, no ingress). |
+| CI/Release Build | `skaffold build -p flux --default-repo <registry>` | Builds & pushes images, updates Helm values on the fly (no deploy). Flux picks up new commits and rolls the cluster. |
+| Cluster Sync | `kubectl apply -k deploy/flux` | Installs/updates the GitRepository + HelmRelease so Flux tracks the chart. |
+
+### Local Development with Skaffold
+
+1. **Prerequisites**: Docker, kubectl, helm, skaffold, and a running cluster
+   (Kind/Minikube/K3d). Ensure your kube-context points at that cluster.
+2. **Bootstrap dependencies** (Postgres, Redis, RabbitMQ storage is ephemeral in
+   dev):
+   ```bash
+   skaffold dev
+   ```
+   Skaffold watches the codebase, rebuilds images, and performs rolling updates
+   via Helm. To exit, press `Ctrl+C`.
+3. **Debug tips**: use `skaffold dev --no-prune=false --cache-artifacts=true`
+   for faster rebuilds, and `skaffold status` to see the active deployment loop.
+
+### Building Images for Flux-controlled environments
+
+1. Authenticate to the container registry that Flux pulls from.
+2. Build & push versioned images while updating the HelmRelease values:
+   ```bash
+   skaffold build -p flux --default-repo <registry.example.com/songnodes>
+   ```
+   The profile disables namespace/secret creation and leaves deployment to Flux.
+3. Commit the resulting Git changes (if any) and push; Flux will reconcile using
+   the Helm chart.
+
+### Installing/Updating the Flux Stack
+
+```bash
+kubectl apply -k deploy/flux
+```
+
+This seeds the `GitRepository` and `HelmRelease`. Flux continuously pulls the
+chart and applies it to the `songnodes` namespace. To force a sync, run:
+
+```bash
+flux reconcile helmrelease songnodes --namespace flux-system
+```
+
+### Rendering manifests locally (optional)
+
+```bash
+helm template songnodes deploy/helm/songnodes \
+  --values deploy/helm/songnodes/values-dev.yaml
+```
+
+## 📁 Directory Structure (Legacy Reference)
+
+The original raw manifests are kept for historical context:
 
 ## 📁 Directory Structure
 
@@ -23,9 +83,6 @@ k8s/
 │   ├── nlp-processor-deployment.yaml
 │   ├── scraper-orchestrator-deployment.yaml
 │   └── frontend-deployment.yaml
-├── monitoring/                     # Observability stack
-│   ├── prometheus-deployment.yaml
-│   └── grafana-deployment.yaml
 ├── ingress/                        # Ingress configuration
 │   └── ingress.yaml
 └── overlays/                       # Environment-specific overrides
@@ -154,14 +211,9 @@ kubectl wait --for=condition=available deployment --all -n songnodes --timeout=3
 kubectl apply -f k8s/services/frontend-deployment.yaml
 ```
 
-#### 8. Deploy Monitoring Stack
 
 ```bash
-# Prometheus
-kubectl apply -f k8s/monitoring/prometheus-deployment.yaml
 
-# Grafana
-kubectl apply -f k8s/monitoring/grafana-deployment.yaml
 ```
 
 #### 9. Configure Ingress
@@ -205,8 +257,6 @@ websocket-api-xxx                     1/1     Running   0          3m
 nlp-processor-xxx                     1/1     Running   0          3m
 scraper-orchestrator-xxx              1/1     Running   0          3m
 frontend-xxx                          1/1     Running   0          2m
-prometheus-xxx                        1/1     Running   0          2m
-grafana-xxx                           1/1     Running   0          2m
 ```
 
 ### Check Services
@@ -255,13 +305,9 @@ kubectl port-forward svc/frontend-service 3006:80 -n songnodes
 # REST API
 kubectl port-forward svc/rest-api-service 8082:8082 -n songnodes
 
-# Grafana
-kubectl port-forward svc/grafana-service 3000:3000 -n songnodes
 # Open http://localhost:3000
 # Default credentials: admin / (from secret)
 
-# Prometheus
-kubectl port-forward svc/prometheus-service 9090:9090 -n songnodes
 # Open http://localhost:9090
 ```
 
@@ -460,8 +506,6 @@ kubectl delete -f k8s/services/
 # Delete core infrastructure
 kubectl delete -f k8s/core/
 
-# Delete monitoring
-kubectl delete -f k8s/monitoring/
 
 # Delete ingress
 kubectl delete -f k8s/ingress/
@@ -484,13 +528,9 @@ kubectl delete namespace songnodes
 kubectl delete pv <pv-name>
 ```
 
-## 📈 Monitoring
 
-### Prometheus
 
-Access Prometheus UI:
 ```bash
-kubectl port-forward svc/prometheus-service 9090:9090 -n songnodes
 # Open http://localhost:9090
 ```
 
@@ -512,18 +552,14 @@ container_memory_usage_bytes{namespace="songnodes"}
 kube_pod_container_status_restarts_total{namespace="songnodes"}
 ```
 
-### Grafana
 
-Access Grafana UI:
 ```bash
-kubectl port-forward svc/grafana-service 3000:3000 -n songnodes
 # Open http://localhost:3000
 ```
 
 **Default credentials**: admin / (set in secrets)
 
 **Import Dashboards**:
-1. Kubernetes Cluster Monitoring: ID 6417
 2. Node Exporter Full: ID 1860
 3. PostgreSQL Database: ID 9628
 4. Redis Dashboard: ID 11835
@@ -618,7 +654,6 @@ kubectl get resourcequota -n songnodes
 - [Kubernetes Official Documentation](https://kubernetes.io/docs/)
 - [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
 - [cert-manager Documentation](https://cert-manager.io/docs/)
-- [Prometheus Operator](https://prometheus-operator.dev/)
 - [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets)
 
 ---

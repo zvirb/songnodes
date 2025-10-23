@@ -1,0 +1,84 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: songnodes
+build:
+  local:
+    push: false
+  artifacts:
+    - image: songnodes/rest-api
+      context: services
+      docker:
+        dockerfile: rest_api/Dockerfile
+    - image: songnodes/graph-visualization-api
+      context: services/graph-visualization-api
+      docker:
+        dockerfile: Dockerfile
+    - image: songnodes/websocket-api
+      context: services
+      docker:
+        dockerfile: websocket-api/Dockerfile
+    - image: songnodes/nlp-processor
+      context: services/nlp-processor
+      docker:
+        dockerfile: Dockerfile
+    - image: songnodes/scraper-orchestrator
+      context: services/scraper-orchestrator
+      docker:
+        dockerfile: Dockerfile
+    - image: songnodes/frontend
+      context: frontend
+      docker:
+        dockerfile: Dockerfile
+deploy:
+  helm:
+    releases:
+      - name: songnodes
+        namespace: songnodes
+        createNamespace: true
+        chartPath: deploy/helm/songnodes
+        valuesFiles:
+          - deploy/helm/songnodes/values-dev.yaml
+        setValueTemplates:
+          services.restApi.image.repository: "{{.IMAGE_NAME_SONGNODES_REST_API}}"
+          services.restApi.image.tag: "{{.IMAGE_TAG_SONGNODES_REST_API}}"
+          services.graphVisualization.image.repository: "{{.IMAGE_NAME_SONGNODES_GRAPH_VISUALIZATION_API}}"
+          services.graphVisualization.image.tag: "{{.IMAGE_TAG_SONGNODES_GRAPH_VISUALIZATION_API}}"
+          services.websocketApi.image.repository: "{{.IMAGE_NAME_SONGNODES_WEBSOCKET_API}}"
+          services.websocketApi.image.tag: "{{.IMAGE_TAG_SONGNODES_WEBSOCKET_API}}"
+          services.nlpProcessor.image.repository: "{{.IMAGE_NAME_SONGNODES_NLP_PROCESSOR}}"
+          services.nlpProcessor.image.tag: "{{.IMAGE_TAG_SONGNODES_NLP_PROCESSOR}}"
+          services.scraperOrchestrator.image.repository: "{{.IMAGE_NAME_SONGNODES_SCRAPER_ORCHESTRATOR}}"
+          services.scraperOrchestrator.image.tag: "{{.IMAGE_TAG_SONGNODES_SCRAPER_ORCHESTRATOR}}"
+          services.frontend.image.repository: "{{.IMAGE_NAME_SONGNODES_FRONTEND}}"
+          services.frontend.image.tag: "{{.IMAGE_TAG_SONGNODES_FRONTEND}}"
+profiles:
+  - name: flux
+    build:
+      local:
+        push: true
+    deploy:
+      helm:
+        releases:
+          - name: songnodes
+            namespace: songnodes
+            createNamespace: false
+            chartPath: deploy/helm/songnodes
+            valuesFiles:
+              - deploy/helm/songnodes/values.yaml
+            setValues:
+              namespace.create: false
+              secrets.create: false
+            setValueTemplates:
+              services.restApi.image.repository: "{{.IMAGE_NAME_SONGNODES_REST_API}}"
+              services.restApi.image.tag: "{{.IMAGE_TAG_SONGNODES_REST_API}}"
+              services.graphVisualization.image.repository: "{{.IMAGE_NAME_SONGNODES_GRAPH_VISUALIZATION_API}}"
+              services.graphVisualization.image.tag: "{{.IMAGE_TAG_SONGNODES_GRAPH_VISUALIZATION_API}}"
+              services.websocketApi.image.repository: "{{.IMAGE_NAME_SONGNODES_WEBSOCKET_API}}"
+              services.websocketApi.image.tag: "{{.IMAGE_TAG_SONGNODES_WEBSOCKET_API}}"
+              services.nlpProcessor.image.repository: "{{.IMAGE_NAME_SONGNODES_NLP_PROCESSOR}}"
+              services.nlpProcessor.image.tag: "{{.IMAGE_TAG_SONGNODES_NLP_PROCESSOR}}"
+              services.scraperOrchestrator.image.repository: "{{.IMAGE_NAME_SONGNODES_SCRAPER_ORCHESTRATOR}}"
+              services.scraperOrchestrator.image.tag: "{{.IMAGE_TAG_SONGNODES_SCRAPER_ORCHESTRATOR}}"
+              services.frontend.image.repository: "{{.IMAGE_NAME_SONGNODES_FRONTEND}}"
+              services.frontend.image.tag: "{{.IMAGE_TAG_SONGNODES_FRONTEND}}"

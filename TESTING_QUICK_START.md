@@ -18,7 +18,6 @@ docker compose up -d
 - ✓ API Integration Gateway
 - ✓ Waterfall enrichment
 - ✓ End-to-end workflows
-- ✓ Metrics and observability
 
 ## Prerequisites
 

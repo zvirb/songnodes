@@ -51,7 +51,7 @@ class CaptchaSolvingMiddleware:
         # FREE Ollama backend (recommended)
         CAPTCHA_ENABLED = False  # Set to True to enable
         CAPTCHA_BACKEND = 'ollama'  # FREE, self-hosted
-        OLLAMA_URL = 'http://ollama:11434'  # Optional, auto-detected
+        OLLAMA_URL = 'http://ollama-maxwell.phoenix.svc.cluster.local:11434'  # Optional, auto-detected
 
         # Legacy paid backends (deprecated)
         # CAPTCHA_BACKEND = '2captcha'

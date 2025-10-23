@@ -1,6 +1,0 @@
-# PostgreSQL Exporter Configuration
-# Minimal valid configuration file to silence the config file warning
-# The exporter uses built-in collectors which provide comprehensive metrics
-
-# Auth modules configuration (optional)
-auth_modules: {}

@@ -1,0 +1,114 @@
+{{- if .Values.redis.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (merge (dict "app.kubernetes.io/name" "redis" "app.kubernetes.io/component" "cache") (.Values.redis.labels | default dict))) | nindent 4 }}
+spec:
+  type: {{ .Values.redis.service.type }}
+  ports:
+    - name: redis
+      port: {{ .Values.redis.service.port }}
+      targetPort: {{ .Values.redis.service.port }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.redis.nameOverride }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (merge (dict "app.kubernetes.io/name" "redis" "app.kubernetes.io/component" "cache") (.Values.redis.labels | default dict))) | nindent 4 }}
+spec:
+  replicas: {{ .Values.redis.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+  template:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "redis" "app.kubernetes.io/component" "cache")) | nindent 8 }}
+      {{- if or .Values.global.commonAnnotations .Values.redis.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.redis.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.global.imagePullSecrets }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: redis
+          image: {{ printf "%s:%s" .Values.redis.image.repository .Values.redis.image.tag }}
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          {{- if .Values.redis.command }}
+          command:
+            {{- range .Values.redis.command }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.redis.service.port }}
+              name: redis
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.global.secretName .Values.secrets.name }}
+                  key: REDIS_PASSWORD
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          {{- if .Values.redis.livenessProbe.enabled }}
+          livenessProbe:
+            {{- toYaml (omit .Values.redis.livenessProbe "enabled") | nindent 12 }}
+          {{- end }}
+          {{- if .Values.redis.readinessProbe.enabled }}
+          readinessProbe:
+            {{- toYaml (omit .Values.redis.readinessProbe "enabled") | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: redis-data
+          {{- if .Values.redis.persistence.enabled }}
+            {{- if .Values.redis.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.redis.persistence.existingClaim }}
+            {{- else }}
+          persistentVolumeClaim:
+            claimName: redis-pvc
+            {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- if and .Values.redis.persistence.enabled (not .Values.redis.persistence.existingClaim) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "redis" "app.kubernetes.io/component" "cache")) | nindent 4 }}
+spec:
+  accessModes:
+    {{- range .Values.redis.persistence.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size }}
+  {{- if .Values.redis.persistence.storageClassName }}
+  storageClassName: {{ .Values.redis.persistence.storageClassName }}
+  {{- end }}
+{{- end }}
+{{- end }}

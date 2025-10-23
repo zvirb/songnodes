@@ -182,6 +182,19 @@ curl http://localhost:8082/health
 - **Grafana Dashboard**: http://localhost:3001 (admin/admin)
 - **Ollama AI**: http://localhost:11434
 
+### Kubernetes (Flux CD + Skaffold)
+
+- **Local development**: `skaffold dev` builds all images and deploys the Helm
+  chart with lightweight defaults (`deploy/helm/songnodes/values-dev.yaml`). It
+  watches the repo for changes and performs rolling updates on your cluster.
+- **Build for Flux**: `skaffold build -p flux --default-repo <registry>` pushes
+  versioned images and wires the tags into the Helm values that Flux applies.
+- **Bootstrap/refresh Flux**: `kubectl apply -k deploy/flux` registers the
+  `GitRepository` + `HelmRelease`; `flux reconcile helmrelease songnodes -n
+  flux-system` forces an immediate sync.
+- **Inspect manifests**: `helm template songnodes deploy/helm/songnodes` renders
+  the full set of resources (HPAs, NetworkPolicies, services, stateful sets).
+
 ## ✅ Current System Status (Sept 2025)
 
 ### Working Features

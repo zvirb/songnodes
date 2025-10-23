@@ -1,0 +1,15 @@
+{{- $frontend := .Values.services.frontend }}
+{{- if and $frontend.enabled $frontend.configMap $frontend.configMap.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $frontend.configMap.name | default "frontend-nginx-config" }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "frontend" "app.kubernetes.io/component" "ui")) | nindent 4 }}
+data:
+  {{- range $key, $value := $frontend.configMap.data }}
+  {{ $key }}: |
+{{ $value | indent 4 }}
+  {{- end }}
+{{- end }}

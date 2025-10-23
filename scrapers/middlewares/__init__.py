@@ -9,7 +9,7 @@ Middleware Stack (Priority Order):
 - DynamicHeaderMiddleware (700): Realistic browser header generation
 
 All middlewares integrate with crawler.stats for shared state management
-and implement comprehensive logging for observability.
+and implement comprehensive logging for diagnostics.
 """
 
 from .headers_middleware import DynamicHeaderMiddleware

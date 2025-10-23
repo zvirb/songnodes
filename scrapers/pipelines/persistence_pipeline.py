@@ -158,7 +158,7 @@ class PersistencePipeline:
             'playlists': set()
         }
 
-        # Statistics for observability
+        # Internal statistics tracking
         self.stats = {
             'total_items': 0,
             'persisted_items': 0,

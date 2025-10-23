@@ -25,12 +25,6 @@ interface ArtistSearchResult {
     track_count: number;
 }
 
-interface DataCompletenessStats {
-    total_tracks: number;
-    missing_artist_count: number;
-    missing_artist_percentage: number;
-}
-
 interface DirtyArtist {
     artist_id: string;
     current_name: string;
@@ -83,8 +77,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
     const ITEMS_PER_PAGE = 50;
 
     // Statistics
-    const [stats, setStats] = useState<DataCompletenessStats | null>(null);
-
+    
     // ============================================================================
     // Data Fetching
     // ============================================================================
@@ -112,25 +105,6 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             setLoading(false);
         }
     }, [page, sortBy]);
-
-    const fetchStats = useCallback(async () => {
-        try {
-            const response = await fetch('/api/v1/observability/data-completeness');
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch stats');
-            }
-
-            const data = await response.json();
-            setStats({
-                total_tracks: data.total_counts.tracks,
-                missing_artist_count: data.track_completeness.artist_attribution.missing,
-                missing_artist_percentage: data.track_completeness.artist_attribution.percentage
-            });
-        } catch (err) {
-            console.error('Error fetching stats:', err);
-        }
-    }, []);
 
     const searchArtists = useCallback(async (query: string) => {
         if (query.trim().length < 2) {
@@ -228,10 +202,6 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             // Optimistic UI Update: Remove the assigned track from the list locally
             // This provides instant feedback without waiting for a full refresh.
             setTracks(prevTracks => prevTracks.filter(t => t.track_id !== trackId));
-            if (stats) {
-                setStats(prevStats => prevStats ? { ...prevStats, missing_artist_count: prevStats.missing_artist_count - 1 } : null);
-            }
-
             // Clear selection
             setSelectedTrack(null);
             setSearchQuery('');
@@ -285,7 +255,6 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
 
         // Refresh and clear selection
         await fetchTracks();
-        await fetchStats();
         setSelectedTracks(new Set());
         setSearchQuery('');
         setArtistResults([]);
@@ -435,11 +404,10 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
     useEffect(() => {
         if (activeTab === 'missing') {
             fetchTracks();
-            fetchStats();
         } else if (activeTab === 'dirty') {
             fetchDirtyArtists();
         }
-    }, [activeTab, fetchTracks, fetchStats, fetchDirtyArtists]);
+    }, [activeTab, fetchTracks, fetchDirtyArtists]);
 
     useEffect(() => {
         const debounce = setTimeout(() => {
@@ -519,16 +487,6 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                         }}>
                             Artist Attribution Manager
                         </h2>
-                        {stats && activeTab === 'missing' && (
-                            <p style={{
-                                margin: 0,
-                                color: '#FFFFFF',
-                                fontSize: '14px',
-                                opacity: 0.8
-                            }}>
-                                {stats.missing_artist_count.toLocaleString()} tracks ({stats.missing_artist_percentage.toFixed(1)}%) missing artist attribution
-                            </p>
-                        )}
                     </div>
 
                     <button

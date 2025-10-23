@@ -1,0 +1,37 @@
+namespace:
+  create: true
+
+secrets:
+  create: false
+
+postgres:
+  persistence:
+    enabled: false
+
+redis:
+  persistence:
+    enabled: false
+
+rabbitmq:
+  persistence:
+    enabled: false
+
+services:
+  restApi:
+    replicaCount: 1
+  graphVisualization:
+    replicaCount: 1
+  websocketApi:
+    replicaCount: 1
+  nlpProcessor:
+    replicaCount: 1
+  scraperOrchestrator:
+    replicaCount: 1
+  frontend:
+    replicaCount: 1
+
+autoscaling:
+  enabled: false
+
+ingress:
+  enabled: false

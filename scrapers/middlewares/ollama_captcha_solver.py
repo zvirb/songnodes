@@ -32,6 +32,7 @@ import base64
 import io
 import json
 import logging
+import os
 import re
 import time
 from typing import Dict, Any, Optional, List
@@ -76,9 +77,12 @@ class OllamaCaptchaSolver:
         if ollama_url:
             self.ollama_url = ollama_url
         else:
-            # Try Docker network first, then localhost
-            import os
-            if os.path.exists("/.dockerenv"):
+            env_url = os.getenv("OLLAMA_URL")
+            if env_url:
+                self.ollama_url = env_url
+            elif os.getenv("KUBERNETES_SERVICE_HOST"):
+                self.ollama_url = "http://ollama-maxwell.phoenix.svc.cluster.local:11434"
+            elif os.path.exists("/.dockerenv"):
                 self.ollama_url = "http://ollama:11434"
             else:
                 self.ollama_url = "http://localhost:11434"

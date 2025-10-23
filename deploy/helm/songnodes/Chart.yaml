@@ -1,0 +1,6 @@
+apiVersion: v2
+name: songnodes
+description: Helm chart for SongNodes core services (data collection, enrichment, graph visualization, frontend)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

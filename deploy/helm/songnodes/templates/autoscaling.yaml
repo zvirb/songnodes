@@ -1,0 +1,30 @@
+{{- if .Values.autoscaling.enabled }}
+{{- range $key, $cfg := .Values.autoscaling.targets }}
+{{- $svc := index $.Values.services $key }}
+{{- if and $svc $svc.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ printf "%s-hpa" $svc.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" $ "labels" (dict "app.kubernetes.io/name" $svc.name "app.kubernetes.io/component" $svc.component)) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $svc.name }}
+  minReplicas: {{ $cfg.minReplicas }}
+  maxReplicas: {{ $cfg.maxReplicas }}
+  {{- if $cfg.metrics }}
+  metrics:
+    {{- toYaml $cfg.metrics | nindent 4 }}
+  {{- end }}
+  {{- if $cfg.behavior }}
+  behavior:
+    {{- toYaml $cfg.behavior | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -307,7 +307,15 @@ async def lifespan(app: FastAPI):
     logger.info("✅ Resource monitor initialized")
 
     # Initialize Ollama extractor
-    ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
+    env_ollama_url = os.getenv("OLLAMA_URL")
+    if env_ollama_url:
+        ollama_url = env_ollama_url
+    elif os.getenv("KUBERNETES_SERVICE_HOST"):
+        ollama_url = "http://ollama-maxwell.phoenix.svc.cluster.local:11434"
+    elif os.path.exists("/.dockerenv"):
+        ollama_url = "http://ollama:11434"
+    else:
+        ollama_url = "http://localhost:11434"
     app.state.ollama = OllamaExtractor(OllamaConfig(base_url=ollama_url))
 
     # Check Ollama health

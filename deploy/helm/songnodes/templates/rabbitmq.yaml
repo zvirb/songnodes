@@ -1,0 +1,110 @@
+{{- if .Values.rabbitmq.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (merge (dict "app.kubernetes.io/name" "rabbitmq" "app.kubernetes.io/component" "message-queue") (.Values.rabbitmq.labels | default dict))) | nindent 4 }}
+spec:
+  type: {{ .Values.rabbitmq.service.type }}
+  {{- if .Values.rabbitmq.service.headless }}
+  clusterIP: None
+  {{- end }}
+  ports:
+    - name: amqp
+      port: {{ .Values.rabbitmq.service.ports.amqp }}
+      targetPort: {{ .Values.rabbitmq.service.ports.amqp }}
+      protocol: TCP
+    - name: management
+      port: {{ .Values.rabbitmq.service.ports.management }}
+      targetPort: {{ .Values.rabbitmq.service.ports.management }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: rabbitmq
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.rabbitmq.nameOverride }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (merge (dict "app.kubernetes.io/name" "rabbitmq" "app.kubernetes.io/component" "message-queue") (.Values.rabbitmq.labels | default dict))) | nindent 4 }}
+spec:
+  serviceName: rabbitmq-service
+  replicas: {{ .Values.rabbitmq.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rabbitmq
+  template:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "rabbitmq" "app.kubernetes.io/component" "message-queue")) | nindent 8 }}
+      {{- if or .Values.global.commonAnnotations .Values.rabbitmq.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.rabbitmq.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.global.imagePullSecrets }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: rabbitmq
+          image: {{ printf "%s:%s" .Values.rabbitmq.image.repository .Values.rabbitmq.image.tag }}
+          imagePullPolicy: {{ .Values.rabbitmq.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.rabbitmq.service.ports.amqp }}
+              name: amqp
+              protocol: TCP
+            - containerPort: {{ .Values.rabbitmq.service.ports.management }}
+              name: management
+              protocol: TCP
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.global.secretName .Values.secrets.name }}
+                  key: RABBITMQ_PASS
+            - name: RABBITMQ_DEFAULT_VHOST
+              value: "/"
+            - name: RABBITMQ_ERLANG_COOKIE
+              value: {{ .Values.rabbitmq.erlangCookie | quote }}
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+          resources:
+            {{- toYaml .Values.rabbitmq.resources | nindent 12 }}
+          {{- if .Values.rabbitmq.livenessProbe.enabled }}
+          livenessProbe:
+            {{- toYaml (omit .Values.rabbitmq.livenessProbe "enabled") | nindent 12 }}
+          {{- end }}
+          {{- if .Values.rabbitmq.readinessProbe.enabled }}
+          readinessProbe:
+            {{- toYaml (omit .Values.rabbitmq.readinessProbe "enabled") | nindent 12 }}
+          {{- end }}
+  {{- if .Values.rabbitmq.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: rabbitmq-data
+      spec:
+        accessModes:
+          {{- range .Values.rabbitmq.persistence.accessModes }}
+          - {{ . | quote }}
+          {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.rabbitmq.persistence.size }}
+        {{- if .Values.rabbitmq.persistence.storageClassName }}
+        storageClassName: {{ .Values.rabbitmq.persistence.storageClassName }}
+        {{- end }}
+  {{- end }}
+{{- end }}

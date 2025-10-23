@@ -1,0 +1,17 @@
+{{- if .Values.config.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ default .Values.global.configMapName .Values.config.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (.Values.config.labels | default dict)) | nindent 4 }}
+  {{- if or .Values.config.annotations .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.config.annotations) | nindent 4 }}
+  {{- end }}
+data:
+  {{- range $key, $value := .Values.config.data }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

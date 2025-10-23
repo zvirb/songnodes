@@ -26,7 +26,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from silver_to_gold_etl import SilverToGoldETL
+from silver_playlists_to_gold_etl import SilverToGoldETL
 
 # Configure logging
 logging.basicConfig(

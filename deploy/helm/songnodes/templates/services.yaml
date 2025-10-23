@@ -1,0 +1,131 @@
+{{- range $key, $svc := .Values.services }}
+{{- if $svc.enabled }}
+{{- $serviceName := printf "%s-service" $svc.name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $serviceName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" $ "labels" (merge (dict "app.kubernetes.io/name" $svc.name "app.kubernetes.io/component" $svc.component) ($svc.service.labels | default dict))) | nindent 4 }}
+spec:
+  type: {{ $svc.service.type | default "ClusterIP" }}
+  ports:
+    {{- range $portName, $port := $svc.service.ports }}
+    - name: {{ $portName }}
+      port: {{ $port.port }}
+      targetPort: {{ $port.targetPort | default $port.port }}
+      protocol: {{ $port.protocol | default "TCP" }}
+    {{- end }}
+  selector:
+    app.kubernetes.io/name: {{ $svc.name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" $ "labels" (merge (dict "app.kubernetes.io/name" $svc.name "app.kubernetes.io/component" $svc.component) ($svc.labels | default dict))) | nindent 4 }}
+spec:
+  replicas: {{ $svc.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $svc.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" $ "labels" (dict "app.kubernetes.io/name" $svc.name "app.kubernetes.io/component" $svc.component)) | nindent 8 }}
+      {{- if or $.Values.global.commonAnnotations $svc.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" $ "annotations" $svc.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range $.Values.global.imagePullSecrets }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ $svc.name }}
+          image: {{ printf "%s:%s" $svc.image.repository $svc.image.tag }}
+          imagePullPolicy: {{ $svc.image.pullPolicy | default "IfNotPresent" }}
+          {{- if $svc.command }}
+          command:
+            {{- range $svc.command }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          ports:
+            {{- range $portName, $port := $svc.containerPorts }}
+            - containerPort: {{ $port }}
+              name: {{ $portName }}
+              protocol: TCP
+            {{- end }}
+          {{- if or $svc.env $svc.extraEnv }}
+          env:
+            {{- if and $svc.env $svc.env.config }}
+              {{- range $cfg := $svc.env.config }}
+            - name: {{ $cfg }}
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default $.Values.global.configMapName $.Values.config.name }}
+                  key: {{ $cfg }}
+              {{- end }}
+            {{- end }}
+            {{- if and $svc.env $svc.env.secret }}
+              {{- range $envName, $secretKey := $svc.env.secret }}
+            - name: {{ $envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default $.Values.global.secretName $.Values.secrets.name }}
+                  key: {{ $secretKey }}
+              {{- end }}
+            {{- end }}
+            {{- if and $svc.env $svc.env.static }}
+              {{- range $envName, $value := $svc.env.static }}
+            - name: {{ $envName }}
+              value: {{ $value | quote }}
+              {{- end }}
+            {{- end }}
+            {{- if $svc.extraEnv }}
+              {{- toYaml $svc.extraEnv | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- if $svc.envFrom }}
+          envFrom:
+            {{- if $svc.envFrom.configMap }}
+            - configMapRef:
+                name: {{ default $.Values.global.configMapName $.Values.config.name }}
+            {{- end }}
+            {{- if $svc.envFrom.secret }}
+            - secretRef:
+                name: {{ default $.Values.global.secretName $.Values.secrets.name }}
+            {{- end }}
+          {{- end }}
+          {{- if $svc.volumeMounts }}
+          volumeMounts:
+            {{- toYaml $svc.volumeMounts | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          {{- if and $svc.probes $svc.probes.liveness $svc.probes.liveness.enabled }}
+          livenessProbe:
+            {{- toYaml (omit $svc.probes.liveness "enabled") | nindent 12 }}
+          {{- end }}
+          {{- if and $svc.probes $svc.probes.readiness $svc.probes.readiness.enabled }}
+          readinessProbe:
+            {{- toYaml (omit $svc.probes.readiness "enabled") | nindent 12 }}
+          {{- end }}
+          {{- if and $svc.probes $svc.probes.startup $svc.probes.startup.enabled }}
+          startupProbe:
+            {{- toYaml (omit $svc.probes.startup "enabled") | nindent 12 }}
+          {{- end }}
+      {{- if $svc.volumes }}
+      volumes:
+        {{- toYaml $svc.volumes | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}

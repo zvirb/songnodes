@@ -9,7 +9,6 @@ Comprehensive integration testing for the SongNodes enrichment infrastructure co
 - Configuration-driven waterfall enrichment
 - Circuit breaker patterns
 - End-to-end enrichment workflows
-- Metrics and observability
 
 ## Test Architecture
 
@@ -21,7 +20,6 @@ tests/integration/
 ├── test_api_gateway.py             # API Gateway tests (11 tests)
 ├── test_waterfall_config.py        # Waterfall enrichment tests (8 tests)
 ├── test_enrichment_e2e.py          # End-to-end workflow tests (6 tests)
-├── test_metrics.py                 # Metrics and observability tests (11 tests)
 └── README.md                       # This file
 ```
 
@@ -61,7 +59,6 @@ Tests the DLQ system for failed enrichments:
 - `test_dlq_failure_and_replay` - Failure → DLQ → Replay workflow
 - `test_dlq_message_inspection` - Message details retrieval
 - `test_dlq_batch_replay` - Batch processing
-- `test_dlq_metrics_export` - Prometheus metrics
 
 ### 3. API Gateway Tests (`test_api_gateway.py`)
 
@@ -71,14 +68,12 @@ Tests the API Integration Gateway resilience patterns:
 - **Caching**: Cache hit/miss behavior
 - **Circuit Breakers**: State transitions and manual control
 - **Provider Routing**: Request routing to correct APIs
-- **Metrics Export**: Prometheus metrics
 
 **Key Tests:**
 - `test_rate_limiting` - Rate limiter activation
 - `test_caching` - Cache performance and consistency
 - `test_circuit_breaker_state` - Circuit breaker monitoring
 - `test_provider_routing` - Multi-provider routing
-- `test_gateway_metrics` - Metrics export
 
 ### 4. Waterfall Enrichment Tests (`test_waterfall_config.py`)
 
@@ -113,22 +108,8 @@ Tests complete enrichment workflows:
 - `test_enrichment_idempotency` - Result consistency
 - `test_batch_enrichment` - Concurrent processing
 
-### 6. Metrics Tests (`test_metrics.py`)
 
-Tests observability and monitoring:
 
-- **Prometheus Export**: All services export metrics
-- **Metric Format**: Proper Prometheus format and labels
-- **Custom Metrics**: Business-specific metrics
-- **Performance**: Fast metrics scraping
-- **Consistency**: Counter monotonicity
-
-**Key Tests:**
-- `test_prometheus_metrics_exported` - All services export metrics
-- `test_api_gateway_metrics` - Gateway-specific metrics
-- `test_enrichment_metrics` - Enrichment-specific metrics
-- `test_metric_labels` - Proper label usage
-- `test_metrics_consistency` - Counter monotonicity
 
 ## Running Tests
 
@@ -181,8 +162,6 @@ pytest tests/integration/test_waterfall_config.py -v
 # End-to-end tests
 pytest tests/integration/test_enrichment_e2e.py -v
 
-# Metrics tests
-pytest tests/integration/test_metrics.py -v
 ```
 
 ### Run Specific Tests
@@ -312,7 +291,6 @@ async def cleanup_test_data(db_connection):
 | Silver enrichment | < 5s | 10s |
 | DLQ replay | < 2s | 5s |
 | Cache hit | < 10ms | 50ms |
-| Metrics scrape | < 500ms | 1s |
 
 ### Performance Tests
 
@@ -424,7 +402,6 @@ jobs:
 - **API Gateway**: 11 tests covering resilience patterns
 - **Waterfall Enrichment**: 8 tests covering configuration and fallback
 - **End-to-End**: 6 tests covering complete workflows
-- **Metrics**: 11 tests covering observability
 
 **Total: 53 integration tests**
 
@@ -481,9 +458,7 @@ async def test_example(
     # 4. Cleanup (automatic via fixture)
 ```
 
-## Metrics and Monitoring
 
-### Test Execution Metrics
 
 - Test duration
 - Test success rate
@@ -492,13 +467,8 @@ async def test_example(
 
 ### Integration with Monitoring
 
-Tests validate that metrics are properly exported:
 
 ```bash
-# Check metrics availability
-curl http://localhost:8100/metrics | grep api_gateway
-curl http://localhost:8020/metrics | grep enrichment
-curl http://localhost:8024/metrics | grep dlq
 ```
 
 ## Maintenance

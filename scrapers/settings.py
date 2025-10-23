@@ -85,7 +85,6 @@ DOWNLOAD_HANDLERS = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'pipelines.observability_wrapper_pipeline.ObservabilityWrapperPipeline': 50,  # Track scraping runs (FIRST)
    'pipelines.validation_pipeline.ValidationPipeline': 100,  # Validate items using Pydantic models
    'pipelines.enrichment_pipeline.EnrichmentPipeline': 200,  # Remix parsing, genre normalization
    'pipelines.api_enrichment_pipeline.APIEnrichmentPipeline': 250,  # General API enrichment (Spotify, MusicBrainz, Last.fm) for ALL tracks
@@ -138,7 +137,14 @@ RETRY_TIMES = 5 # Number of times to retry failed requests
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429, 403] # HTTP codes to retry (added 403 for rate limiting)
 
 # Ollama Integration (Conceptual)
-OLLAMA_HOST = 'http://ollama:11434' # Assuming 'ollama' is resolvable on 'skynet' network
+if os.getenv('OLLAMA_URL'):
+    OLLAMA_HOST = os.getenv('OLLAMA_URL')
+elif os.getenv('KUBERNETES_SERVICE_HOST'):
+    OLLAMA_HOST = 'http://ollama-maxwell.phoenix.svc.cluster.local:11434'
+elif os.path.exists('/.dockerenv'):
+    OLLAMA_HOST = 'http://ollama:11434'
+else:
+    OLLAMA_HOST = 'http://localhost:11434'
 OLLAMA_MODEL = 'nomad-embed-text:latest'
 
 # NLP Fallback Configuration
