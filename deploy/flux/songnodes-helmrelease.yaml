@@ -35,15 +35,10 @@ spec:
       # Use local registry for k3s cluster
       imageRegistry: localhost:5000
 
-    # Override POSTGRES_HOST to use FQDN for DNS resolution
+    # Override POSTGRES_HOST to use StatefulSet pod hostname for DNS resolution
     config:
       data:
-        POSTGRES_HOST: postgres-0.postgres-service.songnodes.svc.cluster.local
-
-    # Override DATABASE_URL to use FQDN for DNS resolution
-    secrets:
-      stringData:
-        DATABASE_URL: postgresql://musicdb_user:musicdb_secure_pass_2024@postgres-0.postgres-service.songnodes.svc.cluster.local:5432/musicdb
+        POSTGRES_HOST: postgres-0.postgres-service
 
     # Development overrides from values-dev.yaml
     postgres:
@@ -71,7 +66,6 @@ spec:
           limits:
             memory: 512Mi
             cpu: 500m
-        initContainers: []
 
       graphVisualization:
         enabled: true
@@ -87,7 +81,6 @@ spec:
           limits:
             memory: 1Gi
             cpu: 1000m
-        initContainers: []
 
       websocketApi:
         enabled: true
@@ -103,7 +96,6 @@ spec:
           limits:
             memory: 512Mi
             cpu: 500m
-        initContainers: []
 
       nlpProcessor:
         enabled: false
@@ -125,7 +117,6 @@ spec:
           limits:
             memory: 512Mi
             cpu: 400m
-        initContainers: []
 
       seratoIntegration:
         enabled: false
