@@ -145,4 +145,4 @@ spec:
       enabled: false
 
     networkPolicy:
-      enabled: false
+      enabled: true
