@@ -24,7 +24,7 @@ spec:
         kind: GitRepository
         name: songnodes
         namespace: flux-system
-      version: 0.1.9
+      version: 0.1.10
   values:
     namespace:
       create: false
