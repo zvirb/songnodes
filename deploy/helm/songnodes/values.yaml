@@ -558,7 +558,7 @@ services:
     enabled: true
     name: metadata-enrichment
     component: enrichment
-    replicaCount: 2
+    replicaCount: 1
     image:
       repository: localhost:5000/songnodes_metadata-enrichment
       tag: latest
@@ -681,28 +681,28 @@ services:
         httpGet:
           path: /health
           port: http
-        initialDelaySeconds: 30
-        periodSeconds: 10
-        timeoutSeconds: 5
-        failureThreshold: 3
+        initialDelaySeconds: 60
+        periodSeconds: 15
+        timeoutSeconds: 15
+        failureThreshold: 5
       readiness:
         enabled: true
         httpGet:
           path: /health
           port: http
-        initialDelaySeconds: 10
-        periodSeconds: 5
-        timeoutSeconds: 3
-        failureThreshold: 3
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 5
       startup:
         enabled: true
         httpGet:
           path: /health
           port: http
         initialDelaySeconds: 0
-        periodSeconds: 5
-        timeoutSeconds: 3
-        failureThreshold: 30
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 60
 
   seratoIntegration:
     enabled: false
