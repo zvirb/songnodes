@@ -525,10 +525,10 @@ services:
       type: ClusterIP
       ports:
         http:
-          port: 8085
-          targetPort: 8085
+          port: 8001
+          targetPort: 8001
     containerPorts:
-      http: 8085
+      http: 8001
     envFrom:
       configMap: true
       secret: true
