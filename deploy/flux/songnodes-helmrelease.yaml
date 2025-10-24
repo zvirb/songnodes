@@ -24,7 +24,7 @@ spec:
         kind: GitRepository
         name: songnodes
         namespace: flux-system
-      version: 0.1.3
+      version: 0.1.4
   values:
     namespace:
       create: false
@@ -145,6 +145,16 @@ spec:
           limits:
             memory: 512Mi
             cpu: 500m
+        probes:
+          readiness:
+            enabled: true
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 3
 
       # Individual scraper services - right-sized based on actual usage (36Mi observed)
       scraper1001tracklists:
