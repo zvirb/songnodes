@@ -8,11 +8,11 @@ metadata:
   name: {{ $serviceName }}
   namespace: {{ $.Values.global.namespace }}
   labels:
-    {{- include "songnodes.labels" (dict "ctx" $ "labels" (merge (dict "app.kubernetes.io/name" $svc.name "app.kubernetes.io/component" $svc.component) ($svc.service.labels | default dict))) | nindent 4 }}
+    {{- include "songnodes.labels" (dict "ctx" $ "labels" (merge (dict "app.kubernetes.io/name" $svc.name "app.kubernetes.io/component" $svc.component) (($svc.service | default dict).labels | default dict))) | nindent 4 }}
 spec:
-  type: {{ $svc.service.type | default "ClusterIP" }}
+  type: {{ ($svc.service | default dict).type | default "ClusterIP" }}
   ports:
-    {{- range $portName, $port := $svc.service.ports }}
+    {{- range $portName, $port := (($svc.service | default dict).ports | default dict) }}
     - name: {{ $portName }}
       port: {{ $port.port }}
       targetPort: {{ $port.targetPort | default $port.port }}
