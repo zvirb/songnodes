@@ -347,14 +347,10 @@ spec:
         - protocol: TCP
           port: {{ .Values.rabbitmq.service.ports.management }}
     # Allow internet (HTTPS/HTTP)
-    - to:
-        - namespaceSelector: {}
-      ports:
+    # Note: No 'to' selector = allows ALL destinations including external IPs
+    - ports:
         - protocol: TCP
           port: 443
-    - to:
-        - namespaceSelector: {}
-      ports:
         - protocol: TCP
           port: 80
 ---
@@ -397,9 +393,8 @@ spec:
         - protocol: TCP
           port: {{ .Values.redis.service.port }}
     # Allow internet for external APIs (Spotify, MusicBrainz, etc.)
-    - to:
-        - namespaceSelector: {}
-      ports:
+    # Note: No 'to' selector = allows ALL destinations including external IPs
+    - ports:
         - protocol: TCP
           port: 443
         - protocol: TCP
@@ -456,9 +451,8 @@ spec:
         - protocol: TCP
           port: 8026
     # Allow internet (HTTPS/HTTP)
-    - to:
-        - namespaceSelector: {}
-      ports:
+    # Note: No 'to' selector = allows ALL destinations including external IPs
+    - ports:
         - protocol: TCP
           port: 80
         - protocol: TCP
