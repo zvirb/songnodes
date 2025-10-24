@@ -24,7 +24,7 @@ spec:
         kind: GitRepository
         name: songnodes
         namespace: flux-system
-      version: 0.1.4
+      version: 0.1.5
   values:
     namespace:
       create: false
@@ -146,6 +146,15 @@ spec:
             memory: 512Mi
             cpu: 500m
         probes:
+          liveness:
+            enabled: true
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 5
           readiness:
             enabled: true
             httpGet:
