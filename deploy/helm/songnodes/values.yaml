@@ -483,6 +483,11 @@ services:
     envFrom:
       configMap: true
       secret: true
+    extraEnv:
+      - name: OLLAMA_HOST
+        value: "http://ollama-maxwell.phoenix.svc.cluster.local:11434"
+      - name: OLLAMA_MODEL
+        value: "llama3.2:latest"
     resources:
       requests:
         memory: 512Mi
@@ -585,6 +590,7 @@ services:
         - LOG_LEVEL
         - ENVIRONMENT
       secret:
+        DATABASE_URL: DATABASE_URL
         POSTGRES_PASSWORD: POSTGRES_PASSWORD
         REDIS_PASSWORD: REDIS_PASSWORD
         SPOTIFY_CLIENT_ID: SPOTIFY_CLIENT_ID

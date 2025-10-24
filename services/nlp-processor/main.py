@@ -14,10 +14,31 @@ from textblob import TextBlob
 import numpy as np
 from pathlib import Path
 from tracklist_extractor import TracklistExtractor
+import ollama
+from ollama import Client as OllamaClient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Ollama client with external service
+OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama-maxwell.phoenix.svc.cluster.local:11434')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2:latest')
+ollama_client = None
+
+def initialize_ollama_client():
+    """Initialize Ollama client with retry logic"""
+    global ollama_client
+    try:
+        ollama_client = OllamaClient(host=OLLAMA_HOST)
+        # Test connection
+        ollama_client.list()
+        logger.info(f"✅ Connected to Ollama service at {OLLAMA_HOST}")
+        return True
+    except Exception as e:
+        logger.warning(f"⚠️ Could not connect to Ollama service: {e}")
+        logger.info("NLP service will continue with spaCy-only mode")
+        return False
 
 # Metrics tracking
 start_time = time.time()
@@ -223,10 +244,13 @@ class MusicNLPProcessor:
 nlp_processor = MusicNLPProcessor()
 tracklist_extractor = TracklistExtractor()
 
+# Initialize Ollama client
+ollama_available = initialize_ollama_client()
+
 app = FastAPI(
     title="NLP Processor Service",
-    description="Natural Language Processing for music data",
-    version="1.0.0"
+    description="Natural Language Processing for music data with Ollama LLM integration",
+    version="2.0.0"
 )
 
 # CORS middleware
@@ -261,7 +285,10 @@ async def health_check():
         "service": "nlp-processor",
         "version": "2.0.0",
         "spacy_loaded": nlp_processor.nlp is not None,
-        "tracklist_extractor_loaded": tracklist_extractor.nlp is not None
+        "tracklist_extractor_loaded": tracklist_extractor.nlp is not None,
+        "ollama_connected": ollama_client is not None,
+        "ollama_host": OLLAMA_HOST if ollama_client else None,
+        "ollama_model": OLLAMA_MODEL if ollama_client else None
     }
 
 @app.get("/metrics", response_class=PlainTextResponse)
@@ -426,6 +453,209 @@ async def extract_timestamps(request: TracklistExtractionRequest):
         }
     except Exception as e:
         logger.error(f"Timestamp extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# Ollama-Powered LLM Endpoints
+# ============================================================================
+
+class LLMInferenceRequest(BaseModel):
+    """Request for LLM inference"""
+    prompt: str
+    context: Optional[str] = None
+    max_tokens: Optional[int] = 500
+    temperature: Optional[float] = 0.7
+
+class GenreClassificationRequest(BaseModel):
+    """Request for genre classification"""
+    text: str
+    artist_name: Optional[str] = None
+    track_title: Optional[str] = None
+
+@app.post("/llm/extract_tracklist")
+async def llm_extract_tracklist(request: TracklistExtractionRequest):
+    """Extract tracklist using Ollama LLM for enhanced accuracy"""
+    global request_count, error_count
+    request_count += 1
+
+    if not ollama_client:
+        # Fallback to spaCy-based extraction
+        logger.warning("Ollama not available, using spaCy fallback")
+        return await extract_tracklist(request)
+
+    try:
+        prompt = f"""Extract a tracklist from the following text. Return ONLY a JSON array of tracks with this exact format:
+[
+  {{"position": 1, "artist": "Artist Name", "title": "Track Title", "timestamp": "00:00"}},
+  ...
+]
+
+Text to analyze:
+{request.text}
+
+Requirements:
+- Extract track position numbers (if present)
+- Extract artist names (required)
+- Extract track titles (required)
+- Extract timestamps in MM:SS or HH:MM:SS format (if present)
+- Return valid JSON only, no other text
+"""
+
+        logger.info(f"Sending tracklist extraction request to Ollama at {OLLAMA_HOST}")
+
+        response = ollama_client.generate(
+            model=OLLAMA_MODEL,
+            prompt=prompt,
+            stream=False,
+            options={
+                "temperature": 0.3,  # Low temperature for structured extraction
+                "num_predict": 2000
+            }
+        )
+
+        response_text = response['response'].strip()
+        logger.info(f"Ollama response: {response_text[:200]}...")
+
+        # Try to parse JSON from response
+        import json
+        try:
+            # Find JSON array in response
+            start_idx = response_text.find('[')
+            end_idx = response_text.rfind(']') + 1
+            if start_idx != -1 and end_idx > start_idx:
+                json_str = response_text[start_idx:end_idx]
+                tracks = json.loads(json_str)
+
+                logger.info(f"Successfully extracted {len(tracks)} tracks using Ollama")
+
+                return {
+                    "tracks": tracks,
+                    "count": len(tracks),
+                    "methods_used": ["ollama_llm"],
+                    "model": OLLAMA_MODEL
+                }
+            else:
+                raise ValueError("No JSON array found in response")
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Failed to parse Ollama JSON response: {e}, falling back to spaCy")
+            # Fallback to spaCy
+            return await extract_tracklist(request)
+
+    except Exception as e:
+        error_count += 1
+        logger.error(f"Ollama extraction failed: {e}")
+        # Fallback to spaCy
+        return await extract_tracklist(request)
+
+@app.post("/llm/classify_genre")
+async def llm_classify_genre(request: GenreClassificationRequest):
+    """Classify music genre using Ollama LLM"""
+    global request_count, error_count
+    request_count += 1
+
+    if not ollama_client:
+        raise HTTPException(
+            status_code=503,
+            detail="Ollama service not available. Use /analyze endpoint for rule-based genre detection."
+        )
+
+    try:
+        context_parts = []
+        if request.artist_name:
+            context_parts.append(f"Artist: {request.artist_name}")
+        if request.track_title:
+            context_parts.append(f"Track: {request.track_title}")
+
+        context_str = "\n".join(context_parts) if context_parts else ""
+
+        prompt = f"""Analyze the following music-related text and classify the music genre(s). Return ONLY a JSON object with this format:
+{{
+  "primary_genre": "Main Genre",
+  "subgenres": ["Subgenre 1", "Subgenre 2"],
+  "confidence": 0.95
+}}
+
+{context_str}
+
+Description/Text:
+{request.text}
+
+Return valid JSON only, no other text."""
+
+        logger.info(f"Sending genre classification request to Ollama")
+
+        response = ollama_client.generate(
+            model=OLLAMA_MODEL,
+            prompt=prompt,
+            stream=False,
+            options={
+                "temperature": 0.4,
+                "num_predict": 300
+            }
+        )
+
+        response_text = response['response'].strip()
+
+        # Parse JSON response
+        import json
+        start_idx = response_text.find('{')
+        end_idx = response_text.rfind('}') + 1
+        if start_idx != -1 and end_idx > start_idx:
+            json_str = response_text[start_idx:end_idx]
+            result = json.loads(json_str)
+
+            result["model"] = OLLAMA_MODEL
+            result["method"] = "ollama_llm"
+
+            logger.info(f"Genre classification: {result.get('primary_genre')}")
+            return result
+        else:
+            raise ValueError("No JSON object found in response")
+
+    except Exception as e:
+        error_count += 1
+        logger.error(f"Genre classification failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/llm/generate")
+async def llm_generate(request: LLMInferenceRequest):
+    """General-purpose LLM text generation for music analysis"""
+    global request_count, error_count
+    request_count += 1
+
+    if not ollama_client:
+        raise HTTPException(
+            status_code=503,
+            detail="Ollama service not available"
+        )
+
+    try:
+        full_prompt = request.prompt
+        if request.context:
+            full_prompt = f"Context: {request.context}\n\n{request.prompt}"
+
+        logger.info(f"Sending generation request to Ollama")
+
+        response = ollama_client.generate(
+            model=OLLAMA_MODEL,
+            prompt=full_prompt,
+            stream=False,
+            options={
+                "temperature": request.temperature,
+                "num_predict": request.max_tokens
+            }
+        )
+
+        return {
+            "generated_text": response['response'],
+            "model": OLLAMA_MODEL,
+            "prompt_length": len(full_prompt),
+            "response_length": len(response['response'])
+        }
+
+    except Exception as e:
+        error_count += 1
+        logger.error(f"LLM generation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
