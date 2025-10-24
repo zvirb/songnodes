@@ -24,7 +24,7 @@ spec:
         kind: GitRepository
         name: songnodes
         namespace: flux-system
-      version: 0.1.1
+      version: 0.1.2
   values:
     namespace:
       create: false
@@ -109,30 +109,114 @@ spec:
             http:
               port: 8001
               targetPort: 8001
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
 
-      # Individual scraper services (inherit config from values.yaml)
+      # Individual scraper services - right-sized based on actual usage (36Mi observed)
       scraper1001tracklists:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperMixesdb:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperSetlistfm:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperReddit:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperMixcloud:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperSoundcloud:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperYoutube:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperInternetarchive:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperLivetracklist:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperResidentadvisor:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       scraperBbcSounds:
         enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
 
       metadataEnrichment:
         enabled: true
