@@ -61,6 +61,7 @@ secrets:
     POSTGRES_PASSWORD: CHANGE_ME_musicdb_secure_pass_2024
     REDIS_PASSWORD: CHANGE_ME_redis_secure_pass_2024
     RABBITMQ_PASS: CHANGE_ME_rabbitmq_secure_pass_2024
+    DATABASE_URL: postgresql+asyncpg://musicdb_user:CHANGE_ME_musicdb_secure_pass_2024@postgres-service:5432/musicdb
     SPOTIFY_CLIENT_ID: CHANGE_ME
     SPOTIFY_CLIENT_SECRET: CHANGE_ME
     TIDAL_CLIENT_ID: CHANGE_ME
