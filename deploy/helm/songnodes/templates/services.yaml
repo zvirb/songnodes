@@ -1,11 +1,10 @@
 {{- range $key, $svc := .Values.services }}
 {{- if $svc.enabled }}
-{{- $serviceName := printf "%s-service" $svc.name }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $serviceName }}
+  name: {{ $svc.name }}
   namespace: {{ $.Values.global.namespace }}
   labels:
     {{- include "songnodes.labels" (dict "ctx" $ "labels" (merge (dict "app.kubernetes.io/name" $svc.name "app.kubernetes.io/component" $svc.component) (($svc.service | default dict).labels | default dict))) | nindent 4 }}
