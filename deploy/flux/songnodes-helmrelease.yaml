@@ -102,6 +102,13 @@ spec:
 
       scraperOrchestrator:
         enabled: true
+        containerPorts:
+          http: 8001
+        service:
+          ports:
+            http:
+              port: 8001
+              targetPort: 8001
 
       metadataEnrichment:
         enabled: true
