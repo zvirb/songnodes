@@ -201,8 +201,9 @@ export const PathfinderPanel: React.FC = () => {
                   <div className="text-sm text-gray-600 truncate">{startTrack.artist}</div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => pathfinding.setStartTrack(null as any)}
-                  className="ml-2 px-2 py-1 text-xs text-red-600 hover:text-red-800"
+                  className="ml-2 px-3 py-1.5 text-xs bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 rounded-md font-medium transition-colors"
                 >
                   Remove
                 </button>
@@ -229,8 +230,9 @@ export const PathfinderPanel: React.FC = () => {
                   <div className="text-sm text-gray-600 truncate">{endTrack.artist}</div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => pathfinding.setEndTrack(null as any)}
-                  className="ml-2 px-2 py-1 text-xs text-red-600 hover:text-red-800"
+                  className="ml-2 px-3 py-1.5 text-xs bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 rounded-md font-medium transition-colors"
                 >
                   Remove
                 </button>
@@ -258,8 +260,9 @@ export const PathfinderPanel: React.FC = () => {
                     <div className="text-gray-600 truncate">{waypoint.artist}</div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => removeWaypoint(waypoint.id)}
-                    className="ml-2 px-2 py-1 text-xs text-red-600 hover:text-red-800"
+                    className="ml-2 px-3 py-1.5 text-xs bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 rounded-md font-medium transition-colors"
                   >
                     Remove
                   </button>

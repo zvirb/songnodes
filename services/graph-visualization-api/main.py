@@ -65,13 +65,21 @@ try:
     REDIS_HOST = redis_config['host']
     REDIS_PORT = redis_config['port']
     REDIS_PASSWORD = redis_config.get('password')
-    logger.info("✅ Using secrets_manager for database and Redis connection")
+    logger.info(f"✅ Using secrets_manager for database and Redis connection. DATABASE_URL scheme: {DATABASE_URL.split(':')[0]}")
 except NameError:
+    # Fallback: ensure we use asyncpg driver for async SQLAlchemy
     DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql+asyncpg://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb')
     REDIS_HOST = os.getenv('REDIS_HOST', 'musicdb-redis')
     REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
     REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
     logger.warning("⚠️ Using fallback config from environment")
+
+# CRITICAL FIX: Ensure asyncpg driver is used regardless of secrets_manager return value
+# The DATABASE_URL from Kubernetes secrets may have postgresql:// scheme, but we MUST use asyncpg
+if DATABASE_URL and not DATABASE_URL.startswith('postgresql+asyncpg://'):
+    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://')
+    DATABASE_URL = DATABASE_URL.replace('postgresql+psycopg2://', 'postgresql+asyncpg://')
+    logger.info(f"✅ Fixed DATABASE_URL scheme to use asyncpg driver: {DATABASE_URL.split('@')[1].split('/')[0] if '@' in DATABASE_URL else 'unknown'}")
 CACHE_TTL = int(os.getenv('CACHE_TTL', 300))  # 5 minutes
 MAX_CONNECTIONS = int(os.getenv('MAX_CONNECTIONS', 1000))
 

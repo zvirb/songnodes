@@ -464,4 +464,14 @@ GRANT ALL ON SCHEMA musicdb TO musicdb_app;
 GRANT ALL ON ALL TABLES IN SCHEMA musicdb TO musicdb_app;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA musicdb TO musicdb_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA musicdb GRANT ALL ON TABLES TO musicdb_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA musicdb GRANT ALL ON SEQUENCES TO musicdb_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA musicdb GRANT ALL ON SEQUENCES TO musicdb_app;-- Target Track Searches Table (for orchestrator search tracking)
+CREATE TABLE IF NOT EXISTS musicdb.target_track_searches (
+    search_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    target_title VARCHAR(500),
+    target_artist VARCHAR(255),
+    search_query TEXT,
+    scraper_name VARCHAR(50),
+    results_found INTEGER,
+    playlists_containing INTEGER,
+    search_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

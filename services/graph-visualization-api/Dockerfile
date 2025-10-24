@@ -13,14 +13,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better Docker layer caching
-COPY requirements.txt .
+COPY graph-visualization-api/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+# Copy common directory (contains secrets_manager.py)
+COPY common /app/common
+
 # Copy application code
-COPY . .
+COPY graph-visualization-api/ .
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser \

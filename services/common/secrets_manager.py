@@ -150,6 +150,18 @@ def get_database_url(
     Returns:
         Connection URL string
     """
+    # Check if DATABASE_URL is already set in environment or secrets
+    # This allows Kubernetes secrets or environment variables to override the constructed URL
+    existing_url = get_secret("DATABASE_URL", required=False)
+    if existing_url:
+        # CRITICAL FIX: If async_driver=True is requested, ensure the URL has the asyncpg driver
+        if async_driver and '+asyncpg' not in existing_url:
+            existing_url = existing_url.replace('postgresql://', 'postgresql+asyncpg://')
+            existing_url = existing_url.replace('postgresql+psycopg2://', 'postgresql+asyncpg://')
+            logger.info(f"Fixed DATABASE_URL scheme to use asyncpg driver")
+        logger.info(f"Using DATABASE_URL from environment/secrets (host: {existing_url.split('@')[1].split('/')[0] if '@' in existing_url else 'unknown'})")
+        return existing_url
+
     config = get_database_config(host_override, port_override)
 
     # Determine driver
@@ -160,10 +172,12 @@ def get_database_url(
     host = "db-connection-pool" if use_connection_pool else config["host"]
     port = 6432 if use_connection_pool else config["port"]
 
-    return (
+    constructed_url = (
         f"{driver}://{config['user']}:{config['password']}"
         f"@{host}:{port}/{config['database']}"
     )
+    logger.info(f"Constructed DATABASE_URL (host: {host}:{port})")
+    return constructed_url
 
 
 def get_redis_config() -> Dict[str, Any]:

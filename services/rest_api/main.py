@@ -113,9 +113,20 @@ try:
     # asyncpg doesn't accept SQLAlchemy-style DSN format (postgresql+asyncpg)
     # Strip the driver suffix for direct asyncpg usage
     DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+
+    # Kubernetes: Disable SSL for asyncpg if not already specified
+    # PostgreSQL in k8s cluster doesn't have SSL enabled by default
+    if "sslmode=" not in DATABASE_URL:
+        separator = "&" if "?" in DATABASE_URL else "?"
+        DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=disable"
+
     logger.info("✅ Using secrets_manager for database connection")
 except NameError:
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb")
+    # Ensure SSL is disabled for fallback URL too
+    if "sslmode=" not in DATABASE_URL:
+        separator = "&" if "?" in DATABASE_URL else "?"
+        DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=disable"
     logger.warning("⚠️ Using fallback DATABASE_URL from environment")
 
 db_pool = None

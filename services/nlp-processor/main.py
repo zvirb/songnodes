@@ -660,4 +660,7 @@ async def llm_generate(request: LLMInferenceRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8021)
+    # Port is configurable via environment variable, defaults to 8086 to match Helm values
+    port = int(os.getenv('PORT', '8086'))
+    logger.info(f"Starting NLP Processor on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)

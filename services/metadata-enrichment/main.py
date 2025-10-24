@@ -144,6 +144,12 @@ class EnrichmentConnectionManager:
             "postgresql+asyncpg://musicdb_user:musicdb_secure_pass_2024@db-connection-pool:6432/musicdb"
         )
 
+        # Ensure asyncpg driver is specified (replace postgresql:// with postgresql+asyncpg://)
+        if database_url.startswith("postgresql://"):
+            database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif not database_url.startswith("postgresql+asyncpg://"):
+            logger.warning(f"Unexpected DATABASE_URL format: {database_url[:30]}...")
+
         self.db_engine = create_async_engine(
             database_url,
             pool_size=20,              # Increased from 15 to handle concurrent batch operations
@@ -256,7 +262,7 @@ async def lifespan(app: FastAPI):
             "postgresql://musicdb_user:musicdb_secure_pass_2024@db:5432/musicdb"
         )
         # asyncpg needs plain postgresql:// URL (strip +asyncpg if present)
-        asyncpg_url = database_url.replace('+asyncpg', '')
+        asyncpg_url = database_url.replace('+asyncpg', '').replace('postgresql://', 'postgresql://')
         await initialize_api_key_helper(asyncpg_url)
         logger.info("Database API key helper initialized")
 

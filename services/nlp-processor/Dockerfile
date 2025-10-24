@@ -24,11 +24,11 @@ RUN useradd -m -u 1000 nlpuser && chown -R nlpuser:nlpuser /app
 USER nlpuser
 
 # Expose port
-EXPOSE 8021
+EXPOSE 8086
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://127.0.0.1:8021/health || exit 1
+    CMD curl -f http://127.0.0.1:8086/health || exit 1
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8021"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8086"]
