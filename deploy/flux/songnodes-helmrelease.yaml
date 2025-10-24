@@ -110,6 +110,30 @@ spec:
               port: 8001
               targetPort: 8001
 
+      # Individual scraper services (inherit config from values.yaml)
+      scraper1001tracklists:
+        enabled: true
+      scraperMixesdb:
+        enabled: true
+      scraperSetlistfm:
+        enabled: true
+      scraperReddit:
+        enabled: true
+      scraperMixcloud:
+        enabled: true
+      scraperSoundcloud:
+        enabled: true
+      scraperYoutube:
+        enabled: true
+      scraperInternetarchive:
+        enabled: true
+      scraperLivetracklist:
+        enabled: true
+      scraperResidentadvisor:
+        enabled: true
+      scraperBbcSounds:
+        enabled: true
+
       metadataEnrichment:
         enabled: true
         replicaCount: 1
