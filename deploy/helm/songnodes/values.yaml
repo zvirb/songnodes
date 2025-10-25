@@ -556,7 +556,7 @@ services:
         periodSeconds: 5
 
   scraper1001tracklists:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-1001tracklists
     component: scraper
     replicaCount: 1
@@ -603,7 +603,7 @@ services:
         failureThreshold: 5
 
   scraperMixesdb:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-mixesdb
     component: scraper
     replicaCount: 1
@@ -650,7 +650,7 @@ services:
         failureThreshold: 5
 
   scraperSetlistfm:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-setlistfm
     component: scraper
     replicaCount: 1
@@ -697,7 +697,7 @@ services:
         failureThreshold: 5
 
   scraperReddit:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-reddit
     component: scraper
     replicaCount: 1
@@ -744,7 +744,7 @@ services:
         failureThreshold: 5
 
   scraperMixcloud:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-mixcloud
     component: scraper
     replicaCount: 1
@@ -791,7 +791,7 @@ services:
         failureThreshold: 5
 
   scraperSoundcloud:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-soundcloud
     component: scraper
     replicaCount: 1
@@ -838,7 +838,7 @@ services:
         failureThreshold: 5
 
   scraperYoutube:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-youtube
     component: scraper
     replicaCount: 1
@@ -885,7 +885,7 @@ services:
         failureThreshold: 5
 
   scraperInternetarchive:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-internetarchive
     component: scraper
     replicaCount: 1
@@ -932,7 +932,7 @@ services:
         failureThreshold: 5
 
   scraperLivetracklist:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-livetracklist
     component: scraper
     replicaCount: 1
@@ -979,7 +979,7 @@ services:
         failureThreshold: 5
 
   scraperResidentadvisor:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-residentadvisor
     component: scraper
     replicaCount: 1
@@ -1026,7 +1026,7 @@ services:
         failureThreshold: 5
 
   scraperBbcSounds:
-    enabled: true
+    enabled: false  # Replaced by unifiedScraper
     name: scraper-bbc-sounds
     component: scraper
     replicaCount: 1
@@ -1071,6 +1071,70 @@ services:
         periodSeconds: 10
         timeoutSeconds: 20
         failureThreshold: 5
+
+  # Unified Scraper - Consolidates all 11 scrapers into a single service
+  unifiedScraper:
+    enabled: true
+    name: unified-scraper
+    component: scraper
+    replicaCount: 1
+    image:
+      repository: localhost:5000/songnodes_unified-scraper
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      ports:
+        http:
+          port: 8000
+          targetPort: 8000
+    containerPorts:
+      http: 8000
+    envFrom:
+      configMap: true
+      secret: true
+    env:
+      static:
+        METADATA_ENRICHMENT_URL: "http://metadata-enrichment:8020"
+        LOG_LEVEL: "INFO"
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+    probes:
+      liveness:
+        enabled: true
+        httpGet:
+          path: /health
+          port: http
+        initialDelaySeconds: 30
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 3
+      readiness:
+        enabled: true
+        httpGet:
+          path: /health
+          port: http
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+    initContainers:
+      - name: wait-for-postgres
+        image: postgres:15-alpine
+        command:
+          - sh
+          - -c
+          - |
+            until pg_isready -h postgres-0.postgres-service.songnodes.svc.cluster.local -p 5432 -U musicdb_user; do
+              echo "Waiting for postgres at postgres-0.postgres-service.songnodes.svc.cluster.local:5432..."
+              sleep 2
+            done
+            echo "postgres-0.postgres-service.songnodes.svc.cluster.local:5432 - accepting connections"
 
   metadataEnrichment:
     enabled: true
@@ -1223,7 +1287,7 @@ services:
         failureThreshold: 60
 
   rawDataProcessor:
-    enabled: true
+    enabled: false  # Disabled: missing service ports configuration
     name: raw-data-processor
     component: processor
     replicaCount: 1
