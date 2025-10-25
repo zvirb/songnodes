@@ -1155,8 +1155,8 @@ async def get_graph_data():
                 # No edges, just get top nodes (with artists only)
                 nodes_query = text("""
                     SELECT
-                        'song_' || t.song_id::text as id,
-                        t.song_id::text as track_id,
+                        'song_' || t.id::text as id,
+                        t.id::text as track_id,
                         0 as x_position,
                         0 as y_position,
                         json_build_object(
@@ -1165,7 +1165,7 @@ async def get_graph_data():
                             'node_type', 'song',
                             'category', t.genre,
                             'genre', t.genre,
-                            'release_year', t.release_year,
+                            'release_year', EXTRACT(YEAR FROM t.release_date),
                             'bpm', t.bpm,
                             'musical_key', t.key
                         ) as metadata
@@ -1176,7 +1176,7 @@ async def get_graph_data():
                       AND a.name != ''
                       AND a.name != 'Unknown'
                     ORDER BY t.created_at DESC
-                    LIMIT 5000  # Increased from 1000 for fuller graph display
+                    LIMIT 5000  -- Increased from 1000 for fuller graph display
                 """)
                 nodes_result = await session.execute(nodes_query)
 
