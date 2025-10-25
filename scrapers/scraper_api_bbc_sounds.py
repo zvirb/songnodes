@@ -78,7 +78,7 @@ async def metrics() -> Response:
 async def _run_spider(cmd: list[str], timeout: int = 900) -> Dict[str, Any]:
     """Execute the scrapy command asynchronously and capture output."""
 
-    logger.info("Executing command", command=" ".join(shlex.quote(c) for c in cmd))
+    logger.info("Executing command: %s", " ".join(shlex.quote(c) for c in cmd))
 
     process = await asyncio.create_subprocess_exec(
         *cmd,
@@ -193,9 +193,9 @@ async def scrape_url(request: ScrapeRequest) -> Dict[str, Any]:
         scrape_requests_total.labels(status="error").inc()
         scrape_duration_seconds.labels(status="error").observe(duration)
         logger.error(
-            "Spider execution failed",
-            returncode=result.get("returncode"),
-            stderr=stderr[:500],
+            "Spider execution failed: returncode=%s, stderr=%s",
+            result.get("returncode"),
+            stderr[:500],
         )
         return {
             "status": "error",
@@ -214,9 +214,9 @@ async def scrape_url(request: ScrapeRequest) -> Dict[str, Any]:
     )
 
     logger.info(
-        "Spider completed",
-        duration_seconds=f"{duration:.2f}",
-        items_processed=stats["items_processed"],
+        "Spider completed: duration_seconds=%s, items_processed=%s",
+        f"{duration:.2f}",
+        stats["items_processed"],
     )
 
     return {

@@ -152,6 +152,12 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: enrichment
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: data-processing
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: processor
       ports:
         - protocol: TCP
           port: {{ .Values.postgres.service.port }}
