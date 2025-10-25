@@ -1,0 +1,138 @@
+{{- if .Values.cronjobs.silverToGold.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: silver-to-gold-processor
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "silver-to-gold-processor" "app.kubernetes.io/component" "data-processing")) | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjobs.silverToGold.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cronjobs.silverToGold.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .Values.cronjobs.silverToGold.failedJobsHistoryLimit | default 3 }}
+  concurrencyPolicy: {{ .Values.cronjobs.silverToGold.concurrencyPolicy | default "Forbid" }}
+  suspend: {{ .Values.cronjobs.silverToGold.suspend | default false }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "silver-to-gold-processor" "app.kubernetes.io/component" "data-processing")) | nindent 8 }}
+      {{- if or .Values.global.commonAnnotations .Values.cronjobs.silverToGold.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.cronjobs.silverToGold.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      backoffLimit: {{ .Values.cronjobs.silverToGold.backoffLimit | default 3 }}
+      activeDeadlineSeconds: {{ .Values.cronjobs.silverToGold.activeDeadlineSeconds | default 7200 }}
+      template:
+        metadata:
+          labels:
+            {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "silver-to-gold-processor" "app.kubernetes.io/component" "data-processing")) | nindent 12 }}
+          {{- if or .Values.global.commonAnnotations .Values.cronjobs.silverToGold.podAnnotations }}
+          annotations:
+            {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.cronjobs.silverToGold.podAnnotations) | nindent 12 }}
+          {{- end }}
+        spec:
+          {{- if .Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- range .Values.global.imagePullSecrets }}
+            - name: {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          restartPolicy: {{ .Values.cronjobs.silverToGold.restartPolicy | default "OnFailure" }}
+          initContainers:
+            - name: wait-for-postgres
+              image: postgres:15-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  for i in $(seq 1 40); do
+                    pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" && exit 0
+                    echo "Waiting for postgres at $POSTGRES_HOST:$POSTGRES_PORT..."
+                    sleep 3
+                  done
+                  echo "Postgres not reachable, giving up."
+                  exit 1
+              env:
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_HOST
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_PORT
+                - name: POSTGRES_DB
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: POSTGRES_PASSWORD
+          containers:
+            - name: silver-to-gold-processor
+              image: {{ printf "%s:%s" .Values.cronjobs.silverToGold.image.repository .Values.cronjobs.silverToGold.image.tag }}
+              imagePullPolicy: {{ .Values.cronjobs.silverToGold.image.pullPolicy | default "Always" }}
+              command:
+                - python
+                - /app/silver_to_gold_scheduler.py
+              env:
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_HOST
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_PORT
+                - name: POSTGRES_DB
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_USER
+                - name: LOG_LEVEL
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: LOG_LEVEL
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: POSTGRES_PASSWORD
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: DATABASE_URL
+                - name: SILVER_TO_GOLD_INTERVAL_HOURS
+                  value: {{ .Values.cronjobs.silverToGold.intervalHours | default 2 | quote }}
+                - name: SILVER_TO_GOLD_BATCH_SIZE
+                  value: {{ .Values.cronjobs.silverToGold.batchSize | default 50000 | quote }}
+                - name: STARTUP_DELAY_SECONDS
+                  value: {{ .Values.cronjobs.silverToGold.startupDelaySeconds | default 90 | quote }}
+              resources:
+                requests:
+                  memory: {{ .Values.cronjobs.silverToGold.resources.requests.memory | default "256Mi" }}
+                  cpu: {{ .Values.cronjobs.silverToGold.resources.requests.cpu | default "100m" }}
+                limits:
+                  memory: {{ .Values.cronjobs.silverToGold.resources.limits.memory | default "1Gi" }}
+                  cpu: {{ .Values.cronjobs.silverToGold.resources.limits.cpu | default "1000m" }}
+{{- end }}

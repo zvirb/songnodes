@@ -16,8 +16,7 @@ from datetime import datetime
 from typing import Optional, Union
 from urllib.parse import urlparse, urljoin
 
-# Add common directory to path for shared utilities
-sys.path.insert(0, '/app/common')
+# Import from local copy in scrapers directory
 from artist_name_cleaner import normalize_artist_name as _normalize_artist_name
 
 
