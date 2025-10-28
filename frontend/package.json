@@ -96,7 +96,7 @@
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4",
-    "vite": "^7.1.9"
+    "vite": "^7.1.11"
   },
   "overrides": {
     "inflight": "npm:@zkochan/inflight@^1.0.0",
