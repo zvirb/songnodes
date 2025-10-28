@@ -29,11 +29,6 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ open, onCl
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
-  // TEMPORARY: Disable overlay entirely until we fix the interaction issue
-  // This allows you to use the app while we debug
-  return null;
-
-  /* COMMENTED OUT - Will fix and re-enable
   if (!open) {
     return null;
   }
@@ -125,5 +120,4 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ open, onCl
       </div>
     </div>
   );
-  */
 };
