@@ -58,6 +58,89 @@ Instead of relaxing filters to show more tracks, we must **improve data quality 
 
 ---
 
+### Critical Scraper Workflow: Target Track Search Strategy
+
+**⚠️ MANDATORY SEARCH PATTERN**
+
+The scraper workflow is designed to find **setlists/playlists** that contain **target tracks**, not to search for individual tracks or artists in isolation.
+
+**Correct Workflow:**
+
+1. **Source**: Read from `target_track_searches` table in database
+   - Columns: `target_artist`, `target_title`, `search_query`
+   - Example row: `target_artist='Deadmau5'`, `target_title='Strobe'`, `search_query='Deadmau5 Strobe'`
+
+2. **Search**: Use the `search_query` field (artist + title combined)
+   - ✅ CORRECT: Search MixesDB for "Deadmau5 Strobe"
+   - ❌ WRONG: Search for just "Deadmau5" (artist only)
+   - ❌ WRONG: Search for just "Strobe" (title only)
+
+3. **Find**: Locate setlists/mixes that **contain** that specific track
+   - MixesDB returns pages like "2019-06-15 - Deadmau5 @ Ultra Music Festival"
+   - These pages have full tracklists with setlist metadata
+
+4. **Scrape**: Extract the **ENTIRE setlist** (all tracks in order)
+   - Playlist metadata: DJ name, event, date, venue
+   - All tracks: position, artist, title, timing
+   - Track transitions: Track A → Track B → Track C (adjacency data)
+
+5. **Store**: Save both playlist AND track transition data
+   - `bronze_scraped_playlists`: Setlist with metadata
+   - `bronze_scraped_tracks`: Individual tracks
+   - Graph edges: Who plays what tracks together
+
+**Why This Matters:**
+
+- **Goal**: Build a graph showing "DJs who play Track X also play Track Y"
+- **Method**: Find setlists containing Track X, scrape ALL tracks from those setlists
+- **Result**: Transition data (X→Y, Y→Z) for graph visualization
+
+**Example:**
+
+```
+Target: "Deadmau5 - Strobe"
+Search: "Deadmau5 Strobe" on MixesDB
+Finds: "2019-06-15 - Deadmau5 @ Ultra Music Festival"
+Scrapes:
+  1. Ghosts 'n' Stuff (0:00)
+  2. Strobe (4:23)          ← Our target track
+  3. I Remember (15:47)
+  4. Some Chords (22:10)
+Creates transitions:
+  - Ghosts 'n' Stuff → Strobe
+  - Strobe → I Remember
+  - I Remember → Some Chords
+```
+
+**DO NOT:**
+- ❌ Search for artist names only ("Deadmau5")
+- ❌ Scrape individual track pages (no setlist context)
+- ❌ Create scrapers that don't preserve track order
+- ❌ Ignore playlist/setlist metadata
+
+**Implementation:**
+
+The CronJob MUST query `target_track_searches` and use the `search_query` field:
+
+```sql
+SELECT search_query, target_artist, target_title
+FROM target_track_searches
+WHERE scraper_name = 'mixesdb'
+LIMIT 10;
+```
+
+Then call the unified scraper API with `search_query` parameter:
+
+```json
+{
+  "source": "mixesdb",
+  "search_query": "Deadmau5 Strobe",  // NOT just "Deadmau5"
+  "limit": 5
+}
+```
+
+---
+
 ## 1. Getting Started: Local Environment Setup
 
 ### 1.1. Clone the Repository

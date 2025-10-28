@@ -832,6 +832,7 @@ class MixesdbSpider(scrapy.Spider):
                     'source_context': track_string,
                     'position_in_source': i + 1,
                     'remix_type': remix_type,
+                    'source_url': response.url,  # CRITICAL: Source URL for playlist context
                     'metadata': json.dumps({
                         'original_string': track_string,
                         'extraction_source': 'mixesdb',

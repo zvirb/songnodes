@@ -137,12 +137,14 @@ class GoldLayerProcessor:
             "bpm": silver_track.get("bpm"),
             "key": silver_track.get("key"),
             "genre_primary": (
-                silver_track.get("genre").split(",")[0].strip()
+                (silver_track["genre"][0] if isinstance(silver_track["genre"], list)
+                 else silver_track["genre"].split(",")[0].strip())
                 if silver_track.get("genre")
                 else None
             ),
             "genres": (
-                [g.strip() for g in silver_track["genre"].split(",")]
+                (silver_track["genre"] if isinstance(silver_track["genre"], list)
+                 else [g.strip() for g in silver_track["genre"].split(",")])
                 if silver_track.get("genre")
                 else None
             ),

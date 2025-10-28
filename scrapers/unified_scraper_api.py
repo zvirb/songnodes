@@ -210,9 +210,15 @@ async def scrape(request: ScrapeRequest) -> Dict[str, Any]:
 
     # Add source-specific parameters
     if request.source == "mixesdb":
-        if request.artist_name:
-            cmd.extend(["-a", f"artist_name={request.artist_name}"])
+        if request.start_urls:
+            # Direct URL scraping (for testing specific mix pages)
+            cmd.extend(["-a", f"start_urls={request.start_urls}"])
+        elif request.artist_name:
+            # mixesdb spider expects 'search_query' parameter, not 'artist_name'
+            cmd.extend(["-a", f"search_query={request.artist_name}"])
         if request.limit:
+            # Note: mixesdb spider doesn't currently use limit parameter
+            # It uses MIXESDB_MAX_RESULTS_PER_SEARCH env var instead
             cmd.extend(["-a", f"limit={request.limit}"])
 
     elif request.source == "bbc_sounds":
