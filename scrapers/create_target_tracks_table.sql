@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS target_tracks (
 
     -- Management fields
     is_active BOOLEAN DEFAULT TRUE,
+    archived BOOLEAN DEFAULT FALSE,
+    completion_percentage INTEGER DEFAULT 0 CHECK (completion_percentage >= 0 AND completion_percentage <= 100),
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

@@ -14,6 +14,8 @@ interface TargetTrack {
   last_searched?: string;
   playlists_found?: number;
   adjacencies_found?: number;
+  archived?: boolean;
+  completion_percentage?: number;
 }
 
 const TargetTracksManager: React.FC = () => {
@@ -25,6 +27,7 @@ const TargetTracksManager: React.FC = () => {
   const [editingTrack, setEditingTrack] = useState<TargetTrack | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const [importData, setImportData] = useState('');
   const [activeTab, setActiveTab] = useState<'manage' | 'search'>('manage');
@@ -123,6 +126,33 @@ const TargetTracksManager: React.FC = () => {
     } catch (error) {
       showNotification('error', 'Failed to save track');
       console.error('Error saving track:', error);
+    }
+  };
+
+  const handleArchiveTrack = async (trackId: string, archived: boolean) => {
+    try {
+      await api.put(`/target-tracks/${trackId}`, { archived });
+      showNotification('success', `Track ${archived ? 'archived' : 'unarchived'} successfully`);
+      loadTracks();
+    } catch (error) {
+      showNotification('error', `Failed to ${archived ? 'archive' : 'unarchive'} track`);
+      console.error('Error archiving track:', error);
+    }
+  };
+
+  const handleUpdateCompletion = async (trackId: string, completion_percentage: number) => {
+    try {
+      // Optimistically update the UI
+      setTracks(prevTracks =>
+        prevTracks.map(t =>
+          t.track_id === trackId ? { ...t, completion_percentage } : t
+        )
+      );
+      await api.put(`/target-tracks/${trackId}`, { completion_percentage });
+    } catch (error) {
+      showNotification('error', 'Failed to update completion');
+      console.error('Error updating completion:', error);
+      loadTracks();
     }
   };
 
@@ -313,6 +343,10 @@ const TargetTracksManager: React.FC = () => {
 
   // Filter tracks based on search and priority
   const filteredTracks = tracks?.filter(track => {
+    if (!showArchived && track.archived) {
+      return false;
+    }
+
     const query = searchQuery.toLowerCase();
     const title = track.title?.toLowerCase() || '';
     const artist = track.artist?.toLowerCase() || '';
@@ -489,6 +523,15 @@ const TargetTracksManager: React.FC = () => {
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="rounded border-dj-gray"
+                />
+                <span className="text-sm">Show Archived</span>
+              </label>
               {filteredTracks.length > 0 && (
                 <div className="flex gap-2">
                   <button
@@ -578,6 +621,13 @@ const TargetTracksManager: React.FC = () => {
                         {/* Actions */}
                         <div className="flex gap-2 ml-4">
                           <button
+                            onClick={() => handleArchiveTrack(track.track_id!, !track.archived)}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-dj-gray rounded transition-all"
+                            title={track.archived ? 'Unarchive' : 'Archive'}
+                          >
+                            {track.archived ? '📂' : '🗄️'}
+                          </button>
+                          <button
                             onClick={() => handleSearchNow(track.track_id!)}
                             className="p-2 text-dj-accent hover:bg-dj-gray rounded transition-all"
                             title="Search now"
@@ -599,6 +649,22 @@ const TargetTracksManager: React.FC = () => {
                             🗑️
                           </button>
                         </div>
+                      </div>
+                      {/* Completion Slider */}
+                      <div className="mt-4">
+                        <label className="text-xs text-gray-400">
+                          Completion: {track.completion_percentage || 0}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={track.completion_percentage || 0}
+                          onChange={(e) =>
+                            handleUpdateCompletion(track.track_id!, parseInt(e.target.value))
+                          }
+                          className="w-full h-2 bg-dj-gray rounded-lg appearance-none cursor-pointer"
+                        />
                       </div>
                     </div>
                   ))}

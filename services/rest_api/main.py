@@ -76,6 +76,11 @@ except ImportError as e:
         detail: Optional[str] = None
 
 
+class TargetTrackUpdate(BaseModel):
+    archived: Optional[bool] = None
+    completion_percentage: Optional[int] = None
+
+
 class TrackPreviewResponse(BaseModel):
     """Response payload describing preview availability for a track."""
     track_id: str
@@ -1989,9 +1994,9 @@ async def get_target_tracks():
         async with db_pool.acquire() as conn:
             rows = await conn.fetch("""
                 SELECT track_id, title, artist, priority, genres, is_active,
+                       archived, completion_percentage,
                        last_searched, playlists_found, adjacencies_found, added_at, updated_at
                 FROM target_tracks
-                WHERE is_active = true
                 ORDER BY priority DESC, added_at DESC
             """)
             return [dict(row) for row in rows]
@@ -2018,6 +2023,44 @@ async def create_target_track(
             return dict(row)
     except Exception as e:
         logger.error(f"Failed to create target track: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/v1/target-tracks/{track_id}")
+async def update_target_track(track_id: str, track_update: TargetTrackUpdate):
+    """Update a target track's archived status or completion percentage."""
+    try:
+        async with db_pool.acquire() as conn:
+            # Build the SET part of the query dynamically
+            set_clauses = []
+            params = []
+            if track_update.archived is not None:
+                set_clauses.append(f"archived = ${len(params) + 2}")
+                params.append(track_update.archived)
+            if track_update.completion_percentage is not None:
+                set_clauses.append(f"completion_percentage = ${len(params) + 2}")
+                params.append(track_update.completion_percentage)
+
+            if not set_clauses:
+                raise HTTPException(status_code=400, detail="No fields to update")
+
+            query = f"""
+                UPDATE target_tracks
+                SET {', '.join(set_clauses)}
+                WHERE track_id = $1
+                RETURNING track_id, title, artist, priority, genres, is_active,
+                          archived, completion_percentage,
+                          last_searched, playlists_found, adjacencies_found, added_at, updated_at
+            """
+            params.insert(0, track_id)
+
+            row = await conn.fetchrow(query, *params)
+
+            if not row:
+                raise HTTPException(status_code=404, detail="Target track not found")
+
+            return dict(row)
+    except Exception as e:
+        logger.error(f"Failed to update target track: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/music-search/{service}")
