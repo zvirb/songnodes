@@ -113,26 +113,30 @@ class TidalAPIClient:
                 if os.path.exists(self._session_file):
                     try:
                         if self.session.login_session_file(self._session_file):
+                            logger.info("Successfully loaded existing session.")
                             return {
                                 "success": True,
                                 "authenticated": True,
                                 "message": "Already authenticated using existing session"
                             }
                     except Exception as e:
-                        logger.warning(f"Failed to load existing session: {e}")
+                        logger.warning(f"Failed to load existing session: {e}. Starting new OAuth flow.")
 
                 # Start new OAuth flow
-                link_login, future = self.session.login_oauth()
+                login, future = self.session.login_oauth()
+                self._oauth_future = future  # Store future for completion check
+
+                logger.info(f"OAuth flow started. User needs to visit {login.verification_uri_complete}")
 
                 return {
                     "success": True,
                     "authenticated": False,
-                    "auth_url": link_login.verification_uri_complete,
-                    "user_code": link_login.user_code,
-                    "device_code": link_login.device_code,
-                    "expires_in": link_login.expires_in,
-                    "message": f"Visit {link_login.verification_uri_complete} to authenticate",
-                    "instructions": f"Enter this code when prompted: {link_login.user_code}"
+                    "auth_url": login.verification_uri_complete,
+                    "user_code": login.user_code,
+                    "device_code": login.device_code,
+                    "expires_in": login.expires_in,
+                    "message": f"Visit {login.verification_uri_complete} to authenticate",
+                    "instructions": f"Enter this code when prompted: {login.user_code}"
                 }
 
             result = await asyncio.get_event_loop().run_in_executor(
@@ -146,7 +150,7 @@ class TidalAPIClient:
             return result
 
         except Exception as e:
-            logger.error(f"OAuth flow error: {e}")
+            logger.error(f"OAuth flow error: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Failed to start OAuth flow: {str(e)}"
@@ -159,17 +163,42 @@ class TidalAPIClient:
         try:
             def _check_completion():
                 if not self.session:
-                    return {"success": False, "message": "No session"}
+                    return {"success": False, "authenticated": False, "message": "OAuth flow not started"}
 
-                if self.session.check_login():
-                    # Save session for future use
-                    self.session.save_session_to_file(self._session_file)
-                    return {
-                        "success": True,
-                        "authenticated": True,
-                        "user_id": getattr(self.session.user, 'id', None) if hasattr(self.session, 'user') else None,
-                        "message": "Authentication completed successfully"
-                    }
+                if not hasattr(self, '_oauth_future') or not self._oauth_future:
+                    # If future is missing, might be an existing session. Verify it.
+                    if self.session.check_login():
+                        return {
+                            "success": True,
+                            "authenticated": True,
+                            "message": "Authenticated with existing session"
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "authenticated": False,
+                            "message": "OAuth not completed and no valid session found"
+                        }
+
+                # Check if the OAuth future is done
+                if self._oauth_future.done():
+                    try:
+                        # This call raises an exception if authentication failed
+                        self._oauth_future.result()
+
+                        # Save session for future use
+                        self.session.save_session_to_file(self._session_file)
+                        logger.info("OAuth completed and session saved.")
+
+                        return {
+                            "success": True,
+                            "authenticated": True,
+                            "user_id": getattr(self.session.user, 'id', None) if hasattr(self.session, 'user') else None,
+                            "message": "Authentication completed successfully"
+                        }
+                    except Exception as e:
+                        logger.error(f"OAuth authentication failed: {e}", exc_info=True)
+                        return {"success": False, "authenticated": False, "message": f"Authentication failed: {e}"}
                 else:
                     return {
                         "success": True,
@@ -188,7 +217,7 @@ class TidalAPIClient:
             return result
 
         except Exception as e:
-            logger.error(f"Error checking OAuth completion: {e}")
+            logger.error(f"Error checking OAuth completion: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Error checking authentication: {str(e)}"
