@@ -372,21 +372,37 @@ class TidalClient(StreamingPlatformClient):
 
 
 class SpotifyClient(StreamingPlatformClient):
-    """Spotify streaming platform client (placeholder implementation)."""
+    """Spotify streaming platform client."""
 
     def __init__(self, enabled: bool = None):
         if enabled is None:
             enabled = os.getenv("ENABLE_SPOTIFY_INTEGRATION", "0").lower() in {"1", "true", "yes"}
         super().__init__("spotify", enabled)
+        self.client = None
 
     async def initialize(self) -> None:
-        """Initialize Spotify client."""
+        """Initialize Spotify client with Client Credentials Flow."""
         if not self.enabled:
             raise RuntimeError("Spotify integration is disabled")
 
-        # TODO: Implement Spotify Web API authentication
-        self.logger.warning("Spotify client is a placeholder implementation")
+        try:
+            import spotipy
+            from spotipy.oauth2 import SpotifyClientCredentials
+        except ImportError:
+            raise RuntimeError("spotipy package not installed")
+
+        client_id = os.getenv("SPOTIFY_CLIENT_ID")
+        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+
+        if not client_id or not client_secret:
+            self.logger.warning("Spotify client ID or secret not configured. Disabling client.")
+            self.enabled = False
+            return
+
+        auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
+        self.client = spotipy.Spotify(auth_manager=auth_manager)
         self._initialized = True
+        self.logger.info("Spotify client initialized successfully")
 
     async def search_track(
         self,
@@ -396,14 +412,67 @@ class SpotifyClient(StreamingPlatformClient):
         **kwargs
     ) -> List[SearchResult]:
         """Search for tracks on Spotify."""
-        # TODO: Implement Spotify search
-        self.logger.debug(f"Spotify search: {title} by {artist}")
-        return []
+        if not self._initialized or not self.client:
+            return []
+
+        query = f"track:{title} artist:{artist}"
+        if isrc:
+            query = f"isrc:{isrc}"
+
+        try:
+            results = await asyncio.to_thread(self.client.search, q=query, type='track', limit=5)
+            search_results = []
+            for item in results['tracks']['items']:
+                metadata = self._convert_spotify_track(item)
+                confidence = self._calculate_match_confidence(title, artist, item)
+                search_results.append(SearchResult(
+                    track=metadata,
+                    confidence=confidence,
+                    search_query=query,
+                    exact_match=bool(isrc and item.get('external_ids', {}).get('isrc') == isrc)
+                ))
+            return search_results
+        except Exception as e:
+            self.logger.error(f"Spotify search failed: {e}")
+            return []
 
     async def get_track_by_id(self, track_id: Union[str, int]) -> Optional[TrackMetadata]:
         """Get track by Spotify ID."""
-        # TODO: Implement Spotify track lookup
-        return None
+        if not self._initialized or not self.client:
+            return None
+        try:
+            track_data = await asyncio.to_thread(self.client.track, track_id)
+            return self._convert_spotify_track(track_data)
+        except Exception as e:
+            self.logger.error(f"Failed to get Spotify track {track_id}: {e}")
+            return None
+
+    def _convert_spotify_track(self, track_data: Dict[str, Any]) -> TrackMetadata:
+        """Convert Spotify track object to standardized metadata."""
+        return TrackMetadata(
+            title=track_data.get('name'),
+            artist=", ".join([artist['name'] for artist in track_data.get('artists', [])]),
+            album=track_data.get('album', {}).get('name'),
+            spotify_id=track_data.get('id'),
+            isrc=track_data.get('external_ids', {}).get('isrc'),
+            duration_ms=track_data.get('duration_ms'),
+            platform="spotify",
+            platform_id=track_data.get('id'),
+            preview_url=track_data.get('preview_url'),
+            popularity=track_data.get('popularity'),
+            external_urls=track_data.get('external_urls'),
+        )
+
+    def _calculate_match_confidence(self, title: str, artist: str, track_data: Dict[str, Any]) -> float:
+        """Calculate confidence score for track match."""
+        import difflib
+
+        title_similarity = difflib.SequenceMatcher(None, title.lower(), track_data.get('name', '').lower()).ratio()
+
+        spotify_artists = ", ".join([a['name'] for a in track_data.get('artists', [])])
+        artist_similarity = difflib.SequenceMatcher(None, artist.lower(), spotify_artists.lower()).ratio()
+
+        return (title_similarity * 0.6) + (artist_similarity * 0.4)
 
 
 class BeatportClient(StreamingPlatformClient):
