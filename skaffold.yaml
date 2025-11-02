@@ -4,40 +4,60 @@ metadata:
   name: songnodes
 build:
   local:
-    push: false
+    push: true
+    useBuildkit: true
+  tagPolicy:
+    gitCommit:
+      variant: AbbrevCommitSha
   artifacts:
-    - image: songnodes/rest-api
+    - image: localhost:5000/songnodes_rest-api
       context: services
       docker:
         dockerfile: rest_api/Dockerfile
-    - image: songnodes/graph-visualization-api
-      context: services/graph-visualization-api
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+    - image: localhost:5000/songnodes_graph-visualization-api
+      context: .
       docker:
-        dockerfile: Dockerfile
-    - image: songnodes/websocket-api
+        dockerfile: services/graph-visualization-api/Dockerfile
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+    - image: localhost:5000/songnodes_websocket-api
       context: services
       docker:
         dockerfile: websocket-api/Dockerfile
-    - image: songnodes/nlp-processor
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+    - image: localhost:5000/songnodes_nlp-processor
       context: services/nlp-processor
       docker:
         dockerfile: Dockerfile
-    - image: songnodes/scraper-orchestrator
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+    - image: localhost:5000/songnodes_scraper-orchestrator
       context: services/scraper-orchestrator
       docker:
         dockerfile: Dockerfile
-    - image: songnodes/metadata-enrichment
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+    - image: localhost:5000/songnodes_metadata-enrichment
       context: .
       docker:
         dockerfile: services/metadata-enrichment/Dockerfile
-    - image: songnodes/serato-integration
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+    - image: localhost:5000/songnodes_serato-integration
       context: services/serato-integration
       docker:
         dockerfile: Dockerfile
-    - image: songnodes/frontend
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
+    - image: localhost:5000/songnodes_frontend
       context: frontend
       docker:
         dockerfile: Dockerfile
+        buildArgs:
+          BUILDKIT_INLINE_CACHE: "1"
 deploy:
   helm:
     releases:

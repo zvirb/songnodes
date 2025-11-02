@@ -141,7 +141,7 @@ Then call the unified scraper API with `search_query` parameter:
 
 ---
 
-## 1. Getting Started: Local Environment Setup
+## 1. Getting Started: Kubernetes-Native Deployment
 
 ### 1.1. Clone the Repository
 
@@ -150,35 +150,81 @@ git clone [repository-url]
 cd songnodes
 ```
 
-### 1.2. Configure Secrets
+### 1.2. Prerequisites
 
-A single `.env` file is the source of truth for all local development credentials. This file **must never be committed to Git.**
+**Required:**
+- Kubernetes cluster (K3s recommended for local/edge deployment)
+- kubectl configured to access your cluster
+- Flux CLI (`flux` command)
+- Skaffold for development workflow
+- Helm 3.x
+
+**Optional:**
+- Local container registry (K3s includes one at `localhost:5000`)
+
+### 1.3. Configure Secrets
+
+Create Kubernetes secrets for the songnodes namespace:
 
 ```bash
-# Copy the template to create your local environment file
-cp .env.example .env
+# Create namespace
+kubectl create namespace songnodes
 
-# Open .env in your editor and fill in any required values
-# The defaults are generally sufficient for local development.
+# Create secrets from environment file
+kubectl create secret generic songnodes-secrets \
+  --from-literal=POSTGRES_PASSWORD=your_secure_password \
+  --from-literal=REDIS_PASSWORD=your_redis_password \
+  --from-literal=RABBITMQ_PASSWORD=your_rabbitmq_password \
+  --from-literal=ANTHROPIC_API_KEY=your_anthropic_key \
+  --from-literal=SPOTIFY_CLIENT_ID=your_spotify_id \
+  --from-literal=SPOTIFY_CLIENT_SECRET=your_spotify_secret \
+  -n songnodes
 ```
 
-### 1.3. Launch the System
+### 1.4. Deploy with Flux GitOps
 
-All services are managed via Docker Compose. This ensures network isolation, service discovery, and consistent environments.
+Flux automatically deploys and manages the application from the Git repository:
 
 ```bash
-# Build all container images and start the services in detached mode
-docker compose up -d --build
+# Flux will automatically sync from the main branch
+# Check deployment status:
+flux get kustomizations
+flux get helmreleases -n flux-system
+
+# Or manually trigger reconciliation:
+flux reconcile source git songnodes
+flux reconcile helmrelease songnodes -n flux-system
 ```
 
-### 1.4. Verify Services
+### 1.5. Development Workflow with Skaffold
+
+For active development with hot-reload and automatic deployment:
 
 ```bash
-# Check that all containers are running and healthy
-docker compose ps
+# Deploy to K8s and watch for changes
+skaffold dev
 
-# View the logs for a specific service (e.g., the REST API)
-docker compose logs -f rest-api
+# Build and deploy without watching
+skaffold run
+
+# Clean up development deployment
+skaffold delete
+```
+
+### 1.6. Verify Services
+
+```bash
+# Check pod status
+kubectl get pods -n songnodes
+
+# Check service endpoints
+kubectl get svc -n songnodes
+
+# View logs for a specific service
+kubectl logs -f deployment/rest-api -n songnodes
+
+# Check data integrity
+kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM tracks;"
 ```
 
 ---
@@ -278,30 +324,49 @@ git commit -m "test(api): add unit tests for fuzzy search"
 
 8. **Merge**: Once approved and all checks are green, merge the PR using **"Squash and Merge"**. This condenses your work into a single, clean commit on the `develop` branch.
 
-### 3.4. Local Development Loop
+### 3.4. Kubernetes Development Loop
 
-After making changes to backend code or Docker configuration, you **must** rebuild the relevant container image.
+After making changes to service code, Skaffold automatically rebuilds and redeploys:
 
 ```bash
-# Rebuild a specific service and restart the system
-docker compose build [service-name] && docker compose up -d
+# Start Skaffold in development mode (watches for file changes)
+skaffold dev
 
-# Example: After changing the REST API code
-docker compose build rest-api && docker compose up -d
+# Skaffold will:
+# 1. Build changed container images
+# 2. Push to local registry (localhost:5000)
+# 3. Update Kubernetes deployments
+# 4. Stream logs from all pods
 ```
 
-**Frontend Exception**: For a faster development experience, you can use Vite's hot-reload server. This is the **only service** that should be run outside of Docker Compose for development.
+**Manual Build and Deploy:**
 
 ```bash
+# Build and push images without Skaffold
+docker build -t localhost:5000/songnodes_rest-api:latest services/rest_api
+docker push localhost:5000/songnodes_rest-api:latest
+
+# Restart deployment to pull new image
+kubectl rollout restart deployment/rest-api -n songnodes
+kubectl rollout status deployment/rest-api -n songnodes
+```
+
+**Frontend Development:**
+
+```bash
+# For rapid frontend development with hot-reload
 cd frontend
 npm run dev
+
+# Frontend will be accessible at http://localhost:5173
+# API calls will proxy to K8s services via kubectl port-forward
 ```
 
 ### 3.5. File Management Rules
 
 - **ALWAYS EDIT** existing files - never create new unless absolutely necessary
-- **NO OVERLAY FILES** - Single `docker-compose.yml` only
-- **NO DUPLICATES** - No alternative/backup versions
+- **NO DUPLICATE CONFIGS** - Single source of truth in Helm charts
+- **USE KUSTOMIZE OVERLAYS** - For environment-specific configurations
 
 ---
 
@@ -792,32 +857,64 @@ Support Ctrl+click (toggle), Shift+click (range), regular click (single-select).
 
 ---
 
-## 6. Deployment Options
+## 6. Deployment Architecture
 
-### 6.1. Local Development
+### 6.1. GitOps with Flux
 
-```bash
-docker compose up -d  # All services
-cd frontend && npm run dev  # Frontend hot-reload (exception)
-```
-
-### 6.2. Production (Kubernetes)
+The application is deployed and managed entirely through Flux GitOps:
 
 ```bash
-# See k8s/README.md for complete instructions
-kubectl apply -f k8s/base/namespace.yaml
-kubectl create secret generic songnodes-secrets --from-env-file=.env -n songnodes
-kubectl apply -k k8s/base/
-kubectl apply -k k8s/overlays/production/
+# Flux continuously monitors the Git repository
+# Changes pushed to main branch trigger automatic deployment
+
+# Check Flux status
+flux get all -n flux-system
+
+# View HelmRelease status
+kubectl get helmrelease songnodes -n flux-system
+
+# Manual sync (if needed)
+flux reconcile source git songnodes
+flux reconcile helmrelease songnodes -n flux-system
 ```
 
-**Key Features**:
-- StatefulSets for PostgreSQL, Redis, RabbitMQ
-- HorizontalPodAutoscalers for auto-scaling (3-10 replicas)
-- NetworkPolicies for security isolation
-- Ingress with TLS/SSL support
-- Prometheus + Grafana monitoring
-- Resource limits and health checks
+### 6.2. Development Deployment with Skaffold
+
+```bash
+# Development mode with hot-reload
+skaffold dev
+
+# One-time deployment
+skaffold run
+
+# Deploy with specific profile
+skaffold run -p production
+```
+
+### 6.3. Production Features
+
+**Infrastructure:**
+- StatefulSets for PostgreSQL, Redis, RabbitMQ with persistent storage
+- HorizontalPodAutoscalers for auto-scaling application pods
+- NetworkPolicies for security isolation between services
+- Resource limits and requests for all pods
+
+**Data Persistence:**
+- PostgreSQL: 20Gi PersistentVolume (migrated from Docker with 15,137 tracks)
+- Redis: 5Gi PersistentVolume for caching
+- RabbitMQ: 10Gi PersistentVolume for message queues
+
+**High Availability:**
+- Multiple frontend replicas (3 pods)
+- Health checks and liveness/readiness probes
+- Automatic pod restart on failure
+- Rolling updates with zero downtime
+
+**Monitoring:**
+- Prometheus metrics collection
+- Grafana dashboards
+- Pod resource usage tracking
+- Application-level metrics
 
 ---
 
@@ -825,32 +922,68 @@ kubectl apply -k k8s/overlays/production/
 
 | Issue | Solution |
 |:------|:---------|
-| Service connection errors | Use Docker Compose - same network required |
-| Import errors | Run via Docker Compose |
-| Frontend can't reach API | Ensure all services running (`docker compose ps`) |
-| Port issues | Use `ports:` not `expose:` in docker-compose.yml |
+| Service connection errors | Check pod status: `kubectl get pods -n songnodes` |
+| Import errors | Verify images are built and pushed to `localhost:5000` registry |
+| Frontend can't reach API | Use port-forward: `kubectl port-forward svc/rest-api 8082:8082 -n songnodes` |
+| Pod crashes | Check logs: `kubectl logs -f <pod-name> -n songnodes` |
 | Memory leaks | Check cleanup in useEffect, verify connection pool limits |
-| Stale code in containers | Rebuild: `docker compose build [service] && docker compose up -d` |
-| Spider ImportError (relative imports) | Use `scrapy crawl [spider_name]` NOT `scrapy runspider` - see Section 5.1.4 |
+| ImagePullBackOff | Verify local registry is running and images are pushed |
+| Spider ImportError | Use `scrapy crawl [spider_name]` NOT `scrapy runspider` - see Section 5.1.4 |
+| Flux sync issues | Force reconcile: `flux reconcile source git songnodes` |
+| PVC mount issues | Check PV status: `kubectl get pv,pvc -n songnodes` |
 
-### 7.1. Common Docker Commands
+### 7.1. Common Kubernetes Commands
 
 ```bash
-docker compose ps                      # Check status
-docker compose logs -f [service]       # View logs
-docker compose build [service]         # Rebuild
-docker compose restart [service]       # Restart
-docker compose exec [service] /bin/bash  # Shell access
-docker stats                           # Monitor resources
+# Pod management
+kubectl get pods -n songnodes                    # List all pods
+kubectl logs -f <pod-name> -n songnodes          # Stream logs
+kubectl exec -it <pod-name> -n songnodes -- bash # Shell access
+kubectl describe pod <pod-name> -n songnodes     # Detailed info
+
+# Deployment management
+kubectl rollout restart deployment/<name> -n songnodes  # Restart deployment
+kubectl rollout status deployment/<name> -n songnodes   # Check rollout status
+kubectl scale deployment/<name> --replicas=3 -n songnodes  # Scale pods
+
+# Service debugging
+kubectl get svc -n songnodes                     # List services
+kubectl port-forward svc/<service> 8080:8080 -n songnodes  # Forward port
+
+# Resource monitoring
+kubectl top pods -n songnodes                    # Resource usage
+kubectl get events -n songnodes --sort-by='.lastTimestamp'  # Recent events
 ```
 
-### 7.2. Volume Backup
+### 7.2. Database Backup and Restore
 
 ```bash
-docker run --rm \
-  -v musicdb_postgres_data:/source:ro \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/backup_$(date +%Y%m%d).tar.gz -C /source .
+# Backup PostgreSQL
+kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > backup-$(date +%Y%m%d).dump
+
+# Restore PostgreSQL
+cat backup.dump | kubectl exec -i -n songnodes postgres-0 -- pg_restore -U musicdb_user -d musicdb --clean
+
+# Verify data
+kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM tracks;"
+```
+
+### 7.3. Flux GitOps Management
+
+```bash
+# Check Flux system status
+flux check
+
+# View all Flux resources
+flux get all -n flux-system
+
+# Force reconciliation
+flux reconcile source git songnodes
+flux reconcile helmrelease songnodes -n flux-system
+
+# Suspend/Resume automatic sync
+flux suspend helmrelease songnodes -n flux-system
+flux resume helmrelease songnodes -n flux-system
 ```
 
 ---
@@ -862,12 +995,13 @@ docker run --rm \
 ❌ **No connection limits**: Use connection pools with max sizes
 ❌ **Event listener leaks**: Always clean up in useEffect return
 ❌ **No periodic cleanup**: Implement garbage collection for caches
-❌ **Hardcoded credentials**: Use secrets manager
-❌ **Direct service execution**: Use Docker Compose
-❌ **Skipping tests**: E2E tests are mandatory
+❌ **Hardcoded credentials**: Use Kubernetes secrets
+❌ **Manual deployments**: Use Flux GitOps for all changes
+❌ **Skipping tests**: E2E tests are mandatory before merge
 ❌ **Force pushes to main**: Protected branch
 ❌ **Unclear commit messages**: Use Conventional Commits
 ❌ **Using `runspider` with relative imports**: Use `scrapy crawl [spider_name]` instead
+❌ **Docker Compose for production**: Kubernetes-only deployment
 
 ---
 
@@ -875,14 +1009,46 @@ docker run --rm \
 
 | Task | Command |
 |:-----|:--------|
-| **Start All Services** | `docker compose up -d` |
-| **Rebuild Service** | `docker compose build [service] && docker compose up -d` |
-| **View Logs** | `docker compose logs -f [service]` |
+| **Check System Status** | `kubectl get pods -n songnodes` |
+| **Deploy with Skaffold** | `skaffold dev` (development) or `skaffold run` (production) |
+| **View Logs** | `kubectl logs -f deployment/[service] -n songnodes` |
 | **Run Tests** | `npm run test:e2e` |
-| **Test Spider** | `docker compose exec scraper-orchestrator scrapy crawl [spider_name] -a arg=value` |
+| **Test Spider in K8s** | `kubectl exec -n songnodes deployment/scraper-orchestrator -- scrapy crawl [spider_name] -a arg=value` |
 | **Frontend Dev** | `cd frontend && npm run dev` |
-| **Production Deploy** | `kubectl apply -k k8s/overlays/production/` |
+| **Flux Status** | `flux get helmreleases -n flux-system` |
+| **Force Flux Sync** | `flux reconcile source git songnodes && flux reconcile helmrelease songnodes -n flux-system` |
+| **Database Backup** | `kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > backup.dump` |
+| **Port Forward** | `kubectl port-forward svc/rest-api 8082:8082 -n songnodes` |
+| **Scale Service** | `kubectl scale deployment/[service] --replicas=3 -n songnodes` |
 
 ---
 
-This is the **only supported way** to develop and deploy SongNodes. No exceptions.
+## 10. System Startup
+
+The SongNodes platform is configured for automatic startup on system reboot:
+
+**K3s Auto-Start:**
+- K3s service is enabled via systemd: `systemctl is-enabled k3s`
+- Starts automatically on boot
+- All pods are restored from persistent storage
+
+**Data Persistence:**
+- PostgreSQL: 15,137 tracks persisted to 20Gi PersistentVolume
+- Redis: Cache data on 5Gi PersistentVolume
+- RabbitMQ: Message queues on 10Gi PersistentVolume
+
+**Post-Reboot Verification:**
+```bash
+# Check K3s is running
+systemctl status k3s
+
+# Verify all pods are healthy
+kubectl get pods -n songnodes
+
+# Verify data integrity
+kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM tracks;"
+```
+
+---
+
+This is the **only supported way** to develop and deploy SongNodes. The project has been fully migrated from Docker Compose to Kubernetes and is managed entirely through Flux GitOps.

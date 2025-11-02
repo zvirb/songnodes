@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better Docker layer caching
-COPY graph-visualization-api/requirements.txt .
+COPY services/graph-visualization-api/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY common /app/common
 
 # Copy application code
-COPY graph-visualization-api/ .
+COPY services/graph-visualization-api/ .
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser \

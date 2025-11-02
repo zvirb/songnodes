@@ -40,30 +40,24 @@ spec:
       data:
         POSTGRES_HOST: postgres-0.postgres-service.songnodes.svc.cluster.local
 
-    # Development overrides from values-dev.yaml
+    # Production configuration with persistence enabled (data migrated from Docker)
     postgres:
       persistence:
-        enabled: false
+        enabled: true
+        size: 20Gi
+        storageClass: local-path
       resources:
         requests:
-          memory: 256Mi
-          cpu: 100m
-        limits:
-          memory: 512Mi
+          memory: 1Gi
           cpu: 500m
+        limits:
+          memory: 2Gi
+          cpu: 2000m
     redis:
       persistence:
-        enabled: false
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 50m
-        limits:
-          memory: 256Mi
-          cpu: 200m
-    rabbitmq:
-      persistence:
-        enabled: false
+        enabled: true
+        size: 5Gi
+        storageClass: local-path
       resources:
         requests:
           memory: 256Mi
@@ -71,6 +65,18 @@ spec:
         limits:
           memory: 512Mi
           cpu: 500m
+    rabbitmq:
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: local-path
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 200m
+        limits:
+          memory: 1Gi
+          cpu: 1000m
 
     services:
       restApi:
