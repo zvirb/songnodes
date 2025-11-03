@@ -74,6 +74,57 @@ class GoldLayerProcessor:
             return None
         return "Major" if key.endswith("B") else "Minor" if key.endswith("A") else None
 
+    def _extract_primary_genre(self, genre_value) -> Optional[str]:
+        """
+        Extract primary genre from genre field (handles both list and string formats).
+
+        Args:
+            genre_value: Can be None, empty string, list, or comma-separated string
+
+        Returns:
+            First genre as string, or None if not available
+        """
+        if not genre_value:
+            return None
+
+        if isinstance(genre_value, list):
+            # Handle list format - return first non-empty item
+            return genre_value[0].strip() if genre_value and genre_value[0] else None
+        elif isinstance(genre_value, str):
+            # Handle string format - split on comma and return first
+            genres = [g.strip() for g in genre_value.split(",") if g.strip()]
+            return genres[0] if genres else None
+        else:
+            # Unexpected type - log and return None
+            logger.warning(f"Unexpected genre type: {type(genre_value)} - {genre_value}")
+            return None
+
+    def _extract_genres(self, genre_value) -> Optional[List[str]]:
+        """
+        Extract all genres from genre field (handles both list and string formats).
+
+        Args:
+            genre_value: Can be None, empty string, list, or comma-separated string
+
+        Returns:
+            List of genre strings, or None if not available
+        """
+        if not genre_value:
+            return None
+
+        if isinstance(genre_value, list):
+            # Handle list format - filter out empty strings
+            genres = [g.strip() for g in genre_value if g and g.strip()]
+            return genres if genres else None
+        elif isinstance(genre_value, str):
+            # Handle string format - split on comma
+            genres = [g.strip() for g in genre_value.split(",") if g.strip()]
+            return genres if genres else None
+        else:
+            # Unexpected type - log and return None
+            logger.warning(f"Unexpected genre type: {type(genre_value)} - {genre_value}")
+            return None
+
     def _calculate_enrichment_completeness(
         self, track: Dict
     ) -> Decimal:
@@ -136,18 +187,8 @@ class GoldLayerProcessor:
             "isrc": silver_track.get("isrc"),
             "bpm": silver_track.get("bpm"),
             "key": silver_track.get("key"),
-            "genre_primary": (
-                (silver_track["genre"][0] if isinstance(silver_track["genre"], list)
-                 else silver_track["genre"].split(",")[0].strip())
-                if silver_track.get("genre")
-                else None
-            ),
-            "genres": (
-                (silver_track["genre"] if isinstance(silver_track["genre"], list)
-                 else [g.strip() for g in silver_track["genre"].split(",")])
-                if silver_track.get("genre")
-                else None
-            ),
+            "genre_primary": self._extract_primary_genre(silver_track.get("genre")),
+            "genres": self._extract_genres(silver_track.get("genre")),
             "energy": silver_track.get("energy"),
             "valence": silver_track.get("valence"),
             "danceability": silver_track.get("danceability"),
