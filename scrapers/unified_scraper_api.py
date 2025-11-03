@@ -78,6 +78,7 @@ class ScrapeRequest(BaseModel):
 
     source: str  # e.g., "mixesdb", "1001tracklists", "bbc_sounds"
     url: Optional[str] = None
+    start_urls: Optional[str] = None  # Direct URL(s) for spider
     params: Dict[str, Any] = {}
     task_id: Optional[str] = None
     max_pages: Optional[int] = None
@@ -170,20 +171,9 @@ def _extract_stats(stdout: str, stderr: str) -> Dict[str, int]:
     }
 
 
-@app.post("/scrape")
-async def scrape(request: ScrapeRequest) -> Dict[str, Any]:
+async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
     """
-    Execute scraping task for the specified source.
-
-    Examples:
-        # Scrape MixesDB for artist
-        POST /scrape {"source": "mixesdb", "artist_name": "Deadmau5", "limit": 5}
-
-        # Scrape BBC Sounds
-        POST /scrape {"source": "bbc_sounds", "max_pages": 1}
-
-        # Scrape 1001tracklists with URL
-        POST /scrape {"source": "1001tracklists", "url": "https://..."}
+    Internal scraping logic extracted for timeout wrapper.
     """
     # Validate source
     if request.source not in SPIDER_MAP:
@@ -308,6 +298,40 @@ async def scrape(request: ScrapeRequest) -> Dict[str, Any]:
         "items_scraped": stats["items_scraped"],
         "duration_seconds": round(duration, 2),
     }
+
+
+@app.post("/scrape")
+async def scrape(request: ScrapeRequest) -> Dict[str, Any]:
+    """
+    Execute scraping task for the specified source with 5-minute timeout.
+
+    Examples:
+        # Scrape MixesDB for artist
+        POST /scrape {"source": "mixesdb", "artist_name": "Deadmau5", "limit": 5}
+
+        # Scrape BBC Sounds
+        POST /scrape {"source": "bbc_sounds", "max_pages": 1}
+
+        # Scrape 1001tracklists with URL
+        POST /scrape {"source": "1001tracklists", "url": "https://..."}
+    """
+    # Wrap entire scraping operation with 5-minute (300s) timeout
+    try:
+        result = await asyncio.wait_for(
+            _scrape_internal(request),
+            timeout=300.0  # 5 minutes - prevents indefinite hanging
+        )
+        return result
+    except asyncio.TimeoutError:
+        logger.error(
+            "Scrape request timeout: source=%s, exceeded 300 seconds",
+            request.source
+        )
+        scrape_requests_total.labels(source=request.source, status="timeout").inc()
+        raise HTTPException(
+            status_code=504,
+            detail=f"Scrape request timeout after 300 seconds for source '{request.source}'"
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover

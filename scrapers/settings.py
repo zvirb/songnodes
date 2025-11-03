@@ -25,11 +25,14 @@ USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
 ROBOTSTXT_OBEY = False
 
 # Reduce concurrent requests to avoid triggering rate limits
-CONCURRENT_REQUESTS = 1
+CONCURRENT_REQUESTS = 8  # Moderate concurrency for reasonable throughput
 
-# Increase delays significantly to mimic human behavior and avoid CAPTCHA blocking
-DOWNLOAD_DELAY = 90  # 90 seconds between requests to avoid IP bans
-RANDOMIZE_DOWNLOAD_DELAY = 0.3  # 0.5 * to 1.5 * DOWNLOAD_DELAY (63-135 seconds)
+# Balanced delays to avoid rate limiting while maintaining reasonable speed
+DOWNLOAD_DELAY = 2  # 2 seconds between requests - balanced approach
+RANDOMIZE_DOWNLOAD_DELAY = 0.5  # 0.5 * to 1.5 * DOWNLOAD_DELAY (1-3 seconds)
+
+# Download timeout settings - prevent indefinite hangs
+DOWNLOAD_TIMEOUT = 30  # Timeout after 30 seconds for any single request
 
 # The download delay setting will honor only one of:
 # CONCURRENT_REQUESTS_PER_DOMAIN = 1
@@ -94,14 +97,14 @@ ITEM_PIPELINES = {
    'pipelines.reddit_validation_pipeline.RedditValidationPipeline': 450,  # Framework Section 2.4: Reddit→Spotify validation
 }
 
-# Enable and configure the AutoThrottle extension with conservative settings
+# Enable and configure the AutoThrottle extension with balanced settings
 AUTOTHROTTLE_ENABLED = True
-# Start with longer delays to avoid anti-bot detection
-AUTOTHROTTLE_START_DELAY = 90  # Match DOWNLOAD_DELAY
-# Allow even longer delays if needed
-AUTOTHROTTLE_MAX_DELAY = 300  # Up to 5 minutes between requests if needed
-# Keep concurrency very low
-AUTOTHROTTLE_TARGET_CONCURRENCY = 0.2  # Lower concurrency for gentler scraping
+# Start with reasonable delays to balance speed and politeness
+AUTOTHROTTLE_START_DELAY = 2  # Match DOWNLOAD_DELAY
+# Allow moderate delays if needed
+AUTOTHROTTLE_MAX_DELAY = 60  # Up to 1 minute between requests if needed
+# Moderate concurrency for reasonable throughput
+AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0  # Target 1 concurrent request per domain
 # Enable debugging to monitor throttling
 AUTOTHROTTLE_DEBUG = True
 
@@ -132,9 +135,9 @@ PLAYWRIGHT_LAUNCH_OPTIONS = {
 # Logging settings [1, 2]
 LOG_LEVEL = 'INFO' # DEBUG for more verbose output
 
-# Retry settings - be more persistent with rate limiting
-RETRY_TIMES = 5 # Number of times to retry failed requests
-RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429, 403] # HTTP codes to retry (added 403 for rate limiting)
+# Retry settings - balanced retry strategy
+RETRY_TIMES = 3  # Number of times to retry failed requests (reduced from 5)
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]  # HTTP codes to retry
 
 # Ollama Integration (Conceptual)
 if os.getenv('OLLAMA_URL'):
