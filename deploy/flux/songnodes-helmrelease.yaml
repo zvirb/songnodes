@@ -327,6 +327,13 @@ spec:
           repository: localhost:5000/songnodes_frontend
           tag: latest
           pullPolicy: Always
+        service:
+          type: NodePort
+          ports:
+            http:
+              port: 80
+              targetPort: 80
+              nodePort: 30006
         resources:
           requests:
             memory: 128Mi
