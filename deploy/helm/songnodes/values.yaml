@@ -1463,8 +1463,9 @@ services:
               }
 
               # API proxy endpoints
+              # Note: No trailing slash on proxy_pass to preserve full request path
               location /api/graph/ {
-                  proxy_pass http://graph-visualization:8084/;
+                  proxy_pass http://graph-visualization:8084;
                   proxy_http_version 1.1;
                   proxy_set_header Host $host;
                   proxy_set_header X-Real-IP $remote_addr;
@@ -1473,7 +1474,7 @@ services:
               }
 
               location /api/rest/ {
-                  proxy_pass http://rest-api:8082/;
+                  proxy_pass http://rest-api:8082;
                   proxy_http_version 1.1;
                   proxy_set_header Host $host;
                   proxy_set_header X-Real-IP $remote_addr;
@@ -1482,7 +1483,7 @@ services:
               }
 
               location /api/ws/ {
-                  proxy_pass http://websocket-api:8083/;
+                  proxy_pass http://websocket-api:8083;
                   proxy_http_version 1.1;
                   proxy_set_header Upgrade $http_upgrade;
                   proxy_set_header Connection "upgrade";
