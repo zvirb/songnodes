@@ -31,15 +31,15 @@ config:
     RABBITMQ_HOST: rabbitmq-service
     RABBITMQ_PORT: "5672"
     RABBITMQ_USER: songnodesuser
-    REST_API_HOST: rest-api-service
+    REST_API_HOST: rest-api
     REST_API_PORT: "8082"
-    GRAPH_API_HOST: graph-visualization-service
+    GRAPH_API_HOST: graph-visualization
     GRAPH_API_PORT: "8084"
-    WEBSOCKET_API_HOST: websocket-api-service
+    WEBSOCKET_API_HOST: websocket-api
     WEBSOCKET_API_PORT: "8083"
-    METADATA_ENRICHMENT_HOST: metadata-enrichment-service
+    METADATA_ENRICHMENT_HOST: metadata-enrichment
     METADATA_ENRICHMENT_PORT: "8020"
-    METADATA_ENRICHMENT_URL: http://metadata-enrichment-service:8020
+    METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     ENVIRONMENT: production
     LOG_LEVEL: INFO
     CORS_ORIGINS: "*"
@@ -1433,9 +1433,9 @@ services:
       http: 80
     env:
       static:
-        VITE_REST_API_URL: http://rest-api-service:8082
-        VITE_GRAPH_API_URL: http://graph-visualization-service:8084
-        VITE_WEBSOCKET_URL: ws://websocket-api-service:8083
+        VITE_REST_API_URL: http://rest-api:8082
+        VITE_GRAPH_API_URL: http://graph-visualization:8084
+        VITE_WEBSOCKET_URL: ws://websocket-api:8083
     configMap:
       enabled: true
       name: frontend-nginx-config
@@ -1647,7 +1647,7 @@ ingress:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/websocket-services: websocket-api-service
+    nginx.ingress.kubernetes.io/websocket-services: websocket-api
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/enable-cors: "true"
