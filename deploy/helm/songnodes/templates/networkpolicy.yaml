@@ -112,6 +112,7 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Allow from ingress-nginx namespace
     - from:
         - namespaceSelector:
             matchLabels:
@@ -127,6 +128,18 @@ spec:
           port: {{ .Values.services.scraperOrchestrator.service.ports.http.port }}
         - protocol: TCP
           port: {{ .Values.services.nlpProcessor.service.ports.http.port }}
+    # Allow from frontend pods (for nginx reverse proxy)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: frontend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.services.restApi.service.ports.http.port }}
+        - protocol: TCP
+          port: {{ .Values.services.websocketApi.service.ports.http.port }}
+        - protocol: TCP
+          port: {{ .Values.services.graphVisualization.service.ports.http.port }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
