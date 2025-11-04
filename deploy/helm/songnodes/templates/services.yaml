@@ -16,6 +16,9 @@ spec:
       port: {{ $port.port }}
       targetPort: {{ $port.targetPort | default $port.port }}
       protocol: {{ $port.protocol | default "TCP" }}
+      {{- if $port.nodePort }}
+      nodePort: {{ $port.nodePort }}
+      {{- end }}
     {{- end }}
   selector:
     app.kubernetes.io/name: {{ $svc.name }}
