@@ -1433,9 +1433,10 @@ services:
       http: 80
     env:
       static:
-        VITE_REST_API_URL: http://rest-api:8082
-        VITE_GRAPH_API_URL: http://graph-visualization:8084
-        VITE_WEBSOCKET_URL: ws://websocket-api:8083
+        # Use empty values to force relative URLs (nginx proxy handles routing)
+        VITE_REST_API_URL: ""
+        VITE_GRAPH_API_URL: ""
+        VITE_WEBSOCKET_URL: ""
     configMap:
       enabled: true
       name: frontend-nginx-config
