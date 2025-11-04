@@ -1463,35 +1463,17 @@ services:
                   add_header Cache-Control "public, immutable";
               }
 
-              # API proxy endpoints
-              # Note: No trailing slash on proxy_pass to preserve full request path
-              location /api/graph/ {
+              # API proxy - single location for all API endpoints
+              # The APIs already include /api prefix, so we just forward everything
+              location /api/ {
                   proxy_pass http://graph-visualization:8084;
                   proxy_http_version 1.1;
                   proxy_set_header Host $host;
                   proxy_set_header X-Real-IP $remote_addr;
                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                   proxy_set_header X-Forwarded-Proto $scheme;
-              }
-
-              location /api/rest/ {
-                  proxy_pass http://rest-api:8082;
-                  proxy_http_version 1.1;
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
-              }
-
-              location /api/ws/ {
-                  proxy_pass http://websocket-api:8083;
-                  proxy_http_version 1.1;
                   proxy_set_header Upgrade $http_upgrade;
                   proxy_set_header Connection "upgrade";
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
               }
 
               location / {
