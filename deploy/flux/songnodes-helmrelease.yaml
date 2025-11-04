@@ -24,7 +24,7 @@ spec:
         kind: GitRepository
         name: songnodes
         namespace: flux-system
-      version: 0.1.11
+      version: 0.1.12
   values:
     namespace:
       create: false
@@ -86,6 +86,13 @@ spec:
           repository: localhost:5000/songnodes_rest-api
           tag: latest
           pullPolicy: Always
+        service:
+          type: NodePort
+          ports:
+            http:
+              port: 8082
+              targetPort: 8082
+              nodePort: 30082
         resources:
           requests:
             memory: 256Mi
@@ -101,6 +108,13 @@ spec:
           repository: localhost:5000/songnodes_graph-visualization-api
           tag: latest
           pullPolicy: Always
+        service:
+          type: NodePort
+          ports:
+            http:
+              port: 8084
+              targetPort: 8084
+              nodePort: 30084
         resources:
           requests:
             memory: 128Mi
@@ -116,6 +130,13 @@ spec:
           repository: localhost:5000/songnodes_websocket-api
           tag: latest
           pullPolicy: Always
+        service:
+          type: NodePort
+          ports:
+            http:
+              port: 8083
+              targetPort: 8083
+              nodePort: 30083
         resources:
           requests:
             memory: 256Mi
@@ -334,6 +355,11 @@ spec:
               port: 80
               targetPort: 80
               nodePort: 30006
+        env:
+          static:
+            VITE_REST_API_URL: http://192.168.1.55:30082
+            VITE_GRAPH_API_URL: http://192.168.1.55:30084
+            VITE_WEBSOCKET_URL: ws://192.168.1.55:30083
         resources:
           requests:
             memory: 128Mi
