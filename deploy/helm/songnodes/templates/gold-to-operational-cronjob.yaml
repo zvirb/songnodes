@@ -1,0 +1,127 @@
+{{- if .Values.cronjobs.goldToOperational.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gold-to-operational-etl
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "gold-to-operational-etl" "app.kubernetes.io/component" "data-processing")) | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjobs.goldToOperational.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cronjobs.goldToOperational.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .Values.cronjobs.goldToOperational.failedJobsHistoryLimit | default 3 }}
+  concurrencyPolicy: {{ .Values.cronjobs.goldToOperational.concurrencyPolicy | default "Forbid" }}
+  suspend: {{ .Values.cronjobs.goldToOperational.suspend | default false }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "gold-to-operational-etl" "app.kubernetes.io/component" "data-processing")) | nindent 8 }}
+      {{- if or .Values.global.commonAnnotations .Values.cronjobs.goldToOperational.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.cronjobs.goldToOperational.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      backoffLimit: {{ .Values.cronjobs.goldToOperational.backoffLimit | default 3 }}
+      activeDeadlineSeconds: {{ .Values.cronjobs.goldToOperational.activeDeadlineSeconds | default 3600 }}
+      template:
+        metadata:
+          labels:
+            {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "gold-to-operational-etl" "app.kubernetes.io/component" "data-processing")) | nindent 12 }}
+          {{- if or .Values.global.commonAnnotations .Values.cronjobs.goldToOperational.podAnnotations }}
+          annotations:
+            {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.cronjobs.goldToOperational.podAnnotations) | nindent 12 }}
+          {{- end }}
+        spec:
+          {{- if .Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- range .Values.global.imagePullSecrets }}
+            - name: {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          restartPolicy: {{ .Values.cronjobs.goldToOperational.restartPolicy | default "OnFailure" }}
+          initContainers:
+            - name: wait-for-postgres
+              image: postgres:15-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  for i in $(seq 1 40); do
+                    pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" && exit 0
+                    echo "Waiting for postgres at $POSTGRES_HOST:$POSTGRES_PORT..."
+                    sleep 3
+                  done
+                  echo "Postgres not reachable, giving up."
+                  exit 1
+              env:
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_HOST
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_PORT
+                - name: POSTGRES_DB
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: POSTGRES_PASSWORD
+          containers:
+            - name: gold-to-operational-etl
+              image: {{ printf "%s:%s" .Values.cronjobs.goldToOperational.image.repository .Values.cronjobs.goldToOperational.image.tag }}
+              imagePullPolicy: {{ .Values.cronjobs.goldToOperational.image.pullPolicy | default "Always" }}
+              command:
+                - python
+                - gold_to_operational_etl.py
+              env:
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_HOST
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_PORT
+                - name: POSTGRES_DB
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_USER
+                - name: LOG_LEVEL
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: LOG_LEVEL
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: POSTGRES_PASSWORD
+              resources:
+                requests:
+                  memory: {{ .Values.cronjobs.goldToOperational.resources.requests.memory | default "512Mi" }}
+                  cpu: {{ .Values.cronjobs.goldToOperational.resources.requests.cpu | default "250m" }}
+                limits:
+                  memory: {{ .Values.cronjobs.goldToOperational.resources.limits.memory | default "2Gi" }}
+                  cpu: {{ .Values.cronjobs.goldToOperational.resources.limits.cpu | default "1000m" }}
+{{- end }}
