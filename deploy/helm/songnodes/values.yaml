@@ -42,7 +42,7 @@ config:
     METADATA_ENRICHMENT_URL: http://metadata-enrichment:8020
     ENVIRONMENT: production
     LOG_LEVEL: INFO
-    CORS_ORIGINS: "*"
+    CORS_ALLOWED_ORIGINS: "*"
     SCRAPER_CONCURRENT_REQUESTS: "16"
     SCRAPER_DOWNLOAD_DELAY: "2.0"
     SCRAPER_AUTOTHROTTLE_ENABLED: "True"
@@ -1463,9 +1463,9 @@ services:
                   add_header Cache-Control "public, immutable";
               }
 
-              # API proxy - single location for all API endpoints
-              # The APIs already include /api prefix, so we just forward everything
-              location /api/ {
+              # API proxy routing - route to correct backend service based on path
+              # Graph API endpoints
+              location ~ ^/api/(graph|v1/visualization|user-setlists) {
                   proxy_pass http://graph-visualization:8084;
                   proxy_http_version 1.1;
                   proxy_set_header Host $host;
@@ -1474,6 +1474,16 @@ services:
                   proxy_set_header X-Forwarded-Proto $scheme;
                   proxy_set_header Upgrade $http_upgrade;
                   proxy_set_header Connection "upgrade";
+              }
+
+              # REST API endpoints (artists, tracks, setlists, scraping, etc.)
+              location /api/ {
+                  proxy_pass http://rest-api:8082;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
               }
 
               location / {
