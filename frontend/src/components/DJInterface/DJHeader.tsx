@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Wand2, FileUp, Filter, Settings as SettingsIcon, Music } from 'lucide-react';
 import { DJModeSelector } from './DJModeSelector';
 import type { DJHeaderProps } from './types';
 import styles from './DJInterface.module.css';
@@ -46,7 +46,8 @@ export function DJHeader({
     <header className={styles.header}>
       <div className={styles.headerLeft}>
         <h1 className={styles.headerTitle}>
-          🎵 SongNodes DJ
+          <Music size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} aria-hidden="true" />
+          SongNodes DJ
         </h1>
 
         <DJModeSelector mode={mode} onModeChange={onModeChange} />
@@ -66,7 +67,8 @@ export function DJHeader({
           className={`${styles.headerButton} ${styles.danger}`}
           aria-label="Fix artist attribution for unknown tracks"
         >
-          🎨 Fix Artist Attribution
+          <Wand2 size={16} strokeWidth={2} aria-hidden="true" />
+          Fix Artist Attribution
         </button>
 
         <button
@@ -74,7 +76,8 @@ export function DJHeader({
           className={`${styles.headerButton} ${styles.info}`}
           aria-label="Import tracklist from text or file"
         >
-          📝 Import Tracklist
+          <FileUp size={16} strokeWidth={2} aria-hidden="true" />
+          Import Tracklist
         </button>
 
         <button
@@ -82,7 +85,8 @@ export function DJHeader({
           className={styles.headerButton}
           aria-label="Configure graph visualization filters"
         >
-          🔧 Filters
+          <Filter size={16} strokeWidth={2} aria-hidden="true" />
+          Graph Filters
         </button>
 
         <button
@@ -90,7 +94,8 @@ export function DJHeader({
           className={styles.headerButton}
           aria-label="Open application settings"
         >
-          ⚙️ Settings
+          <SettingsIcon size={16} strokeWidth={2} aria-hidden="true" />
+          Settings
         </button>
 
         <button

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
 
@@ -212,9 +213,11 @@ export const PathfinderPanel: React.FC = () => {
               <button
                 onClick={useSelectedTrackAsStart}
                 disabled={!currentlySelectedTrack || tracks.length === 0}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-green-400 hover:text-green-800 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-green-400 hover:text-green-800 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                aria-label={currentlySelectedTrack ? `Use ${currentlySelectedTrack.name} as start track` : 'Select a track on the graph first'}
               >
-                {currentlySelectedTrack ? '✓ Use Selected Track as Start' : 'Select a track on the graph first'}
+                {currentlySelectedTrack && <Check size={16} strokeWidth={2} aria-hidden="true" />}
+                {currentlySelectedTrack ? 'Use Selected Track as Start' : 'Select a track on the graph first'}
               </button>
             )}
           </div>
@@ -241,9 +244,11 @@ export const PathfinderPanel: React.FC = () => {
               <button
                 onClick={useSelectedTrackAsEnd}
                 disabled={!currentlySelectedTrack || tracks.length === 0}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-400 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-400 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                aria-label={currentlySelectedTrack ? `Use ${currentlySelectedTrack.name} as end track` : 'Select a track on the graph first'}
               >
-                {currentlySelectedTrack ? '✓ Use Selected Track as End' : 'Select a track on the graph first'}
+                {currentlySelectedTrack && <Check size={16} strokeWidth={2} aria-hidden="true" />}
+                {currentlySelectedTrack ? 'Use Selected Track as End' : 'Select a track on the graph first'}
               </button>
             )}
           </div>
@@ -272,9 +277,11 @@ export const PathfinderPanel: React.FC = () => {
             <button
               onClick={useSelectedTrackAsWaypoint}
               disabled={!currentlySelectedTrack || tracks.length === 0}
-              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-yellow-400 hover:text-yellow-800 hover:bg-yellow-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-yellow-400 hover:text-yellow-800 hover:bg-yellow-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+              aria-label={currentlySelectedTrack ? `Add ${currentlySelectedTrack.name} as waypoint` : 'Select a track on the graph first'}
             >
-              {currentlySelectedTrack ? '✓ Use Selected Track as Waypoint' : 'Select a track on the graph first'}
+              {currentlySelectedTrack && <Check size={16} strokeWidth={2} aria-hidden="true" />}
+              {currentlySelectedTrack ? 'Use Selected Track as Waypoint' : 'Select a track on the graph first'}
             </button>
           </div>
         </div>

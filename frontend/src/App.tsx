@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { BarChart3, Crosshair, ListMusic, MousePointer2, Pause, Play, RefreshCw, RotateCcw, Route, Search as SearchIcon, Settings, SlidersHorizontal, Target } from 'lucide-react';
+import { BarChart3, Crosshair, ListMusic, MousePointer2, Pause, Play, RefreshCw, RotateCcw, Route, Search as SearchIcon, Settings, SlidersHorizontal, Target, Disc3, X } from 'lucide-react';
 
 import { useStore } from './store/useStore';
 import { api } from './services/api';
@@ -328,7 +328,7 @@ const App: React.FC = () => {
             onClick={() => panels.toggleLeftPanel(null)}
             aria-label="Close panel"
           >
-            ✕
+            <X size={16} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
         <div className="panel-content">
@@ -376,7 +376,7 @@ const App: React.FC = () => {
             onClick={() => panels.toggleRightPanel(null)}
             aria-label="Close panel"
           >
-            ✕
+            <X size={16} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
         <div className="panel-content">
@@ -457,9 +457,11 @@ const App: React.FC = () => {
           <button
             className="btn btn-small btn-primary"
             onClick={() => setDjModeEnabled(true)}
-            style={{ backgroundColor: '#7ED321' }}
+            style={{ backgroundColor: '#7ED321', display: 'flex', alignItems: 'center', gap: '6px' }}
+            aria-label="Switch to DJ Mode interface"
           >
-            🎤 Switch to DJ Mode
+            <Disc3 size={16} aria-hidden="true" />
+            Switch to DJ Mode
           </button>
 
           {/* Connection Status */}
