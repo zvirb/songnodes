@@ -1759,7 +1759,7 @@ cronjobs:
     image:
       repository: localhost:5000/songnodes_gold-to-operational-etl
       tag: latest
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     concurrencyPolicy: Forbid
     restartPolicy: OnFailure
     successfulJobsHistoryLimit: 3

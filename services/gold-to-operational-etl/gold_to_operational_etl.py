@@ -170,6 +170,7 @@ class GoldToOperationalETL:
                   WHERE LOWER(TRIM(a.name)) = LOWER(TRIM(gta.artist_name))
               )
             LIMIT $1
+            ON CONFLICT (normalized_name) DO NOTHING
             RETURNING id, name
         """
 
@@ -249,6 +250,17 @@ class GoldToOperationalETL:
                     AND (gta.spotify_id IS NULL OR t.spotify_id = gta.spotify_id)
               )
             LIMIT $1
+            ON CONFLICT (normalized_title) DO UPDATE SET
+                spotify_id = COALESCE(EXCLUDED.spotify_id, tracks.spotify_id),
+                isrc = COALESCE(EXCLUDED.isrc, tracks.isrc),
+                bpm = COALESCE(EXCLUDED.bpm, tracks.bpm),
+                key = COALESCE(EXCLUDED.key, tracks.key),
+                energy = COALESCE(EXCLUDED.energy, tracks.energy),
+                danceability = COALESCE(EXCLUDED.danceability, tracks.danceability),
+                valence = COALESCE(EXCLUDED.valence, tracks.valence),
+                genre = COALESCE(EXCLUDED.genre, tracks.genre),
+                updated_at = NOW(),
+                metadata = tracks.metadata || EXCLUDED.metadata
             RETURNING id, title
         """
 
@@ -291,6 +303,7 @@ class GoldToOperationalETL:
                   WHERE ta.track_id = t.id AND ta.artist_id = a.id
               )
             LIMIT $1
+            ON CONFLICT (track_id, artist_id, role) DO NOTHING
             RETURNING track_id, artist_id
         """
 
@@ -357,6 +370,10 @@ class GoldToOperationalETL:
                   WHERE sa.song_id_1 = t1.id AND sa.song_id_2 = t2.id
               )
             LIMIT $1
+            ON CONFLICT (song_id_1, song_id_2) DO UPDATE SET
+                occurrence_count = song_adjacency.occurrence_count + EXCLUDED.occurrence_count,
+                weight = (song_adjacency.occurrence_count + EXCLUDED.occurrence_count)::float,
+                updated_at = NOW()
             RETURNING song_id_1, song_id_2
         """
 

@@ -406,7 +406,7 @@ async def get_graph_nodes(
                                 0 as depth
                             FROM tracks t
                             LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                            LEFT JOIN artists a ON ta.artist_id = a.artist_id
+                            LEFT JOIN artists a ON ta.artist_id = a.id
                             WHERE t.id::text = :center_id
 
                             UNION ALL
@@ -430,7 +430,7 @@ async def get_graph_nodes(
                                 cn.depth + 1
                             FROM tracks t
                             LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                            LEFT JOIN artists a ON ta.artist_id = a.artist_id
+                            LEFT JOIN artists a ON ta.artist_id = a.id
                             JOIN playlist_tracks pt1 ON pt1.song_id = t.id
                             JOIN playlist_tracks pt2 ON pt2.playlist_id = pt1.playlist_id
                             JOIN connected_nodes cn ON cn.id = pt2.song_id
@@ -561,7 +561,7 @@ async def get_graph_nodes(
                                 ) as metadata,
                                 COUNT(*) OVER() as total_count
                             FROM playlists p
-                            LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
+                            LEFT JOIN artists a ON p.dj_artist_id = a.id
                             ORDER BY p.event_date DESC NULLS LAST
                             LIMIT :limit OFFSET :offset
                         """)
@@ -644,7 +644,7 @@ async def search_tracks(
                         COUNT(*) OVER() as total_count
                     FROM tracks t
                     JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                    JOIN artists a ON ta.artist_id = a.artist_id
+                    JOIN artists a ON ta.artist_id = a.id
                     WHERE (t.title ILIKE :query
                            OR a.name ILIKE :query)
                         AND a.name IS NOT NULL AND a.name != ''
@@ -1053,10 +1053,10 @@ async def get_graph_data():
                 -- ✅ FIX: Ensure both endpoints have valid artist attribution
                 INNER JOIN tracks t1 ON sa.song_id_1 = t1.id
                 INNER JOIN track_artists ta1 ON t1.id = ta1.track_id AND ta1.role = 'primary'
-                INNER JOIN artists a1 ON ta1.artist_id = a1.artist_id
+                INNER JOIN artists a1 ON ta1.artist_id = a1.id
                 INNER JOIN tracks t2 ON sa.song_id_2 = t2.id
                 INNER JOIN track_artists ta2 ON t2.id = ta2.track_id AND ta2.role = 'primary'
-                INNER JOIN artists a2 ON ta2.artist_id = a2.artist_id
+                INNER JOIN artists a2 ON ta2.artist_id = a2.id
                 WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
                   AND a1.name IS NOT NULL AND a1.name != '' AND a1.name != 'Unknown'
                   AND a2.name IS NOT NULL AND a2.name != '' AND a2.name != 'Unknown'
@@ -1109,37 +1109,28 @@ async def get_graph_data():
                                 'category', t.genre,
                                 'genre', t.genre,
                                 'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
-                                -- DJ-Critical Fields
+                                -- DJ-Critical Fields (only existing columns)
                                 'bpm', t.bpm,
                                 'musical_key', t.key,
                                 'energy', t.energy,
                                 'danceability', t.danceability,
                                 'valence', t.valence,
                                 'duration_ms', t.duration_ms,
-                                -- Streaming Platform IDs
+                                -- Streaming Platform IDs (only existing columns)
                                 'spotify_id', t.spotify_id,
                                 'apple_music_id', t.apple_music_id,
-                                'beatport_id', t.beatport_id,
                                 'isrc', t.isrc,
-                                -- Track Characteristics
+                                -- Track Characteristics (only existing columns)
                                 'is_remix', t.is_remix,
                                 'is_mashup', t.is_mashup,
                                 'is_live', t.is_live,
-                                'is_instrumental', t.is_instrumental,
-                                'popularity_score', t.popularity_score,
-                                -- Audio Features
-                                'acousticness', t.acousticness,
-                                'instrumentalness', t.instrumentalness,
-                                'liveness', t.liveness,
-                                'speechiness', t.speechiness,
-                                'loudness', t.loudness,
                                 -- Release Information
                                 'release_date', t.release_date,
                                 'subgenre', t.subgenre
                             ) as metadata
                         FROM tracks t
                         INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                        INNER JOIN artists a ON ta.artist_id = a.artist_id
+                        INNER JOIN artists a ON ta.artist_id = a.id
                         WHERE t.id::text = ANY(:node_ids)
                           -- ✅ FIX: Only return nodes with valid artist attribution
                           AND a.name IS NOT NULL
@@ -1171,7 +1162,7 @@ async def get_graph_data():
                         ) as metadata
                     FROM tracks t
                     INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                    INNER JOIN artists a ON ta.artist_id = a.artist_id
+                    INNER JOIN artists a ON ta.artist_id = a.id
                     WHERE a.name IS NOT NULL
                       AND a.name != ''
                       AND a.name != 'Unknown'
@@ -1777,7 +1768,7 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                         'title', t.title,
                         'artist', COALESCE(
                             (SELECT a.name FROM track_artists ta
-                             JOIN artists a ON ta.artist_id = a.artist_id
+                             JOIN artists a ON ta.artist_id = a.id
                              WHERE ta.track_id = t.id AND ta.role = 'primary' LIMIT 1),
                             'Unknown'
                         ),
@@ -1828,11 +1819,11 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                     CASE
                         WHEN sa.song_id_1::text = :clean_node_id THEN
                             COALESCE((SELECT a.name FROM track_artists ta
-                                     JOIN artists a ON ta.artist_id = a.artist_id
+                                     JOIN artists a ON ta.artist_id = a.id
                                      WHERE ta.track_id = t2.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
                         ELSE
                             COALESCE((SELECT a.name FROM track_artists ta
-                                     JOIN artists a ON ta.artist_id = a.artist_id
+                                     JOIN artists a ON ta.artist_id = a.id
                                      WHERE ta.track_id = t1.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
                     END as connected_artist,
                     CASE
@@ -1934,7 +1925,7 @@ async def get_combined_graph_data():
                     CURRENT_TIMESTAMP as created_at
                 FROM tracks t
                 INNER JOIN track_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
-                INNER JOIN artists a ON ta.artist_id = a.artist_id
+                INNER JOIN artists a ON ta.artist_id = a.id
                 WHERE a.name IS NOT NULL
                   AND a.name != ''
                   AND a.name != 'Unknown'
