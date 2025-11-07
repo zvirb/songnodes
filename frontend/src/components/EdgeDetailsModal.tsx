@@ -72,7 +72,9 @@ export const EdgeDetailsModal: React.FC<EdgeDetailsModalProps> = ({ edge, onClos
       <div className="modal" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown} style={{ maxWidth: '600px' }}>
         <div className="modal-header">
           <h3>Connection Details</h3>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close connection details">
+            <X size={20} strokeWidth={2} aria-hidden="true" />
+          </button>
         </div>
 
         <div className="modal-content">

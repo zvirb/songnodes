@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Music, Music2, Hash, Check } from 'lucide-react';
 import './DataQualityReview.css';
 
 // Types
@@ -298,17 +299,17 @@ export const DataQualityReview: React.FC = () => {
           <div className="quality-indicators">
             {currentTrack.has_spotify_id && (
               <span className="indicator spotify" title="Has Spotify ID">
-                <span className="icon">🎵</span> Spotify
+                <span className="icon"><Music size={14} strokeWidth={2} aria-hidden="true" /></span> Spotify
               </span>
             )}
             {currentTrack.has_musicbrainz_id && (
               <span className="indicator mb" title="Has MusicBrainz ID">
-                <span className="icon">🎼</span> MB
+                <span className="icon"><Music2 size={14} strokeWidth={2} aria-hidden="true" /></span> MB
               </span>
             )}
             {currentTrack.has_isrc && (
               <span className="indicator isrc" title="Has ISRC">
-                <span className="icon">🔢</span> ISRC
+                <span className="icon"><Hash size={14} strokeWidth={2} aria-hidden="true" /></span> ISRC
               </span>
             )}
           </div>
@@ -362,8 +363,10 @@ export const DataQualityReview: React.FC = () => {
             onClick={() => handleAction('approve', 'genre', currentTrack.suggested_genre)}
             disabled={!currentTrack.suggested_genre}
             title="Keyboard: A"
+            aria-label="Approve suggested genre"
           >
-            ✓ Approve
+            <Check size={16} strokeWidth={2} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+            Approve
           </button>
 
           <button

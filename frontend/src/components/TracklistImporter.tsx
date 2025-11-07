@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FileUp, X } from 'lucide-react';
 
 interface TracklistImporterProps {
   onClose: () => void;
@@ -218,22 +219,29 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
             color: '#FFFFFF',
             fontSize: '20px',
             fontWeight: 600,
-            margin: 0
+            margin: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}>
-            📝 Import Tracklist
+            <FileUp size={20} strokeWidth={2} aria-hidden="true" />
+            Import Tracklist
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close tracklist importer"
             style={{
               backgroundColor: 'transparent',
               border: 'none',
               color: '#8E8E93',
-              fontSize: '24px',
               cursor: 'pointer',
-              padding: '4px 8px'
+              padding: '4px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            ✕
+            <X size={24} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
 

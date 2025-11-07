@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { SlidersHorizontal, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
 
@@ -284,8 +285,9 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
-              🎛️ Graph Filters
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <SlidersHorizontal size={20} strokeWidth={2} aria-hidden="true" />
+              Graph Filters
             </h2>
             <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#8E8E93' }}>
               Showing {filteredNodeCount} of {totalNodes} nodes, {filteredEdgeCount} of {totalEdges} edges
@@ -293,16 +295,19 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
           </div>
           <button
             onClick={onClose}
+            aria-label="Close graph filters panel"
             style={{
               background: 'none',
               border: 'none',
               color: '#8E8E93',
-              fontSize: '24px',
               cursor: 'pointer',
-              padding: '4px'
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            ×
+            <X size={20} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
 
