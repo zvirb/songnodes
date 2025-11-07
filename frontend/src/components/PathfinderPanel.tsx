@@ -317,6 +317,9 @@ export const PathfinderPanel: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Waypoints (Optional) - Tracks that must be included
             </label>
+            <p className="text-xs text-gray-600 mb-2">
+              ℹ️ Waypoints will be visited in optimal order (not the order you add them)
+            </p>
             <div className="space-y-2 mb-2">
               {waypoints.map(waypoint => (
                 <div key={waypoint.id} className="flex items-center justify-between p-2 bg-yellow-50 border border-yellow-200 rounded-md">

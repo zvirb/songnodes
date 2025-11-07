@@ -47,8 +47,9 @@ export interface PathConstraints {
 export interface WaypointConfig {
   id: string;
   track: Track;
-  order: number;
-  locked: boolean; // If true, cannot be removed or reordered
+  locked: boolean; // If true, cannot be removed
+  // NOTE: Waypoints are visited in optimal order determined by pathfinding algorithm
+  // Order field removed as backend treats waypoints as unordered set
 }
 
 export type WizardStep =
@@ -83,7 +84,7 @@ export type PathfinderEvent =
   | { type: 'SET_END_TRACK'; track: Track | null }
   | { type: 'ADD_WAYPOINT'; track: Track }
   | { type: 'REMOVE_WAYPOINT'; waypointId: string }
-  | { type: 'REORDER_WAYPOINTS'; fromIndex: number; toIndex: number }
+  // REMOVED: REORDER_WAYPOINTS - waypoints are visited in optimal order, not user-specified order
   | { type: 'UPDATE_CONSTRAINTS'; constraints: Partial<PathConstraints> }
   | { type: 'NEXT_STEP' }
   | { type: 'PREVIOUS_STEP' }

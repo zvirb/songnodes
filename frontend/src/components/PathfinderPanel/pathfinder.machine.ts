@@ -55,7 +55,7 @@ export const pathfinderMachine = createMachine<PathfinderContext, PathfinderEven
               {
                 id: crypto.randomUUID(),
                 track: event.track,
-                order: context.waypoints.length,
+                // order field removed - waypoints are unordered
                 locked: false,
               },
             ],
@@ -65,10 +65,8 @@ export const pathfinderMachine = createMachine<PathfinderContext, PathfinderEven
         REMOVE_WAYPOINT: {
           actions: assign({
             waypoints: (context, event) => {
-              const removed = context.waypoints.find((w) => w.id === event.waypointId);
-              return context.waypoints
-                .filter((w) => w.id !== event.waypointId)
-                .map((w, index) => ({ ...w, order: index }));
+              // Remove order reassignment - waypoints are unordered
+              return context.waypoints.filter((w) => w.id !== event.waypointId);
             },
             announcement: (context, event) => {
               const waypoint = context.waypoints.find((w) => w.id === event.waypointId);
@@ -76,18 +74,8 @@ export const pathfinderMachine = createMachine<PathfinderContext, PathfinderEven
             },
           }),
         },
-        REORDER_WAYPOINTS: {
-          actions: assign({
-            waypoints: (context, event) => {
-              const waypoints = [...context.waypoints];
-              const [moved] = waypoints.splice(event.fromIndex, 1);
-              waypoints.splice(event.toIndex, 0, moved);
-              return waypoints.map((w, index) => ({ ...w, order: index }));
-            },
-            announcement: (_, event) =>
-              `Moved waypoint from position ${event.fromIndex + 1} to ${event.toIndex + 1}`,
-          }),
-        },
+        // REMOVED: REORDER_WAYPOINTS handler - waypoints are visited in optimal order
+        // Backend pathfinding algorithm treats waypoints as unordered set
         UPDATE_CONSTRAINTS: {
           actions: assign({
             constraints: (context, event) => ({
