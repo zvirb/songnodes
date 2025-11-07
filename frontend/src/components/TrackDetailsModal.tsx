@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { X, Link2, Search, Play } from 'lucide-react';
 import { HarmonicCompatibility } from './HarmonicCompatibility';
 import { EnergyMeter } from './EnergyMeter';
 import { Track } from '../types/dj';
@@ -130,6 +131,7 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
+          aria-label="Close track details"
           style={{
             position: 'absolute',
             top: '16px',
@@ -137,11 +139,13 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
             backgroundColor: 'transparent',
             border: 'none',
             color: '#8E8E93',
-            fontSize: '24px',
             cursor: 'pointer',
             padding: '8px',
             borderRadius: '50%',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
@@ -152,7 +156,7 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
             e.currentTarget.style.color = '#8E8E93';
           }}
         >
-          ✕
+          <X size={24} strokeWidth={2} aria-hidden="true" />
         </button>
 
         <div style={{ padding: '32px' }}>
@@ -191,12 +195,13 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
                   borderRadius: '20px',
                   marginBottom: '16px'
                 }}>
+                  <Play size={14} fill="#FFFFFF" stroke="#FFFFFF" aria-hidden="true" />
                   <span style={{
                     color: '#FFFFFF',
                     fontSize: '14px',
                     fontWeight: 600
                   }}>
-                    🎯 Currently Playing
+                    Currently Playing
                   </span>
                 </div>
               )}
@@ -208,6 +213,7 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
                 onClick={() => {
                   onSetAsCurrentlyPlaying(track);
                 }}
+                aria-label="Set this track as currently playing"
                 style={{
                   padding: '12px 24px',
                   backgroundColor: '#4A90E2',
@@ -218,7 +224,10 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#357ABD';
@@ -227,7 +236,8 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
                   e.currentTarget.style.backgroundColor = '#4A90E2';
                 }}
               >
-                🎵 Set as Currently Playing
+                <Play size={16} fill="#FFFFFF" stroke="#FFFFFF" aria-hidden="true" />
+                Set as Currently Playing
               </button>
             )}
           </div>
@@ -346,9 +356,13 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
               color: '#FFFFFF',
               fontSize: '20px',
               margin: '0 0 16px 0',
-              fontWeight: 600
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
-              🔗 Connected Tracks ({edges.length})
+              <Link2 size={20} strokeWidth={2} aria-hidden="true" />
+              Connected Tracks ({edges.length})
             </h3>
 
             {edges.length > 0 ? (
@@ -433,9 +447,13 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
                 color: '#8E8E93',
                 backgroundColor: 'rgba(255, 255, 255, 0.02)',
                 borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.1)'
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px'
               }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+                <Search size={48} strokeWidth={1.5} color="#8E8E93" aria-hidden="true" />
                 <div style={{ fontSize: '16px', marginBottom: '8px' }}>
                   No connections found
                 </div>
