@@ -42,6 +42,7 @@ spec:
 
     # Production configuration with persistence enabled (data migrated from Docker)
     postgres:
+      enabled: true
       persistence:
         enabled: true
         size: 20Gi
