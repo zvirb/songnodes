@@ -124,6 +124,7 @@ interface ViewActions {
   resetView: () => void;
   navigateToNode: (nodeId: string, options?: { highlight?: boolean; openModal?: boolean; selectNode?: boolean }) => void;
   setGenreFilter: (genre: string | null) => void; // New: Set active genre filter
+  setHighlightedNodes: (nodeIds: Set<string> | null) => void; // NEW: Set highlighted nodes for connectivity visualization
 }
 
 interface PanelActions {
@@ -581,6 +582,16 @@ export const useStore = create<StoreState>()(
               ...get().searchFilters,
               genre: genre ? [genre] : undefined, // Convert single genre string to array for SearchFilters
             });
+          },
+
+          setHighlightedNodes: (nodeIds) => {
+            set((state) => ({
+              ...state,
+              viewState: {
+                ...state.viewState,
+                highlightedNodes: nodeIds || undefined,
+              },
+            }), false, 'view/setHighlightedNodes');
           },
         },
 

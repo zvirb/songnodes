@@ -161,6 +161,7 @@ export interface ViewState {
   selectedTool: 'select' | 'path' | 'setlist' | 'filter';
   selectedNodes: Set<string>;
   hoveredNode: string | null;
+  highlightedNodes?: Set<string>; // NEW: Nodes to highlight (e.g., for connectivity visualization)
   zoom: number;
   pan: { x: number; y: number };
   showLabels: boolean;

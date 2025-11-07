@@ -527,9 +527,16 @@ class PerformanceMonitor {
 interface GraphVisualizationProps {
   onTrackSelect?: (track: Track) => void;
   onTrackRightClick?: (track: Track, position: { x: number; y: number }) => void;
+  highlightedNodeIds?: Set<string>;  // NEW: Nodes to highlight (e.g., reachable nodes)
+  highlightColor?: number;  // NEW: Color for highlighted nodes (default: yellow)
 }
 
-export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackSelect, onTrackRightClick }) => {
+export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
+  onTrackSelect,
+  onTrackRightClick,
+  highlightedNodeIds,
+  highlightColor = 0xFFFF00  // Yellow default
+}) => {
   // Store hooks
   const {
     graphData,
@@ -660,9 +667,15 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       return COLOR_SCHEMES.node.hovered;
     }
 
+    // Highlighted nodes (connectivity visualization) - check both props and store
+    const highlightedNodes = highlightedNodeIds || viewState.highlightedNodes;
+    if (highlightedNodes && highlightedNodes.has(node.id)) {
+      return highlightColor;
+    }
+
     // Fallback to default color
     return COLOR_SCHEMES.node.default;
-  }, [viewState.selectedNodes, viewState.hoveredNode, pathfindingState]);
+  }, [viewState.selectedNodes, viewState.hoveredNode, viewState.highlightedNodes, pathfindingState, highlightedNodeIds, highlightColor]);
 
   const getEdgeColor = useCallback((edge: EnhancedGraphEdge): number => {
     // Check if edge is part of the pathfinding result

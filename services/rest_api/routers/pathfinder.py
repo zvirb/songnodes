@@ -11,7 +11,7 @@ import logging
 from collections import defaultdict
 import math
 from annoy import AnnoyIndex
-from ..utils.pathfinder_utils import find_pivots
+from ..utils.pathfinder_utils import find_pivots, validate_pathfinder_request
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +97,8 @@ class PathfinderResponse(BaseModel):
     average_connection_strength: float
     key_compatibility_score: float  # 0-1, percentage of compatible key transitions
     message: str
+    validation_errors: Optional[List[str]] = None  # NEW: Specific validation errors
+    suggestions: Optional[List[str]] = None  # NEW: Actionable suggestions
 
 # ===========================================
 # Helper Functions
@@ -470,6 +472,33 @@ async def find_dj_path(request: PathfinderRequest):
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid waypoint track IDs: {list(invalid_waypoints)}"
+            )
+
+        # PRE-VALIDATION: Check constraints before running pathfinding
+        is_valid, validation_errors, suggestions = validate_pathfinder_request(
+            start_id=request.start_track_id,
+            end_id=request.end_track_id,
+            waypoint_ids=waypoint_ids,
+            target_duration_ms=request.target_duration_ms,
+            tracks_dict=tracks_dict,
+            adjacency=adjacency
+        )
+
+        if not is_valid:
+            logger.warning(f"Pathfinding validation failed: {validation_errors}")
+            return PathfinderResponse(
+                success=False,
+                path=[],
+                total_duration_ms=0,
+                target_duration_ms=request.target_duration_ms,
+                duration_difference_ms=request.target_duration_ms,
+                waypoints_visited=[],
+                waypoints_missed=list(waypoint_ids),
+                average_connection_strength=0.0,
+                key_compatibility_score=0.0,
+                message="Pathfinding constraints validation failed",
+                validation_errors=validation_errors,
+                suggestions=suggestions
             )
 
         logger.info(f"Starting pathfinding: start={request.start_track_id}, end={request.end_track_id}, "

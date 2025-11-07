@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
+import { bfsReachableNodes, areNodesConnected, getNodeConnectivity } from '../utils/graphConnectivity';
 
 interface PathSegment {
   track: {
@@ -28,6 +29,8 @@ interface PathfinderResult {
   average_connection_strength: number;
   key_compatibility_score: number;
   message: string;
+  validation_errors?: string[];
+  suggestions?: string[];
 }
 
 const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
@@ -35,7 +38,7 @@ const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:808
 export const PathfinderPanel: React.FC = () => {
   // Use store's graphData which includes any applied filters
   // This ensures pathfinder and visualization use the SAME filtered node set
-  const { graphData, pathfindingState, pathfinding, viewState } = useStore();
+  const { graphData, pathfindingState, pathfinding, viewState, view } = useStore();
 
   const tracks = graphData.nodes;
   const edges = graphData.edges;
@@ -56,6 +59,38 @@ export const PathfinderPanel: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<PathfinderResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Calculate reachable nodes from start track for connectivity visualization
+  const reachableFromStart = useMemo(() => {
+    if (!startTrack || edges.length === 0) return new Set<string>();
+    return bfsReachableNodes(startTrack.id, edges, 5000);
+  }, [startTrack, edges]);
+
+  // Check connectivity between start and end tracks
+  const startEndConnected = useMemo(() => {
+    if (!startTrack || !endTrack) return null;
+    return reachableFromStart.has(endTrack.id);
+  }, [startTrack, endTrack, reachableFromStart]);
+
+  // Get connectivity stats for start track
+  const startTrackConnectivity = useMemo(() => {
+    if (!startTrack) return null;
+    return getNodeConnectivity(startTrack.id, edges);
+  }, [startTrack, edges]);
+
+  // Update highlighted nodes in the store when reachable nodes change
+  useEffect(() => {
+    if (startTrack && reachableFromStart.size > 0) {
+      view.setHighlightedNodes(reachableFromStart);
+    } else {
+      view.setHighlightedNodes(null);
+    }
+
+    // Clear highlighting when component unmounts
+    return () => {
+      view.setHighlightedNodes(null);
+    };
+  }, [reachableFromStart, startTrack, view]);
 
   const removeWaypoint = (trackId: string) => {
     pathfinding.removeWaypoint(trackId);
@@ -188,6 +223,36 @@ export const PathfinderPanel: React.FC = () => {
       )}
 
       <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        {/* Connectivity Status */}
+        {startTrack && startTrackConnectivity && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">📊 Connectivity Status</h4>
+            <div className="text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-gray-700">Start track connections:</span>
+                <span className="font-medium text-blue-900">{startTrackConnectivity.totalDegree} tracks</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-700">Reachable from start:</span>
+                <span className="font-medium text-blue-900">{reachableFromStart.size} tracks</span>
+              </div>
+              {endTrack && startEndConnected !== null && (
+                <div className="mt-2 pt-2 border-t border-blue-300">
+                  {startEndConnected ? (
+                    <span className="flex items-center text-green-700">
+                      <span className="mr-1">✅</span> Start ↔ End: Connected
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-red-700">
+                      <span className="mr-1">❌</span> Start ↔ End: Different clusters
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Track Selection */}
         <div className="space-y-3">
           <div>
@@ -343,10 +408,33 @@ export const PathfinderPanel: React.FC = () => {
           {isSearching ? 'Finding Path...' : 'Find Path'}
         </button>
 
-        {/* Error */}
+        {/* Error with validation details */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+            <h4 className="font-semibold text-red-900 mb-2">Pathfinding Error</h4>
+            <p className="text-red-800 text-sm mb-3">{error}</p>
+
+            {result && !result.success && result.validation_errors && result.validation_errors.length > 0 && (
+              <div className="mt-3">
+                <h5 className="font-medium text-red-900 text-sm mb-2">Specific Issues:</h5>
+                <ul className="list-disc list-inside space-y-1">
+                  {result.validation_errors.map((err, idx) => (
+                    <li key={idx} className="text-red-700 text-sm">{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {result && !result.success && result.suggestions && result.suggestions.length > 0 && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <h5 className="font-medium text-yellow-900 text-sm mb-2">💡 Suggestions:</h5>
+                <ul className="list-disc list-inside space-y-1">
+                  {result.suggestions.map((suggestion, idx) => (
+                    <li key={idx} className="text-yellow-800 text-sm">{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
