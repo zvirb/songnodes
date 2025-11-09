@@ -1,0 +1,145 @@
+{{- if and .Values.postgres.enabled .Values.postgres.backup.enabled }}
+---
+# PersistentVolumeClaim for backup storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backup-storage
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "postgres-backup" "app.kubernetes.io/component" "backup")) | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.postgres.backup.storageSize | default "10Gi" }}
+  {{- if .Values.postgres.backup.storageClassName }}
+  storageClassName: {{ .Values.postgres.backup.storageClassName }}
+  {{- end }}
+
+---
+# ConfigMap with backup and cleanup scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-backup-scripts
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "postgres-backup" "app.kubernetes.io/component" "backup")) | nindent 4 }}
+data:
+  backup.sh: |
+    #!/bin/bash
+    set -e
+
+    # Environment variables
+    BACKUP_DIR="/backups"
+    TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+    BACKUP_FILE="${BACKUP_DIR}/musicdb_backup_${TIMESTAMP}.sql.gz"
+    RETENTION_DAYS={{ .Values.postgres.backup.retentionDays | default 7 }}
+
+    echo "=== PostgreSQL Backup Starting at $(date) ==="
+    echo "Backup file: ${BACKUP_FILE}"
+
+    # Create backup directory if it doesn't exist
+    mkdir -p "${BACKUP_DIR}"
+
+    # Perform backup with pg_dump (compressed)
+    echo "Running pg_dump..."
+    PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
+      -h postgres-service \
+      -U "${POSTGRES_USER}" \
+      -d "${POSTGRES_DB}" \
+      --format=custom \
+      --compress=9 \
+      --verbose \
+      --file="${BACKUP_FILE%.gz}" 2>&1 | grep -v "^pg_dump:"
+
+    # Gzip the backup
+    echo "Compressing backup..."
+    gzip -f "${BACKUP_FILE%.gz}"
+
+    # Verify backup exists and has content
+    if [ -f "${BACKUP_FILE}" ] && [ -s "${BACKUP_FILE}" ]; then
+      BACKUP_SIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
+      echo "✅ Backup completed successfully: ${BACKUP_FILE} (${BACKUP_SIZE})"
+    else
+      echo "❌ Backup failed or is empty"
+      exit 1
+    fi
+
+    # Cleanup old backups (keep last N days)
+    echo "Cleaning up backups older than ${RETENTION_DAYS} days..."
+    find "${BACKUP_DIR}" -name "musicdb_backup_*.sql.gz" -type f -mtime +${RETENTION_DAYS} -delete
+
+    # List remaining backups
+    echo "=== Current backups ==="
+    ls -lh "${BACKUP_DIR}"/musicdb_backup_*.sql.gz 2>/dev/null || echo "No backups found"
+
+    echo "=== Backup completed at $(date) ==="
+
+---
+# CronJob for automated backups
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "postgres-backup" "app.kubernetes.io/component" "backup")) | nindent 4 }}
+spec:
+  # Run daily at 2 AM (default)
+  schedule: {{ .Values.postgres.backup.schedule | default "0 2 * * *" | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "postgres-backup" "app.kubernetes.io/component" "backup")) | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: postgres-backup
+            image: {{ printf "%s:%s" .Values.postgres.image.repository .Values.postgres.image.tag }}
+            command: ["/bin/bash", "/scripts/backup.sh"]
+            env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.global.secretName .Values.secrets.name }}
+                  key: POSTGRES_PASSWORD
+            volumeMounts:
+            - name: backup-scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                memory: {{ .Values.postgres.backup.resources.requests.memory | default "256Mi" }}
+                cpu: {{ .Values.postgres.backup.resources.requests.cpu | default "100m" }}
+              limits:
+                memory: {{ .Values.postgres.backup.resources.limits.memory | default "512Mi" }}
+                cpu: {{ .Values.postgres.backup.resources.limits.cpu | default "500m" }}
+          volumes:
+          - name: backup-scripts
+            configMap:
+              name: postgres-backup-scripts
+              defaultMode: 0755
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: postgres-backup-storage
+{{- end }}

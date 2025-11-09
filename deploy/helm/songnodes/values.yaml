@@ -136,6 +136,19 @@ postgres:
         kubectl create configmap postgres-init-scripts \
           --from-file=sql/init/ \
           -n songnodes
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retentionDays: 7
+    storageSize: 10Gi
+    storageClassName: local-path
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
 
 redis:
   enabled: true
