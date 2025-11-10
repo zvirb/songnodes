@@ -18,6 +18,7 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 /**
@@ -98,8 +99,32 @@ const buttonVariants = cva(
   }
 );
 
+/**
+ * Micro-interaction animation variants
+ * 2025 Design Trend: Purposeful, delightful animations
+ */
+const microInteractions = {
+  hover: {
+    scale: 1.02,
+    y: -2,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 17,
+    },
+  },
+  tap: {
+    scale: 0.98,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 17,
+    },
+  },
+};
+
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDrag' | 'onDragEnd' | 'onDragStart'>,
     VariantProps<typeof buttonVariants> {
   /**
    * Render as child component (Radix Slot pattern)
@@ -131,6 +156,12 @@ export interface ButtonProps
    * Example: "⌘S" or "Ctrl+S"
    */
   shortcut?: string;
+
+  /**
+   * Disable micro-interactions (for reduced motion preference or specific use cases)
+   * @default false
+   */
+  disableAnimations?: boolean;
 }
 
 /**
@@ -200,23 +231,79 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       shortcut,
       disabled,
+      disableAnimations = false,
       children,
       ...props
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : 'button';
-
     // Disable button when loading or explicitly disabled
     const isDisabled = disabled || loading;
 
+    // Check if user prefers reduced motion
+    const prefersReducedMotion = typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
+
+    const shouldAnimate = !isDisabled && !disableAnimations && !prefersReducedMotion;
+
+    // Use slot pattern or motion button
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, fullWidth, className }))}
+          ref={ref}
+          disabled={isDisabled}
+          aria-busy={loading}
+          aria-disabled={isDisabled}
+          {...props}
+        >
+          {/* Loading spinner (replaces leftIcon when loading) */}
+          {loading && <Spinner className="h-4 w-4" />}
+
+          {/* Left icon (hidden during loading) */}
+          {!loading && leftIcon && (
+            <span className="shrink-0" aria-hidden="true">
+              {leftIcon}
+            </span>
+          )}
+
+          {/* Button text */}
+          {children && <span className="truncate">{children}</span>}
+
+          {/* Right icon */}
+          {rightIcon && (
+            <span className="shrink-0" aria-hidden="true">
+              {rightIcon}
+            </span>
+          )}
+
+          {/* Keyboard shortcut hint */}
+          {shortcut && (
+            <kbd
+              className={cn(
+                'ml-auto hidden text-xs opacity-60 sm:inline-flex',
+                'rounded border border-current px-1 py-0.5',
+                'font-mono'
+              )}
+              aria-label={`Keyboard shortcut: ${shortcut}`}
+            >
+              {shortcut}
+            </kbd>
+          )}
+        </Slot>
+      );
+    }
+
     return (
-      <Comp
+      <motion.button
         className={cn(buttonVariants({ variant, size, fullWidth, className }))}
         ref={ref}
         disabled={isDisabled}
         aria-busy={loading}
         aria-disabled={isDisabled}
+        whileHover={shouldAnimate ? microInteractions.hover : undefined}
+        whileTap={shouldAnimate ? microInteractions.tap : undefined}
         {...props}
       >
         {/* Loading spinner (replaces leftIcon when loading) */}
@@ -252,7 +339,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             {shortcut}
           </kbd>
         )}
-      </Comp>
+      </motion.button>
     );
   }
 );

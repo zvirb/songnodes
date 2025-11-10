@@ -47,12 +47,14 @@ const ModalClose = DialogPrimitive.Close;
 const ModalPortal = DialogPrimitive.Portal;
 
 /**
- * Modal overlay/backdrop component
+ * Modal overlay/backdrop component with Progressive Blur
+ * 2025 Design Trend: Progressive blur increases from edges to center
  *
  * Cognitive Load Reduction:
  * - Dark overlay focuses attention on modal content
  * - Prevents interaction with background content
  * - Click-to-close provides intuitive exit
+ * - Progressive blur creates depth perception
  */
 const ModalOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -62,12 +64,15 @@ const ModalOverlay = React.forwardRef<
     ref={ref}
     className={cn(
       'fixed inset-0 z-[var(--z-modal-backdrop)]',
-      'bg-[var(--color-modal-overlay)]',
-      'backdrop-blur-sm',
       'data-[state=open]:animate-in data-[state=open]:fade-in-0',
       'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
       className
     )}
+    style={{
+      background: 'radial-gradient(circle, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.9) 100%)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    }}
     {...props}
   />
 ));
@@ -168,8 +173,6 @@ const ModalContent = React.forwardRef<
           'flex flex-col',
           'max-h-[85vh]',
           'gap-4 p-6',
-          'bg-[var(--color-modal-bg)]',
-          'border border-[var(--color-border-default)]',
           'rounded-[var(--radius-modal)]',
           'shadow-[var(--shadow-modal)]',
           'focus:outline-none',
@@ -177,8 +180,16 @@ const ModalContent = React.forwardRef<
           'data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-2',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
           'data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-bottom-2',
+          // Glass morphism effect (2025 Design Trend)
+          'relative overflow-hidden',
           className
         )}
+        style={{
+          background: 'linear-gradient(135deg, rgba(26, 26, 26, 0.98) 0%, rgba(26, 26, 26, 0.85) 100%)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        }}
         {...props}
       >
         {children}

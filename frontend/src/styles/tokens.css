@@ -352,6 +352,44 @@
   --avatar-size-base: 40px;
   --avatar-size-lg: 48px;
   --avatar-size-xl: 64px;
+
+  /* ============================================
+     FLUID RESPONSIVE DESIGN TOKENS (2025)
+     ============================================ */
+
+  /* Fluid Typography (clamp for responsive scaling) */
+  --fluid-font-xs: clamp(0.694rem, 0.5rem + 0.5vw, 0.833rem);    /* ~11px to 13px */
+  --fluid-font-sm: clamp(0.833rem, 0.7rem + 0.5vw, 1rem);        /* ~13px to 16px */
+  --fluid-font-base: clamp(1rem, 0.9rem + 0.5vw, 1.2rem);        /* ~16px to 19px */
+  --fluid-font-lg: clamp(1.2rem, 1rem + 1vw, 1.728rem);          /* ~19px to 28px */
+  --fluid-font-xl: clamp(1.44rem, 1.2rem + 1.2vw, 2.074rem);     /* ~23px to 33px */
+  --fluid-font-2xl: clamp(1.728rem, 1.4rem + 1.5vw, 2.488rem);   /* ~28px to 40px */
+  --fluid-font-3xl: clamp(2.074rem, 1.6rem + 2vw, 3.583rem);     /* ~33px to 57px */
+  --fluid-font-4xl: clamp(2.488rem, 2rem + 2.5vw, 5.161rem);     /* ~40px to 83px */
+
+  /* Fluid Spacing (for responsive padding/margins) */
+  --fluid-space-xs: clamp(0.25rem, 0.2rem + 0.25vw, 0.5rem);     /* 4px to 8px */
+  --fluid-space-sm: clamp(0.5rem, 0.4rem + 0.5vw, 1rem);         /* 8px to 16px */
+  --fluid-space-md: clamp(1rem, 0.8rem + 1vw, 2rem);             /* 16px to 32px */
+  --fluid-space-lg: clamp(1.5rem, 1.2rem + 1.5vw, 3rem);         /* 24px to 48px */
+  --fluid-space-xl: clamp(2rem, 1.5rem + 2vw, 4rem);             /* 32px to 64px */
+  --fluid-space-2xl: clamp(3rem, 2rem + 3vw, 6rem);              /* 48px to 96px */
+
+  /* Fluid Container Widths */
+  --fluid-container-sm: clamp(20rem, 90vw, 40rem);               /* 320px to 640px */
+  --fluid-container-md: clamp(30rem, 90vw, 60rem);               /* 480px to 960px */
+  --fluid-container-lg: clamp(40rem, 90vw, 80rem);               /* 640px to 1280px */
+  --fluid-container-xl: clamp(50rem, 90vw, 100rem);              /* 800px to 1600px */
+
+  /* Fluid Border Radius */
+  --fluid-radius-sm: clamp(0.25rem, 0.2rem + 0.25vw, 0.5rem);    /* 4px to 8px */
+  --fluid-radius-md: clamp(0.5rem, 0.4rem + 0.5vw, 1rem);        /* 8px to 16px */
+  --fluid-radius-lg: clamp(0.75rem, 0.6rem + 0.75vw, 1.5rem);    /* 12px to 24px */
+
+  /* Perspective for 3D effects */
+  --perspective-sm: 800px;
+  --perspective-md: 1000px;
+  --perspective-lg: 1200px;
 }
 
 /* ============================================
