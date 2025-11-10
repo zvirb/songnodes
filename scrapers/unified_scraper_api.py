@@ -83,6 +83,7 @@ class ScrapeRequest(BaseModel):
     task_id: Optional[str] = None
     max_pages: Optional[int] = None
     artist_name: Optional[str] = None
+    search_query: Optional[str] = None  # For mixesdb: "Artist - Track Title"
     limit: Optional[int] = None
 
 
@@ -203,8 +204,11 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
         if request.start_urls:
             # Direct URL scraping (for testing specific mix pages)
             cmd.extend(["-a", f"start_urls={request.start_urls}"])
+        elif request.search_query:
+            # Use search_query if provided (preferred)
+            cmd.extend(["-a", f"search_query={request.search_query}"])
         elif request.artist_name:
-            # mixesdb spider expects 'search_query' parameter, not 'artist_name'
+            # Fall back to artist_name for backward compatibility
             cmd.extend(["-a", f"search_query={request.artist_name}"])
         if request.limit:
             # Note: mixesdb spider doesn't currently use limit parameter
