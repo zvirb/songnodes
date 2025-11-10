@@ -179,6 +179,9 @@ class ValidationPipeline:
             class_name = item.__class__.__name__.lower()
             if 'artist' in class_name and 'track' not in class_name:
                 return 'artist'
+            # Check for setlist-track relationship items BEFORE generic setlist check
+            elif ('setlist' in class_name and 'track' in class_name) or 'setlisttrack' in class_name:
+                return 'playlist_track'
             elif 'track' in class_name and 'adjacency' not in class_name and 'artist' not in class_name:
                 return 'track'
             elif 'setlist' in class_name or 'playlist' in class_name:
@@ -196,6 +199,9 @@ class ValidationPipeline:
                 return 'track_adjacency'
             elif 'artist_role' in item:
                 return 'track_artist'
+            # Check for setlist-track relationship (has both setlist and track fields)
+            elif 'setlist_name' in item and 'track_order' in item:
+                return 'playlist_track'
             else:
                 return 'track'
         elif 'setlist_name' in item or ('name' in item and 'dj_artist_name' in item):
@@ -297,12 +303,14 @@ class ValidationPipeline:
             ValidationError: If validation fails
         """
         # For playlist_track items, validate minimal fields
-        if 'position' in item and 'playlist_name' in item:
+        # Handle both playlist_name+position and setlist_name+track_order
+        if ('position' in item and 'playlist_name' in item) or ('track_order' in item and 'setlist_name' in item):
             # Minimal validation for playlist tracks
             if not item.get('track_name') and not item.get('title'):
                 raise ValidationError("playlist_track requires track_name or title")
-            if item.get('position', -1) < 0:
-                raise ValidationError("position must be >= 0")
+            position_value = item.get('position') or item.get('track_order', -1)
+            if position_value < 0:
+                raise ValidationError("position/track_order must be >= 0")
         else:
             # Full track-artist relationship validation
             validate_track_artist_item(item, data_source=data_source)

@@ -729,24 +729,26 @@ class MixesdbSpider(scrapy.Spider):
         track_elements = []
 
         if tracklist_heading:
-            # Pattern 1 (Primary): Modern MediaWiki with data-testid attributes (2025 structure)
-            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@data-testid="playlist-track-list"][1]//li')
-            self.logger.info(f"🔍 Attempting XPath pattern 1 (data-testid): Found {len(track_elements)} elements")
+            # Pattern 1 (Primary): Direct sibling <ol> (most common structure)
+            # MediaWiki typically renders: <h2>Tracklist</h2><ol><li>...</li></ol>
+            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
+            self.logger.info(f"🔍 Attempting XPath pattern 1 (direct sibling ol): Found {len(track_elements)} elements")
 
             if not track_elements:
-                # Pattern 2 (Fallback): MediaWiki standard wrapper (most common)
-                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="mw-parser-output"][1]//ol/li')
-                self.logger.info(f"🔍 Attempting XPath pattern 2 (mw-parser-output): Found {len(track_elements)} elements")
+                # Pattern 2 (Fallback): Using following axis to catch ol after any intervening elements
+                # This handles cases where there might be <p>, <div>, or other elements between h2 and ol
+                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::ol[1]/li')
+                self.logger.info(f"🔍 Attempting XPath pattern 2 (following ol): Found {len(track_elements)} elements")
 
             if not track_elements:
-                # Pattern 3 (Fallback): Older div.list wrapper
+                # Pattern 3 (Fallback): Modern MediaWiki with data-testid attributes (newer structure)
+                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@data-testid="playlist-track-list"][1]//li')
+                self.logger.info(f"🔍 Attempting XPath pattern 3 (data-testid): Found {len(track_elements)} elements")
+
+            if not track_elements:
+                # Pattern 4 (Fallback): Older div.list wrapper structure
                 track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="list"][1]//ol/li')
-                self.logger.info(f"🔍 Attempting XPath pattern 3 (div.list): Found {len(track_elements)} elements")
-
-            if not track_elements:
-                # Pattern 4 (Fallback): Direct sibling <ol>
-                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
-                self.logger.info(f"🔍 Attempting XPath pattern 4 (direct sibling): Found {len(track_elements)} elements")
+                self.logger.info(f"🔍 Attempting XPath pattern 4 (div.list): Found {len(track_elements)} elements")
         else:
             self.logger.warning(f"🔍 [DEBUG] No Tracklist heading found on page!")
 
@@ -832,7 +834,7 @@ class MixesdbSpider(scrapy.Spider):
                     'source_context': track_string,
                     'position_in_source': i + 1,
                     'remix_type': remix_type,
-                    'source_url': response.url,  # CRITICAL: Source URL for playlist context
+                    # Note: source_url removed - stored in external_urls instead (EnhancedTrackItem doesn't support it)
                     'metadata': json.dumps({
                         'original_string': track_string,
                         'extraction_source': 'mixesdb',

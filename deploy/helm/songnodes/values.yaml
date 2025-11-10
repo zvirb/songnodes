@@ -1110,6 +1110,7 @@ services:
       static:
         METADATA_ENRICHMENT_URL: "http://metadata-enrichment:8020"
         LOG_LEVEL: "INFO"
+        PYTHONUNBUFFERED: "1"
     resources:
       requests:
         memory: 512Mi

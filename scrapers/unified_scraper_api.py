@@ -201,19 +201,32 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
 
     # Add source-specific parameters
     if request.source == "mixesdb":
+        logger.info(
+            "MixesDB spider parameters: start_urls=%s, search_query=%s, artist_name=%s, limit=%s",
+            request.start_urls,
+            request.search_query,
+            request.artist_name,
+            request.limit
+        )
         if request.start_urls:
             # Direct URL scraping (for testing specific mix pages)
             cmd.extend(["-a", f"start_urls={request.start_urls}"])
+            logger.info("Added start_urls parameter: %s", request.start_urls)
         elif request.search_query:
             # Use search_query if provided (preferred)
             cmd.extend(["-a", f"search_query={request.search_query}"])
+            logger.info("Added search_query parameter: %s", request.search_query)
         elif request.artist_name:
             # Fall back to artist_name for backward compatibility
             cmd.extend(["-a", f"search_query={request.artist_name}"])
+            logger.info("Added artist_name as search_query parameter: %s", request.artist_name)
+        else:
+            logger.warning("No search parameters provided for mixesdb spider!")
         if request.limit:
             # Note: mixesdb spider doesn't currently use limit parameter
             # It uses MIXESDB_MAX_RESULTS_PER_SEARCH env var instead
             cmd.extend(["-a", f"limit={request.limit}"])
+            logger.info("Added limit parameter: %s", request.limit)
 
     elif request.source == "bbc_sounds":
         if request.max_pages:
