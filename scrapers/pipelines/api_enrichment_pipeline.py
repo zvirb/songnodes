@@ -148,6 +148,7 @@ class APIEnrichmentPipeline:
         # Skip if already enriched (has spotify_id)
         if adapter.get('spotify_id'):
             self.stats['already_enriched'] += 1
+            logger.debug(f"Track already enriched (has spotify_id): {adapter.get('artist_name')} - {adapter.get('track_name')}")
             return item
 
         # Extract required fields
@@ -159,14 +160,29 @@ class APIEnrichmentPipeline:
             source_context = adapter.get('source_context')
             if source_context and ' - ' in source_context:
                 title = source_context.split(' - ', 1)[1].strip()
+                logger.debug(f"Parsed title from source_context: '{title}'")
 
         if not (artist and title):
-            logger.debug(
-                f"Track missing artist or title - skipping enrichment "
-                f"(artist={artist}, title={title})"
+            # Log which field is missing for better debugging
+            missing_fields = []
+            if not artist:
+                missing_fields.append('artist')
+            if not title:
+                missing_fields.append('title')
+
+            logger.warning(
+                f"⚠️ Track missing required fields for enrichment: {', '.join(missing_fields)}. "
+                f"Available fields: {list(adapter.keys())}",
+                extra={
+                    'missing_fields': missing_fields,
+                    'available_fields': list(adapter.keys()),
+                    'source': adapter.get('data_source', 'unknown')
+                }
             )
             self.stats['skipped'] += 1
             return item
+
+        logger.debug(f"Attempting to enrich track: {artist} - {title}")
 
         # Call enrichment service
         try:
@@ -181,15 +197,44 @@ class APIEnrichmentPipeline:
 
             if enrichment_data and enrichment_data.get('status') in ['completed', 'partial']:
                 # Apply enrichment to item
+                metadata_acquired = enrichment_data.get('metadata_acquired', {})
+                sources_used = enrichment_data.get('sources_used', [])
+
+                # Log what data was actually acquired
+                acquired_fields = [k for k, v in metadata_acquired.items() if v is not None]
+                logger.info(
+                    f"✓ Enriched '{artist} - {title}': status={enrichment_data.get('status')}, "
+                    f"sources={', '.join(sources_used)}, fields={', '.join(acquired_fields)}",
+                    extra={
+                        'artist': artist,
+                        'title': title,
+                        'status': enrichment_data.get('status'),
+                        'sources': sources_used,
+                        'fields_acquired': acquired_fields,
+                        'cached': enrichment_data.get('cached', False)
+                    }
+                )
+
                 self._apply_enrichment_data(adapter, enrichment_data)
                 self.stats['enriched'] += 1
-                logger.debug(f"✓ Enriched via service: {artist} - {title}")
 
                 # Track metrics
                 if self.metrics:
                     self.metrics['enrichment_requests_total'].labels(status='success').inc()
             else:
-                logger.debug(f"Service returned no enrichment for: {artist} - {title}")
+                status = enrichment_data.get('status', 'no_response') if enrichment_data else 'no_response'
+                errors = enrichment_data.get('errors', []) if enrichment_data else []
+
+                logger.warning(
+                    f"⚠️ No enrichment data for '{artist} - {title}': status={status}",
+                    extra={
+                        'artist': artist,
+                        'title': title,
+                        'status': status,
+                        'errors': errors
+                    }
+                )
+
                 if self.metrics:
                     self.metrics['enrichment_requests_total'].labels(status='no_data').inc()
 

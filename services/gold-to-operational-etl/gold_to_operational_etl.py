@@ -181,22 +181,47 @@ class GoldToOperationalETL:
             logger.info(f"[DRY RUN] Would create {result} artists")
             return result
 
-        results = await self.pool.fetch(query, batch_size)
-        count = len(results)
+        try:
+            results = await self.pool.fetch(query, batch_size)
+            count = len(results)
 
-        if count > 0:
+            if count == 0:
+                logger.info("No new artists to migrate (all already exist in gold)")
+                return 0
+
             # Filter out invalid artist names
             valid_artists = [r for r in results if self.is_valid_artist_name(r['name'])]
             invalid_count = count - len(valid_artists)
 
             if invalid_count > 0:
-                logger.warning(f"⚠️  Filtered out {invalid_count} invalid artist names")
+                # Log which artists were invalid
+                invalid_names = [r['name'] for r in results if not self.is_valid_artist_name(r['name'])]
+                logger.warning(
+                    f"⚠️ Filtered out {invalid_count} invalid artist names: {', '.join(invalid_names[:10])}" +
+                    (f" (and {len(invalid_names) - 10} more)" if len(invalid_names) > 10 else ""),
+                    extra={'invalid_count': invalid_count, 'invalid_names': invalid_names}
+                )
                 self.stats['skipped_invalid_artist'] += invalid_count
 
             self.stats['artists_created'] += len(valid_artists)
-            logger.info(f"✅ Created {len(valid_artists)} artists")
 
-        return count
+            # Log sample of created artists
+            if valid_artists:
+                sample = [r['name'] for r in valid_artists[:5]]
+                logger.info(
+                    f"✅ Created {len(valid_artists)} artists. Sample: {', '.join(sample)}",
+                    extra={'count': len(valid_artists), 'sample': sample}
+                )
+
+            return count
+
+        except Exception as e:
+            logger.error(
+                f"❌ Failed to migrate artists: {e}",
+                extra={'error': str(e)},
+                exc_info=True
+            )
+            raise
 
     async def migrate_tracks(self, batch_size: int = 1000) -> int:
         """
@@ -383,14 +408,60 @@ class GoldToOperationalETL:
             logger.info(f"[DRY RUN] Would create {result} adjacencies")
             return result
 
-        results = await self.pool.fetch(query, batch_size)
-        count = len(results)
+        try:
+            # First, log potential transitions that might be filtered out
+            filtered_count_query = """
+                SELECT COUNT(*) FROM silver_track_transitions stt
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM gold_track_analytics gta1
+                    JOIN gold_track_analytics gta2 ON TRUE
+                    JOIN tracks t1 ON LOWER(TRIM(t1.title)) = LOWER(TRIM(gta1.track_title))
+                    JOIN tracks t2 ON LOWER(TRIM(t2.title)) = LOWER(TRIM(gta2.track_title))
+                    JOIN track_artists ta1 ON t1.id = ta1.track_id AND ta1.role = 'primary'
+                    JOIN artists a1 ON ta1.artist_id = a1.id
+                    JOIN track_artists ta2 ON t2.id = ta2.track_id AND ta2.role = 'primary'
+                    JOIN artists a2 ON ta2.artist_id = a2.id
+                    WHERE stt.from_track_id = gta1.silver_track_id
+                      AND stt.to_track_id = gta2.silver_track_id
+                      AND gta1.data_quality_score >= 0.5
+                      AND gta2.data_quality_score >= 0.5
+                      AND a1.name IS NOT NULL AND a1.name != ''
+                      AND a2.name IS NOT NULL AND a2.name != ''
+                )
+            """
 
-        self.stats['adjacencies_created'] += count
-        if count > 0:
-            logger.info(f"✅ Created {count} song adjacencies")
+            filtered_count = await self.pool.fetchval(filtered_count_query)
+            if filtered_count > 0:
+                logger.warning(
+                    f"⚠️ {filtered_count} silver transitions will be filtered out due to missing artist attribution or low quality",
+                    extra={'filtered_count': filtered_count}
+                )
 
-        return count
+            results = await self.pool.fetch(query, batch_size)
+            count = len(results)
+
+            if count == 0:
+                logger.info("No new adjacencies to create (all already exist or filtered out)")
+                return 0
+
+            self.stats['adjacencies_created'] += count
+
+            # Log sample of created adjacencies
+            sample = results[:3]
+            logger.info(
+                f"✅ Created {count} song adjacencies. Sample edges: {[(r['song_id_1'], r['song_id_2']) for r in sample]}",
+                extra={'count': count, 'sample_edges': sample}
+            )
+
+            return count
+
+        except Exception as e:
+            logger.error(
+                f"❌ Failed to migrate adjacencies: {e}",
+                extra={'error': str(e)},
+                exc_info=True
+            )
+            raise
 
     async def run_migration(self, batch_size: int = 1000):
         """
