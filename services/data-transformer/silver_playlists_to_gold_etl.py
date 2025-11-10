@@ -105,7 +105,8 @@ class SilverPlaylistsToGoldETL:
             password=db_config['password'],
             min_size=5,
             max_size=20,
-            command_timeout=60
+            command_timeout=60,
+            server_settings={'search_path': 'musicdb,public'}
         )
         logger.info("✅ Database connection pool initialized")
 
