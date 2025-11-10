@@ -8,6 +8,7 @@ This document outlines the architecture, development workflow, and best practice
 - **Resilience:** The system incorporates adaptive anti-detection mechanisms, robust error handling, and comprehensive data validation.
 - **Scalability:** The architecture is designed for growth, with a clear path toward distributed and cloud-native deployment.
 - **Data Integrity:** We prioritize accuracy and consistency through structured extraction, in-flight validation, and a canonical enrichment workflow.
+- **GitOps-First:** All infrastructure and application changes flow through Git → Flux → Kubernetes. Manual kubectl operations are forbidden in production.
 
 ### Critical Data Quality Requirement: Artist Attribution
 
@@ -324,7 +325,90 @@ git commit -m "test(api): add unit tests for fuzzy search"
 
 8. **Merge**: Once approved and all checks are green, merge the PR using **"Squash and Merge"**. This condenses your work into a single, clean commit on the `develop` branch.
 
-### 3.4. Kubernetes Development Loop
+### 3.4. GitOps-First Deployment Workflow
+
+**⚠️ CRITICAL: All infrastructure and application changes MUST flow through GitOps**
+
+**Correct Deployment Workflow:**
+
+```
+Code Change → Git Commit → Git Push → Flux Reconcile → Kubernetes Apply → Verify
+```
+
+**Step-by-Step Process:**
+
+1. **Make Changes**: Edit code, Helm values, or Kubernetes manifests
+2. **Commit to Git**: `git add . && git commit -m "feat(api): add new endpoint"`
+3. **Push to Repository**: `git push origin main`
+4. **Trigger Flux Sync** (if needed): `flux reconcile source git songnodes && flux reconcile helmrelease songnodes -n flux-system`
+5. **Verify Deployment**: `kubectl get pods -n songnodes` and check logs
+
+**⚠️ FORBIDDEN COMMANDS IN PRODUCTION:**
+
+These commands **bypass GitOps** and create configuration drift:
+
+```bash
+# ❌ NEVER USE IN PRODUCTION
+kubectl edit deployment/rest-api -n songnodes
+kubectl patch deployment/rest-api -n songnodes --patch '...'
+kubectl apply -f local-manifest.yaml -n songnodes
+kubectl set image deployment/rest-api rest-api=new-image:latest -n songnodes
+```
+
+**Why These Are Dangerous:**
+- Changes are not tracked in Git (no audit trail)
+- Flux will overwrite manual changes on next reconciliation
+- Creates configuration drift between Git and cluster state
+- Impossible to reproduce in other environments
+- No rollback capability
+
+**Emergency Situations Only:**
+
+If you MUST make manual changes in an emergency:
+1. Document the change in a Git issue immediately
+2. Create a follow-up PR to codify the change in Git
+3. Expect Flux to overwrite manual changes within minutes
+
+**Image Pull Policy Enforcement:**
+
+**⚠️ CRITICAL: All Helm charts MUST enforce `imagePullPolicy: Always` for `:latest` tags**
+
+This prevents pods from running stale code when images are updated.
+
+**Required Helm Template Pattern:**
+
+```yaml
+# deploy/helm/songnodes/templates/deployment.yaml
+spec:
+  containers:
+  - name: {{ .Values.service.name }}
+    image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+    imagePullPolicy: {{ if eq .Values.image.tag "latest" }}Always{{ else }}IfNotPresent{{ end }}
+```
+
+**Why This Is Mandatory:**
+- Kubernetes caches images by tag
+- With `IfNotPresent`, Kubernetes won't pull `:latest` if it already has an image with that tag
+- Result: Pods run OLD code even after image is rebuilt
+- `Always` forces Kubernetes to check the registry on every pod start
+
+**Frontend Build Requirements:**
+
+Before building frontend Docker images, you MUST run the production build:
+
+```bash
+# ❌ WRONG - Dockerfile copies stale dist/
+docker build -t localhost:5000/songnodes-frontend:latest frontend/
+
+# ✅ CORRECT - Build fresh production assets first
+cd frontend
+npm run build  # Creates fresh dist/ directory
+cd ..
+docker build -t localhost:5000/songnodes-frontend:latest frontend/
+docker push localhost:5000/songnodes-frontend:latest
+```
+
+### 3.5. Kubernetes Development Loop
 
 After making changes to service code, Skaffold automatically rebuilds and redeploys:
 
@@ -362,7 +446,7 @@ npm run dev
 # API calls will proxy to K8s services via kubectl port-forward
 ```
 
-### 3.5. File Management Rules
+### 3.6. File Management Rules
 
 - **ALWAYS EDIT** existing files - never create new unless absolutely necessary
 - **NO DUPLICATE CONFIGS** - Single source of truth in Helm charts
@@ -931,6 +1015,7 @@ skaffold run -p production
 | Spider ImportError | Use `scrapy crawl [spider_name]` NOT `scrapy runspider` - see Section 5.1.4 |
 | Flux sync issues | Force reconcile: `flux reconcile source git songnodes` |
 | PVC mount issues | Check PV status: `kubectl get pv,pvc -n songnodes` |
+| Stale code running | Check imagePullPolicy (must be `Always` for `:latest` tags) |
 
 ### 7.1. Common Kubernetes Commands
 
@@ -953,9 +1038,55 @@ kubectl port-forward svc/<service> 8080:8080 -n songnodes  # Forward port
 # Resource monitoring
 kubectl top pods -n songnodes                    # Resource usage
 kubectl get events -n songnodes --sort-by='.lastTimestamp'  # Recent events
+
+# Stale code detection
+kubectl get pods -n songnodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}'
+# Compare pod age to code modification time to detect stale deployments
 ```
 
-### 7.2. Database Backup and Restore
+### 7.2. Orphaned Pod Detection
+
+**⚠️ CRITICAL: Orphaned pods can cause confusing deployment failures**
+
+Before diagnosing pod failures, ALWAYS check for multiple pod hash generations:
+
+```bash
+# Check for pods with different hash suffixes
+kubectl get pods -n songnodes -l app=rest-api
+
+# Example output indicating orphaned pods:
+# rest-api-5d7c8b9f4d-abcde  1/1  Running     # Old generation (orphaned)
+# rest-api-7f9d6c8a2b-xyzab  0/1  CrashLoop   # New generation (current)
+```
+
+**Orphaned Pod Symptoms:**
+- Multiple pods with different hash suffixes for same deployment
+- Old pod(s) running successfully
+- New pod(s) crashing or failing health checks
+- Deployment shows incorrect replica count
+
+**Resolution:**
+
+```bash
+# 1. Identify orphaned pods (not managed by current deployment)
+kubectl get pods -n songnodes -l app=rest-api
+
+# 2. Get current deployment hash
+kubectl get deployment/rest-api -n songnodes -o jsonpath='{.spec.template.metadata.labels.pod-template-hash}'
+
+# 3. Delete pods that don't match current deployment hash
+kubectl delete pod rest-api-<old-hash>-<id> -n songnodes
+
+# 4. Verify only current-generation pods remain
+kubectl get pods -n songnodes -l app=rest-api
+```
+
+**Prevention:**
+- Always use `kubectl rollout restart` instead of manually deleting pods
+- Monitor for pods with multiple hash generations during deployments
+- Implement pod disruption budgets to prevent orphaned pods
+
+### 7.3. Database Backup and Restore
 
 ```bash
 # Backup PostgreSQL
@@ -968,7 +1099,7 @@ cat backup.dump | kubectl exec -i -n songnodes postgres-0 -- pg_restore -U music
 kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM tracks;"
 ```
 
-### 7.3. Flux GitOps Management
+### 7.4. Flux GitOps Management
 
 ```bash
 # Check Flux system status
@@ -986,6 +1117,51 @@ flux suspend helmrelease songnodes -n flux-system
 flux resume helmrelease songnodes -n flux-system
 ```
 
+### 7.5. Stale Code Diagnostics
+
+**⚠️ CRITICAL: Verify pods are running latest code before debugging**
+
+Kubernetes caches images and may run stale code even after rebuilding images.
+
+**Detection Steps:**
+
+```bash
+# 1. Check when pods were last started
+kubectl get pods -n songnodes -o wide
+
+# 2. Check when code was last modified
+git log -1 --format="%ai" -- services/rest_api/
+
+# 3. If pod age > code modification time, pods are stale
+# Example:
+# Pod started: 2025-01-05 10:00:00
+# Code modified: 2025-01-05 14:30:00
+# Result: Pod is running code from BEFORE the changes
+
+# 4. Check imagePullPolicy
+kubectl get deployment/rest-api -n songnodes -o jsonpath='{.spec.template.spec.containers[0].imagePullPolicy}'
+# MUST be "Always" for :latest tags
+
+# 5. Force pod restart to pull fresh image
+kubectl rollout restart deployment/rest-api -n songnodes
+kubectl rollout status deployment/rest-api -n songnodes
+
+# 6. Verify new pods are running
+kubectl get pods -n songnodes -l app=rest-api
+```
+
+**Common Causes:**
+- `imagePullPolicy: IfNotPresent` (WRONG for :latest tags)
+- Kubernetes cached old image with :latest tag
+- Image built but not pushed to registry
+- Registry running stale image
+
+**Resolution:**
+1. Verify `imagePullPolicy: Always` in Helm chart
+2. Delete pods to force image pull: `kubectl delete pod <pod-name> -n songnodes`
+3. Or rollout restart: `kubectl rollout restart deployment/<name> -n songnodes`
+4. Confirm fresh pods: `kubectl get pods -n songnodes` (check AGE column)
+
 ---
 
 ## 8. Anti-Patterns to Avoid
@@ -997,11 +1173,15 @@ flux resume helmrelease songnodes -n flux-system
 ❌ **No periodic cleanup**: Implement garbage collection for caches
 ❌ **Hardcoded credentials**: Use Kubernetes secrets
 ❌ **Manual deployments**: Use Flux GitOps for all changes
+❌ **kubectl edit/patch in production**: Bypasses GitOps, creates config drift
+❌ **imagePullPolicy: IfNotPresent for :latest**: Causes stale code in pods
 ❌ **Skipping tests**: E2E tests are mandatory before merge
 ❌ **Force pushes to main**: Protected branch
 ❌ **Unclear commit messages**: Use Conventional Commits
 ❌ **Using `runspider` with relative imports**: Use `scrapy crawl [spider_name]` instead
 ❌ **Docker Compose for production**: Kubernetes-only deployment
+❌ **Ignoring orphaned pods**: Check for multiple pod hash generations
+❌ **Building frontend without npm run build**: Results in stale dist/
 
 ---
 
@@ -1015,11 +1195,16 @@ flux resume helmrelease songnodes -n flux-system
 | **Run Tests** | `npm run test:e2e` |
 | **Test Spider in K8s** | `kubectl exec -n songnodes deployment/scraper-orchestrator -- scrapy crawl [spider_name] -a arg=value` |
 | **Frontend Dev** | `cd frontend && npm run dev` |
+| **Frontend Production Build** | `cd frontend && npm run build` |
 | **Flux Status** | `flux get helmreleases -n flux-system` |
 | **Force Flux Sync** | `flux reconcile source git songnodes && flux reconcile helmrelease songnodes -n flux-system` |
 | **Database Backup** | `kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > backup.dump` |
 | **Port Forward** | `kubectl port-forward svc/rest-api 8082:8082 -n songnodes` |
 | **Scale Service** | `kubectl scale deployment/[service] --replicas=3 -n songnodes` |
+| **Restart Deployment** | `kubectl rollout restart deployment/[service] -n songnodes` |
+| **Check Pod Age** | `kubectl get pods -n songnodes -o wide` |
+| **Check Orphaned Pods** | `kubectl get pods -n songnodes -l app=[service-name]` |
+| **Verify ImagePullPolicy** | `kubectl get deployment/[service] -n songnodes -o jsonpath='{.spec.template.spec.containers[0].imagePullPolicy}'` |
 
 ---
 
@@ -1047,6 +1232,10 @@ kubectl get pods -n songnodes
 
 # Verify data integrity
 kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM tracks;"
+
+# Check for stale pods (compare pod age to last git commit)
+kubectl get pods -n songnodes -o wide
+git log -1 --format="%ai"
 ```
 
 ---
