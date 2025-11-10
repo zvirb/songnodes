@@ -199,15 +199,16 @@ class PersistencePipeline:
                 f"postgresql://{self.config['user']}:{self.config['password']}"
                 f"@{self.config['host']}:{self.config['port']}/{self.config['database']}"
             )
-            # Note: server_settings removed as PgBouncer doesn't support them at connection time
-            # Timeout settings should be applied per-transaction if needed
+            # Configure database connection with proper schema search path
+            # server_settings ensures queries search musicdb schema first, then public
             self.connection_pool = loop.run_until_complete(asyncpg.create_pool(
                 connection_string,
                 min_size=5,
                 max_size=15,
                 command_timeout=30,
                 max_queries=50000,
-                max_inactive_connection_lifetime=1800
+                max_inactive_connection_lifetime=1800,
+                server_settings={'search_path': 'musicdb,public'}
             ))
             self.logger.info("✓ Database connection pool initialized in persistent thread")
             self._pool_ready.set()  # Signal that pool is ready
