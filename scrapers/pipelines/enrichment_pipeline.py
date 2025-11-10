@@ -626,7 +626,8 @@ class EnrichmentPipeline:
 
         # BPM range for setlists
         if 'tracks' in item and isinstance(item['tracks'], list):
-            bpms = [t.get('bpm') for t in item['tracks'] if t.get('bpm') and isinstance(t.get('bpm'), (int, float))]
+            # Handle both dict tracks (track objects) and string tracks (track names)
+            bpms = [t.get('bpm') for t in item['tracks'] if isinstance(t, dict) and t.get('bpm') and isinstance(t.get('bpm'), (int, float))]
             if bpms:
                 item['bpm_range'] = {
                     'min': min(bpms),
