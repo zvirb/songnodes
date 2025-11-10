@@ -130,11 +130,16 @@ class SilverPlaylistsToGoldETL:
         Returns artist_id (UUID) from gold artists table if successful, None if failed.
         """
         if not artist_name or artist_name.strip() == '':
+            logger.debug(
+                f"⚠️ Empty artist name provided (silver_artist_id={silver_artist_id})"
+            )
             return None
 
         normalized = artist_name.lower().strip()
         if normalized in GENERIC_ARTIST_NAMES:
-            logger.debug(f"Skipping generic artist name '{artist_name}'")
+            logger.debug(
+                f"Skipping generic artist name '{artist_name}' (silver_artist_id={silver_artist_id})"
+            )
             return None
 
         # Normalize artist name
@@ -153,6 +158,9 @@ class SilverPlaylistsToGoldETL:
             """, artist_name, normalized)
 
             if existing:
+                logger.debug(
+                    f"✓ Found existing gold artist: '{artist_name}' (artist_id={existing['artist_id']})"
+                )
                 return existing['artist_id']
 
             # Create new artist in gold layer if not found
@@ -163,11 +171,22 @@ class SilverPlaylistsToGoldETL:
                 RETURNING artist_id
             """, artist_name, normalized)
 
-            logger.debug(f"Created gold artist: {artist_name} (UUID: {artist_id})")
+            logger.info(
+                f"✅ Created gold artist: '{artist_name}' (UUID: {artist_id})",
+                extra={'artist_name': artist_name, 'artist_id': artist_id}
+            )
             return artist_id
 
         except Exception as e:
-            logger.error(f"Error mapping artist '{artist_name}': {e}")
+            logger.error(
+                f"❌ Error mapping artist '{artist_name}': {e}",
+                extra={
+                    'artist_name': artist_name,
+                    'silver_artist_id': silver_artist_id,
+                    'error': str(e)
+                },
+                exc_info=True
+            )
             return None
 
     async def map_silver_track_to_gold(
@@ -182,6 +201,7 @@ class SilverPlaylistsToGoldETL:
         then finds matching track in gold tracks table.
         """
         if not silver_track_id:
+            logger.debug("⚠️ map_silver_track_to_gold called with NULL silver_track_id")
             return None
 
         try:
@@ -193,13 +213,20 @@ class SilverPlaylistsToGoldETL:
             """, silver_track_id)
 
             if not silver_track:
-                logger.debug(f"Silver track not found: {silver_track_id}")
+                logger.warning(
+                    f"⚠️ Silver track not found in silver_enriched_tracks: {silver_track_id}",
+                    extra={'silver_track_id': silver_track_id}
+                )
                 return None
 
             artist_name = silver_track['artist_name']
             track_title = silver_track['track_title']
 
             if not track_title or track_title.strip() == '':
+                logger.warning(
+                    f"⚠️ Empty track_title for silver track {silver_track_id} (artist={artist_name})",
+                    extra={'silver_track_id': silver_track_id, 'artist_name': artist_name}
+                )
                 return None
 
             normalized_title = track_title.lower().strip()
@@ -221,7 +248,14 @@ class SilverPlaylistsToGoldETL:
                 """, normalized_title, artist_name, normalized_artist)
 
                 if track_id:
+                    logger.debug(
+                        f"✓ Mapped silver track {silver_track_id} → gold track {track_id} (artist+title match)"
+                    )
                     return track_id
+                else:
+                    logger.debug(
+                        f"⚠️ No artist+title match for '{artist_name} - {track_title}' (silver_id={silver_track_id})"
+                    )
 
             # Second try: title-only match (for tracks without artist info)
             track_id = await conn.fetchval("""
@@ -230,10 +264,28 @@ class SilverPlaylistsToGoldETL:
                 LIMIT 1
             """, normalized_title)
 
+            if track_id:
+                logger.debug(
+                    f"✓ Mapped silver track {silver_track_id} → gold track {track_id} (title-only match)"
+                )
+            else:
+                logger.warning(
+                    f"⚠️ No gold track found for '{artist_name} - {track_title}' (silver_id={silver_track_id})",
+                    extra={
+                        'silver_track_id': silver_track_id,
+                        'artist_name': artist_name,
+                        'track_title': track_title
+                    }
+                )
+
             return track_id
 
         except Exception as e:
-            logger.error(f"Error mapping silver track {silver_track_id}: {e}")
+            logger.error(
+                f"❌ Error mapping silver track {silver_track_id}: {e}",
+                extra={'silver_track_id': silver_track_id, 'error': str(e)},
+                exc_info=True
+            )
             return None
 
     async def transform_silver_playlist(
@@ -280,9 +332,20 @@ class SilverPlaylistsToGoldETL:
 
             # Skip if no tracks
             if not silver_tracks or len(silver_tracks) == 0:
-                logger.debug(f"No tracks found for playlist {playlist_id}")
+                logger.warning(
+                    f"⚠️ No tracks found for playlist '{playlist_name}' (silver_id={playlist_id})",
+                    extra={
+                        'playlist_id': playlist_id,
+                        'playlist_name': playlist_name,
+                        'artist_name': artist_name
+                    }
+                )
                 self.stats['skipped_no_tracks'] += 1
                 return False
+
+            logger.debug(
+                f"Processing playlist '{playlist_name}' with {len(silver_tracks)} tracks (silver_id={playlist_id})"
+            )
 
             # Step 3: Create/update playlist in gold playlists table
             if self.dry_run:

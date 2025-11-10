@@ -364,11 +364,41 @@ class PersistencePipeline:
         """
         track_name = item.get('track_name') or item.get('title', '').strip()
         if not track_name:
+            self.logger.warning(
+                f"⚠️ Track item missing track_name/title. Available fields: {list(item.keys())}",
+                extra={
+                    'item_type': 'track',
+                    'missing_field': 'track_name',
+                    'item_keys': list(item.keys()),
+                    'source': item.get('data_source', 'unknown')
+                }
+            )
             return
 
-        track_key = f"{track_name}::{item.get('artist_name', '')}"
+        artist_name = item.get('artist_name', '').strip()
+        track_key = f"{track_name}::{artist_name}"
+
         if track_key in self.processed_items['tracks']:
+            self.logger.debug(f"Duplicate track skipped: {track_key}")
             return
+
+        # Log missing critical fields
+        missing_fields = []
+        if not artist_name:
+            missing_fields.append('artist_name')
+        if not item.get('track_id'):
+            missing_fields.append('track_id')
+
+        if missing_fields:
+            self.logger.warning(
+                f"⚠️ Track '{track_name}' missing critical fields: {', '.join(missing_fields)}",
+                extra={
+                    'track_name': track_name,
+                    'artist_name': artist_name,
+                    'missing_fields': missing_fields,
+                    'source': item.get('data_source', 'unknown')
+                }
+            )
 
         self.processed_items['tracks'].add(track_key)
 
@@ -740,38 +770,100 @@ class PersistencePipeline:
         import json
 
         results = []
-        for item in batch:
-            # Get source metadata
-            source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
-            source_url = item.get('source_url', 'unknown')
-            source_track_id = item.get('source_track_id') or item.get('track_id')
-            scraper_version = item.get('scraper_version', 'v1.0.0')
+        skipped_count = 0
+        error_count = 0
 
-            # Serialize complete item as raw_json
-            raw_json = json.dumps(item, default=str)
+        for idx, item in enumerate(batch):
+            try:
+                # Get source metadata with detailed logging for missing values
+                source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
+                source_url = item.get('source_url', 'unknown')
+                source_track_id = item.get('source_track_id') or item.get('track_id')
+                scraper_version = item.get('scraper_version', 'v1.0.0')
 
-            # Extract fields for indexing
-            artist_name = item.get('artist_name', '')
-            track_title = item.get('track_name') or item.get('title', '')
+                # Log warnings for default values being used
+                if source == 'unknown':
+                    self.logger.debug(
+                        f"Bronze track #{idx}: Using default source='unknown' (missing data_source/source/platform)"
+                    )
+                if source_url == 'unknown':
+                    self.logger.debug(
+                        f"Bronze track #{idx}: Using default source_url='unknown'"
+                    )
+                if not source_track_id:
+                    self.logger.warning(
+                        f"⚠️ Bronze track #{idx}: Missing source_track_id AND track_id - may cause conflicts",
+                        extra={
+                            'source': source,
+                            'artist_name': item.get('artist_name'),
+                            'track_title': item.get('track_name') or item.get('title')
+                        }
+                    )
+                    skipped_count += 1
+                    continue
 
-            # Insert with RETURNING id
-            bronze_id = await conn.fetchval("""
-                INSERT INTO bronze_scraped_tracks (
-                    source, source_url, source_track_id, scraper_version,
-                    raw_json, artist_name, track_title
+                # Serialize complete item as raw_json
+                try:
+                    raw_json = json.dumps(item, default=str)
+                except (TypeError, ValueError) as e:
+                    self.logger.error(
+                        f"❌ Failed to serialize item #{idx} to JSON: {e}",
+                        extra={'item_keys': list(item.keys())}
+                    )
+                    error_count += 1
+                    continue
+
+                # Extract fields for indexing
+                artist_name = item.get('artist_name', '')
+                track_title = item.get('track_name') or item.get('title', '')
+
+                # Log missing critical fields
+                if not artist_name:
+                    self.logger.debug(f"Bronze track #{idx}: Missing artist_name")
+                if not track_title:
+                    self.logger.warning(
+                        f"⚠️ Bronze track #{idx}: Missing track_title (track_name AND title are both empty)",
+                        extra={'source': source, 'source_track_id': source_track_id}
+                    )
+
+                # Insert with RETURNING id
+                bronze_id = await conn.fetchval("""
+                    INSERT INTO bronze_scraped_tracks (
+                        source, source_url, source_track_id, scraper_version,
+                        raw_json, artist_name, track_title
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (source, source_url, source_track_id) DO UPDATE SET
+                        raw_json = EXCLUDED.raw_json,
+                        artist_name = EXCLUDED.artist_name,
+                        track_title = EXCLUDED.track_title,
+                        scraped_at = NOW()
+                    RETURNING id
+                """, source, source_url, source_track_id, scraper_version, raw_json, artist_name, track_title)
+
+                results.append({'item': item, 'bronze_id': bronze_id})
+
+                self.logger.debug(
+                    f"✓ Bronze track inserted: {artist_name} - {track_title} (bronze_id={bronze_id})"
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT (source, source_url, source_track_id) DO UPDATE SET
-                    raw_json = EXCLUDED.raw_json,
-                    artist_name = EXCLUDED.artist_name,
-                    track_title = EXCLUDED.track_title,
-                    scraped_at = NOW()
-                RETURNING id
-            """, source, source_url, source_track_id, scraper_version, raw_json, artist_name, track_title)
 
-            results.append({'item': item, 'bronze_id': bronze_id})
+            except Exception as e:
+                error_count += 1
+                self.logger.error(
+                    f"❌ Error inserting bronze track #{idx}: {e}",
+                    extra={
+                        'artist_name': item.get('artist_name'),
+                        'track_title': item.get('track_name') or item.get('title'),
+                        'source': item.get('data_source'),
+                        'error': str(e)
+                    },
+                    exc_info=True
+                )
 
-        self.logger.info(f"✓ Inserted {len(results)} tracks to bronze layer")
+        self.logger.info(
+            f"✓ Inserted {len(results)} tracks to bronze layer "
+            f"(skipped={skipped_count}, errors={error_count})"
+        )
         return results
 
     async def _insert_bronze_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
@@ -872,33 +964,104 @@ class PersistencePipeline:
         Args:
             batch: List of silver layer track items (with _raw_item reference for bronze_id)
         """
-        await conn.executemany("""
-            INSERT INTO silver_enriched_tracks (
-                bronze_id, artist_name, track_title, spotify_id, isrc, release_date, duration_ms,
-                bpm, key, genre, energy, valence, danceability,
-                validation_status, data_quality_score, enrichment_metadata
+        valid_items = []
+        skipped_count = 0
+
+        for idx, item in enumerate(batch):
+            # CRITICAL: Validate bronze_id FK reference
+            bronze_id = item.get('_raw_item', {}).get('_bronze_id')
+            if not bronze_id:
+                self.logger.error(
+                    f"❌ Silver track #{idx}: Missing bronze_id FK reference! "
+                    f"Cannot link to bronze layer. Track: {item.get('artist_name')} - {item.get('track_name') or item.get('title')}",
+                    extra={
+                        'artist_name': item.get('artist_name'),
+                        'track_title': item.get('track_name') or item.get('title'),
+                        'has_raw_item': '_raw_item' in item,
+                        'raw_item_keys': list(item.get('_raw_item', {}).keys()) if '_raw_item' in item else None
+                    }
+                )
+                skipped_count += 1
+                continue
+
+            artist_name = item.get('artist_name') or 'Unknown Artist'
+            track_title = item.get('track_name') or item.get('title')
+
+            if not track_title:
+                self.logger.warning(
+                    f"⚠️ Silver track #{idx}: Missing track_title (bronze_id={bronze_id})",
+                    extra={'bronze_id': bronze_id, 'artist_name': artist_name}
+                )
+                skipped_count += 1
+                continue
+
+            # Log warnings for missing optional enrichment fields
+            missing_enrichment = []
+            if not item.get('spotify_id'):
+                missing_enrichment.append('spotify_id')
+            if not item.get('bpm'):
+                missing_enrichment.append('bpm')
+            if not item.get('key') and not item.get('musical_key'):
+                missing_enrichment.append('key')
+            if item.get('energy') is None:
+                missing_enrichment.append('energy')
+
+            if missing_enrichment:
+                self.logger.debug(
+                    f"Silver track '{artist_name} - {track_title}': Missing enrichment fields: {', '.join(missing_enrichment)}"
+                )
+
+            valid_items.append(item)
+
+        if skipped_count > 0:
+            self.logger.warning(f"⚠️ Skipped {skipped_count} silver tracks due to missing bronze_id or track_title")
+
+        if not valid_items:
+            self.logger.error("❌ No valid silver tracks to insert! All items were skipped.")
+            return
+
+        # Insert valid items
+        try:
+            await conn.executemany("""
+                INSERT INTO silver_enriched_tracks (
+                    bronze_id, artist_name, track_title, spotify_id, isrc, release_date, duration_ms,
+                    bpm, key, genre, energy, valence, danceability,
+                    validation_status, data_quality_score, enrichment_metadata
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            """, [
+                (
+                    item.get('_raw_item', {}).get('_bronze_id'),  # bronze_id FK (validated above)
+                    item.get('artist_name') or 'Unknown Artist',  # artist_name (REQUIRED, denormalized)
+                    item.get('track_name') or item.get('title'),  # track_title
+                    item.get('spotify_id'),  # spotify_id
+                    item.get('isrc'),  # isrc
+                    None,  # release_date (TODO: parse from item if available)
+                    int(item.get('duration_ms', 0)) if item.get('duration_ms') else None,  # duration_ms
+                    float(item.get('bpm')) if item.get('bpm') else None,  # bpm
+                    item.get('key') or item.get('musical_key'),  # key
+                    [item.get('genre')] if item.get('genre') else None,  # genre[] array
+                    float(item.get('energy')) if item.get('energy') is not None else None,  # energy
+                    float(item.get('valence')) if item.get('valence') is not None else None,  # valence
+                    float(item.get('danceability')) if item.get('danceability') is not None else None,  # danceability
+                    'valid',  # validation_status (REQUIRED)
+                    self._calculate_quality_score(item),  # data_quality_score (REQUIRED)
+                    '{}'  # enrichment_metadata (REQUIRED JSONB, empty for now)
+                ) for item in valid_items
+            ])
+
+            self.logger.info(f"✓ Inserted {len(valid_items)} silver tracks (skipped={skipped_count})")
+
+        except Exception as e:
+            self.logger.error(
+                f"❌ Failed to insert silver tracks batch: {e}",
+                extra={
+                    'batch_size': len(valid_items),
+                    'error': str(e)
+                },
+                exc_info=True
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-        """, [
-            (
-                item.get('_raw_item', {}).get('_bronze_id'),  # bronze_id FK (links to raw data)
-                item.get('artist_name') or 'Unknown Artist',  # artist_name (REQUIRED, denormalized)
-                item.get('track_name') or item.get('title'),  # track_title
-                item.get('spotify_id'),  # spotify_id
-                item.get('isrc'),  # isrc
-                None,  # release_date (TODO: parse from item if available)
-                int(item.get('duration_ms', 0)) if item.get('duration_ms') else None,  # duration_ms
-                float(item.get('bpm')) if item.get('bpm') else None,  # bpm
-                item.get('key') or item.get('musical_key'),  # key
-                [item.get('genre')] if item.get('genre') else None,  # genre[] array
-                float(item.get('energy')) if item.get('energy') is not None else None,  # energy
-                float(item.get('valence')) if item.get('valence') is not None else None,  # valence
-                float(item.get('danceability')) if item.get('danceability') is not None else None,  # danceability
-                'valid',  # validation_status (REQUIRED)
-                self._calculate_quality_score(item),  # data_quality_score (REQUIRED)
-                '{}'  # enrichment_metadata (REQUIRED JSONB, empty for now)
-            ) for item in batch
-        ])
+            raise
 
     def _calculate_quality_score(self, item: Dict[str, Any]) -> float:
         """Calculate data quality score based on field completeness (0.00-1.00)."""
@@ -1018,18 +1181,41 @@ class PersistencePipeline:
         MEDALLION SCHEMA: Writes to silver_playlist_tracks using UUID foreign keys.
         Requires playlists and tracks to exist in medallion tables first.
         """
-        for item in batch:
+        success_count = 0
+        missing_playlist_count = 0
+        missing_track_count = 0
+        error_count = 0
+
+        for idx, item in enumerate(batch):
             try:
                 # Handle both playlist_name and setlist_name
                 playlist_name = item.get('playlist_name') or item.get('setlist_name')
                 if not playlist_name:
-                    self.logger.warning(f"Missing playlist/setlist name in item: {item}")
+                    self.logger.warning(
+                        f"❌ Playlist track #{idx}: Missing playlist_name/setlist_name",
+                        extra={'item_keys': list(item.keys())}
+                    )
+                    error_count += 1
                     continue
 
                 # Handle both position and track_order
                 position = item.get('position') or item.get('track_order')
                 if position is None:
-                    self.logger.warning(f"Missing position/track_order in item: {item}")
+                    self.logger.warning(
+                        f"❌ Playlist track #{idx}: Missing position/track_order for playlist '{playlist_name}'",
+                        extra={'playlist_name': playlist_name, 'item_keys': list(item.keys())}
+                    )
+                    error_count += 1
+                    continue
+
+                track_name = item.get('track_name')
+                artist_name = item.get('artist_name', 'Unknown Artist')
+
+                if not track_name:
+                    self.logger.warning(
+                        f"❌ Playlist track #{idx}: Missing track_name (playlist='{playlist_name}', position={position})"
+                    )
+                    error_count += 1
                     continue
 
                 # Get playlist ID from medallion table
@@ -1039,13 +1225,18 @@ class PersistencePipeline:
                 )
 
                 if not playlist_result:
-                    self.logger.warning(f"Playlist not found in silver_enriched_playlists: {playlist_name}")
+                    self.logger.warning(
+                        f"⚠️ Playlist track #{idx}: Playlist not found in silver_enriched_playlists: '{playlist_name}'",
+                        extra={
+                            'playlist_name': playlist_name,
+                            'track_name': track_name,
+                            'position': position
+                        }
+                    )
+                    missing_playlist_count += 1
                     continue
 
                 # Get track ID from medallion table (match by artist_name + track_title for better accuracy)
-                track_name = item.get('track_name')
-                artist_name = item.get('artist_name', 'Unknown Artist')
-
                 track_result = await conn.fetchrow(
                     "SELECT id FROM silver_enriched_tracks WHERE track_title = $1 AND artist_name = $2 LIMIT 1",
                     track_name,
@@ -1053,7 +1244,16 @@ class PersistencePipeline:
                 )
 
                 if not track_result:
-                    self.logger.warning(f"Track not found in silver_enriched_tracks: {artist_name} - {track_name}")
+                    self.logger.warning(
+                        f"⚠️ Playlist track #{idx}: Track not found in silver_enriched_tracks: '{artist_name} - {track_name}'",
+                        extra={
+                            'playlist_name': playlist_name,
+                            'artist_name': artist_name,
+                            'track_name': track_name,
+                            'position': position
+                        }
+                    )
+                    missing_track_count += 1
                     continue
 
                 # Insert playlist track (with upsert on conflict)
@@ -1069,10 +1269,29 @@ class PersistencePipeline:
                     item.get('cue_time_ms')  # Optional cue time
                 )
 
-            except Exception as e:
-                self.logger.warning(
-                    f"Could not insert playlist track {item.get('track_name')} at position {position}: {e}"
+                success_count += 1
+                self.logger.debug(
+                    f"✓ Playlist track inserted: '{playlist_name}' position {position}: {artist_name} - {track_name}"
                 )
+
+            except Exception as e:
+                error_count += 1
+                self.logger.error(
+                    f"❌ Error inserting playlist track #{idx}: {e}",
+                    extra={
+                        'playlist_name': item.get('playlist_name') or item.get('setlist_name'),
+                        'track_name': item.get('track_name'),
+                        'artist_name': item.get('artist_name'),
+                        'position': item.get('position') or item.get('track_order'),
+                        'error': str(e)
+                    },
+                    exc_info=True
+                )
+
+        self.logger.info(
+            f"✓ Inserted {success_count} playlist tracks "
+            f"(missing_playlist={missing_playlist_count}, missing_track={missing_track_count}, errors={error_count})"
+        )
 
     async def _insert_adjacency_batch(self, conn, batch: List[Dict[str, Any]]):
         """Insert track adjacency batch with upsert logic."""
