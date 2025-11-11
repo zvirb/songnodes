@@ -519,6 +519,7 @@ class MixesdbSpider(scrapy.Spider):
                     yield EnhancedSetlistTrackItem(
                         setlist_name=setlist_data['setlist_name'],
                         track_name=track_info['track']['track_name'],
+                        artist_name=track_info['track'].get('artist_name', ''),  # CRITICAL: Required for persistence pipeline lookup
                         track_order=track_info['track_order'],
                         start_time=track_info['track'].get('start_time'),
                         data_source=self.name,
@@ -819,7 +820,7 @@ class MixesdbSpider(scrapy.Spider):
                 track_item = {
                     'track_id': track_id,  # Deterministic ID for matching across sources
                     'track_name': parsed_track['track_name'],
-                    'artist_name': primary_artists[0] if primary_artists else '',  # MEDALLION FIX: Denormalize primary artist
+                    'artist_name': primary_artists[0] if primary_artists else 'Unknown Artist',  # CRITICAL: Use 'Unknown Artist' to match persistence pipeline default
                     'normalized_title': parsed_track['track_name'].lower().strip(),
                     'is_remix': is_remix,
                     'is_mashup': parsed_track.get('is_mashup', False),
