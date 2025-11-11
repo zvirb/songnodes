@@ -408,6 +408,74 @@ docker build -t localhost:5000/songnodes-frontend:latest frontend/
 docker push localhost:5000/songnodes-frontend:latest
 ```
 
+**Redeployment After Code Changes:**
+
+**⚠️ DEVELOPMENT vs PRODUCTION Methods**
+
+The correct redeployment method depends on your image tagging strategy:
+
+**Development (`:latest` tags):**
+
+```bash
+# Step 1: Make code changes and commit
+git add scrapers/spiders/mixesdb_spider.py
+git commit -m "fix(scrapers): fix artist_name persistence bug"
+
+# Step 2: Pull latest changes (if needed)
+git pull --rebase
+
+# Step 3: Build and push image
+docker build -t localhost:5000/songnodes_scrapers:latest scrapers/
+docker push localhost:5000/songnodes_scrapers:latest
+
+# Step 4: Force pods to pull fresh image by deleting them
+# (Kubernetes will recreate with imagePullPolicy: Always)
+kubectl delete pods -n songnodes -l app=unified-scraper
+
+# Step 5: Verify new pods are running
+kubectl get pods -n songnodes -l app=unified-scraper
+kubectl logs -n songnodes -l app=unified-scraper --tail=50
+```
+
+**Why delete pods instead of `kubectl rollout restart`?**
+- Flux/GitOps doesn't detect `:latest` image changes (limitation of Kubernetes)
+- `kubectl rollout restart` creates new pods but may still use cached images
+- Deleting pods forces Kubernetes to pull fresh images from registry
+- With `imagePullPolicy: Always`, new pods will get the latest image
+
+**Production (versioned tags):**
+
+```bash
+# Step 1: Make code changes and commit
+git add services/rest-api/main.py
+git commit -m "feat(api): add new endpoint"
+
+# Step 2: Update image tag in Helm values
+# deploy/helm/songnodes/values.yaml
+image:
+  tag: "v1.2.3"  # Increment version
+
+# Step 3: Commit version bump
+git add deploy/helm/songnodes/values.yaml
+git commit -m "chore(helm): bump rest-api to v1.2.3"
+git push origin main
+
+# Step 4: Build and push versioned image
+docker build -t localhost:5000/songnodes_rest-api:v1.2.3 services/rest_api
+docker push localhost:5000/songnodes_rest-api:v1.2.3
+
+# Step 5: Trigger Flux reconciliation
+flux reconcile source git songnodes
+flux reconcile helmrelease songnodes -n flux-system
+
+# Flux will detect the version change and deploy automatically
+```
+
+**⚠️ NEVER use these in production:**
+- `kubectl rollout restart` - bypasses GitOps audit trail
+- `kubectl edit` - changes not tracked in Git
+- `kubectl apply -f local-file.yaml` - creates config drift
+
 ### 3.5. Kubernetes Development Loop
 
 After making changes to service code, Skaffold automatically rebuilds and redeploys:
