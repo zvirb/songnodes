@@ -272,7 +272,7 @@ services:
     enabled: true
     name: rest-api
     component: backend
-    replicaCount: 3
+    replicaCount: 1
     image:
       repository: localhost:5000/songnodes_rest-api
       tag: latest
@@ -388,7 +388,7 @@ services:
     enabled: true
     name: graph-visualization
     component: backend
-    replicaCount: 2
+    replicaCount: 1
     image:
       repository: localhost:5000/songnodes_graph-visualization-api
       tag: latest
@@ -438,7 +438,7 @@ services:
     enabled: true
     name: websocket-api
     component: backend
-    replicaCount: 2
+    replicaCount: 1
     image:
       repository: localhost:5000/songnodes_websocket-api
       tag: latest
@@ -481,7 +481,7 @@ services:
     enabled: true
     name: nlp-processor
     component: backend
-    replicaCount: 2
+    replicaCount: 1
     image:
       repository: localhost:5000/songnodes_nlp-processor
       tag: latest
@@ -529,7 +529,7 @@ services:
     enabled: true
     name: scraper-orchestrator
     component: scraper
-    replicaCount: 2
+    replicaCount: 1
     image:
       repository: localhost:5000/songnodes_scraper-orchestrator
       tag: latest
@@ -1440,7 +1440,7 @@ services:
     enabled: true
     name: frontend
     component: ui
-    replicaCount: 3
+    replicaCount: 1
     image:
       repository: localhost:5000/songnodes_frontend
       tag: latest
