@@ -219,6 +219,7 @@ class EnhancedSetlistTrackItem(scrapy.Item):
     track_name = scrapy.Field()
     track_id = scrapy.Field()
     track_order = scrapy.Field()
+    artist_name = scrapy.Field()  # Artist name for the track
 
     # Performance timing
     start_time = scrapy.Field()  # Timestamp in set
