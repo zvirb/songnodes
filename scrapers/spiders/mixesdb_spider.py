@@ -355,23 +355,35 @@ class MixesdbSpider(scrapy.Spider):
         """Parse search results and follow mix links"""
         mix_links = response.css('div.mw-search-result-heading a::attr(href), ul.mw-search-results li a::attr(href)').getall()
 
+        self.logger.info(f"🔍 parse_search_results: Found {len(mix_links)} links from CSS selectors")
+        self.logger.info(f"🔍 First 3 links: {mix_links[:3]}")
+
         # Limit to 5 results per search to prevent timeouts
         # With 15s delay, 5 results = ~75s + processing time
         max_results = int(os.getenv('MIXESDB_MAX_RESULTS_PER_SEARCH', '5'))
 
+        requests_yielded = 0
         for link in mix_links[:max_results]:
             full_url = response.urljoin(link)
+            self.logger.info(f"🔍 Processing link: {full_url}")
             if self.is_mix_url(full_url):
+                self.logger.info(f"✅ is_mix_url passed: {full_url}")
                 if self.is_source_processed(full_url):
-                    self.logger.debug(f"Skipping already processed URL: {full_url}")
+                    self.logger.info(f"⏭️  Skipping already processed URL: {full_url}")
                     continue
+                self.logger.info(f"🚀 Yielding Request for: {full_url}")
+                requests_yielded += 1
                 yield scrapy.Request(
                     url=full_url,
                     callback=self.parse_mix_page,
                     errback=self.handle_error,
-                    dont_filter=False,
+                    dont_filter=True,  # CRITICAL FIX: Allow URL following even if previously seen
                     meta={'download_timeout': 30}
                 )
+            else:
+                self.logger.info(f"❌ is_mix_url failed: {full_url}")
+
+        self.logger.info(f"🔍 parse_search_results COMPLETE: Yielded {requests_yielded} requests")
 
     def parse_category_page(self, response):
         """Parse category pages for mix links using LLM"""
