@@ -1095,6 +1095,15 @@ services:
       repository: localhost:5000/songnodes_unified-scraper
       tag: latest
       pullPolicy: Always
+    command:
+      - python
+      - -m
+      - uvicorn
+      - unified_scraper_api:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
     service:
       type: ClusterIP
       ports:
