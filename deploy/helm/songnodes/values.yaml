@@ -1659,33 +1659,6 @@ autoscaling:
               type: Utilization
               averageUtilization: 80
 
-    frontend:
-      minReplicas: 3
-      maxReplicas: 10
-      metrics:
-        - type: Resource
-          resource:
-            name: cpu
-            target:
-              type: Utilization
-              averageUtilization: 70
-        - type: Resource
-          resource:
-            name: memory
-            target:
-              type: Utilization
-              averageUtilization: 75
-      behavior:
-        scaleUp:
-          stabilizationWindowSeconds: 30
-          policies:
-            - type: Percent
-              value: 100
-              periodSeconds: 15
-            - type: Pods
-              value: 5
-              periodSeconds: 15
-          selectPolicy: Max
 
 ingress:
   enabled: true
