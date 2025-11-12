@@ -530,18 +530,26 @@ interface GraphVisualizationProps {
 }
 
 export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackSelect, onTrackRightClick }) => {
-  // Store hooks
-  const {
-    graphData,
-    viewState,
-    pathfindingState,
-    graph,
-    pathfinding,
-    performance: performanceStore,
-    performanceMetrics,
-    view,
-    simulation,
-  } = useStore();
+  console.log('🎬 [GraphVisualization] Component function executing');
+
+  // Store hooks - use specific selectors for better reactivity
+  const graphData = useStore(state => state.graphData);
+  const viewState = useStore(state => state.viewState);
+  const pathfindingState = useStore(state => state.pathfindingState);
+  const graph = useStore(state => state.graph);
+  const pathfinding = useStore(state => state.pathfinding);
+  const performanceStore = useStore(state => state.performance);
+  const performanceMetrics = useStore(state => state.performanceMetrics);
+  const view = useStore(state => state.view);
+  const simulation = useStore(state => state.simulation);
+
+  // Debug: Log graphData whenever it changes
+  console.log('[GraphVisualization] Store subscription received graphData:', {
+    nodes: graphData?.nodes?.length || 0,
+    edges: graphData?.edges?.length || 0,
+    hasData: !!graphData,
+    firstNode: graphData?.nodes?.[0]
+  });
 
   // Refs for PIXI and D3
   const containerRef = useRef<HTMLDivElement>(null);
@@ -613,6 +621,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const nodesContainerRef = useRef<PIXI.Container | null>(null);
   const labelsContainerRef = useRef<PIXI.Container | null>(null);
   const interactionContainerRef = useRef<PIXI.Container | null>(null);
+
+  // 🎨 Debug: Monitor rendering triggers
+  useEffect(() => {
+    console.log('🎨 [GraphVisualization] Rendering status:', {
+      isInitialized,
+      hasPixiApp: !!pixiAppRef.current,
+      hasContainer: !!containerRef.current,
+      nodeCount: graphData.nodes.length,
+      edgeCount: graphData.edges.length,
+      canRender: isInitialized && graphData.nodes.length > 0
+    });
+  }, [isInitialized, graphData.nodes.length, graphData.edges.length]);
 
   // Enhanced data with PIXI objects
   const enhancedNodesRef = useRef<Map<string, EnhancedGraphNode>>(new Map());
@@ -935,12 +955,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Force an initial render to show test visuals
     app.render();
-    // DEBUG: Initial render logging disabled (too noisy)
-    // console.log('Forced initial PIXI render');
+    console.log('✅ [GraphVisualization] Forced initial PIXI render');
 
     setIsInitialized(true);
-    // DEBUG: PIXI initialization complete logging disabled (too noisy)
-    // console.log('PIXI initialization complete, isInitialized set to true');
+    console.log('✅ [GraphVisualization] PIXI initialization complete, isInitialized set to TRUE');
 
     } catch (error) {
       console.error('Failed to initialize PIXI.js application:', error);
@@ -2839,7 +2857,16 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Update graph data with intelligent diffing (2025 optimization)
   const updateGraphData = useCallback(() => {
-    if (!simulationRef.current || !nodesContainerRef.current || !edgesContainerRef.current) return;
+    console.log('[GraphVisualization] updateGraphData called');
+
+    if (!simulationRef.current || !nodesContainerRef.current || !edgesContainerRef.current) {
+      console.warn('[GraphVisualization] updateGraphData aborted - missing refs:', {
+        hasSimulation: !!simulationRef.current,
+        hasNodesContainer: !!nodesContainerRef.current,
+        hasEdgesContainer: !!edgesContainerRef.current
+      });
+      return;
+    }
 
     // CRITICAL FIX: Ensure enhancedNodesRef is initialized
     if (!enhancedNodesRef.current) {
@@ -2851,6 +2878,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // CRITICAL FIX: Use ref to access current graphData without capturing in closure
     const currentGraphData = graphDataRef.current;
+
+    console.log('[GraphVisualization] updateGraphData processing:', {
+      nodeCount: currentGraphData.nodes.length,
+      edgeCount: currentGraphData.edges.length,
+      existingNodesInMap: enhancedNodesRef.current.size,
+      existingEdgesInMap: enhancedEdgesRef.current.size
+    });
 
     // Check if this is new data (trigger animation)
     const newDataHash = generateDataHash(currentGraphData.nodes, currentGraphData.edges);
@@ -2913,6 +2947,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
       // Create all nodes fresh
       const nodeMap = new Map<string, EnhancedGraphNode>();
+      console.log('[GraphVisualization] Creating', currentGraphData.nodes.length, 'PIXI nodes (full rebuild)');
       currentGraphData.nodes.forEach(nodeData => {
         const node = createEnhancedNode(nodeData);
         const pixiContainer = createPixiNode(node);
@@ -2920,6 +2955,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         nodeMap.set(node.id, node);
         enhancedNodesRef.current.set(node.id, node);
       });
+      console.log('[GraphVisualization] Created', enhancedNodesRef.current.size, 'nodes, container has', nodesContainerRef.current!.children.length, 'children');
 
       // Continue with edges in the existing code flow below
     } else {
@@ -3084,11 +3120,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
       simulation.alpha(1.0).restart(); // Start with maximum energy
       animationStateRef.current.isActive = true;
-      if (process.env.NODE_ENV === 'development') {
-        // DEBUG: Simulation start logging disabled (too noisy)
-        // console.log('✅ Simulation started');
-      }
+      console.log('[GraphVisualization] Simulation restarted with alpha=1.0');
+    } else {
+      console.log('[GraphVisualization] Simulation paused - not restarting');
     }
+
+    console.log('[GraphVisualization] updateGraphData complete:', {
+      finalNodeCount: enhancedNodesRef.current.size,
+      finalEdgeCount: enhancedEdgesRef.current.size,
+      nodesContainerChildren: nodesContainerRef.current?.children.length || 0,
+      edgesContainerChildren: edgesContainerRef.current?.children.length || 0,
+      simulationNodeCount: nodes.length
+    });
 
     // Rebuild spatial index
     spatialIndexRef.current.rebuild(Array.from(nodeMap.values()));
@@ -3281,8 +3324,21 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // CRITICAL FIX: Trigger on data hash instead of array lengths
   // This ensures updates when content changes, not just when array sizes change
   useEffect(() => {
+    console.log('[GraphVisualization] Data update check:', {
+      isInitialized,
+      nodeCount: graphData.nodes.length,
+      edgeCount: graphData.edges.length,
+      currentDataHash,
+      lastDataHash: lastDataHashRef.current
+    });
+
     if (isInitialized && graphData.nodes.length > 0) {
+      console.log('[GraphVisualization] Calling updateGraphData with', graphData.nodes.length, 'nodes and', graphData.edges.length, 'edges');
       updateGraphData();
+    } else if (isInitialized && graphData.nodes.length === 0) {
+      console.warn('[GraphVisualization] isInitialized=true but graphData.nodes.length=0 - data may not be loaded yet');
+    } else if (!isInitialized) {
+      console.log('[GraphVisualization] Waiting for initialization (isInitialized=false)');
     }
   }, [isInitialized, currentDataHash, updateGraphData]);
 

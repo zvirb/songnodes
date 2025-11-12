@@ -1276,10 +1276,10 @@ async def get_graph_stats():
             # Also get database-wide stats
             db_stats_query = text("""
                 SELECT
-                    (SELECT COUNT(*) FROM tracks) as total_tracks,
-                    (SELECT COUNT(*) FROM artists) as total_artists,
-                    (SELECT COUNT(*) FROM playlists) as total_playlists,
-                    (SELECT COUNT(*) FROM playlist_tracks) as total_playlist_tracks
+                    (SELECT COUNT(*) FROM silver_enriched_tracks) as total_tracks,
+                    (SELECT COUNT(*) FROM silver_enriched_artists) as total_artists,
+                    (SELECT COUNT(*) FROM silver_enriched_playlists) as total_playlists,
+                    (SELECT COUNT(*) FROM silver_playlist_tracks) as total_playlist_tracks
             """)
 
             db_result = await session.execute(db_stats_query)

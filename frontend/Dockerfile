@@ -69,20 +69,21 @@ RUN echo 'server { \
         etag off; \
     } \
     \
-    location /api { \
-        proxy_pass http://api-gateway:8080; \
+    # API proxy routing - Kubernetes ConfigMap will override this with correct service names \
+    # This is a fallback config for non-k8s deployments \
+    location ~ ^/api/(graph|v1/visualization|user-setlists) { \
+        proxy_pass http://graph-visualization:8084; \
         proxy_http_version 1.1; \
-        proxy_set_header Upgrade $http_upgrade; \
-        proxy_set_header Connection "upgrade"; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
         proxy_set_header X-Forwarded-Proto $scheme; \
+        proxy_set_header Upgrade $http_upgrade; \
+        proxy_set_header Connection "upgrade"; \
     } \
     \
-    # Prometheus metrics proxy \
-    location /prometheus/ { \
-        proxy_pass http://prometheus:9090/; \
+    location /api/ { \
+        proxy_pass http://rest-api:8082; \
         proxy_http_version 1.1; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \

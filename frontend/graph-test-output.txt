@@ -1,0 +1,362 @@
+🚀 Starting SongNodes WebGL E2E Test Setup...
+✅ Test directories created
+🔍 Verifying WebGL support for graph visualization...
+✅ WebGL Support Verified:
+   Version: WebGL 2.0 (OpenGL ES 3.0 Chromium)
+   Renderer: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
+   Max Texture Size: 8192
+   Extensions: 29
+🎵 SongNodes WebGL E2E Test Setup Complete
+
+Running 60 tests using 1 worker
+
+WebGL Info: {
+  vendor: [32m'WebKit'[39m,
+  renderer: [32m'WebKit WebGL'[39m,
+  version: [32m'WebGL 2.0 (OpenGL ES 3.0 Chromium)'[39m,
+  shadingLanguageVersion: [32m'WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)'[39m,
+  maxTextureSize: [33m8192[39m,
+  maxViewportDims: Int32Array(2) [ [33m8192[39m, [33m8192[39m ],
+  extensions: [
+    [32m'EXT_clip_control'[39m,
+    [32m'EXT_color_buffer_float'[39m,
+    [32m'EXT_color_buffer_half_float'[39m,
+    [32m'EXT_conservative_depth'[39m,
+    [32m'EXT_depth_clamp'[39m,
+    [32m'EXT_float_blend'[39m,
+    [32m'EXT_polygon_offset_clamp'[39m,
+    [32m'EXT_texture_compression_bptc'[39m,
+    [32m'EXT_texture_compression_rgtc'[39m,
+    [32m'EXT_texture_filter_anisotropic'[39m,
+    [32m'EXT_texture_mirror_clamp_to_edge'[39m,
+    [32m'NV_shader_noperspective_interpolation'[39m,
+    [32m'OES_draw_buffers_indexed'[39m,
+    [32m'OES_sample_variables'[39m,
+    [32m'OES_shader_multisample_interpolation'[39m,
+    [32m'OES_texture_float_linear'[39m,
+    [32m'OVR_multiview2'[39m,
+    [32m'WEBGL_clip_cull_distance'[39m,
+    [32m'WEBGL_compressed_texture_astc'[39m,
+    [32m'WEBGL_compressed_texture_etc'[39m,
+    [32m'WEBGL_compressed_texture_etc1'[39m,
+    [32m'WEBGL_compressed_texture_s3tc'[39m,
+    [32m'WEBGL_compressed_texture_s3tc_srgb'[39m,
+    [32m'WEBGL_debug_renderer_info'[39m,
+    [32m'WEBGL_debug_shaders'[39m,
+    [32m'WEBGL_lose_context'[39m,
+    [32m'WEBGL_multi_draw'[39m,
+    [32m'WEBGL_polygon_mode'[39m,
+    [32m'WEBGL_stencil_texturing'[39m
+  ]
+}
+  ✘   1 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:28:5 › SongNodes Graph Visualization › Core Rendering › should load and display graph with nodes and edges (3.8s)
+Canvas dimensions: {
+  width: [33m750[39m,
+  height: [33m606[39m,
+  style: { width: [32m'100%'[39m, height: [32m'100%'[39m },
+  clientWidth: [33m750[39m,
+  clientHeight: [33m606[39m,
+  offsetWidth: [33m750[39m,
+  offsetHeight: [33m606[39m
+}
+  ✘   2 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:54:5 › SongNodes Graph Visualization › Core Rendering › should render PIXI.js canvas with proper dimensions (3.2s)
+  ✓   3 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:78:5 › SongNodes Graph Visualization › Core Rendering › should initialize PIXI application correctly (2.5s)
+  ✘   4 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:95:5 › SongNodes Graph Visualization › Core Rendering › should handle missing or error data gracefully (13.0s)
+  ✘   5 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:117:5 › SongNodes Graph Visualization › Graph Elements Verification › should display music track nodes with metadata (2.6s)
+  ✘   6 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:138:5 › SongNodes Graph Visualization › Graph Elements Verification › should display track adjacency edges (2.4s)
+  ✓   7 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:154:5 › SongNodes Graph Visualization › Graph Elements Verification › should support track labels and metadata display (2.4s)
+LOD Performance: {
+  zoomedOut: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  },
+  zoomedIn: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  }
+}
+Performance metrics: {
+  frameRate: [33m0[39m,
+  renderTime: [33m0[39m,
+  nodeCount: [33m0[39m,
+  edgeCount: [33m0[39m,
+  visibleNodes: [33m0[39m,
+  visibleEdges: [33m0[39m,
+  memoryUsage: [33m0[39m
+}
+  ✘   8 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:172:5 › SongNodes Graph Visualization › Level of Detail (LOD) System › should implement LOD for performance optimization (9.4s)
+Culling test: {
+  initial: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  },
+  panned: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  }
+}
+  ✓   9 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:200:5 › SongNodes Graph Visualization › Level of Detail (LOD) System › should cull distant objects for performance (5.4s)
+  ✓  10 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:218:5 › SongNodes Graph Visualization › Error Handling and Recovery › should handle WebGL context loss gracefully (3.3s)
+  ✘  11 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:241:5 › SongNodes Graph Visualization › Error Handling and Recovery › should handle memory pressure gracefully (18.0s)
+  ✘  12 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:262:5 › SongNodes Graph Visualization › Accessibility and Usability › should maintain performance with accessibility features enabled (3.7s)
+  ✘  13 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:277:5 › SongNodes Graph Visualization › Accessibility and Usability › should be responsive on different screen sizes (4.5s)
+  ✓  14 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:300:5 › SongNodes Graph Visualization › Data Integrity › should maintain data consistency during operations (4.5s)
+  ✘  15 [chromium] › tests/e2e/graph-visualization.graph.spec.ts:317:5 › SongNodes Graph Visualization › Data Integrity › should handle rapid state changes without corruption (4.7s)
+  ✘  16 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:28:5 › SongNodes Graph Visualization › Core Rendering › should load and display graph with nodes and edges (8.0s)
+Canvas dimensions: {
+  width: [33m750[39m,
+  height: [33m606[39m,
+  style: { width: [32m'100%'[39m, height: [32m'100%'[39m },
+  clientWidth: [33m746[39m,
+  clientHeight: [33m602[39m,
+  offsetWidth: [33m750[39m,
+  offsetHeight: [33m606[39m
+}
+  ✘  17 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:54:5 › SongNodes Graph Visualization › Core Rendering › should render PIXI.js canvas with proper dimensions (11.1s)
+  ✘  18 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:78:5 › SongNodes Graph Visualization › Core Rendering › should initialize PIXI application correctly (8.6s)
+  ✘  19 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:95:5 › SongNodes Graph Visualization › Core Rendering › should handle missing or error data gracefully (19.8s)
+  ✘  20 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:117:5 › SongNodes Graph Visualization › Graph Elements Verification › should display music track nodes with metadata (11.2s)
+  ✘  21 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:138:5 › SongNodes Graph Visualization › Graph Elements Verification › should display track adjacency edges (11.0s)
+  ✓  22 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:154:5 › SongNodes Graph Visualization › Graph Elements Verification › should support track labels and metadata display (9.4s)
+LOD Performance: {
+  zoomedOut: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  },
+  zoomedIn: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  }
+}
+Performance metrics: {
+  frameRate: [33m0[39m,
+  renderTime: [33m0[39m,
+  nodeCount: [33m0[39m,
+  edgeCount: [33m0[39m,
+  visibleNodes: [33m0[39m,
+  visibleEdges: [33m0[39m,
+  memoryUsage: [33m0[39m
+}
+  ✘  23 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:172:5 › SongNodes Graph Visualization › Level of Detail (LOD) System › should implement LOD for performance optimization (7.7s)
+Culling test: {
+  initial: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  },
+  panned: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  }
+}
+  ✓  24 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:200:5 › SongNodes Graph Visualization › Level of Detail (LOD) System › should cull distant objects for performance (9.8s)
+  ✓  25 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:218:5 › SongNodes Graph Visualization › Error Handling and Recovery › should handle WebGL context loss gracefully (3.4s)
+  ✘  26 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:241:5 › SongNodes Graph Visualization › Error Handling and Recovery › should handle memory pressure gracefully (16.6s)
+  ✘  27 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:262:5 › SongNodes Graph Visualization › Accessibility and Usability › should maintain performance with accessibility features enabled (9.4s)
+  ✘  28 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:277:5 › SongNodes Graph Visualization › Accessibility and Usability › should be responsive on different screen sizes (11.1s)
+  ✓  29 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:300:5 › SongNodes Graph Visualization › Data Integrity › should maintain data consistency during operations (15.2s)
+  ✘  30 [firefox] › tests/e2e/graph-visualization.graph.spec.ts:317:5 › SongNodes Graph Visualization › Data Integrity › should handle rapid state changes without corruption (4.8s)
+WebGL Info: {
+  vendor: [32m'WebKit'[39m,
+  renderer: [32m'WebKit WebGL'[39m,
+  version: [32m'WebGL 2.0'[39m,
+  shadingLanguageVersion: [32m'WebGL GLSL ES 3.00'[39m,
+  maxTextureSize: [33m16384[39m,
+  maxViewportDims: Int32Array(2) [ [33m16384[39m, [33m16384[39m ],
+  extensions: [
+    [32m'EXT_clip_control'[39m,
+    [32m'EXT_color_buffer_float'[39m,
+    [32m'EXT_color_buffer_half_float'[39m,
+    [32m'EXT_conservative_depth'[39m,
+    [32m'EXT_depth_clamp'[39m,
+    [32m'EXT_float_blend'[39m,
+    [32m'EXT_polygon_offset_clamp'[39m,
+    [32m'EXT_render_snorm'[39m,
+    [32m'EXT_texture_compression_bptc'[39m,
+    [32m'EXT_texture_compression_rgtc'[39m,
+    [32m'EXT_texture_filter_anisotropic'[39m,
+    [32m'EXT_texture_mirror_clamp_to_edge'[39m,
+    [32m'EXT_texture_norm16'[39m,
+    [32m'KHR_parallel_shader_compile'[39m,
+    [32m'NV_shader_noperspective_interpolation'[39m,
+    [32m'OES_draw_buffers_indexed'[39m,
+    [32m'OES_sample_variables'[39m,
+    [32m'OES_shader_multisample_interpolation'[39m,
+    [32m'OES_texture_float_linear'[39m,
+    [32m'WEBGL_blend_func_extended'[39m,
+    [32m'WEBGL_clip_cull_distance'[39m,
+    [32m'WEBGL_compressed_texture_astc'[39m,
+    [32m'WEBGL_compressed_texture_etc'[39m,
+    [32m'WEBGL_compressed_texture_etc1'[39m,
+    [32m'WEBGL_compressed_texture_s3tc'[39m,
+    [32m'WEBGL_compressed_texture_s3tc_srgb'[39m,
+    [32m'WEBGL_debug_renderer_info'[39m,
+    [32m'WEBGL_debug_shaders'[39m,
+    [32m'WEBGL_lose_context'[39m,
+    [32m'WEBGL_multi_draw'[39m,
+    [32m'WEBGL_stencil_texturing'[39m
+  ]
+}
+  ✘  31 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:28:5 › SongNodes Graph Visualization › Core Rendering › should load and display graph with nodes and edges (5.5s)
+Canvas dimensions: {
+  width: [33m1500[39m,
+  height: [33m1212[39m,
+  style: { width: [32m'100%'[39m, height: [32m'100%'[39m },
+  clientWidth: [33m750[39m,
+  clientHeight: [33m606[39m,
+  offsetWidth: [33m750[39m,
+  offsetHeight: [33m606[39m
+}
+  ✘  32 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:54:5 › SongNodes Graph Visualization › Core Rendering › should render PIXI.js canvas with proper dimensions (5.2s)
+  ✓  33 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:78:5 › SongNodes Graph Visualization › Core Rendering › should initialize PIXI application correctly (4.5s)
+  ✘  34 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:95:5 › SongNodes Graph Visualization › Core Rendering › should handle missing or error data gracefully (14.9s)
+  ✘  35 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:117:5 › SongNodes Graph Visualization › Graph Elements Verification › should display music track nodes with metadata (4.7s)
+  ✘  36 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:138:5 › SongNodes Graph Visualization › Graph Elements Verification › should display track adjacency edges (4.6s)
+  ✓  37 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:154:5 › SongNodes Graph Visualization › Graph Elements Verification › should support track labels and metadata display (4.5s)
+LOD Performance: {
+  zoomedOut: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  },
+  zoomedIn: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  }
+}
+Performance metrics: {
+  frameRate: [33m0[39m,
+  renderTime: [33m0[39m,
+  nodeCount: [33m0[39m,
+  edgeCount: [33m0[39m,
+  visibleNodes: [33m0[39m,
+  visibleEdges: [33m0[39m,
+  memoryUsage: [33m0[39m
+}
+  ✘  38 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:172:5 › SongNodes Graph Visualization › Level of Detail (LOD) System › should implement LOD for performance optimization (12.1s)
+Culling test: {
+  initial: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  },
+  panned: {
+    frameRate: [33m0[39m,
+    renderTime: [33m0[39m,
+    nodeCount: [33m0[39m,
+    edgeCount: [33m0[39m,
+    visibleNodes: [33m0[39m,
+    visibleEdges: [33m0[39m,
+    memoryUsage: [33m0[39m
+  }
+}
+  ✓  39 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:200:5 › SongNodes Graph Visualization › Level of Detail (LOD) System › should cull distant objects for performance (6.6s)
+  ✓  40 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:218:5 › SongNodes Graph Visualization › Error Handling and Recovery › should handle WebGL context loss gracefully (5.5s)
+  ✘  41 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:241:5 › SongNodes Graph Visualization › Error Handling and Recovery › should handle memory pressure gracefully (17.3s)
+  ✘  42 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:262:5 › SongNodes Graph Visualization › Accessibility and Usability › should maintain performance with accessibility features enabled (5.5s)
+  ✘  43 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:277:5 › SongNodes Graph Visualization › Accessibility and Usability › should be responsive on different screen sizes (6.5s)
+  ✓  44 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:300:5 › SongNodes Graph Visualization › Data Integrity › should maintain data consistency during operations (5.4s)
+  ✘  45 [webkit] › tests/e2e/graph-visualization.graph.spec.ts:317:5 › SongNodes Graph Visualization › Data Integrity › should handle rapid state changes without corruption (6.9s)
+WebGL Info: {
+  vendor: [32m'WebKit'[39m,
+  renderer: [32m'WebKit WebGL'[39m,
+  version: [32m'WebGL 2.0 (OpenGL ES 3.0 Chromium)'[39m,
+  shadingLanguageVersion: [32m'WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)'[39m,
+  maxTextureSize: [33m8192[39m,
+  maxViewportDims: Int32Array(2) [ [33m8192[39m, [33m8192[39m ],
+  extensions: [
+    [32m'EXT_clip_control'[39m,
+    [32m'EXT_color_buffer_float'[39m,
+    [32m'EXT_color_buffer_half_float'[39m,
+    [32m'EXT_conservative_depth'[39m,
+    [32m'EXT_depth_clamp'[39m,
+    [32m'EXT_float_blend'[39m,
+    [32m'EXT_polygon_offset_clamp'[39m,
+    [32m'EXT_texture_compression_bptc'[39m,
+    [32m'EXT_texture_compression_rgtc'[39m,
+    [32m'EXT_texture_filter_anisotropic'[39m,
+    [32m'EXT_texture_mirror_clamp_to_edge'[39m,
+    [32m'NV_shader_noperspective_interpolation'[39m,
+    [32m'OES_draw_buffers_indexed'[39m,
+    [32m'OES_sample_variables'[39m,
+    [32m'OES_shader_multisample_interpolation'[39m,
+    [32m'OES_texture_float_linear'[39m,
+    [32m'OVR_multiview2'[39m,
+    [32m'WEBGL_clip_cull_distance'[39m,
+    [32m'WEBGL_compressed_texture_astc'[39m,
+    [32m'WEBGL_compressed_texture_etc'[39m,
+    [32m'WEBGL_compressed_texture_etc1'[39m,
+    [32m'WEBGL_compressed_texture_s3tc'[39m,
+    [32m'WEBGL_compressed_texture_s3tc_srgb'[39m,
+    [32m'WEBGL_debug_renderer_info'[39m,
+    [32m'WEBGL_debug_shaders'[39m,
+    [32m'WEBGL_lose_context'[39m,
+    [32m'WEBGL_multi_draw'[39m,
+    [32m'WEBGL_polygon_mode'[39m,
+    [32m'WEBGL_stencil_texturing'[39m
+  ]
+}
+  ✘  46 [graph-visualization] › tests/e2e/graph-visualization.graph.spec.ts:28:5 › SongNodes Graph Visualization › Core Rendering › should load and display graph with nodes and edges (2.7s)
+Canvas dimensions: {
+  width: [33m750[39m,
+  height: [33m606[39m,
+  style: { width: [32m'100%'[39m, height: [32m'100%'[39m },
+  clientWidth: [33m750[39m,
+  clientHeight: [33m606[39m,
+  offsetWidth: [33m750[39m,
+  offsetHeight: [33m606[39m
+}
+  ✘  47 [graph-visualization] › tests/e2e/graph-visualization.graph.spec.ts:54:5 › SongNodes Graph Visualization › Core Rendering › should render PIXI.js canvas with proper dimensions (3.3s)
+  ✓  48 [graph-visualization] › tests/e2e/graph-visualization.graph.spec.ts:78:5 › SongNodes Graph Visualization › Core Rendering › should initialize PIXI application correctly (2.4s)
