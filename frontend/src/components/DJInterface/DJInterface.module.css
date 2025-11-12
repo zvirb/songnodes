@@ -400,22 +400,72 @@
 }
 
 /* ============================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN (Mobile-First)
    ============================================ */
 
-@media (max-width: 1200px) {
-  .planModeLayout {
-    grid-template-columns: 220px 1fr 300px;
+/* Extra Small Phones (375px and below) */
+@media (max-width: 375px) {
+  .header {
+    padding: var(--fluid-space-sm) var(--fluid-space-xs);
+    min-height: var(--layout-mobile-header-height);
+  }
+
+  .headerTitle {
+    font-size: var(--fluid-font-base);
+  }
+
+  .headerLeft {
+    gap: var(--space-2);
+  }
+
+  .headerRight {
+    gap: var(--space-2);
+  }
+
+  .modeSelector {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .modeButton {
+    flex: 1;
+    padding: var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .statBadge {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .main {
+    padding: var(--space-2);
+    gap: var(--space-2);
   }
 }
 
-@media (max-width: 768px) {
+/* Small Phones (480px and below) */
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--fluid-space-sm);
+  }
+
+  .headerLeft {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .headerRight {
+    width: 100%;
     flex-wrap: wrap;
+    justify-content: center;
   }
 
   .playModeLayout {
     grid-template-columns: 1fr;
+    gap: var(--space-2);
   }
 
   .browserContainer {
@@ -425,10 +475,109 @@
   .planModeLayout {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr auto;
+    gap: var(--space-2);
+  }
+
+  .libraryPanel {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
   }
 
   .rightPanel {
     grid-row: 3;
+    max-height: 50vh;
+  }
+
+  .tabHeader {
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .tabButton {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-xs);
+  }
+
+  .tabContent {
+    padding: var(--space-3);
+  }
+
+  .graphContainer {
+    border-radius: var(--radius-md);
+    min-height: 300px;
+  }
+}
+
+/* Tablet Portrait (640px and below) */
+@media (max-width: 640px) {
+  .main {
+    padding: var(--fluid-space-sm);
+  }
+
+  .planModeLayout {
+    gap: var(--space-3);
+  }
+
+  .headerButton {
+    padding: var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .searchInput {
+    font-size: var(--font-size-sm);
+    padding: var(--space-2);
+  }
+}
+
+/* Tablet Landscape (768px and below) */
+@media (max-width: 768px) {
+  .playModeLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .planModeLayout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .rightPanel {
+    grid-row: 3;
+  }
+}
+
+/* Small Desktop (1024px and above) */
+@media (min-width: 1024px) {
+  .playModeLayout {
+    grid-template-columns: 1fr 400px;
+  }
+
+  .planModeLayout {
+    grid-template-columns: 240px 1fr 320px;
+  }
+
+  .browserContainer {
+    display: block;
+  }
+}
+
+/* Large Desktop (1200px and above) */
+@media (min-width: 1200px) {
+  .planModeLayout {
+    grid-template-columns: 280px 1fr 400px;
+  }
+
+  .playModeLayout {
+    grid-template-columns: 1fr 480px;
+  }
+}
+
+/* Extra Large Desktop (1440px and above) */
+@media (min-width: 1440px) {
+  .planModeLayout {
+    grid-template-columns: 320px 1fr 480px;
+  }
+
+  .main {
+    padding: var(--space-6);
   }
 }
 

@@ -822,6 +822,157 @@ select:focus-visible {
 }
 
 /* ============================================
+   MOBILE-FIRST RESPONSIVE UTILITIES
+   ============================================ */
+
+/* Fluid Typography (responsive font sizing) */
+.text-fluid-xs { font-size: var(--fluid-font-xs); }
+.text-fluid-sm { font-size: var(--fluid-font-sm); }
+.text-fluid-base { font-size: var(--fluid-font-base); }
+.text-fluid-lg { font-size: var(--fluid-font-lg); }
+.text-fluid-xl { font-size: var(--fluid-font-xl); }
+.text-fluid-2xl { font-size: var(--fluid-font-2xl); }
+
+/* Fluid Spacing (responsive padding/margin) */
+.p-fluid-xs { padding: var(--fluid-space-xs); }
+.p-fluid-sm { padding: var(--fluid-space-sm); }
+.p-fluid-md { padding: var(--fluid-space-md); }
+.p-fluid-lg { padding: var(--fluid-space-lg); }
+.p-fluid-xl { padding: var(--fluid-space-xl); }
+
+.m-fluid-xs { margin: var(--fluid-space-xs); }
+.m-fluid-sm { margin: var(--fluid-space-sm); }
+.m-fluid-md { margin: var(--fluid-space-md); }
+.m-fluid-lg { margin: var(--fluid-space-lg); }
+.m-fluid-xl { margin: var(--fluid-space-xl); }
+
+/* Responsive Display Utilities */
+.mobile-only {
+  display: block;
+}
+
+.tablet-up {
+  display: none;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+
+  .tablet-up {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* Touch-Friendly Spacing */
+.touch-target {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+}
+
+.touch-target-comfortable {
+  min-width: var(--touch-target-comfortable);
+  min-height: var(--touch-target-comfortable);
+}
+
+.touch-target-large {
+  min-width: var(--touch-target-large);
+  min-height: var(--touch-target-large);
+}
+
+/* Mobile Stack (vertical layout for small screens) */
+.mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .mobile-stack {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* Mobile Full Width */
+.mobile-full {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .mobile-full {
+    width: auto;
+  }
+}
+
+/* Responsive Containers */
+.container-fluid {
+  width: 100%;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .container-fluid {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-fluid {
+    max-width: var(--layout-content-max-width);
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Safe Area Support (for notched phones) */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+
+  .safe-top {
+    padding-top: max(var(--space-4), env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  }
+}
+
+/* Overflow Scroll with Momentum (iOS) */
+.scroll-touch {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide Scrollbars on Mobile */
+@media (max-width: 768px) {
+  .scroll-touch::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scroll-touch {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+/* ============================================
    DARK MODE TOGGLE (Future Enhancement)
    ============================================ */
 
