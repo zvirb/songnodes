@@ -1435,12 +1435,14 @@ class PersistencePipeline:
                     # Use asyncio.run_coroutine_threadsafe to schedule in the persistent thread's loop
                     import concurrent.futures
                     import time
+                    self.logger.info("Scheduling final flush_all_batches() in persistent loop...")
                     future = asyncio.run_coroutine_threadsafe(
                         self.flush_all_batches(),
                         self._persistent_loop
                     )
-                    # Wait for completion with longer timeout
-                    future.result(timeout=60)
+                    # Wait for completion with MUCH longer timeout to handle large batches
+                    self.logger.info("Waiting for flush completion (timeout: 300s)...")
+                    future.result(timeout=300)
                     # Give extra time for database commits to fully complete
                     time.sleep(0.5)
                     self.logger.info("✓ All batches flushed successfully")

@@ -1041,26 +1041,26 @@ async def get_graph_data():
         async with async_session() as session:
             # Get all edges (adjacencies) - only include edges where BOTH endpoints have valid artists
             # This ensures the graph is always connected and all nodes are displayable
+            # ✅ FIX: Use silver_enriched_tracks directly (same as REST API) instead of complex joins
             edges_query = text("""
                 SELECT
-                       ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
-                       'song_' || sa.song_id_1::text as source_id,
-                       'song_' || sa.song_id_2::text as target_id,
-                       sa.occurrence_count::float as weight,
+                       ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
+                       'song_' || tr.from_track_id::text as source_id,
+                       'song_' || tr.to_track_id::text as target_id,
+                       tr.occurrence_count::float as weight,
                        'sequential' as edge_type,
                        COUNT(*) OVER() as total_count
-                FROM song_adjacency sa
-                -- ✅ FIX: Ensure both endpoints have valid artist attribution
-                INNER JOIN tracks t1 ON sa.song_id_1 = t1.id
-                INNER JOIN track_artists ta1 ON t1.id = ta1.track_id AND ta1.role = 'primary'
-                INNER JOIN artists a1 ON ta1.artist_id = a1.id
-                INNER JOIN tracks t2 ON sa.song_id_2 = t2.id
-                INNER JOIN track_artists ta2 ON t2.id = ta2.track_id AND ta2.role = 'primary'
-                INNER JOIN artists a2 ON ta2.artist_id = a2.id
-                WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
-                  AND a1.name IS NOT NULL AND a1.name != '' AND a1.name != 'Unknown'
-                  AND a2.name IS NOT NULL AND a2.name != '' AND a2.name != 'Unknown'
-                ORDER BY occurrence_count DESC
+                FROM silver_track_transitions tr
+                INNER JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
+                INNER JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
+                WHERE tr.occurrence_count >= 1  -- Show all adjacency relationships
+                  AND t1.artist_name IS NOT NULL AND t1.artist_name != ''
+                  AND t1.artist_name != 'Unknown' AND t1.artist_name != 'Unknown Artist'
+                  AND t1.artist_name != 'Various Artists' AND t1.artist_name != 'VA'
+                  AND t2.artist_name IS NOT NULL AND t2.artist_name != ''
+                  AND t2.artist_name != 'Unknown' AND t2.artist_name != 'Unknown Artist'
+                  AND t2.artist_name != 'Various Artists' AND t2.artist_name != 'VA'
+                ORDER BY tr.occurrence_count DESC
                 LIMIT 30000  -- Increased from 5000 to show full graph (current max: ~26k edges)
             """)
             edges_result = await session.execute(edges_query)
@@ -1096,6 +1096,7 @@ async def get_graph_data():
                 # Extract UUIDs from 'song_<uuid>' format
                 clean_ids = [nid.replace('song_', '') for nid in referenced_node_ids]
 
+                # ✅ FIX: Use silver_enriched_tracks directly (same as REST API)
                 nodes_query = text("""
                         SELECT
                             'song_' || t.id::text as id,
@@ -1103,39 +1104,37 @@ async def get_graph_data():
                             0 as x_position,
                             0 as y_position,
                             json_build_object(
-                                'title', t.title,
-                                'artist', a.name,
+                                'title', t.track_title,
+                                'artist', t.artist_name,
                                 'node_type', 'song',
-                                'category', t.genre,
-                                'genre', t.genre,
+                                'category', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
+                                            THEN t.genre[1] ELSE 'Electronic' END,
+                                'genre', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
+                                         THEN t.genre[1] ELSE 'Electronic' END,
                                 'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
-                                -- DJ-Critical Fields (only existing columns)
+                                -- DJ-Critical Fields
                                 'bpm', t.bpm,
                                 'musical_key', t.key,
                                 'energy', t.energy,
                                 'danceability', t.danceability,
                                 'valence', t.valence,
                                 'duration_ms', t.duration_ms,
-                                -- Streaming Platform IDs (only existing columns)
+                                -- Streaming Platform IDs
                                 'spotify_id', t.spotify_id,
                                 'apple_music_id', t.apple_music_id,
                                 'isrc', t.isrc,
-                                -- Track Characteristics (only existing columns)
-                                'is_remix', t.is_remix,
-                                'is_mashup', t.is_mashup,
-                                'is_live', t.is_live,
                                 -- Release Information
-                                'release_date', t.release_date,
-                                'subgenre', t.subgenre
+                                'release_date', t.release_date
                             ) as metadata
-                        FROM tracks t
-                        INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                        INNER JOIN artists a ON ta.artist_id = a.id
+                        FROM silver_enriched_tracks t
                         WHERE t.id::text = ANY(:node_ids)
                           -- ✅ FIX: Only return nodes with valid artist attribution
-                          AND a.name IS NOT NULL
-                          AND a.name != ''
-                          AND a.name != 'Unknown'
+                          AND t.artist_name IS NOT NULL
+                          AND t.artist_name != ''
+                          AND t.artist_name != 'Unknown'
+                          AND t.artist_name != 'Unknown Artist'
+                          AND t.artist_name != 'Various Artists'
+                          AND t.artist_name != 'VA'
                         -- NO LIMIT: Return ALL nodes referenced by edges to ensure graph connectivity
                 """)
 
@@ -1144,6 +1143,7 @@ async def get_graph_data():
                 })
             else:
                 # No edges, just get top nodes (with artists only)
+                # ✅ FIX: Use silver_enriched_tracks directly
                 nodes_query = text("""
                     SELECT
                         'song_' || t.id::text as id,
@@ -1151,21 +1151,24 @@ async def get_graph_data():
                         0 as x_position,
                         0 as y_position,
                         json_build_object(
-                            'title', t.title,
-                            'artist', a.name,
+                            'title', t.track_title,
+                            'artist', t.artist_name,
                             'node_type', 'song',
-                            'category', t.genre,
-                            'genre', t.genre,
+                            'category', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
+                                        THEN t.genre[1] ELSE 'Electronic' END,
+                            'genre', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
+                                     THEN t.genre[1] ELSE 'Electronic' END,
                             'release_year', EXTRACT(YEAR FROM t.release_date),
                             'bpm', t.bpm,
                             'musical_key', t.key
                         ) as metadata
-                    FROM tracks t
-                    INNER JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                    INNER JOIN artists a ON ta.artist_id = a.id
-                    WHERE a.name IS NOT NULL
-                      AND a.name != ''
-                      AND a.name != 'Unknown'
+                    FROM silver_enriched_tracks t
+                    WHERE t.artist_name IS NOT NULL
+                      AND t.artist_name != ''
+                      AND t.artist_name != 'Unknown'
+                      AND t.artist_name != 'Unknown Artist'
+                      AND t.artist_name != 'Various Artists'
+                      AND t.artist_name != 'VA'
                     ORDER BY t.created_at DESC
                     LIMIT 5000  -- Increased from 1000 for fuller graph display
                 """)
