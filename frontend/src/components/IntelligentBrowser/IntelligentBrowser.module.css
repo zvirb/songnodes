@@ -559,21 +559,126 @@
   font-size: 11px;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Responsive Design (Mobile-First) */
+
+/* Extra Small Phones (375px and below) */
+@media (max-width: 375px) {
+  .container {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-md);
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .metric {
+    padding: var(--spacing-sm);
+  }
+
+  .metricValue {
+    font-size: 18px;
+  }
+
+  .searchInput {
+    padding: 10px 40px 10px 36px;
+    font-size: 14px;
+  }
+
+  .tabs {
+    gap: var(--spacing-xs);
+  }
+
+  .tab {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .trackItem {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+    min-height: 80px;
+  }
+
+  .scoreBadge {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .trackInfo .trackName {
+    font-size: 15px;
+  }
+
+  .trackInfo .trackArtist {
+    font-size: 13px;
+  }
+
+  .compatibilityGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xs);
+  }
+
+  .reasonTag {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+}
+
+/* Small Phones (480px and below) */
+@media (max-width: 480px) {
   .container {
     padding: var(--spacing-md);
+    max-height: 100vh;
+  }
+
+  .currentTrack {
+    gap: var(--spacing-sm);
+  }
+
+  .currentTrackHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .trackName {
+    font-size: 18px;
+  }
+
+  .trackArtist {
+    font-size: 14px;
   }
 
   .metricsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .compatibilityGrid {
-    grid-template-columns: repeat(2, 1fr);
+  .searchInput {
+    font-size: 14px;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filterInfo {
+    font-size: 12px;
+  }
+
+  .listContainer {
+    max-height: 60vh;
+    min-height: 200px;
   }
 
   .trackItem {
+    min-height: 88px; /* iOS touch target size */
+    padding: var(--spacing-md);
     grid-template-columns: auto 1fr;
     grid-template-areas:
       "score info"
@@ -581,17 +686,34 @@
       "reasons reasons";
   }
 
+  .compatibilityGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .previewButton {
     grid-area: auto;
     margin-top: var(--spacing-sm);
+    width: 100%;
+  }
+
+  .helpList {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
   }
 }
 
-/* Touch-friendly targets for mobile */
-@media (max-width: 768px) {
-  .trackItem {
-    min-height: 88px; /* iOS touch target size */
-    padding: var(--spacing-md);
+/* Tablet Portrait (640px and below) */
+@media (max-width: 640px) {
+  .container {
+    border-radius: var(--radius-md);
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .compatibilityGrid {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .tab,
@@ -599,6 +721,47 @@
   .previewButton {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+/* Tablet Landscape (768px and below) */
+@media (max-width: 768px) {
+  .container {
+    padding: var(--spacing-md);
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .compatibilityGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Small Desktop (1024px and above) */
+@media (min-width: 1024px) {
+  .container {
+    max-height: 80vh;
+  }
+
+  .listContainer {
+    max-height: 500px;
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Large Desktop (1200px and above) */
+@media (min-width: 1200px) {
+  .container {
+    padding: var(--spacing-xl);
+  }
+
+  .metricsGrid {
+    gap: var(--spacing-lg);
   }
 }
 

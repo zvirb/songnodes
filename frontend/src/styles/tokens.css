@@ -390,6 +390,35 @@
   --perspective-sm: 800px;
   --perspective-md: 1000px;
   --perspective-lg: 1200px;
+
+  /* ============================================
+     RESPONSIVE BREAKPOINTS (Mobile-First)
+     ============================================ */
+
+  /* Breakpoint Values (for reference in media queries) */
+  --breakpoint-xs: 375px;    /* Small phone */
+  --breakpoint-sm: 480px;    /* Large phone */
+  --breakpoint-md: 640px;    /* Tablet portrait */
+  --breakpoint-lg: 768px;    /* Tablet landscape */
+  --breakpoint-xl: 1024px;   /* Desktop */
+  --breakpoint-2xl: 1200px;  /* Large desktop */
+  --breakpoint-3xl: 1440px;  /* Extra large desktop */
+
+  /* Mobile-Specific Layout Dimensions */
+  --layout-mobile-header-height: 56px;
+  --layout-mobile-toolbar-height: 44px;
+  --layout-mobile-panel-min-width: 100%;
+  --layout-mobile-spacing: var(--space-3);
+
+  /* Tablet-Specific Layout Dimensions */
+  --layout-tablet-header-height: 60px;
+  --layout-tablet-sidebar-width: 240px;
+  --layout-tablet-panel-min-width: 320px;
+
+  /* Touch Target Sizes (WCAG 2.1 Level AA) */
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+  --touch-target-large: 56px;
 }
 
 /* ============================================
