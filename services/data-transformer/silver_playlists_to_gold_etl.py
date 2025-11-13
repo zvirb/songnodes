@@ -167,7 +167,6 @@ class SilverPlaylistsToGoldETL:
             artist_id = await conn.fetchval("""
                 INSERT INTO gold_artist_analytics (artist_name, silver_artist_id)
                 VALUES ($1, $2)
-                ON CONFLICT (artist_name) DO UPDATE SET artist_name = EXCLUDED.artist_name
                 RETURNING id
             """, artist_name, silver_artist_id)
 
