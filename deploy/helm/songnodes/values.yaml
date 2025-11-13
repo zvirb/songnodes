@@ -1551,11 +1551,11 @@ services:
           name: frontend-nginx-config
 
 autoscaling:
-  enabled: true
+  enabled: false  # Disabled: causes memory pressure, all services run single replica
   targets:
     restApi:
-      minReplicas: 3
-      maxReplicas: 10
+      minReplicas: 1
+      maxReplicas: 1
       metrics:
         - type: Resource
           resource:
@@ -1592,8 +1592,8 @@ autoscaling:
           selectPolicy: Max
 
     graphVisualization:
-      minReplicas: 2
-      maxReplicas: 8
+      minReplicas: 1
+      maxReplicas: 1
       metrics:
         - type: Resource
           resource:
@@ -1609,8 +1609,8 @@ autoscaling:
               averageUtilization: 80
 
     websocketApi:
-      minReplicas: 2
-      maxReplicas: 6
+      minReplicas: 1
+      maxReplicas: 1
       metrics:
         - type: Resource
           resource:
@@ -1626,8 +1626,8 @@ autoscaling:
               averageUtilization: 75
 
     nlpProcessor:
-      minReplicas: 2
-      maxReplicas: 5
+      minReplicas: 1
+      maxReplicas: 1
       metrics:
         - type: Resource
           resource:
@@ -1643,8 +1643,8 @@ autoscaling:
               averageUtilization: 85
 
     metadataEnrichment:
-      minReplicas: 2
-      maxReplicas: 6
+      minReplicas: 1
+      maxReplicas: 1
       metrics:
         - type: Resource
           resource:
