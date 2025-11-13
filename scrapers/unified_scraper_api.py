@@ -140,6 +140,9 @@ async def _run_spider(cmd: list[str], timeout: int = 900) -> Dict[str, Any]:
     stdout_text = stdout_bytes.decode("utf-8", errors="ignore") if stdout_bytes else ""
     stderr_text = stderr_bytes.decode("utf-8", errors="ignore") if stderr_bytes else ""
 
+    # Debug: Log lengths and returncode
+    logger.info(f"Process completed: returncode={process.returncode}, stdout_len={len(stdout_text)}, stderr_len={len(stderr_text)}")
+
     # Log subprocess output for debugging
     if stdout_text:
         logger.info("=" * 80)
