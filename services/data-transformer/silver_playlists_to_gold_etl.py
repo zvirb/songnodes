@@ -152,24 +152,24 @@ class SilverPlaylistsToGoldETL:
 
             # Try to find by name in gold layer artists table
             existing = await conn.fetchrow("""
-                SELECT artist_id FROM artists
-                WHERE name = $1 OR normalized_name = $2
+                SELECT id FROM gold_artist_analytics
+                WHERE artist_name = $1
                 LIMIT 1
-            """, artist_name, normalized)
+            """, artist_name)
 
             if existing:
                 logger.debug(
-                    f"✓ Found existing gold artist: '{artist_name}' (artist_id={existing['artist_id']})"
+                    f"✓ Found existing gold artist: '{artist_name}' (id={existing['id']})"
                 )
-                return existing['artist_id']
+                return existing['id']
 
             # Create new artist in gold layer if not found
             artist_id = await conn.fetchval("""
-                INSERT INTO artists (name, normalized_name)
+                INSERT INTO gold_artist_analytics (artist_name, silver_artist_id)
                 VALUES ($1, $2)
-                ON CONFLICT (normalized_name) DO UPDATE SET name = EXCLUDED.name
-                RETURNING artist_id
-            """, artist_name, normalized)
+                ON CONFLICT (artist_name) DO UPDATE SET artist_name = EXCLUDED.artist_name
+                RETURNING id
+            """, artist_name, silver_artist_id)
 
             logger.info(
                 f"✅ Created gold artist: '{artist_name}' (UUID: {artist_id})",
@@ -238,14 +238,11 @@ class SilverPlaylistsToGoldETL:
                 normalized_artist = re.sub(r'\s+', ' ', normalized_artist)
 
                 track_id = await conn.fetchval("""
-                    SELECT t.id
-                    FROM tracks t
-                    JOIN track_artists ta ON t.id = ta.track_id
-                    JOIN artists a ON ta.artist_id = a.artist_id
-                    WHERE t.normalized_title = $1
-                      AND (a.name = $2 OR a.normalized_name = $3)
+                    SELECT id
+                    FROM gold_track_analytics
+                    WHERE track_title = $1 AND artist_name = $2
                     LIMIT 1
-                """, normalized_title, artist_name, normalized_artist)
+                """, track_title, artist_name)
 
                 if track_id:
                     logger.debug(
@@ -259,10 +256,10 @@ class SilverPlaylistsToGoldETL:
 
             # Second try: title-only match (for tracks without artist info)
             track_id = await conn.fetchval("""
-                SELECT id FROM tracks
-                WHERE normalized_title = $1
+                SELECT id FROM gold_track_analytics
+                WHERE track_title = $1
                 LIMIT 1
-            """, normalized_title)
+            """, track_title)
 
             if track_id:
                 logger.debug(
