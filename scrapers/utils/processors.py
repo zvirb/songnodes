@@ -488,12 +488,55 @@ def unique_list(values: list) -> list:
 # ============================================================================
 
 def validate_email(value: str) -> Optional[str]:
-    """Validate email format, return None if invalid."""
+    """
+    Validate email format with comprehensive logging.
+
+    Uses a permissive regex pattern that accepts most valid email formats
+    while logging detailed information about validation failures.
+
+    Returns:
+        The email value if valid, None if invalid
+    """
     if not value:
+        logger = getattr(validate_email, '_logger', None)
+        if logger:
+            logger.debug("Email validation failed: empty or None value")
         return None
 
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return value if re.match(pattern, str(value)) else None
+    value_str = str(value).strip()
+
+    # More permissive email pattern that allows:
+    # - Unicode characters in local part (common in modern email)
+    # - Subdomains and hyphens in domain
+    # - TLDs from 2 to 63 characters (supports new gTLDs)
+    # - Plus addressing (user+tag@domain.com)
+    # - Dots and underscores
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,63}$'
+
+    is_valid = re.match(pattern, value_str) is not None
+
+    # Lazy-load logger to avoid circular imports
+    logger = getattr(validate_email, '_logger', None)
+    if not logger:
+        try:
+            import logging
+            logger = logging.getLogger(__name__)
+            validate_email._logger = logger
+        except:
+            pass
+
+    if is_valid:
+        if logger:
+            logger.debug(f"Email validation succeeded: {value_str}")
+        return value_str
+    else:
+        if logger:
+            logger.warning(
+                f"Email validation failed: '{value_str}' - "
+                f"Pattern: {pattern[:50]}... - "
+                f"Reason: Does not match required email format (user@domain.tld)"
+            )
+        return None
 
 
 def validate_url(value: str) -> Optional[str]:

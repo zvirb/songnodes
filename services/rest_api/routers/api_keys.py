@@ -635,7 +635,7 @@ async def _test_lastfm_key(key_value: str, key_name: str) -> Dict[str, Any]:
 
 async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
     """
-    Validate MusicBrainz User-Agent format
+    Validate MusicBrainz User-Agent format with comprehensive logging
 
     MusicBrainz requires meaningful User-Agent strings with contact info:
     - Format: AppName/Version (contact-info)
@@ -645,7 +645,10 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
     - See: https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
     """
 
+    logger.info(f"Validating MusicBrainz User-Agent: '{user_agent}'")
+
     if not user_agent or len(user_agent) < 10:
+        logger.warning(f"User-Agent validation failed: too short (length: {len(user_agent) if user_agent else 0})")
         return {
             'valid': False,
             'message': 'User-Agent too short (minimum 10 characters)',
@@ -653,6 +656,7 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
         }
 
     if '/' not in user_agent:
+        logger.warning(f"User-Agent validation failed: missing version separator '/' in '{user_agent}'")
         return {
             'valid': False,
             'message': 'Invalid User-Agent format. Expected: AppName/Version (contact)',
@@ -661,6 +665,7 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
 
     # Check for contact information (email or URL in parentheses)
     if '(' not in user_agent or ')' not in user_agent:
+        logger.warning(f"User-Agent validation failed: missing parentheses in '{user_agent}'")
         return {
             'valid': False,
             'message': 'User-Agent must include contact info in parentheses',
@@ -671,6 +676,7 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
     contact_start = user_agent.find('(')
     contact_end = user_agent.find(')')
     if contact_start >= contact_end:
+        logger.warning(f"User-Agent validation failed: invalid parentheses positioning in '{user_agent}'")
         return {
             'valid': False,
             'message': 'Invalid contact info format',
@@ -678,19 +684,42 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
         }
 
     contact_info = user_agent[contact_start+1:contact_end].strip()
+    logger.info(f"Extracted contact info from User-Agent: '{contact_info}'")
 
-    # Validate contact info contains email or URL
-    has_email = '@' in contact_info and '.' in contact_info
-    has_url = 'http://' in contact_info or 'https://' in contact_info or contact_info.startswith('+http')
+    # Validate contact info contains email or URL using proper validation
+    has_email = False
+    has_url = False
+
+    # Check for URL patterns
+    if 'http://' in contact_info or 'https://' in contact_info or contact_info.startswith('+http'):
+        has_url = True
+        logger.info(f"User-Agent contains URL in contact info: '{contact_info}'")
+
+    # Check for email using regex pattern (more permissive than simple @ and . check)
+    # Extract potential email from contact info (may have URLs too)
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,63}'
+    email_matches = re.findall(email_pattern, contact_info)
+    if email_matches:
+        has_email = True
+        # Get the full match (findall with groups returns tuples, we want the full match)
+        full_email_match = re.search(email_pattern, contact_info)
+        if full_email_match:
+            found_email = full_email_match.group(0)
+            logger.info(f"User-Agent contains valid email in contact info: '{found_email}'")
 
     if not (has_email or has_url):
+        logger.error(
+            f"User-Agent validation failed: no valid email or URL found in contact info. "
+            f"Contact info: '{contact_info}' - Expected format: 'email@example.com' or 'http://example.com'"
+        )
         return {
             'valid': False,
             'message': 'Contact info must include email or URL',
-            'error': 'No valid email or URL found in contact info'
+            'error': f"No valid email or URL found in contact info: '{contact_info}'"
         }
 
     # Test with actual MusicBrainz API
+    logger.info(f"Testing User-Agent with MusicBrainz API: '{user_agent}'")
     try:
         headers = {
             'User-Agent': user_agent,
@@ -704,18 +733,28 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
                 timeout=aiohttp.ClientTimeout(total=10)
             ) as response:
                 if response.status == 200:
+                    logger.info(f"✅ MusicBrainz User-Agent validated successfully: '{user_agent}'")
                     return {
                         'valid': True,
                         'message': 'MusicBrainz User-Agent is valid'
                     }
                 elif response.status == 400:
+                    error_body = await response.text()
+                    logger.error(
+                        f"❌ MusicBrainz rejected User-Agent (HTTP 400): '{user_agent}' - "
+                        f"Response: {error_body[:200]}"
+                    )
                     return {
                         'valid': False,
                         'message': 'Invalid User-Agent format',
-                        'error': 'MusicBrainz rejected the User-Agent'
+                        'error': f'MusicBrainz rejected the User-Agent: {error_body[:200]}'
                     }
                 else:
                     # Even if we get other errors, the User-Agent format is likely valid
+                    logger.warning(
+                        f"⚠️  MusicBrainz API returned HTTP {response.status} for User-Agent '{user_agent}', "
+                        f"but assuming format is valid"
+                    )
                     return {
                         'valid': True,
                         'message': 'MusicBrainz User-Agent format appears valid',
@@ -724,10 +763,14 @@ async def _test_musicbrainz_user_agent(user_agent: str) -> Dict[str, Any]:
 
     except Exception as e:
         # If we can't connect, assume format is valid if it has the right structure
+        logger.warning(
+            f"⚠️  Could not test User-Agent with MusicBrainz API: {str(e)} - "
+            f"Assuming format is valid based on structure validation"
+        )
         return {
             'valid': True,
             'message': 'MusicBrainz User-Agent format appears valid',
-            'details': {'note': 'Could not test with API, format validation only'}
+            'details': {'note': f'Could not test with API ({str(e)}), format validation only'}
         }
 
 async def _test_setlistfm_key(api_key: str) -> Dict[str, Any]:
