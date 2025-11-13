@@ -332,22 +332,22 @@ async def scrape(request: ScrapeRequest) -> Dict[str, Any]:
         # Scrape 1001tracklists with URL
         POST /scrape {"source": "1001tracklists", "url": "https://..."}
     """
-    # Wrap entire scraping operation with 5-minute (300s) timeout
+    # Wrap entire scraping operation with 15-minute (900s) timeout
     try:
         result = await asyncio.wait_for(
             _scrape_internal(request),
-            timeout=300.0  # 5 minutes - prevents indefinite hanging
+            timeout=900.0  # 15 minutes - matches spider timeout
         )
         return result
     except asyncio.TimeoutError:
         logger.error(
-            "Scrape request timeout: source=%s, exceeded 300 seconds",
+            "Scrape request timeout: source=%s, exceeded 900 seconds",
             request.source
         )
         scrape_requests_total.labels(source=request.source, status="timeout").inc()
         raise HTTPException(
             status_code=504,
-            detail=f"Scrape request timeout after 300 seconds for source '{request.source}'"
+            detail=f"Scrape request timeout after 900 seconds for source '{request.source}'"
         )
 
 
