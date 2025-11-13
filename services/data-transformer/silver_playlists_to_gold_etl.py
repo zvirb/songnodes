@@ -352,29 +352,51 @@ class SilverPlaylistsToGoldETL:
                 # Create unique source_url using silver playlist ID
                 source_url = f"silver_etl:{playlist_id}"
 
-                # Upsert playlist (using silver_playlist_id as unique key)
-                gold_playlist_id = await conn.fetchval("""
-                    INSERT INTO gold_playlist_analytics (
-                        silver_playlist_id, playlist_name, artist_name,
-                        event_name, event_date, track_count
+                # Check if playlist already exists
+                existing_playlist_id = await conn.fetchval("""
+                    SELECT id FROM gold_playlist_analytics
+                    WHERE silver_playlist_id = $1
+                """, playlist_id)
+
+                if existing_playlist_id:
+                    # Update existing playlist
+                    gold_playlist_id = await conn.fetchval("""
+                        UPDATE gold_playlist_analytics
+                        SET playlist_name = $2,
+                            artist_name = $3,
+                            event_name = $4,
+                            event_date = $5,
+                            track_count = $6,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $1
+                        RETURNING id
+                    """,
+                        existing_playlist_id,
+                        playlist_name,
+                        artist_name if artist_name else 'Unknown',
+                        silver_playlist.get('event_name'),
+                        silver_playlist.get('event_date'),
+                        len(silver_tracks)
                     )
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (silver_playlist_id) DO UPDATE SET
-                        playlist_name = EXCLUDED.playlist_name,
-                        artist_name = EXCLUDED.artist_name,
-                        event_name = EXCLUDED.event_name,
-                        event_date = EXCLUDED.event_date,
-                        track_count = EXCLUDED.track_count,
-                        updated_at = CURRENT_TIMESTAMP
-                    RETURNING id
-                """,
-                    playlist_id,  # silver_playlist_id (unique)
-                    playlist_name,  # playlist_name
-                    artist_name if artist_name else 'Unknown',  # artist_name (required)
-                    silver_playlist.get('event_name'),  # event_name
-                    silver_playlist.get('event_date'),  # event_date
-                    len(silver_tracks)  # track_count
-                )
+                    logger.debug(f"Updated gold playlist {gold_playlist_id} from silver {playlist_id}")
+                else:
+                    # Insert new playlist
+                    gold_playlist_id = await conn.fetchval("""
+                        INSERT INTO gold_playlist_analytics (
+                            silver_playlist_id, playlist_name, artist_name,
+                            event_name, event_date, track_count
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        RETURNING id
+                    """,
+                        playlist_id,
+                        playlist_name,
+                        artist_name if artist_name else 'Unknown',
+                        silver_playlist.get('event_name'),
+                        silver_playlist.get('event_date'),
+                        len(silver_tracks)
+                    )
+                    logger.debug(f"Created gold playlist {gold_playlist_id} from silver {playlist_id}")
 
                 self.stats['playlists_created'] += 1
 
@@ -470,8 +492,8 @@ class SilverPlaylistsToGoldETL:
                           WHERE spt.playlist_id = sep.id
                       )
                       AND NOT EXISTS (
-                          SELECT 1 FROM playlists p
-                          WHERE p.source_url = 'silver_etl:' || sep.id::text
+                          SELECT 1 FROM gold_playlist_analytics gpa
+                          WHERE gpa.silver_playlist_id = sep.id
                       )
                     ORDER BY sep.created_at ASC
                 """
