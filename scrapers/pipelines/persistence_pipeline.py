@@ -474,11 +474,15 @@ class PersistencePipeline:
         Args:
             item: Playlist item
         """
+        self.logger.info(f"🔍 _process_playlist_item called with item keys: {list(item.keys())}")
         playlist_name = item.get('setlist_name') or item.get('name', '').strip()
+        self.logger.info(f"🔍 Playlist name: {playlist_name}")
         if not playlist_name or playlist_name in self.processed_items['playlists']:
+            self.logger.warning(f"⚠️ Skipping playlist: name={'empty' if not playlist_name else playlist_name}, already_processed={playlist_name in self.processed_items['playlists']}")
             return
 
         self.processed_items['playlists'].add(playlist_name)
+        self.logger.info(f"✅ Processing playlist: {playlist_name}")
 
         # Extract validation fields
         tracklist_count = item.get('tracklist_count', item.get('total_tracks', 0))
@@ -550,7 +554,9 @@ class PersistencePipeline:
             event_date = None
 
         # MEDALLION: Add to BRONZE batch (raw data preservation)
+        self.logger.info(f"➕ Adding playlist to bronze_playlists batch (current size: {len(self.item_batches['bronze_playlists'])})")
         self.item_batches['bronze_playlists'].append(item)  # Store complete raw item
+        self.logger.info(f"📦 Bronze playlists batch now has {len(self.item_batches['bronze_playlists'])} items (batch_size={self.batch_size})")
 
         # MEDALLION: Add to SILVER batch (enriched data)
         silver_playlist = {
