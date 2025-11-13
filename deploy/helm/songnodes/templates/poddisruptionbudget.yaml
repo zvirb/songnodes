@@ -1,0 +1,21 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- range $service, $config := .Values.podDisruptionBudget.services }}
+{{- if $config.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $service }}-pdb
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $service }}
+    app.kubernetes.io/component: resilience
+    {{- include "songnodes.labels" $ | nindent 4 }}
+spec:
+  minAvailable: {{ $config.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $service }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1770,3 +1770,26 @@ cronjobs:
         memory: 2Gi
         cpu: 1000m
     podAnnotations: {}
+
+# PodDisruptionBudgets - Ensure minimum availability during disruptions
+podDisruptionBudget:
+  enabled: true
+  services:
+    postgres:
+      enabled: true
+      minAvailable: 1  # Critical: Always keep database available
+    rabbitmq:
+      enabled: true
+      minAvailable: 1  # Critical: Message queue must stay up
+    redis:
+      enabled: true
+      minAvailable: 1  # Critical: Cache must stay up
+    rest-api:
+      enabled: true
+      minAvailable: 1  # Keep API available during disruptions
+    graph-visualization:
+      enabled: true
+      minAvailable: 1  # Keep graph API available
+    metadata-enrichment:
+      enabled: true
+      minAvailable: 1  # Keep enrichment service available
