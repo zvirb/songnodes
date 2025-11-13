@@ -370,7 +370,7 @@ class SetlistBase(BaseModel):
     description: Optional[str] = None
 
     # Artist/DJ info
-    dj_artist_name: constr(min_length=1, max_length=255)
+    dj_artist_name: Optional[constr(min_length=1, max_length=255)] = None
     dj_artist_id: Optional[str] = None
     supporting_artists: Optional[List[str]] = None
 
