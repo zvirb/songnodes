@@ -140,6 +140,23 @@ async def _run_spider(cmd: list[str], timeout: int = 900) -> Dict[str, Any]:
     stdout_text = stdout_bytes.decode("utf-8", errors="ignore") if stdout_bytes else ""
     stderr_text = stderr_bytes.decode("utf-8", errors="ignore") if stderr_bytes else ""
 
+    # Log subprocess output for debugging
+    if stdout_text:
+        logger.info("=" * 80)
+        logger.info("SCRAPY STDOUT:")
+        logger.info("=" * 80)
+        for line in stdout_text.splitlines():
+            logger.info(line)
+        logger.info("=" * 80)
+
+    if stderr_text:
+        logger.warning("=" * 80)
+        logger.warning("SCRAPY STDERR:")
+        logger.warning("=" * 80)
+        for line in stderr_text.splitlines():
+            logger.warning(line)
+        logger.warning("=" * 80)
+
     return {
         "status": "success" if process.returncode == 0 else "error",
         "returncode": process.returncode,
