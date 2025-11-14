@@ -97,11 +97,11 @@ postgres:
     storageClassName: ""
   resources:
     requests:
-      memory: 1Gi
-      cpu: 500m
+      memory: 256Mi
+      cpu: 100m
     limits:
-      memory: 2Gi
-      cpu: 1000m
+      memory: 512Mi
+      cpu: 500m
   readinessProbe:
     enabled: true
     exec:
@@ -144,11 +144,11 @@ postgres:
     storageClassName: local-path
     resources:
       requests:
-        memory: 256Mi
-        cpu: 100m
+        memory: 128Mi
+        cpu: 50m
       limits:
-        memory: 512Mi
-        cpu: 500m
+        memory: 256Mi
+        cpu: 200m
 
 redis:
   enabled: true
@@ -167,7 +167,7 @@ redis:
     - --requirepass
     - $(REDIS_PASSWORD)
     - --maxmemory
-    - 512mb
+    - 32mb
     - --maxmemory-policy
     - allkeys-lru
     - --save
@@ -185,11 +185,11 @@ redis:
     storageClassName: ""
   resources:
     requests:
-      memory: 256Mi
-      cpu: 100m
+      memory: 16Mi
+      cpu: 10m
     limits:
-      memory: 512Mi
-      cpu: 500m
+      memory: 32Mi
+      cpu: 100m
   readinessProbe:
     enabled: true
     exec:
@@ -239,11 +239,11 @@ rabbitmq:
     storageClassName: ""
   resources:
     requests:
-      memory: 512Mi
-      cpu: 250m
+      memory: 192Mi
+      cpu: 100m
     limits:
-      memory: 1Gi
-      cpu: 1000m
+      memory: 384Mi
+      cpu: 500m
   readinessProbe:
     enabled: true
     exec:
@@ -350,11 +350,11 @@ services:
                 key: POSTGRES_PASSWORD
     resources:
       requests:
-        memory: 256Mi
-        cpu: 100m
+        memory: 96Mi
+        cpu: 50m
       limits:
-        memory: 512Mi
-        cpu: 500m
+        memory: 192Mi
+        cpu: 200m
     probes:
       liveness:
         enabled: true
@@ -413,11 +413,11 @@ services:
       secret: true
     resources:
       requests:
-        memory: 512Mi
-        cpu: 250m
+        memory: 96Mi
+        cpu: 50m
       limits:
-        memory: 1Gi
-        cpu: 1000m
+        memory: 192Mi
+        cpu: 200m
     probes:
       liveness:
         enabled: true
@@ -456,11 +456,11 @@ services:
       secret: true
     resources:
       requests:
-        memory: 256Mi
-        cpu: 100m
+        memory: 96Mi
+        cpu: 50m
       limits:
-        memory: 512Mi
-        cpu: 500m
+        memory: 192Mi
+        cpu: 200m
     probes:
       liveness:
         enabled: true
@@ -504,11 +504,11 @@ services:
         value: "llama3.2:latest"
     resources:
       requests:
-        memory: 512Mi
-        cpu: 200m
+        memory: 256Mi
+        cpu: 100m
       limits:
-        memory: 1Gi
-        cpu: 800m
+        memory: 512Mi
+        cpu: 500m
     probes:
       liveness:
         enabled: true
@@ -547,11 +547,11 @@ services:
       secret: true
     resources:
       requests:
-        memory: 512Mi
-        cpu: 250m
+        memory: 128Mi
+        cpu: 50m
       limits:
-        memory: 1Gi
-        cpu: 1000m
+        memory: 256Mi
+        cpu: 200m
     probes:
       liveness:
         enabled: true
@@ -1122,11 +1122,11 @@ services:
         PYTHONUNBUFFERED: "1"
     resources:
       requests:
-        memory: 512Mi
-        cpu: 250m
+        memory: 64Mi
+        cpu: 50m
       limits:
-        memory: 1Gi
-        cpu: 1000m
+        memory: 128Mi
+        cpu: 200m
     probes:
       liveness:
         enabled: true
@@ -1275,11 +1275,11 @@ services:
                 key: REDIS_PASSWORD
     resources:
       requests:
-        memory: 512Mi
-        cpu: 200m
+        memory: 128Mi
+        cpu: 50m
       limits:
-        memory: 1Gi
-        cpu: 800m
+        memory: 256Mi
+        cpu: 200m
     probes:
       liveness:
         enabled: true
@@ -1521,11 +1521,11 @@ services:
           }
     resources:
       requests:
-        memory: 128Mi
-        cpu: 50m
+        memory: 32Mi
+        cpu: 25m
       limits:
-        memory: 256Mi
-        cpu: 200m
+        memory: 64Mi
+        cpu: 100m
     probes:
       liveness:
         enabled: true
@@ -1742,11 +1742,11 @@ cronjobs:
     activeDeadlineSeconds: 7200
     resources:
       requests:
-        memory: 128Mi
-        cpu: 50m
+        memory: 32Mi
+        cpu: 25m
       limits:
-        memory: 512Mi
-        cpu: 500m
+        memory: 64Mi
+        cpu: 100m
     podAnnotations: {}
 
   goldToOperational:
@@ -1764,11 +1764,11 @@ cronjobs:
     activeDeadlineSeconds: 3600  # 1 hour timeout
     resources:
       requests:
-        memory: 512Mi
-        cpu: 250m
+        memory: 256Mi
+        cpu: 100m
       limits:
-        memory: 2Gi
-        cpu: 1000m
+        memory: 1Gi
+        cpu: 500m
     podAnnotations: {}
 
 # PodDisruptionBudgets - Ensure minimum availability during disruptions
