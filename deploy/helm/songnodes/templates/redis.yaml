@@ -26,6 +26,8 @@ metadata:
     {{- include "songnodes.labels" (dict "ctx" . "labels" (merge (dict "app.kubernetes.io/name" "redis" "app.kubernetes.io/component" "cache") (.Values.redis.labels | default dict))) | nindent 4 }}
 spec:
   replicas: {{ .Values.redis.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: redis

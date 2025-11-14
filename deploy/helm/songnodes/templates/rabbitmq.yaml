@@ -34,6 +34,9 @@ metadata:
 spec:
   serviceName: rabbitmq-service
   replicas: {{ .Values.rabbitmq.replicaCount }}
+  updateStrategy:
+    type: OnDelete
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app.kubernetes.io/name: rabbitmq

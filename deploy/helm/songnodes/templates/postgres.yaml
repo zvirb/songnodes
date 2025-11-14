@@ -30,6 +30,9 @@ metadata:
 spec:
   serviceName: postgres-service
   replicas: {{ .Values.postgres.replicaCount }}
+  updateStrategy:
+    type: OnDelete
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app.kubernetes.io/name: postgres
