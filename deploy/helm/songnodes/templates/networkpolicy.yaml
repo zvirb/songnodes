@@ -495,7 +495,12 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: scraper-orchestrator
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: target-track-scraper
       ports:
+        - protocol: TCP
+          port: 8000
         - protocol: TCP
           port: 8011
         - protocol: TCP
