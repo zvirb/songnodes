@@ -1771,6 +1771,30 @@ cronjobs:
         cpu: 500m
     podAnnotations: {}
 
+  targetTrackScraper:
+    enabled: true
+    schedule: "0 2 * * *"  # Run daily at 2 AM UTC
+    image:
+      repository: localhost:5000/songnodes_scraper-orchestrator
+      tag: latest
+      pullPolicy: Always
+    batchSize: 10  # Process 10 tracks at a time
+    delayBetweenBatches: 60  # 60 seconds between batches to respect rate limits
+    concurrencyPolicy: Forbid  # Don't allow overlapping jobs
+    restartPolicy: OnFailure
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+    backoffLimit: 2  # Retry failed jobs up to 2 times
+    activeDeadlineSeconds: 14400  # 4 hours for 278 tracks (10 tracks/batch * 60s delay = ~28 batches * 5min/batch = ~2.3 hours + buffer)
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    podAnnotations: {}
+
 # PodDisruptionBudgets - Ensure minimum availability during disruptions
 podDisruptionBudget:
   enabled: true

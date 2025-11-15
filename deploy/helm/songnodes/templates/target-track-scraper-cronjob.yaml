@@ -1,0 +1,151 @@
+{{- if .Values.cronjobs.targetTrackScraper.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: target-track-scraper
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "target-track-scraper" "app.kubernetes.io/component" "scraper")) | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjobs.targetTrackScraper.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cronjobs.targetTrackScraper.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .Values.cronjobs.targetTrackScraper.failedJobsHistoryLimit | default 3 }}
+  concurrencyPolicy: {{ .Values.cronjobs.targetTrackScraper.concurrencyPolicy | default "Forbid" }}
+  suspend: {{ .Values.cronjobs.targetTrackScraper.suspend | default false }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "target-track-scraper" "app.kubernetes.io/component" "scraper")) | nindent 8 }}
+      {{- if or .Values.global.commonAnnotations .Values.cronjobs.targetTrackScraper.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.cronjobs.targetTrackScraper.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      backoffLimit: {{ .Values.cronjobs.targetTrackScraper.backoffLimit | default 2 }}
+      activeDeadlineSeconds: {{ .Values.cronjobs.targetTrackScraper.activeDeadlineSeconds | default 14400 }}  # 4 hours for 278 tracks
+      template:
+        metadata:
+          labels:
+            {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "target-track-scraper" "app.kubernetes.io/component" "scraper")) | nindent 12 }}
+          {{- if or .Values.global.commonAnnotations .Values.cronjobs.targetTrackScraper.podAnnotations }}
+          annotations:
+            {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.cronjobs.targetTrackScraper.podAnnotations) | nindent 12 }}
+          {{- end }}
+        spec:
+          {{- if .Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- range .Values.global.imagePullSecrets }}
+            - name: {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          restartPolicy: {{ .Values.cronjobs.targetTrackScraper.restartPolicy | default "OnFailure" }}
+          initContainers:
+            - name: wait-for-postgres
+              image: postgres:15-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  for i in $(seq 1 40); do
+                    pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" && exit 0
+                    echo "Waiting for postgres at $POSTGRES_HOST:$POSTGRES_PORT..."
+                    sleep 3
+                  done
+                  echo "Postgres not reachable, giving up."
+                  exit 1
+              env:
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_HOST
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_PORT
+                - name: POSTGRES_DB
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: POSTGRES_PASSWORD
+            - name: wait-for-unified-scraper
+              image: curlimages/curl:latest
+              command:
+                - sh
+                - -c
+                - |
+                  for i in $(seq 1 30); do
+                    if curl -sf http://unified-scraper:8000/health > /dev/null; then
+                      echo "Unified scraper is ready"
+                      exit 0
+                    fi
+                    echo "Waiting for unified-scraper..."
+                    sleep 5
+                  done
+                  echo "Unified scraper not ready, giving up."
+                  exit 1
+          containers:
+            - name: target-track-scraper
+              image: {{ printf "%s:%s" .Values.cronjobs.targetTrackScraper.image.repository .Values.cronjobs.targetTrackScraper.image.tag }}
+              imagePullPolicy: {{ .Values.cronjobs.targetTrackScraper.image.pullPolicy | default "IfNotPresent" }}
+              command:
+                - python
+                - /app/target_track_scraper_job.py
+              env:
+                - name: POSTGRES_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_HOST
+                - name: POSTGRES_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_PORT
+                - name: POSTGRES_DB
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: POSTGRES_USER
+                - name: LOG_LEVEL
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ default .Values.global.configMapName .Values.config.name }}
+                      key: LOG_LEVEL
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: POSTGRES_PASSWORD
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default .Values.global.secretName .Values.secrets.name }}
+                      key: DATABASE_URL
+                - name: UNIFIED_SCRAPER_URL
+                  value: "http://unified-scraper:8000"
+                - name: BATCH_SIZE
+                  value: {{ .Values.cronjobs.targetTrackScraper.batchSize | default "10" | quote }}
+                - name: DELAY_BETWEEN_BATCHES
+                  value: {{ .Values.cronjobs.targetTrackScraper.delayBetweenBatches | default "60" | quote }}
+              {{- if .Values.cronjobs.targetTrackScraper.resources }}
+              resources:
+                {{- toYaml .Values.cronjobs.targetTrackScraper.resources | nindent 16 }}
+              {{- end }}
+{{- end }}
