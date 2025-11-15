@@ -1773,7 +1773,7 @@ cronjobs:
 
   targetTrackScraper:
     enabled: true
-    schedule: "0 2 * * *"  # Run daily at 2 AM UTC
+    schedule: "0 1,7,13,19 * * *"  # Run 4 times daily: 1 AM, 7 AM, 1 PM, 7 PM
     image:
       repository: localhost:5000/songnodes_scraper-orchestrator
       tag: latest
