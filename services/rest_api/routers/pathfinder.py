@@ -11,7 +11,16 @@ import logging
 from collections import defaultdict
 import math
 from annoy import AnnoyIndex
-from ..utils.pathfinder_utils import find_pivots
+import sys
+import os
+
+# Handle both direct imports and package imports
+try:
+    from ..utils.pathfinder_utils import find_pivots
+except (ImportError, ValueError):
+    # Fallback for direct module execution
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+    from utils.pathfinder_utils import find_pivots
 
 logger = logging.getLogger(__name__)
 

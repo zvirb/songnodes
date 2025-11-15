@@ -45,19 +45,9 @@ class RedisQueueConsumer:
         # HTTP client for calling scraper APIs
         self.http_client = httpx.AsyncClient(timeout=60.0)
 
-        # Scraper service mappings
+        # Scraper service mappings - All scrapers now unified in single service
         self.scraper_endpoints = {
-            '1001tracklists': 'http://scraper-1001tracklists:8011/scrape',
-            'mixesdb': 'http://scraper-mixesdb:8012/scrape',
-            'setlistfm': 'http://scraper-setlistfm:8013/scrape',
-            'reddit': 'http://scraper-reddit:8014/scrape',
-            'mixcloud': 'http://scraper-mixcloud:8015/scrape',
-            'soundcloud': 'http://scraper-soundcloud:8016/scrape',
-            'youtube': 'http://scraper-youtube:8017/scrape',
-            'internetarchive': 'http://scraper-internetarchive:8018/scrape',
-            'livetracklist': 'http://scraper-livetracklist:8019/scrape',
-            'residentadvisor': 'http://scraper-residentadvisor:8023/scrape',
-            'bbc_sounds_rave_forever': 'http://scraper-bbc-sounds:8026/scrape'
+            'unified-scraper': 'http://unified-scraper:8000/scrape'
         }
 
         self.running = True

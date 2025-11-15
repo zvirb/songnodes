@@ -3,7 +3,7 @@ FROM public.ecr.aws/docker/library/python:3.11-slim
 WORKDIR /app
 
 # Copy requirements first for better caching
-COPY rest_api/requirements.txt .
+COPY services/rest_api/requirements.txt .
 
 # System build deps for wheels (e.g., annoy)
 RUN apt-get update \
@@ -16,11 +16,11 @@ RUN apt-get update \
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared common directory with secrets_manager and artist_name_cleaner
-COPY common /app/common
+COPY services/common /app/common
 
 # Copy application code (includes pydantic_models.py copied from scrapers directory)
 # Note: pydantic_models.py is a copy of scrapers/pydantic_models.py for shared validation
-COPY rest_api/ .
+COPY services/rest_api/ .
 
 # Expose port
 EXPOSE 8082

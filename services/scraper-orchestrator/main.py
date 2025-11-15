@@ -224,12 +224,11 @@ class EnhancedConnectionManager:
         except Exception as e:
             health_status['redis'] = f'unhealthy: {e}'
 
-        # HTTP client health
-        try:
-            await self.http_client.get('https://httpbin.org/status/200', timeout=5.0)
+        # HTTP client health - just check if client exists (no external call needed)
+        if self.http_client:
             health_status['http_client'] = 'healthy'
-        except Exception as e:
-            health_status['http_client'] = f'unhealthy: {e}'
+        else:
+            health_status['http_client'] = 'unhealthy: client not initialized'
 
         return health_status
 
