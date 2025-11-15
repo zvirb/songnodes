@@ -67,7 +67,7 @@ class TargetTrackScraperJob:
             raise
 
     async def get_pending_searches(self, limit: int) -> List[Dict[str, Any]]:
-        """Get target tracks that haven't been searched yet or need retry"""
+        """Get target tracks to search for"""
         query = """
             SELECT
                 search_id,
@@ -76,13 +76,7 @@ class TargetTrackScraperJob:
                 target_title,
                 scraper_name
             FROM musicdb.target_track_searches
-            WHERE
-                (last_search_timestamp IS NULL
-                 OR last_search_timestamp < NOW() - INTERVAL '7 days')
-                AND (retry_count IS NULL OR retry_count < 3)
-            ORDER BY
-                last_search_timestamp ASC NULLS FIRST,
-                search_timestamp ASC
+            ORDER BY search_timestamp ASC
             LIMIT $1
         """
 
@@ -112,15 +106,8 @@ class TargetTrackScraperJob:
             response = await self.http_client.post(
                 f"{UNIFIED_SCRAPER_URL}/scrape",
                 json={
-                    'url': None,  # We're doing a search, not scraping a specific URL
-                    'search_query': search_query,
-                    'scraper': scraper_name,
-                    'metadata': {
-                        'discovered_via': 'target_track_search',
-                        'target_artist': search['target_artist'],
-                        'target_title': search['target_title'],
-                        'priority': 'high'
-                    }
+                    'source': scraper_name,  # Fixed: API expects 'source', not 'scraper'
+                    'search_query': search_query
                 }
             )
 
@@ -202,32 +189,19 @@ class TargetTrackScraperJob:
         items_found: int = 0,
         error: str = None
     ):
-        """Update the search status in the database"""
+        """Update the search results in the database"""
         if success:
             query = """
                 UPDATE musicdb.target_track_searches
                 SET
-                    last_search_timestamp = NOW(),
-                    search_status = 'completed',
-                    items_found = $2,
-                    retry_count = 0,
-                    last_error = NULL
+                    results_found = $2,
+                    playlists_containing = $2
                 WHERE search_id = $1
             """
             async with self.db_pool.acquire() as conn:
                 await conn.execute(query, search_id, items_found)
         else:
-            query = """
-                UPDATE musicdb.target_track_searches
-                SET
-                    last_search_timestamp = NOW(),
-                    search_status = 'failed',
-                    retry_count = COALESCE(retry_count, 0) + 1,
-                    last_error = $2
-                WHERE search_id = $1
-            """
-            async with self.db_pool.acquire() as conn:
-                await conn.execute(query, search_id, error)
+            logger.warning("Search failed but not updating error tracking", search_id=search_id, error=error)
 
     async def run(self):
         """Main execution loop"""
