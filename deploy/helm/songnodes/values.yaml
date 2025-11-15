@@ -1122,11 +1122,11 @@ services:
         PYTHONUNBUFFERED: "1"
     resources:
       requests:
-        memory: 64Mi
-        cpu: 50m
+        memory: 512Mi
+        cpu: 100m
       limits:
-        memory: 128Mi
-        cpu: 200m
+        memory: 1536Mi  # 1.5Gi for Scrapy + Playwright
+        cpu: 500m
     probes:
       liveness:
         enabled: true
