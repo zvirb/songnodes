@@ -45,7 +45,7 @@ POSTGRES_USER = os.getenv('POSTGRES_USER', 'musicdb_user')
 POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
 UNIFIED_SCRAPER_URL = os.getenv('UNIFIED_SCRAPER_URL', 'http://unified-scraper:8000')
 BATCH_SIZE = int(os.getenv('BATCH_SIZE', 10))
-DELAY_BETWEEN_BATCHES = int(os.getenv('DELAY_BETWEEN_BATCHES', 60))
+DELAY_BETWEEN_BATCHES = int(os.getenv('DELAY_BETWEEN_BATCHES', 20))
 
 class TargetTrackScraperJob:
     """Scrapes playlists/setlists for target tracks"""

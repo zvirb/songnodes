@@ -1773,13 +1773,13 @@ cronjobs:
 
   targetTrackScraper:
     enabled: true
-    schedule: "0 2,8,14,20 * * *"  # Run 4 times daily: 1 PM, 7 PM, 1 AM, 7 AM AEDT (UTC+11)
+    schedule: "23 23 * * *"  # Run once daily at 9:23am AEST (UTC+10)
     image:
       repository: localhost:5000/songnodes_scraper-orchestrator
       tag: latest
       pullPolicy: Always
     batchSize: 10  # Process 10 tracks at a time
-    delayBetweenBatches: 60  # 60 seconds between batches to respect rate limits
+    delayBetweenBatches: 20  # 20 seconds between batches to respect rate limits
     concurrencyPolicy: Forbid  # Don't allow overlapping jobs
     restartPolicy: OnFailure
     successfulJobsHistoryLimit: 3

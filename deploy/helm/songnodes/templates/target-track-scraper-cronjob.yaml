@@ -22,7 +22,7 @@ spec:
       {{- end }}
     spec:
       backoffLimit: {{ .Values.cronjobs.targetTrackScraper.backoffLimit | default 2 }}
-      activeDeadlineSeconds: {{ .Values.cronjobs.targetTrackScraper.activeDeadlineSeconds | default 14400 }}  # 4 hours for 278 tracks
+      activeDeadlineSeconds: {{ .Values.cronjobs.targetTrackScraper.activeDeadlineSeconds | default 86400 }}  # 24 hours for 278 tracks
       template:
         metadata:
           labels:
