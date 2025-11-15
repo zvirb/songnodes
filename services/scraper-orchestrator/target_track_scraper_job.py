@@ -8,9 +8,17 @@ import os
 import sys
 import httpx
 import structlog
+import logging
 from datetime import datetime
 from typing import List, Dict, Any
 import asyncpg
+
+# Configure Python's logging module to output to stdout
+logging.basicConfig(
+    format="%(message)s",
+    stream=sys.stdout,
+    level=logging.INFO,
+)
 
 # Configure structured logging
 structlog.configure(
