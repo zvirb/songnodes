@@ -45,6 +45,7 @@ spec:
               imagePullPolicy: {{ .Values.cronjobs.targetTrackScraper.image.pullPolicy | default "IfNotPresent" }}
               command:
                 - python
+                - -u
                 - /app/target_track_scraper_job.py
               env:
                 - name: POSTGRES_HOST
