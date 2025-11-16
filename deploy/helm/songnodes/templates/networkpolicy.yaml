@@ -465,6 +465,14 @@ spec:
           port: {{ .Values.rabbitmq.service.ports.amqp }}
         - protocol: TCP
           port: {{ .Values.rabbitmq.service.ports.management }}
+    # Allow metadata-enrichment service
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: enrichment
+      ports:
+        - protocol: TCP
+          port: {{ .Values.services.metadataEnrichment.service.ports.http.port }}
     # Allow internet (HTTPS/HTTP)
     # Note: No 'to' selector = allows ALL destinations including external IPs
     - ports:
@@ -472,6 +480,30 @@ spec:
           port: 80
         - protocol: TCP
           port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: scraper-to-enrichment
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "policy" "scraper-to-enrichment")) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: enrichment
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: scraper
+      ports:
+        - protocol: TCP
+          port: {{ .Values.services.metadataEnrichment.service.ports.http.port }}
+        - protocol: TCP
+          port: {{ .Values.config.data.METRICS_PORT | default "9090" | int }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
