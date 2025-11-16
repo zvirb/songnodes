@@ -125,8 +125,6 @@ spec:
         - protocol: TCP
           port: {{ .Values.services.graphVisualization.service.ports.http.port }}
         - protocol: TCP
-          port: {{ .Values.services.scraperOrchestrator.service.ports.http.port }}
-        - protocol: TCP
           port: {{ .Values.services.nlpProcessor.service.ports.http.port }}
     # Allow from frontend pods (for nginx reverse proxy)
     - from:
@@ -467,36 +465,6 @@ spec:
           port: {{ .Values.rabbitmq.service.ports.amqp }}
         - protocol: TCP
           port: {{ .Values.rabbitmq.service.ports.management }}
-    # Allow scraper-to-scraper communication (orchestrator to individual scrapers)
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/component: scraper
-      ports:
-        - protocol: TCP
-          port: 8000
-        - protocol: TCP
-          port: 8011
-        - protocol: TCP
-          port: 8012
-        - protocol: TCP
-          port: 8013
-        - protocol: TCP
-          port: 8014
-        - protocol: TCP
-          port: 8015
-        - protocol: TCP
-          port: 8016
-        - protocol: TCP
-          port: 8017
-        - protocol: TCP
-          port: 8018
-        - protocol: TCP
-          port: 8019
-        - protocol: TCP
-          port: 8023
-        - protocol: TCP
-          port: 8026
     # Allow internet (HTTPS/HTTP)
     # Note: No 'to' selector = allows ALL destinations including external IPs
     - ports:
@@ -520,9 +488,6 @@ spec:
     - Ingress
   ingress:
     - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: scraper-orchestrator
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: target-track-scraper
