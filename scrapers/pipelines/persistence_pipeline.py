@@ -610,9 +610,16 @@ class PersistencePipeline:
 
         # FIRST: Queue the track itself (so it exists when we create the relationship)
         # Use _process_track_item to handle this properly
+        # Generate synthetic track_id for bronze layer (artist::title format)
+        synthetic_track_id = f"{artist_name}::{track_name}" if artist_name and track_name else None
+
         await self._process_track_item({
             'track_name': track_name,
             'artist_name': artist_name,
+            # CRITICAL: Include source_track_id so bronze layer doesn't skip this track
+            'source_track_id': synthetic_track_id,
+            'data_source': item.get('source') or item.get('data_source', 'playlist_track'),
+            'source_url': item.get('source_url', 'unknown'),
             'normalized_title': item.get('normalized_title', track_name.lower().strip()),
             'normalized_artist': item.get('normalized_artist', artist_name.lower().strip()),
             'duration_seconds': item.get('duration_seconds'),
@@ -624,7 +631,6 @@ class PersistencePipeline:
             'musicbrainz_id': item.get('musicbrainz_id'),
             'soundcloud_id': item.get('soundcloud_id'),
             'beatport_id': item.get('beatport_id'),
-            'source': item.get('source', 'scraped_data'),
             'metadata': item.get('metadata')
         })
 
@@ -788,6 +794,31 @@ class PersistencePipeline:
                 source_track_id = item.get('source_track_id') or item.get('track_id')
                 scraper_version = item.get('scraper_version', 'v1.0.0')
 
+                # Extract fields for generating synthetic ID if needed
+                artist_name = item.get('artist_name', '').strip()
+                track_title = item.get('track_name') or item.get('title', '')
+
+                # CRITICAL FIX: Generate synthetic source_track_id if missing
+                # This prevents tracks from being skipped in bronze layer
+                if not source_track_id:
+                    if artist_name and track_title:
+                        # Generate deterministic ID based on artist + title
+                        source_track_id = f"{artist_name}::{track_title}"
+                        self.logger.debug(
+                            f"Bronze track #{idx}: Generated synthetic source_track_id='{source_track_id}'"
+                        )
+                    else:
+                        self.logger.warning(
+                            f"⚠️ Bronze track #{idx}: Cannot generate source_track_id - missing artist_name or track_title",
+                            extra={
+                                'source': source,
+                                'artist_name': artist_name,
+                                'track_title': track_title
+                            }
+                        )
+                        skipped_count += 1
+                        continue
+
                 # Log warnings for default values being used
                 if source == 'unknown':
                     self.logger.debug(
@@ -797,17 +828,6 @@ class PersistencePipeline:
                     self.logger.debug(
                         f"Bronze track #{idx}: Using default source_url='unknown'"
                     )
-                if not source_track_id:
-                    self.logger.warning(
-                        f"⚠️ Bronze track #{idx}: Missing source_track_id AND track_id - may cause conflicts",
-                        extra={
-                            'source': source,
-                            'artist_name': item.get('artist_name'),
-                            'track_title': item.get('track_name') or item.get('title')
-                        }
-                    )
-                    skipped_count += 1
-                    continue
 
                 # Serialize complete item as raw_json
                 try:
@@ -820,9 +840,7 @@ class PersistencePipeline:
                     error_count += 1
                     continue
 
-                # Extract fields for indexing
-                artist_name = item.get('artist_name', '')
-                track_title = item.get('track_name') or item.get('title', '')
+                # Note: artist_name and track_title already extracted above for ID generation
 
                 # Log missing critical fields
                 if not artist_name:
