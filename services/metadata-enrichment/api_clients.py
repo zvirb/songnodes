@@ -627,7 +627,24 @@ class SpotifyClient:
             return None
 
     def _extract_track_metadata(self, track: Dict) -> Dict[str, Any]:
-        """Extract metadata from Spotify track object"""
+        """Extract metadata from Spotify track object including album artwork"""
+        # Extract album artwork URLs in different sizes
+        # Spotify provides images in descending size order (largest first)
+        images = track.get('album', {}).get('images', [])
+        album_artwork_large = None
+        album_artwork_medium = None
+        album_artwork_small = None
+
+        if len(images) >= 1:
+            album_artwork_large = images[0].get('url')  # Typically 640x640
+        if len(images) >= 2:
+            album_artwork_medium = images[1].get('url')  # Typically 300x300
+        if len(images) >= 3:
+            album_artwork_small = images[2].get('url')  # Typically 64x64
+        elif len(images) >= 1:
+            # Fallback: use large image for all sizes if fewer images available
+            album_artwork_small = album_artwork_medium = album_artwork_large
+
         return {
             'spotify_id': track['id'],
             'isrc': track.get('external_ids', {}).get('isrc'),
@@ -640,7 +657,11 @@ class SpotifyClient:
             },
             'duration_ms': track['duration_ms'],
             'popularity': track.get('popularity'),
-            'preview_url': track.get('preview_url')
+            'preview_url': track.get('preview_url'),
+            # Album artwork URLs
+            'album_artwork_small': album_artwork_small,
+            'album_artwork_medium': album_artwork_medium,
+            'album_artwork_large': album_artwork_large
         }
 
 # ===================
@@ -1540,7 +1561,58 @@ class TidalClient:
             return None
 
     def _extract_track_metadata(self, track: Dict) -> Dict[str, Any]:
-        """Extract metadata from Tidal track object"""
+        """Extract metadata from Tidal track object including album artwork"""
+        # Extract album artwork URLs
+        # Tidal provides imageCover array with different sizes or uses resource.images
+        album_artwork_large = None
+        album_artwork_medium = None
+        album_artwork_small = None
+
+        # Try to get album artwork from various Tidal response formats
+        album_data = track.get('album', {})
+
+        # Format 1: imageCover array with different sizes
+        image_cover = album_data.get('imageCover', [])
+        if image_cover:
+            for img in image_cover:
+                width = img.get('width', 0)
+                url = img.get('url')
+                if url:
+                    if width >= 640:
+                        album_artwork_large = url
+                    elif width >= 300:
+                        album_artwork_medium = url
+                    elif width >= 64:
+                        album_artwork_small = url
+
+        # Format 2: Tidal's resource.images format (used in some endpoints)
+        resource = album_data.get('resource', {})
+        images = resource.get('images', {})
+        if images:
+            # Tidal image sizes: SMALL (80x80), MEDIUM (320x320), LARGE (640x640)
+            if images.get('LARGE'):
+                for img in images['LARGE']:
+                    album_artwork_large = img.get('url')
+                    break
+            if images.get('MEDIUM'):
+                for img in images['MEDIUM']:
+                    album_artwork_medium = img.get('url')
+                    break
+            if images.get('SMALL'):
+                for img in images['SMALL']:
+                    album_artwork_small = img.get('url')
+                    break
+
+        # Format 3: Fallback to album cover URL (if available as single URL)
+        if not album_artwork_large and album_data.get('cover'):
+            # Tidal cover format: base URL + size parameter
+            # Example: https://resources.tidal.com/images/{uuid}/{width}x{height}.jpg
+            cover = album_data.get('cover')
+            if cover:
+                album_artwork_large = f"{cover}/640x640.jpg"
+                album_artwork_medium = f"{cover}/320x320.jpg"
+                album_artwork_small = f"{cover}/80x80.jpg"
+
         return {
             'tidal_id': track.get('id'),
             'isrc': track.get('isrc'),
@@ -1559,5 +1631,9 @@ class TidalClient:
             },
             'duration_ms': track.get('duration', 0) * 1000,  # Tidal returns seconds
             'explicit': track.get('explicit', False),
-            'url': track.get('url')
+            'url': track.get('url'),
+            # Album artwork URLs
+            'album_artwork_small': album_artwork_small,
+            'album_artwork_medium': album_artwork_medium,
+            'album_artwork_large': album_artwork_large
         }
