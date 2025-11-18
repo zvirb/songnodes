@@ -754,6 +754,19 @@ class MetadataEnrichmentPipeline:
                     else:
                         params['genre'] = metadata['genre']
 
+                # Album artwork URLs from Spotify/Tidal/MusicBrainz
+                if metadata.get('album_artwork_small'):
+                    updates.append("album_artwork_small = :album_artwork_small")
+                    params['album_artwork_small'] = metadata['album_artwork_small']
+
+                if metadata.get('album_artwork_medium'):
+                    updates.append("album_artwork_medium = :album_artwork_medium")
+                    params['album_artwork_medium'] = metadata['album_artwork_medium']
+
+                if metadata.get('album_artwork_large'):
+                    updates.append("album_artwork_large = :album_artwork_large")
+                    params['album_artwork_large'] = metadata['album_artwork_large']
+
                 # Update metadata JSONB with all enrichment data
                 enrichment_data = {
                     'musicbrainz_id': metadata.get('musicbrainz_id'),
@@ -775,7 +788,7 @@ class MetadataEnrichmentPipeline:
 
                 if updates:
                     query = text(f"""
-                        UPDATE tracks
+                        UPDATE silver_enriched_tracks
                         SET {', '.join(updates)}
                         WHERE id = :track_id
                     """)
