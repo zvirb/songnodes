@@ -1,0 +1,109 @@
+# SoundCloud Parser Configuration
+# ================================
+# SoundCloud hosts DJ mixes and tracks with tracklists in descriptions or comments.
+
+source_name: "SoundCloud"
+source_type: "dj_archive"
+base_url: "https://soundcloud.com"
+
+selectors:
+  tracklist_container:
+    - "css:div.truncatedAudioInfo__content"
+    - "css:div.sc-description"
+    - "css:div[itemprop='description']"
+    - "xpath://div[contains(@class, 'truncatedAudioInfo')]"
+
+  track_row:
+    - "css:div.tracklist-item"
+    - "css:li.track-entry"
+    - "xpath://div[contains(@class, 'tracklist-item')]"
+
+  track_title:
+    - "css:span.track-title::text"
+    - "css:a.trackTitle::text"
+    - "xpath:.//span[contains(@class, 'track-title')]/text()"
+
+  artist_name:
+    - "css:span.artist::text"
+    - "css:a.trackArtist::text"
+    - "xpath:.//span[contains(@class, 'artist')]/text()"
+
+  timestamp:
+    - "css:span.timestamp::text"
+    - "css:time.track-timestamp::text"
+    - "xpath:.//span[contains(@class, 'timestamp')]/text()"
+
+  venue:
+    - "css:span.event-location::text"
+
+  date:
+    - "css:time.uploadTime::attr(datetime)"
+    - "css:time[pubdate]::attr(datetime)"
+    - "xpath://time/@datetime"
+
+  setlist_name:
+    - "css:h1.soundTitle__title span::text"
+    - "css:a.soundTitle__title::text"
+    - "css:h1[itemprop='name']::text"
+    - "xpath://h1[contains(@class, 'soundTitle')]/span/text()"
+
+  notes:
+    - "css:div.truncatedAudioInfo__content p::text"
+    - "css:div.sc-description::text"
+    - "xpath://div[contains(@class, 'description')]//text()"
+
+regex_patterns:
+  clean_track_title:
+    - pattern: "^\\d+[\\-\\.\\)]\\s*"
+      replace: ""
+    - pattern: "\\[.*?\\]$"
+      replace: ""
+    - pattern: "\\s{2,}"
+      replace: " "
+
+  clean_artist_name:
+    - pattern: "\\(.*?\\)"
+      replace: ""
+    - pattern: "^feat\\.?\\s+"
+      replace: ""
+      flags: "IGNORECASE"
+
+  extract_timestamp:
+    - pattern: "(\\d{1,2}:\\d{2}(?::\\d{2})?)"
+      group: 1
+
+  extract_date:
+    - pattern: "(\\d{4}-\\d{2}-\\d{2})"
+      group: 1
+
+data_mapping:
+  default_artist: ""
+  default_genre: "DJ Mix"
+  source_identifier: "soundcloud"
+  date_format: "%Y-%m-%d"
+  extract_timestamps: true
+  enable_nlp_fallback: true
+
+pagination:
+  enabled: false
+
+validation:
+  min_tracks: 1
+  max_tracks: 200
+  require_venue: false
+  require_date: false
+
+rate_limiting:
+  download_delay: 2.5
+  randomize_delay: 0.4
+  concurrent_requests: 1
+
+metadata:
+  created_by: "SongNodes Team"
+  created_at: "2025-11-21"
+  last_updated: "2025-11-21"
+  notes: "SoundCloud tracklists - often embedded in description text, NLP fallback recommended"
+  source_url_pattern: "https://soundcloud.com/{username}/{track-slug}"
+  example_urls:
+    - "https://soundcloud.com/deadmau5/mau5ville-level-complete"
+    - "https://soundcloud.com/anjunadeep/anjunadeep-edition-500"

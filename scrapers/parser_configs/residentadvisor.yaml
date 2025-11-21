@@ -1,0 +1,118 @@
+# Resident Advisor Parser Configuration
+# =====================================
+# Resident Advisor is a leading electronic music platform with DJ charts,
+# event listings, and tracklists from DJ sets.
+
+source_name: "Resident Advisor"
+source_type: "dj_archive"
+base_url: "https://ra.co"
+
+selectors:
+  tracklist_container:
+    - "css:ul.tracklist"
+    - "css:div.track-list"
+    - "css:section.tracks"
+    - "xpath://ul[contains(@class, 'tracklist')]"
+
+  track_row:
+    - "css:li.track"
+    - "css:div.track-item"
+    - "css:li[data-testid='track']"
+    - "xpath://li[contains(@class, 'track')]"
+
+  track_title:
+    - "css:span.track-title::text"
+    - "css:a.track-name::text"
+    - "css:div.title::text"
+    - "xpath:.//span[contains(@class, 'track-title')]/text()"
+
+  artist_name:
+    - "css:span.artist::text"
+    - "css:a.artist-name::text"
+    - "css:div.artist::text"
+    - "xpath:.//span[contains(@class, 'artist')]/text()"
+
+  timestamp:
+    - "css:span.timestamp::text"
+    - "css:span.time::text"
+    - "xpath:.//span[contains(@class, 'timestamp')]/text()"
+
+  venue:
+    - "css:a.venue-name::text"
+    - "css:span.venue::text"
+    - "css:div.event-venue a::text"
+    - "xpath://a[contains(@class, 'venue')]/text()"
+
+  date:
+    - "css:time.event-date::attr(datetime)"
+    - "css:span.date::text"
+    - "css:div.event-date::text"
+    - "xpath://time/@datetime"
+
+  setlist_name:
+    - "css:h1.event-title::text"
+    - "css:h1.dj-chart-title::text"
+    - "css:header h1::text"
+    - "xpath://h1[contains(@class, 'title')]/text()"
+
+  notes:
+    - "css:div.event-description::text"
+    - "css:div.chart-description::text"
+    - "xpath://div[contains(@class, 'description')]//text()"
+
+regex_patterns:
+  clean_track_title:
+    - pattern: "^\\d+\\.\\s*"
+      replace: ""
+    - pattern: "\\[.*?\\]$"
+      replace: ""
+    - pattern: "\\s{2,}"
+      replace: " "
+
+  clean_artist_name:
+    - pattern: "\\(.*?\\)"
+      replace: ""
+    - pattern: "^feat\\.?\\s+"
+      replace: ""
+      flags: "IGNORECASE"
+
+  extract_timestamp:
+    - pattern: "(\\d{1,2}:\\d{2}(?::\\d{2})?)"
+      group: 1
+
+  extract_date:
+    - pattern: "(\\d{4}-\\d{2}-\\d{2})"
+      group: 1
+
+data_mapping:
+  default_artist: ""
+  default_genre: "Electronic"
+  source_identifier: "residentadvisor"
+  date_format: "%Y-%m-%d"
+  extract_timestamps: true
+  enable_nlp_fallback: true
+
+pagination:
+  enabled: false
+
+validation:
+  min_tracks: 1
+  max_tracks: 100
+  require_venue: false
+  require_date: false
+
+rate_limiting:
+  download_delay: 2.5
+  randomize_delay: 0.4
+  concurrent_requests: 1
+
+metadata:
+  created_by: "SongNodes Team"
+  created_at: "2025-11-21"
+  last_updated: "2025-11-21"
+  notes: "Resident Advisor DJ charts, podcasts, and event tracklists"
+  source_url_pattern: "https://ra.co/dj/{dj-slug}/charts"
+  example_urls:
+    - "https://ra.co/dj/amelielens/charts"
+    - "https://ra.co/podcast/836"
+    - "https://ra.co/events/1234567"

@@ -76,16 +76,15 @@ SPIDER_MAP = {
 # Config files are in parser_configs/ directory
 GENERIC_ARCHIVE_CONFIGS = {
     "internetarchive": "archive_org_etree",
-    # The following sources do not have config files yet
-    # They will return a clear "not implemented" error
+    "mixcloud": "mixcloud",
+    "soundcloud": "soundcloud",
+    "youtube": "youtube",
+    "residentadvisor": "residentadvisor",
 }
 
 # Sources that are listed but not yet implemented
 NOT_IMPLEMENTED_SOURCES = {
-    "mixcloud": "Mixcloud parser config not implemented. Create parser_configs/mixcloud.yaml to enable.",
-    "soundcloud": "SoundCloud parser config not implemented. Create parser_configs/soundcloud.yaml to enable.",
-    "youtube": "YouTube parser config not implemented. Create parser_configs/youtube.yaml to enable.",
-    "residentadvisor": "Resident Advisor parser config not implemented. Create parser_configs/residentadvisor.yaml to enable.",
+    # All generic archive sources now have parser configs
 }
 
 
