@@ -379,6 +379,7 @@ class SilverPlaylistsToGoldETL:
                         len(silver_tracks)
                     )
                     logger.debug(f"Updated gold playlist {gold_playlist_id} from silver {playlist_id}")
+                    self.stats['playlists_updated'] += 1
                 else:
                     # Insert new playlist
                     gold_playlist_id = await conn.fetchval("""
@@ -397,8 +398,7 @@ class SilverPlaylistsToGoldETL:
                         len(silver_tracks)
                     )
                     logger.debug(f"Created gold playlist {gold_playlist_id} from silver {playlist_id}")
-
-                self.stats['playlists_created'] += 1
+                    self.stats['playlists_created'] += 1
 
             # Step 4 & 5: Map tracks from silver to gold and create relationships
             tracks_added = 0
@@ -436,7 +436,7 @@ class SilverPlaylistsToGoldETL:
             if self.stats['silver_playlists_processed'] % 10 == 0:
                 logger.info(
                     f"Progress: {self.stats['silver_playlists_processed']} playlists processed, "
-                    f"{self.stats['playlists_created']} created, "
+                    f"{self.stats['playlists_created']} created, {self.stats['playlists_updated']} updated, "
                     f"{self.stats['playlist_tracks_created']} track relationships created"
                 )
 
@@ -469,10 +469,9 @@ class SilverPlaylistsToGoldETL:
 
         try:
             async with self.pool.acquire() as conn:
-                # Query silver playlists that haven't been processed yet
-                # Exclude playlists already in gold layer (check by source_url pattern)
-                # Note: We filter by existence of tracks in silver_playlist_tracks, not by track_count
-                # since track_count may be out of sync
+                # Query all silver playlists for ETL processing
+                # The transform_silver_playlist method handles both INSERT (new playlists)
+                # and UPDATE (already-processed playlists with changed metadata)
                 query = """
                     SELECT DISTINCT
                         sep.id,
@@ -487,10 +486,6 @@ class SilverPlaylistsToGoldETL:
                         sep.validation_status,
                         sep.created_at
                     FROM silver_enriched_playlists sep
-                    WHERE NOT EXISTS (
-                          SELECT 1 FROM gold_playlist_analytics gpa
-                          WHERE gpa.silver_playlist_id = sep.id
-                      )
                     ORDER BY sep.created_at ASC
                 """
 
@@ -524,7 +519,8 @@ class SilverPlaylistsToGoldETL:
         logger.info("="*80)
         logger.info(f"Duration: {duration:.2f}s")
         logger.info(f"Silver playlists processed: {self.stats['silver_playlists_processed']}")
-        logger.info(f"Playlists created/updated: {self.stats['playlists_created']}")
+        logger.info(f"Playlists created: {self.stats['playlists_created']}")
+        logger.info(f"Playlists updated: {self.stats['playlists_updated']}")
         logger.info(f"Playlist-track relationships created: {self.stats['playlist_tracks_created']}")
         logger.info(f"Skipped (no tracks): {self.stats['skipped_no_tracks']}")
         logger.info(f"Errors: {self.stats['errors']}")
