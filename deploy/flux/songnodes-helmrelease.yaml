@@ -195,7 +195,7 @@ spec:
 
       # Individual scraper services - right-sized based on actual usage (36Mi observed)
       scraper1001tracklists:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -204,7 +204,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperMixesdb:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -213,7 +213,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperSetlistfm:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -222,7 +222,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperReddit:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -231,7 +231,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperMixcloud:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -240,7 +240,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperSoundcloud:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -249,7 +249,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperYoutube:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -258,7 +258,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperInternetarchive:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -267,7 +267,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperLivetracklist:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -276,7 +276,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperResidentadvisor:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi
@@ -285,7 +285,7 @@ spec:
             memory: 512Mi
             cpu: 500m
       scraperBbcSounds:
-        enabled: true
+        enabled: false
         resources:
           requests:
             memory: 128Mi

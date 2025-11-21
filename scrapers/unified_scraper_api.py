@@ -72,6 +72,22 @@ SPIDER_MAP = {
     "residentadvisor": "generic_archive",
 }
 
+# Generic archive config mapping - maps source to YAML config file name
+# Config files are in parser_configs/ directory
+GENERIC_ARCHIVE_CONFIGS = {
+    "internetarchive": "archive_org_etree",
+    # The following sources do not have config files yet
+    # They will return a clear "not implemented" error
+}
+
+# Sources that are listed but not yet implemented
+NOT_IMPLEMENTED_SOURCES = {
+    "mixcloud": "Mixcloud parser config not implemented. Create parser_configs/mixcloud.yaml to enable.",
+    "soundcloud": "SoundCloud parser config not implemented. Create parser_configs/soundcloud.yaml to enable.",
+    "youtube": "YouTube parser config not implemented. Create parser_configs/youtube.yaml to enable.",
+    "residentadvisor": "Resident Advisor parser config not implemented. Create parser_configs/residentadvisor.yaml to enable.",
+}
+
 
 class ScrapeRequest(BaseModel):
     """Request payload for triggering a spider."""
@@ -105,10 +121,15 @@ async def metrics() -> Response:
 
 @app.get("/sources")
 async def list_sources() -> Dict[str, Any]:
-    """List all supported scraper sources."""
+    """List all supported scraper sources with implementation status."""
+    implemented = [s for s in SPIDER_MAP.keys() if s not in NOT_IMPLEMENTED_SOURCES]
+    not_implemented = list(NOT_IMPLEMENTED_SOURCES.keys())
     return {
         "sources": list(SPIDER_MAP.keys()),
+        "implemented": implemented,
+        "not_implemented": not_implemented,
         "total_count": len(SPIDER_MAP),
+        "implemented_count": len(implemented),
     }
 
 
@@ -203,6 +224,13 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
             detail=f"Unknown source '{request.source}'. Supported: {list(SPIDER_MAP.keys())}",
         )
 
+    # Check if source is not implemented
+    if request.source in NOT_IMPLEMENTED_SOURCES:
+        raise HTTPException(
+            status_code=501,
+            detail=NOT_IMPLEMENTED_SOURCES[request.source],
+        )
+
     spider_name = SPIDER_MAP[request.source]
     task_id = request.task_id or f"{request.source}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
     start_time = time.time()
@@ -263,6 +291,20 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
             cmd.extend(["-a", f"artist_name={request.artist_name}"])
         if request.limit:
             cmd.extend(["-a", f"limit={request.limit}"])
+
+    elif request.source in GENERIC_ARCHIVE_CONFIGS:
+        # Generic archive spider requires config parameter
+        config_name = GENERIC_ARCHIVE_CONFIGS[request.source]
+        cmd.extend(["-a", f"config={config_name}"])
+        if request.url:
+            cmd.extend(["-a", f"start_url={request.url}"])
+        elif request.start_urls:
+            cmd.extend(["-a", f"start_url={request.start_urls}"])
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Source '{request.source}' requires 'url' or 'start_urls' parameter",
+            )
 
     # Add generic parameters from params dict
     for key, value in (request.params or {}).items():

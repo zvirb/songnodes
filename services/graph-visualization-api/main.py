@@ -381,7 +381,7 @@ async def get_graph_nodes(
         async with async_session() as session:
             try:
                 if center_node_id:
-                    # Graph traversal query using song_adjacency for relationships
+                    # Graph traversal query using silver_track_transitions for relationships
                     # Extract song UUID from node_id (format: 'song_<uuid>')
                     clean_node_id = center_node_id.replace('song_', '') if center_node_id.startswith('song_') else center_node_id
 
@@ -466,15 +466,15 @@ async def get_graph_nodes(
                             WITH valid_edges AS (
                                 -- Get edges where AT LEAST ONE endpoint has a valid artist
                                 SELECT DISTINCT
-                                    sa.song_id_1,
-                                    sa.song_id_2,
-                                    sa.occurrence_count
-                                FROM song_adjacency sa
-                                INNER JOIN graph_nodes n1 ON 'song_' || sa.song_id_1::text = n1.node_id
-                                INNER JOIN graph_nodes n2 ON 'song_' || sa.song_id_2::text = n2.node_id
+                                    tr.from_track_id,
+                                    tr.to_track_id,
+                                    tr.transition_count
+                                FROM silver_track_transitions tr
+                                INNER JOIN graph_nodes n1 ON 'song_' || tr.from_track_id::text = n1.node_id
+                                INNER JOIN graph_nodes n2 ON 'song_' || tr.to_track_id::text = n2.node_id
                                 WHERE n1.node_type = 'song'
                                   AND n2.node_type = 'song'
-                                  AND sa.occurrence_count >= 1
+                                  AND tr.transition_count >= 1
                                   -- At least ONE endpoint must have a valid artist
                                   AND (
                                     (n1.artist_name IS NOT NULL AND n1.artist_name != '' AND n1.artist_name != 'Unknown')
@@ -484,9 +484,9 @@ async def get_graph_nodes(
                             ),
                             valid_node_ids AS (
                                 -- Get all unique node IDs that appear in valid edges
-                                SELECT DISTINCT song_id_1 as song_id FROM valid_edges
+                                SELECT DISTINCT from_track_id as song_id FROM valid_edges
                                 UNION
-                                SELECT DISTINCT song_id_2 as song_id FROM valid_edges
+                                SELECT DISTINCT to_track_id as song_id FROM valid_edges
                             )
                             SELECT
                                 gn.node_id as id,
@@ -761,18 +761,18 @@ async def get_graph_edges(
 
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
-                               'song_' || sa.song_id_1::text as source_id,
-                               'song_' || sa.song_id_2::text as target_id,
-                               sa.occurrence_count::float as weight,
+                               ROW_NUMBER() OVER (ORDER BY tr.transition_count DESC) as row_number,
+                               'song_' || tr.from_track_id::text as source_id,
+                               'song_' || tr.to_track_id::text as target_id,
+                               tr.transition_count::float as weight,
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM song_adjacency sa
-                        JOIN tracks t1 ON sa.song_id_1 = t1.id
-                        JOIN tracks t2 ON sa.song_id_2 = t2.id
-                        WHERE (sa.song_id_1 = ANY(:song_ids) OR sa.song_id_2 = ANY(:song_ids))
-                          AND sa.occurrence_count >= 1  -- Show all adjacency relationships
-                        ORDER BY occurrence_count DESC
+                        FROM silver_track_transitions tr
+                        JOIN tracks t1 ON tr.from_track_id = t1.id
+                        JOIN tracks t2 ON tr.to_track_id = t2.id
+                        WHERE (tr.from_track_id = ANY(:song_ids) OR tr.to_track_id = ANY(:song_ids))
+                          AND tr.transition_count >= 1  -- Show all adjacency relationships
+                        ORDER BY transition_count DESC
                         LIMIT :limit OFFSET :offset
                     """).bindparams(
                         bindparam('song_ids', type_=ARRAY(UUID(as_uuid=True)))
@@ -784,21 +784,21 @@ async def get_graph_edges(
                         "offset": offset
                     })
                 else:
-                    # Query song_adjacency for SEQUENTIAL adjacencies only (consecutive tracks in setlists)
+                    # Query silver_track_transitions for SEQUENTIAL adjacencies only (consecutive tracks in setlists)
                     # Filter to only show the strongest adjacency relationships to reduce visual clutter
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY sa.occurrence_count DESC) as row_number,
-                               'song_' || sa.song_id_1::text as source_id,
-                               'song_' || sa.song_id_2::text as target_id,
-                               sa.occurrence_count::float as weight,
+                               ROW_NUMBER() OVER (ORDER BY tr.transition_count DESC) as row_number,
+                               'song_' || tr.from_track_id::text as source_id,
+                               'song_' || tr.to_track_id::text as target_id,
+                               tr.transition_count::float as weight,
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
-                        FROM song_adjacency sa
-                        JOIN tracks t1 ON sa.song_id_1 = t1.id
-                        JOIN tracks t2 ON sa.song_id_2 = t2.id
-                        WHERE sa.occurrence_count >= 1  -- Show all adjacency relationships
-                        ORDER BY occurrence_count DESC
+                        FROM silver_track_transitions tr
+                        JOIN tracks t1 ON tr.from_track_id = t1.id
+                        JOIN tracks t2 ON tr.to_track_id = t2.id
+                        WHERE tr.transition_count >= 1  -- Show all adjacency relationships
+                        ORDER BY transition_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
@@ -1044,23 +1044,23 @@ async def get_graph_data():
             # ✅ FIX: Use silver_enriched_tracks directly (same as REST API) instead of complex joins
             edges_query = text("""
                 SELECT
-                       ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
+                       ROW_NUMBER() OVER (ORDER BY tr.transition_count DESC) as row_number,
                        'song_' || tr.from_track_id::text as source_id,
                        'song_' || tr.to_track_id::text as target_id,
-                       tr.occurrence_count::float as weight,
+                       tr.transition_count::float as weight,
                        'sequential' as edge_type,
                        COUNT(*) OVER() as total_count
                 FROM silver_track_transitions tr
                 INNER JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
                 INNER JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
-                WHERE tr.occurrence_count >= 1  -- Show all adjacency relationships
+                WHERE tr.transition_count >= 1  -- Show all adjacency relationships
                   AND t1.artist_name IS NOT NULL AND t1.artist_name != ''
                   AND t1.artist_name != 'Unknown' AND t1.artist_name != 'Unknown Artist'
                   AND t1.artist_name != 'Various Artists' AND t1.artist_name != 'VA'
                   AND t2.artist_name IS NOT NULL AND t2.artist_name != ''
                   AND t2.artist_name != 'Unknown' AND t2.artist_name != 'Unknown Artist'
                   AND t2.artist_name != 'Various Artists' AND t2.artist_name != 'VA'
-                ORDER BY tr.occurrence_count DESC
+                ORDER BY tr.transition_count DESC
                 LIMIT 30000  -- Increased from 5000 to show full graph (current max: ~26k edges)
             """)
             edges_result = await session.execute(edges_query)
@@ -1121,7 +1121,6 @@ async def get_graph_data():
                                 'duration_ms', t.duration_ms,
                                 -- Streaming Platform IDs
                                 'spotify_id', t.spotify_id,
-                                'apple_music_id', t.apple_music_id,
                                 'isrc', t.isrc,
                                 -- Release Information
                                 'release_date', t.release_date
@@ -1240,10 +1239,10 @@ async def get_graph_stats():
                 edge_stats AS (
                     SELECT
                         COUNT(*) as total_edges,
-                        SUM(occurrence_count) as total_occurrences,
-                        AVG(occurrence_count) as avg_occurrence_count,
-                        MAX(occurrence_count) as max_occurrence_count
-                    FROM song_adjacency
+                        SUM(transition_count) as total_occurrences,
+                        AVG(transition_count) as avg_occurrence_count,
+                        MAX(transition_count) as max_occurrence_count
+                    FROM silver_track_transitions
                 ),
                 genre_stats AS (
                     SELECT
@@ -1362,10 +1361,10 @@ async def test_adjacency():
         async with async_session() as session:
             query = text("""
                 SELECT COUNT(*) as count
-                FROM song_adjacency sa
-                JOIN tracks t1 ON sa.song_id_1 = t1.id
-                JOIN tracks t2 ON sa.song_id_2 = t2.id
-                WHERE sa.occurrence_count >= 1
+                FROM silver_track_transitions tr
+                JOIN tracks t1 ON tr.from_track_id = t1.id
+                JOIN tracks t2 ON tr.to_track_id = t2.id
+                WHERE tr.transition_count >= 1
             """)
             result = await session.execute(query)
             count = result.scalar()
@@ -1810,17 +1809,17 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
             # Now get connected tracks via adjacency
             edges_query = text("""
                 SELECT
-                    'song_' || sa.song_id_1::text as source_id,
-                    'song_' || sa.song_id_2::text as target_id,
-                    sa.occurrence_count::float as weight,
+                    'song_' || tr.from_track_id::text as source_id,
+                    'song_' || tr.to_track_id::text as target_id,
+                    tr.transition_count::float as weight,
                     'adjacency' as edge_type,
                     -- Get connected track info
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN t2.title
+                        WHEN tr.from_track_id::text = :clean_node_id THEN t2.title
                         ELSE t1.title
                     END as connected_title,
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN
+                        WHEN tr.from_track_id::text = :clean_node_id THEN
                             COALESCE((SELECT a.name FROM track_artists ta
                                      JOIN artists a ON ta.artist_id = a.id
                                      WHERE ta.track_id = t2.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
@@ -1830,19 +1829,19 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                                      WHERE ta.track_id = t1.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
                     END as connected_artist,
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN t2.genre
+                        WHEN tr.from_track_id::text = :clean_node_id THEN t2.genre
                         ELSE t1.genre
                     END as connected_genre,
                     CASE
-                        WHEN sa.song_id_1::text = :clean_node_id THEN sa.song_id_2::text
-                        ELSE sa.song_id_1::text
+                        WHEN tr.from_track_id::text = :clean_node_id THEN tr.to_track_id::text
+                        ELSE tr.from_track_id::text
                     END as connected_id
-                FROM song_adjacency sa
-                LEFT JOIN tracks t1 ON sa.song_id_1 = t1.id
-                LEFT JOIN tracks t2 ON sa.song_id_2 = t2.id
-                WHERE (sa.song_id_1::text = :clean_node_id OR sa.song_id_2::text = :clean_node_id)
-                  AND sa.occurrence_count >= 1
-                ORDER BY sa.occurrence_count DESC
+                FROM silver_track_transitions tr
+                LEFT JOIN tracks t1 ON tr.from_track_id = t1.id
+                LEFT JOIN tracks t2 ON tr.to_track_id = t2.id
+                WHERE (tr.from_track_id::text = :clean_node_id OR tr.to_track_id::text = :clean_node_id)
+                  AND tr.transition_count >= 1
+                ORDER BY tr.transition_count DESC
                 LIMIT 20
             """)
 

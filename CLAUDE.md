@@ -39,6 +39,22 @@ Graph visualization **REQUIRES** valid artist attribution on **BOTH** endpoints 
 
 **Example:** Search "Deadmau5 Strobe" → Find "2019-06-15 Deadmau5 @ Ultra" → Scrape full tracklist (Ghosts 'n' Stuff → Strobe → I Remember → Some Chords) → Create transition edges
 
+### Unified Scraper Deployment (MANDATORY)
+
+**Deployment:** `unified-scraper` is the ONLY scraper pod allowed in production and development
+
+**Forbidden:** Individual scraper deployments (`scraper-1001tracklists`, `scraper-mixesdb`, `scraper-beatport`, etc.) are **strictly prohibited**
+
+**Architecture:** All spider types (mixesdb, 1001tracklists, beatport, etc.) run through the unified-scraper API (`POST http://unified-scraper:8012/scrape`)
+
+**Benefits:**
+- Memory efficiency: Single 1GB pod vs. 12+ individual pods (12GB+)
+- Centralized resilience: Shared proxy rotation, rate limiting, retry logic
+- Simplified management: One deployment to monitor, update, and scale
+- Unified configuration: Single source of truth for all scraping parameters
+
+**DO NOT:** Create separate Kubernetes deployments for individual spiders (e.g., Helm chart entries for `scraper-mixesdb-deployment`)
+
 ---
 
 ## 1. Setup

@@ -56,8 +56,6 @@ images:
     newTag: latest
   - name: songnodes/scraper-orchestrator
     newTag: latest
-  - name: songnodes/scraper-1001
-    newTag: latest
   - name: songnodes/frontend
     newTag: latest
 
