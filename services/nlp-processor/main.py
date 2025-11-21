@@ -16,6 +16,12 @@ from pathlib import Path
 from tracklist_extractor import TracklistExtractor
 import ollama
 from ollama import Client as OllamaClient
+import signal
+import sys
+from contextlib import asynccontextmanager
+import atexit
+import json
+import gc
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +45,56 @@ def initialize_ollama_client():
         logger.warning(f"⚠️ Could not connect to Ollama service: {e}")
         logger.info("NLP service will continue with spaCy-only mode")
         return False
+
+def cleanup_ollama_client():
+    """Cleanup Ollama client connections"""
+    global ollama_client
+    if ollama_client is not None:
+        try:
+            # Close the underlying HTTP client if it exists
+            if hasattr(ollama_client, '_client') and ollama_client._client is not None:
+                ollama_client._client.close()
+                logger.info("Ollama HTTP client closed")
+            if hasattr(ollama_client, 'close'):
+                ollama_client.close()
+                logger.info("Ollama client closed")
+            ollama_client = None
+            logger.info("Ollama client cleanup completed")
+        except Exception as e:
+            logger.error(f"Error closing Ollama client: {e}")
+
+def cleanup_nlp_resources():
+    """Cleanup NLP processor resources"""
+    global nlp_processor, tracklist_extractor
+    try:
+        if nlp_processor and hasattr(nlp_processor, 'nlp') and nlp_processor.nlp is not None:
+            # spaCy models don't have explicit close, but we can help garbage collection
+            nlp_processor.nlp = None
+            logger.info("spaCy NLP model cleared from memory")
+        
+        if tracklist_extractor and hasattr(tracklist_extractor, 'nlp') and tracklist_extractor.nlp is not None:
+            tracklist_extractor.nlp = None
+            logger.info("Tracklist extractor spaCy model cleared from memory")
+        
+        logger.info("NLP resources cleanup completed")
+    except Exception as e:
+        logger.error(f"Error cleaning up NLP resources: {e}")
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    cleanup_ollama_client()
+    cleanup_nlp_resources()
+    logger.info("Shutdown cleanup completed")
+    sys.exit(0)
+
+# Register signal handlers for graceful shutdown
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+
+# Register atexit handler as fallback
+atexit.register(cleanup_ollama_client)
+atexit.register(cleanup_nlp_resources)
 
 # Metrics tracking
 start_time = time.time()
@@ -247,10 +303,23 @@ tracklist_extractor = TracklistExtractor()
 # Initialize Ollama client
 ollama_available = initialize_ollama_client()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan context manager for startup and shutdown"""
+    # Startup
+    logger.info("NLP Processor service starting up...")
+    yield
+    # Shutdown
+    logger.info("NLP Processor service shutting down...")
+    cleanup_ollama_client()
+    cleanup_nlp_resources()
+    logger.info("NLP Processor shutdown completed")
+
 app = FastAPI(
     title="NLP Processor Service",
     description="Natural Language Processing for music data with Ollama LLM integration",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -483,6 +552,7 @@ async def llm_extract_tracklist(request: TracklistExtractionRequest):
         logger.warning("Ollama not available, using spaCy fallback")
         return await extract_tracklist(request)
 
+    response = None
     try:
         prompt = f"""Extract a tracklist from the following text. Return ONLY a JSON array of tracks with this exact format:
 [
@@ -508,16 +578,15 @@ Requirements:
             prompt=prompt,
             stream=False,
             options={
-                "temperature": 0.3,  # Low temperature for structured extraction
+                "temperature": 0.3,
                 "num_predict": 2000
             }
         )
 
-        response_text = response['response'].strip()
+        response_text = response.get('response', '').strip()
         logger.info(f"Ollama response: {response_text[:200]}...")
 
         # Try to parse JSON from response
-        import json
         try:
             # Find JSON array in response
             start_idx = response_text.find('[')
@@ -546,6 +615,9 @@ Requirements:
         logger.error(f"Ollama extraction failed: {e}")
         # Fallback to spaCy
         return await extract_tracklist(request)
+    finally:
+        # Ensure response is dereferenced
+        response = None
 
 @app.post("/llm/classify_genre")
 async def llm_classify_genre(request: GenreClassificationRequest):
@@ -559,6 +631,7 @@ async def llm_classify_genre(request: GenreClassificationRequest):
             detail="Ollama service not available. Use /analyze endpoint for rule-based genre detection."
         )
 
+    response = None
     try:
         context_parts = []
         if request.artist_name:
@@ -594,10 +667,9 @@ Return valid JSON only, no other text."""
             }
         )
 
-        response_text = response['response'].strip()
+        response_text = response.get('response', '').strip()
 
         # Parse JSON response
-        import json
         start_idx = response_text.find('{')
         end_idx = response_text.rfind('}') + 1
         if start_idx != -1 and end_idx > start_idx:
@@ -616,6 +688,9 @@ Return valid JSON only, no other text."""
         error_count += 1
         logger.error(f"Genre classification failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Ensure response is dereferenced
+        response = None
 
 @app.post("/llm/generate")
 async def llm_generate(request: LLMInferenceRequest):
@@ -629,6 +704,7 @@ async def llm_generate(request: LLMInferenceRequest):
             detail="Ollama service not available"
         )
 
+    response = None
     try:
         full_prompt = request.prompt
         if request.context:
@@ -646,17 +722,23 @@ async def llm_generate(request: LLMInferenceRequest):
             }
         )
 
+        generated_text = response.get('response', '')
+        response_length = len(generated_text)
+
         return {
-            "generated_text": response['response'],
+            "generated_text": generated_text,
             "model": OLLAMA_MODEL,
             "prompt_length": len(full_prompt),
-            "response_length": len(response['response'])
+            "response_length": response_length
         }
 
     except Exception as e:
         error_count += 1
         logger.error(f"LLM generation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Ensure response is dereferenced
+        response = None
 
 if __name__ == "__main__":
     import uvicorn

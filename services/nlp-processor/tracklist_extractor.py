@@ -3,6 +3,7 @@ import spacy
 import re
 from typing import List, Dict, Optional
 import logging
+import gc
 
 logger = logging.getLogger(__name__)
 
@@ -32,23 +33,27 @@ class TracklistExtractor:
         """
         tracks = []
 
-        # Strategy 1: Structured patterns (most reliable)
-        structured_tracks = self._extract_structured_patterns(text, extract_timestamps)
-        if structured_tracks:
-            tracks.extend(structured_tracks)
+        try:
+            # Strategy 1: Structured patterns (most reliable)
+            structured_tracks = self._extract_structured_patterns(text, extract_timestamps)
+            if structured_tracks:
+                tracks.extend(structured_tracks)
 
-        # Strategy 2: spaCy NER (for unstructured text)
-        if not tracks and self.nlp:
-            ner_tracks = self._extract_with_spacy(text)
-            if ner_tracks:
-                tracks.extend(ner_tracks)
+            # Strategy 2: spaCy NER (for unstructured text)
+            if not tracks and self.nlp:
+                ner_tracks = self._extract_with_spacy(text)
+                if ner_tracks:
+                    tracks.extend(ner_tracks)
 
-        # Strategy 3: Fallback regex patterns
-        if not tracks:
-            fallback_tracks = self._extract_fallback_patterns(text)
-            tracks.extend(fallback_tracks)
+            # Strategy 3: Fallback regex patterns
+            if not tracks:
+                fallback_tracks = self._extract_fallback_patterns(text)
+                tracks.extend(fallback_tracks)
 
-        return self._deduplicate_tracks(tracks)
+            return self._deduplicate_tracks(tracks)
+        finally:
+            # Force garbage collection to release spaCy doc objects
+            gc.collect()
 
     def _extract_structured_patterns(self, text: str, extract_timestamps: bool) -> List[Dict]:
         """Extract from well-formatted tracklists using expanded pattern library"""
@@ -197,48 +202,54 @@ class TracklistExtractor:
         if not self.nlp:
             return []
 
-        doc = self.nlp(text)
         tracks = []
+        doc = None
+        try:
+            doc = self.nlp(text)
+            
+            # Look for PERSON entities (likely artists) followed by WORK_OF_ART (tracks)
+            entities = list(doc.ents)
+            for i, ent in enumerate(entities):
+                if ent.label_ == "PERSON":
+                    # Look for following entities that might be track names
+                    if i + 1 < len(entities):
+                        next_ent = entities[i + 1]
+                        if next_ent.label_ in ["WORK_OF_ART", "PRODUCT"]:
+                            tracks.append({
+                                'artist': self._clean_text(ent.text),
+                                'title': self._clean_text(next_ent.text),
+                                'confidence': 0.7
+                            })
 
-        # Look for PERSON entities (likely artists) followed by WORK_OF_ART (tracks)
-        entities = list(doc.ents)
-        for i, ent in enumerate(entities):
-            if ent.label_ == "PERSON":
-                # Look for following entities that might be track names
-                if i + 1 < len(entities):
-                    next_ent = entities[i + 1]
-                    if next_ent.label_ in ["WORK_OF_ART", "PRODUCT"]:
+            # Alternative: Look for "feat.", "vs", "x" patterns
+            feat_pattern = r'([A-Z][a-zA-Z\s]+)\s+(?:feat\.|ft\.|vs\.?|x)\s+([A-Z][a-zA-Z\s]+)\s+-\s+([^\n]+)'
+            for match in re.finditer(feat_pattern, text):
+                tracks.append({
+                    'artist': self._clean_text(f"{match.group(1)} feat. {match.group(2)}"),
+                    'title': self._clean_text(match.group(3)),
+                    'confidence': 0.75
+                })
+
+            # Look for common collaboration patterns using spaCy
+            for sent in doc.sents:
+                sent_text = sent.text
+                # Check for artist collaboration indicators
+                if any(collab in sent_text.lower() for collab in ['feat.', 'ft.', 'featuring', 'vs', 'x', '&']):
+                    # Extract using pattern
+                    collab_pattern = r'([A-Z][a-zA-Z\s&]+?)\s+(?:feat\.|ft\.|featuring|vs\.?|x|&)\s+([A-Z][a-zA-Z\s&]+?)\s+-\s+(.+?)(?:\n|$)'
+                    match = re.search(collab_pattern, sent_text)
+                    if match:
                         tracks.append({
-                            'artist': self._clean_text(ent.text),
-                            'title': self._clean_text(next_ent.text),
-                            'confidence': 0.7
+                            'artist': self._clean_text(f"{match.group(1)} feat. {match.group(2)}"),
+                            'title': self._clean_text(match.group(3)),
+                            'confidence': 0.8
                         })
 
-        # Alternative: Look for "feat.", "vs", "x" patterns
-        feat_pattern = r'([A-Z][a-zA-Z\s]+)\s+(?:feat\.|ft\.|vs\.?|x)\s+([A-Z][a-zA-Z\s]+)\s+-\s+([^\n]+)'
-        for match in re.finditer(feat_pattern, text):
-            tracks.append({
-                'artist': self._clean_text(f"{match.group(1)} feat. {match.group(2)}"),
-                'title': self._clean_text(match.group(3)),
-                'confidence': 0.75
-            })
-
-        # Look for common collaboration patterns using spaCy
-        for sent in doc.sents:
-            sent_text = sent.text
-            # Check for artist collaboration indicators
-            if any(collab in sent_text.lower() for collab in ['feat.', 'ft.', 'featuring', 'vs', 'x', '&']):
-                # Extract using pattern
-                collab_pattern = r'([A-Z][a-zA-Z\s&]+?)\s+(?:feat\.|ft\.|featuring|vs\.?|x|&)\s+([A-Z][a-zA-Z\s&]+?)\s+-\s+(.+?)(?:\n|$)'
-                match = re.search(collab_pattern, sent_text)
-                if match:
-                    tracks.append({
-                        'artist': self._clean_text(f"{match.group(1)} feat. {match.group(2)}"),
-                        'title': self._clean_text(match.group(3)),
-                        'confidence': 0.8
-                    })
-
-        return tracks
+            return tracks
+        finally:
+            # Explicitly release the spaCy doc to free memory
+            doc = None
+            gc.collect()
 
     def _extract_fallback_patterns(self, text: str) -> List[Dict]:
         """Last resort: basic patterns"""
@@ -309,34 +320,38 @@ class TracklistExtractor:
             'estimated_tracks': 0
         }
 
-        # Check for timestamps
-        if re.search(r'\d{1,2}:\d{2}', text):
-            analysis['has_timestamps'] = True
+        try:
+            # Check for timestamps
+            if re.search(r'\d{1,2}:\d{2}', text):
+                analysis['has_timestamps'] = True
 
-        # Check for numbering
-        if re.search(r'^\s*\d+\.\s+', text, re.MULTILINE):
-            analysis['has_numbering'] = True
+            # Check for numbering
+            if re.search(r'^\s*\d+\.\s+', text, re.MULTILINE):
+                analysis['has_numbering'] = True
 
-        # Check separator type
-        if ' - ' in text:
-            analysis['separator_type'] = 'dash'
-        elif ' – ' in text:  # En dash
-            analysis['separator_type'] = 'en_dash'
+            # Check separator type
+            if ' - ' in text:
+                analysis['separator_type'] = 'dash'
+            elif ' – ' in text:  # En dash
+                analysis['separator_type'] = 'en_dash'
 
-        # Determine format type
-        if analysis['has_timestamps']:
-            if re.search(r'\[(\d{1,2}:\d{2})\]', text):
-                analysis['format_type'] = 'bracketed_timestamps'
-            else:
-                analysis['format_type'] = 'plain_timestamps'
-        elif analysis['has_numbering']:
-            analysis['format_type'] = 'numbered_list'
-        elif analysis['separator_type']:
-            analysis['format_type'] = 'simple_list'
+            # Determine format type
+            if analysis['has_timestamps']:
+                if re.search(r'\[(\d{1,2}:\d{2})\]', text):
+                    analysis['format_type'] = 'bracketed_timestamps'
+                else:
+                    analysis['format_type'] = 'plain_timestamps'
+            elif analysis['has_numbering']:
+                analysis['format_type'] = 'numbered_list'
+            elif analysis['separator_type']:
+                analysis['format_type'] = 'simple_list'
 
-        # Estimate number of tracks
-        # Count lines with artist - track pattern
-        track_lines = re.findall(r'[A-Z][a-zA-Z\s&]+ - [^\n]+', text)
-        analysis['estimated_tracks'] = len(track_lines)
+            # Estimate number of tracks
+            # Count lines with artist - track pattern
+            track_lines = re.findall(r'[A-Z][a-zA-Z\s&]+ - [^\n]+', text)
+            analysis['estimated_tracks'] = len(track_lines)
 
-        return analysis
+            return analysis
+        finally:
+            # Ensure garbage collection
+            gc.collect()
