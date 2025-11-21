@@ -531,12 +531,14 @@ class BronzeToSilverETL:
                 INSERT INTO silver_track_transitions (
                     from_track_id,
                     to_track_id,
-                    transition_count,
-                    last_observed_at
-                ) VALUES ($1, $2, 1, NOW())
+                    occurrence_count,
+                    first_seen,
+                    last_seen
+                ) VALUES ($1, $2, 1, NOW(), NOW())
                 ON CONFLICT (from_track_id, to_track_id) DO UPDATE SET
-                    transition_count = silver_track_transitions.transition_count + 1,
-                    last_observed_at = NOW()
+                    occurrence_count = silver_track_transitions.occurrence_count + 1,
+                    last_seen = NOW(),
+                    updated_at = NOW()
             """, silver_from_id, silver_to_id)
 
             self.stats['track_transitions_created'] += 1

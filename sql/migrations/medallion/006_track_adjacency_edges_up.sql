@@ -11,6 +11,10 @@
 CREATE TABLE IF NOT EXISTS silver_track_transitions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
+    -- Track references (edges in the graph)
+    from_track_id UUID NOT NULL,
+    to_track_id UUID NOT NULL,
+
     -- Occurrence tracking
     occurrence_count INTEGER NOT NULL DEFAULT 1,
     first_seen TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -39,12 +43,18 @@ CREATE TABLE IF NOT EXISTS silver_track_transitions (
 
     -- Constraints
     CONSTRAINT silver_transitions_self_loop CHECK (from_track_id != to_track_id),
+    CONSTRAINT silver_transitions_quality_range CHECK (
+        transition_quality_score IS NULL OR
         (transition_quality_score >= 0 AND transition_quality_score <= 1)
     ),
     CONSTRAINT silver_transitions_key_compat_range CHECK (
         avg_key_compatibility IS NULL OR
         (avg_key_compatibility >= 0 AND avg_key_compatibility <= 1)
     ),
+
+    -- Foreign keys to track metadata
+    FOREIGN KEY (from_track_id) REFERENCES silver_enriched_tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY (to_track_id) REFERENCES silver_enriched_tracks(id) ON DELETE CASCADE,
 
     -- Unique constraint: Only one edge per from→to pair
     UNIQUE(from_track_id, to_track_id)
@@ -210,6 +220,7 @@ DECLARE
     to_track UUID;
 BEGIN
     -- Extract sequential transitions from playlist_tracks
+    -- CRITICAL: Filter out self-loops (pt1.track_id != pt2.track_id)
     FOR transition_record IN
         SELECT
             pt1.track_id as from_track_id,
@@ -222,6 +233,7 @@ BEGIN
             AND pt2.position = pt1.position + 1
         WHERE pt1.track_id IS NOT NULL
           AND pt2.track_id IS NOT NULL
+          AND pt1.track_id != pt2.track_id
         ORDER BY pt1.playlist_id, pt1.position
     LOOP
         -- Insert or update transition
