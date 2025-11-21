@@ -419,27 +419,60 @@ class BronzeToSilverETL:
     async def process_setlist_track(self, conn: asyncpg.Connection, bronze_id: UUID, raw_data: Dict) -> bool:
         """Process enhancedsetlisttrack into silver_playlist_tracks"""
         try:
+            # Try to get IDs first, fall back to name-based lookup
             playlist_id = raw_data.get('setlist_id', raw_data.get('playlist_id'))
             track_id = raw_data.get('track_id')
-            position = raw_data.get('position', raw_data.get('position_in_source', 0))
+            position = raw_data.get('position', raw_data.get('position_in_source', raw_data.get('track_order', 0)))
 
-            # Map bronze IDs to silver IDs (check in-memory map first, then database)
-            silver_playlist_id = self.bronze_to_silver_playlist_map.get(playlist_id)
-            if not silver_playlist_id:
-                # Query database for existing silver playlist
+            # Get names for fallback lookup
+            setlist_name = raw_data.get('setlist_name', '').strip()
+            track_name = raw_data.get('track_name', '').strip()
+            artist_name = raw_data.get('artist_name', '').strip()
+
+            silver_playlist_id = None
+            silver_track_id = None
+
+            # Try ID-based lookup first
+            if playlist_id:
+                silver_playlist_id = self.bronze_to_silver_playlist_map.get(playlist_id)
+                if not silver_playlist_id:
+                    try:
+                        silver_playlist_id = await conn.fetchval("""
+                            SELECT id FROM silver_enriched_playlists WHERE bronze_id = $1
+                        """, UUID(playlist_id) if isinstance(playlist_id, str) else playlist_id)
+                    except (ValueError, TypeError):
+                        pass
+
+            # Fall back to name-based lookup for playlist
+            if not silver_playlist_id and setlist_name:
                 silver_playlist_id = await conn.fetchval("""
-                    SELECT id FROM silver_enriched_playlists WHERE bronze_id = $1
-                """, UUID(playlist_id) if isinstance(playlist_id, str) else playlist_id)
+                    SELECT id FROM silver_enriched_playlists WHERE playlist_name = $1 LIMIT 1
+                """, setlist_name)
 
-            silver_track_id = self.bronze_to_silver_track_map.get(track_id)
-            if not silver_track_id:
-                # Query database for existing silver track
-                silver_track_id = await conn.fetchval("""
-                    SELECT id FROM silver_enriched_tracks WHERE bronze_id = $1
-                """, UUID(track_id) if isinstance(track_id, str) else track_id)
+            if track_id:
+                silver_track_id = self.bronze_to_silver_track_map.get(track_id)
+                if not silver_track_id:
+                    try:
+                        silver_track_id = await conn.fetchval("""
+                            SELECT id FROM silver_enriched_tracks WHERE bronze_id = $1
+                        """, UUID(track_id) if isinstance(track_id, str) else track_id)
+                    except (ValueError, TypeError):
+                        pass
+
+            # Fall back to name-based lookup for track
+            if not silver_track_id and track_name:
+                if artist_name:
+                    silver_track_id = await conn.fetchval("""
+                        SELECT id FROM silver_enriched_tracks
+                        WHERE track_title = $1 AND artist_name = $2 LIMIT 1
+                    """, track_name, artist_name)
+                if not silver_track_id:
+                    silver_track_id = await conn.fetchval("""
+                        SELECT id FROM silver_enriched_tracks WHERE track_title = $1 LIMIT 1
+                    """, track_name)
 
             if not silver_playlist_id or not silver_track_id:
-                logger.debug(f"Skipping setlist track - missing playlist ({silver_playlist_id}) or track ({silver_track_id}) mapping for bronze IDs {playlist_id}, {track_id}")
+                logger.debug(f"Skipping setlist track - missing playlist ({silver_playlist_id}) or track ({silver_track_id}) for {setlist_name}/{track_name}")
                 return False
 
             await conn.execute("""
@@ -487,6 +520,11 @@ class BronzeToSilverETL:
 
             if not silver_from_id or not silver_to_id:
                 logger.debug(f"Skipping adjacency {bronze_id} - tracks not found in silver layer: {track_1_name} → {track_2_name}")
+                return False
+
+            # Filter out self-loops (track transitioning to itself)
+            if silver_from_id == silver_to_id:
+                logger.debug(f"Skipping self-loop adjacency {bronze_id}: {track_1_name} → {track_2_name}")
                 return False
 
             await conn.execute("""

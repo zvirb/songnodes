@@ -487,11 +487,7 @@ class SilverPlaylistsToGoldETL:
                         sep.validation_status,
                         sep.created_at
                     FROM silver_enriched_playlists sep
-                    WHERE EXISTS (
-                          SELECT 1 FROM silver_playlist_tracks spt
-                          WHERE spt.playlist_id = sep.id
-                      )
-                      AND NOT EXISTS (
+                    WHERE NOT EXISTS (
                           SELECT 1 FROM gold_playlist_analytics gpa
                           WHERE gpa.silver_playlist_id = sep.id
                       )
