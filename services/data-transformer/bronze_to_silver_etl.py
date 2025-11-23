@@ -3,27 +3,24 @@
 Bronze-to-Silver ETL Script (Medallion Architecture)
 =====================================================
 
-Transforms raw_scrape_data (bronze layer) into silver layer tables:
-- silver_enriched_tracks (validated and enriched track data)
-- silver_enriched_artists (deduplicated artist data)
-- silver_enriched_playlists (playlist/setlist metadata)
-- silver_playlist_tracks (track relationships with positions)
-- silver_track_transitions (adjacency edges for graph)
+Transforms Bronze layer tables into Silver layer tables:
+- bronze_scraped_tracks → silver_enriched_tracks (validated and enriched track data)
+- bronze_scraped_playlists → silver_enriched_playlists (playlist/setlist metadata)
+- Derives silver_playlist_tracks (track relationships with positions from raw_json)
+- Derives silver_track_transitions (adjacency edges for graph from track positions)
 
 Architecture:
-1. Read unprocessed records from raw_scrape_data
-2. Validate and clean data
-3. Insert into appropriate silver tables based on scrape_type
-4. Mark raw records as processed
+1. Read unprocessed records from bronze_scraped_tracks and bronze_scraped_playlists
+2. Extract and validate track/playlist data from raw_json
+3. Insert into appropriate silver tables
+4. Derive track transitions from sequential track positions in playlists
 5. Calculate data quality scores
 
-Scrape Types Handled:
-- enhancedtrack → silver_enriched_tracks
-- enhancedartist → silver_enriched_artists
-- enhancedsetlist/playlist → silver_enriched_playlists
-- enhancedsetlisttrack → silver_playlist_tracks
-- enhancedtrackadjacency → silver_track_transitions
-- enhancedtrackartist → enhances track artist relationships
+Data Flow:
+- bronze_scraped_tracks.raw_json → silver_enriched_tracks
+- bronze_scraped_playlists.raw_json → silver_enriched_playlists
+- bronze_scraped_playlists.raw_json['tracks'] → silver_playlist_tracks (with positions)
+- silver_playlist_tracks (positions) → silver_track_transitions (graph edges)
 
 Usage:
     # Process all unprocessed bronze records
@@ -66,18 +63,28 @@ logger = logging.getLogger(__name__)
 
 class BronzeToSilverETL:
     """
-    ETL process to transform raw_scrape_data → silver layer tables.
+    ETL process to transform Bronze layer tables → Silver layer tables.
 
     Validates, cleans, and enriches bronze data into the silver layer.
+
+    Data Sources:
+    - bronze_scraped_tracks: Raw track data with raw_json payload
+    - bronze_scraped_playlists: Raw playlist data with raw_json payload (includes tracks array)
+
+    Outputs:
+    - silver_enriched_tracks: Validated tracks with quality scores
+    - silver_enriched_playlists: Validated playlists
+    - silver_playlist_tracks: Track-playlist junction with positions
+    - silver_track_transitions: Graph edges derived from sequential track positions
     """
 
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
         self.pool: Optional[asyncpg.Pool] = None
         self.stats = {
-            'bronze_records_processed': 0,
+            'bronze_tracks_processed': 0,
+            'bronze_playlists_processed': 0,
             'tracks_created': 0,
-            'artists_created': 0,
             'playlists_created': 0,
             'playlist_tracks_created': 0,
             'track_transitions_created': 0,
@@ -86,9 +93,11 @@ class BronzeToSilverETL:
         }
 
         # Track created IDs to link relationships
-        self.bronze_to_silver_track_map: Dict[str, UUID] = {}
-        self.bronze_to_silver_artist_map: Dict[str, UUID] = {}
-        self.bronze_to_silver_playlist_map: Dict[str, UUID] = {}
+        self.bronze_to_silver_track_map: Dict[UUID, UUID] = {}  # bronze_id → silver_id
+        self.bronze_to_silver_playlist_map: Dict[UUID, UUID] = {}  # bronze_id → silver_id
+
+        # Track name-based lookup for transitions (when IDs not available)
+        self.track_name_to_silver_id: Dict[str, UUID] = {}  # "artist|||title" → silver_id
 
     @staticmethod
     async def _setup_codecs(conn):
@@ -220,33 +229,83 @@ class BronzeToSilverETL:
 
         return min(score, 1.0)
 
-    async def process_enhanced_track(self, conn: asyncpg.Connection, bronze_id: UUID, raw_data: Dict) -> Optional[UUID]:
-        """Process enhancedtrack scrape type into silver_enriched_tracks"""
+    async def process_bronze_track(self, conn: asyncpg.Connection, bronze_track: Dict) -> Optional[UUID]:
+        """
+        Process bronze_scraped_tracks record into silver_enriched_tracks.
+
+        Args:
+            conn: Database connection
+            bronze_track: Record from bronze_scraped_tracks with raw_json payload
+
+        Returns:
+            Silver track ID if successful, None otherwise
+        """
         try:
-            # Debug: Check raw_data type
-            if not isinstance(raw_data, dict):
-                logger.error(f"process_enhanced_track received non-dict raw_data: type={type(raw_data)}, value={str(raw_data)[:100]}")
+            bronze_id = bronze_track['id']
+            raw_json = bronze_track['raw_json']
+
+            # raw_json should already be a dict (via JSONB codec)
+            if not isinstance(raw_json, dict):
+                logger.error(f"Bronze track {bronze_id}: raw_json is not a dict: {type(raw_json)}")
                 self.stats['errors'] += 1
                 return None
 
-            # Extract and validate required fields
-            artist_name = raw_data.get('artist_name', '').strip()
-            track_title = raw_data.get('track_name', '').strip()
+            # Extract and validate required fields from raw_json
+            # Support multiple field name variations from different scrapers
+            artist_name = (
+                raw_json.get('artist_name') or
+                raw_json.get('artist') or
+                bronze_track.get('artist_name') or
+                ''
+            ).strip()
+
+            track_title = (
+                raw_json.get('track_title') or
+                raw_json.get('track_name') or
+                raw_json.get('title') or
+                bronze_track.get('track_title') or
+                ''
+            ).strip()
 
             if not artist_name or not track_title:
+                logger.debug(f"Skipping bronze track {bronze_id}: missing artist ({artist_name}) or title ({track_title})")
                 self.stats['skipped_invalid'] += 1
                 return None
 
             # Calculate data quality score
-            quality_score = self.calculate_data_quality_score(raw_data)
+            quality_score = self.calculate_data_quality_score(raw_json)
 
-            # Prepare enrichment metadata
+            # Prepare enrichment metadata (preserve source lineage)
             enrichment_metadata = {
-                'source': raw_data.get('data_source', 'unknown'),
-                'original_string': raw_data.get('metadata', {}).get('original_string', ''),
-                'extraction_source': raw_data.get('metadata', {}).get('extraction_source', ''),
-                'scraped_at': raw_data.get('scrape_timestamp', datetime.now().isoformat())
+                'bronze_source': bronze_track.get('source', 'unknown'),
+                'source_url': bronze_track.get('source_url'),
+                'scraper_version': bronze_track.get('scraper_version'),
+                'scraped_at': bronze_track.get('scraped_at', datetime.now()).isoformat() if isinstance(bronze_track.get('scraped_at'), datetime) else str(bronze_track.get('scraped_at')),
+                'original_payload_keys': list(raw_json.keys())
             }
+
+            # Extract optional enriched fields from raw_json
+            spotify_id = raw_json.get('spotify_id') or raw_json.get('spotify', {}).get('id')
+            isrc = raw_json.get('isrc')
+            duration_ms = raw_json.get('duration_ms') or raw_json.get('duration')
+            bpm = raw_json.get('bpm')
+            key = raw_json.get('key') or raw_json.get('musical_key')
+            genre = raw_json.get('genre')
+            energy = raw_json.get('energy')
+            valence = raw_json.get('valence')
+            danceability = raw_json.get('danceability')
+            release_date_str = raw_json.get('release_date')
+
+            # Parse release_date if present
+            release_date = None
+            if release_date_str:
+                try:
+                    if isinstance(release_date_str, str):
+                        release_date = datetime.strptime(release_date_str, '%Y-%m-%d').date()
+                    elif isinstance(release_date_str, date):
+                        release_date = release_date_str
+                except (ValueError, AttributeError):
+                    logger.debug(f"Could not parse release_date: {release_date_str}")
 
             # Create silver enriched track
             silver_track_id = await conn.fetchval("""
@@ -256,31 +315,41 @@ class BronzeToSilverETL:
                     track_title,
                     spotify_id,
                     isrc,
+                    release_date,
                     duration_ms,
                     bpm,
                     key,
                     genre,
+                    energy,
+                    valence,
+                    danceability,
                     validation_status,
                     data_quality_score,
                     enrichment_metadata,
                     validated_at,
                     enriched_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
                 ON CONFLICT (bronze_id) DO UPDATE SET
                     artist_name = EXCLUDED.artist_name,
                     track_title = EXCLUDED.track_title,
+                    spotify_id = EXCLUDED.spotify_id,
+                    isrc = EXCLUDED.isrc,
                     updated_at = NOW()
                 RETURNING id
             """,
                 bronze_id,
                 artist_name,
                 track_title,
-                raw_data.get('spotify_id'),
-                raw_data.get('isrc'),
-                raw_data.get('duration_ms'),
-                raw_data.get('bpm'),
-                raw_data.get('musical_key'),
-                [raw_data.get('genre')] if raw_data.get('genre') else None,
+                spotify_id,
+                isrc,
+                release_date,
+                duration_ms,
+                bpm,
+                key,
+                [genre] if genre else None,
+                energy,
+                valence,
+                danceability,
                 'valid' if quality_score >= 0.7 else 'warning' if quality_score >= 0.4 else 'needs_review',
                 quality_score,
                 json.dumps(enrichment_metadata),
@@ -288,91 +357,95 @@ class BronzeToSilverETL:
                 datetime.now()
             )
 
-            # Track the mapping
-            track_id_from_bronze = raw_data.get('track_id', str(bronze_id))
-            self.bronze_to_silver_track_map[track_id_from_bronze] = silver_track_id
+            # Track the mapping for later lookups
+            self.bronze_to_silver_track_map[bronze_id] = silver_track_id
+            # Also create name-based lookup for transition creation
+            track_key = f"{artist_name.lower()}|||{track_title.lower()}"
+            self.track_name_to_silver_id[track_key] = silver_track_id
 
             self.stats['tracks_created'] += 1
+            self.stats['bronze_tracks_processed'] += 1
             return silver_track_id
 
         except Exception as e:
-            logger.error(f"Error processing enhanced track {bronze_id}: {e}")
+            logger.error(f"Error processing bronze track {bronze_track.get('id')}: {e}")
             self.stats['errors'] += 1
             return None
 
-    async def process_enhanced_artist(self, conn: asyncpg.Connection, bronze_id: UUID, raw_data: Dict) -> Optional[UUID]:
-        """Process enhancedartist scrape type into silver_enriched_artists"""
+
+    async def process_bronze_playlist(self, conn: asyncpg.Connection, bronze_playlist: Dict) -> Optional[UUID]:
+        """
+        Process bronze_scraped_playlists record into silver layer.
+
+        This method:
+        1. Creates silver_enriched_playlists entry
+        2. Extracts tracks array from raw_json
+        3. Creates/links tracks in silver_enriched_tracks
+        4. Creates silver_playlist_tracks entries with positions
+        5. Derives silver_track_transitions from sequential track positions
+
+        Args:
+            conn: Database connection
+            bronze_playlist: Record from bronze_scraped_playlists with raw_json payload
+
+        Returns:
+            Silver playlist ID if successful, None otherwise
+        """
         try:
-            artist_name = raw_data.get('artist_name', '').strip()
-            if not artist_name:
+            bronze_id = bronze_playlist['id']
+            raw_json = bronze_playlist['raw_json']
+
+            if not isinstance(raw_json, dict):
+                logger.error(f"Bronze playlist {bronze_id}: raw_json is not a dict: {type(raw_json)}")
+                self.stats['errors'] += 1
+                return None
+
+            # Extract playlist metadata
+            playlist_name = (
+                raw_json.get('playlist_name') or
+                raw_json.get('name') or
+                raw_json.get('title') or
+                bronze_playlist.get('playlist_name') or
+                ''
+            ).strip()
+
+            if not playlist_name:
+                logger.debug(f"Skipping bronze playlist {bronze_id}: missing playlist_name")
                 self.stats['skipped_invalid'] += 1
                 return None
 
-            # Create normalized name for deduplication
-            normalized_name = artist_name.lower().strip()
+            artist_name = (
+                raw_json.get('artist_name') or
+                raw_json.get('artist') or
+                bronze_playlist.get('artist_name') or
+                ''
+            ).strip()
+
+            # Parse event_date
+            event_date = bronze_playlist.get('event_date')
+            if not event_date and raw_json.get('event_date'):
+                try:
+                    event_date_str = raw_json['event_date']
+                    if isinstance(event_date_str, str):
+                        event_date = datetime.strptime(event_date_str, '%Y-%m-%d').date()
+                except (ValueError, AttributeError):
+                    logger.debug(f"Could not parse event_date: {raw_json.get('event_date')}")
+
+            # Calculate data quality
+            quality_score = self.calculate_data_quality_score(raw_json)
+            validation_status = 'valid' if quality_score >= 0.7 else 'warning' if quality_score >= 0.4 else 'needs_review'
 
             # Prepare enrichment metadata
             enrichment_metadata = {
-                'source': raw_data.get('data_source', 'bronze_layer'),
-                'scraped_at': raw_data.get('scrape_timestamp', datetime.now().isoformat())
+                'bronze_source': bronze_playlist.get('source', 'unknown'),
+                'source_url': bronze_playlist.get('source_url'),
+                'scraper_version': bronze_playlist.get('scraper_version'),
+                'scraped_at': bronze_playlist.get('scraped_at', datetime.now()).isoformat() if isinstance(bronze_playlist.get('scraped_at'), datetime) else str(bronze_playlist.get('scraped_at'))
             }
 
-            # Create or get silver enriched artist
-            silver_artist_id = await conn.fetchval("""
-                INSERT INTO silver_enriched_artists (
-                    bronze_ids,
-                    canonical_name,
-                    normalized_name,
-                    aliases,
-                    validation_status,
-                    data_quality_score,
-                    enrichment_metadata
-                ) VALUES (ARRAY[$1::uuid], $2, $3, $4, $5, $6, $7)
-                ON CONFLICT (canonical_name) DO UPDATE SET
-                    bronze_ids = array_append(silver_enriched_artists.bronze_ids, $8::uuid),
-                    updated_at = NOW()
-                RETURNING id
-            """,
-                bronze_id,  # $1 - for initial array creation
-                artist_name,  # $2
-                normalized_name,  # $3 - normalized for searching/deduplication
-                [],  # $4 - aliases
-                'valid',  # $5
-                0.8,  # $6 - default quality
-                json.dumps(enrichment_metadata),  # $7
-                bronze_id  # $8 - for array_append on conflict
-            )
-
-            self.bronze_to_silver_artist_map[artist_name] = silver_artist_id
-            self.stats['artists_created'] += 1
-            return silver_artist_id
-
-        except Exception as e:
-            logger.error(f"Error processing enhanced artist {bronze_id}: {e}")
-            self.stats['errors'] += 1
-            return None
-
-    async def process_enhanced_playlist(self, conn: asyncpg.Connection, bronze_id: UUID, raw_data: Dict) -> Optional[UUID]:
-        """Process enhancedsetlist/playlist scrape type into silver_enriched_playlists"""
-        try:
-            playlist_name = raw_data.get('name', raw_data.get('playlist_name', '')).strip()
-            if not playlist_name:
-                self.stats['skipped_invalid'] += 1
-                return None
-
-            # Parse event_date from string to date object if needed
-            event_date = raw_data.get('event_date')
-            if event_date and isinstance(event_date, str):
-                try:
-                    # Try parsing ISO format date string (YYYY-MM-DD)
-                    event_date = datetime.strptime(event_date, '%Y-%m-%d').date()
-                except ValueError:
-                    logger.warning(f"Failed to parse event_date '{event_date}' for playlist {bronze_id}, setting to None")
-                    event_date = None
-
-            # Calculate data quality and validation status
-            quality_score = self.calculate_data_quality_score(raw_data)
-            validation_status = 'valid' if quality_score >= 0.7 else 'warning' if quality_score >= 0.4 else 'needs_review'
+            # Extract tracks array from raw_json
+            tracks_array = raw_json.get('tracks', [])
+            track_count = len(tracks_array) if isinstance(tracks_array, list) else raw_json.get('track_count', 0)
 
             # Create silver enriched playlist
             silver_playlist_id = await conn.fetchval("""
@@ -390,251 +463,209 @@ class BronzeToSilverETL:
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 ON CONFLICT (bronze_id) DO UPDATE SET
                     playlist_name = EXCLUDED.playlist_name,
+                    artist_name = EXCLUDED.artist_name,
                     updated_at = NOW()
                 RETURNING id
             """,
                 bronze_id,
                 playlist_name,
-                raw_data.get('artist_name', '').strip(),
-                raw_data.get('event_name'),
+                artist_name,
+                raw_json.get('event_name'),
                 event_date,
-                raw_data.get('venue', raw_data.get('location')),
-                raw_data.get('track_count', 0),
+                raw_json.get('event_location') or raw_json.get('venue') or raw_json.get('location'),
+                track_count,
                 validation_status,
                 quality_score,
-                json.dumps({})  # Empty metadata for now
+                json.dumps(enrichment_metadata)
             )
 
-            playlist_id_from_bronze = raw_data.get('playlist_id', str(bronze_id))
-            self.bronze_to_silver_playlist_map[playlist_id_from_bronze] = silver_playlist_id
-
+            # Track the mapping
+            self.bronze_to_silver_playlist_map[bronze_id] = silver_playlist_id
             self.stats['playlists_created'] += 1
+            self.stats['bronze_playlists_processed'] += 1
+
+            # Process tracks array (if present)
+            if isinstance(tracks_array, list) and len(tracks_array) > 0:
+                await self._process_playlist_tracks(conn, silver_playlist_id, tracks_array, bronze_id)
+
             return silver_playlist_id
 
         except Exception as e:
-            logger.error(f"Error processing enhanced playlist {bronze_id}: {e}")
+            logger.error(f"Error processing bronze playlist {bronze_playlist.get('id')}: {e}")
             self.stats['errors'] += 1
             return None
 
-    async def process_setlist_track(self, conn: asyncpg.Connection, bronze_id: UUID, raw_data: Dict) -> bool:
-        """Process enhancedsetlisttrack into silver_playlist_tracks"""
+    async def _process_playlist_tracks(
+        self,
+        conn: asyncpg.Connection,
+        silver_playlist_id: UUID,
+        tracks_array: List[Dict],
+        bronze_playlist_id: UUID
+    ) -> None:
+        """
+        Process tracks array from bronze playlist raw_json.
+
+        Creates:
+        1. silver_playlist_tracks entries with positions
+        2. silver_track_transitions entries from sequential positions
+
+        Args:
+            conn: Database connection
+            silver_playlist_id: ID of silver playlist
+            tracks_array: Array of track dicts from raw_json['tracks']
+            bronze_playlist_id: Source bronze playlist ID for logging
+        """
         try:
-            # Try to get IDs first, fall back to name-based lookup
-            playlist_id = raw_data.get('setlist_id', raw_data.get('playlist_id'))
-            track_id = raw_data.get('track_id')
-            position = raw_data.get('position', raw_data.get('position_in_source', raw_data.get('track_order', 0)))
+            previous_silver_track_id = None
 
-            # Get names for fallback lookup
-            setlist_name = raw_data.get('setlist_name', '').strip()
-            track_name = raw_data.get('track_name', '').strip()
-            artist_name = raw_data.get('artist_name', '').strip()
+            for idx, track_data in enumerate(tracks_array):
+                if not isinstance(track_data, dict):
+                    logger.debug(f"Skipping non-dict track at position {idx} in playlist {bronze_playlist_id}")
+                    continue
 
-            silver_playlist_id = None
-            silver_track_id = None
+                # Extract track info
+                artist = (
+                    track_data.get('artist_name') or
+                    track_data.get('artist') or
+                    ''
+                ).strip()
 
-            # Try ID-based lookup first
-            if playlist_id:
-                silver_playlist_id = self.bronze_to_silver_playlist_map.get(playlist_id)
-                if not silver_playlist_id:
-                    try:
-                        silver_playlist_id = await conn.fetchval("""
-                            SELECT id FROM silver_enriched_playlists WHERE bronze_id = $1
-                        """, UUID(playlist_id) if isinstance(playlist_id, str) else playlist_id)
-                    except (ValueError, TypeError):
-                        pass
+                title = (
+                    track_data.get('track_title') or
+                    track_data.get('track_name') or
+                    track_data.get('title') or
+                    ''
+                ).strip()
 
-            # Fall back to name-based lookup for playlist
-            if not silver_playlist_id and setlist_name:
-                silver_playlist_id = await conn.fetchval("""
-                    SELECT id FROM silver_enriched_playlists WHERE playlist_name = $1 LIMIT 1
-                """, setlist_name)
+                if not artist or not title:
+                    logger.debug(f"Skipping track at position {idx}: missing artist or title")
+                    continue
 
-            if track_id:
-                silver_track_id = self.bronze_to_silver_track_map.get(track_id)
+                # Position from track_data or array index
+                position = track_data.get('position', idx + 1)
+
+                # Look up or create silver track ID
+                track_key = f"{artist.lower()}|||{title.lower()}"
+                silver_track_id = self.track_name_to_silver_id.get(track_key)
+
                 if not silver_track_id:
-                    try:
-                        silver_track_id = await conn.fetchval("""
-                            SELECT id FROM silver_enriched_tracks WHERE bronze_id = $1
-                        """, UUID(track_id) if isinstance(track_id, str) else track_id)
-                    except (ValueError, TypeError):
-                        pass
-
-            # Fall back to name-based lookup for track
-            if not silver_track_id and track_name:
-                if artist_name:
+                    # Track not yet in silver layer - try to find by name
                     silver_track_id = await conn.fetchval("""
                         SELECT id FROM silver_enriched_tracks
-                        WHERE track_title = $1 AND artist_name = $2 LIMIT 1
-                    """, track_name, artist_name)
+                        WHERE LOWER(artist_name) = $1 AND LOWER(track_title) = $2
+                        LIMIT 1
+                    """, artist.lower(), title.lower())
+
                 if not silver_track_id:
+                    # Create silver track on-the-fly from playlist track data
+                    logger.debug(f"Creating silver track on-the-fly: {artist} - {title}")
                     silver_track_id = await conn.fetchval("""
-                        SELECT id FROM silver_enriched_tracks WHERE track_title = $1 LIMIT 1
-                    """, track_name)
+                        INSERT INTO silver_enriched_tracks (
+                            artist_name,
+                            track_title,
+                            validation_status,
+                            data_quality_score,
+                            enrichment_metadata
+                        ) VALUES ($1, $2, $3, $4, $5)
+                        RETURNING id
+                    """,
+                        artist,
+                        title,
+                        'needs_review',
+                        0.5,
+                        json.dumps({'created_from': 'playlist_tracks', 'bronze_playlist_id': str(bronze_playlist_id)})
+                    )
+                    self.track_name_to_silver_id[track_key] = silver_track_id
+                    self.stats['tracks_created'] += 1
 
-            if not silver_playlist_id or not silver_track_id:
-                logger.debug(f"Skipping setlist track - missing playlist ({silver_playlist_id}) or track ({silver_track_id}) for {setlist_name}/{track_name}")
-                return False
+                # Create playlist-track junction entry
+                await conn.execute("""
+                    INSERT INTO silver_playlist_tracks (
+                        playlist_id,
+                        track_id,
+                        position
+                    ) VALUES ($1, $2, $3)
+                    ON CONFLICT (playlist_id, track_id, position) DO NOTHING
+                """, silver_playlist_id, silver_track_id, position)
+                self.stats['playlist_tracks_created'] += 1
 
-            await conn.execute("""
-                INSERT INTO silver_playlist_tracks (
-                    playlist_id,
-                    track_id,
-                    position
-                ) VALUES ($1, $2, $3)
-                ON CONFLICT (playlist_id, position) DO NOTHING
-            """, silver_playlist_id, silver_track_id, position)
+                # Create track transition (edge) from previous track to current track
+                if previous_silver_track_id and previous_silver_track_id != silver_track_id:
+                    await self._create_track_transition(
+                        conn,
+                        previous_silver_track_id,
+                        silver_track_id,
+                        silver_playlist_id,
+                        position - 1  # Previous position
+                    )
 
-            self.stats['playlist_tracks_created'] += 1
-            return True
+                previous_silver_track_id = silver_track_id
 
         except Exception as e:
-            logger.error(f"Error processing setlist track {bronze_id}: {e}")
+            logger.error(f"Error processing playlist tracks for playlist {bronze_playlist_id}: {e}")
             self.stats['errors'] += 1
-            return False
 
-    async def process_track_adjacency(self, conn: asyncpg.Connection, bronze_id: UUID, raw_data: Dict) -> bool:
-        """Process enhancedtrackadjacency into silver_track_transitions"""
+    async def _create_track_transition(
+        self,
+        conn: asyncpg.Connection,
+        from_track_id: UUID,
+        to_track_id: UUID,
+        playlist_id: UUID,
+        position: int
+    ) -> None:
+        """
+        Create or update silver_track_transitions entry.
+
+        Args:
+            conn: Database connection
+            from_track_id: Silver track ID (source)
+            to_track_id: Silver track ID (destination)
+            playlist_id: Silver playlist ID (context)
+            position: Position in playlist where transition occurs
+        """
         try:
-            # Extract track names (adjacency data uses names, not bronze IDs)
-            track_1_name = raw_data.get('track_1_name', '').strip()
-            track_2_name = raw_data.get('track_2_name', '').strip()
+            # Filter out self-loops
+            if from_track_id == to_track_id:
+                logger.debug(f"Skipping self-loop transition: {from_track_id} → {to_track_id}")
+                return
 
-            if not track_1_name or not track_2_name:
-                logger.debug(f"Skipping adjacency {bronze_id} - missing track names")
-                return False
-
-            # Find silver track IDs by matching track names
-            # Note: This may match multiple tracks with the same name from different artists
-            # For now, we'll take the first match
-            silver_from_id = await conn.fetchval("""
-                SELECT id FROM silver_enriched_tracks
-                WHERE track_title = $1
-                LIMIT 1
-            """, track_1_name)
-
-            silver_to_id = await conn.fetchval("""
-                SELECT id FROM silver_enriched_tracks
-                WHERE track_title = $1
-                LIMIT 1
-            """, track_2_name)
-
-            if not silver_from_id or not silver_to_id:
-                logger.debug(f"Skipping adjacency {bronze_id} - tracks not found in silver layer: {track_1_name} → {track_2_name}")
-                return False
-
-            # Filter out self-loops (track transitioning to itself)
-            if silver_from_id == silver_to_id:
-                logger.debug(f"Skipping self-loop adjacency {bronze_id}: {track_1_name} → {track_2_name}")
-                return False
-
+            # Create or update transition
             await conn.execute("""
                 INSERT INTO silver_track_transitions (
                     from_track_id,
                     to_track_id,
                     occurrence_count,
+                    playlist_occurrences,
                     first_seen,
                     last_seen
-                ) VALUES ($1, $2, 1, NOW(), NOW())
+                ) VALUES ($1, $2, 1, $3::jsonb, NOW(), NOW())
                 ON CONFLICT (from_track_id, to_track_id) DO UPDATE SET
                     occurrence_count = silver_track_transitions.occurrence_count + 1,
+                    playlist_occurrences = silver_track_transitions.playlist_occurrences || $4::jsonb,
                     last_seen = NOW(),
                     updated_at = NOW()
-            """, silver_from_id, silver_to_id)
+            """,
+                from_track_id,
+                to_track_id,
+                json.dumps([{'playlist_id': str(playlist_id), 'position': position, 'date': datetime.now().isoformat()}]),
+                json.dumps([{'playlist_id': str(playlist_id), 'position': position, 'date': datetime.now().isoformat()}])
+            )
 
             self.stats['track_transitions_created'] += 1
-            return True
 
         except Exception as e:
-            logger.error(f"Error processing track adjacency {bronze_id}: {e}")
+            logger.error(f"Error creating track transition {from_track_id} → {to_track_id}: {e}")
             self.stats['errors'] += 1
-            return False
 
-    async def process_track_artist(self, conn: asyncpg.Connection, bronze_id: UUID, raw_data: Dict) -> bool:
-        """
-        Process enhancedtrackartist into silver layer.
-
-        This scrape_type represents track-artist relationships. It creates both
-        the track and artist if they don't exist, leveraging the existing handlers.
-        """
-        try:
-            artist_name = raw_data.get('artist_name', '').strip()
-            track_name = raw_data.get('track_name', '').strip()
-
-            if not artist_name or not track_name:
-                self.stats['skipped_invalid'] += 1
-                return False
-
-            # Process as both artist and track creation
-            # First create/update artist
-            await self.process_enhanced_artist(conn, bronze_id, raw_data)
-
-            # Then create/update track (which includes artist_name field)
-            await self.process_enhanced_track(conn, bronze_id, raw_data)
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error processing track-artist relationship {bronze_id}: {e}")
-            self.stats['errors'] += 1
-            return False
-
-    async def process_bronze_record(self, conn: asyncpg.Connection, record: Dict) -> bool:
-        """
-        Process a single bronze record and insert into appropriate silver table
-
-        Args:
-            conn: Database connection
-            record: Bronze record from raw_scrape_data
-
-        Returns:
-            True if processing succeeded, False otherwise
-        """
-        scrape_id = record['scrape_id']
-        scrape_type = record['scrape_type']
-        raw_data = record['raw_data']
-
-        success = False
-
-        try:
-            if scrape_type == 'enhancedtrack':
-                success = await self.process_enhanced_track(conn, scrape_id, raw_data) is not None
-            elif scrape_type == 'enhancedartist':
-                success = await self.process_enhanced_artist(conn, scrape_id, raw_data) is not None
-            elif scrape_type in ('enhancedsetlist', 'playlist'):
-                success = await self.process_enhanced_playlist(conn, scrape_id, raw_data) is not None
-            elif scrape_type == 'enhancedsetlisttrack':
-                success = await self.process_setlist_track(conn, scrape_id, raw_data)
-            elif scrape_type == 'enhancedtrackadjacency':
-                success = await self.process_track_adjacency(conn, scrape_id, raw_data)
-            elif scrape_type == 'enhancedtrackartist':
-                success = await self.process_track_artist(conn, scrape_id, raw_data)
-            else:
-                logger.warning(f"Unknown scrape_type: {scrape_type}")
-
-            if success:
-                self.stats['bronze_records_processed'] += 1
-
-                # Mark as processed
-                if not self.dry_run:
-                    await conn.execute("""
-                        UPDATE raw_scrape_data
-                        SET processed = true, processed_at = NOW()
-                        WHERE scrape_id = $1
-                    """, scrape_id)
-
-        except Exception as e:
-            logger.error(f"Error processing bronze record {scrape_id}: {e}")
-            self.stats['errors'] += 1
-            success = False
-
-        return success
 
     async def run(self, limit: Optional[int] = None) -> Dict[str, int]:
         """
-        Run the Bronze-to-Silver ETL process
+        Run the Bronze-to-Silver ETL process.
+
+        Processes records from bronze_scraped_tracks and bronze_scraped_playlists tables.
 
         Args:
-            limit: Maximum number of records to process (None = all)
+            limit: Maximum number of records to process per table (None = all)
 
         Returns:
             Statistics dictionary
@@ -647,110 +678,64 @@ class BronzeToSilverETL:
             logger.info("⚠️ DRY RUN MODE - No database writes will occur")
 
         async with self.pool.acquire() as conn:
-            # Query unprocessed bronze records (asyncpg will auto-convert JSONB to dict)
-            query = """
-                SELECT scrape_id, scrape_type, raw_data, scraped_at
-                FROM raw_scrape_data
-                WHERE processed = false
+            # Phase 1: Process bronze_scraped_tracks
+            logger.info("Phase 1: Processing bronze_scraped_tracks...")
+            tracks_query = """
+                SELECT id, source, source_url, source_track_id, scraper_version,
+                       raw_json, artist_name, track_title, scraped_at
+                FROM bronze_scraped_tracks
                 ORDER BY scraped_at ASC
             """
             if limit:
-                query += f" LIMIT {limit}"
-                logger.info(f"Querying bronze records (limit={limit})...")
+                tracks_query += f" LIMIT {limit}"
+                logger.info(f"Querying bronze tracks (limit={limit})...")
             else:
-                logger.info("Querying all unprocessed bronze records...")
+                logger.info("Querying all bronze tracks...")
 
-            records = await conn.fetch(query)
-            logger.info(f"Found {len(records)} unprocessed bronze records")
+            bronze_tracks = await conn.fetch(tracks_query)
+            logger.info(f"Found {len(bronze_tracks)} bronze track records")
 
-            if not records:
-                logger.info("No records to process")
-                return self.stats
+            # Process bronze tracks
+            for bronze_track in bronze_tracks:
+                await self.process_bronze_track(conn, dict(bronze_track))
 
-            # Debug: Check type of raw_data immediately after fetch
-            if records:
-                sample = records[0]
-                logger.debug(f"Sample record type: {type(sample)}")
-                logger.debug(f"Sample raw_data type: {type(sample['raw_data'])}")
-                logger.debug(f"Sample raw_data value (first 100 chars): {str(sample['raw_data'])[:100]}")
+            logger.info(f"✅ Processed {self.stats['bronze_tracks_processed']} bronze tracks → {self.stats['tracks_created']} silver tracks")
 
-            # Group by scrape_type for proper ordering
-            records_by_type = {
-                'enhancedartist': [],
-                'enhancedtrack': [],
-                'enhancedsetlist': [],
-                'playlist': [],
-                'enhancedsetlisttrack': [],
-                'enhancedtrackadjacency': [],
-                'enhancedtrackartist': []
-            }
+            # Phase 2: Process bronze_scraped_playlists
+            logger.info("Phase 2: Processing bronze_scraped_playlists...")
+            playlists_query = """
+                SELECT id, source, source_url, source_playlist_id, scraper_version,
+                       raw_json, playlist_name, artist_name, event_name, event_date, scraped_at
+                FROM bronze_scraped_playlists
+                ORDER BY scraped_at ASC
+            """
+            if limit:
+                playlists_query += f" LIMIT {limit}"
+                logger.info(f"Querying bronze playlists (limit={limit})...")
+            else:
+                logger.info("Querying all bronze playlists...")
 
-            for record in records:
-                scrape_type = record['scrape_type']
-                if scrape_type in records_by_type:
-                    # Keep as asyncpg Record to preserve native types (esp. JSONB → dict)
-                    records_by_type[scrape_type].append(record)
+            bronze_playlists = await conn.fetch(playlists_query)
+            logger.info(f"Found {len(bronze_playlists)} bronze playlist records")
 
-            # Process in correct order (dependencies)
-            processing_order = [
-                'enhancedartist',
-                'enhancedtrack',
-                'enhancedsetlist',
-                'playlist',
-                'enhancedsetlisttrack',
-                'enhancedtrackadjacency',
-                'enhancedtrackartist'  # Process last as it links tracks to artists
-            ]
+            # Process bronze playlists (includes track transitions derivation)
+            for bronze_playlist in bronze_playlists:
+                await self.process_bronze_playlist(conn, dict(bronze_playlist))
 
-            for scrape_type in processing_order:
-                type_records = records_by_type[scrape_type]
-                if not type_records:
-                    continue
-
-                logger.info(f"Processing {len(type_records)} {scrape_type} records...")
-
-                for record in type_records:
-                    # Verify raw_data is a dict (asyncpg should auto-convert JSONB)
-                    raw_data_type = type(record['raw_data'])
-                    is_dict = isinstance(record['raw_data'], dict)
-                    scrape_id_str = str(record['scrape_id'])[:8]
-
-                    if not isinstance(record['raw_data'], dict):
-                        # Fallback: Try parsing as JSON string if codec didn't work
-                        if isinstance(record['raw_data'], str):
-                            try:
-                                # Create mutable dict from record and parse JSON
-                                record_dict = dict(record)
-                                record_dict['raw_data'] = json.loads(record_dict['raw_data'])
-                                logger.info(f"✅ Fallback JSON parsing succeeded for {scrape_id_str}")
-                                # Process the modified record dict
-                                await self.process_bronze_record(conn, record_dict)
-                                continue
-                            except json.JSONDecodeError as e:
-                                logger.error(f"raw_data for {record['scrape_id']} failed JSON parsing: {e}")
-                                self.stats['errors'] += 1
-                                continue
-                        else:
-                            logger.error(f"raw_data for {record['scrape_id']} is not a dict, it's {type(record['raw_data'])}: {str(record['raw_data'])[:100]}")
-                            self.stats['errors'] += 1
-                            continue
-
-                    # Parse nested JSON strings (JSONB codec only decodes top level)
-                    record_dict = dict(record)
-                    record_dict['raw_data'] = self._parse_nested_json(record_dict['raw_data'])
-
-                    await self.process_bronze_record(conn, record_dict)
+            logger.info(f"✅ Processed {self.stats['bronze_playlists_processed']} bronze playlists → {self.stats['playlists_created']} silver playlists")
+            logger.info(f"✅ Created {self.stats['playlist_tracks_created']} playlist-track associations")
+            logger.info(f"✅ Derived {self.stats['track_transitions_created']} track transitions (graph edges)")
 
             logger.info("="*80)
             logger.info("BRONZE-TO-SILVER ETL PROCESS COMPLETE")
             logger.info("="*80)
             logger.info(f"Statistics:")
-            logger.info(f"  - Bronze records processed: {self.stats['bronze_records_processed']}")
-            logger.info(f"  - Tracks created: {self.stats['tracks_created']}")
-            logger.info(f"  - Artists created: {self.stats['artists_created']}")
-            logger.info(f"  - Playlists created: {self.stats['playlists_created']}")
-            logger.info(f"  - Playlist tracks created: {self.stats['playlist_tracks_created']}")
-            logger.info(f"  - Track transitions created: {self.stats['track_transitions_created']}")
+            logger.info(f"  - Bronze tracks processed: {self.stats['bronze_tracks_processed']}")
+            logger.info(f"  - Bronze playlists processed: {self.stats['bronze_playlists_processed']}")
+            logger.info(f"  - Silver tracks created: {self.stats['tracks_created']}")
+            logger.info(f"  - Silver playlists created: {self.stats['playlists_created']}")
+            logger.info(f"  - Playlist-track associations: {self.stats['playlist_tracks_created']}")
+            logger.info(f"  - Track transitions (edges): {self.stats['track_transitions_created']}")
             logger.info(f"  - Errors: {self.stats['errors']}")
             logger.info(f"  - Skipped (invalid): {self.stats['skipped_invalid']}")
             logger.info("="*80)

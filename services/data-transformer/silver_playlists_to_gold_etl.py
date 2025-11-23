@@ -503,10 +503,16 @@ class SilverPlaylistsToGoldETL:
                     await self.close()
                     return self.stats
 
-                # Process each silver playlist in a transaction
+                # Process each silver playlist
                 for silver_playlist in silver_playlists:
-                    async with conn.transaction():
-                        await self.transform_silver_playlist(conn, dict(silver_playlist))
+                    # Use savepoint for error isolation (not full transaction)
+                    try:
+                        async with conn.transaction():
+                            await self.transform_silver_playlist(conn, dict(silver_playlist))
+                    except Exception as e:
+                        logger.error(f"Transaction failed for playlist {silver_playlist['id']}: {e}")
+                        self.stats['errors'] += 1
+                        continue
 
         finally:
             await self.close()

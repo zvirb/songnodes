@@ -1,5 +1,358 @@
 # SongNodes: Developer Guide
 
+## Application Purpose & Vision
+
+**SongNodes** is a data-driven DJ setlist building tool that leverages real-world transition data from thousands of professional DJ mixes and playlists. Unlike algorithmic recommendations based solely on BPM or harmonic key matching, SongNodes captures and visualizes **proven track pairings** used by DJs in actual performances.
+
+### Core Value Proposition
+
+**Track transitions are the foundation of SongNodes.** Each transition represents:
+- A validated pairing from a real DJ mix or curated playlist
+- Implicit DJ mixing knowledge (harmonic compatibility, energy flow, BPM progression)
+- Community consensus when multiple DJs use the same transition
+- Real-world proof that two tracks work well together
+
+**Example:** If 50 DJs have transitioned from "Deadmau5 - Strobe" to "Eric Prydz - Opus" in their sets, this represents a **high-confidence pairing** validated by the DJ community, not just algorithmic similarity.
+
+### Why Transitions Matter
+
+Traditional DJ software suggests tracks based on:
+- BPM matching (±3 BPM range)
+- Harmonic key compatibility (Camelot wheel)
+- Genre classification
+- Release year or energy level
+
+**SongNodes goes further** by answering: "What do professional DJs actually play after this track?"
+
+**Value Over Algorithms:**
+- **Real Data vs. Theory:** BPM compatibility doesn't guarantee a good transition — DJs know which tracks flow well through experience
+- **Proven Pairings:** Multiple occurrences of the same transition indicate a "classic" combination
+- **Pattern Discovery:** Graph visualization reveals mixing patterns invisible in track lists
+- **Contextual Knowledge:** Transitions capture momentum, crowd energy, and set progression
+
+**Graph Visualization Benefits:**
+- **Nodes (Tracks):** Size represents popularity (playlist appearances)
+- **Edges (Transitions):** Thickness represents frequency (occurrence count)
+- **Pathfinding:** Build setlists by following high-weight edges
+- **Discovery:** Explore new tracks through graph traversal from known favorites
+
+### Complete Data Pipeline (Medallion Architecture)
+
+SongNodes implements a four-layer medallion architecture to transform raw scraped playlists into an interactive graph database:
+
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   Scraper   │─────▶│   Bronze    │─────▶│   Silver    │─────▶│    Gold     │─────▶│ Operational │─────▶ Frontend
+│  (Unified)  │      │ (Raw Data)  │      │ (Validated) │      │ (Analytics) │      │  (Graph DB) │       (PIXI.js)
+└─────────────┘      └─────────────┘      └─────────────┘      └─────────────┘      └─────────────┘
+      │                     │                     │                     │                     │
+      │                     │                     │                     │                     │
+  Complete          Raw playlists        Track transitions      Aggregated             Nodes + Edges
+  setlists          with positions       (sequential pairs)      analytics             (rendered graph)
+  from DJs          preserved as          occurrence counts      quality scores        DJ sees proven
+                    bronze_scraped_       in silver_track_       in gold_track_        track pairings
+                    playlists +           transitions            analytics
+                    bronze_scraped_
+                    tracks
+```
+
+#### Bronze Layer: Raw Data Capture
+
+**Purpose:** Preserve complete raw data from scraping sources for reproducibility and reprocessing
+
+**Tables:**
+- `bronze_scraped_playlists`: Playlist/setlist metadata (source, URL, event, artist, date, venue)
+- `bronze_scraped_tracks`: Individual tracks with sequential positions (1, 2, 3, ...)
+
+**Key Features:**
+- Raw JSON preserved in `raw_metadata` JSONB column
+- Track positions captured from list order (critical for transitions)
+- Deduplication via `UNIQUE(source, source_url)`
+- ALL source data retained, no filtering
+
+**Example Bronze Data:**
+```sql
+-- bronze_scraped_playlists
+id: uuid-1234
+source: '1001tracklists'
+source_url: 'https://1001tracklists.com/tracklist/...'
+event_name: 'Carl Cox @ Space Ibiza 2024'
+artist_name: 'Carl Cox'
+event_date: '2024-08-15'
+
+-- bronze_scraped_tracks (4 rows)
+{playlist_id: uuid-1234, position: 1, artist: 'Adam Beyer', title: 'Your Mind', raw_metadata: {...}}
+{playlist_id: uuid-1234, position: 2, artist: 'Amelie Lens', title: 'Contradictions', raw_metadata: {...}}
+{playlist_id: uuid-1234, position: 3, artist: 'Charlotte de Witte', title: 'Selected', raw_metadata: {...}}
+{playlist_id: uuid-1234, position: 4, artist: 'Reinier Zonneveld', title: 'Pattern Burst', raw_metadata: {...}}
+```
+
+#### Silver Layer: Validated & Enriched Data
+
+**Purpose:** Create canonical tracks and transitions with metadata enrichment
+
+**ETL Process (Bronze → Silver):**
+1. Match bronze tracks to canonical silver tracks (deduplication via Spotify ID, ISRC, or fuzzy matching)
+2. Enrich tracks with metadata (BPM, harmonic key, energy, Spotify ID, ISRC) via `metadata-enrichment` service
+3. **Create transitions** from sequential track positions: `position N → position N+1`
+4. Calculate transition quality metrics (BPM delta, key compatibility, energy progression)
+
+**Tables:**
+- `silver_enriched_tracks`: Canonical tracks with full metadata
+- `silver_enriched_playlists`: Validated playlists
+- `silver_track_transitions`: **CORE TABLE** — transition edges with occurrence tracking
+
+**Transition Creation Example:**
+```sql
+-- Input: Bronze tracks at positions 1, 2, 3, 4
+-- Output: Silver transitions (edges)
+
+Transition 1: Adam Beyer - Your Mind → Amelie Lens - Contradictions
+  source_track_id: canonical-track-123
+  target_track_id: canonical-track-456
+  occurrence_count: 1  (first time seeing this transition)
+  playlist_occurrences: ['uuid-1234']
+  transition_metadata: {
+    bpm_delta: +2,  (128 BPM → 130 BPM)
+    key_compatibility: 'perfect_match',  (A Minor → A Minor)
+    energy_progression: +5%
+  }
+
+Transition 2: Amelie Lens - Contradictions → Charlotte de Witte - Selected
+  source_track_id: canonical-track-456
+  target_track_id: canonical-track-789
+  occurrence_count: 1
+  transition_metadata: {
+    bpm_delta: +2,  (130 BPM → 132 BPM)
+    key_compatibility: 'compatible',  (A Minor → D Minor, relative keys)
+    energy_progression: +15%
+  }
+
+-- If 20 other DJs also use "Adam Beyer → Amelie Lens", occurrence_count becomes 21
+-- This HIGH OCCURRENCE COUNT signals a proven, reliable transition
+```
+
+**Silver Layer Validation:**
+- Artist attribution required (no NULL/Unknown artists in transitions)
+- BPM and key data enriched via Spotify/MusicBrainz APIs
+- Duplicate transitions merged (same source + target + playlist = single row)
+- Position integrity verified (no gaps: 1→2→3, not 1→3→5)
+
+#### Gold Layer: Analytics & Aggregations
+
+**Purpose:** Pre-compute analytics for fast queries and reporting
+
+**ETL Process (Silver → Gold):**
+1. Aggregate track statistics (total playlist appearances, average BPM, genre distribution)
+2. Calculate transition quality scores (weighted by occurrence count, BPM compatibility, key compatibility)
+3. Compute artist analytics (track count, collaboration networks)
+4. Generate confidence ratings for transitions (high occurrence = high confidence)
+
+**Tables:**
+- `gold_track_analytics`: Track-level metrics (popularity, average transition quality)
+- `gold_transition_analytics`: Transition-level metrics (weighted quality scores, confidence ratings)
+- `gold_artist_analytics`: Artist-level metrics (track count, genre distribution)
+
+**Example Gold Analytics:**
+```sql
+-- gold_track_analytics
+track_id: canonical-track-456  (Amelie Lens - Contradictions)
+total_playlist_appearances: 127
+average_bpm: 130.2
+most_common_key: 'A Minor'
+average_energy: 0.82
+incoming_transitions_count: 89  (89 tracks transition TO this track)
+outgoing_transitions_count: 103  (103 tracks transition FROM this track)
+popularity_score: 0.91  (high popularity)
+
+-- gold_transition_analytics
+transition_id: transition-abc-123  (Adam Beyer → Amelie Lens)
+occurrence_count: 21  (21 DJs used this transition)
+confidence_rating: 0.87  (high confidence due to multiple occurrences)
+average_bpm_delta: +2.1
+key_compatibility_rate: 0.95  (95% of occurrences had compatible keys)
+weighted_quality_score: 0.89  (high-quality transition)
+```
+
+**Quality Scoring Formula:**
+```
+weighted_quality_score = (
+  occurrence_weight * 0.4 +  // More occurrences = higher weight
+  bpm_compatibility * 0.2 +   // BPM delta < 3 = compatible
+  key_compatibility * 0.2 +   // Harmonic key match
+  energy_progression * 0.2    // Smooth energy transition
+)
+```
+
+#### Operational Layer: Graph Database
+
+**Purpose:** Optimized graph structure for fast traversal and visualization
+
+**ETL Process (Gold → Operational):**
+1. Create graph nodes from gold tracks (include all metadata)
+2. Create graph edges from gold transitions (weight = occurrence count)
+3. Pre-compute graph metrics (PageRank, centrality, clustering coefficients)
+4. Index for fast neighbor queries and pathfinding
+
+**Graph Structure:**
+- **Nodes:** Tracks with attributes (artist, title, BPM, key, energy, popularity)
+- **Edges:** Directed transitions with weights (occurrence_count)
+- **Properties:** Edge weight = transition frequency (higher weight = more popular pairing)
+
+**Example Graph Representation:**
+```json
+// Node (Track)
+{
+  "id": "canonical-track-456",
+  "label": "Amelie Lens - Contradictions",
+  "properties": {
+    "artist": "Amelie Lens",
+    "title": "Contradictions",
+    "bpm": 130,
+    "key": "A Minor",
+    "energy": 0.82,
+    "popularity": 0.91,
+    "total_playlists": 127
+  }
+}
+
+// Edge (Transition)
+{
+  "source": "canonical-track-123",  // Adam Beyer - Your Mind
+  "target": "canonical-track-456",  // Amelie Lens - Contradictions
+  "weight": 21,  // 21 occurrences = thick edge in visualization
+  "properties": {
+    "occurrence_count": 21,
+    "confidence": 0.87,
+    "quality_score": 0.89,
+    "avg_bpm_delta": +2.1,
+    "key_compatibility": "perfect_match"
+  }
+}
+```
+
+**Graph API Delivery:**
+- REST endpoint: `GET /api/graph/nodes?artist=Amelie%20Lens`
+- WebSocket: Real-time updates when new transitions are scraped
+- Response includes nodes + edges for visualization
+- Frontend renders with PIXI.js force-directed layout
+
+#### Frontend: Interactive Visualization
+
+**Purpose:** Render interactive graph for DJ setlist building
+
+**PIXI.js Rendering:**
+- Nodes sized by popularity (playlist appearances)
+- Edges sized by weight (occurrence count)
+- Force-directed layout (D3.js simulation)
+- Interactive features: drag, zoom, click, multi-select
+
+**User Workflow:**
+1. Search for starting track (e.g., "Deadmau5 - Strobe")
+2. View graph of connected tracks (tracks that transition TO/FROM Strobe)
+3. Click edge to see transition details (occurrence count, quality score, BPM/key info)
+4. Follow high-weight edges to discover proven pairings
+5. Build setlist by adding tracks along graph paths
+
+**Example User Flow:**
+```
+User clicks: "Deadmau5 - Strobe" node
+  → Graph shows 50 outgoing edges (tracks DJs play AFTER Strobe)
+  → Thickest edge: "Eric Prydz - Opus" (weight: 23 occurrences)
+  → User clicks edge to see transition details:
+      - 23 DJs used this transition
+      - BPM: 124 → 126 (+2, compatible)
+      - Key: A Minor → A Minor (perfect match)
+      - Energy: 0.75 → 0.80 (+5%, smooth build)
+      - Confidence: 0.92 (high)
+  → User adds "Eric Prydz - Opus" to setlist
+  → Graph updates to show edges FROM "Opus"
+  → User continues building setlist by following proven transitions
+```
+
+### Transition Capture Detailed Example
+
+**Input Playlist:** "Carl Cox @ Space Ibiza 2024"
+
+**Scraped Tracklist:**
+```
+Position 1: Adam Beyer - Your Mind (128 BPM, A Minor)
+Position 2: Amelie Lens - Contradictions (130 BPM, A Minor) ← harmonic match!
+Position 3: Charlotte de Witte - Selected (132 BPM, D Minor) ← energy progression
+Position 4: Reinier Zonneveld - Pattern Burst (135 BPM, D Minor)
+```
+
+**Bronze Layer Storage:**
+- Full playlist metadata stored in `bronze_scraped_playlists`
+- 4 track rows stored in `bronze_scraped_tracks` with positions 1-4
+- Raw JSON from scraper preserved in `raw_metadata` for reprocessing
+
+**Silver Layer Transition Creation:**
+```
+Transition 1: Adam Beyer - Your Mind → Amelie Lens - Contradictions
+  - occurrence_count: 1 (first time seeing this)
+  - bpm_delta: +2 (128→130, smooth acceleration)
+  - key_compatibility: 'perfect' (A Minor → A Minor)
+  - playlist_id: uuid-1234
+
+Transition 2: Amelie Lens - Contradictions → Charlotte de Witte - Selected
+  - occurrence_count: 1
+  - bpm_delta: +2 (130→132, continuing acceleration)
+  - key_compatibility: 'compatible' (A Minor → D Minor, relative keys)
+  - energy_delta: +15% (building intensity)
+
+Transition 3: Charlotte de Witte - Selected → Reinier Zonneveld - Pattern Burst
+  - occurrence_count: 1
+  - bpm_delta: +3 (132→135)
+  - key_compatibility: 'perfect' (D Minor → D Minor)
+```
+
+**What Happens When More DJs Use Same Transitions:**
+
+If 20 other DJs also use "Adam Beyer - Your Mind → Amelie Lens - Contradictions" in their sets:
+- `occurrence_count` increases from 1 to 21
+- `playlist_occurrences` array contains 21 playlist IDs
+- Gold layer calculates `confidence_rating: 0.87` (high confidence)
+- Operational layer creates thick edge with `weight: 21`
+- Frontend renders thick line between nodes, signaling **proven high-quality transition**
+
+**Graph Visualization Result:**
+- User searching for "Adam Beyer - Your Mind" sees thick edge to "Amelie Lens - Contradictions"
+- Hover tooltip shows: "21 DJs used this transition | BPM: +2 | Key: Perfect Match | Confidence: 87%"
+- User knows this is a **validated pairing** used by professionals, not just algorithmic suggestion
+
+### Why This Architecture Exists
+
+**Separation of Concerns (Medallion Layers):**
+- **Bronze:** Raw data preservation enables reprocessing when enrichment APIs improve
+- **Silver:** Canonical tracks prevent duplicates (same track from multiple sources)
+- **Gold:** Pre-computed analytics enable fast queries (no aggregation at query time)
+- **Operational:** Graph-optimized structure for visualization and pathfinding
+
+**Transitions as First-Class Citizens:**
+- Dedicated `silver_track_transitions` table (not derived on-the-fly)
+- Occurrence counting reveals community knowledge ("wisdom of the DJs")
+- Quality metrics enable filtering low-confidence transitions
+- Graph structure enables setlist pathfinding algorithms
+
+**Real Data Beats Algorithms:**
+- BPM matching alone doesn't guarantee good transitions (e.g., 128 BPM techno → 128 BPM house may clash)
+- Harmonic key theory is useful but doesn't capture DJ intuition
+- Real playlists include energy flow, crowd momentum, set narrative
+- **21 DJs using the same transition** is stronger evidence than any algorithm
+
+**Scalability Through Layers:**
+- Bronze grows linearly with scrapes (append-only)
+- Silver deduplicates and enriches (slower writes, optimized reads)
+- Gold aggregates for dashboards (updated periodically, not real-time)
+- Operational serves frontend (optimized for graph queries, indexed for speed)
+
+**Data Quality Enforcement:**
+- Artist attribution required at silver layer (no Unknown Artists in graph)
+- Position integrity validated (no gaps in track sequences)
+- Transition metrics calculated consistently (BPM delta, key compatibility)
+- Confidence ratings filter noise (low occurrence = low confidence)
+
 ## Guiding Principles
 
 - **Modularity:** Components are discrete, reusable units with single responsibilities
@@ -30,14 +383,103 @@ Graph visualization **REQUIRES** valid artist attribution on **BOTH** endpoints 
 
 **Target:** Find **setlists/playlists** containing target tracks (not individual tracks/artists)
 
-**Workflow:**
-1. **Source:** Query `target_track_searches` table (`search_query`, `target_artist`, `target_title`)
-2. **Search:** Use combined `search_query` (e.g., "Deadmau5 Strobe") — NOT artist/title alone
-3. **Find:** Locate setlists containing the target track
-4. **Scrape:** Extract ENTIRE setlist (metadata, all tracks, positions, transitions)
-5. **Store:** Save playlist + track transition data for graph edges
+**Core Objective:** Scrape complete playlists to capture **track transitions** — the sequential ordering of tracks that forms the foundation of the graph visualization. Each transition represents an edge in the graph, connecting tracks that were played consecutively by DJs/artists.
 
-**Example:** Search "Deadmau5 Strobe" → Find "2019-06-15 Deadmau5 @ Ultra" → Scrape full tracklist (Ghosts 'n' Stuff → Strobe → I Remember → Some Chords) → Create transition edges
+**Workflow Steps:**
+
+1. **Source Identification:**
+   - Query `target_track_searches` table for search targets
+   - Table columns: `search_query`, `target_artist`, `target_title`
+   - Example row: `search_query="Deadmau5 Strobe"`, `target_artist="Deadmau5"`, `target_title="Strobe"`
+
+2. **Search Execution:**
+   - Use **combined** `search_query` (e.g., "Deadmau5 Strobe") — NOT artist/title separately
+   - Search across sources: MixesDB, 1001Tracklists, Beatport, etc.
+   - Goal: Locate setlists/playlists **containing** the target track
+
+3. **Setlist Discovery:**
+   - Find playlists where target track appears in tracklist
+   - Example: "2019-06-15 Deadmau5 @ Ultra Music Festival" contains "Strobe" at position 7
+
+4. **Complete Setlist Extraction:**
+   - Scrape **ENTIRE** playlist, not just target track
+   - Extract ALL tracks with their sequential positions
+   - Capture playlist metadata (date, venue, DJ/artist, event name, source URL)
+   - Preserve track ordering (critical for transitions)
+
+5. **Bronze Layer Persistence:**
+   - Write raw scraped data to medallion architecture bronze layer
+   - Tables:
+     - `bronze_scraped_playlists`: Playlist metadata (source, date, artist, venue, URL)
+     - `bronze_scraped_tracks`: Individual tracks with positions and raw metadata
+   - Track fields: `position`, `artist_name`, `track_title`, `playlist_id`, `raw_metadata` (JSONB)
+   - Preserve ALL raw data for downstream enrichment
+
+6. **Transition Edge Creation:**
+   - **Automatic:** ETL pipeline processes bronze data to create transitions
+   - For each consecutive track pair in playlist:
+     - Create transition edge: `track[N] → track[N+1]`
+     - Store in `track_transitions` table with metadata
+   - Transition metadata includes:
+     - `source_track_id`: Previous track (edge source)
+     - `target_track_id`: Next track (edge target)
+     - `playlist_id`: Source playlist reference
+     - `position_in_playlist`: Sequential position
+     - `transition_metadata`: JSONB (BPM compatibility, key compatibility, energy flow)
+
+**Example Workflow:**
+
+```
+Step 1-2: Search Query
+  → search_query: "Deadmau5 Strobe"
+
+Step 3: Setlist Discovery
+  → Found: "2019-06-15 Deadmau5 @ Ultra Music Festival"
+  → Tracklist preview shows "Strobe" at position 7
+
+Step 4: Complete Extraction
+  → Scrape FULL tracklist:
+     Position 1: "Ghosts 'n' Stuff" - Deadmau5
+     Position 2: "Strobe" - Deadmau5 ← TARGET TRACK
+     Position 3: "I Remember" - Deadmau5 & Kaskade
+     Position 4: "Some Chords" - Deadmau5
+     Position 5: "Professional Griefers" - Deadmau5
+     ...
+
+Step 5: Bronze Persistence
+  → bronze_scraped_playlists:
+     playlist_id: uuid-1234
+     source: "1001tracklists"
+     event_name: "Ultra Music Festival 2019"
+     artist: "Deadmau5"
+     date: "2019-06-15"
+
+  → bronze_scraped_tracks (5 rows):
+     {playlist_id: uuid-1234, position: 1, artist: "Deadmau5", title: "Ghosts 'n' Stuff"}
+     {playlist_id: uuid-1234, position: 2, artist: "Deadmau5", title: "Strobe"}
+     {playlist_id: uuid-1234, position: 3, artist: "Deadmau5 & Kaskade", title: "I Remember"}
+     {playlist_id: uuid-1234, position: 4, artist: "Deadmau5", title: "Some Chords"}
+     {playlist_id: uuid-1234, position: 5, artist: "Deadmau5", title: "Professional Griefers"}
+
+Step 6: Transition Edge Creation (ETL Automatic)
+  → track_transitions table:
+     Edge 1: Ghosts 'n' Stuff → Strobe (position 1→2, playlist uuid-1234)
+     Edge 2: Strobe → I Remember (position 2→3, playlist uuid-1234)
+     Edge 3: I Remember → Some Chords (position 3→4, playlist uuid-1234)
+     Edge 4: Some Chords → Professional Griefers (position 4→5, playlist uuid-1234)
+```
+
+**Graph Visualization Impact:**
+- Each transition becomes an **edge** in the graph
+- Tracks with many transitions (e.g., "Strobe" appears in 50+ playlists) become **hub nodes**
+- Edge weight increases with transition frequency (multiple DJs playing same sequence)
+- Visualization reveals common track pairings, DJ mixing patterns, harmonic progressions
+
+**Critical Requirements:**
+- **Complete playlists only:** Partial tracklists invalidate transition data
+- **Position preservation:** Track order is essential for edge directionality
+- **All tracks captured:** Missing tracks create gaps in transition chains
+- **Raw metadata storage:** Bronze layer preserves original data for auditing/reprocessing
 
 ### Unified Scraper Deployment (MANDATORY)
 
@@ -267,7 +709,7 @@ npx playwright test -g "should render all variants" --workers=1
 1. **Extraction (Spiders):** Raw data extraction with `ItemLoaders`
 2. **Validation Pipeline:** Holistic checks (required fields, types)
 3. **Enrichment Pipeline:** Delegates to `metadata-enrichment` microservice (Section 5.1.5)
-4. **Persistence Pipeline:** Upsert to PostgreSQL (prevent duplicates)
+4. **Persistence Pipeline:** Upsert to PostgreSQL bronze layer (prevent duplicates)
 
 **Resilience Features:**
 - Intelligent proxy rotation (health-aware pool)
@@ -289,6 +731,264 @@ scrapy runspider spiders/mixesdb_spider.py -a artist_name='Artist'
 ```
 
 **Why:** `scrapy crawl` loads spider through project structure, maintains package hierarchy, resolves relative imports. `runspider` executes file directly, breaks imports.
+
+#### 5.1.1. Bronze Layer Data Model (CRITICAL)
+
+**Purpose:** Raw scraped data persistence for medallion architecture (Bronze → Silver → Gold)
+
+**Schema:**
+
+```sql
+-- Playlist/Setlist metadata
+CREATE TABLE bronze_scraped_playlists (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source VARCHAR(100) NOT NULL,  -- 'mixesdb', '1001tracklists', 'beatport'
+  source_url TEXT NOT NULL UNIQUE,  -- Original URL for deduplication
+  playlist_external_id VARCHAR(255),  -- External ID from source
+  event_name TEXT,
+  artist_name VARCHAR(500),
+  venue TEXT,
+  event_date DATE,
+  scraped_at TIMESTAMP DEFAULT NOW(),
+  raw_metadata JSONB,  -- ALL source data preserved
+  CONSTRAINT unique_source_playlist UNIQUE(source, source_url)
+);
+
+-- Individual tracks with positions (CRITICAL for transitions)
+CREATE TABLE bronze_scraped_tracks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  playlist_id UUID NOT NULL REFERENCES bronze_scraped_playlists(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL,  -- Sequential position in playlist (1-based)
+  artist_name VARCHAR(500),
+  track_title VARCHAR(500),
+  track_duration INTERVAL,  -- If available from source
+  raw_metadata JSONB,  -- Original track data from source
+  scraped_at TIMESTAMP DEFAULT NOW(),
+  CONSTRAINT unique_playlist_position UNIQUE(playlist_id, position),
+  CONSTRAINT valid_position CHECK(position > 0)
+);
+
+CREATE INDEX idx_bronze_tracks_playlist ON bronze_scraped_tracks(playlist_id);
+CREATE INDEX idx_bronze_tracks_position ON bronze_scraped_tracks(playlist_id, position);
+CREATE INDEX idx_bronze_playlists_source ON bronze_scraped_playlists(source);
+CREATE INDEX idx_bronze_playlists_artist ON bronze_scraped_playlists(artist_name);
+```
+
+**Pipeline Implementation:**
+
+```python
+# scrapers/pipelines/persistence_pipeline.py
+class BronzePersistencePipeline:
+    async def process_item(self, item, spider):
+        # 1. Upsert playlist metadata
+        playlist_id = await self.upsert_playlist({
+            'source': spider.name,
+            'source_url': item['playlist_url'],
+            'event_name': item.get('event_name'),
+            'artist_name': item.get('artist_name'),
+            'event_date': item.get('event_date'),
+            'raw_metadata': item.get('raw_playlist_metadata')
+        })
+
+        # 2. Insert tracks with positions (CRITICAL: preserve order)
+        for position, track in enumerate(item['tracks'], start=1):
+            await self.insert_track({
+                'playlist_id': playlist_id,
+                'position': position,  # Sequential position for transitions
+                'artist_name': track.get('artist'),
+                'track_title': track.get('title'),
+                'track_duration': track.get('duration'),
+                'raw_metadata': track  # Preserve ALL source data
+            })
+
+        return item
+```
+
+#### 5.1.2. Transition Extraction (ETL Bronze → Silver)
+
+**ETL Process:** Automated pipeline processes bronze layer to create silver layer transitions
+
+```sql
+-- Silver layer: Canonical transitions (graph edges)
+INSERT INTO silver_track_transitions (
+  source_track_id,
+  target_track_id,
+  playlist_id,
+  position_in_playlist,
+  transition_metadata
+)
+SELECT
+  t1.canonical_track_id AS source_track_id,  -- Previous track
+  t2.canonical_track_id AS target_track_id,  -- Next track
+  t1.playlist_id,
+  t1.position AS position_in_playlist,
+  jsonb_build_object(
+    'source_artist', t1.artist_name,
+    'target_artist', t2.artist_name,
+    'source_title', t1.track_title,
+    'target_title', t2.track_title,
+    'bronze_source_id', p.source
+  ) AS transition_metadata
+FROM bronze_scraped_tracks t1
+JOIN bronze_scraped_tracks t2 ON t1.playlist_id = t2.playlist_id
+  AND t2.position = t1.position + 1  -- Next track in sequence
+JOIN bronze_scraped_playlists p ON t1.playlist_id = p.id
+WHERE t1.canonical_track_id IS NOT NULL
+  AND t2.canonical_track_id IS NOT NULL
+ON CONFLICT (source_track_id, target_track_id, playlist_id) DO NOTHING;
+```
+
+**Key Requirements:**
+- **Position integrity:** Tracks MUST have sequential positions (no gaps)
+- **Canonical matching:** Bronze tracks matched to silver canonical tracks via enrichment
+- **Deduplication:** Same transition from same playlist = single edge (composite unique constraint)
+- **Metadata preservation:** Raw source data retained in bronze for auditing/reprocessing
+
+**Spider Output Contract:**
+
+```python
+# scrapers/items.py
+class PlaylistItem(scrapy.Item):
+    playlist_url = scrapy.Field()  # REQUIRED: Source URL for deduplication
+    event_name = scrapy.Field()
+    artist_name = scrapy.Field()
+    event_date = scrapy.Field()
+    tracks = scrapy.Field()  # REQUIRED: List of TrackItems with positions preserved
+    raw_playlist_metadata = scrapy.Field()
+
+class TrackItem(scrapy.Item):
+    # Position is implicit from list order (enumerate in pipeline)
+    artist = scrapy.Field()  # REQUIRED
+    title = scrapy.Field()   # REQUIRED
+    duration = scrapy.Field()
+    # DO NOT add position field — pipeline assigns from list index
+```
+
+**Transition Quality Metrics:**
+- Tracks per playlist (target: 10-50 tracks)
+- Position coverage (no gaps in sequence)
+- Canonical match rate (% bronze tracks matched to silver)
+- Edge creation rate (% bronze tracks → silver transitions)
+
+#### 5.1.3. Unified Scraper API Usage
+
+**Endpoint:** `POST http://unified-scraper:8012/scrape`
+
+**Purpose:** Single API gateway for ALL spider types (replaces individual scraper deployments)
+
+**Request Format:**
+
+```json
+{
+  "spider_name": "mixesdb",  // 'mixesdb', '1001tracklists', 'beatport'
+  "search_params": {
+    "search_query": "Deadmau5 Strobe",  // Combined search query (REQUIRED)
+    "target_artist": "Deadmau5",        // For tracking purposes
+    "target_title": "Strobe",           // For tracking purposes
+    "limit": 10                         // Max playlists to scrape
+  },
+  "scrape_options": {
+    "enable_enrichment": true,  // Delegate to metadata-enrichment service
+    "max_retries": 3,
+    "timeout": 300
+  }
+}
+```
+
+**Response Format:**
+
+```json
+{
+  "status": "completed",
+  "spider_name": "mixesdb",
+  "playlists_scraped": 5,
+  "tracks_extracted": 247,
+  "transitions_created": 235,
+  "errors": [],
+  "bronze_playlist_ids": [
+    "uuid-1234",
+    "uuid-5678"
+  ],
+  "execution_time_seconds": 45.2
+}
+```
+
+**Usage Examples:**
+
+```bash
+# Search for playlists containing "Strobe" by Deadmau5
+curl -X POST http://unified-scraper:8012/scrape \
+  -H "Content-Type: application/json" \
+  -d '{
+    "spider_name": "mixesdb",
+    "search_params": {
+      "search_query": "Deadmau5 Strobe",
+      "target_artist": "Deadmau5",
+      "target_title": "Strobe",
+      "limit": 5
+    }
+  }'
+
+# Search 1001Tracklists for Armin van Buuren sets
+curl -X POST http://unified-scraper:8012/scrape \
+  -H "Content-Type: application/json" \
+  -d '{
+    "spider_name": "1001tracklists",
+    "search_params": {
+      "search_query": "Armin van Buuren Shivers",
+      "target_artist": "Armin van Buuren",
+      "target_title": "Shivers",
+      "limit": 10
+    }
+  }'
+
+# From Python code
+import httpx
+
+async def scrape_playlists(search_query: str, target_artist: str, target_title: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "http://unified-scraper:8012/scrape",
+            json={
+                "spider_name": "mixesdb",
+                "search_params": {
+                    "search_query": search_query,
+                    "target_artist": target_artist,
+                    "target_title": target_title,
+                    "limit": 10
+                }
+            },
+            timeout=600.0  # 10 minutes for large scrapes
+        )
+        return response.json()
+```
+
+**Benefits vs. Individual Deployments:**
+
+| Individual Scrapers | Unified Scraper |
+|---------------------|-----------------|
+| 12+ separate pods (12GB+ memory) | Single pod (1GB memory) |
+| Duplicate proxy pools per spider | Shared proxy rotation |
+| 12+ separate configurations | Single source of truth |
+| Inconsistent retry logic | Centralized resilience |
+| Hard to monitor/debug | Single log stream |
+| Resource contention | Efficient resource sharing |
+
+**Monitoring:**
+
+```bash
+# Health check
+curl http://unified-scraper:8012/health
+
+# Spider statistics
+curl http://unified-scraper:8012/stats
+
+# Active scrape jobs
+curl http://unified-scraper:8012/jobs
+
+# View logs
+kubectl logs -f deployment/unified-scraper -n songnodes
+```
 
 ### 5.1.5. Enrichment Delegation Architecture
 
@@ -502,6 +1202,7 @@ kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELE
 
 ## 8. Anti-Patterns to Avoid
 
+### General Anti-Patterns
 ❌ Unbounded collections (use pagination/limits)
 ❌ Missing timeouts (all network calls need timeouts)
 ❌ No connection limits (use connection pools with max sizes)
@@ -513,10 +1214,25 @@ kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELE
 ❌ Skipping tests (E2E mandatory before merge)
 ❌ Force pushes to main (protected branch)
 ❌ Unclear commit messages (use Conventional Commits)
-❌ Using `runspider` with relative imports (use `scrapy crawl`)
 ❌ Docker Compose for production (Kubernetes-only)
 ❌ Ignoring orphaned pods (check for multiple hash generations)
 ❌ Building frontend without `npm run build` (stale dist/)
+
+### Scraper Anti-Patterns (CRITICAL)
+❌ **Individual scraper deployments** (use unified-scraper only)
+❌ **Partial tracklists** (scrape ENTIRE playlist or discard)
+❌ **Searching for individual tracks** (search for playlists containing tracks)
+❌ **Ignoring track positions** (positions are critical for edge creation)
+❌ **Missing position gaps** (validate sequential positions: 1, 2, 3... no jumps)
+❌ **Position in spider output** (pipeline assigns positions from list order)
+❌ **Skipping bronze layer** (all raw data MUST persist to bronze first)
+❌ **Direct silver writes** (bronze → ETL → silver, never bypass bronze)
+❌ **Using `runspider`** (use `scrapy crawl [spider_name]` for correct imports)
+❌ **Hardcoded metadata enrichment** (delegate to metadata-enrichment service)
+❌ **Scraping artists instead of playlists** (artists don't provide transition data)
+❌ **Single-track playlists** (require 2+ tracks to create transitions)
+❌ **Null/Unknown artists in bronze** (preserve raw data, filter in silver layer)
+❌ **Duplicate playlist URLs** (enforce UNIQUE constraint on source_url)
 
 ---
 
@@ -528,7 +1244,11 @@ kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELE
 | Deploy with Skaffold | `skaffold dev` / `skaffold run` |
 | View Logs | `kubectl logs -f deployment/[service] -n songnodes` |
 | Run Tests | `npm run test:e2e` |
-| Test Spider | `kubectl exec -n songnodes deployment/scraper-orchestrator -- scrapy crawl [spider_name] -a arg=value` |
+| **Trigger Scrape (Unified)** | `curl -X POST http://unified-scraper:8012/scrape -d '{"spider_name":"mixesdb","search_params":{"search_query":"Deadmau5 Strobe","limit":5}}'` |
+| Test Spider (Direct) | `kubectl exec -n songnodes deployment/unified-scraper -- scrapy crawl [spider_name] -a search_query="Artist Track" -a limit=1` |
+| View Scraper Logs | `kubectl logs -f deployment/unified-scraper -n songnodes` |
+| Check Bronze Data | `kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM bronze_scraped_playlists;"` |
+| Check Transitions | `kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM track_transitions;"` |
 | Frontend Dev | `cd frontend && npm run dev` |
 | Frontend Build | `cd frontend && npm run build` |
 | Flux Status | `flux get helmreleases -n flux-system` |

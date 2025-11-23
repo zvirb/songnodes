@@ -26,7 +26,8 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from silver_playlists_to_gold_etl import SilverPlaylistsToGoldETL as SilverToGoldETL
+from silver_tracks_to_gold_etl import SilverTracksToGoldETL
+from silver_playlists_to_gold_etl import SilverPlaylistsToGoldETL
 
 # Configure logging
 logging.basicConfig(
@@ -38,21 +39,63 @@ logger = logging.getLogger(__name__)
 
 async def run_etl_cycle(batch_size: int = 1000) -> dict:
     """
-    Run a single ETL cycle
+    Run a single ETL cycle for BOTH tracks and playlists
 
     Args:
-        batch_size: Number of tracks to process per cycle
+        batch_size: Number of items to process per cycle
 
     Returns:
-        Statistics dictionary from ETL run
+        Combined statistics dictionary from both ETL runs
     """
+    combined_stats = {
+        'silver_tracks_processed': 0,
+        'tracks_created': 0,
+        'tracks_updated': 0,
+        'silver_playlists_processed': 0,
+        'playlists_created': 0,
+        'playlists_updated': 0,
+        'playlist_tracks_created': 0,
+        'errors': 0
+    }
+
     try:
-        etl = SilverToGoldETL(dry_run=False)
-        stats = await etl.run(limit=batch_size)
-        return stats
+        # Step 1: Run track ETL (must complete before playlists)
+        logger.info("="*80)
+        logger.info("STEP 1: Running Silver-to-Gold TRACK ETL")
+        logger.info("="*80)
+        track_etl = SilverTracksToGoldETL(dry_run=False)
+        track_stats = await track_etl.run(limit=batch_size)
+
+        # Merge track stats
+        combined_stats['silver_tracks_processed'] = track_stats.get('silver_tracks_processed', 0)
+        combined_stats['tracks_created'] = track_stats.get('tracks_created', 0)
+        combined_stats['tracks_updated'] = track_stats.get('tracks_updated', 0)
+        combined_stats['errors'] += track_stats.get('errors', 0)
+
+        logger.info(f"✅ Track ETL complete: {track_stats.get('silver_tracks_processed', 0)} tracks processed")
+
+        # Step 2: Run playlist ETL (depends on tracks existing in gold layer)
+        logger.info("="*80)
+        logger.info("STEP 2: Running Silver-to-Gold PLAYLIST ETL")
+        logger.info("="*80)
+        playlist_etl = SilverPlaylistsToGoldETL(dry_run=False)
+        playlist_stats = await playlist_etl.run(limit=batch_size)
+
+        # Merge playlist stats
+        combined_stats['silver_playlists_processed'] = playlist_stats.get('silver_playlists_processed', 0)
+        combined_stats['playlists_created'] = playlist_stats.get('playlists_created', 0)
+        combined_stats['playlists_updated'] = playlist_stats.get('playlists_updated', 0)
+        combined_stats['playlist_tracks_created'] = playlist_stats.get('playlist_tracks_created', 0)
+        combined_stats['errors'] += playlist_stats.get('errors', 0)
+
+        logger.info(f"✅ Playlist ETL complete: {playlist_stats.get('silver_playlists_processed', 0)} playlists processed")
+
+        return combined_stats
+
     except Exception as e:
         logger.error(f"ETL cycle failed: {e}", exc_info=True)
-        return {"errors": 1, "silver_tracks_processed": 0}
+        combined_stats['errors'] += 1
+        return combined_stats
 
 
 async def scheduler_loop():
@@ -103,12 +146,17 @@ async def scheduler_loop():
             logger.info(f"ETL CYCLE #{cycle_count} COMPLETE")
             logger.info(f"Duration: {cycle_duration:.2f}s")
             logger.info(f"Statistics:")
-            logger.info(f"  - Silver tracks processed: {stats.get('silver_tracks_processed', 0)}")
-            logger.info(f"  - Tracks created: {stats.get('tracks_created', 0)}")
-            logger.info(f"  - Tracks updated: {stats.get('tracks_updated', 0)}")
-            logger.info(f"  - Artists created: {stats.get('artists_created', 0)}")
-            logger.info(f"  - Track-artist relationships: {stats.get('track_artists_created', 0)}")
-            logger.info(f"  - Errors: {stats.get('errors', 0)}")
+            logger.info(f"  TRACKS:")
+            logger.info(f"    - Silver tracks processed: {stats.get('silver_tracks_processed', 0)}")
+            logger.info(f"    - Tracks created: {stats.get('tracks_created', 0)}")
+            logger.info(f"    - Tracks updated: {stats.get('tracks_updated', 0)}")
+            logger.info(f"  PLAYLISTS:")
+            logger.info(f"    - Silver playlists processed: {stats.get('silver_playlists_processed', 0)}")
+            logger.info(f"    - Playlists created: {stats.get('playlists_created', 0)}")
+            logger.info(f"    - Playlists updated: {stats.get('playlists_updated', 0)}")
+            logger.info(f"    - Playlist-track relationships: {stats.get('playlist_tracks_created', 0)}")
+            logger.info(f"  OVERALL:")
+            logger.info(f"    - Total errors: {stats.get('errors', 0)}")
 
             # Calculate next run time
             next_run = datetime.now() + timedelta(seconds=interval_seconds)
