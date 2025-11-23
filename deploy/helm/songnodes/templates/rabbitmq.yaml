@@ -84,6 +84,16 @@ spec:
           volumeMounts:
             - name: rabbitmq-data
               mountPath: /var/lib/rabbitmq
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    sleep 10
+                    rabbitmqctl add_vhost musicdb || true
+                    rabbitmqctl set_permissions -p musicdb songnodesuser ".*" ".*" ".*" || true
           resources:
             {{- toYaml .Values.rabbitmq.resources | nindent 12 }}
           {{- if .Values.rabbitmq.livenessProbe.enabled }}
