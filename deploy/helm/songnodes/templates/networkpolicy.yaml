@@ -574,27 +574,5 @@ spec:
               app.kubernetes.io/name: target-track-scraper
       ports:
         - protocol: TCP
-          port: 8000
-        - protocol: TCP
-          port: 8011
-        - protocol: TCP
-          port: 8012
-        - protocol: TCP
-          port: 8013
-        - protocol: TCP
-          port: 8014
-        - protocol: TCP
-          port: 8015
-        - protocol: TCP
-          port: 8016
-        - protocol: TCP
-          port: 8017
-        - protocol: TCP
-          port: 8018
-        - protocol: TCP
-          port: 8019
-        - protocol: TCP
-          port: 8023
-        - protocol: TCP
-          port: 8026
+          port: 8000  # unified-scraper only
 {{- end }}

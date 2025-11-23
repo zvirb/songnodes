@@ -371,6 +371,9 @@ async def get_artists(limit: int = 100, offset: int = 0):
     Uses Pydantic models to ensure data quality and type safety.
     """
     try:
+        if db_pool is None:
+            raise HTTPException(status_code=503, detail="Database pool not initialized")
+
         async with db_pool.acquire() as conn:
             query = """
             SELECT artist_id::text as artist_id,
@@ -468,6 +471,9 @@ async def get_dirty_artists(limit: int = 50, offset: int = 0):
     - Special character prefixes: +, -, *
     """
     try:
+        if db_pool is None:
+            raise HTTPException(status_code=503, detail="Database pool not initialized")
+
         # Import the cleaning function from common module
         from common.artist_name_cleaner import clean_artist_name, has_formatting_artifacts
 
@@ -536,6 +542,9 @@ async def rename_artist(artist_id: str, request: RenameArtistRequest):
     Rename an artist (for manual correction of dirty names).
     """
     try:
+        if db_pool is None:
+            raise HTTPException(status_code=503, detail="Database pool not initialized")
+
         new_name = request.new_name
         async with db_pool.acquire() as conn:
             # Check if new name conflicts with existing artist
@@ -591,6 +600,9 @@ async def merge_artist(duplicate_id: str, request: RenameArtistRequest):
     Use this when a dirty artist name should be merged with an existing clean artist.
     """
     try:
+        if db_pool is None:
+            raise HTTPException(status_code=503, detail="Database pool not initialized")
+
         target_name = request.new_name
         async with db_pool.acquire() as conn:
             # Find the existing artist with target name
@@ -691,6 +703,9 @@ async def delete_artist(artist_id: str):
     Use this for artists that cannot be cleaned or merged (e.g., "[unknown]").
     """
     try:
+        if db_pool is None:
+            raise HTTPException(status_code=503, detail="Database pool not initialized")
+
         async with db_pool.acquire() as conn:
             # Start transaction
             async with conn.transaction():

@@ -147,7 +147,7 @@ def calculate_heuristic(
     current_duration: int,
     target_duration: int,
     remaining_waypoints: Set[str],
-    avg_track_duration: int
+    avg_track_duration: float
 ) -> float:
     """
     Improved heuristic for A* search (2025 best practices)
@@ -402,7 +402,7 @@ def find_path(
             new_remaining_waypoints = current_state.remaining_waypoints - {neighbor_id}
 
             # Calculate heuristic
-            new_heuristic = calculate_heuristic(new_duration, target_duration, new_remaining_waypoints, avg_duration)
+            new_heuristic = calculate_heuristic(new_duration, target_duration, new_remaining_waypoints, float(avg_duration))
 
             # Create new state
             new_state = PathfinderState(

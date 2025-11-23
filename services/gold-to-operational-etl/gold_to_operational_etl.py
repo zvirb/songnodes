@@ -369,8 +369,8 @@ class GoldToOperationalETL:
                 t2.id as song_id_2,
                 t1.id as source_track_id,
                 t2.id as target_track_id,
-                stt.occurrence_count,
-                stt.occurrence_count::float as weight
+                stt.transition_count as occurrence_count,
+                stt.transition_count::float as weight
             FROM silver_track_transitions stt
             -- Map silver track IDs to gold track IDs
             JOIN gold_track_analytics gta1 ON stt.from_track_id = gta1.silver_track_id
@@ -389,13 +389,13 @@ class GoldToOperationalETL:
               AND gta2.data_quality_score >= 0.5
               AND a1.name IS NOT NULL AND a1.name != '' AND LOWER(a1.name) NOT IN ('unknown', 'unknown artist', 'various artists', 'va')
               AND a2.name IS NOT NULL AND a2.name != '' AND LOWER(a2.name) NOT IN ('unknown', 'unknown artist', 'various artists', 'va')
-              AND stt.occurrence_count >= 1
+              AND stt.transition_count >= 1
               AND NOT EXISTS (
                   SELECT 1 FROM song_adjacency sa
                   WHERE sa.song_id_1 = t1.id AND sa.song_id_2 = t2.id
               )
             LIMIT $1
-            ON CONFLICT (song_id_1, song_id_2) DO UPDATE SET
+            ON CONFLICT (source_track_id, target_track_id) DO UPDATE SET
                 occurrence_count = song_adjacency.occurrence_count + EXCLUDED.occurrence_count,
                 weight = (song_adjacency.occurrence_count + EXCLUDED.occurrence_count)::float,
                 updated_at = NOW()

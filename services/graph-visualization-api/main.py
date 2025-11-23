@@ -892,6 +892,10 @@ async def process_node_batch(nodes: List[Dict[str, Any]], batch_id: str):
 async def update_batch_status(batch_id: str, status: str, result: Any):
     """Update batch processing status in Redis."""
     try:
+        if redis_pool is None:
+            logger.error("Redis pool not initialized, cannot update batch status")
+            return
+
         status_data = {
             'batch_id': batch_id,
             'status': status,

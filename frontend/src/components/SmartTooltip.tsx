@@ -517,7 +517,7 @@ export const useSmartTooltip = () => {
           {
             label: 'Play',
             icon: <Play size={12} />,
-            onClick: () => ,
+            onClick: () => { /* Play functionality not implemented */ },
             color: '#10b981'
           },
           {

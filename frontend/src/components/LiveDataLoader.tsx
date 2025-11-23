@@ -365,7 +365,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         onDataUpdate('graph', graphData);
       }
 
-      }ms)`);
+      console.log(`✅ Graph data loaded successfully (${latency.toFixed(0)}ms)`);
 
     } catch (error) {
       const errorMessage = `Failed to load data: ${error}`;

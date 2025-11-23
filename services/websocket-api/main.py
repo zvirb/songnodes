@@ -643,7 +643,7 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
                 "message": message.data.get("message", ""),
                 "room_id": room_id
             },
-            "timestamp": message.timestamp.isoformat()
+            "timestamp": message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
         }
         await websocket_service.manager.broadcast_to_room(room_id, broadcast_message)
 
@@ -657,7 +657,7 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
                 "node_id": message.data.get("node_id"),
                 "position": message.data.get("position")
             },
-            "timestamp": message.timestamp.isoformat()
+            "timestamp": message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
         }
         await websocket_service.manager.broadcast_to_room("graph_updates", broadcast_message)
 
@@ -676,7 +676,7 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
                 "updates": message.data.get("updates", {}),
                 "position": message.data.get("position")
             },
-            "timestamp": message.timestamp.isoformat()
+            "timestamp": message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
         }
         await websocket_service.manager.broadcast_to_room("graph_updates", broadcast_message)
 
@@ -689,7 +689,7 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
                 "edge_id": message.data.get("edge_id"),
                 "updates": message.data.get("updates", {})
             },
-            "timestamp": message.timestamp.isoformat()
+            "timestamp": message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
         }
         await websocket_service.manager.broadcast_to_room("graph_updates", broadcast_message)
 
@@ -700,7 +700,7 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
                 "user_id": message.user_id,
                 "action": message.data.get("action"),
                 "scraper_name": message.data.get("scraper_name"),
-                "timestamp": message.timestamp.isoformat()
+                "timestamp": message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
             }
 
             await websocket_service.exchange.publish(
@@ -716,7 +716,7 @@ async def handle_websocket_message(message: WebSocketMessage, room_id: str):
                 "type": message.type,
                 "user_id": message.user_id,
                 "data": message.data,
-                "timestamp": message.timestamp.isoformat()
+                "timestamp": message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
             }
             await websocket_service.redis_client.lpush(
                 message_key, json.dumps(message_data)
