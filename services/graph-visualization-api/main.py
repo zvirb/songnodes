@@ -768,8 +768,8 @@ async def get_graph_edges(
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM silver_track_transitions tr
-                        JOIN tracks t1 ON tr.from_track_id = t1.id
-                        JOIN tracks t2 ON tr.to_track_id = t2.id
+                        JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
+                        JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
                         WHERE (tr.from_track_id = ANY(:song_ids) OR tr.to_track_id = ANY(:song_ids))
                           AND tr.transition_count >= 1  -- Show all adjacency relationships
                         ORDER BY transition_count DESC
@@ -795,8 +795,8 @@ async def get_graph_edges(
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM silver_track_transitions tr
-                        JOIN tracks t1 ON tr.from_track_id = t1.id
-                        JOIN tracks t2 ON tr.to_track_id = t2.id
+                        JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
+                        JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
                         WHERE tr.transition_count >= 1  -- Show all adjacency relationships
                         ORDER BY transition_count DESC
                         LIMIT :limit OFFSET :offset
