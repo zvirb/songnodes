@@ -148,7 +148,7 @@ class PersistencePipeline:
             'tracks': [],  # Silver layer tracks
             'playlists': [],  # Silver layer playlists
             'playlist_tracks': [],
-            # Note: adjacency removed - auto-populated by DB triggers from playlist_tracks
+            'song_adjacency': [],  # Track adjacency relationships (transitions)
         }
 
         # Track processed items to avoid duplicates within same scraping session
@@ -166,6 +166,11 @@ class PersistencePipeline:
             'silent_failures': 0,  # NEW: Track silent failures
             'items_by_type': {}
         }
+
+        # CRITICAL: Playlist context tracking for bronze_scraped_tracks FK relationships
+        # Maps playlist_name -> bronze_scraped_playlists.id for linking tracks to playlists
+        self._current_bronze_playlist_id: Optional[str] = None  # Current playlist being processed
+        self._playlist_id_map: Dict[str, str] = {}  # Map playlist_name -> bronze_id
 
         # Periodic flushing to bypass Scrapy/Twisted async close_spider() issue
         self.flush_interval = 10  # seconds
@@ -295,6 +300,12 @@ class PersistencePipeline:
             # Determine item type (with fallback if not explicitly set)
             item_type = self._determine_item_type(item)
 
+            # Log item ENTRY to pipeline
+            item_class_name = item.__class__.__name__ if hasattr(item, '__class__') else 'dict'
+            self.logger.info(
+                f"🔍 Processing item #{self.stats['total_items']}: class={item_class_name}, type={item_type}"
+            )
+
             if item_type == 'artist':
                 await self._process_artist_item(item)
             elif item_type == 'track':
@@ -306,7 +317,7 @@ class PersistencePipeline:
             elif item_type == 'track_adjacency':
                 await self._process_adjacency_item(item)
             else:
-                self.logger.warning(f"Unknown item type: {item_type}")
+                self.logger.warning(f"❌ Unknown item type: {item_type} (class={item_class_name})")
                 return item
 
             # Track statistics
@@ -314,17 +325,17 @@ class PersistencePipeline:
                 self.stats['items_by_type'][item_type] = 0
             self.stats['items_by_type'][item_type] += 1
 
-            # Log successful processing
-            self.logger.debug(
-                f"✓ Queued {item_type} item: "
-                f"{item.get('artist_name') or item.get('track_name') or item.get('setlist_name', 'unknown')}"
+            # Log successful queuing with batch routing info
+            batch_sizes = {k: len(v) for k, v in self.item_batches.items() if v}
+            self.logger.info(
+                f"✓ Queued {item_type} item to batches. Current batch sizes: {batch_sizes}"
             )
 
             return item
 
         except Exception as e:
             self.stats['failed_items'] += 1
-            self.logger.error(f"Error processing item: {e}")
+            self.logger.error(f"❌ Error processing item #{self.stats['total_items']}: {e}")
             import traceback
             self.logger.error(traceback.format_exc())
             raise
@@ -414,6 +425,8 @@ class PersistencePipeline:
             await self._process_artist_item({'artist_name': artist_name, 'genre': item.get('genre')})
 
         # MEDALLION: Add to BRONZE batch (raw data preservation)
+        # CRITICAL: Preserve playlist context fields (_bronze_playlist_id, _track_position)
+        # These are passed from _process_playlist_track_item for bronze FK relationships
         self.item_batches['bronze_tracks'].append(item)  # Store complete raw item
 
         # MEDALLION: Add to SILVER batch (enriched data)
@@ -475,6 +488,7 @@ class PersistencePipeline:
             item: Playlist item
         """
         self.logger.info(f"🔍 _process_playlist_item called with item keys: {list(item.keys())}")
+        self.logger.info(f"🔍 Item class: {item.__class__.__name__}")
         playlist_name = item.get('setlist_name') or item.get('name', '').strip()
         self.logger.info(f"🔍 Playlist name: {playlist_name}")
         if not playlist_name or playlist_name in self.processed_items['playlists']:
@@ -482,7 +496,7 @@ class PersistencePipeline:
             return
 
         self.processed_items['playlists'].add(playlist_name)
-        self.logger.info(f"✅ Processing playlist: {playlist_name}")
+        self.logger.info(f"✅ Processing playlist: {playlist_name} - adding to bronze_playlists batch")
 
         # Extract validation fields
         tracklist_count = item.get('tracklist_count', item.get('total_tracks', 0))
@@ -554,9 +568,17 @@ class PersistencePipeline:
             event_date = None
 
         # MEDALLION: Add to BRONZE batch (raw data preservation)
-        self.logger.info(f"➕ Adding playlist to bronze_playlists batch (current size: {len(self.item_batches['bronze_playlists'])})")
+        bronze_batch_size_before = len(self.item_batches['bronze_playlists'])
+        self.logger.info(
+            f"➕ Routing playlist '{playlist_name}' to bronze_playlists batch "
+            f"(current size: {bronze_batch_size_before}/{self.batch_size})"
+        )
         self.item_batches['bronze_playlists'].append(item)  # Store complete raw item
-        self.logger.info(f"📦 Bronze playlists batch now has {len(self.item_batches['bronze_playlists'])} items (batch_size={self.batch_size})")
+        bronze_batch_size_after = len(self.item_batches['bronze_playlists'])
+        self.logger.info(
+            f"📦 Added to bronze_playlists batch "
+            f"(new size: {bronze_batch_size_after}/{self.batch_size}) - CONFIRMED: item added (delta={bronze_batch_size_after - bronze_batch_size_before})"
+        )
 
         # MEDALLION: Add to SILVER batch (enriched data)
         silver_playlist = {
@@ -613,6 +635,14 @@ class PersistencePipeline:
         # Generate synthetic track_id for bronze layer (artist::title format)
         synthetic_track_id = f"{artist_name}::{track_name}" if artist_name and track_name else None
 
+        # CRITICAL: Resolve playlist_id from playlist_name for bronze FK relationship
+        bronze_playlist_id = self._playlist_id_map.get(playlist_name)
+        if not bronze_playlist_id:
+            self.logger.warning(
+                f"⚠️ Cannot link track to playlist: playlist_name='{playlist_name}' not found in map "
+                f"(map size={len(self._playlist_id_map)}, keys={list(self._playlist_id_map.keys())[:5]})"
+            )
+
         await self._process_track_item({
             'track_name': track_name,
             'artist_name': artist_name,
@@ -631,7 +661,10 @@ class PersistencePipeline:
             'musicbrainz_id': item.get('musicbrainz_id'),
             'soundcloud_id': item.get('soundcloud_id'),
             'beatport_id': item.get('beatport_id'),
-            'metadata': item.get('metadata')
+            'metadata': item.get('metadata'),
+            # CRITICAL: Pass playlist context for bronze_scraped_tracks FK
+            '_bronze_playlist_id': bronze_playlist_id,  # FK to bronze_scraped_playlists
+            '_track_position': position  # Position in playlist (for transitions)
         })
 
         # SECOND: Queue the playlist_track relationship
@@ -754,7 +787,24 @@ class PersistencePipeline:
         """
         batch = self.item_batches[batch_type]
         if not batch:
+            self.logger.debug(f"Skipping empty batch: {batch_type}")
             return
+
+        # Determine target table based on batch type
+        table_map = {
+            'bronze_tracks': 'bronze_scraped_tracks',
+            'bronze_playlists': 'bronze_scraped_playlists',
+            'artists': 'artists',
+            'tracks': 'silver_enriched_tracks',
+            'playlists': 'silver_enriched_playlists',
+            'playlist_tracks': 'silver_playlist_tracks',
+            'song_adjacency': 'song_adjacency'
+        }
+        target_table = table_map.get(batch_type, batch_type)
+
+        self.logger.info(
+            f"📤 Flushing {len(batch)} {batch_type} items to {target_table}..."
+        )
 
         try:
             async with self.connection_pool.acquire() as conn:
@@ -776,14 +826,20 @@ class PersistencePipeline:
                         await self._insert_playlists_batch(conn, batch)
                     elif batch_type == 'playlist_tracks':
                         await self._insert_playlist_tracks_batch(conn, batch)
-                    # Note: song_adjacency removed - auto-populated by DB triggers
+                    elif batch_type == 'song_adjacency':
+                        await self._insert_song_adjacency_batch(conn, batch)
 
             self.stats['persisted_items'] += len(batch)
-            self.logger.info(f"✓ Flushed {len(batch)} {batch_type} items to database")
+            self.logger.info(
+                f"✅ Successfully flushed {len(batch)} {batch_type} items to {target_table} "
+                f"(total persisted: {self.stats['persisted_items']})"
+            )
             self.item_batches[batch_type] = []
 
         except Exception as e:
-            self.logger.error(f"Error flushing {batch_type} batch: {e}")
+            self.logger.error(f"❌ Error flushing {batch_type} batch to {target_table}: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             raise
 
     async def _insert_bronze_tracks_batch(self, conn, batch: List[Dict[str, Any]]):
@@ -810,6 +866,11 @@ class PersistencePipeline:
                 # Extract fields for generating synthetic ID if needed
                 artist_name = item.get('artist_name', '').strip()
                 track_title = item.get('track_name') or item.get('title', '')
+
+                # CRITICAL: Extract playlist context for FK relationship
+                # These fields are set by _process_playlist_track_item via _process_track_item
+                bronze_playlist_id = item.get('_bronze_playlist_id')  # FK to bronze_scraped_playlists
+                track_position = item.get('_track_position')  # Position in playlist
 
                 # CRITICAL FIX: Generate synthetic source_track_id if missing
                 # This prevents tracks from being skipped in bronze layer
@@ -864,20 +925,32 @@ class PersistencePipeline:
                         extra={'source': source, 'source_track_id': source_track_id}
                     )
 
+                # CRITICAL: Log playlist context before INSERT for debugging
+                if bronze_playlist_id or track_position:
+                    self.logger.info(
+                        f"🔗 Bronze track #{idx} has playlist context: "
+                        f"playlist_id={bronze_playlist_id}, position={track_position}, "
+                        f"artist='{artist_name}', title='{track_title}'"
+                    )
+
                 # Insert with RETURNING id
+                # CRITICAL: Include playlist_id and position for FK relationship and transition creation
                 bronze_id = await conn.fetchval("""
                     INSERT INTO bronze_scraped_tracks (
                         source, source_url, source_track_id, scraper_version,
-                        raw_json, artist_name, track_title
+                        raw_json, artist_name, track_title, playlist_id, position
                     )
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     ON CONFLICT (source, source_url, source_track_id) DO UPDATE SET
                         raw_json = EXCLUDED.raw_json,
                         artist_name = EXCLUDED.artist_name,
                         track_title = EXCLUDED.track_title,
+                        playlist_id = COALESCE(EXCLUDED.playlist_id, bronze_scraped_tracks.playlist_id),
+                        position = COALESCE(EXCLUDED.position, bronze_scraped_tracks.position),
                         scraped_at = NOW()
                     RETURNING id
-                """, source, source_url, source_track_id, scraper_version, raw_json, artist_name, track_title)
+                """, source, source_url, source_track_id, scraper_version, raw_json, artist_name, track_title,
+                     bronze_playlist_id, track_position)
 
                 results.append({'item': item, 'bronze_id': bronze_id})
 
@@ -913,8 +986,10 @@ class PersistencePipeline:
         """
         import json
 
+        self.logger.info(f"🔍 _insert_bronze_playlists_batch called with {len(batch)} items")
         results = []
-        for item in batch:
+        for idx, item in enumerate(batch):
+            self.logger.info(f"🔍 Processing bronze playlist #{idx+1}/{len(batch)}: {item.get('name') or item.get('setlist_name')}")
             # Get source metadata
             source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
             source_url = item.get('source_url', 'unknown')
@@ -943,6 +1018,7 @@ class PersistencePipeline:
                 event_date = event_date.date()
 
             # Insert with RETURNING id
+            self.logger.info(f"🔍 Executing INSERT for playlist: source={source}, url={source_url}, name={playlist_name}")
             bronze_id = await conn.fetchval("""
                 INSERT INTO bronze_scraped_playlists (
                     source, source_url, source_playlist_id, scraper_version,
@@ -960,9 +1036,21 @@ class PersistencePipeline:
             """, source, source_url, source_playlist_id, scraper_version, raw_json,
                  playlist_name, artist_name, event_name, event_date)
 
+            self.logger.info(f"✅ Successfully inserted playlist to bronze layer: bronze_id={bronze_id}, name={playlist_name}")
             results.append({'item': item, 'bronze_id': bronze_id})
 
-        self.logger.info(f"✓ Inserted {len(results)} playlists to bronze layer")
+            # CRITICAL: Store playlist context for subsequent track items
+            # This allows EnhancedSetlistTrackItem to link to the correct playlist
+            self._current_bronze_playlist_id = bronze_id
+            self._playlist_id_map[playlist_name] = bronze_id
+            # Also store bronze_id in the item for downstream pipeline access
+            item['_bronze_id'] = bronze_id
+            self.logger.info(
+                f"🔗 Stored playlist context: playlist_name='{playlist_name}' -> bronze_id={bronze_id} "
+                f"(current_bronze_playlist_id updated, map size={len(self._playlist_id_map)})"
+            )
+
+        self.logger.info(f"✓ Inserted {len(results)} playlists to bronze layer (total)")
         return results
 
     async def _insert_artists_batch(self, conn, batch: List[Dict[str, Any]]):
@@ -1331,71 +1419,126 @@ class PersistencePipeline:
             f"(missing_playlist={missing_playlist_count}, missing_track={missing_track_count}, errors={error_count})"
         )
 
-    async def _insert_adjacency_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert track adjacency batch with upsert logic."""
-        self.logger.info(f"🔍 Processing {len(batch)} adjacency items for insertion")
+    async def _insert_song_adjacency_batch(self, conn, batch: List[Dict[str, Any]]):
+        """
+        Insert track adjacency batch (transitions/edges) to song_adjacency table.
 
-        # Get track IDs for adjacencies
+        Handles EnhancedTrackAdjacencyItem objects yielded by spiders.
+
+        Args:
+            conn: Database connection
+            batch: List of adjacency item dicts
+        """
+        self.logger.info(f"🔍 Processing {len(batch)} song_adjacency items for insertion")
+
         adjacencies_with_ids = []
         skipped_count = 0
 
-        for item in batch:
+        for idx, item in enumerate(batch):
             try:
-                track1_name = item.get('track1_name', 'UNKNOWN')
-                track2_name = item.get('track2_name', 'UNKNOWN')
+                # Extract track names - handle various field naming conventions
+                track1_name = item.get('track_1_name') or item.get('track1_name') or item.get('source_track_name', '').strip()
+                track2_name = item.get('track_2_name') or item.get('track2_name') or item.get('target_track_name', '').strip()
 
+                if not track1_name or not track2_name:
+                    self.logger.warning(
+                        f"⚠️ Adjacency #{idx}: Missing track names (track1='{track1_name}', track2='{track2_name}')"
+                    )
+                    skipped_count += 1
+                    continue
+
+                # Look up track IDs from silver_enriched_tracks (medallion architecture)
                 track1_result = await conn.fetchrow(
-                    "SELECT id FROM tracks WHERE title = $1 LIMIT 1",
+                    "SELECT id FROM silver_enriched_tracks WHERE track_title = $1 LIMIT 1",
                     track1_name
                 )
                 track2_result = await conn.fetchrow(
-                    "SELECT id FROM tracks WHERE title = $1 LIMIT 1",
+                    "SELECT id FROM silver_enriched_tracks WHERE track_title = $1 LIMIT 1",
                     track2_name
                 )
 
                 if track1_result and track2_result:
-                    # Ensure track_id_1 < track_id_2 for the CHECK constraint
-                    id1, id2 = track1_result['id'], track2_result['id']
-                    if str(id1) > str(id2):
-                        id1, id2 = id2, id1
+                    source_track_id = track1_result['id']
+                    target_track_id = track2_result['id']
+
+                    # Extract metadata
+                    occurrence_count = item.get('occurrence_count', 1)
+                    distance = item.get('distance', 1)
+                    weight = 1.0 / float(distance) if distance > 0 else 1.0  # Inverse distance weighting
+                    source = item.get('data_source') or item.get('source', 'scraped')
 
                     adjacencies_with_ids.append({
-                        'track_id_1': id1,
-                        'track_id_2': id2,
-                        'occurrence_count': item.get('occurrence_count', 1),
-                        'avg_distance': item.get('distance', 1.0)
+                        'source_track_id': source_track_id,
+                        'target_track_id': target_track_id,
+                        'occurrence_count': occurrence_count,
+                        'weight': weight,
+                        'source': source
                     })
+
+                    self.logger.debug(
+                        f"✓ Adjacency #{idx}: {track1_name} → {track2_name} "
+                        f"(distance={distance}, weight={weight:.3f})"
+                    )
                 else:
                     skipped_count += 1
                     if not track1_result:
-                        self.logger.debug(f"Track not found in DB: '{track1_name}'")
+                        self.logger.debug(f"Track not found in silver_enriched_tracks: '{track1_name}'")
                     if not track2_result:
-                        self.logger.debug(f"Track not found in DB: '{track2_name}'")
+                        self.logger.debug(f"Track not found in silver_enriched_tracks: '{track2_name}'")
 
             except Exception as e:
                 skipped_count += 1
-                self.logger.warning(f"Could not create adjacency for {item.get('track1_name', '?')} -> {item.get('track2_name', '?')}: {e}")
+                self.logger.error(
+                    f"❌ Error processing adjacency #{idx}: {e}",
+                    extra={
+                        'track1_name': item.get('track_1_name') or item.get('track1_name'),
+                        'track2_name': item.get('track_2_name') or item.get('track2_name'),
+                        'error': str(e)
+                    },
+                    exc_info=True
+                )
 
         if adjacencies_with_ids:
-            self.logger.info(f"✅ Inserting {len(adjacencies_with_ids)} adjacencies ({skipped_count} skipped due to missing tracks)")
-            await conn.executemany("""
-                INSERT INTO song_adjacency (song_id_1, song_id_2, occurrence_count, avg_distance)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (song_id_1, song_id_2) DO UPDATE SET
-                    occurrence_count = song_adjacency.occurrence_count + EXCLUDED.occurrence_count,
-                    avg_distance = ((COALESCE(song_adjacency.avg_distance, 0) * song_adjacency.occurrence_count) +
-                                    (EXCLUDED.avg_distance * EXCLUDED.occurrence_count)) /
-                                   (song_adjacency.occurrence_count + EXCLUDED.occurrence_count)
-            """, [
-                (
-                    item['track_id_1'],
-                    item['track_id_2'],
-                    item['occurrence_count'],
-                    item['avg_distance']
-                ) for item in adjacencies_with_ids
-            ])
+            self.logger.info(
+                f"✅ Inserting {len(adjacencies_with_ids)} song_adjacency records "
+                f"({skipped_count} skipped due to missing tracks)"
+            )
+
+            try:
+                await conn.executemany("""
+                    INSERT INTO song_adjacency (
+                        source_track_id, target_track_id, occurrence_count, weight, source
+                    )
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (source_track_id, target_track_id) DO UPDATE SET
+                        occurrence_count = song_adjacency.occurrence_count + EXCLUDED.occurrence_count,
+                        weight = (song_adjacency.weight * song_adjacency.occurrence_count +
+                                  EXCLUDED.weight * EXCLUDED.occurrence_count) /
+                                 (song_adjacency.occurrence_count + EXCLUDED.occurrence_count),
+                        updated_at = CURRENT_TIMESTAMP
+                """, [
+                    (
+                        item['source_track_id'],
+                        item['target_track_id'],
+                        item['occurrence_count'],
+                        item['weight'],
+                        item['source']
+                    ) for item in adjacencies_with_ids
+                ])
+
+                self.logger.info(f"✓ Successfully inserted {len(adjacencies_with_ids)} song_adjacency records")
+
+            except Exception as e:
+                self.logger.error(
+                    f"❌ Failed to insert song_adjacency batch: {e}",
+                    extra={'batch_size': len(adjacencies_with_ids)},
+                    exc_info=True
+                )
+                raise
         else:
-            self.logger.warning(f"⚠️ No adjacencies inserted! {skipped_count} items skipped (tracks not found in DB)")
+            self.logger.warning(
+                f"⚠️ No song_adjacency records inserted! {skipped_count} items skipped (tracks not found in DB)"
+            )
 
     async def flush_all_batches(self):
         """
@@ -1457,13 +1600,20 @@ class PersistencePipeline:
         Args:
             spider: Spider instance
         """
+        self.logger.info("=" * 80)
         self.logger.info("🔄 close_spider called - flushing remaining batches before stopping thread...")
+        self.logger.info("=" * 80)
         try:
             # Log batch sizes before flushing
             with self._flushing_lock:
+                total_pending = 0
                 for batch_type, batch in self.item_batches.items():
                     if batch:
-                        self.logger.info(f"  Pending {batch_type}: {len(batch)} items")
+                        self.logger.info(f"  📦 Pending {batch_type}: {len(batch)} items")
+                        total_pending += len(batch)
+                    else:
+                        self.logger.debug(f"  📭 Empty batch: {batch_type}")
+                self.logger.info(f"  📊 Total pending items across all batches: {total_pending}")
 
             # CRITICAL: Do final flush BEFORE stopping the thread
             # The persistent thread's event loop must still be running to execute the flush
