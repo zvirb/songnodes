@@ -521,13 +521,16 @@ class MixesdbSpider(scrapy.Spider):
                     yield playlist_item
 
             for track_info in tracks_data:
-                yield EnhancedTrackItem(**track_info['track'])
+                # CRITICAL FIX: Do NOT yield EnhancedTrackItem for Bronze layer
+                # Bronze layer persistence happens via EnhancedSetlistTrackItem (playlist_track routing)
+                # EnhancedTrackItem is for Silver layer (enrichment pipeline)
+                # yield EnhancedTrackItem(**track_info['track'])  # REMOVED
 
-                # Yield relationships
+                # Yield relationships (for Silver layer)
                 for relationship in track_info['relationships']:
                     yield EnhancedTrackArtistItem(**relationship)
 
-                # Yield setlist-track relationship
+                # Yield setlist-track relationship (ONLY source for Bronze layer tracks)
                 if setlist_data:
                     yield EnhancedSetlistTrackItem(
                         setlist_name=setlist_data['setlist_name'],
