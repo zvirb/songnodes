@@ -918,6 +918,13 @@ class PersistencePipeline:
                 bronze_playlist_id = item.get('_bronze_playlist_id')  # FK to bronze_scraped_playlists
                 track_position = item.get('_track_position')  # Position in playlist
 
+                # DEBUG: Log values BEFORE fallback check
+                self.logger.info(
+                    f"🔍 Fallback check for track #{idx}: "
+                    f"track_position={track_position}, bronze_playlist_id={bronze_playlist_id}, "
+                    f"_playlist_name={item.get('_playlist_name')}"
+                )
+
                 # CRITICAL FIX: Database fallback if playlist_id is None
                 # This handles race condition where tracks are batched before playlist flush completes
                 if track_position is not None and bronze_playlist_id is None:
