@@ -653,9 +653,39 @@ class PersistencePipeline:
         bronze_playlist_id = self._playlist_id_map.get(playlist_name)
         if not bronze_playlist_id:
             self.logger.warning(
-                f"⚠️ Cannot link track to playlist: playlist_name='{playlist_name}' not found in map "
-                f"(map size={len(self._playlist_id_map)}, keys={list(self._playlist_id_map.keys())[:5]})"
+                f"⚠️ Playlist '{playlist_name}' not found in map "
+                f"(map size={len(self._playlist_id_map)}, keys={list(self._playlist_id_map.keys())[:5]}). "
+                f"Querying database for fallback..."
             )
+            # FALLBACK: Query database directly for playlist_id
+            # This handles cases where map wasn't populated due to timing issues
+            try:
+                if self.connection_pool:
+                    async with self.connection_pool.acquire() as conn:
+                        # Query for most recent playlist with matching name
+                        bronze_playlist_id = await conn.fetchval("""
+                            SELECT id FROM bronze_scraped_playlists
+                            WHERE playlist_name = $1
+                            ORDER BY scraped_at DESC
+                            LIMIT 1
+                        """, playlist_name)
+
+                        if bronze_playlist_id:
+                            self.logger.info(
+                                f"✅ Database fallback succeeded: Found playlist_id={bronze_playlist_id} "
+                                f"for playlist_name='{playlist_name}'. Updating map cache."
+                            )
+                            # Update map for future lookups
+                            self._playlist_id_map[playlist_name] = bronze_playlist_id
+                        else:
+                            self.logger.error(
+                                f"❌ Database fallback failed: Playlist '{playlist_name}' not found in "
+                                f"bronze_scraped_playlists table. Track will be skipped."
+                            )
+            except Exception as e:
+                self.logger.error(f"❌ Database fallback query failed: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
 
         await self._process_track_item({
             'track_name': track_name,
