@@ -722,13 +722,27 @@ npx playwright test -g "should render all variants" --workers=1
 
 **Testing Spiders:**
 ```bash
-# ✅ CORRECT
-scrapy crawl mixesdb -a artist_name='Deadmau5' -a limit=1  # Proper module loading
-curl -X POST http://localhost:8012/scrape -d '{"artist_name":"Deadmau5","limit":1}'  # API
+# ✅ CORRECT - search_query combines artist + track (how spiders actually work)
+scrapy crawl mixesdb -a search_query='Deadmau5 Strobe' -a limit=1
+curl -X POST http://localhost:8012/scrape -H "Content-Type: application/json" \
+  -d '{"source": "mixesdb", "search_query": "Deadmau5 Strobe", "limit": 1}'
+
+# ✅ CORRECT - Direct URL for testing specific mix pages
+curl -X POST http://localhost:8012/scrape -H "Content-Type: application/json" \
+  -d '{"source": "mixesdb", "start_urls": "https://mixesdb.com/db/index.php/...", "limit": 1}'
+
+# ❌ WRONG - Artist name only (doesn't match real search behavior)
+curl -X POST http://localhost:8012/scrape -d '{"source": "mixesdb", "search_query": "Deadmau5"}'
 
 # ❌ WRONG - Fails with relative imports
 scrapy runspider spiders/mixesdb_spider.py -a artist_name='Artist'
 ```
+
+**CRITICAL: search_query Format**
+- **Correct:** `"search_query": "Artist Name Track Title"` (e.g., "Deadmau5 Strobe", "Carl Cox Space")
+- **Purpose:** Scraper finds setlists/playlists CONTAINING the target track, then scrapes the ENTIRE playlist with all track positions
+- **Why not just artist?** Searching for only "Deadmau5" returns too many results and doesn't target specific tracks for transition discovery
+- **Result:** Complete setlist → bronze_scraped_playlists + bronze_scraped_tracks with positions → transitions created from sequential positions
 
 **Why:** `scrapy crawl` loads spider through project structure, maintains package hierarchy, resolves relative imports. `runspider` executes file directly, breaks imports.
 

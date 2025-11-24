@@ -184,6 +184,7 @@ class EnhancedSetlistItem(scrapy.Item):
     updated_at = scrapy.Field()
     data_source = scrapy.Field()
     scrape_timestamp = scrapy.Field()
+    _bronze_id = scrapy.Field()  # Bronze layer database ID (set by persistence pipeline)
 
 
 class EnhancedTrackArtistItem(scrapy.Item):
@@ -409,6 +410,7 @@ class PlaylistItem(scrapy.Item):
     data_source = scrapy.Field()  # Which scraper collected this
     scrape_timestamp = scrapy.Field()  # When it was scraped
     created_at = scrapy.Field()  # Creation timestamp
+    _bronze_id = scrapy.Field()  # Bronze layer database ID (set by persistence pipeline)
 
 
 # Framework Section 5.2: Missing Schema Tables
