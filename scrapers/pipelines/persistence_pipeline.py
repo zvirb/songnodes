@@ -427,7 +427,19 @@ class PersistencePipeline:
         # MEDALLION: Add to BRONZE batch (raw data preservation)
         # CRITICAL: Preserve playlist context fields (_bronze_playlist_id, _track_position)
         # These are passed from _process_playlist_track_item for bronze FK relationships
-        self.item_batches['bronze_tracks'].append(item)  # Store complete raw item
+        # SKIP bronze insertion for standalone tracks (no playlist context) to avoid NULL FK violations
+        # Tracks WITH playlist context come from EnhancedSetlistTrackItem processing
+        has_playlist_context = item.get('_bronze_playlist_id') is not None or item.get('_track_position') is not None
+        if has_playlist_context:
+            self.item_batches['bronze_tracks'].append(item)  # Store complete raw item
+            self.logger.debug(
+                f"✓ Track '{track_name}' queued to bronze_tracks (has playlist context: "
+                f"playlist_id={item.get('_bronze_playlist_id')}, position={item.get('_track_position')})"
+            )
+        else:
+            self.logger.debug(
+                f"⊘ Track '{track_name}' skipped for bronze_tracks (no playlist context - standalone track)"
+            )
 
         # MEDALLION: Add to SILVER batch (enriched data)
         silver_item = {
@@ -1557,7 +1569,8 @@ class PersistencePipeline:
         1. Bronze layer (raw data, returns bronze_ids)
         2. Legacy/lookup tables (artists)
         3. Silver layer (enriched data, references bronze_ids)
-        4. Junction tables (playlist_tracks, triggers adjacency)
+        4. Junction tables (playlist_tracks)
+        5. Track adjacency (song_adjacency, explicit spider yields)
         """
         # Define flush order to respect foreign key dependencies
         # CRITICAL: Bronze before silver for medallion architecture
@@ -1567,7 +1580,8 @@ class PersistencePipeline:
             'artists',            # 3. Legacy artists table
             'tracks',             # 4. Silver layer tracks (links to bronze via bronze_id)
             'playlists',          # 5. Silver layer playlists (links to bronze via bronze_id)
-            'playlist_tracks'     # 6. Junction table (triggers adjacency via DB triggers)
+            'playlist_tracks'     # 6. Junction table (triggers adjacency via DB triggers),
+            'song_adjacency'      # 7. Track adjacency/transitions (depends on tracks existing)
         ]
 
         for batch_type in flush_order:
