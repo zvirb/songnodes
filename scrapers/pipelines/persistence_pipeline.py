@@ -141,7 +141,7 @@ class PersistencePipeline:
 
         # Batch processing configuration
         self.batch_size = 50
-        self.item_batches = {
+        self.item_batches: Dict[str, List[Dict[str, Any]]] = {
             'bronze_tracks': [],  # NEW: Bronze layer for raw track data
             'bronze_playlists': [],  # NEW: Bronze layer for raw playlist data
             'artists': [],
@@ -152,14 +152,14 @@ class PersistencePipeline:
         }
 
         # Track processed items to avoid duplicates within same scraping session
-        self.processed_items = {
+        self.processed_items: Dict[str, set] = {
             'artists': set(),
             'tracks': set(),  # Changed from 'songs' to 'tracks'
             'playlists': set()
         }
 
         # Internal statistics tracking
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             'total_items': 0,
             'persisted_items': 0,
             'failed_items': 0,
@@ -608,12 +608,14 @@ class PersistencePipeline:
         }
         self.item_batches['playlists'].append(silver_playlist)
 
-        # Flush bronze if batch full (bronze must flush before silver)
-        if len(self.item_batches['bronze_playlists']) >= self.batch_size:
-            await self._flush_batch('bronze_playlists')
-
-        if len(self.item_batches['playlists']) >= self.batch_size:
-            await self._flush_batch('playlists')
+        # CRITICAL FIX: Flush playlist batches IMMEDIATELY to populate _playlist_id_map
+        # This ensures subsequent EnhancedSetlistTrackItem objects can look up the bronze_playlist_id
+        # Without immediate flush, _playlist_id_map remains empty when tracks are processed
+        self.logger.info(
+            f"🚀 IMMEDIATE FLUSH: Flushing bronze_playlists to populate _playlist_id_map for '{playlist_name}'"
+        )
+        await self._flush_batch('bronze_playlists')
+        await self._flush_batch('playlists')
 
     async def _process_playlist_track_item(self, item: Dict[str, Any]):
         """
@@ -819,6 +821,8 @@ class PersistencePipeline:
         )
 
         try:
+            if not self.connection_pool:
+                raise RuntimeError("Connection pool not initialized")
             async with self.connection_pool.acquire() as conn:
                 async with conn.transaction():
                     if batch_type == 'bronze_tracks':
@@ -1175,12 +1179,12 @@ class PersistencePipeline:
                     item.get('isrc'),  # isrc
                     None,  # release_date (TODO: parse from item if available)
                     int(item.get('duration_ms', 0)) if item.get('duration_ms') else None,  # duration_ms
-                    float(item.get('bpm')) if item.get('bpm') else None,  # bpm
+                    float(item.get('bpm', 0)) if item.get('bpm') else None,  # bpm
                     item.get('key') or item.get('musical_key'),  # key
                     [item.get('genre')] if item.get('genre') else None,  # genre[] array
-                    float(item.get('energy')) if item.get('energy') is not None else None,  # energy
-                    float(item.get('valence')) if item.get('valence') is not None else None,  # valence
-                    float(item.get('danceability')) if item.get('danceability') is not None else None,  # danceability
+                    float(item.get('energy', 0)) if item.get('energy') is not None else None,  # energy
+                    float(item.get('valence', 0)) if item.get('valence') is not None else None,  # valence
+                    float(item.get('danceability', 0)) if item.get('danceability') is not None else None,  # danceability
                     'valid',  # validation_status (REQUIRED)
                     self._calculate_quality_score(item),  # data_quality_score (REQUIRED)
                     '{}'  # enrichment_metadata (REQUIRED JSONB, empty for now)
