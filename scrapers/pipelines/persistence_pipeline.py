@@ -698,9 +698,15 @@ class PersistencePipeline:
             elif ('setlist' in class_name and 'track' in class_name) or 'setlisttrack' in class_name:
                 self.logger.info(f"✓ Detected playlist_track from class name: {class_name}")
                 return 'playlist_track'
+            # CRITICAL FIX: Explicit PlaylistItem detection for bronze_playlists routing
+            elif 'playlistitem' in class_name:
+                self.logger.info(f"✓ Detected playlist from PlaylistItem class: {class_name}")
+                return 'playlist'
             elif 'track' in class_name and 'adjacency' not in class_name and 'artist' not in class_name:
                 return 'track'
-            elif 'setlist' in class_name or 'playlist' in class_name:
+            # Check for EnhancedSetlistItem (legacy format) - also routes to playlist processing
+            elif 'setlist' in class_name or 'enhancedsetlist' in class_name:
+                self.logger.debug(f"Detected setlist from class name: {class_name}")
                 return 'setlist'
             elif 'adjacency' in class_name:
                 return 'track_adjacency'
@@ -708,7 +714,7 @@ class PersistencePipeline:
                 return 'track_artist'
 
         # Infer from item fields
-        if 'artist_name' in item and 'track_name' not in item and 'setlist_name' not in item:
+        if 'artist_name' in item and 'track_name' not in item and 'setlist_name' not in item and 'name' not in item:
             return 'artist'
         elif 'track_name' in item or 'title' in item:
             if 'track1_name' in item or 'track2_name' in item:
@@ -721,7 +727,14 @@ class PersistencePipeline:
                 return 'playlist_track'
             else:
                 return 'track'
+        # CRITICAL FIX: Explicit PlaylistItem field detection
+        # PlaylistItem has 'name' + 'source' + ('dj_name' or 'total_tracks' or 'tracklist_count')
+        elif 'name' in item and 'source' in item and ('total_tracks' in item or 'tracklist_count' in item or 'dj_name' in item):
+            self.logger.info(f"✓ Detected playlist from fields: name + source + total_tracks/dj_name")
+            return 'playlist'
+        # EnhancedSetlistItem detection (legacy format with setlist_name or dj_artist_name)
         elif 'setlist_name' in item or ('name' in item and 'dj_artist_name' in item):
+            self.logger.debug(f"Detected setlist from fields: setlist_name or name+dj_artist_name")
             return 'setlist'
         elif 'playlist_name' in item and 'position' in item:
             return 'playlist_track'

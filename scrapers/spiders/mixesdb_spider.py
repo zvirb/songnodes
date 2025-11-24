@@ -493,6 +493,7 @@ class MixesdbSpider(scrapy.Spider):
                 )
                 # Yield a parsing failure item for retry tracking
                 failure_item = PlaylistItem(
+                    item_type='playlist',  # CRITICAL: Explicit type for pipeline routing
                     name=setlist_data.get('setlist_name', 'Unknown Playlist') if setlist_data else 'Unknown Playlist',
                     source='mixesdb',
                     source_url=response.url,
