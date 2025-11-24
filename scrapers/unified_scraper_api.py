@@ -189,26 +189,76 @@ async def _run_spider(cmd: list[str], timeout: int = 900) -> Dict[str, Any]:
 
 
 def _extract_stats(stdout: str, stderr: str) -> Dict[str, int]:
-    """Parse scrapy log output for item counters."""
+    """
+    Parse scrapy log output for item counters.
+
+    CRITICAL: Differentiates between:
+    - items_yielded: Items yielded by spider (from scrapy stats)
+    - items_persisted: Items actually written to database (from persistence pipeline)
+
+    Returns both counts to detect data loss (yielded > persisted).
+    """
     combined = f"{stdout}\n{stderr}"
-    item_scraped = 0
-    db_items = 0
+    items_yielded = 0  # Items yielded by spider (from scrapy's item_scraped_count)
+    items_persisted = 0  # Items actually persisted to database (from persistence pipeline)
+    bronze_playlists_persisted = 0  # Bronze playlists actually written
+    bronze_tracks_persisted = 0  # Bronze tracks actually written
 
     for line in combined.splitlines():
-        if "item_scraped_count" in line:
+        # Extract scrapy's item_scraped_count (items yielded by spider)
+        if "item_scraped_count" in line and ":" in line:
             try:
-                item_scraped = int(line.split(":")[1].strip().rstrip(","))
-            except (IndexError, ValueError):
-                continue
-        if "Total items processed:" in line:
-            try:
-                db_items = int(line.split(":")[1].strip())
-            except (IndexError, ValueError):
+                # Format: "'item_scraped_count': 21," or "item_scraped_count: 21"
+                parts = line.split(":")
+                if len(parts) >= 2:
+                    count_str = parts[1].strip().rstrip(",").strip("'")
+                    items_yielded = int(count_str)
+                    logger.info(f"Extracted items_yielded: {items_yielded} from line: {line[:100]}")
+            except (IndexError, ValueError) as e:
+                logger.warning(f"Failed to parse item_scraped_count from line: {line[:100]}, error: {e}")
                 continue
 
+        # Extract persistence pipeline's "Items persisted" count (actual DB writes)
+        # Format: "  ✅ Items persisted: 21"
+        if "Items persisted:" in line:
+            try:
+                parts = line.split("Items persisted:")
+                if len(parts) >= 2:
+                    count_str = parts[1].strip().split()[0]  # Get first word after colon
+                    items_persisted = int(count_str)
+                    logger.info(f"Extracted items_persisted: {items_persisted} from line: {line[:100]}")
+            except (IndexError, ValueError) as e:
+                logger.warning(f"Failed to parse Items persisted from line: {line[:100]}, error: {e}")
+                continue
+
+        # Extract bronze layer insert counts for detailed tracking
+        # Format: "✓ Inserted 5 playlists to bronze layer"
+        if "Inserted" in line and "to bronze layer" in line:
+            try:
+                parts = line.split("Inserted")
+                if len(parts) >= 2:
+                    count_part = parts[1].strip().split()[0]
+                    count = int(count_part)
+                    if "playlist" in line.lower():
+                        bronze_playlists_persisted = count
+                        logger.info(f"Extracted bronze_playlists_persisted: {count} from line: {line[:100]}")
+                    elif "track" in line.lower():
+                        bronze_tracks_persisted = count
+                        logger.info(f"Extracted bronze_tracks_persisted: {count} from line: {line[:100]}")
+            except (IndexError, ValueError) as e:
+                logger.debug(f"Failed to parse bronze insert count from line: {line[:100]}, error: {e}")
+                continue
+
+    logger.info(f"Final extracted stats: yielded={items_yielded}, persisted={items_persisted}, bronze_playlists={bronze_playlists_persisted}, bronze_tracks={bronze_tracks_persisted}")
+
     return {
-        "items_scraped": item_scraped,
-        "items_processed": db_items if db_items > 0 else item_scraped,
+        "items_yielded": items_yielded,
+        "items_persisted": items_persisted,
+        "bronze_playlists_persisted": bronze_playlists_persisted,
+        "bronze_tracks_persisted": bronze_tracks_persisted,
+        # DEPRECATED: Keep for backward compatibility, but now tracks DB writes only
+        "items_processed": items_persisted,
+        "items_scraped": items_yielded,  # Alias for items_yielded
     }
 
 
@@ -358,13 +408,26 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
     scrape_duration_seconds.labels(source=request.source, status=status_label).observe(
         duration
     )
-    items_scraped_total.labels(source=request.source).inc(stats["items_processed"])
+    # Increment counter by items PERSISTED (actual DB writes), not yielded
+    items_scraped_total.labels(source=request.source).inc(stats["items_persisted"])
+
+    # CRITICAL: Detect data loss (items yielded but not persisted)
+    if stats["items_yielded"] > stats["items_persisted"]:
+        data_loss_count = stats["items_yielded"] - stats["items_persisted"]
+        logger.warning(
+            "⚠️ DATA LOSS DETECTED: source=%s, items_yielded=%s, items_persisted=%s, data_loss=%s",
+            request.source,
+            stats["items_yielded"],
+            stats["items_persisted"],
+            data_loss_count,
+        )
 
     logger.info(
-        "Spider completed: source=%s, duration_seconds=%s, items_processed=%s",
+        "Spider completed: source=%s, duration_seconds=%s, items_yielded=%s, items_persisted=%s",
         request.source,
         f"{duration:.2f}",
-        stats["items_processed"],
+        stats["items_yielded"],
+        stats["items_persisted"],
     )
 
     return {
@@ -372,8 +435,18 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
         "source": request.source,
         "task_id": task_id,
         "url": request.url,
-        "items_processed": stats["items_processed"],
-        "items_scraped": stats["items_scraped"],
+        # Report both counts for transparency
+        "items_yielded": stats["items_yielded"],
+        "items_persisted": stats["items_persisted"],
+        # Bronze layer details
+        "bronze_playlists_persisted": stats.get("bronze_playlists_persisted", 0),
+        "bronze_tracks_persisted": stats.get("bronze_tracks_persisted", 0),
+        # Backward compatibility (now tracks persisted count)
+        "items_processed": stats["items_persisted"],
+        "items_scraped": stats["items_yielded"],
+        # Data loss indicator
+        "data_loss_count": stats["items_yielded"] - stats["items_persisted"] if stats["items_yielded"] > stats["items_persisted"] else 0,
+        "data_loss_detected": stats["items_yielded"] > stats["items_persisted"],
         "duration_seconds": round(duration, 2),
     }
 
