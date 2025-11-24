@@ -1574,13 +1574,14 @@ class PersistencePipeline:
         """
         # Define flush order to respect foreign key dependencies
         # CRITICAL: Bronze before silver for medallion architecture
+        # CRITICAL: bronze_playlists BEFORE bronze_tracks (tracks FK to playlists)
         flush_order = [
-            'bronze_tracks',      # 1. Bronze layer tracks (raw data)
-            'bronze_playlists',   # 2. Bronze layer playlists (raw data)
+            'bronze_playlists',   # 1. Bronze layer playlists (raw data) - MUST BE FIRST
+            'bronze_tracks',      # 2. Bronze layer tracks (raw data, FK to bronze_playlists)
             'artists',            # 3. Legacy artists table
             'tracks',             # 4. Silver layer tracks (links to bronze via bronze_id)
             'playlists',          # 5. Silver layer playlists (links to bronze via bronze_id)
-            'playlist_tracks'     # 6. Junction table (triggers adjacency via DB triggers),
+            'playlist_tracks',    # 6. Junction table (triggers adjacency via DB triggers)
             'song_adjacency'      # 7. Track adjacency/transitions (depends on tracks existing)
         ]
 
