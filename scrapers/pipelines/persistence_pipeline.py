@@ -827,9 +827,8 @@ class PersistencePipeline:
                         for result in results:
                             result['item']['_bronze_id'] = result['bronze_id']
                     elif batch_type == 'bronze_playlists':
+                        # _bronze_id already set inside _insert_bronze_playlists_batch (line 1059)
                         results = await self._insert_bronze_playlists_batch(conn, batch)
-                        for result in results:
-                            result['item']['_bronze_id'] = result['bronze_id']
                     elif batch_type == 'artists':
                         await self._insert_artists_batch(conn, batch)
                     elif batch_type == 'tracks':
