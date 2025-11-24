@@ -708,7 +708,8 @@ class PersistencePipeline:
             'metadata': item.get('metadata'),
             # CRITICAL: Pass playlist context for bronze_scraped_tracks FK
             '_bronze_playlist_id': bronze_playlist_id,  # FK to bronze_scraped_playlists
-            '_track_position': position  # Position in playlist (for transitions)
+            '_track_position': position,  # Position in playlist (for transitions)
+            '_playlist_name': playlist_name  # For flush-time database fallback lookup
         })
 
         # SECOND: Queue the playlist_track relationship
@@ -916,6 +917,41 @@ class PersistencePipeline:
                 # These fields are set by _process_playlist_track_item via _process_track_item
                 bronze_playlist_id = item.get('_bronze_playlist_id')  # FK to bronze_scraped_playlists
                 track_position = item.get('_track_position')  # Position in playlist
+
+                # CRITICAL FIX: Database fallback if playlist_id is None
+                # This handles race condition where tracks are batched before playlist flush completes
+                if track_position is not None and bronze_playlist_id is None:
+                    # Try to resolve playlist_id from the item's playlist_name
+                    playlist_name = item.get('_playlist_name')
+                    if playlist_name:
+                        # First check in-memory map
+                        bronze_playlist_id = self._playlist_id_map.get(playlist_name)
+                        if not bronze_playlist_id:
+                            # Fallback: Query database directly
+                            try:
+                                bronze_playlist_id = await conn.fetchval("""
+                                    SELECT id FROM bronze_scraped_playlists
+                                    WHERE playlist_name = $1
+                                    ORDER BY scraped_at DESC
+                                    LIMIT 1
+                                """, playlist_name)
+                                if bronze_playlist_id:
+                                    self.logger.info(
+                                        f"✅ Flush-time database fallback: Found playlist_id={bronze_playlist_id} "
+                                        f"for playlist_name='{playlist_name}'"
+                                    )
+                                    # Update map cache
+                                    self._playlist_id_map[playlist_name] = bronze_playlist_id
+                                else:
+                                    self.logger.error(
+                                        f"❌ Flush-time fallback failed: Playlist '{playlist_name}' not found in database"
+                                    )
+                            except Exception as e:
+                                self.logger.error(f"❌ Flush-time database query failed: {e}")
+                        else:
+                            self.logger.info(
+                                f"✅ Flush-time map lookup: Found playlist_id={bronze_playlist_id} for '{playlist_name}'"
+                            )
 
                 # CRITICAL FIX: Generate synthetic source_track_id if missing
                 # This prevents tracks from being skipped in bronze layer
