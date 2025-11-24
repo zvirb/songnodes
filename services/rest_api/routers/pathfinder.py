@@ -286,14 +286,17 @@ def find_path(
     prefer_key_matching: bool,
     pivots: Set[str],
     synthetic_edges: Optional[Set[Tuple[str, str]]] = None  # Set of (from_id, to_id) synthetic edges
-) -> Optional[List[Tuple[str, float, bool, bool]]]:
+) -> Tuple[Optional[List[Tuple[str, float, bool, bool]]], Optional[List[Tuple[str, float, bool, bool]]]]:
     """
     Modified A* pathfinding with constraints
 
-    Returns: List of (track_id, connection_strength, key_compatible, is_synthetic) or None if no path found
+    Returns:
+        Tuple of (best_path, longest_valid_path)
+        - best_path: Optimal path satisfying all constraints, or None
+        - longest_valid_path: Longest valid path found (even if constraints failed), or None
     """
     if start_id not in tracks_dict:
-        return None
+        return None, None
 
     if synthetic_edges is None:
         synthetic_edges = set()
@@ -321,6 +324,10 @@ def find_path(
     best_path = None
     best_duration_diff = float('inf')
 
+    # Fallback: keep track of the longest path found that is valid (correct endpoint)
+    longest_valid_path = None
+    longest_valid_duration = -1
+
     iterations = 0
     max_iterations = 10000  # Prevent infinite loops
 
@@ -340,6 +347,14 @@ def find_path(
         is_within_tolerance = duration_diff <= tolerance
         all_waypoints_visited = len(current_state.remaining_waypoints) == 0
         is_correct_endpoint = (end_id is None) or (current_state.current_track_id == end_id)
+
+        # Update longest valid path found so far
+        # We consider a path "valid" for fallback if it ends at the correct endpoint (if specified)
+        # We want the longest path that doesn't excessively exceed the target (though strict over-shoot is handled by neighbor pruning)
+        if is_correct_endpoint:
+            if current_state.duration > longest_valid_duration:
+                longest_valid_path = current_state.path
+                longest_valid_duration = current_state.duration
 
         # Valid solution if: within tolerance, all waypoints visited, and correct endpoint
         if is_within_tolerance and all_waypoints_visited and is_correct_endpoint:
@@ -420,7 +435,7 @@ def find_path(
 
     logger.info(f"Pathfinding completed in {iterations} iterations")
 
-    return best_path
+    return best_path, longest_valid_path
 
 # ===========================================
 # API Endpoint
@@ -514,11 +529,15 @@ async def find_dj_path(request: PathfinderRequest):
         tolerance_multipliers = [1.0, 1.5, 2.0, 3.0]
         path = None
 
+        # Track the global longest valid path across all attempts
+        global_longest_valid_path = None
+        global_longest_valid_duration = -1
+
         for multiplier in tolerance_multipliers:
             adjusted_tolerance = int(request.tolerance_ms * multiplier)
             logger.info(f"Attempting pathfinding with tolerance={adjusted_tolerance}ms (multiplier={multiplier})")
 
-            path = find_path(
+            path, longest_fallback = find_path(
                 start_id=request.start_track_id,
                 end_id=request.end_track_id,
                 target_duration=request.target_duration_ms,
@@ -531,6 +550,17 @@ async def find_dj_path(request: PathfinderRequest):
                 synthetic_edges=synthetic_edge_set
             )
 
+            # Update global fallback if this attempt found a longer valid path
+            if longest_fallback:
+                # Calculate duration for this fallback path
+                fallback_duration = 0
+                for track_id, _, _, _ in longest_fallback:
+                    fallback_duration += tracks_dict[track_id].duration_ms
+
+                if fallback_duration > global_longest_valid_duration:
+                    global_longest_valid_duration = fallback_duration
+                    global_longest_valid_path = longest_fallback
+
             if path:
                 logger.info(f"Path found with tolerance multiplier {multiplier}")
                 break
@@ -540,7 +570,7 @@ async def find_dj_path(request: PathfinderRequest):
             logger.info("Attempting best-effort pathfinding without strict waypoint requirement")
 
             # Run with no waypoints, then check which ones we hit
-            path = find_path(
+            path, longest_fallback = find_path(
                 start_id=request.start_track_id,
                 end_id=request.end_track_id,
                 target_duration=request.target_duration_ms,
@@ -552,6 +582,29 @@ async def find_dj_path(request: PathfinderRequest):
                 pivots=pivots,
                 synthetic_edges=synthetic_edge_set
             )
+
+            # Update global fallback if this attempt found a longer valid path
+            if longest_fallback:
+                # Calculate duration for this fallback path
+                fallback_duration = 0
+                for track_id, _, _, _ in longest_fallback:
+                    fallback_duration += tracks_dict[track_id].duration_ms
+
+                if fallback_duration > global_longest_valid_duration:
+                    global_longest_valid_duration = fallback_duration
+                    global_longest_valid_path = longest_fallback
+
+        # Use the longest valid path if we still haven't found a path meeting constraints
+        if not path and global_longest_valid_path:
+            logger.warning("No path met constraints. Falling back to longest valid path found.")
+            path = global_longest_valid_path
+
+            # Recalculate duration for the fallback path
+            current_duration = 0
+            for track_id, _, _, _ in path:
+                current_duration += tracks_dict[track_id].duration_ms
+
+            logger.info(f"Fallback path duration: {current_duration}ms (Target: {request.target_duration_ms}ms)")
 
         if not path:
             return PathfinderResponse(
@@ -603,8 +656,22 @@ async def find_dj_path(request: PathfinderRequest):
 
         duration_diff = abs(total_duration - request.target_duration_ms)
 
+        # Determine success flag: if duration diff is within original tolerance, it's a success.
+        # Otherwise, if we used a fallback path, it might strictly be a "failure" to meet constraints,
+        # but the user requested this functionality, so we can mark it as success or include a warning in message.
+        # Given the requirement "pathfinding system is working... even if a path exists", we should probably treat it as success.
+        is_strict_success = duration_diff <= request.tolerance_ms
+
+        # However, if we are returning the fallback because we couldn't stretch the length,
+        # we can mark it as success=True so the frontend displays it, but note it in the message.
+        success = True
+        message = f"Found path with {len(path)} tracks, {len(visited_waypoints)}/{len(waypoint_ids)} waypoints visited"
+
+        if not is_strict_success:
+             message += f". Note: Target duration not reached (short by {duration_diff/60000:.1f} mins)."
+
         return PathfinderResponse(
-            success=True,
+            success=success,
             path=path_segments,
             total_duration_ms=total_duration,
             target_duration_ms=request.target_duration_ms,
@@ -613,7 +680,7 @@ async def find_dj_path(request: PathfinderRequest):
             waypoints_missed=missed_waypoints,
             average_connection_strength=avg_connection_strength,
             key_compatibility_score=key_compatibility_score,
-            message=f"Found path with {len(path)} tracks, {len(visited_waypoints)}/{len(waypoint_ids)} waypoints visited"
+            message=message
         )
 
     except HTTPException:
