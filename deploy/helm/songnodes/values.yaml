@@ -1231,6 +1231,27 @@ cronjobs:
         cpu: 500m
     podAnnotations: {}
 
+# One-off Jobs - Manual execution jobs
+jobs:
+  rawDataProcessor:
+    enabled: false  # Disabled by default - enable manually when needed
+    image:
+      repository: localhost:5000/songnodes_scrapers
+      tag: latest
+      pullPolicy: Always
+    batchSize: 500  # Process 500 records at a time
+    restartPolicy: OnFailure
+    backoffLimit: 3
+    activeDeadlineSeconds: 3600  # 1 hour timeout
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    podAnnotations: {}
+
 # PodDisruptionBudgets - Ensure minimum availability during disruptions
 podDisruptionBudget:
   enabled: true

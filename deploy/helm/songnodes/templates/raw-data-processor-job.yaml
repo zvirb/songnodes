@@ -1,0 +1,117 @@
+{{- if .Values.jobs.rawDataProcessor.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: raw-data-processor-{{ now | date "20060102150405" }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "raw-data-processor" "app.kubernetes.io/component" "data-processing")) | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.jobs.rawDataProcessor.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.jobs.rawDataProcessor.activeDeadlineSeconds | default 3600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "raw-data-processor" "app.kubernetes.io/component" "data-processing")) | nindent 8 }}
+      {{- if or .Values.global.commonAnnotations .Values.jobs.rawDataProcessor.podAnnotations }}
+      annotations:
+        {{- include "songnodes.annotations" (dict "ctx" . "annotations" .Values.jobs.rawDataProcessor.podAnnotations) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.global.imagePullSecrets }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      restartPolicy: {{ .Values.jobs.rawDataProcessor.restartPolicy | default "OnFailure" }}
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:15-alpine
+          command:
+            - sh
+            - -c
+            - |
+              for i in $(seq 1 40); do
+                pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" && exit 0
+                echo "Waiting for postgres at $POSTGRES_HOST:$POSTGRES_PORT..."
+                sleep 3
+              done
+              echo "Postgres not reachable, giving up."
+              exit 1
+          env:
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.global.secretName .Values.secrets.name }}
+                  key: POSTGRES_PASSWORD
+      containers:
+        - name: raw-data-processor
+          image: {{ printf "%s:%s" .Values.jobs.rawDataProcessor.image.repository .Values.jobs.rawDataProcessor.image.tag }}
+          imagePullPolicy: {{ .Values.jobs.rawDataProcessor.image.pullPolicy | default "Always" }}
+          command:
+            - python
+            - /app/raw_data_processor.py
+          env:
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: POSTGRES_USER
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ default .Values.global.configMapName .Values.config.name }}
+                  key: LOG_LEVEL
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.global.secretName .Values.secrets.name }}
+                  key: POSTGRES_PASSWORD
+            - name: BATCH_SIZE
+              value: {{ .Values.jobs.rawDataProcessor.batchSize | default 500 | quote }}
+            - name: PROCESSING_INTERVAL
+              value: "10"
+          resources:
+            requests:
+              memory: {{ .Values.jobs.rawDataProcessor.resources.requests.memory | default "256Mi" }}
+              cpu: {{ .Values.jobs.rawDataProcessor.resources.requests.cpu | default "100m" }}
+            limits:
+              memory: {{ .Values.jobs.rawDataProcessor.resources.limits.memory | default "512Mi" }}
+              cpu: {{ .Values.jobs.rawDataProcessor.resources.limits.cpu | default "500m" }}
+{{- end }}
