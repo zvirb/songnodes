@@ -83,7 +83,7 @@ class TargetTrackScraperJob:
                 target_artist,
                 target_title,
                 scraper_name
-            FROM musicdb.target_track_searches
+            FROM target_track_searches
             ORDER BY search_timestamp ASC
             LIMIT $1
         """
@@ -200,7 +200,7 @@ class TargetTrackScraperJob:
         """Update the search results in the database"""
         if success:
             query = """
-                UPDATE musicdb.target_track_searches
+                UPDATE target_track_searches
                 SET
                     results_found = $2,
                     playlists_containing = $2
