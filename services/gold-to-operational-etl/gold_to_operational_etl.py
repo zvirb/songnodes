@@ -275,7 +275,7 @@ class GoldToOperationalETL:
                     AND (gta.spotify_id IS NULL OR t.spotify_id = gta.spotify_id)
               )
             LIMIT $1
-            ON CONFLICT (normalized_title) DO UPDATE SET
+            ON CONFLICT (title, normalized_title) DO UPDATE SET
                 spotify_id = COALESCE(EXCLUDED.spotify_id, tracks.spotify_id),
                 isrc = COALESCE(EXCLUDED.isrc, tracks.isrc),
                 bpm = COALESCE(EXCLUDED.bpm, tracks.bpm),
