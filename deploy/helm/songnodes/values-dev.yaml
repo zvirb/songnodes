@@ -40,6 +40,10 @@ services:
     enabled: false
   scraperOrchestrator:
     enabled: true
+    image:
+      repository: localhost:5000/songnodes_scraper-orchestrator
+      tag: latest
+      pullPolicy: Always
   metadataEnrichment:
     enabled: true
     replicaCount: 1
