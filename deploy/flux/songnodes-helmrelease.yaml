@@ -159,6 +159,10 @@ spec:
 
       scraperOrchestrator:
         enabled: true
+        image:
+          repository: localhost:5000/songnodes_scraper-orchestrator
+          tag: latest
+          pullPolicy: Always
         containerPorts:
           http: 8001
         service:
