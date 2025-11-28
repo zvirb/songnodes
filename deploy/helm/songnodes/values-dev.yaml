@@ -39,7 +39,7 @@ services:
   nlpProcessor:
     enabled: false
   scraperOrchestrator:
-    enabled: false
+    enabled: true
   metadataEnrichment:
     enabled: true
     replicaCount: 1
