@@ -10,7 +10,7 @@ metadata:
   labels:
     app.kubernetes.io/name: {{ $service }}
     app.kubernetes.io/component: resilience
-    {{- include "songnodes.labels" $ | nindent 4 }}
+    {{- include "songnodes.labels" (dict "ctx" $) | nindent 4 }}
 spec:
   minAvailable: {{ $config.minAvailable | default 1 }}
   selector:
