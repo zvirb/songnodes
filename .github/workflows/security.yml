@@ -1,0 +1,45 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  security-events: write # Needed only if uploading SARIF on a public repo
+
+jobs:
+  trivy-scan:
+    name: Trivy (Deps, Docker, K8s & Secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'vuln,misconfig,secret'
+          severity: 'CRITICAL,HIGH'
+          format: 'table' # Prints cleanly in Action logs (works on both Public & Private repos)
+          exit-code: '0'  # Change to '1' once existing issues are cleaned up to block broken PRs
+
+  sast-scan:
+    name: Semgrep SAST (Python & TypeScript)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep with FastAPI, Python, and React rules
+        run: |
+          semgrep scan \
+            --config p/python \
+            --config p/fastapi \
+            --config p/typescript \
+            --config p/react \
+            --config p/docker \
+            --metrics=off
