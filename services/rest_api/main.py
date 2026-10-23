@@ -76,11 +76,6 @@ except ImportError as e:
         detail: Optional[str] = None
 
 
-class TargetTrackUpdate(BaseModel):
-    archived: Optional[bool] = None
-    completion_percentage: Optional[int] = None
-
-
 class TrackPreviewResponse(BaseModel):
     """Response payload describing preview availability for a track."""
     track_id: str
@@ -363,61 +358,6 @@ async def health_check():
             }
         )
 
-@app.get("/api/v1/artists", response_model=List[ArtistResponse])
-async def get_artists(limit: int = 100, offset: int = 0):
-    """
-    Get list of artists with comprehensive validation.
-
-    Uses Pydantic models to ensure data quality and type safety.
-    """
-    try:
-        if db_pool is None:
-            raise HTTPException(status_code=503, detail="Database pool not initialized")
-
-        async with db_pool.acquire() as conn:
-            query = """
-            SELECT artist_id::text as artist_id,
-                   name as artist_name,
-                   LOWER(TRIM(name)) as normalized_name,
-                   aliases,
-                   spotify_id,
-                   NULL::varchar as apple_music_id,
-                   NULL::varchar as youtube_channel_id,
-                   NULL::varchar as soundcloud_id,
-                   NULL::varchar as discogs_id,
-                   musicbrainz_id,
-                   genres as genre_preferences,
-                   country,
-                   false as is_verified,
-                   0 as follower_count,
-                   0 as monthly_listeners,
-                   0 as popularity_score,
-                   'spotify' as data_source,
-                   created_at as scrape_timestamp,
-                   created_at,
-                   updated_at
-            FROM artists
-            ORDER BY name
-            LIMIT $1 OFFSET $2
-            """
-            rows = await conn.fetch(query, limit, offset)
-
-            artists = []
-            for row in rows:
-                try:
-                    # Convert database row to Pydantic model
-                    artist = ArtistResponse(**dict(row))
-                    artists.append(artist)
-                except ValidationError as ve:
-                    logger.warning(f"Artist {row['artist_id']} failed validation: {ve}")
-                    # Skip invalid artists
-                    continue
-
-            return artists
-
-    except Exception as e:
-        logger.error(f"Failed to fetch artists: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 # =============================================================================
 # Dirty Artist Management - Data Quality
@@ -819,65 +759,6 @@ async def get_tracks_without_artist(
         logger.error(f"Failed to fetch tracks without artist: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/artists/search", response_model=List[ArtistSearchResult])
-async def search_artists(query: str, limit: int = 20):
-    """
-    Search artists by name with fuzzy matching.
-
-    Uses PostgreSQL ILIKE for pattern matching, returning results sorted by
-    match quality (exact matches first, then partial matches).
-
-    Args:
-        query: Artist name search query
-        limit: Maximum number of results to return
-
-    Returns:
-        List of matching artists with track counts
-    """
-    try:
-        async with db_pool.acquire() as conn:
-            # Fuzzy search with ILIKE pattern matching
-            search_query = """
-            SELECT
-                a.artist_id::text as artist_id,
-                a.name,
-                a.spotify_id,
-                a.genres,
-                COUNT(DISTINCT ta.track_id) as track_count,
-                CASE
-                    WHEN LOWER(a.name) = LOWER($1) THEN 1.0
-                    WHEN LOWER(a.name) LIKE LOWER($1 || '%') THEN 0.9
-                    WHEN LOWER(a.name) LIKE LOWER('%' || $1 || '%') THEN 0.7
-                    ELSE 0.5
-                END as match_score
-            FROM artists a
-            LEFT JOIN track_artists ta ON a.artist_id = ta.artist_id
-            WHERE a.name ILIKE $2
-            GROUP BY a.artist_id, a.name, a.spotify_id, a.genres
-            ORDER BY match_score DESC, track_count DESC, a.name
-            LIMIT $3
-            """
-
-            search_pattern = f"%{query}%"
-            rows = await conn.fetch(search_query, query, search_pattern, limit)
-
-            results = []
-            for row in rows:
-                results.append(ArtistSearchResult(
-                    artist_id=row['artist_id'],
-                    name=row['name'],
-                    match_score=float(row['match_score']),
-                    track_count=row['track_count'],
-                    spotify_id=row['spotify_id'],
-                    genres=row['genres'] if row['genres'] else None
-                ))
-
-            logger.info(f"Artist search for '{query}' returned {len(results)} results")
-            return results
-
-    except Exception as e:
-        logger.error(f"Failed to search artists: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/tracks/{track_id}/assign-artist")
 async def assign_artist_to_track(track_id: str, request: AssignArtistRequest):
@@ -963,56 +844,6 @@ async def assign_artist_to_track(track_id: str, request: AssignArtistRequest):
         logger.error(f"Failed to assign artist to track {track_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/artists/{artist_id}", response_model=ArtistResponse)
-async def get_artist(artist_id: str):
-    """
-    Get specific artist by ID with validation.
-
-    Returns comprehensive artist data validated by Pydantic.
-    """
-    try:
-        async with db_pool.acquire() as conn:
-            query = """
-            SELECT artist_id::text as artist_id,
-                   name as artist_name,
-                   LOWER(TRIM(name)) as normalized_name,
-                   aliases,
-                   spotify_id,
-                   NULL::varchar as apple_music_id,
-                   NULL::varchar as youtube_channel_id,
-                   NULL::varchar as soundcloud_id,
-                   NULL::varchar as discogs_id,
-                   musicbrainz_id,
-                   genres as genre_preferences,
-                   country,
-                   false as is_verified,
-                   0 as follower_count,
-                   0 as monthly_listeners,
-                   0 as popularity_score,
-                   'spotify' as data_source,
-                   created_at as scrape_timestamp,
-                   created_at,
-                   updated_at
-            FROM artists
-            WHERE artist_id = $1::uuid
-            """
-            row = await conn.fetchrow(query, artist_id)
-
-            if not row:
-                raise HTTPException(status_code=404, detail="Artist not found")
-
-            try:
-                artist = ArtistResponse(**dict(row))
-                return artist
-            except ValidationError as ve:
-                logger.error(f"Artist {artist_id} validation failed: {ve}")
-                raise HTTPException(status_code=500, detail="Artist data validation failed")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to fetch artist {artist_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/artists", response_model=ArtistResponse, status_code=201)
 async def create_artist(artist: ArtistCreate):
@@ -1070,87 +901,6 @@ async def create_artist(artist: ArtistCreate):
         logger.error(f"Failed to create artist: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/tracks", response_model=List[TrackResponse])
-async def get_tracks(
-    artist_id: Optional[int] = None,
-    min_bpm: Optional[float] = None,
-    max_bpm: Optional[float] = None,
-    limit: int = 100,
-    offset: int = 0
-):
-    """
-    Get list of tracks from Gold layer with comprehensive validation and filtering.
-
-    Uses Gold medallion layer (tracks + artists + track_artists) for normalized,
-    high-quality data with proper artist attribution.
-    """
-    try:
-        async with db_pool.acquire() as conn:
-            # Build dynamic query based on filters
-            conditions = []
-            params = []
-            param_num = 1
-
-            if artist_id:
-                conditions.append(f"ta.artist_id = ${param_num}::uuid")
-                params.append(artist_id)
-                param_num += 1
-
-            if min_bpm:
-                conditions.append(f"t.bpm >= ${param_num}")
-                params.append(min_bpm)
-                param_num += 1
-
-            if max_bpm:
-                conditions.append(f"t.bpm <= ${param_num}")
-                params.append(max_bpm)
-                param_num += 1
-
-            where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-
-            # Query Gold layer with proper artist joins
-            query = f"""
-            SELECT DISTINCT ON (t.id)
-                   t.id::text as song_id, t.id::text as track_id, t.title as track_name,
-                   t.normalized_title, t.duration_ms,
-                   t.isrc, t.spotify_id, t.apple_music_id, t.youtube_music_id as youtube_id,
-                   t.soundcloud_id, t.musicbrainz_id,
-                   t.bpm, t.key as musical_key, t.energy, t.danceability, t.valence,
-                   t.acousticness, t.instrumentalness, t.liveness,
-                   t.speechiness, t.loudness,
-                   EXTRACT(YEAR FROM t.release_date)::int as release_date,
-                   t.genre, NULL as subgenre, NULL as record_label,
-                   false as is_remix, false as is_mashup, false as is_live, false as is_cover,
-                   false as is_instrumental, false as is_explicit,
-                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
-                   NULL::integer as popularity_score, NULL::integer as play_count, NULL as track_type,
-                   NULL as source_context, NULL::integer as position_in_source,
-                   'gold' as data_source, t.created_at as scrape_timestamp,
-                   ta.artist_id::text as primary_artist_id, t.created_at, t.updated_at
-            FROM tracks t
-            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary' AND ta.position = 0
-            {where_clause}
-            ORDER BY t.id, ta.position
-            LIMIT ${param_num} OFFSET ${param_num + 1}
-            """
-            params.extend([limit, offset])
-
-            rows = await conn.fetch(query, *params)
-
-            tracks = []
-            for row in rows:
-                try:
-                    track = TrackResponse(**dict(row))
-                    tracks.append(track)
-                except ValidationError as ve:
-                    logger.warning(f"Track {row['song_id']} failed validation: {ve}")
-                    continue
-
-            return tracks
-
-    except Exception as e:
-        logger.error(f"Failed to fetch tracks: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/tracks", response_model=TrackResponse, status_code=201)
 async def create_track(track: TrackCreate):
@@ -1381,231 +1131,44 @@ async def import_tracklist(request: TracklistImportRequest):
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 
-@app.get("/api/search/tracks", response_model=List[TrackResponse])
-async def search_tracks(
-    query: str,
-    limit: int = 20,
-    offset: int = 0
-):
-    """
-    Search tracks by name or artist with fuzzy matching (Gold layer).
 
-    Uses PostgreSQL's ILIKE for pattern matching against Gold layer tracks
-    with proper artist attribution via track_artists junction table.
-    Results ordered by relevance (exact matches first).
-    """
-    try:
-        async with db_pool.acquire() as conn:
-            # Search Gold layer with artist joins
-            search_query = """
-            SELECT DISTINCT ON (t.id)
-                   t.id::text as song_id, t.id::text as track_id, t.title as track_name,
-                   t.normalized_title, t.duration_ms,
-                   t.isrc, t.spotify_id, t.apple_music_id, t.youtube_music_id as youtube_id,
-                   t.soundcloud_id, t.musicbrainz_id,
-                   t.bpm, t.key as musical_key, t.energy, t.danceability, t.valence,
-                   t.acousticness, t.instrumentalness, t.liveness,
-                   t.speechiness, t.loudness,
-                   EXTRACT(YEAR FROM t.release_date)::int as release_date,
-                   t.genre, NULL as subgenre, NULL as record_label,
-                   false as is_remix, false as is_mashup, false as is_live, false as is_cover,
-                   false as is_instrumental, false as is_explicit,
-                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
-                   NULL::integer as popularity_score, NULL::integer as play_count, NULL as track_type,
-                   NULL as source_context, NULL::integer as position_in_source,
-                   'gold' as data_source, t.created_at as scrape_timestamp,
-                   ta.artist_id::text as primary_artist_id, t.created_at, t.updated_at
-            FROM tracks t
-            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary' AND ta.position = 0
-            LEFT JOIN artists a ON ta.artist_id = a.artist_id
-            WHERE t.title ILIKE $1 OR t.normalized_title ILIKE $1 OR a.name ILIKE $1
-            ORDER BY t.id,
-                CASE
-                    WHEN t.title ILIKE $2 THEN 1
-                    WHEN t.title ILIKE $1 THEN 2
-                    WHEN a.name ILIKE $1 THEN 3
-                    ELSE 4
-                END
-            LIMIT $3 OFFSET $4
-            """
-
-            search_pattern = f"%{query}%"
-            exact_pattern = query
-            rows = await conn.fetch(search_query, search_pattern, exact_pattern, limit, offset)
-
-            tracks = []
-            for row in rows:
-                try:
-                    track = TrackResponse(**dict(row))
-                    tracks.append(track)
-                except ValidationError as ve:
-                    logger.warning(f"Track {row['song_id']} failed validation: {ve}")
-                    continue
-
-            logger.info(f"Gold layer search for '{query}' returned {len(tracks)} tracks")
-            return tracks
-
-    except Exception as e:
-        logger.error(f"Failed to search tracks: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/tracks/{track_id}", response_model=TrackResponse)
-async def get_track_by_id(track_id: str):
-    """
-    Get a single track by its ID from Gold layer.
-
-    Returns track with proper artist attribution from normalized Gold tables.
-    """
-    try:
-        async with db_pool.acquire() as conn:
-            # Query Gold layer with artist joins
-            query = """
-            SELECT t.id::text as song_id, t.id::text as track_id, t.title as track_name,
-                   t.normalized_title, t.duration_ms,
-                   t.isrc, t.spotify_id, t.apple_music_id, t.youtube_music_id as youtube_id,
-                   t.soundcloud_id, t.musicbrainz_id,
-                   t.bpm, t.key as musical_key, t.energy, t.danceability, t.valence,
-                   t.acousticness, t.instrumentalness, t.liveness,
-                   t.speechiness, t.loudness,
-                   EXTRACT(YEAR FROM t.release_date)::int as release_date,
-                   t.genre, NULL as subgenre, NULL as record_label,
-                   false as is_remix, false as is_mashup, false as is_live, false as is_cover,
-                   false as is_instrumental, false as is_explicit,
-                   NULL as remix_type, NULL as original_artist, NULL as remixer, NULL as mashup_components,
-                   NULL::integer as popularity_score, NULL::integer as play_count, NULL as track_type,
-                   NULL as source_context, NULL::integer as position_in_source,
-                   'gold' as data_source, t.created_at as scrape_timestamp,
-                   ta.artist_id::text as primary_artist_id, t.created_at, t.updated_at
-            FROM tracks t
-            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary' AND ta.position = 0
-            WHERE t.id::text = $1
-            LIMIT 1
-            """
-
-            row = await conn.fetchrow(query, track_id)
-
-            if not row:
-                raise HTTPException(status_code=404, detail=f"Track with ID '{track_id}' not found in Gold layer")
-
-            try:
-                track = TrackResponse(**dict(row))
-                return track
-            except ValidationError as ve:
-                logger.error(f"Track {track_id} failed validation: {ve}")
-                raise HTTPException(status_code=500, detail="Track data validation failed")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to fetch track {track_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 class TrackUpdateRequest(BaseModel):
-    """Request model for manual track metadata updates"""
-    artist_name: Optional[str] = None
-    track_title: Optional[str] = None
-    bpm: Optional[float] = None
-    key: Optional[str] = None
-    genre: Optional[str] = None
+    """Manual silver-catalog corrections; energy calibration is a later milestone."""
+    artist_name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    track_title: Optional[str] = Field(default=None, min_length=1, max_length=500)
+    bpm: Optional[float] = Field(default=None, ge=20, le=300)
+    key: Optional[str] = Field(default=None, max_length=20)
+    genre: Optional[str] = Field(default=None, max_length=100)
+
 
 @app.patch("/api/tracks/{track_id}")
 async def update_track_metadata(track_id: str, update_data: TrackUpdateRequest):
-    """
-    Update track metadata in Silver layer for manual corrections.
-
-    Allows users to manually correct artist attribution, track title, and audio features
-    when automated extraction/enrichment produces incorrect results.
-
-    Updates are applied to silver_enriched_tracks (Silver layer), not Gold layer.
-    Gold layer remains read-only and reflects the canonical, fully-enriched state.
-
-    Args:
-        track_id: Track ID (with or without 'song_' prefix)
-        update_data: Fields to update (at least one required)
-
-    Returns:
-        Updated track metadata
-    """
+    """Correct silver metadata, preserving SQL array types and omitted/null semantics."""
+    from uuid import UUID
     try:
-        # Validate at least one field is being updated
-        if not any([update_data.artist_name, update_data.track_title,
-                   update_data.bpm, update_data.key, update_data.genre]):
-            raise HTTPException(
-                status_code=400,
-                detail="At least one field must be updated"
-            )
-
-        # Strip 'song_' prefix if present for database query
-        normalized_id = track_id.replace('song_', '')
-
-        async with db_pool.acquire() as conn:
-            # Build dynamic UPDATE query
-            set_clauses = []
-            params = []
-            param_num = 1
-
-            if update_data.artist_name is not None:
-                set_clauses.append(f"artist_name = ${param_num}")
-                params.append(update_data.artist_name)
-                param_num += 1
-
-            if update_data.track_title is not None:
-                set_clauses.append(f"track_title = ${param_num}")
-                params.append(update_data.track_title)
-                param_num += 1
-
-            if update_data.bpm is not None:
-                set_clauses.append(f"bpm = ${param_num}")
-                params.append(update_data.bpm)
-                param_num += 1
-
-            if update_data.key is not None:
-                set_clauses.append(f"key = ${param_num}")
-                params.append(update_data.key)
-                param_num += 1
-
-            if update_data.genre is not None:
-                set_clauses.append(f"genre = ${param_num}")
-                params.append(update_data.genre)
-                param_num += 1
-
-            # Add updated_at timestamp
-            set_clauses.append("updated_at = NOW()")
-
-            # Execute update on Silver layer
-            query = f"""
-            UPDATE silver_enriched_tracks
-            SET {', '.join(set_clauses)}
-            WHERE id::text = ${param_num}
-            RETURNING id, track_title, artist_name, bpm, key, genre, updated_at
-            """
-            params.append(normalized_id)
-
-            row = await conn.fetchrow(query, *params)
-
-            if not row:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Track '{track_id}' not found in Silver layer"
-                )
-
-            logger.info(f"✅ Updated track {track_id}: artist='{row['artist_name']}', title='{row['track_title']}'")
-
-            return {
-                "track_id": f"song_{row['id']}",
-                "artist_name": row['artist_name'],
-                "track_title": row['track_title'],
-                "bpm": float(row['bpm']) if row['bpm'] is not None else None,
-                "key": row['key'],
-                "genre": row['genre'],
-                "updated_at": row['updated_at'].isoformat() if row['updated_at'] else None
-            }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to update track {track_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        identifier = UUID(track_id.removeprefix('song_'))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid track ID")
+    updates = update_data.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="At least one field must be updated")
+    for name in ('artist_name', 'track_title'):
+        if name in updates:
+            if updates[name] is None or not updates[name].strip():
+                raise HTTPException(status_code=422, detail=f"{name} must contain text")
+            updates[name] = updates[name].strip()
+    if 'genre' in updates and updates['genre'] is not None:
+        updates['genre'] = [updates['genre']]
+    assignments = ', '.join(f'{name} = ${i}' for i, name in enumerate(updates, start=2))
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(f"""
+            UPDATE silver_enriched_tracks SET {assignments}, updated_at = NOW()
+            WHERE id = $1 RETURNING id, track_title, artist_name, bpm, key, genre, updated_at
+        """, identifier, *updates.values())
+    if row is None:
+        raise HTTPException(status_code=404, detail="Track not found in Silver layer")
+    return {**dict(row), 'id': str(row['id']), 'track_id': f"song_{row['id']}"}
 
 @app.get("/api/v1/tracks/{track_id}/preview", response_model=TrackPreviewResponse)
 async def get_track_preview(track_id: str):
@@ -1670,158 +1233,7 @@ async def get_track_preview(track_id: str):
         logger.error(f"Failed to fetch preview for track {track_id}: {exc}")
         raise HTTPException(status_code=500, detail="Failed to fetch track preview")
 
-@app.get("/api/v1/setlists", response_model=List[SetlistResponse])
-async def get_setlists(dj_id: Optional[int] = None, limit: int = 100, offset: int = 0):
-    """
-    Get list of DJ setlists/playlists with comprehensive validation.
 
-    Supports filtering by DJ. All setlists validated by Pydantic.
-    """
-    try:
-        async with db_pool.acquire() as conn:
-            where_clause = "WHERE dj_artist_id = $3" if dj_id else ""
-            params = [limit, offset]
-            if dj_id:
-                params.append(dj_id)
-
-            query = f"""
-            SELECT
-                p.playlist_id,
-                p.name as setlist_name,
-                NULL as normalized_name,
-                NULL as description,
-                COALESCE(a.name, 'Unknown DJ') as dj_artist_name,
-                p.dj_artist_id::text as dj_artist_id,
-                NULL::text[] as supporting_artists,
-                p.event_name,
-                NULL as event_type,
-                NULL as venue_name,
-                NULL as venue_location,
-                NULL::integer as venue_capacity,
-                p.event_date as set_date,
-                NULL::timestamp as set_start_time,
-                NULL::timestamp as set_end_time,
-                p.duration_minutes,
-                NULL::text[] as genre_tags,
-                NULL::text[] as mood_tags,
-                NULL::jsonb as bpm_range,
-                p.tracklist_count as total_tracks,
-                NULL as spotify_playlist_id,
-                NULL as soundcloud_playlist_id,
-                NULL as mixcloud_id,
-                NULL as youtube_playlist_id,
-                p.source as data_source,
-                COALESCE(p.last_scrape_attempt, p.created_at) as scrape_timestamp,
-                p.created_at,
-                p.updated_at
-            FROM playlists p
-            LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
-            {where_clause}
-            ORDER BY p.event_date DESC NULLS LAST, p.name
-            LIMIT $1 OFFSET $2
-            """
-
-            rows = await conn.fetch(query, *params)
-
-            setlists = []
-            for row in rows:
-                try:
-                    setlist = SetlistResponse(**dict(row))
-                    setlists.append(setlist)
-                except ValidationError as ve:
-                    logger.warning(f"Setlist {row['playlist_id']} failed validation: {ve}")
-                    continue
-
-            return setlists
-
-    except Exception as e:
-        logger.error(f"Failed to fetch setlists: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/v1/playlists", response_model=List[SetlistResponse])
-async def get_playlists(
-    source: Optional[str] = Query(None, description="Filter by source (mixesdb, 1001tracklists, etc)"),
-    dj_id: Optional[str] = Query(None, description="Filter by DJ artist ID"),
-    limit: int = Query(100, ge=1, le=500, description="Max playlists to return"),
-    offset: int = Query(0, ge=0, description="Pagination offset")
-):
-    """
-    Get playlists (DJ setlists/mixes) with filtering options.
-
-    Alias endpoint for /api/v1/setlists - queries the same playlists table.
-    Supports filtering by source platform and DJ artist.
-    """
-    try:
-        async with db_pool.acquire() as conn:
-            where_clauses = []
-            params = [limit, offset]
-            param_idx = 3
-
-            if source:
-                where_clauses.append(f"p.source = ${param_idx}")
-                params.append(source)
-                param_idx += 1
-
-            if dj_id:
-                where_clauses.append(f"p.dj_artist_id = ${param_idx}::uuid")
-                params.append(dj_id)
-                param_idx += 1
-
-            where_clause = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-
-            query = f"""
-            SELECT
-                p.playlist_id,
-                p.name as setlist_name,
-                NULL as normalized_name,
-                NULL as description,
-                COALESCE(a.name, 'Unknown DJ') as dj_artist_name,
-                p.dj_artist_id::text as dj_artist_id,
-                NULL::text[] as supporting_artists,
-                p.event_name,
-                NULL as event_type,
-                NULL as venue_name,
-                NULL as venue_location,
-                NULL::integer as venue_capacity,
-                p.event_date as set_date,
-                NULL::timestamp as set_start_time,
-                NULL::timestamp as set_end_time,
-                p.duration_minutes,
-                NULL::text[] as genre_tags,
-                NULL::text[] as mood_tags,
-                NULL::jsonb as bpm_range,
-                p.tracklist_count as total_tracks,
-                NULL as spotify_playlist_id,
-                NULL as soundcloud_playlist_id,
-                NULL as mixcloud_id,
-                NULL as youtube_playlist_id,
-                p.source as data_source,
-                COALESCE(p.last_scrape_attempt, p.created_at) as scrape_timestamp,
-                p.created_at,
-                p.updated_at
-            FROM playlists p
-            LEFT JOIN artists a ON p.dj_artist_id = a.artist_id
-            {where_clause}
-            ORDER BY p.event_date DESC NULLS LAST, p.created_at DESC
-            LIMIT $1 OFFSET $2
-            """
-
-            rows = await conn.fetch(query, *params)
-
-            playlists = []
-            for row in rows:
-                try:
-                    playlist = SetlistResponse(**dict(row))
-                    playlists.append(playlist)
-                except ValidationError as ve:
-                    logger.warning(f"Playlist {row['playlist_id']} failed validation: {ve}")
-                    continue
-
-            return playlists
-
-    except Exception as e:
-        logger.error(f"Failed to fetch playlists: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/graph/nodes")
 async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
@@ -2002,81 +1414,9 @@ class PipelineHealthData(BaseModel):
     avg_quality_score: Optional[float]
     total_critical_anomalies: Optional[int]
 
-@app.get("/api/v1/target-tracks")
-async def get_target_tracks():
-    """Get list of target tracks from the database"""
-    try:
-        async with db_pool.acquire() as conn:
-            rows = await conn.fetch("""
-                SELECT track_id, title, artist, priority, genres, is_active,
-                       archived, completion_percentage,
-                       last_searched, playlists_found, adjacencies_found, added_at, updated_at
-                FROM target_tracks
-                ORDER BY priority DESC, added_at DESC
-            """)
-            return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Failed to fetch target tracks: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/v1/target-tracks", status_code=201)
-async def create_target_track(
-    title: str,
-    artist: str,
-    priority: str = "medium",
-    genres: List[str] = None,
-    is_active: bool = True
-):
-    """Add a new target track"""
-    try:
-        async with db_pool.acquire() as conn:
-            row = await conn.fetchrow("""
-                INSERT INTO target_tracks (title, artist, priority, genres, is_active)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING track_id, title, artist, priority, genres, is_active, added_at
-            """, title, artist, priority, genres or [], is_active)
-            return dict(row)
-    except Exception as e:
-        logger.error(f"Failed to create target track: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.put("/api/v1/target-tracks/{track_id}")
-async def update_target_track(track_id: str, track_update: TargetTrackUpdate):
-    """Update a target track's archived status or completion percentage."""
-    try:
-        async with db_pool.acquire() as conn:
-            # Build the SET part of the query dynamically
-            set_clauses = []
-            params = []
-            if track_update.archived is not None:
-                set_clauses.append(f"archived = ${len(params) + 2}")
-                params.append(track_update.archived)
-            if track_update.completion_percentage is not None:
-                set_clauses.append(f"completion_percentage = ${len(params) + 2}")
-                params.append(track_update.completion_percentage)
-
-            if not set_clauses:
-                raise HTTPException(status_code=400, detail="No fields to update")
-
-            query = f"""
-                UPDATE target_tracks
-                SET {', '.join(set_clauses)}
-                WHERE track_id = $1
-                RETURNING track_id, title, artist, priority, genres, is_active,
-                          archived, completion_percentage,
-                          last_searched, playlists_found, adjacencies_found, added_at, updated_at
-            """
-            params.insert(0, track_id)
-
-            row = await conn.fetchrow(query, *params)
-
-            if not row:
-                raise HTTPException(status_code=404, detail="Target track not found")
-
-            return dict(row)
-    except Exception as e:
-        logger.error(f"Failed to update target track: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+# Queue management uses one JSON contract shared with the frontend.
+from routers.target_tracks import router as target_tracks_router
+app.include_router(target_tracks_router)
 
 @app.get("/api/v1/music-search/{service}")
 async def music_search(service: str, q: str, limit: int = 20):
@@ -2151,6 +1491,12 @@ async def music_search(service: str, q: str, limit: int = 20):
     except Exception as e:
         logger.error(f"Music search failed for {service}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Read contracts are separate from scraper submission validators.
+# Register after legacy static routes (e.g. /artists/dirty) to preserve matching.
+from routers.catalog_reads import router as catalog_reads_router
+app.include_router(catalog_reads_router)
 
 if __name__ == "__main__":
     import sys

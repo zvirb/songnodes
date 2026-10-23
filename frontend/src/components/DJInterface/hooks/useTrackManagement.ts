@@ -74,7 +74,7 @@ export function useTrackManagement(nodes: GraphNode[]): TrackManagementState {
    * Transform, validate, deduplicate, and sort tracks
    *
    * Memoized to prevent recalculation on every render.
-   * Only recalculates when nodes array length changes.
+   * Recalculates when the nodes array changes, including same-count metadata refreshes.
    */
   const tracks = useMemo(() => {
     if (!nodes || nodes.length === 0) return [];
@@ -106,7 +106,7 @@ export function useTrackManagement(nodes: GraphNode[]): TrackManagementState {
       console.error('[useTrackManagement] Error processing tracks:', error);
       return [];
     }
-  }, [nodes.length]); // Dependency: Only recalculate when node count changes
+  }, [nodes]); // Metadata can change without changing the number of nodes.
 
   /**
    * Select a track for inspection

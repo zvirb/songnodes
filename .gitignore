@@ -158,6 +158,9 @@ README_COMPLIANCE_COMPLETE.md
 
 # Test and validation scripts (generated)
 test_*.py
+!tests/integration/test_dev_workflows.py
+!tests/integration/test_dev_catalog_reads.py
+!tests/integration/test_dev_metadata_coverage.py
 verify_*.py
 validate_*.py
 *_validation.py

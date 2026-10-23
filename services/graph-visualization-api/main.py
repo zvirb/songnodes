@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 
 import uvicorn
 import redis.asyncio as redis
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks, Depends, Request
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks, Depends, Request, Query
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -31,6 +31,7 @@ import prometheus_client
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 import logging
 import os
+import catalog
 
 # Configure logging
 logging.basicConfig(
@@ -318,7 +319,7 @@ class NodeBatch(BaseModel):
 
 class GraphQuery(BaseModel):
     center_node_id: Optional[str] = Field(None, description="Center node for graph expansion")
-    max_depth: int = Field(default=3, ge=1, le=10, description="Maximum traversal depth")
+    max_depth: int = Field(default=3, ge=1, le=3, description="Maximum traversal depth")
     max_nodes: int = Field(default=100, ge=1, le=1000, description="Maximum nodes to return")
     filters: Dict[str, Any] = Field(default_factory=dict, description="Query filters")
 
@@ -365,342 +366,17 @@ async def get_db_session():
     async with async_session() as session:
         yield session
 
-@cache_result(ttl=600)  # Cache for 10 minutes
-async def get_graph_nodes(
-    center_node_id: Optional[str] = None,
-    max_depth: int = 3,
-    max_nodes: int = 100,
-    filters: Dict[str, Any] = None,
-    limit: int = 100,
-    offset: int = 0
-) -> Dict[str, Any]:
-    """Get graph nodes with optional filtering and traversal."""
-    with DATABASE_QUERY_DURATION.labels(query_type='get_nodes').time():
-        async with async_session() as session:
-            try:
-                if center_node_id:
-                    # Graph traversal query using silver_track_transitions for relationships
-                    # Extract song UUID from node_id (format: 'song_<uuid>')
-                    clean_node_id = center_node_id.replace('song_', '') if center_node_id.startswith('song_') else center_node_id
+async def get_graph_nodes(center_node_id=None, max_depth=3, max_nodes=100, filters=None, limit=100, offset=0):
+    if not 1 <= max_depth <= 3 or not 1 <= min(limit, max_nodes) <= 15000 or offset < 0:
+        raise HTTPException(status_code=422, detail="Invalid graph query bounds")
+    async with async_session() as session:
+        return await catalog.nodes(session, center_node_id, max_depth, max_nodes, limit, offset)
 
-                    query = text("""
-                        WITH RECURSIVE connected_nodes AS (
-                            -- Start with the center node
-                            SELECT
-                                t.id as id,
-                                t.id as track_id,
-                                0 as x_position,
-                                0 as y_position,
-                                json_build_object(
-                                    'title', t.title,
-                                    'artist', a.name,
-                                    'node_type', 'song',
-                                    'category', t.genre,
-                                    'genre', t.genre,
-                                    'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
-                                    'bpm', t.bpm,
-                                    'key', t.key
-                                ) as metadata,
-                                0 as depth
-                            FROM tracks t
-                            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                            LEFT JOIN artists a ON ta.artist_id = a.id
-                            WHERE t.id::text = :center_id
 
-                            UNION ALL
+async def search_tracks(query, search_type="fuzzy", fields=None, limit=20, offset=0):
+    async with async_session() as session:
+        return await catalog.search(session, query, limit, offset)
 
-                            -- Recursively get connected nodes via playlist_tracks
-                            SELECT DISTINCT
-                                t.id as id,
-                                t.id as track_id,
-                                0 as x_position,
-                                0 as y_position,
-                                json_build_object(
-                                    'title', t.title,
-                                    'artist', a.name,
-                                    'node_type', 'song',
-                                    'category', t.genre,
-                                    'genre', t.genre,
-                                    'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
-                                    'bpm', t.bpm,
-                                    'key', t.key
-                                ) as metadata,
-                                cn.depth + 1
-                            FROM tracks t
-                            LEFT JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                            LEFT JOIN artists a ON ta.artist_id = a.id
-                            JOIN playlist_tracks pt1 ON pt1.song_id = t.id
-                            JOIN playlist_tracks pt2 ON pt2.playlist_id = pt1.playlist_id
-                            JOIN connected_nodes cn ON cn.id = pt2.song_id
-                            WHERE cn.depth < :max_depth AND t.id != cn.id
-                        )
-                        SELECT DISTINCT
-                            'song_' || id::text as id,
-                            'song_' || track_id::text as track_id,
-                            x_position,
-                            y_position,
-                            metadata
-                        FROM connected_nodes
-                        LIMIT :max_nodes
-                    """)
-                    result = await session.execute(
-                        query,
-                        {
-                            "center_id": clean_node_id,
-                            "max_depth": max_depth,
-                            "max_nodes": max_nodes
-                        }
-                    )
-                else:
-                    # First, check if we have any tracks in the database
-                    count_query = text("SELECT COUNT(*) FROM tracks")
-                    count_result = await session.execute(count_query)
-                    songs_count = count_result.scalar()
-
-                    if songs_count > 0:
-                        # EDGE-FIRST APPROACH: Only include nodes that participate in valid edges
-                        # This ensures we show connected graphs where AT LEAST ONE endpoint has a valid artist
-                        query = text("""
-                            WITH valid_edges AS (
-                                -- Get edges where AT LEAST ONE endpoint has a valid artist
-                                SELECT DISTINCT
-                                    tr.from_track_id,
-                                    tr.to_track_id,
-                                    tr.occurrence_count
-                                FROM silver_track_transitions tr
-                                INNER JOIN graph_nodes n1 ON 'song_' || tr.from_track_id::text = n1.node_id
-                                INNER JOIN graph_nodes n2 ON 'song_' || tr.to_track_id::text = n2.node_id
-                                WHERE n1.node_type = 'song'
-                                  AND n2.node_type = 'song'
-                                  AND tr.occurrence_count >= 1
-                                  -- At least ONE endpoint must have a valid artist
-                                  AND (
-                                    (n1.artist_name IS NOT NULL AND n1.artist_name != '' AND n1.artist_name != 'Unknown')
-                                    OR
-                                    (n2.artist_name IS NOT NULL AND n2.artist_name != '' AND n2.artist_name != 'Unknown')
-                                  )
-                            ),
-                            valid_node_ids AS (
-                                -- Get all unique node IDs that appear in valid edges
-                                SELECT DISTINCT from_track_id as song_id FROM valid_edges
-                                UNION
-                                SELECT DISTINCT to_track_id as song_id FROM valid_edges
-                            )
-                            SELECT
-                                gn.node_id as id,
-                                gn.node_id as track_id,
-                                0 as x_position,
-                                0 as y_position,
-                                json_build_object(
-                                    'title', gn.label,
-                                    'artist', gn.artist_name,
-                                    'node_type', gn.node_type,
-                                    'category', gn.category,
-                                    'genre', gn.category,
-                                    'release_year', gn.release_year,
-                                    'appearance_count', gn.appearance_count,
-                                    -- DJ-Critical Fields
-                                    'bpm', gn.bpm,
-                                    'musical_key', gn.musical_key,
-                                    'energy', gn.energy,
-                                    'danceability', gn.danceability,
-                                    'valence', gn.valence,
-                                    'duration_ms', gn.duration_ms,
-                                    -- Streaming Platform IDs
-                                    'spotify_id', gn.spotify_id,
-                                    'apple_music_id', gn.apple_music_id,
-                                    'beatport_id', gn.beatport_id,
-                                    'isrc', gn.isrc,
-                                    -- Track Characteristics
-                                    'is_remix', gn.is_remix,
-                                    'is_mashup', gn.is_mashup,
-                                    'is_live', gn.is_live,
-                                    'is_instrumental', gn.is_instrumental,
-                                    'popularity_score', gn.popularity_score,
-                                    -- Audio Features
-                                    'acousticness', gn.acousticness,
-                                    'instrumentalness', gn.instrumentalness,
-                                    'liveness', gn.liveness,
-                                    'speechiness', gn.speechiness,
-                                    'loudness', gn.loudness,
-                                    -- Release Information
-                                    'release_date', gn.release_date,
-                                    'subgenre', gn.subgenre
-                                ) as metadata,
-                                COUNT(*) OVER() as total_count
-                            FROM graph_nodes gn
-                            INNER JOIN valid_node_ids vni ON 'song_' || vni.song_id::text = gn.node_id
-                            ORDER BY gn.appearance_count DESC
-                            LIMIT :limit OFFSET :offset
-                        """)
-                        result = await session.execute(query, {
-                            "limit": limit,
-                            "offset": offset
-                        })
-                    else:
-                        # Fallback: Use playlists as temporary nodes when no songs exist
-                        logger.info("No songs found, using playlists as fallback nodes")
-                        query = text("""
-                            SELECT
-                                'playlist_' || playlist_id::text as id,
-                                'playlist_' || playlist_id::text as track_id,
-                                0 as x_position,
-                                0 as y_position,
-                                json_build_object(
-                                    'title', p.name,
-                                    'artist', COALESCE(a.name, 'Various Artists'),
-                                    'node_type', 'playlist',
-                                    'category', 'Playlist',
-                                    'genre', 'Playlist',
-                                    'source', p.source,
-                                    'event_date', p.event_date::text,
-                                    'event_name', p.event_name,
-                                    'appearance_count', 0
-                                ) as metadata,
-                                COUNT(*) OVER() as total_count
-                            FROM playlists p
-                            LEFT JOIN artists a ON p.dj_artist_id = a.id
-                            ORDER BY p.event_date DESC NULLS LAST
-                            LIMIT :limit OFFSET :offset
-                        """)
-                        result = await session.execute(query, {
-                            "limit": limit,
-                            "offset": offset
-                        })
-
-                nodes = []
-                total_count = 0
-                logger.info(f"DEBUG: Query executed, processing results...")
-                for row in result:
-                    logger.info(f"DEBUG: Processing row: {row}")
-                    # Get the metadata from the view
-                    metadata = dict(row.metadata) if row.metadata else {}
-
-                    # Extract artist and title from metadata
-                    artist = metadata.get('artist')
-                    title = metadata.get('title')
-
-                    # Compute label
-                    if artist and artist != 'Unknown':
-                        metadata['label'] = f"{artist} - {title}"
-                    else:
-                        metadata['label'] = title or 'Unknown'
-
-                    metadata['node_type'] = metadata.get('node_type', 'song')
-                    metadata['category'] = metadata.get('genre', metadata.get('category', 'Electronic'))
-                    metadata['appearance_count'] = metadata.get('appearance_count', 0)
-
-                    node_data = {
-                        'id': str(row.id),
-                        'track_id': str(row.track_id),
-                        # ✅ FIX: Add top-level artist and title fields for frontend
-                        'artist': artist,
-                        'title': title,
-                        'position': {
-                            'x': float(row.x_position) if row.x_position is not None else 0.0,
-                            'y': float(row.y_position) if row.y_position is not None else 0.0
-                        },
-                        'metadata': metadata
-                    }
-                    nodes.append(node_data)
-                    if hasattr(row, 'total_count'):
-                        total_count = row.total_count
-
-                return {
-                    'nodes': nodes,
-                    'total': total_count or len(nodes),
-                    'limit': limit,
-                    'offset': offset
-                }
-
-            except Exception as e:
-                logger.error(f"Database error in get_graph_nodes: {e}")
-                raise HTTPException(status_code=500, detail="Database query failed")
-
-@cache_result(ttl=180)  # Cache for 3 minutes (shorter for search results)
-async def search_tracks(
-    query: str,
-    search_type: str = "fuzzy",
-    fields: List[str] = None,
-    limit: int = 20,
-    offset: int = 0
-) -> Dict[str, Any]:
-    """Search tracks using full-text search with PostgreSQL."""
-    with DATABASE_QUERY_DURATION.labels(query_type='search_tracks').time():
-        async with async_session() as session:
-            try:
-                if fields is None:
-                    fields = ["title", "artist", "album", "genres"]
-                
-                # Simple search query with basic ILIKE matching (exclude tracks without artists)
-                search_query = text("""
-                    SELECT
-                        t.id as id,
-                        t.title,
-                        a.name as artist,
-                        1.0 as relevance_score,
-                        COUNT(*) OVER() as total_count
-                    FROM tracks t
-                    JOIN track_artists ta ON t.id = ta.track_id AND ta.role = 'primary'
-                    JOIN artists a ON ta.artist_id = a.id
-                    WHERE (t.title ILIKE :query
-                           OR a.name ILIKE :query)
-                        AND a.name IS NOT NULL AND a.name != ''
-                    ORDER BY t.title
-                    LIMIT :limit OFFSET :offset
-                """)
-                
-                # Execute search query
-                search_params = {
-                    "query": f"%{query}%",
-                    "limit": limit,
-                    "offset": offset
-                }
-                
-                result = await session.execute(search_query, search_params)
-                rows = result.fetchall()
-                
-                if not rows:
-                    return {
-                        "results": [],
-                        "total": 0,
-                        "suggestions": await get_search_suggestions(query, session)
-                    }
-                
-                # Process results
-                results = []
-                total_count = rows[0].total_count if rows else 0
-                
-                for row in rows:
-                    # Generate highlights for fuzzy search
-                    highlights = {}
-                    if search_type == "fuzzy" and query.lower() in row.title.lower():
-                        highlights["title"] = highlight_text(row.title, query)
-                    if row.artist and query.lower() in row.artist.lower():
-                        highlights["artist"] = highlight_text(row.artist, query)
-                    
-                    results.append({
-                        "id": str(row.id),
-                        "title": row.title,
-                        "artist": row.artist,
-                        "score": float(row.relevance_score),
-                        "highlights": highlights
-                    })
-                
-                # Get suggestions if low result count
-                suggestions = []
-                if len(results) < 3:
-                    suggestions = await get_search_suggestions(query, session)
-                
-                return {
-                    "results": results,
-                    "total": total_count,
-                    "suggestions": suggestions
-                }
-                
-            except Exception as e:
-                logger.error(f"Database error in search_tracks: {e}")
-                raise HTTPException(status_code=500, detail="Search query failed")
 
 def highlight_text(text: str, query: str) -> str:
     """Simple text highlighting for search results."""
@@ -726,113 +402,9 @@ async def get_search_suggestions(query: str, session) -> List[str]:
         logger.error(f"Error getting search suggestions: {e}")
         return []
 
-@cache_result(ttl=300)  # Cache for 5 minutes
-async def get_graph_edges(
-    node_ids: List[str] = None,
-    limit: int = 1000,
-    offset: int = 0
-) -> Dict[str, Any]:
-    """Get graph edges, optionally filtered by node IDs."""
-    with DATABASE_QUERY_DURATION.labels(query_type='get_edges').time():
-        async with async_session() as session:
-            try:
-                if node_ids:
-                    # Extract song IDs from node_ids (format: 'song_<uuid>')
-                    raw_song_ids = [nid.replace('song_', '') for nid in node_ids if nid.startswith('song_')]
-
-                    # Convert to UUID objects for proper binding and filter invalid values
-                    song_ids: List[uuid.UUID] = []
-                    for raw_id in raw_song_ids:
-                        try:
-                            song_ids.append(uuid.UUID(raw_id))
-                        except ValueError:
-                            logger.warning(f"Ignoring invalid song UUID in get_graph_edges: {raw_id}")
-
-                    if not song_ids:
-                        logger.warning("No valid song IDs provided to get_graph_edges; returning empty result")
-                        return {
-                            'edges': [],
-                            'total': 0,
-                            'limit': limit,
-                            'offset': offset
-                        }
-
-                    query = text("""
-                        SELECT
-                               ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
-                               'song_' || tr.from_track_id::text as source_id,
-                               'song_' || tr.to_track_id::text as target_id,
-                               tr.occurrence_count::float as weight,
-                               'sequential' as edge_type,
-                               COUNT(*) OVER() as total_count
-                        FROM silver_track_transitions tr
-                        JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
-                        JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
-                        WHERE (tr.from_track_id = ANY(:song_ids) OR tr.to_track_id = ANY(:song_ids))
-                          AND tr.occurrence_count >= 1  -- Show all adjacency relationships
-                        ORDER BY occurrence_count DESC
-                        LIMIT :limit OFFSET :offset
-                    """).bindparams(
-                        bindparam('song_ids', type_=ARRAY(UUID(as_uuid=True)))
-                    )
-
-                    result = await session.execute(query, {
-                        "song_ids": song_ids,
-                        "limit": limit,
-                        "offset": offset
-                    })
-                else:
-                    # Query silver_track_transitions for SEQUENTIAL adjacencies only (consecutive tracks in setlists)
-                    # Filter to only show the strongest adjacency relationships to reduce visual clutter
-                    query = text("""
-                        SELECT
-                               ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
-                               'song_' || tr.from_track_id::text as source_id,
-                               'song_' || tr.to_track_id::text as target_id,
-                               tr.occurrence_count::float as weight,
-                               'sequential' as edge_type,
-                               COUNT(*) OVER() as total_count
-                        FROM silver_track_transitions tr
-                        JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
-                        JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
-                        WHERE tr.occurrence_count >= 1  -- Show all adjacency relationships
-                        ORDER BY occurrence_count DESC
-                        LIMIT :limit OFFSET :offset
-                    """)
-                    result = await session.execute(query, {
-                        "limit": limit,
-                        "offset": offset
-                    })
-                
-                edges = []
-                total_count = 0
-                for row in result:
-                    source_id = str(row.source_id)
-                    target_id = str(row.target_id)
-                    edge_id = f"{source_id}__{target_id}"
-
-                    edge_data = {
-                        'id': edge_id,
-                        'source': source_id,
-                        'target': target_id,
-                        'weight': float(row.weight),
-                        'type': row.edge_type,
-                        'edge_type': row.edge_type
-                    }
-                    edges.append(edge_data)
-                    if hasattr(row, 'total_count'):
-                        total_count = row.total_count
-
-                return {
-                    'edges': edges,
-                    'total': total_count or len(edges),
-                    'limit': limit,
-                    'offset': offset
-                }
-                
-            except Exception as e:
-                logger.error(f"Database error in get_graph_edges: {e}")
-                raise HTTPException(status_code=500, detail="Database query failed")
+async def get_graph_edges(node_ids=None, limit=1000, offset=0):
+    async with async_session() as session:
+        return await catalog.edges(session, node_ids, limit, offset)
 
 async def bulk_insert_nodes(nodes_data: List[Dict[str, Any]]) -> int:
     """
@@ -982,379 +554,45 @@ async def metrics_middleware(request: Request, call_next):
 # API Routes
 @app.get("/api/graph/nodes")
 async def get_nodes(
-    limit: int = 5000,  # Increased from 100 to show full graph
-    offset: int = 0,
-    center_node_id: Optional[str] = None,
-    max_depth: int = 3
+    limit: int = Query(5000, ge=1, le=15000), offset: int = Query(0, ge=0),
+    center_node_id: Optional[str] = None, max_depth: int = Query(3, ge=1, le=3)
 ):
-    """Get all graph nodes with pagination."""
-    try:
-        # Temporarily bypass circuit breaker to debug
-        logger.info(f"DEBUG: Calling get_graph_nodes directly...")
-        result = await get_graph_nodes(
-            center_node_id,
-            max_depth,
-            limit,  # max_nodes parameter
-            {},     # filters
-            limit,  # limit parameter
-            offset  # offset parameter
-        )
-        logger.info(f"DEBUG: Result from get_graph_nodes: {result}")
-        return result
+    return await get_graph_nodes(center_node_id, max_depth, limit, {}, limit, offset)
 
-    except Exception as e:
-        logger.error(f"Error in get_nodes: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve nodes")
 
 @app.get("/api/graph/edges")
 async def get_edges(
-    limit: int = 50000,  # Increased from 1000 to show full graph
-    offset: int = 0,
+    limit: int = Query(30000, ge=1, le=50000), offset: int = Query(0, ge=0),
     node_ids: Optional[str] = None
 ):
-    """Get all graph edges with pagination."""
-    try:
-        # If node_ids are not provided, fetch all nodes first
-        if not node_ids:
-            nodes_result = await get_graph_nodes(limit=10000)  # A large limit to get all nodes
-            parsed_node_ids = [node['id'] for node in nodes_result['nodes']]
-        else:
-            parsed_node_ids = [id.strip() for id in node_ids.split(',')]
+    parsed = [value.strip() for value in node_ids.split(',') if value.strip()] if node_ids is not None else None
+    if parsed is not None and len(parsed) > 15000:
+        raise HTTPException(status_code=422, detail="Too many node IDs")
+    return await get_graph_edges(parsed, limit, offset)
 
-        result = await db_circuit_breaker.call(
-            get_graph_edges,
-            parsed_node_ids,
-            limit,
-            offset
-        )
-        return result
-
-    except Exception as e:
-        logger.error(f"Error in get_edges: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve edges")
 
 @app.get("/api/graph/data")
-async def get_graph_data():
-    """Get combined nodes and edges data for frontend visualization."""
-    try:
-        # EDGE-FIRST APPROACH: Get edges first, then get nodes that participate in those edges
-        # This ensures the graph is always connected
-        logger.info("Fetching adjacency relationships from database")
-        async with async_session() as session:
-            # Get all edges (adjacencies) - only include edges where BOTH endpoints have valid artists
-            # This ensures the graph is always connected and all nodes are displayable
-            # ✅ FIX: Use silver_enriched_tracks directly (same as REST API) instead of complex joins
-            edges_query = text("""
-                SELECT
-                       ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
-                       'song_' || tr.from_track_id::text as source_id,
-                       'song_' || tr.to_track_id::text as target_id,
-                       tr.occurrence_count::float as weight,
-                       'sequential' as edge_type,
-                       COUNT(*) OVER() as total_count
-                FROM silver_track_transitions tr
-                INNER JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
-                INNER JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
-                WHERE tr.occurrence_count >= 1  -- Show all adjacency relationships
-                  AND t1.artist_name IS NOT NULL AND t1.artist_name != ''
-                  AND t1.artist_name != 'Unknown' AND t1.artist_name != 'Unknown Artist'
-                  AND t1.artist_name != 'Various Artists' AND t1.artist_name != 'VA'
-                  AND t2.artist_name IS NOT NULL AND t2.artist_name != ''
-                  AND t2.artist_name != 'Unknown' AND t2.artist_name != 'Unknown Artist'
-                  AND t2.artist_name != 'Various Artists' AND t2.artist_name != 'VA'
-                ORDER BY tr.occurrence_count DESC
-                LIMIT 30000  -- Increased from 5000 to show full graph (current max: ~26k edges)
-            """)
-            edges_result = await session.execute(edges_query)
+async def get_graph_data(limit: int = Query(5000, ge=1, le=15000)):
+    async with async_session() as session:
+        # Counts, selected nodes, and induced edges share one PostgreSQL snapshot.
+        await session.connection(execution_options={"isolation_level": "REPEATABLE READ"})
+        return await catalog.graph(session, limit)
 
-            edges = []
-            referenced_node_ids = set()
-
-            for row in edges_result:
-                source_id = str(row.source_id)
-                target_id = str(row.target_id)
-                edge_id = f"{source_id}__{target_id}"
-
-                edge_data = {
-                    'id': edge_id,
-                    'source': source_id,
-                    'target': target_id,
-                    'weight': float(row.weight),
-                    'type': row.edge_type,
-                    'edge_type': row.edge_type
-                }
-                edges.append(edge_data)
-
-                # Track which nodes are referenced by edges
-                referenced_node_ids.add(source_id)
-                referenced_node_ids.add(target_id)
-
-            logger.info(f"Found {len(edges)} edges referencing {len(referenced_node_ids)} unique nodes")
-
-            # Now get nodes - just get nodes that are referenced by edges (those with artists)
-            if referenced_node_ids:
-                # Get all nodes that are referenced by edges
-                # IMPORTANT: Only include songs with artist relationships (unusable otherwise)
-                # Extract UUIDs from 'song_<uuid>' format
-                clean_ids = [nid.replace('song_', '') for nid in referenced_node_ids]
-
-                # ✅ FIX: Use silver_enriched_tracks directly (same as REST API)
-                nodes_query = text("""
-                        SELECT
-                            'song_' || t.id::text as id,
-                            t.id::text as track_id,
-                            0 as x_position,
-                            0 as y_position,
-                            json_build_object(
-                                'title', t.track_title,
-                                'artist', t.artist_name,
-                                'node_type', 'song',
-                                'category', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
-                                            THEN t.genre[1] ELSE 'Electronic' END,
-                                'genre', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
-                                         THEN t.genre[1] ELSE 'Electronic' END,
-                                'release_year', EXTRACT(YEAR FROM t.release_date)::integer,
-                                -- DJ-Critical Fields
-                                'bpm', t.bpm,
-                                'musical_key', t.key,
-                                'energy', t.energy,
-                                'danceability', t.danceability,
-                                'valence', t.valence,
-                                'duration_ms', t.duration_ms,
-                                -- Streaming Platform IDs
-                                'spotify_id', t.spotify_id,
-                                'isrc', t.isrc,
-                                -- Release Information
-                                'release_date', t.release_date
-                            ) as metadata
-                        FROM silver_enriched_tracks t
-                        WHERE t.id::text = ANY(:node_ids)
-                          -- ✅ FIX: Only return nodes with valid artist attribution
-                          AND t.artist_name IS NOT NULL
-                          AND t.artist_name != ''
-                          AND t.artist_name != 'Unknown'
-                          AND t.artist_name != 'Unknown Artist'
-                          AND t.artist_name != 'Various Artists'
-                          AND t.artist_name != 'VA'
-                        -- NO LIMIT: Return ALL nodes referenced by edges to ensure graph connectivity
-                """)
-
-                nodes_result = await session.execute(nodes_query, {
-                    "node_ids": clean_ids
-                })
-            else:
-                # No edges, just get top nodes (with artists only)
-                # ✅ FIX: Use silver_enriched_tracks directly
-                nodes_query = text("""
-                    SELECT
-                        'song_' || t.id::text as id,
-                        t.id::text as track_id,
-                        0 as x_position,
-                        0 as y_position,
-                        json_build_object(
-                            'title', t.track_title,
-                            'artist', t.artist_name,
-                            'node_type', 'song',
-                            'category', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
-                                        THEN t.genre[1] ELSE 'Electronic' END,
-                            'genre', CASE WHEN t.genre IS NOT NULL AND array_length(t.genre, 1) > 0
-                                     THEN t.genre[1] ELSE 'Electronic' END,
-                            'release_year', EXTRACT(YEAR FROM t.release_date),
-                            'bpm', t.bpm,
-                            'musical_key', t.key
-                        ) as metadata
-                    FROM silver_enriched_tracks t
-                    WHERE t.artist_name IS NOT NULL
-                      AND t.artist_name != ''
-                      AND t.artist_name != 'Unknown'
-                      AND t.artist_name != 'Unknown Artist'
-                      AND t.artist_name != 'Various Artists'
-                      AND t.artist_name != 'VA'
-                    ORDER BY t.created_at DESC
-                    LIMIT 5000  -- Increased from 1000 for fuller graph display
-                """)
-                nodes_result = await session.execute(nodes_query)
-
-            nodes = []
-            for row in nodes_result:
-                # Get the metadata from the view
-                metadata = dict(row.metadata) if row.metadata else {}
-
-                # Extract artist and title from metadata
-                artist = metadata.get('artist')
-                title = metadata.get('title')
-
-                # Compute label
-                if artist and artist != 'Unknown':
-                    metadata['label'] = f"{artist} - {title}"
-                else:
-                    metadata['label'] = title or 'Unknown'
-
-                metadata['node_type'] = 'song'
-                metadata['category'] = metadata.get('genre', 'Electronic')
-                metadata['appearance_count'] = metadata.get('appearance_count', 0)
-
-                node_data = {
-                    'id': str(row.id),
-                    'track_id': str(row.track_id),
-                    # ✅ FIX: Add top-level artist and title fields for frontend
-                    'artist': artist,
-                    'title': title,
-                    'position': {
-                        'x': float(row.x_position) if row.x_position is not None else 0.0,
-                        'y': float(row.y_position) if row.y_position is not None else 0.0
-                    },
-                    'metadata': metadata
-                }
-                nodes.append(node_data)
-
-        logger.info(f"Returning {len(nodes)} nodes and {len(edges)} edges")
-        return {
-            'nodes': nodes,
-            'edges': edges,
-            'metadata': {
-                'total_nodes': len(nodes),
-                'total_edges': len(edges),
-                'generated_at': datetime.utcnow().isoformat()
-            }
-        }
-
-    except Exception as e:
-        logger.error(f"Error in get_graph_data: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve graph data")
 
 @app.get("/api/graph/stats")
 async def get_graph_stats():
-    """Get graph statistics including node/edge counts and metadata distribution."""
-    try:
-        async with async_session() as session:
-            # Get comprehensive graph statistics
-            stats_query = text("""
-                WITH node_stats AS (
-                    SELECT
-                        COUNT(DISTINCT node_id) as total_nodes,
-                        COUNT(DISTINCT node_id) FILTER (WHERE node_type = 'song') as song_nodes,
-                        COUNT(DISTINCT node_id) FILTER (WHERE node_type = 'artist') as artist_nodes,
-                        COUNT(DISTINCT node_id) FILTER (WHERE artist_name IS NOT NULL AND artist_name != 'Unknown') as nodes_with_artists
-                    FROM graph_nodes
-                ),
-                edge_stats AS (
-                    SELECT
-                        COUNT(*) as total_edges,
-                        SUM(occurrence_count) as total_occurrences,
-                        AVG(occurrence_count) as avg_occurrence_count,
-                        MAX(occurrence_count) as max_occurrence_count
-                    FROM silver_track_transitions
-                ),
-                genre_stats AS (
-                    SELECT
-                        category as genre,
-                        COUNT(*) as count
-                    FROM graph_nodes
-                    WHERE category IS NOT NULL
-                    GROUP BY category
-                    ORDER BY COUNT(*) DESC
-                    LIMIT 10
-                )
-                SELECT
-                    (SELECT json_build_object(
-                        'total_nodes', total_nodes,
-                        'song_nodes', song_nodes,
-                        'artist_nodes', artist_nodes,
-                        'nodes_with_artists', nodes_with_artists,
-                        'nodes_without_artists', total_nodes - nodes_with_artists
-                    ) FROM node_stats) as node_stats,
-                    (SELECT json_build_object(
-                        'total_edges', total_edges,
-                        'total_occurrences', total_occurrences,
-                        'avg_occurrence_count', ROUND(avg_occurrence_count::numeric, 2),
-                        'max_occurrence_count', max_occurrence_count
-                    ) FROM edge_stats) as edge_stats,
-                    (SELECT json_agg(json_build_object('genre', genre, 'count', count))
-                     FROM genre_stats) as top_genres
-            """)
-
-            result = await session.execute(stats_query)
-            row = result.fetchone()
-
-            # Also get database-wide stats
-            db_stats_query = text("""
-                SELECT
-                    (SELECT COUNT(*) FROM silver_enriched_tracks) as total_tracks,
-                    (SELECT COUNT(*) FROM silver_enriched_artists) as total_artists,
-                    (SELECT COUNT(*) FROM silver_enriched_playlists) as total_playlists,
-                    (SELECT COUNT(*) FROM silver_playlist_tracks) as total_playlist_tracks
-            """)
-
-            db_result = await session.execute(db_stats_query)
-            db_row = db_result.fetchone()
-
-            return {
-                "graph_stats": {
-                    "nodes": dict(row.node_stats) if row.node_stats else {},
-                    "edges": dict(row.edge_stats) if row.edge_stats else {},
-                    "top_genres": row.top_genres if row.top_genres else []
-                },
-                "database_stats": {
-                    "total_tracks": db_row.total_tracks,
-                    "total_artists": db_row.total_artists,
-                    "total_playlists": db_row.total_playlists,
-                    "total_playlist_tracks": db_row.total_playlist_tracks
-                },
-                "metadata": {
-                    "generated_at": datetime.utcnow().isoformat(),
-                    "cache_status": "fresh"
-                }
-            }
-
-    except Exception as e:
-        logger.error(f"Error in get_graph_stats: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve graph statistics")
+    async with async_session() as session:
+        return await catalog.statistics(session)
 
 @app.get("/api/graph/search")
+@app.get("/api/v1/visualization/search")
 async def search_graph(
-    q: str,
-    type: str = "fuzzy",
-    fields: str = "title,artist,album,genres",
-    limit: int = 20,
-    offset: int = 0
+    q: str = Query(..., min_length=1, max_length=500), type: str = "fuzzy",
+    fields: str = "title,artist,album,genres", limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0)
 ):
-    """Search graph nodes and tracks."""
-    try:
-        # Execute search with circuit breaker
-        search_results = await db_circuit_breaker.call(
-            search_tracks,
-            q.strip(),
-            type,
-            fields.split(','),
-            limit,
-            offset
-        )
-
-        return {
-            "results": search_results["results"],
-            "total": search_results["total"],
-            "limit": limit,
-            "offset": offset,
-            "query": q,
-            "suggestions": search_results.get("suggestions", []),
-            "facets": {},
-            "status": "ok"
-        }
-
-    except Exception as e:
-        logger.error(f"Error in search_graph: {e}")
-        # Return fallback response for graceful degradation
-        return {
-            "results": [],
-            "total": 0,
-            "limit": limit,
-            "offset": offset,
-            "query": q,
-            "suggestions": [],
-            "facets": {},
-            "status": "Search service temporarily offline"
-        }
+    results = await search_tracks(q, type, fields.split(','), limit, offset)
+    return {**results, 'limit': limit, 'offset': offset, 'query': q, 'facets': {}, 'status': 'ok'}
 
 @app.get("/test/adjacency")
 async def test_adjacency():
@@ -1593,51 +831,6 @@ async def create_user_setlist(payload: UserSetlist):
         logger.error(f"Error creating user setlist: {e}")
         raise HTTPException(status_code=500, detail="Failed to save setlist")
 
-@app.get("/api/v1/visualization/search")
-async def search_visualization_tracks(
-    q: str,
-    type: str = "fuzzy", 
-    fields: str = "title,artist,album,genres",
-    limit: int = 20,
-    offset: int = 0
-):
-    """Search tracks for visualization with database query."""
-    try:
-        # Execute search with circuit breaker
-        search_results = await db_circuit_breaker.call(
-            search_tracks,
-            q.strip(),
-            type,
-            fields.split(','),
-            limit,
-            offset
-        )
-        
-        return {
-            "results": search_results["results"],
-            "total": search_results["total"],
-            "limit": limit,
-            "offset": offset,
-            "query": q,
-            "suggestions": search_results.get("suggestions", []),
-            "facets": {},
-            "status": "ok"
-        }
-        
-    except Exception as e:
-        logger.error(f"Error in search_visualization_tracks: {e}")
-        # Return fallback response for graceful degradation
-        return {
-            "results": [],
-            "total": 0,
-            "limit": limit,
-            "offset": offset,
-            "query": q,
-            "suggestions": [],
-            "facets": {},
-            "status": "Search service temporarily offline"
-        }
-
 @app.post("/api/v1/visualization/graph")
 async def get_visualization_graph(query: GraphQuery):
     """Get graph data for visualization."""
@@ -1756,241 +949,26 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             logger.error(f"Error during WebSocket cleanup: {cleanup_error}")
 
 @app.get("/api/graph/neighborhood/{node_id}")
-async def get_node_neighborhood(node_id: str, radius: int = 1):
-    """Get neighborhood around specific node for track modal display."""
-    try:
-        # First, let's get the target node information
-        async with async_session() as session:
-            # Get the target node info (only if it has an artist)
-            node_query = text("""
-                SELECT
-                    'song_' || t.id::text as id,
-                    'song_' || t.id::text as track_id,
-                    0 as x_position,
-                    0 as y_position,
-                    json_build_object(
-                        'title', t.title,
-                        'artist', COALESCE(
-                            (SELECT a.name FROM track_artists ta
-                             JOIN artists a ON ta.artist_id = a.id
-                             WHERE ta.track_id = t.id AND ta.role = 'primary' LIMIT 1),
-                            'Unknown'
-                        ),
-                        'node_type', 'song',
-                        'category', t.genre,
-                        'genre', t.genre,
-                        'release_year', t.release_date,
-                        'appearance_count', 0
-                    ) as metadata
-                FROM tracks t
-                WHERE 'song_' || t.id::text = :node_id
-            """)
+async def get_node_neighborhood(node_id: str, radius: int = Query(1, ge=1, le=2)):
+    async with async_session() as session:
+        data = await catalog.graph(session, limit=150, center=node_id, depth=radius)
+    if not data['nodes']:
+        raise HTTPException(status_code=404, detail="Node not found")
+    # Preserve the detail-modal envelope and nested track contract.
+    for node in data['nodes']:
+        node.update(name=node['title'], label=node['title'], type='track', track={
+            'id': node['track_id'], 'name': node['title'], 'artist': node['artist'],
+            'genre': node['metadata']['genre'],
+        })
+    return {'data': {'nodes': data['nodes'], 'edges': data['edges']},
+            'status': 'success', 'timestamp': data['metadata']['generated_at']}
 
-            node_result = await session.execute(node_query, {"node_id": node_id})
-            node_row = node_result.fetchone()
 
-            if not node_row:
-                raise HTTPException(status_code=404, detail="Node not found")
-
-            # Transform target node to expected format
-            target_node_metadata = dict(node_row.metadata) if node_row.metadata else {}
-            target_node = {
-                'id': str(node_row.id),
-                'name': target_node_metadata.get('title', 'Unknown'),
-                'artist': target_node_metadata.get('artist', 'Unknown'),
-                'label': target_node_metadata.get('title', 'Unknown'),
-                'type': 'track',
-                'track': {
-                    'id': str(node_row.id),
-                    'name': target_node_metadata.get('title', 'Unknown'),
-                    'artist': target_node_metadata.get('artist', 'Unknown'),
-                    'genre': target_node_metadata.get('category', 'Electronic')
-                }
-            }
-
-            # Now get connected tracks via adjacency
-            edges_query = text("""
-                SELECT
-                    'song_' || tr.from_track_id::text as source_id,
-                    'song_' || tr.to_track_id::text as target_id,
-                    tr.occurrence_count::float as weight,
-                    'adjacency' as edge_type,
-                    -- Get connected track info
-                    CASE
-                        WHEN tr.from_track_id::text = :clean_node_id THEN t2.title
-                        ELSE t1.title
-                    END as connected_title,
-                    CASE
-                        WHEN tr.from_track_id::text = :clean_node_id THEN
-                            COALESCE((SELECT a.name FROM track_artists ta
-                                     JOIN artists a ON ta.artist_id = a.id
-                                     WHERE ta.track_id = t2.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
-                        ELSE
-                            COALESCE((SELECT a.name FROM track_artists ta
-                                     JOIN artists a ON ta.artist_id = a.id
-                                     WHERE ta.track_id = t1.id AND ta.role = 'primary' LIMIT 1), 'Unknown')
-                    END as connected_artist,
-                    CASE
-                        WHEN tr.from_track_id::text = :clean_node_id THEN t2.genre
-                        ELSE t1.genre
-                    END as connected_genre,
-                    CASE
-                        WHEN tr.from_track_id::text = :clean_node_id THEN tr.to_track_id::text
-                        ELSE tr.from_track_id::text
-                    END as connected_id
-                FROM silver_track_transitions tr
-                LEFT JOIN tracks t1 ON tr.from_track_id = t1.id
-                LEFT JOIN tracks t2 ON tr.to_track_id = t2.id
-                WHERE (tr.from_track_id::text = :clean_node_id OR tr.to_track_id::text = :clean_node_id)
-                  AND tr.occurrence_count >= 1
-                ORDER BY tr.occurrence_count DESC
-                LIMIT 20
-            """)
-
-            # Extract the UUID part from node_id (remove 'song_' prefix if present)
-            clean_node_id = node_id.replace('song_', '') if node_id.startswith('song_') else node_id
-
-            edges_result = await session.execute(edges_query, {"clean_node_id": clean_node_id})
-
-            # Build edges and connected nodes
-            edges = []
-            connected_nodes = [target_node]  # Include the target node itself
-
-            for row in edges_result:
-                # Determine which node is the connected one
-                if row.source_id == node_id:
-                    connected_node_id = row.target_id
-                else:
-                    connected_node_id = row.source_id
-
-                # Create connected node info
-                connected_node = {
-                    'id': connected_node_id,
-                    'name': row.connected_title or 'Unknown Track',
-                    'artist': row.connected_artist or 'Unknown Artist',
-                    'label': row.connected_title or 'Unknown Track',
-                    'type': 'track',
-                    'track': {
-                        'id': row.connected_id,
-                        'name': row.connected_title or 'Unknown Track',
-                        'artist': row.connected_artist or 'Unknown Artist',
-                        'genre': row.connected_genre or 'Electronic'
-                    }
-                }
-                connected_nodes.append(connected_node)
-
-                # Create edge
-                edge = {
-                    'id': f"{row.source_id}__{row.target_id}",
-                    'source': row.source_id,
-                    'target': row.target_id,
-                    'weight': float(row.weight),
-                    'type': row.edge_type
-                }
-                edges.append(edge)
-
-        # Return in the format expected by the frontend
-        return {
-            'data': {
-                'nodes': connected_nodes,
-                'edges': edges
-            },
-            'status': 'success',
-            'timestamp': datetime.utcnow().isoformat()
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in get_node_neighborhood: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve node neighborhood")
-
+@app.get("/api/graph")
 @app.get("/api/v1/graph")
-async def get_combined_graph_data():
-    """Get combined nodes and edges data for frontend visualization."""
-    try:
-        # Get nodes data (only tracks with artists)
-        async with async_session() as session:
-            nodes_query = text("""
-                SELECT
-                    'song_' || t.id::text as id,
-                    'song_' || t.id::text as track_id,
-                    0 as x_position,
-                    0 as y_position,
-                    json_build_object(
-                        'label', t.title,
-                        'title', t.title,
-                        'artist', a.name,
-                        'node_type', 'song',
-                        'category', t.genre,
-                        'release_year', t.release_year,
-                        'appearance_count', 0
-                    ) as metadata,
-                    CURRENT_TIMESTAMP as created_at
-                FROM tracks t
-                INNER JOIN track_artists ta ON t.song_id = ta.song_id AND ta.role = 'primary'
-                INNER JOIN artists a ON ta.artist_id = a.id
-                WHERE a.name IS NOT NULL
-                  AND a.name != ''
-                  AND a.name != 'Unknown'
-                ORDER BY t.created_at DESC
-                LIMIT 1000
-            """)
-            nodes_result = await session.execute(nodes_query)
-            nodes_data = [dict(row._mapping) for row in nodes_result]
-
-            # Get edges data from graph_edges view
-            edges_query = text("""
-                SELECT
-                    ROW_NUMBER() OVER (ORDER BY weight DESC) as id,
-                    source as source_id,
-                    target as target_id,
-                    weight,
-                    edge_type,
-                    CURRENT_TIMESTAMP as created_at
-                FROM graph_edges
-                ORDER BY weight DESC
-                LIMIT 2000
-            """)
-            edges_result = await session.execute(edges_query)
-            edges_data = [dict(row._mapping) for row in edges_result]
-
-            # Transform to frontend format
-            nodes = []
-            for node in nodes_data:
-                metadata = node.get('metadata', {}) or {}
-                nodes.append({
-                    'id': str(node['id']),
-                    'title': metadata.get('title', 'Unknown'),
-                    'artist': metadata.get('artist', 'Unknown'),
-                    'type': 'track',
-                    'position': {
-                        'x': node.get('x_position', 0),
-                        'y': node.get('y_position', 0)
-                    },
-                    'metadata': metadata
-                })
-
-            edges = []
-            for edge in edges_data:
-                edges.append({
-                    'id': str(edge['id']),
-                    'source': str(edge['source_id']),
-                    'target': str(edge['target_id']),
-                    'weight': edge.get('weight', 1),
-                    'type': edge.get('edge_type', 'adjacency')
-                })
-
-            return {
-                'nodes': nodes,
-                'edges': edges,
-                'total_nodes': len(nodes),
-                'total_edges': len(edges)
-            }
-
-    except Exception as e:
-        logger.error(f"Error getting combined graph data: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve graph data")
+async def get_combined_graph_data(limit: int = Query(5000, ge=1, le=15000)):
+    result = await get_graph_data(limit)
+    return {**result, 'total_nodes': len(result['nodes']), 'total_edges': len(result['edges'])}
 
 if __name__ == "__main__":
     import sys

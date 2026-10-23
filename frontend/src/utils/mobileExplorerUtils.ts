@@ -1,3 +1,4 @@
+import { trackFromNode } from './trackMetadata';
 /**
  * @file Mobile Track Explorer Utilities
  * @description Contains helper functions for the MobileTrackExplorer component.
@@ -17,18 +18,7 @@ export interface ConnectedTrack {
  * @returns {Track[]} A list of simplified track objects.
  */
 export const transformNodesToTracks = (nodes: GraphNode[]): Track[] => {
-  return (nodes || []).map(node => ({
-    id: node.id,
-    name: node.title || node.metadata?.title || node.label || 'Unknown Track',
-    artist: node.artist || node.metadata?.artist || 'Unknown Artist',
-    bpm: node.metadata?.bpm || 120,
-    key: node.metadata?.key || node.metadata?.camelotKey || '1A',
-    energy: node.metadata?.energy || 5,
-    duration: node.metadata?.duration || 180,
-    genre: node.metadata?.genre || 'Electronic',
-    album: node.metadata?.album,
-    year: node.metadata?.year,
-  }));
+  return (nodes || []).map(trackFromNode);
 };
 
 /**

@@ -6,6 +6,10 @@ the wave-routing addition. It supersedes the plan held only in chat. Update
 before stopping. This document describes intended work; STATUS.md records what
 has actually been completed and verified.
 
+The [track-metadata retrieval requirements](requirements/TRACK_METADATA_RETRIEVAL.md)
+are also part of this plan. Their five work packages are scheduled below, with
+the full original request retained for its provider contracts and acceptance cases.
+
 ## Direction and delivery rules
 
 Replace components incrementally, preserving a working application and rollback
@@ -43,6 +47,9 @@ evidence, or passing builds as passing runtime or type checks.
    observed drop sizes; do not manufacture fixtures to make a route pass.
 5. Measure ingestion latency, graph/search response times, browser responsiveness,
    and memory with documented dataset sizes, concurrency, and hardware.
+6. Complete the metadata transport/unknown-value audit and coverage-baseline
+   preparation in the [metadata retrieval program](#track-metadata-retrieval-program--wp1wp5)
+   before the next catalog-write changes.
 
 **Exit:** a clean environment starts reliably, real database-backed graph/browser
 workflows and representative REST operations pass, and the baseline and remaining
@@ -60,6 +67,7 @@ Move CPU-heavy and slow external operations to Celery. Add job status,
 idempotency keys, bounded retries, and dead-letter handling. Define transaction
 boundaries explicitly; consolidation does not create atomic transactions across
 external APIs, databases, and queues.
+Consolidate TIDAL callers onto the shared official-v2 client as specified in WP1.
 
 **Exit:** equivalent results for representative ingestion, compatibility endpoints
 remain usable, and replaying/retrying jobs does not duplicate records or transitions.
@@ -87,6 +95,9 @@ Settle the canonical energy definition before building dependent indexes:
 Add a PostgreSQL transactional outbox and replayable, idempotent projection
 consumers. Handle lag, retries, deletions, and entity merges. Avoid independent
 application dual writes to PostgreSQL and downstream stores.
+Include the metadata program's reversible feature/platform-ID schema changes,
+source-evidence model, shared Camelot specification/corrections, and consensus
+contract here before enabling enrichment writeback or backfill.
 
 **Exit:** canonical identities and ordered setlists survive merges/replays, energy
 scale/bands/provenance are defined and tested, and projections can be rebuilt and
@@ -106,6 +117,8 @@ merge history and checkpoint historical backfills.
 
 Use Chromaprint/AcoustID only where suitable authorized audio is available:
 fingerprinting still requires audio. Use metadata matching otherwise.
+Integrate the metadata program's official provider clients, ISRC/version matching,
+duration guard, per-field waterfall, and verified backfill in this milestone.
 
 **Exit:** agreed precision on labelled examples, especially remixes and ambiguous
 titles/artists; auditable and reversible merges; resumable backfill.
@@ -130,6 +143,8 @@ with workload/hardware documented and the final target agreed from measurements.
 
 Wave routing belongs here within graph projection; **it is not a separate
 milestone and must not be bolted onto the current route finder**.
+Preserve the metadata program's fields, provenance, and unknown-value semantics
+when projecting the repaired PostgreSQL catalog into Memgraph.
 
 ### Graph and scoring contract
 
@@ -220,10 +235,203 @@ in milestone 6. Retain the previous extractor until quality/operational gates pa
 Add pgvector only after choosing a versioned embedding model and a specific
 retrieval use case. Measure retrieval quality and HNSW recall before optimizing
 latency.
+WP3's audio methods, terms verification, independent-method consensus, and
+rated-library energy calibration are part of this milestone; catalogue retrieval
+and transport fixes are scheduled earlier rather than waiting for audio.
 
 **Exit:** measured extraction quality and resource use, trustworthy calibrated
 energy against library ratings, replayable feature updates, and validated vector
 retrieval if included.
+
+## Track-metadata retrieval program — WP1–WP5
+
+This program repairs metadata acquisition and delivery to the graph. It is
+required work, not an optional renderer enhancement. The detailed
+[uploaded specification](requirements/TRACK_METADATA_RETRIEVAL.md) is retained
+verbatim. Its provider observations are user-supplied evidence dated 24 Oct 2026;
+they have not been independently live-verified in this cloud task.
+
+### Placement and execution order
+
+| Work | Primary home | Prerequisite and handoff |
+| --- | --- | --- |
+| Graph/catalog/frontend field transport and honest unknowns | Milestone 1, next task | Test delivery of existing values before attributing missing graph data to providers. |
+| Coverage tooling and provider contract reconnaissance | Milestone 1 | Capture a real-data baseline and stable sample before enrichment changes. |
+| Shared TIDAL client consolidation (WP1) | Milestone 2 | Verify official contracts, implement the client, then migrate its callers. |
+| Metadata schema, provenance, Camelot correction migration, consensus contract | Milestone 3 | Reversible migrations and energy-scale contract precede production writeback/backfill. |
+| TIDAL/Deezer/GetSongBPM retrieval, matching, per-field waterfall (WP1/WP2/WP4 and WP3 catalogue methods) | Milestones 3–4 | Provider clients and schema feed the configured field resolver; version matching must pass before backfill. |
+| Graph exposure, resumable enrichment backfill, coverage proof (WP5) | Milestones 3–4, before milestone 6 | Populate and verify the current PostgreSQL graph first, then carry the same fields into Memgraph. |
+| Audio methods, calibrated energy, and audio-dependent consensus (WP3) | Milestone 8 | Use authorized audio and rated-library calibration; missing calibrated energy stays unknown until supported. |
+
+Do not defer provider repair, Camelot correctness, or existing-field transport
+until the renderer replacement. Wave routing in milestone 6 depends on milestone-3
+energy semantics and provenance, and later benefits from milestone-8 calibration.
+Define how wave routing handles unknown energy rather than manufacturing scores.
+
+Metadata transport checkpoint (2026-10-24 Australia/Sydney): shared backend and
+frontend adapters now expose stored fields on graph/catalog/detail/setlist reads,
+initial loads and API reloads, and desktop/mobile mappings. Explicit silver NULLs
+and meaningful zeroes are preserved; durations keep their units; record labels
+remain distinct from graph labels. Energy displays retain raw values/scales, and
+legacy timed routing reports missing durations instead of inventing them.
+Validation: 20 synthetic database/API tests, 38 frontend unit tests, type check,
+production build and extended Chromium smoke passed. This is delivery of existing
+values, not provider repair, calibration, backfill or proof of real-data coverage.
+Actual-data/source inventory and coverage-baseline tooling (item 5) are now
+documented in [METADATA_BASELINE.md](METADATA_BASELINE.md). The minimal stack is
+empty; no real-library coverage or populated fixed sample is established. The
+read-only CLI and six coverage regression checks are complete; provider consensus
+remains unassessed. Capture a new populated baseline before real backfill.
+
+### Immediate next task — metadata transport and baseline
+
+The current code inspection found two concrete transport issues:
+`frontend/src/services/api.ts` builds graph nodes without copying all available
+metadata; `frontend/src/hooks/useDataLoader.ts` supplies invented BPM/key/energy
+defaults. Audit all graph-to-track transformations, including DJInterface and
+utility adapters, rather than fixing only one path.
+
+1. Preserve BPM, musical/Camelot keys, energy and its scale, danceability, valence,
+   duration units, ISRC, TIDAL/Deezer IDs, label, and mix/version metadata from the
+   database through graph/catalog responses to frontend graph and track objects.
+2. Keep display `label` distinct from the record label. Handle currently absent
+   columns/JSONB fields explicitly until the versioned schema migration lands.
+3. Preserve zero where meaningful and unknown where missing. Remove invented
+   tempo, key, energy, and pseudo-random duration values from factual metadata.
+   Keep any visual placeholder separate from data used for recommendations/routing.
+4. Add regression cases for populated fields, nulls, zero values, unit conversion,
+   and identical metadata through initial load, reload, detail, and neighborhood
+   paths. Do not relabel legacy 0–1 energy as calibrated 1–10 energy.
+5. Inventory actual data and source bindings. Add coverage tooling that can run
+   before/after backfill; do not use synthetic fixtures as production coverage.
+
+This task precedes the remaining legacy catalog writes because those writes and
+later enrichment must preserve the same metadata contract.
+
+### WP1 — one official TIDAL v2 client
+
+- Consult the current official OpenAPI reference and verify live read contracts
+  before implementation. Use `/v2` JSON:API and `application/vnd.api+json`.
+- Implement ISRC lookup, searchResults relationship IDs, and hydration with
+  artists; respect the requested 20-item batching limits. Treat opaque resource
+  IDs separately from raw search text.
+- Parse `data[].attributes`, ISO-8601 durations, title/version distinctions, ISRC,
+  and TIDAL ID. Make `TIDAL_COUNTRY_CODE` configurable with default `AU`.
+- Treat unexpected 404s on the known-good contract fixture as failures, not
+  silent empty matches. Do not assume TIDAL supplies non-null BPM/key.
+- Fix auth with secrets in supported headers/bodies rather than URL parameters;
+  verify app-token, PKCE, refresh, and supported scopes against live contracts.
+- Migrate enrichment, streaming integrations, connector, auth and playlist callers
+  to the shared client. Implement documented v2 playlist item limits, duplicate
+  policy, item IDs, and idempotency keys. Inventory exceptions where a feature is
+  unavailable on the official API; do not silently keep private endpoints.
+- Reconcile configured credential names without copying credentials into code,
+  logs, fixtures, or PR text. Existing HTTPS proxy/secret bindings are checked first.
+
+### WP2 — working Deezer retrieval
+
+Implement ISRC-first lookup, plain-text search (including an extended-version
+candidate query), track detail and album hydration. Preserve `deezer_id`, ISRC,
+duration, title/version, gain, preview URL, album genres and label. Treat zero BPM
+as unknown, not a real tempo. Add rate limiting, Redis caching, and quota-code-4
+backoff with verified provider behavior. Preview availability does not itself
+establish permission to analyze the audio.
+
+### WP3 — independent BPM/key evidence and calibrated energy
+
+- Repair GetSongBPM URL, `type=both`/lookup parameters and `tempo`/`key_of`/
+  `camelot` parsing. Verify its terms and implement the required visible backlink
+  before enabling it. Preserve non-zero Deezer BPM and existing Beatport values;
+  use AcousticBrainz only where its historical data exists.
+- Define one shared `to_camelot()` with golden tests for all 24 keys, enharmonic
+  spellings, long/short key names, Open Key (`1m` = `8A`, `1d` = `8B`), and existing
+  Camelot codes. Correct both enrichment conversion paths. Recompute affected
+  stored minor values from original musical key/mode or trusted source evidence,
+  not from an already incorrect Camelot code alone; retain originals for rollback
+  and flag unrecoverable values for review.
+- Store every source's BPM/key measurement and method/version provenance. Do not
+  count the same upstream source twice as independent agreement. Fold half/double
+  tempos only with justified genre ranges; test 64↔128 and 87↔174. Define behavior
+  for unknown/multiple genres rather than forcing an arbitrary range.
+- Distinguish exact key agreement from relative-major/minor or ±1-neighbor
+  near-agreement. Select by agreement then configured source trust, preserve
+  disagreements, set `metadata_review`, and expose `v_metadata_conflicts`.
+- In milestone 8, verify Essentia KeyExtractor (`edma`) and RhythmExtractor2013,
+  compare independent audio methods, and write versioned evidence/results back
+  through the track resolver rather than only an analysis table. Use MinIO audio
+  or provider previews only after checking and recording applicable terms.
+- Calibrate energy from loudness/RMS, onset rate, spectral flux, danceability,
+  and other tested methods against the user's rated library. Fit and validate the
+  rule instead of inventing weights. Without tagged calibration data, leave
+  canonical energy null. Do not write 1–10 values into legacy 0–1 fields before
+  the milestone-3 schema/scale migration.
+- Remove Spotify audio-features calls throughout the repository and from active
+  waterfall configuration. Preserve unrelated supported Spotify integrations.
+
+### WP4 — configured field resolution, matching, and schema
+
+Replace blind `metadata.update` overwrites with configured per-field resolution
+and provenance. Wire `ConfigDrivenEnricher` into the actual enrichment path.
+Implement the requested defaults:
+
+- BPM/key: consensus from independent methods.
+- ISRC: TIDAL, then Deezer, then MusicBrainz's `isrcs` list.
+- Duration/mix name: TIDAL, then Deezer.
+- Genre/record label: Discogs, then Deezer album, then HTTPS Last.fm tags.
+
+Match ISRC first, then version-aware fuzzy candidates. Include TIDAL/Deezer
+candidates and the hard ±10-second duration guard to prevent radio-edit/extended
+mix substitution; define explicit review behavior when duration is unknown.
+
+Add reversible migrations for `camelot_key`, record label, `mix_name`, source
+evidence/review state, and missing platform identifiers as confirmed by schema
+inspection. Backfill available JSONB values without destroying source evidence.
+Keep genres as `TEXT[]`. Correct MusicBrainz ISRC capture, Last.fm HTTPS, hard-coded
+database-password defaults, and deployment credential-name mismatches.
+
+### WP5 — graph projection, backfill, and proof
+
+Expose the agreed fields through the current graph API and any retained
+`graph_nodes` view, then preserve them in the milestone-6 Memgraph projection.
+Audit view consumers rather than assuming all code still uses that view: the
+current baseline graph API reads silver tables directly.
+
+Build a rate-limited, resumable, idempotent backfill for tracks missing BPM, key,
+ISRC, TIDAL ID or Deezer ID. Use checkpoints, bounded batches, retries and review
+outcomes. Retain before-state evidence and avoid overwriting stronger known
+values. Backfill must run only after schema, client contracts, matching and field
+resolution are validated; never destructively change the production database.
+
+### Acceptance, research, and handoff
+
+- Report before/after non-null coverage for all tracks and a persisted, seeded
+  sample of 50 stable track IDs: BPM, key, Camelot key, energy, ISRC, TIDAL ID,
+  Deezer ID, genre, record label, and mix name. Report sample size honestly if
+  fewer than 50 real tracks are available. Include independent-method BPM/key
+  agreement, near-agreement and conflict rates. Separate transport improvements
+  from newly acquired metadata, and explain fields whose coverage did not improve.
+- Add credential-gated live contract tests for the requested TIDAL/Deezer ISRC
+  `QM6MZ2651268`, 304-second extended version, and TIDAL search finding both the
+  202- and 304-second versions. Recheck any drift against current live responses;
+  report it rather than hard-coding the dated observation as a passing result.
+- Add unit/contract cases for key mappings, ISO durations, tempo folding,
+  independence of sources, version guards, null/zero semantics, field priority,
+  quota/retry handling, and deprecated-URL/Spotify-audio-features absence.
+- Research current official docs per work package and verify API behavior with
+  real calls. Distinguish passed, failed, skipped-for-credentials and unrun checks.
+  Missing credentials, calibration ratings, or real catalog data are recorded
+  prerequisites; never invent values or claim live coverage from fixtures.
+- Follow the uploaded request to use parallel agents with disjoint file ownership
+  when implementing independent work packages. Assign migrations, shared types,
+  and integration edits to a single owner and sequence dependent handoffs.
+- Use a branch and open a PR with actual coverage, live-test/terms results,
+  compatibility exceptions, and remaining gaps. Keep `.env` and secrets out of Git.
+- The referenced laptop `musicLibrary` implementations are candidate reference
+  material, not files available in this cloud checkout. Inspect connected/local
+  access before requesting copies; keep any newly saved laptop files on `D:\`.
+- Do not extend Beatport/1001tracklists scraping or bypass blocks; use existing
+  collected values and supported APIs. Do not introduce undocumented/private
+  TIDAL calls as a fallback.
 
 ## Feature availability and dependency order
 
@@ -243,5 +451,7 @@ Real-set fixtures begin in milestone 1. Energy definitions precede search facets
 and graph move labels. Wave routing ships in milestone 6; milestone 7 displays
 it, and milestone 8 improves the reliability of its input scores.
 
-The next implementation task remains milestone-1 REST/legacy graph validation.
-Do not skip that foundation to implement wave routing ahead of its prerequisites.
+The next implementation task is the remaining legacy catalog-write audit.
+Metadata transport and development coverage-baseline tooling are complete;
+real-library coverage, ordered real sets and workload baselines remain pending. Provider/schema work follows the metadata program above. Do not skip
+those foundations to implement wave routing ahead of its prerequisites.

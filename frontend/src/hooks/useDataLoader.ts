@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { GraphNode, GraphEdge, Track } from '../types';
+import { GraphNode, GraphEdge } from '../types';
+import { graphNodeFromApi } from '../utils/trackMetadata';
 
 /**
  * Helper function to check if a node has valid artist attribution
@@ -23,68 +24,6 @@ const hasValidArtist = (node: any): boolean => {
   if (invalidPrefixes.some(prefix => normalizedArtist.startsWith(prefix))) return false;
 
   return true;
-};
-
-/**
- * Helper function to transform node data into a Track object
- * This ensures that each node has the track property populated
- * for the track modal to display correctly
- *
- * ✅ FIX: Provides safe defaults for all required Track fields
- * ⚠️  ASSUMES: Node has already been validated with hasValidArtist()
- */
-const nodeToTrack = (node: any): Track => {
-  const metadata = node.metadata || {};
-  const title = node.title || metadata.title || metadata.label || 'Unknown Track';
-  const artist = node.artist || metadata.artist || 'Unknown Artist';
-
-  // ✅ Ensure energy is a valid number between 1-10
-  const rawEnergy = metadata.energy || 5;
-  const energy = Math.min(10, Math.max(1, Math.round(rawEnergy))) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-
-  // ✅ Ensure BPM is a valid number (default 128 for house music)
-  const bpm = metadata.bpm || 128;
-
-  // ✅ Ensure key is a valid CamelotKey (default 8A)
-  const rawKey = metadata.key || metadata.camelotKey || '8A';
-  const key = rawKey as '1A' | '2A' | '3A' | '4A' | '5A' | '6A' | '7A' | '8A' | '9A' | '10A' | '11A' | '12A' | '1B' | '2B' | '3B' | '4B' | '5B' | '6B' | '7B' | '8B' | '9B' | '10B' | '11B' | '12B';
-
-  // ✅ Ensure duration is a valid number (default 240 seconds = 4 minutes)
-  const duration = metadata.duration || 240;
-
-  return {
-    id: node.id,
-    name: title,
-    artist: artist,
-    album: metadata.album,
-    genre: metadata.genre || metadata.category || 'Electronic',
-
-    // ✅ Required DJ-critical metadata with safe defaults
-    bpm: bpm,
-    key: key,
-    energy: energy,
-
-    // ✅ Required timing
-    duration: duration,
-    intro: metadata.intro,
-    outro: metadata.outro,
-
-    // ✅ Required status field (default to unplayed)
-    status: 'unplayed' as 'unplayed' | 'playing' | 'played' | 'queued',
-
-    // ✅ Year/Release info
-    year: metadata.release_year || metadata.year,
-
-    // Optional fields
-    waveform: metadata.waveform,
-    beatgrid: metadata.beatgrid,
-    lastPlayed: metadata.lastPlayed,
-    playCount: metadata.playCount || 0,
-    tags: metadata.tags || [],
-    mood: metadata.mood,
-    notes: metadata.notes,
-    cuePoints: metadata.cuePoints || [],
-  };
 };
 
 export const useDataLoader = () => {
@@ -117,37 +56,7 @@ export const useDataLoader = () => {
         const allNodes = (nodesData.nodes || [])
           .filter((node: any) => hasValidArtist(node));
 
-        const nodes: GraphNode[] = allNodes.map((node: any) => {
-          // ✅ CRITICAL FIX: Generate stable random positions based on node ID hash
-          // This prevents LOD flickering caused by Math.random() returning different values on each render
-          const hash = node.id.split('').reduce((acc: number, char: string) => {
-            return ((acc << 5) - acc) + char.charCodeAt(0);
-          }, 0);
-          const stableRandomX = ((hash & 0xFFFF) / 0xFFFF) * 1600 - 800;
-          const stableRandomY = (((hash >> 16) & 0xFFFF) / 0xFFFF) * 1200 - 600;
-
-          return {
-            id: node.id,
-            title: node.title || node.metadata?.title || node.metadata?.label || 'ERROR: No Track Title',
-            artist: node.artist || node.metadata?.artist || 'ERROR: No Artist (Filter Bypass)',
-            artistId: node.artist_id,
-            bpm: node.metadata?.bpm,
-            key: node.metadata?.key,
-            genre: node.metadata?.genre || node.metadata?.category || 'Electronic',
-            energy: node.metadata?.energy,
-            year: node.metadata?.release_year,
-            label: node.metadata?.label || node.metadata?.title || node.title || 'ERROR: No Label',
-            connections: node.metadata?.appearance_count || 0,
-            popularity: node.metadata?.popularity || 0,
-            // ✅ FIX: Use stable hash-based positions instead of Math.random() to prevent LOD instability
-            x: (node.position?.x !== undefined && node.position?.x !== null) ? node.position.x : stableRandomX,
-            y: (node.position?.y !== undefined && node.position?.y !== null) ? node.position.y : stableRandomY,
-            // Include metadata for DJInterface access
-            metadata: node.metadata,
-            // ✅ FIX: Create Track object for modal display
-            track: nodeToTrack(node),
-          };
-        });
+        const nodes: GraphNode[] = allNodes.map(graphNodeFromApi);
 
         // Create a set of loaded node IDs for quick lookup
         const nodeIds = new Set(nodes.map(n => n.id));
@@ -196,30 +105,13 @@ export const useDataLoader = () => {
         // Fallback: try loading from legacy endpoints
         try {
           const response = await fetch('/api/graph');
+          if (!response.ok) throw new Error(`Graph fallback failed: ${response.status}`);
           const data = await response.json();
 
           // ✅ FILTER: Exclude tracks without valid artist attribution (fallback endpoint too)
           const validNodes = (data.nodes || []).filter((node: any) => hasValidArtist(node));
 
-          const nodes: GraphNode[] = validNodes.map((node: any) => {
-            // Stable hash-based positions for fallback too
-            const hash = node.id.split('').reduce((acc: number, char: string) => {
-              return ((acc << 5) - acc) + char.charCodeAt(0);
-            }, 0);
-            const stableRandomX = ((hash & 0xFFFF) / 0xFFFF) * 1600 - 800;
-            const stableRandomY = (((hash >> 16) & 0xFFFF) / 0xFFFF) * 1200 - 600;
-
-            return {
-              id: node.id,
-              title: node.label || node.name || 'ERROR: No Track Title (Fallback)',
-              artist: node.artist || 'ERROR: No Artist (Fallback)',
-              genre: node.type,
-              x: (node.x !== undefined && node.x !== null && node.x !== 0) ? node.x : stableRandomX,
-              y: (node.y !== undefined && node.y !== null && node.y !== 0) ? node.y : stableRandomY,
-              // ✅ FIX: Create Track object for fallback data too
-              track: nodeToTrack(node),
-            };
-          });
+          const nodes: GraphNode[] = validNodes.map(graphNodeFromApi);
 
           const edges: GraphEdge[] = (data.edges || []).map((edge: any, index: number) => ({
             id: `edge-${index}`,
@@ -238,6 +130,7 @@ export const useDataLoader = () => {
           });
           const connectedNodes = nodes.filter(node => connectedNodeIds.has(node.id));
 
+          setError(null);
           setGraphData({ nodes: connectedNodes, edges });
           applyFilters({});
           setLoading(false);

@@ -9,7 +9,7 @@
  */
 
 import type { Track, GraphNode } from '../../../types';
-import { getStableHashValue } from './stableHash';
+import { trackFromNode } from '../../../utils/trackMetadata';
 
 /**
  * Validate if a graph node has sufficient data to be displayed as a track
@@ -54,84 +54,10 @@ export function isValidTrackNode(node: any): boolean {
   return hasTitle && hasValidArtist;
 }
 
-/**
- * Transform a graph node into a standardized Track object
- *
- * This function normalizes graph node data into the Track interface,
- * handling multiple data source locations (node properties, metadata object)
- * and providing stable fallback values when metadata is missing.
- *
- * Data Priority:
- * 1. Direct node properties (node.title, node.artist, etc.)
- * 2. Metadata object (node.metadata.title, node.metadata.artist, etc.)
- * 3. Stable fallback values (using deterministic hash)
- *
- * Fallback Strategy:
- * - Duration: 3-8 minutes (180-480 seconds) via stable hash
- * - BPM: Use stable hash if needed (caller's responsibility)
- * - Key: undefined (no fallback - should be enriched separately)
- * - Energy: undefined (no fallback - should be enriched separately)
- *
- * @param node - Graph node to transform
- * @returns Standardized Track object
- *
- * @throws {Error} If node is invalid or missing required fields
- *
- * @example
- * ```typescript
- * const tracks = validNodes.map(transformNodeToTrack);
- * ```
- */
+/** Validate artist/title attribution, then use the shared factual metadata mapping. */
 export function transformNodeToTrack(node: GraphNode): Track {
-  if (!isValidTrackNode(node)) {
-    throw new Error(`Invalid track node: missing title or artist`);
-  }
-
-  const metadata = node.metadata || {};
-  const trackId = node.id || node.track?.id || '';
-
-  // Extract track name from multiple potential sources
-  const trackName =
-    node.title ||
-    node.name ||
-    metadata.title ||
-    metadata.label ||
-    node.label ||
-    'Unknown Track';
-
-  // Extract artist name from multiple potential sources
-  const artistName =
-    node.artist ||
-    metadata.artist ||
-    'Unknown Artist';
-
-  return {
-    id: trackId,
-    name: trackName,
-    title: trackName, // Alias for compatibility
-    artist: artistName,
-
-    // Musical metadata (may be undefined)
-    bpm: node.bpm || metadata.bpm || undefined,
-    key: node.key || metadata.key || metadata.camelotKey || undefined,
-    energy: node.energy || metadata.energy || undefined,
-
-    // Duration with stable fallback (3-8 minutes)
-    duration: node.duration || metadata.duration ||
-      getStableHashValue(trackId + '_duration', 180, 480),
-
-    // Track status (default to unplayed)
-    status: 'unplayed' as const,
-
-    // Genre/category
-    genre: node.genre || metadata.genre || metadata.category || 'Electronic',
-
-    // Platform identifiers
-    isrc: metadata.isrc || metadata.upc || undefined,
-    spotify_id: metadata.spotify_id || undefined,
-    apple_music_id: metadata.apple_music_id || undefined,
-    beatport_id: metadata.beatport_id || undefined,
-  };
+  if (!isValidTrackNode(node)) throw new Error('Invalid track node: missing title or artist');
+  return trackFromNode(node);
 }
 
 /**

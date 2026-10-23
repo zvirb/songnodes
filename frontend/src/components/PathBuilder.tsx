@@ -1,3 +1,4 @@
+import { routeTracksFromNodes } from '../utils/trackMetadata';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { validateWaypoints } from '../utils/pathfinding';
@@ -185,18 +186,7 @@ export const PathBuilder: React.FC = () => {
 
     try {
       // Prepare tracks data - handle both nested track format and flat node format
-      const tracksData = graphData.nodes.map(node => {
-        const track = node.track || node;
-        return {
-          id: node.id,
-          name: track.name || node.name || node.title || node.label || 'Unknown',
-          artist: track.artist || node.artist || 'Unknown',
-          duration_ms: ((track.duration || node.duration || 180) * 1000), // Convert seconds to ms
-          camelot_key: track.camelotKey || node.camelot_key || node.metadata?.camelot_key,
-          bpm: track.bpm || node.bpm || node.metadata?.bpm,
-          energy: track.energy || node.energy || node.metadata?.energy
-        };
-      });
+      const tracksData = routeTracksFromNodes(graphData.nodes);
 
       // Prepare edges data
       const edgesData = graphData.edges.map(edge => ({

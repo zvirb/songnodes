@@ -13,6 +13,7 @@ services:
       - ./sql/migrations/medallion/001_bronze_layer_up.sql:/docker-entrypoint-initdb.d/001-bronze.sql:ro
       - ./sql/migrations/medallion/002_silver_layer_up.sql:/docker-entrypoint-initdb.d/002-silver.sql:ro
       - ./sql/migrations/medallion/006_track_adjacency_edges_up.sql:/docker-entrypoint-initdb.d/006-transitions.sql:ro
+      - ./sql/migrations/012_target_tracks_up.sql:/docker-entrypoint-initdb.d/012-target-tracks.sql:ro
     healthcheck:
       test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U songnodes -d songnodes']
       interval: 3s

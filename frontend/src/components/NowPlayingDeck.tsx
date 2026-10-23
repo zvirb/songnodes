@@ -1,3 +1,4 @@
+import { formatStoredEnergy } from '../utils/trackMetadata';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, Pause, Loader2 } from 'lucide-react';
 
@@ -248,7 +249,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
   const progressPercent = clamp(progress, 0, 1) * 100;
   const totalPreviewSeconds = previewDuration > 0 ? previewDuration : 30;
   const trackDurationSeconds = track?.duration ?? track?.duration_seconds ?? 0;
-  const energyPercent = track?.energy !== undefined ? Math.round(track.energy * 100) : null;
+  const energyDisplay = formatStoredEnergy(track?.energy, track?.energy_scale);
   const valencePercent = track?.valence !== undefined ? Math.round(track.valence * 100) : null;
 
   if (!track) {
@@ -370,7 +371,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
             fontWeight: 700,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {energyPercent !== null ? `${energyPercent}` : '—'}
+            {energyDisplay}
           </span>
         </div>
 

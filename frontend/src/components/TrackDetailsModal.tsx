@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Link2, Search, Play } from 'lucide-react';
 import { HarmonicCompatibility } from './HarmonicCompatibility';
-import { EnergyMeter } from './EnergyMeter';
+import { formatStoredEnergy } from '../utils/trackMetadata';
 import { Track } from '../types/dj';
 import { useGraphNodes, useGraphEdges } from '../store/useStore';
 
@@ -318,7 +318,7 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
               }}>
                 Energy
               </div>
-              <EnergyMeter level={track.energy || 5} size="small" />
+              <span>{formatStoredEnergy(track.energy, track.energy_scale)}</span>
             </div>
 
             {/* Duration */}

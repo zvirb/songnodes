@@ -1,7 +1,21 @@
 export type { DJMode, TrackRecommendation } from './dj';
 
+// Stored values are transported as-is; energy is not implicitly calibrated.
+export interface StoredTrackMetadata {
+  duration_ms?: number;
+  musical_key?: string;
+  camelot_key?: string;
+  energy_scale?: string;
+  tidal_id?: string;
+  deezer_id?: string;
+  record_label?: string;
+  mix_name?: string;
+  genres?: string[];
+  release_date?: string;
+}
+
 // Core music data types
-export interface Track {
+export interface Track extends StoredTrackMetadata {
   id: string;
   name: string;
   artist: string;
@@ -48,7 +62,7 @@ export interface CuePoint {
 }
 
 // Graph visualization types
-export interface GraphNode {
+export interface GraphNode extends StoredTrackMetadata {
   id: string;
   track_id?: string;
   camelotKey?: string;

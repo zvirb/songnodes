@@ -1,3 +1,4 @@
+import { trackFromNode } from '../utils/trackMetadata';
 import React, { useState, useMemo, useCallback } from 'react';
 import { Track } from '../types/dj';
 import useStore from '../store/useStore';
@@ -39,18 +40,7 @@ export const MobileTrackExplorer: React.FC = () => {
 
   // Get all tracks from graph data
   const allTracks = useMemo(() => {
-    return (graphData?.nodes || []).map(node => ({
-      id: node.id,
-      name: node.title || node.metadata?.title || node.label || 'Unknown Track',
-      artist: node.artist || node.metadata?.artist || 'Unknown Artist',
-      bpm: node.metadata?.bpm || 120,
-      key: node.metadata?.key || node.metadata?.camelotKey || '1A',
-      energy: node.metadata?.energy || 5,
-      duration: node.metadata?.duration || 180,
-      genre: node.metadata?.genre || 'Electronic',
-      album: node.metadata?.album,
-      year: node.metadata?.year,
-    }));
+    return (graphData?.nodes || []).map(trackFromNode);
   }, [graphData?.nodes]);
 
   // Search functionality

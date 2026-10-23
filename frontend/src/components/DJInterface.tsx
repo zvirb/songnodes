@@ -1,3 +1,4 @@
+import { trackFromNode as transformNodeToTrack } from '../utils/trackMetadata';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { NowPlayingDeck } from './NowPlayingDeck';
@@ -37,43 +38,6 @@ const CAMELOT_KEYS = ['1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A
                       '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'];
 
 const ONBOARDING_STORAGE_KEY = 'songnodes-onboarding-dismissed';
-
-// Deterministic hash function for stable random values
-const getStableHashValue = (str: string, min: number, max: number): number => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash) % (max - min + 1) + min;
-};
-
-// Pure function for track transformation - no React.memo needed for regular functions
-const transformNodeToTrack = (node: any): Track => {
-  const metadata = node.metadata || {};
-  const trackId = node.id || node.track_id || '';
-
-  // Get track name from multiple potential sources
-  const trackName = node.title || metadata.title || metadata.label || node.label || 'Unknown Track';
-
-  // Get artist name from multiple potential sources
-  const artistName = node.artist || metadata.artist || 'Unknown Artist';
-
-  return {
-    id: trackId,
-    name: trackName,
-    title: trackName, // Alias for compatibility
-    artist: artistName,
-    bpm: metadata.bpm || undefined,
-    key: metadata.key || metadata.camelotKey || undefined,
-    energy: metadata.energy || undefined,
-    duration: metadata.duration || getStableHashValue(trackId + '_duration', 180, 480), // 3-8 minutes
-    status: 'unplayed' as const,
-    genre: metadata.genre || metadata.category || 'Electronic',
-    isrc: metadata.isrc || metadata.upc || undefined
-  };
-};
 
 // Optimized node validation function
 const isValidTrackNode = (node: any): boolean => {
@@ -248,19 +212,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
       const { track, nodeId } = event.detail;
       if (track) {
         // Transform node data to Track format if needed
-        const trackData: Track = {
-          id: track.id || nodeId,
-          name: track.name || track.label || track.title || 'Unknown Track',
-          title: track.name || track.label || track.title || 'Unknown Track',
-          artist: track.artist || 'Unknown Artist',
-          bpm: track.bpm,
-          key: track.key,
-          energy: track.energy,
-          duration: track.duration,
-          status: 'unplayed' as const,
-          genre: track.genre || track.category || 'Electronic',
-          isrc: track.isrc
-        };
+        const trackData = transformNodeToTrack({ ...track, id: track.id || nodeId });
 
         setInspectedTrack(trackData);
         setIsModalOpen(true);
@@ -291,7 +243,7 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
       });
 
     return Array.from(uniqueNodesMap.values());
-  }, [graphData?.nodes?.length]);
+  }, [graphData?.nodes]);
 
   // Transform nodes to tracks with stable references
   const tracks = useMemo(() => {

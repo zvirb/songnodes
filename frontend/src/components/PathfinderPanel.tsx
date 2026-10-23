@@ -1,3 +1,4 @@
+import { routeTracksFromNodes } from '../utils/trackMetadata';
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -79,15 +80,7 @@ export const PathfinderPanel: React.FC = () => {
 
       // Use the store's filtered tracks and edges directly
       // This ensures pathfinder uses the same data as the visualization
-      const tracksData = tracks.map((track: any) => ({
-        id: track.id,
-        name: track.name || track.title || 'Unknown',
-        artist: track.artist || 'Unknown',
-        duration_ms: 180000, // Default 3 minutes
-        camelot_key: track.track?.camelotKey || track.metadata?.musical_key,
-        bpm: track.track?.bpm || track.metadata?.bpm,
-        energy: track.track?.energy || track.metadata?.energy
-      }));
+      const tracksData = routeTracksFromNodes(tracks);
 
       const edgesData = edges.map((edge: any) => ({
         from_id: edge.source,

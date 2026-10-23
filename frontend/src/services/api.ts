@@ -1,3 +1,4 @@
+import { graphNodeFromApi } from '../utils/trackMetadata';
 import {
   GraphData,
   GraphApiResponse,
@@ -192,24 +193,7 @@ export const graphApi = {
       }
 
       // Transform data to expected format
-      const nodes = response.data.nodes?.map((node: any) => ({
-        id: node.id,
-        label: node.metadata?.title || node.metadata?.label || node.id,
-        type: 'track' as const,
-        x: node.position?.x || 0,
-        y: node.position?.y || 0,
-        // Map metadata to node properties for compatibility
-        title: node.metadata?.title,
-        artist: node.metadata?.artist,
-        name: node.metadata?.title,
-        genre: node.metadata?.category,
-        track: {
-          id: node.track_id || node.id,
-          name: node.metadata?.title || node.metadata?.label || '',
-          artist: node.metadata?.artist || '',
-          genre: node.metadata?.category,
-        }
-      })) || [];
+      const nodes = (response.data.nodes || []).map(graphNodeFromApi);
 
       // Create a set of loaded node IDs for efficient filtering
       const nodeIds = new Set(nodes.map(n => n.id));
@@ -549,7 +533,7 @@ export const healthApi = {
 
 // Create simple HTTP client for target tracks API
 const createTargetTracksClient = () => {
-  const baseURL = 'http://localhost:8088/api/v1';
+  const baseURL = `${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')}/api/v1`;
 
   const request = async (method: string, url: string, data?: any) => {
     const response = await fetch(`${baseURL}${url}`, {
@@ -564,7 +548,7 @@ const createTargetTracksClient = () => {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return response.json();
+    return { data: response.status === 204 ? null : await response.json() };
   };
 
   return {
