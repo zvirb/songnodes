@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useStore from '../store/useStore';
 import { GraphNode } from '../types';
 import { Music, RotateCcw, Maximize2, Eye, EyeOff } from 'lucide-react';

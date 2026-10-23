@@ -24,7 +24,7 @@ export const useLiveDataLoader = (options?: Partial<LiveDataLoaderProps>) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<number>(0);
 
-  const loaderRef = useRef<{ refresh: () => void }>();
+  const loaderRef = useRef<{ refresh: () => void } | null>(null);
 
   const refresh = useCallback(() => {
     loaderRef.current?.refresh();

@@ -75,7 +75,7 @@ export function setupRoutes(fastify: FastifyInstance): void {
       const token = extracted ?? undefined;
       
       // Add connection with authentication
-      fastify.websocket.addConnection(connectionId, connection.socket, token);
+      fastify.websocket.addConnection(connectionId, connection, token);
       
       // Note: All message handling is done by WebSocketService including authentication
     });

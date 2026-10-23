@@ -3,7 +3,7 @@ import pytest
 import asyncio
 from typing import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from fastapi.testclient import TestClient
 
 
@@ -63,7 +63,7 @@ async def test_client(mock_redis_client, mock_rabbitmq_connection):
                 websocket_service.rabbitmq_channel = rabbitmq_channel
                 websocket_service.exchange = rabbitmq_exchange
 
-                async with AsyncClient(app=app, base_url="http://test") as client:
+                async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                     yield client
 
 

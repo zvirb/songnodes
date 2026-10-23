@@ -18,7 +18,7 @@ export const useAutoSave = (
     error: null,
   });
 
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastSavedDataRef = useRef<string>('');
 
   const save = useCallback(async (data: Setlist) => {

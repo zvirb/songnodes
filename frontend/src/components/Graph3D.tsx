@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import ForceGraph3D, { ForceGraphMethods } from 'react-force-graph-3d';
+import ForceGraph3D, { type ForceGraphMethods } from 'react-force-graph-3d';
 import * as THREE from 'three';
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
@@ -91,7 +91,7 @@ export const Graph3D: React.FC<Graph3DProps> = ({
   onNodeHover,
   className = '',
 }) => {
-  const fgRef = useRef<ForceGraphMethods>();
+  const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Store state

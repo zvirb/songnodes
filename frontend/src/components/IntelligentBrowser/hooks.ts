@@ -177,7 +177,7 @@ export const useDebouncedValue = <T,>(value: T, delay: number): T => {
  */
 export const useAnnouncer = () => {
   const [announcement, setAnnouncement] = useState<string>('');
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const announce = useCallback((message: string, polite: boolean = true) => {
     if (timeoutRef.current) {

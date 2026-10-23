@@ -91,9 +91,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
   const musicCredentials = useStore(state => state.musicCredentials);
 
   // Refs for cleanup
-  const intervalRef = useRef<NodeJS.Timeout>();
-  const websocketRef = useRef<WebSocket>();
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const websocketRef = useRef<WebSocket | undefined>(undefined);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // CRITICAL: Add ref to avoid closure issues with WebSocket retry logic
   const statusRef = useRef<ConnectionStatus>({
@@ -102,7 +102,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
     retryCount: 0,
     latency: 0
   });
-  const performanceTrackerRef = useRef<number>();
+  const performanceTrackerRef = useRef<number | undefined>(undefined);
 
   // WebSocket connection management
   const connectWebSocket = useCallback(() => {
@@ -646,7 +646,7 @@ export const useLiveDataLoader = (options?: Partial<LiveDataLoaderProps>) => {
 
   const loaderRef = useRef<{
     refresh: () => void;
-  }>();
+  } | null>(null);
 
   const refresh = useCallback(() => {
     if (loaderRef.current) {

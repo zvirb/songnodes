@@ -93,17 +93,16 @@ class HealthCheckService {
 
       this.redisClient = redis.createClient({
         url: redisUrl,
-        retry_strategy: (options) => {
-          if (options.error && options.error.code === 'ECONNREFUSED') {
-            return new Error('Redis server connection refused');
+        socket: {
+          reconnectStrategy: (retries, cause) => {
+            if (cause && cause.code === 'ECONNREFUSED') {
+              return new Error('Redis server connection refused');
+            }
+            if (retries > 10) {
+              return new Error('Redis retry attempts exhausted');
+            }
+            return Math.min(retries * 100, 3000);
           }
-          if (options.total_retry_time > 1000 * 60 * 60) {
-            return new Error('Redis retry time exhausted');
-          }
-          if (options.attempt > 10) {
-            return undefined;
-          }
-          return Math.min(options.attempt * 100, 3000);
         }
       });
 
@@ -372,7 +371,7 @@ class HealthCheckService {
       const start = Date.now();
       
       const response = await fetch(`${graphApiUrl}/health`, {
-        timeout: 5000
+        signal: AbortSignal.timeout(5000)
       });
       
       const responseTime = Date.now() - start;

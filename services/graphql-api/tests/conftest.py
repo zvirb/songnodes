@@ -2,7 +2,7 @@
 import pytest
 import asyncio
 from typing import AsyncGenerator, Generator
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from fastapi.testclient import TestClient
 
 
@@ -19,7 +19,7 @@ async def test_client() -> AsyncGenerator:
     """Create async test client for GraphQL API"""
     from main import app
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 

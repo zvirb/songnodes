@@ -17,7 +17,7 @@ export async function metricsMiddleware(
   const startTime = process.hrtime.bigint();
   
   // Extract route pattern (removing query params and dynamic segments)
-  const route = request.routerPath || request.url.split('?')[0];
+  const route = request.routeOptions.url || request.url.split('?')[0];
   
   reply.raw.on('finish', () => {
     const endTime = process.hrtime.bigint();

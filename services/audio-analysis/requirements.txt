@@ -1,20 +1,20 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-pydantic==2.5.3
-asyncpg==0.29.0
-aio-pika==9.3.1
-prometheus-client==0.19.0
-httpx==0.26.0
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+asyncpg==0.32.0
+aio-pika==10.1.1
+prometheus-client==0.26.0
+httpx==0.28.1
 
 # Audio processing libraries
-librosa==0.10.1
-essentia==2.1b6.dev1110
-numpy==1.24.3
-scipy==1.11.4
-soundfile==0.12.1
+librosa==0.11.0
+essentia==2.1b6.dev1389
+numpy==2.4.6
+scipy==1.17.1
+soundfile==0.14.0
 
 # Additional dependencies for audio processing
-numba==0.58.1
-resampy==0.4.2
-audioread==3.0.1
-psutil==5.9.6
+numba==0.68.0
+resampy==0.4.3
+audioread==3.1.0
+psutil==7.2.2

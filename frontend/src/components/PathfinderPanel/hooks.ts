@@ -6,7 +6,7 @@
 import { useMachine } from '@xstate/react';
 import { useStore } from '../../store/useStore';
 import { useEffect, useRef, useCallback } from 'react';
-import { pathfinderMachine, pathfinderMachineOptions } from './pathfinder.machine';
+import { pathfinderMachine } from './pathfinder.machine';
 import { PathfinderContext, WizardStep } from './types';
 import { Track } from '../../types';
 import { adaptServerPath } from '../../utils/serverPath';
@@ -15,9 +15,7 @@ import { adaptServerPath } from '../../utils/serverPath';
  * Main pathfinder hook - integrates XState machine with Zustand store
  */
 export function usePathfinder() {
-  const [state, send] = useMachine(pathfinderMachine, {
-    ...pathfinderMachineOptions,
-  });
+  const [state, send] = useMachine(pathfinderMachine);
 
   const { graphData, viewState, pathfinding } = useStore();
   const prevStateRef = useRef(state.context);
@@ -218,7 +216,7 @@ export function useScreenReaderAnnouncement() {
  * Hook for debouncing constraint updates
  */
 export function useDebouncedConstraintUpdate(send: (event: any) => void, delay: number = 500) {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const debouncedUpdate = useCallback(
     (constraints: any) => {

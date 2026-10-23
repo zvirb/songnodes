@@ -2,12 +2,11 @@
 
 ## Current task
 
-Completed: committed all accumulated changes as `f7eb5cc` and successfully
-pushed `work` to `origin/work`, with upstream tracking configured. The earlier
-baseline commit `883ee06` is included in the published branch. Diff formatting
-checks passed; existing validation results are retained below. This status update
-is included in a follow-up documentation commit on the same branch.
-Next implementation task: the legacy catalog-write audit.
+Completed: merged the dependency-upgrade branch (`chore/upgrade-dependencies`, all frontend,
+Node-service and Python pins moved to latest) onto `work` on the integration branch
+`chore/upgrade-dependencies-on-work`, and corrected the code the upgrades broke.
+`work` and `origin/work` are unchanged. Not pushed.
+Next implementation task: the legacy catalog-write audit (unchanged from the previous checkpoint).
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
@@ -53,6 +52,16 @@ Started: 2026-10-24 (Australia/Sydney).
 - Documented commands, metric definitions, sample rules, schema gaps and source-binding inventory in `docs/METADATA_BASELINE.md`. No credential values were read or exported for this inventory.
 - Captured two empty-catalog snapshots and a comparison under ignored `.local-dev/coverage/`. All six inventory entity counts are zero; no real-data coverage baseline, complete real set or 50-track sample is established. Agreement remains explicitly unassessed.
 - Found a pending TIDAL startup wiring issue: database `tidal_keys` are retrieved but client construction uses environment variables. Recorded it for WP1; provider behavior was not changed or tested live.
+
+## Dependency upgrade merge (2026-10-24)
+
+- Conflicts: `frontend/package.json` (upgrade pins plus work's `@xstate/react`, `xstate`, `d3-transition`, `@types/d3-transition`, `@types/three`, `vitest`, taken at latest majors: xstate 5, @xstate/react 6, vitest 5, @types/three 0.186), `frontend/package-lock.json` (regenerated), `Graph3D.tsx` (work's null-safe `linkEndpointId` kept, React 19 ref typing kept) and `CamelotHelix3D.tsx` (`three/addons` path).
+- Ported `PathfinderPanel/pathfinder.machine.ts` and its `useMachine` call to the XState 5 API (`setup`, `fromPromise`, `guard`, `input`/`output`); added `pathfinder.machine.test.ts`.
+- Gateway proxies now use `pathFilter` (http-proxy-middleware 4 strips the mount prefix, which broke `pathRewrite`).
+- Test conftests for graphql-api, rest_api and websocket-api use `httpx.ASGITransport` (httpx 0.28 removed `AsyncClient(app=)`).
+- Checks run: frontend `tsc --noEmit` 0 errors; `vite build` passed; `vitest run src` 41 tests passed; both Python API apps and all work-added modules import under the installed new majors; Splink 5 calls smoke-tested. Gateway proxy path rewriting verified against a local upstream.
+- Not run: Docker builds, database-backed API tests, Chromium smoke, Playwright E2E, Python service test suites.
+- Known, not caused by the upgrade: `scrapers/llm_scraper_engine.py` uses the removed OpenAI `ChatCompletion` API; Node service Dockerfiles still use `node:18-alpine` and need a base-image bump to meet the new `engines` ranges; Node services have no lockfiles.
 
 ## Validation results
 

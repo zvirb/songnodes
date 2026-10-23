@@ -4,7 +4,7 @@ import asyncio
 from typing import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 import asyncpg
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from fastapi.testclient import TestClient
 
 # Import the app but prevent actual database connections
@@ -52,7 +52,7 @@ async def test_client(mock_db_pool) -> AsyncGenerator:
             import main
             main.db_pool = mock_db_pool
 
-            async with AsyncClient(app=app, base_url="http://test") as client:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 yield client
 
 @pytest.fixture

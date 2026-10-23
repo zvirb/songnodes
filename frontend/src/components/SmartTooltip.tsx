@@ -67,8 +67,8 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
 
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const hideTimeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Calculate optimal position and placement
   const calculatePosition = useCallback(() => {
