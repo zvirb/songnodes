@@ -394,6 +394,14 @@ class Registry(unittest.TestCase):
         self.assertNotIn('getsongbpm', names({'GETSONGBPM_ENABLED': 'true'}))
         self.assertIn('getsongbpm', names({'GETSONGBPM_API_KEY': 'g', 'GETSONGBPM_ENABLED': '1'}))
 
+    def test_enrichment_providers_switch_restricts_or_disables_outbound_calls(self):
+        env = {'TIDAL_CLIENT_ID': 'i', 'TIDAL_CLIENT_SECRET': 's', 'LASTFM_API_KEY': 'l'}
+        names = lambda extra: [p.name for p in self.build({**env, **extra})]  # noqa: E731
+        self.assertEqual(names({}), ['tidal', 'deezer', 'musicbrainz', 'lastfm'])
+        self.assertEqual(names({'ENRICHMENT_PROVIDERS': 'tidal, lastfm'}), ['tidal', 'lastfm'])
+        self.assertEqual(names({'ENRICHMENT_PROVIDERS': 'none'}), [], 'none disables every provider')
+        self.assertEqual(names({'ENRICHMENT_PROVIDERS': 'discogs'}), [], 'a listed but unconfigured provider is not built')
+
     def test_shared_upstreams_can_be_grouped(self):
         providers = self.build({'PROVIDER_GROUPS': 'musicbrainz=deezer', 'LASTFM_API_KEY': 'l'})
         groups = {p.name: p.independent_group for p in providers}

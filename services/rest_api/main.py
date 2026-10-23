@@ -750,6 +750,8 @@ from routers.catalog_writes import router as catalog_writes_router
 app.include_router(catalog_writes_router)
 from routers.jobs import router as jobs_router
 app.include_router(jobs_router)
+from routers.datalayer import router as datalayer_router
+app.include_router(datalayer_router)
 
 # Read contracts are separate from scraper submission validators.
 from routers.catalog_reads import router as catalog_reads_router

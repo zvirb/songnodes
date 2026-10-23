@@ -106,3 +106,10 @@ async def list_jobs(conn, status: Optional[str], kind: Optional[str], limit: int
         WHERE ($1::text IS NULL OR status = $1) AND ($2::text IS NULL OR kind = $2)
         ORDER BY created_at DESC, id LIMIT $3 OFFSET $4
     """, status, kind, limit, offset)
+
+
+async def prune(conn, keep_days: int = 14) -> int:
+    """Delete succeeded jobs older than `keep_days`. Dead and in-flight jobs are never pruned."""
+    result = await conn.execute("""
+        DELETE FROM ingestion_jobs WHERE status = 'succeeded' AND finished_at < NOW() - make_interval(days => $1)""", keep_days)
+    return int(result.split()[-1])
