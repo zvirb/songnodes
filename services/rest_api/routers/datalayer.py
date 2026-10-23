@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from common.datalayer import identity, jobs as jobs_domain, outbox, projection
+from common.datalayer import er, identity, jobs as jobs_domain, outbox, projection
 from common.datalayer.errors import CatalogError
 from common.providers.getsongbpm import ATTRIBUTION
 from routers.catalog_writes import domain_errors, get_pool
@@ -15,7 +15,7 @@ router = APIRouter(tags=['datalayer'])
 
 # `scrape` is submitted through /api/v1/scrape/trigger so its payload is validated in one place.
 ENQUEUEABLE = {'ingest_pending', 'enrichment_backfill', 'enrich_track', 'camelot_repair', 'projection_consume',
-               'projection_rebuild', 'projection_reconcile'}
+               'projection_rebuild', 'projection_reconcile', 'er_shadow'}
 
 
 class EnqueueRequest(BaseModel):
@@ -138,3 +138,27 @@ async def attributions():
     import os
     enabled = (os.getenv('GETSONGBPM_ENABLED', '').strip().lower() in ('1', 'true', 'yes', 'on')) and bool(os.getenv('GETSONGBPM_API_KEY'))
     return {'attributions': [ATTRIBUTION] if enabled else []}
+
+
+class ReviewVerdict(BaseModel):
+    outcome: str = Field(..., pattern='^(same|different)$')
+
+
+@router.get('/api/v1/resolution/review')
+@domain_errors
+async def resolution_review(limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
+    """Shadow entity-resolution pairs awaiting a human verdict, most similar first."""
+    async with get_pool().acquire() as conn:
+        rows = await er.pending_review(conn, limit, offset)
+    return [{'decision_id': r['id'], 'entity_type': r['entity_type'], 'left_id': str(r['left_id']), 'right_id': str(r['right_id']),
+             'score': r['score'], 'decision': r['decision'], 'artist': r['left_artist'], 'left_title': r['left_title'],
+             'right_title': r['right_title'], 'features': json.loads(r['features']) if isinstance(r['features'], str) else r['features']}
+            for r in rows]
+
+
+@router.post('/api/v1/resolution/{decision_id}/review')
+@domain_errors
+async def resolution_verdict(decision_id: int, verdict: ReviewVerdict):
+    """`same` merges the pair through the reversible track merge; `different` records that they must stay apart."""
+    async with get_pool().acquire() as conn:
+        return await er.review(conn, decision_id, verdict.outcome)

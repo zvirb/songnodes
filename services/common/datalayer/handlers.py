@@ -11,7 +11,7 @@ from uuid import UUID
 
 import httpx
 
-from . import backfill, enrichment, evidence, ingest, outbox, projection
+from . import backfill, enrichment, er, evidence, ingest, outbox, projection
 from .errors import CatalogError
 
 
@@ -139,3 +139,15 @@ async def projection_rebuild(conn, ctx: Context, payload: Dict[str, Any]) -> Dic
 @handler('projection_reconcile')
 async def projection_reconcile(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
     return await projection.reconcile(conn, repair=bool(payload.get('repair')))
+
+
+@handler('er_shadow')
+async def er_shadow(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Score same-artist track pairs in shadow mode (records decisions; merges nothing). Resumable by artist."""
+    if payload.get('restart'):
+        await conn.execute("DELETE FROM backfill_checkpoints WHERE name = $1", er.CHECKPOINT)
+    summary = await er.run_shadow(conn, int(payload.get('max_artists', 25)))
+    follow_ups = []
+    if summary['status'] == 'running':
+        follow_ups.append(after('er_shadow', payload, {k: v for k, v in payload.items() if k not in ('job_id', 'restart')}, tag='er-next'))
+    return {**summary, 'enqueue': follow_ups}

@@ -31,6 +31,9 @@ class DataLayer(unittest.TestCase):
     def test_enrichment_waterfall_backfill_and_job_runner(self):
         self.scenario('worker')
 
+    def test_entity_resolution_shadow_review_and_reversible_promotion(self):
+        self.scenario('resolution')
+
 
 if __name__ == '__main__':
     unittest.main()
