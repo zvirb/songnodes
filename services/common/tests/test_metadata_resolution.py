@@ -168,6 +168,14 @@ class FieldResolution(unittest.TestCase):
         r = fr.resolve_field('record_label', [self.C('discogs', 'Anjunabeats')], fr.Existing(' anjunabeats ', 'deezer_album'))
         self.assertEqual((r.action, r.review), ('keep_existing', False))
 
+    def test_durations_within_two_seconds_agree_and_larger_gaps_conflict(self):
+        close = fr.resolve_field('duration_ms', [self.C('tidal', 637000), self.C('deezer', 637500)])
+        self.assertEqual((close.value, close.source, close.review), (637000, 'tidal', False))
+        far = fr.resolve_field('duration_ms', [self.C('tidal', 637000), self.C('deezer', 202000)])
+        self.assertTrue(far.review)
+        kept = fr.resolve_field('duration_ms', [self.C('deezer', 637400)], fr.Existing(637000, 'tidal'))
+        self.assertEqual((kept.action, kept.review), ('keep_existing', False))
+
     def test_unconfigured_field_is_an_error(self):
         with self.assertRaises(KeyError):
             fr.resolve_field('bpm', [])

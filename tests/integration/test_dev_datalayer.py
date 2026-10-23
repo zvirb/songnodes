@@ -28,6 +28,9 @@ class DataLayer(unittest.TestCase):
     def test_bronze_ingestion_is_complete_idempotent_and_concurrency_safe(self):
         self.scenario('ingest')
 
+    def test_enrichment_waterfall_backfill_and_job_runner(self):
+        self.scenario('worker')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -62,6 +62,19 @@ def comparable(value: Any) -> Any:
     return value
 
 
+DURATION_TOLERANCE_MS = 2000   # providers report the same recording within a fraction of a second
+
+
+def same(field: str, a: Any, b: Any) -> bool:
+    """Field-aware equality: durations agree within DURATION_TOLERANCE_MS; everything else compares normalised."""
+    if field == 'duration_ms':
+        try:
+            return abs(float(a) - float(b)) <= DURATION_TOLERANCE_MS
+        except (TypeError, ValueError):
+            return False
+    return comparable(a) == comparable(b)
+
+
 def rank(source: Optional[str], priority: Sequence[str]) -> int:
     """Lower is stronger: manual -1, listed sources by index, unlisted sources and legacy last."""
     if source == MANUAL:
@@ -84,14 +97,14 @@ def resolve_field(name: str, candidates: Sequence[Candidate], existing: Optional
                           existing.value if existing_known else None, existing.source if existing_known else None,
                           reason='no candidate value')
     best = usable[0]
-    disagreeing = tuple(c for c in usable[1:] if comparable(c.value) != comparable(best.value))
+    disagreeing = tuple(c for c in usable[1:] if not same(name, c.value, best.value))
     if existing_known:
         if rank(existing.source, priority) <= rank(best.source, priority):
-            conflict = comparable(existing.value) != comparable(best.value)
+            conflict = not same(name, existing.value, best.value)
             return Resolution(name, 'keep_existing', existing.value, existing.source, usable if conflict else (),
                               review=conflict and existing.source != MANUAL,
                               reason='existing value is at least as strong')
-        if comparable(existing.value) == comparable(best.value):
+        if same(name, existing.value, best.value):
             return Resolution(name, 'keep_existing', existing.value, existing.source, reason='already equal')
     return Resolution(name, 'set', best.value, best.source, disagreeing, review=bool(disagreeing),
                       reason=f'highest-priority source {best.source}')

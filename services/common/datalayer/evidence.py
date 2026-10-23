@@ -20,6 +20,9 @@ RESOLVED_FIELDS = {  # evidence field -> silver column
     'record_label': 'record_label', 'tidal_id': 'tidal_id', 'deezer_id': 'deezer_id', 'musicbrainz_id': 'musicbrainz_id',
 }
 IDENTIFIER_FIELDS = {'tidal_id', 'deezer_id', 'musicbrainz_id'}
+LEGACY = 'legacy'
+SNAPSHOT_COLUMNS = {'bpm': 'bpm', 'key': 'key', 'isrc': 'isrc', 'duration_ms': 'duration_ms', 'genre': 'genre',
+                    'record_label': 'record_label', 'mix_name': 'mix_name', 'tidal_id': 'tidal_id', 'deezer_id': 'deezer_id'}
 REVIEW_PREFIXES = ('bpm_', 'key_', 'isrc_', 'genre_', 'record_label_', 'duration_', 'mix_name_', 'match_')
 
 
@@ -77,6 +80,8 @@ async def apply_consensus(conn, track_id: UUID, trust: Sequence[str] = consensus
     reasons: List[str] = []
 
     def items(rows, field):
+        # `legacy` snapshots are kept for rollback and as the weakest candidate, but are not an independent measurement.
+        rows = [r for r in rows if r['source'] != LEGACY]
         return [consensus.Evidence(field, decoded(r['value']), r['source'], r['method'], r['method_version'] or None,
                                    r['independent_group'], float(r['confidence']) if r['confidence'] is not None else None)
                 for r in rows]
@@ -218,3 +223,23 @@ async def revert_camelot(conn, track_id: UUID) -> bool:
         await conn.execute('UPDATE silver_camelot_corrections SET reverted_at = NOW() WHERE track_id = $1', track_id)
         await outbox.append(conn, 'track', track_id, 'updated', {'fields': ['camelot_key'], 'by': 'camelot_revert'})
     return True
+
+
+async def snapshot_legacy(conn, track_id: UUID) -> int:
+    """Keep the current column values as `legacy` evidence before enrichment may replace them.
+
+    Only fields without any evidence are snapshotted, so the before-state of a backfill is retained exactly once.
+    """
+    row = await conn.fetchrow('SELECT * FROM silver_enriched_tracks WHERE id = $1', track_id)
+    if row is None:
+        raise CatalogError(404, 'Track not found')
+    written = 0
+    for field, column in SNAPSHOT_COLUMNS.items():
+        value = row[column]
+        if value is None or (isinstance(value, (str, list)) and not value):
+            continue
+        if await conn.fetchval('SELECT EXISTS(SELECT 1 FROM silver_track_metadata_evidence WHERE track_id = $1 AND field = $2)', track_id, field):
+            continue
+        value = float(value) if hasattr(value, 'as_tuple') else (list(value) if isinstance(value, (list, tuple)) else value)
+        written += int(await record(conn, track_id, field, value, LEGACY, method='pre_enrichment_snapshot'))
+    return written
