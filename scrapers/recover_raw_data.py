@@ -54,7 +54,7 @@ except ImportError:
             'port': port_override or int(os.getenv('DATABASE_PORT', '5432')),
             'database': os.getenv('DATABASE_NAME', 'musicdb'),
             'user': os.getenv('DATABASE_USER', 'musicdb_user'),
-            'password': os.getenv('DATABASE_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024'))
+            'password': os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD')
         }
 
     def validate_secrets():

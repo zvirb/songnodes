@@ -22,7 +22,7 @@ def normalize_title(title):
 async def assign_proper_artists():
     conn = await asyncpg.connect(
         host='localhost', port=5433, database='musicdb',
-        user='musicdb_user', password=os.environ.get('POSTGRES_PASSWORD', 'musicdb_secure_pass')
+        user='musicdb_user', password=(os.getenv('POSTGRES_PASSWORD') or os.getenv('DATABASE_PASSWORD'))
     )
 
     print("=== ASSIGNING PROPER ARTISTS TO TRACKS ===\n")

@@ -27,7 +27,7 @@ def get_database_config():
     """Get database config from environment"""
     return {
         'user': os.getenv('POSTGRES_USER', 'musicdb_user'),
-        'password': os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024'),
+        'password': (os.getenv('POSTGRES_PASSWORD') or os.getenv('DATABASE_PASSWORD')),
         'host': os.getenv('POSTGRES_HOST', 'postgres'),
         'port': int(os.getenv('POSTGRES_PORT', '5432')),
         'database': os.getenv('POSTGRES_DB', 'musicdb')

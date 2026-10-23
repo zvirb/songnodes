@@ -58,7 +58,7 @@ class EnrichmentQueuePublisher:
         self.rabbitmq_host = rabbitmq_host or os.getenv('RABBITMQ_HOST', 'rabbitmq')
         self.rabbitmq_port = rabbitmq_port or int(os.getenv('RABBITMQ_PORT', 5672))
         self.rabbitmq_user = rabbitmq_user or os.getenv('RABBITMQ_USER', 'musicdb')
-        self.rabbitmq_pass = rabbitmq_pass or os.getenv('RABBITMQ_PASS', 'rabbitmq_secure_pass_2024')
+        self.rabbitmq_pass = rabbitmq_pass or os.getenv('RABBITMQ_PASS')
         self.rabbitmq_vhost = rabbitmq_vhost or os.getenv('RABBITMQ_VHOST', 'musicdb')
         self.queue_name = queue_name
 

@@ -91,7 +91,7 @@ DATABASE_CONFIG = {
     "port": int(os.getenv("POSTGRES_PORT", 6432)),
     "database": os.getenv("POSTGRES_DB", "musicdb"),
     "user": os.getenv("POSTGRES_USER", "musicdb_user"),
-    "password": os.getenv("POSTGRES_PASSWORD", "musicdb_secure_pass_2024")
+    "password": (os.getenv('POSTGRES_PASSWORD') or os.getenv('DATABASE_PASSWORD'))
 }
 
 # Database connection pool

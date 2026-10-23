@@ -58,7 +58,7 @@ class EnrichmentQueueConsumer:
             host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
             port = int(os.getenv('RABBITMQ_PORT', 5672))
             user = os.getenv('RABBITMQ_USER', 'musicdb')
-            password = os.getenv('RABBITMQ_PASS', 'rabbitmq_secure_pass_2024')
+            password = os.getenv('RABBITMQ_PASS')
             vhost = os.getenv('RABBITMQ_VHOST', 'musicdb')
 
             self.rabbitmq_url = f"amqp://{user}:{password}@{host}:{port}/{vhost}"

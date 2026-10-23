@@ -20,8 +20,8 @@ class AudioFetcher:
     def __init__(self):
         self.http_client = httpx.AsyncClient(timeout=30.0)
         self.minio_endpoint = os.getenv('MINIO_ENDPOINT', 'http://minio:9000')
-        self.minio_access_key = os.getenv('MINIO_ACCESS_KEY', 'minioadmin')
-        self.minio_secret_key = os.getenv('MINIO_SECRET_KEY', 'minioadmin')
+        self.minio_access_key = os.getenv('MINIO_ACCESS_KEY')
+        self.minio_secret_key = os.getenv('MINIO_SECRET_KEY')
 
     async def fetch_audio(
         self,

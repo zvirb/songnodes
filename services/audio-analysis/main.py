@@ -145,7 +145,7 @@ async def lifespan(app: FastAPI):
         rabbitmq_host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
         rabbitmq_port = int(os.getenv('RABBITMQ_PORT', '5672'))
         rabbitmq_user = os.getenv('RABBITMQ_USER', 'musicdb')
-        rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'rabbitmq_secure_pass_2024')
+        rabbitmq_pass = os.getenv('RABBITMQ_PASS')
         logger.warning("⚠️ Using fallback RabbitMQ config from environment")
 
     try:

@@ -237,7 +237,7 @@ class WebSocketService:
             rabbitmq_host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
             rabbitmq_port = os.getenv('RABBITMQ_PORT', '5672')
             rabbitmq_user = os.getenv('RABBITMQ_USER', 'musicdb_user')
-            rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'rabbitmq_secure_pass_2024')
+            rabbitmq_pass = os.getenv('RABBITMQ_PASS')
             rabbitmq_vhost = os.getenv('RABBITMQ_VHOST', 'musicdb')
             logger.warning("⚠️ Using fallback RabbitMQ config from environment")
         try:

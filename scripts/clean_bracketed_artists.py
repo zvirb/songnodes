@@ -20,7 +20,7 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "5433"))
 DB_NAME = os.getenv("DB_NAME", "musicdb")
 DB_USER = os.getenv("DB_USER", "musicdb_user")
-DB_PASS = os.getenv("POSTGRES_PASSWORD", "musicdb_secure_pass_2024")
+DB_PASS = (os.getenv('POSTGRES_PASSWORD') or os.getenv('DATABASE_PASSWORD'))
 
 
 async def clean_bracketed_artists():

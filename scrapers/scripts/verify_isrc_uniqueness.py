@@ -52,7 +52,7 @@ def get_database_connection():
             'port': int(os.getenv('DATABASE_PORT', '5433')),
             'database': os.getenv('DATABASE_NAME', 'musicdb'),
             'user': os.getenv('DATABASE_USER', 'musicdb_user'),
-            'password': os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass_2024')
+            'password': (os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD'))
         }
         print(f"✓ Using environment variables: {db_config['host']}:{db_config['port']}")
 

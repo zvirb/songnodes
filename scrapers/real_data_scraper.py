@@ -40,7 +40,7 @@ class RealDataScraper:
             'port': int(os.getenv('DATABASE_PORT', 5432)),
             'database': os.getenv('DATABASE_NAME', 'musicdb'),
             'user': os.getenv('DATABASE_USER', 'musicdb_user'),
-            'password': os.getenv('DATABASE_PASSWORD', '7D82_xqNs55tGyk')  # Use actual database password
+            'password': (os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD'))  # Use actual database password
         }
         self.db_pipeline = PersistencePipeline(db_config)
 

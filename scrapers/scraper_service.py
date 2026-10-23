@@ -224,7 +224,7 @@ async def run_migration():
         db_port = os.getenv('DATABASE_PORT', '5432')
         db_name = os.getenv('DATABASE_NAME', 'musicdb')
         db_user = os.getenv('DATABASE_USER', 'musicdb_user')
-        db_password = os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass_2024')
+        db_password = (os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD'))
 
         migration_file = '/app/sql/migrations/001_add_mbid_and_camelot.sql'
 
