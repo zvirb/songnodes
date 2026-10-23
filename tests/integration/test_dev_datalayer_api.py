@@ -102,6 +102,33 @@ class DataLayerApi(unittest.TestCase):
         self.assertNotIn(track, [r['track_id'] for r in request(8082, '/api/v1/metadata/review?reason=isrc_conflict&limit=200')[1]])
         self.assertEqual(request(8082, '/api/v1/metadata/review?limit=0')[0], 422)
 
+    def test_canonical_metadata_reaches_rest_and_graph_reads_identically(self):
+        track = self.new_track('exposed')
+        sql(f"""UPDATE silver_enriched_tracks SET camelot_key = '8A', record_label = 'Label {self.marker}', mix_name = 'Extended',
+                    tidal_id = 'T1', deezer_id = 'D1', energy_canonical = 7.5, energy_source = 'manual_rating',
+                    energy_calibrated = true, energy_contract_version = 'energy-1', metadata_review = true,
+                    metadata_review_reasons = ARRAY['key_near'], energy = 0.3 WHERE id = '{track}'""")
+        expected = {'camelot_key': '8A', 'record_label': f'Label {self.marker}', 'mix_name': 'Extended', 'tidal_id': 'T1',
+                    'deezer_id': 'D1', 'energy_canonical': 7.5, 'energy_band': 'peak', 'energy_calibrated': True,
+                    'energy_source': 'manual_rating', 'energy_contract_version': 'energy-1', 'metadata_review': True,
+                    'metadata_review_reasons': ['key_near'], 'energy': 0.3}
+        status, detail = request(8082, f'/api/v1/tracks/{track}')
+        self.assertEqual(status, 200, detail)
+        for key, value in expected.items():
+            self.assertEqual(detail[key], value, f'REST {key}')
+        status, graph = request(8084, '/api/graph/data')
+        self.assertEqual(status, 200, graph)
+        node = next(n for n in graph.get('data', graph)['nodes'] if n['id'] == f'song_{track}')
+        for key, value in expected.items():
+            self.assertEqual(node['metadata'][key], value, f'graph {key}')
+        self.assertNotEqual(node['metadata']['label'], f'Label {self.marker}', 'display label stays distinct from the record label')
+        # Legacy 0-1 energy is never relabelled as canonical, and uncalibrated or unknown energy has no band.
+        sql(f"UPDATE silver_enriched_tracks SET energy_calibrated = false WHERE id = '{track}'")
+        self.assertEqual(request(8082, f'/api/v1/tracks/{track}')[1]['energy_band'], None)
+        sql(f"UPDATE silver_enriched_tracks SET energy_canonical = NULL, energy_source = NULL, energy_calibrated = NULL, energy_contract_version = NULL WHERE id = '{track}'")
+        unknown = request(8082, f'/api/v1/tracks/{track}')[1]
+        self.assertEqual((unknown['energy_canonical'], unknown['energy_band'], unknown['energy']), (None, None, 0.3))
+
     def test_outbox_status_and_attributions(self):
         self.new_track('outbox')
         status, body = request(8082, '/api/v1/outbox/status')

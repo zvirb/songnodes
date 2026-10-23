@@ -49,6 +49,13 @@ class CatalogTrack(Provenance):
     beatport_id: Optional[str] = None
     record_label: Optional[str] = None
     mix_name: Optional[str] = None
+    energy_canonical: Optional[float] = None          # 1-10 contract value (energy-1); legacy `energy` stays 0-1
+    energy_band: Optional[str] = None                  # only for calibrated canonical energy
+    energy_calibrated: Optional[bool] = None
+    energy_source: Optional[str] = None
+    energy_contract_version: Optional[str] = None
+    metadata_review: bool = False
+    metadata_review_reasons: List[str] = []
 
 
 class CatalogArtist(Provenance):
