@@ -22,6 +22,12 @@ class CatalogWrites(unittest.TestCase):
     def cleanup(self):
         m = f'%{self.marker}%'
         sql(f"""BEGIN;
+            DELETE FROM outbox_events WHERE payload::text LIKE '{m}'
+                OR aggregate_id IN (SELECT id FROM silver_enriched_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}')
+                OR aggregate_id IN (SELECT id FROM silver_enriched_artists WHERE canonical_name LIKE '{m}')
+                OR aggregate_id IN (SELECT id FROM bronze_scraped_playlists WHERE raw_json::text LIKE '{m}');
+            DELETE FROM entity_redirects WHERE history_id IN (SELECT id FROM entity_merge_history WHERE snapshot::text LIKE '{m}');
+            DELETE FROM entity_merge_history WHERE snapshot::text LIKE '{m}';
             DELETE FROM silver_enriched_playlists WHERE playlist_name LIKE '{m}' OR artist_name LIKE '{m}'
                 OR bronze_id IN (SELECT id FROM bronze_scraped_playlists WHERE raw_json::text LIKE '{m}');
             DELETE FROM silver_enriched_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';

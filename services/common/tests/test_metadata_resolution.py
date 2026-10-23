@@ -43,6 +43,11 @@ class BpmConsensus(unittest.TestCase):
         r = cs.bpm_consensus([E('bpm', 0, 'deezer'), E('bpm', 124, 'tidal')])
         self.assertEqual((r.status, r.value), ('single_source', 124))
 
+    def test_manual_correction_is_final_and_does_not_raise_review(self):
+        r = cs.bpm_consensus([E('bpm', 128, 'deezer'), E('bpm', 128.3, 'getsongbpm'), E('bpm', 126, 'manual')])
+        self.assertEqual((r.status, r.value, r.review, r.supporting_groups), ('manual', 126.0, False, ('manual',)))
+        self.assertEqual({e.source for e in r.conflicting}, {'deezer', 'getsongbpm'}, 'provider readings stay visible')
+
     def test_fold_is_recorded(self):
         r = cs.bpm_consensus([E('bpm', 87, 'tidal')], genres=['Drum and Bass'])
         self.assertEqual((r.value, r.folded, r.fold_status), (174.0, True, 'folded'))
@@ -65,6 +70,10 @@ class KeyConsensus(unittest.TestCase):
 
     def test_no_evidence_is_unknown(self):
         self.assertEqual(cs.key_consensus([]).status, 'unknown')
+
+    def test_manual_key_wins(self):
+        r = cs.key_consensus([E('key', '8A', 'tidal'), E('key', '8A', 'deezer'), E('key', '9A', 'manual')])
+        self.assertEqual((r.status, r.value, r.review), ('manual', '9A', False))
 
 
 class Matching(unittest.TestCase):

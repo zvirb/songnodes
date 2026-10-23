@@ -434,12 +434,26 @@ async def update_track_metadata(track_id: str, update_data: TrackUpdateRequest):
             updates[name] = updates[name].strip()
     if 'genre' in updates and updates['genre'] is not None:
         updates['genre'] = [updates['genre']]
+    from common.datalayer import evidence, outbox
+    from common.metadata.camelot import to_camelot
+    changed = list(updates)
+    if 'key' in updates:
+        updates['camelot_key'] = to_camelot(updates['key']) if updates['key'] else None
     assignments = ', '.join(f'{name} = ${i}' for i, name in enumerate(updates, start=2))
     async with db_pool.acquire() as conn:
-        row = await conn.fetchrow(f"""
-            UPDATE silver_enriched_tracks SET {assignments}, updated_at = NOW()
-            WHERE id = $1 RETURNING id, track_title, artist_name, bpm, key, genre, updated_at
-        """, identifier, *updates.values())
+        async with conn.transaction():
+            row = await conn.fetchrow(f"""
+                UPDATE silver_enriched_tracks SET {assignments}, updated_at = NOW()
+                WHERE id = $1 RETURNING id, track_title, artist_name, bpm, key, genre, updated_at
+            """, identifier, *updates.values())
+            if row is not None:
+                # A manual correction is the strongest evidence; clearing a value withdraws it.
+                for field in ('bpm', 'key'):
+                    if field in updates:
+                        await conn.execute("DELETE FROM silver_track_metadata_evidence WHERE track_id = $1 AND field = $2 "
+                                           "AND source = 'manual'", identifier, field)
+                        await evidence.record(conn, identifier, field, updates[field], 'manual', method='rest_api_patch')
+                await outbox.append(conn, 'track', identifier, 'updated', {'fields': changed, 'by': 'manual_patch'})
     if row is None:
         raise HTTPException(status_code=404, detail="Track not found in Silver layer")
     return {**dict(row), 'id': str(row['id']), 'track_id': f"song_{row['id']}"}

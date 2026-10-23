@@ -14,8 +14,8 @@ from test_dev_workflows import ROOT, request, sql
 QUEUE_SCENARIO = textwrap.dedent('''
     import asyncio, os, sys
     import asyncpg
-    import jobs
-    from catalog_writes import CatalogError
+    from common.datalayer import jobs
+    from common.datalayer.errors import CatalogError
 
     KIND = sys.argv[1]
 

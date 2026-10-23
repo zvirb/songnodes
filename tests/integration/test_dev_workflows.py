@@ -63,7 +63,8 @@ class DevelopmentWorkflows(unittest.TestCase):
         for target in cls.targets:
             request(8082, f'/api/v1/target-tracks/{target}', 'DELETE')
         values = ','.join(f"'{value}'" for value in cls.ids)
-        sql(f'DELETE FROM silver_enriched_tracks WHERE id IN ({values});')
+        sql(f'DELETE FROM outbox_events WHERE aggregate_id IN ({values}); '
+            f'DELETE FROM silver_enriched_tracks WHERE id IN ({values});')
 
     def graph(self, path):
         status, body = request(8084, path)

@@ -10,7 +10,7 @@ import json
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
-from catalog_writes import CatalogError
+from .errors import CatalogError
 
 MAX_BACKOFF_SECONDS = 3600
 DEFAULT_LEASE_SECONDS = 300

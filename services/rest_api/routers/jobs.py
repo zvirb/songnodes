@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
-import jobs as domain
+from common.datalayer import jobs as domain
 from routers.catalog_writes import domain_errors, get_pool
 
 router = APIRouter(tags=['jobs'])

@@ -11,18 +11,13 @@ import json
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from common.datalayer import evidence, outbox
+from common.datalayer.errors import CatalogError  # noqa: F401  (re-exported for callers)
+
 PLACEHOLDER_ARTISTS = ('', 'unknown', 'unknown artist', 'various', 'various artists', 'va')
 PLACEHOLDER_PREFIXES = ('va @', 'various artists @', 'unknown artist,', 'unknown artist @')
 IMPORT_SOURCE = 'user_import'
 IMPORT_SCRAPER_VERSION = 'rest-api-tracklist-import-v1'
-
-
-class CatalogError(Exception):
-    """Domain failure carrying the HTTP status the API layer should report."""
-
-    def __init__(self, status: int, detail: str):
-        super().__init__(detail)
-        self.status, self.detail = status, detail
 
 
 def clean_name(value: Optional[str]) -> str:
@@ -80,7 +75,8 @@ async def create_artist(conn, artist) -> Dict[str, Any]:
         raise CatalogError(409, f"Artist '{clash}' already exists")
     external = {k: getattr(artist, k, None) for k in
                 ('apple_music_id', 'youtube_music_id', 'deezer_id', 'tidal_id', 'soundcloud_id', 'discogs_id')}
-    return dict(await conn.fetchrow("""
+    async with conn.transaction():
+        row = await conn.fetchrow("""
         INSERT INTO silver_enriched_artists (
             bronze_ids, canonical_name, aliases, normalized_name, spotify_id, musicbrainz_id, beatport_id,
             genres, country, validation_status, enrichment_metadata, deduplication_strategy)
@@ -88,7 +84,9 @@ async def create_artist(conn, artist) -> Dict[str, Any]:
         RETURNING id AS artist_id, created_at, updated_at
     """, name, artist.aliases, key, artist.spotify_id, artist.musicbrainz_id, getattr(artist, 'beatport_id', None),
         artist.genre_preferences, artist.country,
-        manual_metadata(is_verified=artist.is_verified, popularity_score=artist.popularity_score, **external)))
+        manual_metadata(is_verified=artist.is_verified, popularity_score=artist.popularity_score, **external))
+        await outbox.append(conn, 'artist', row['artist_id'], 'created', {'name': name})
+    return dict(row)
 
 
 async def rename_artist(conn, artist_id: UUID, new_name: str) -> Dict[str, Any]:
@@ -114,6 +112,7 @@ async def rename_artist(conn, artist_id: UUID, new_name: str) -> Dict[str, Any]:
             WHERE id = $1 RETURNING updated_at
         """, artist_id, new_name, key, old)
         tracks = await retarget_artist_rows(conn, old, artist_id, artist_id, new_name)
+        await outbox.append(conn, 'artist', artist_id, 'renamed', {'old_name': old, 'new_name': new_name})
     return {'artist_id': str(artist_id), 'name': new_name, 'updated_at': updated, 'tracks_updated': tracks}
 
 
@@ -140,6 +139,20 @@ async def merge_artist(conn, duplicate_id: UUID, target_name: str) -> Dict[str, 
         duplicate, target = locked.get(duplicate_id), locked.get(target_id)
         if duplicate is None:
             raise CatalogError(404, 'Duplicate artist not found')
+        snapshot = {
+            'duplicate': json.loads(await conn.fetchval('SELECT to_jsonb(a)::text FROM silver_enriched_artists a WHERE id = $1', duplicate_id)),
+            'target_before': json.loads(await conn.fetchval("""
+                SELECT jsonb_build_object('aliases', aliases, 'bronze_ids', bronze_ids, 'merged_artist_ids', merged_artist_ids,
+                                          'deduplication_strategy', deduplication_strategy)::text
+                FROM silver_enriched_artists WHERE id = $1""", target_id)),
+            'moved_track_ids': [str(r['id']) for r in await conn.fetch(
+                'SELECT id FROM silver_enriched_tracks WHERE artist_name = $1', duplicate['canonical_name'])],
+            'moved_set_ids': [str(r['id']) for r in await conn.fetch(
+                'SELECT id FROM silver_enriched_playlists WHERE artist_id = $1', duplicate_id)],
+            'target_name': target['canonical_name'],
+            'flattened': [str(r['old_id']) for r in await conn.fetch(
+                "SELECT old_id FROM entity_redirects WHERE entity_type = 'artist' AND new_id = $1", duplicate_id)],
+        }
         await conn.execute("""
             UPDATE silver_enriched_artists SET
                 aliases = ARRAY(SELECT DISTINCT a FROM unnest(
@@ -152,6 +165,15 @@ async def merge_artist(conn, duplicate_id: UUID, target_name: str) -> Dict[str, 
             [duplicate_id] + list(duplicate['merged_artist_ids'] or []))
         moved = await retarget_artist_rows(conn, duplicate['canonical_name'], duplicate_id, target_id, target['canonical_name'])
         await conn.execute('DELETE FROM silver_enriched_artists WHERE id = $1', duplicate_id)
+        history = await conn.fetchval("""
+            INSERT INTO entity_merge_history (entity_type, survivor_id, duplicate_id, snapshot, reason)
+            VALUES ('artist', $1, $2, $3::jsonb, 'manual merge') RETURNING id""", target_id, duplicate_id,
+                                      json.dumps(snapshot, default=str))
+        await conn.execute("UPDATE entity_redirects SET new_id = $1 WHERE entity_type = 'artist' AND new_id = $2", target_id, duplicate_id)
+        await conn.execute("INSERT INTO entity_redirects (entity_type, old_id, new_id, history_id) VALUES ('artist', $1, $2, $3)",
+                           duplicate_id, target_id, history)
+        await outbox.append(conn, 'artist', duplicate_id, 'merged', {
+            'name': duplicate['canonical_name'], 'survivor_name': target['canonical_name'], 'survivor_id': str(target_id)})
         # Silver has no per-track artist junction, so there are no role conflicts to delete;
         # report titles that now repeat under the surviving artist for manual review.
         repeated = await conn.fetchval("""
@@ -161,7 +183,7 @@ async def merge_artist(conn, duplicate_id: UUID, target_name: str) -> Dict[str, 
     return {
         'merged_from': {'artist_id': str(duplicate_id), 'name': duplicate['canonical_name']},
         'merged_into': {'artist_id': str(target_id), 'name': target['canonical_name']},
-        'tracks_moved': moved, 'conflicts_resolved': 0, 'repeated_titles': repeated,
+        'tracks_moved': moved, 'conflicts_resolved': 0, 'repeated_titles': repeated, 'history_id': history,
     }
 
 
@@ -178,6 +200,7 @@ async def delete_artist(conn, artist_id: UUID) -> Dict[str, Any]:
             raise CatalogError(409, f"Artist '{artist['canonical_name']}' still has {tracks} track(s) and {sets} "
                                     'set(s). Rename or merge it instead.')
         await conn.execute('DELETE FROM silver_enriched_artists WHERE id = $1', artist_id)
+        await outbox.append(conn, 'artist', artist_id, 'deleted', {'name': artist['canonical_name']})
     return {'artist_id': str(artist_id), 'name': artist['canonical_name'], 'tracks_removed': 0}
 
 
@@ -202,6 +225,7 @@ async def assign_artist(conn, track_id: UUID, artist_id: UUID, role: str) -> Dic
                     'manual_artist_assignment', jsonb_build_object('previous', $3::text, 'at', NOW()))
             WHERE id = $1 RETURNING updated_at
         """, track_id, artist['canonical_name'], track['artist_name'])
+        await outbox.append(conn, 'track', track_id, 'updated', {'fields': ['artist_name']})
     return {'success': True, 'track_id': str(track_id), 'artist_id': str(artist_id), 'role': 'primary',
             'position': 0, 'created_at': updated}
 
@@ -245,15 +269,21 @@ async def create_track(conn, track, artist_name: str) -> Dict[str, Any]:
         'apple_music_id', 'youtube_id', 'soundcloud_id', 'musicbrainz_id', 'record_label', 'subgenre',
         'is_remix', 'remix_type', 'remixer', 'original_artist', 'data_source')}
     extra = {k: getattr(v, 'value', v) for k, v in extra.items()}
-    return dict(await conn.fetchrow("""
-        INSERT INTO silver_enriched_tracks (
-            artist_name, track_title, spotify_id, isrc, release_date, duration_ms, bpm, key, genre,
-            energy, valence, danceability, validation_status, enrichment_metadata)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'needs_review', $13::jsonb)
-        RETURNING id AS song_id, created_at, updated_at
-    """, artist, title, track.spotify_id, track.isrc, track.release_date, track.duration_ms, track.bpm,
-        track.musical_key, [track.genre] if track.genre else None, track.energy, track.valence,
-        track.danceability, manual_metadata(**extra)))
+    async with conn.transaction():
+        row = await conn.fetchrow("""
+            INSERT INTO silver_enriched_tracks (
+                artist_name, track_title, spotify_id, isrc, release_date, duration_ms, bpm, key, genre,
+                energy, valence, danceability, validation_status, enrichment_metadata)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'needs_review', $13::jsonb)
+            RETURNING id AS song_id, created_at, updated_at
+        """, artist, title, track.spotify_id, track.isrc, track.release_date, track.duration_ms, track.bpm,
+            track.musical_key, [track.genre] if track.genre else None, track.energy, track.valence,
+            track.danceability, manual_metadata(**extra))
+        for field, value in (('bpm', track.bpm), ('key', track.musical_key)):
+            if value is not None:
+                await evidence.record(conn, row['song_id'], field, value, 'manual', method='rest_api_create')
+        await outbox.append(conn, 'track', row['song_id'], 'created', {'artist': artist, 'title': title})
+    return dict(row)
 
 
 async def resolve_artist(conn, name: str) -> str:
@@ -343,6 +373,7 @@ async def import_tracklist(conn, tracks, dj_artist: Optional[str] = None, name: 
             stats['details'].append({'artist': entry['artist'], 'title': entry['title'], 'position': entry['position'],
                                      'status': status, 'track_id': str(track)})
             silver_ids[entry['position']] = track
+            await outbox.append(conn, 'track', track, status, {'by': 'tracklist_import', 'position': entry['position']})
         if dj:
             silver_set = await conn.fetchval("""
                 INSERT INTO silver_enriched_playlists (bronze_id, playlist_name, artist_id, artist_name, track_count,
@@ -371,4 +402,6 @@ async def import_tracklist(conn, tracks, dj_artist: Optional[str] = None, name: 
                     playlist_occurrences = silver_track_transitions.playlist_occurrences || EXCLUDED.playlist_occurrences
             """, silver_ids[left['position']], silver_ids[right_position], occurrence)
             stats['transitions_created'] += 1
+        await outbox.append(conn, 'setlist', playlist, 'imported', {
+            'tracks': len(entries), 'transitions': stats['transitions_created'], 'source': IMPORT_SOURCE})
     return stats

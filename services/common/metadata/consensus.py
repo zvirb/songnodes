@@ -33,7 +33,7 @@ class Evidence:
 @dataclass(frozen=True)
 class Consensus:
     value: Optional[Any]
-    status: str                              # consensus | single_source | unresolved | unknown
+    status: str                              # manual | consensus | single_source | unresolved | unknown
     chosen: Optional[Evidence] = None
     supporting_groups: Tuple[str, ...] = ()
     near_groups: Tuple[str, ...] = ()        # agree only after an octave / relative-key / neighbour step
@@ -75,6 +75,16 @@ def _consensus(items: List[Tuple[Evidence, Any]], exact: Callable[[Any, Any], bo
 def _build(items, exact, near, trust, folded_flags=None) -> Consensus:
     if not items:
         return Consensus(None, 'unknown')
+    manual = [i for i, (evidence, _) in enumerate(items) if evidence.source == 'manual']
+    if manual:
+        # A person's explicit correction is final; provider disagreement is kept but does not raise review.
+        index = max(manual, key=lambda i: (items[i][0].measured_at or datetime.min, i))
+        chosen, value = items[index]
+        dissent = [(e, v) for i, (e, v) in enumerate(items) if e.source != 'manual']
+        near_groups = {e.group for e, v in dissent if not exact(value, v) and near(value, v)}
+        conflicting = tuple(e for e, v in dissent if not exact(value, v) and not near(value, v))
+        return Consensus(value=value, status='manual', chosen=chosen, supporting_groups=('manual',),
+                         near_groups=tuple(sorted(near_groups)), conflicting=conflicting, review=False)
     chosen, value, ranked, winner = _consensus(items, exact, near, trust)
     support = tuple(sorted({items[i][0].group for i in winner}))
     others = [i for cluster in ranked[1:] for i in cluster]
