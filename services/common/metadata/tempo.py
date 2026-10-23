@@ -74,7 +74,7 @@ def fold_tempo(bpm, genres: Optional[Iterable[str]]) -> Tuple[Optional[float], s
     return candidates.pop(), 'folded'
 
 
-def tempo_agreement(a, b, tolerance: float = 0.02) -> Optional[str]:
+def tempo_agreement(a, b, tolerance: float = 0.005) -> Optional[str]:
     """'exact' within tolerance, 'octave' when one is half/double the other, 'none', or None if unknown."""
     left, right = known_bpm(a), known_bpm(b)
     if left is None or right is None:

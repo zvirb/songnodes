@@ -2,11 +2,17 @@
 
 ## Current task
 
-Completed 2026-10-24 on `feature/catalog-writes-silver` (not merged or pushed): Milestone 2 job foundation and the
-last legacy Gold read. `POST /api/v1/scrape/trigger` now records a durable `ingestion_jobs` row instead of returning a
-fabricated job id; `GET /api/v1/tracks/{id}/preview` reads silver. No worker/Celery wiring and no data import.
-Next implementation task: wire a worker (Celery on RabbitMQ per the plan) that claims `ingestion_jobs`, then continue
-Milestone 2/3 per Next steps.
+Started 2026-10-24 on `feature/catalog-writes-silver`: make the DATA LAYER code-complete, with synthetic tests only,
+so the first real scrape can run. Scope set by the user: audio processing (Milestone 8 and WP3 audio/calibration) is OUT;
+renderer (M7), wave routing (M6) and search (M5) are presentation/query layers and are NOT part of this pass. In scope:
+M2 worker, M3 identities/energy contract/outbox/schema, M4 normalization and entity resolution, WP1/WP2/WP4/WP5
+(provider clients, matching, per-field resolution, resumable backfill) and the non-audio part of WP3 (key/tempo/consensus).
+Standing rule from the user: a provider that no longer supplies the data we need is removed from all code and interfaces.
+Done so far: shared Camelot/tempo/energy modules; Spotify audio-features removed everywhere (guard test added).
+Docs unreachable for Deezer, GetSongBPM, MusicBrainz and Discogs (login shell/403/interstitial), so none are declared defunct;
+their clients are written from the user's spec and gated by credential-only live contract tests (unverified).
+TIDAL v2 OAS 1.10.206 (read 2026-10-24) defines track attributes bpm, key, keyScale; population is unverified.
+Next step: consensus, matching and field-resolution modules, then migration 014 (schema, evidence, outbox).
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
