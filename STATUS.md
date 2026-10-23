@@ -2,12 +2,11 @@
 
 ## Current task
 
-Completed 2026-10-24 on branch `feature/catalog-writes-silver` (from `main`, not yet merged or pushed):
-the legacy REST catalog writes now operate on silver storage. Domain rules are in
-`services/rest_api/catalog_writes.py`; `services/rest_api/routers/catalog_writes.py` is the thin HTTP layer;
-the dead handlers were removed from `main.py`. No data was imported.
-Next implementation task: Milestone 2 follow-through (job status/idempotency/Celery for slow work) and the
-remaining legacy `/api/v1/*` surfaces still on old tables (see Resume point).
+Completed 2026-10-24 on `feature/catalog-writes-silver` (not merged or pushed): Milestone 2 job foundation and the
+last legacy Gold read. `POST /api/v1/scrape/trigger` now records a durable `ingestion_jobs` row instead of returning a
+fabricated job id; `GET /api/v1/tracks/{id}/preview` reads silver. No worker/Celery wiring and no data import.
+Next implementation task: wire a worker (Celery on RabbitMQ per the plan) that claims `ingestion_jobs`, then continue
+Milestone 2/3 per Next steps.
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
@@ -75,6 +74,14 @@ Started: 2026-10-24 (Australia/Sydney).
 Checks: 10 new database-backed tests in `tests/integration/test_dev_catalog_writes.py`; all 36 dev integration tests pass (`PYTHONIOENCODING=utf-8`, see below); synthetic rows cleaned (all catalog tables back to 0 rows).
 Known: `scripts/metadata_coverage.py` prints `->` arrows that fail under Windows' cp1252 when output is piped (one coverage CLI test errors without `PYTHONIOENCODING=utf-8`); not changed here.
 
+## Ingestion jobs (2026-10-24)
+
+- Migration `sql/migrations/013_ingestion_jobs_up.sql` (+ down), wired into compose init and `scripts/start-dev.sh`. Domain in `services/rest_api/jobs.py` (enqueue idempotent on `(kind, idempotency_key)`, lease-based `FOR UPDATE SKIP LOCKED` claim, `fail` with exponential backoff capped at 1 h, dead-letter after `max_attempts`, `retry_dead`); HTTP in `routers/jobs.py`: `POST /api/v1/scrape/trigger` (202, optional `Idempotency-Key`, no key = new job), `GET /api/v1/jobs[?status&kind]`, `GET /api/v1/jobs/{id}`, `POST /api/v1/jobs/{id}/retry`.
+- Jobs stay `queued`: nothing consumes them in the minimal stack, and the response says so. Claim/complete/fail are worker APIs, not exposed over HTTP.
+- `/api/v1/tracks/{id}/preview` now reads `silver_enriched_tracks` (id, `song_` prefix or spotify id), takes provider ids through the shared stored-metadata extractor, and returns `preview_url: null` (no audio is stored).
+- All GET endpoints of the REST API (excluding the provider auth routers) return non-5xx against the dev stack.
+- Checks: 5 new tests (`tests/integration/test_dev_jobs.py`) including a retry/backoff/dead-letter/lease/5-way concurrent claim scenario on real Postgres; all 41 dev integration tests pass with `PYTHONIOENCODING=utf-8`; synthetic rows cleaned (all tables 0 rows). Not run: Celery/RabbitMQ, the unified scraper, Playwright.
+
 ## Validation results
 
 - `bash scripts/start-dev.sh`: passed, including a repeat run retaining the existing database volume. All four services reported healthy.
@@ -128,9 +135,9 @@ milestone 3; availability of complete real-set fixtures must be checked in miles
 
 ## Next steps
 
-1. Milestone 2: job status, idempotency keys, bounded retries and dead-letter handling for slow work (Celery), and retire callers of the old data-transformer/data-validator write paths.
-2. Check the remaining legacy surfaces (`/api/v1/tracks/{id}/preview`, legacy `/api/graph/*` in rest_api, setlist/playlist writes) against silver.
+1. Milestone 2: add a worker that claims `ingestion_jobs` (Celery + RabbitMQ per the plan; the table already carries status, idempotency, retries and dead-letter), move slow scrape/enrichment dispatch onto it, and retire the old data-transformer/data-validator write paths.
+2. Provider routers (`music_auth`, `spotify_playlists`, `tidal_playlists`, `youtube_api`, `api_keys`) were not audited against silver or live providers.
 3. Obtain/import authorised real catalog/set fixtures when permitted, then capture a populated baseline (not done: no data imported).
-4. Continue with canonical identity/outbox work and the WP1-WP5 metadata program.
+4. Milestone 3 canonical identity/energy contract, then the WP1-WP5 metadata program.
 
 Update this file whenever a new task begins and when work stops or a milestone completes.

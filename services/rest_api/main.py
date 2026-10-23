@@ -446,60 +446,35 @@ async def update_track_metadata(track_id: str, update_data: TrackUpdateRequest):
 
 @app.get("/api/v1/tracks/{track_id}/preview", response_model=TrackPreviewResponse)
 async def get_track_preview(track_id: str):
-    """Return preview metadata for a track from Gold layer, falling back to streaming IDs when audio isn't stored."""
+    """Return preview metadata from the silver catalog; no audio is stored, so only streaming IDs are exposed."""
 
     if not db_pool:
         raise HTTPException(status_code=503, detail="Database connection not ready")
 
-    normalized_id = track_id
-    if track_id.startswith('song_'):
-        normalized_id = track_id[len('song_'):]
+    normalized_id = track_id.removeprefix('song_')
 
     try:
         async with db_pool.acquire() as conn:
-            # Query Gold layer for preview data
-            query = """
-            SELECT
-                t.id::text AS song_id,
-                t.id::text as track_id,
-                t.title,
-                NULL as preview_url,
-                t.spotify_id,
-                t.tidal_id,
-                t.apple_music_id,
-                t.updated_at
-            FROM tracks t
-            WHERE t.id::text = $1 OR t.spotify_id = $1
-            LIMIT 1
-            """
+            row = await conn.fetchrow(
+                "SELECT * FROM silver_enriched_tracks WHERE id::text = $1 OR spotify_id = $1 ORDER BY created_at LIMIT 1",
+                normalized_id)
 
-            row = await conn.fetchrow(query, normalized_id)
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Track '{track_id}' not found in silver catalog")
 
-            if not row:
-                raise HTTPException(status_code=404, detail=f"Track '{track_id}' not found in Gold layer")
-
-            preview_url = row['preview_url']
-            source = 'stored' if preview_url else None
-
-            message: Optional[str] = None
-            if not preview_url:
-                message = (
-                    "No cached preview available. Use the streaming IDs to request a 30s clip "
-                    "from Spotify or Tidal, or trigger re-enrichment via metadata services."
-                )
-
-            return TrackPreviewResponse(
-                track_id=row['song_id'],
-                preview_url=preview_url,
-                source=source,
-                expires_at=None,
-                message=message,
-                streaming_options={
-                    'spotify_id': row['spotify_id'],
-                    'tidal_id': row['tidal_id'],
-                    'apple_music_id': row['apple_music_id'],
-                }
-            )
+        from common.track_metadata import stored_metadata
+        stored = stored_metadata(dict(row))
+        return TrackPreviewResponse(
+            track_id=str(row['id']),
+            preview_url=None,
+            source=None,
+            expires_at=None,
+            message=(
+                "No cached preview available. Use the streaming IDs to request a 30s clip "
+                "from Spotify or Tidal, or trigger re-enrichment via metadata services."
+            ),
+            streaming_options={key: stored[key] for key in ('spotify_id', 'tidal_id', 'apple_music_id')},
+        )
 
     except HTTPException:
         raise
@@ -636,19 +611,7 @@ async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
         logger.error(f"Failed to fetch graph edges: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/scrape/trigger")
-async def trigger_scrape(source: str = "1001tracklists"):
-    """Trigger web scraping job"""
-    try:
-        return {
-            "status": "initiated",
-            "job_id": "scrape_12345",
-            "source": source,
-            "message": "Scraping job has been queued"
-        }
-    except Exception as e:
-        logger.error(f"Failed to trigger scrape: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+# Scrape submission and job status live in routers/jobs.py (durable ingestion_jobs records).
 
 # =============================================================================
 # PIPELINE OBSERVABILITY ENDPOINTS - 2025 Data Pipeline Best Practices
@@ -771,6 +734,8 @@ async def music_search(service: str, q: str, limit: int = 20):
 # parameterised read routes below.
 from routers.catalog_writes import router as catalog_writes_router
 app.include_router(catalog_writes_router)
+from routers.jobs import router as jobs_router
+app.include_router(jobs_router)
 
 # Read contracts are separate from scraper submission validators.
 from routers.catalog_reads import router as catalog_reads_router

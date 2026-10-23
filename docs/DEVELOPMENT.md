@@ -50,6 +50,15 @@ and preserves existing records. Apply that migration explicitly when deploying
 the updated REST service outside this development script. Rolling back API code
 does not require dropping the queue table; keep its data.
 
+The startup script also applies `sql/migrations/013_ingestion_jobs_up.sql`
+(idempotent). It creates `ingestion_jobs`, the durable job table behind
+`POST /api/v1/scrape/trigger` and `GET /api/v1/jobs`. Jobs are deduplicated by
+`(kind, idempotency_key)` (send an `Idempotency-Key` header to retry safely),
+retried with exponential backoff up to `max_attempts`, then dead-lettered;
+`POST /api/v1/jobs/{id}/retry` revives a dead job. The minimal stack runs no
+worker, so submitted jobs stay `queued`. Apply the migration explicitly outside
+this script; `013_ingestion_jobs_down.sql` drops the table and its history.
+
 ## Verify
 
 With Vite running:
