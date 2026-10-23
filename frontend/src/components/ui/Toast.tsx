@@ -44,7 +44,7 @@ export interface ToastConfig {
   /** Cancel button configuration */
   cancel?: {
     label: string;
-    onClick?: () => void;
+    onClick: () => void;
   };
 
   /** Callback when toast is dismissed */
@@ -115,7 +115,6 @@ export function Toaster() {
       closeButton
       duration={4000}
       visibleToasts={3}
-      pauseWhenPageIsHidden
     />
   );
 }

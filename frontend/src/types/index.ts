@@ -1,3 +1,5 @@
+export type { DJMode, TrackRecommendation } from './dj';
+
 // Core music data types
 export interface Track {
   id: string;
@@ -27,12 +29,13 @@ export interface Track {
   status?: 'unplayed' | 'playing' | 'played' | 'queued'; // DJ status
   waveform?: number[]; // Waveform data for visualization
   beatgrid?: number[]; // Beatgrid data
-  lastPlayed?: Date; // Last time track was played
+  lastPlayed?: Date | number; // Last time track was played
   playCount?: number; // Number of times track was played
   tags?: string[]; // User tags for filtering
   mood?: string; // Mood descriptor
   notes?: string; // User notes
-  cuePoints?: CuePoint[]; // DJ cue points for track navigation
+  cuePoints?: CuePoint[];
+  metadata?: { remix?: string; [key: string]: unknown }; // DJ cue points for track navigation
 }
 
 // Cue point interface for DJ navigation
@@ -47,6 +50,8 @@ export interface CuePoint {
 // Graph visualization types
 export interface GraphNode {
   id: string;
+  track_id?: string;
+  camelotKey?: string;
   label: string;
   type?: 'track' | 'artist' | 'album' | 'genre';
   track?: Track;
@@ -383,3 +388,13 @@ export const DEFAULT_CONFIG: AppConfig = {
     debounceDelay: 300,
   },
 };
+// Public API-key metadata; secret values are never returned by these endpoints.
+export interface APIKeyRequirement {
+  service_name: string; key_name: string; display_name: string; description: string;
+  required: boolean; documentation_url: string; display_order: number;
+}
+export interface APIKey {
+  id: string; service_name: string; key_name: string; masked_value: string;
+  description: string | null; is_valid: boolean | null; last_tested_at: string | null;
+  test_error: string | null; created_at: string; updated_at: string;
+}

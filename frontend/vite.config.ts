@@ -6,6 +6,8 @@ import { resolve } from 'path';
 const timestampPlugin = () => {
   return {
     name: 'timestamp-inject',
+    // Vite's development client must retain its exact URL for token injection.
+    apply: 'build' as const,
     transformIndexHtml(html: string) {
       const timestamp = Date.now();
       // Add ?v=timestamp to ALL script tags, CSS links, and module preloads

@@ -9,6 +9,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { pathfinderMachine, pathfinderMachineOptions } from './pathfinder.machine';
 import { PathfinderContext, WizardStep } from './types';
 import { Track } from '../../types';
+import { adaptServerPath } from '../../utils/serverPath';
 
 /**
  * Main pathfinder hook - integrates XState machine with Zustand store
@@ -53,15 +54,17 @@ export function usePathfinder() {
     // Update Zustand store when constraints change
     if (JSON.stringify(curr.constraints) !== JSON.stringify(prev.constraints)) {
       pathfinding.setPathConstraints({
-        ...curr.constraints,
-        targetDuration: curr.constraints.targetDuration * 60 * 1000, // Convert to ms
-        tolerance: curr.constraints.tolerance * 60 * 1000, // Convert to ms
+        timing: {
+          ...useStore.getState().pathfindingState.constraints.timing,
+          enabled: true,
+          targetDuration: curr.constraints.targetDuration * 60, // Shared track durations use seconds.
+        }
       });
     }
 
     // Update Zustand store when result changes
     if (curr.result !== prev.result) {
-      pathfinding.setCurrentPath(curr.result);
+      pathfinding.setCurrentPath(curr.result ? adaptServerPath(curr.result) : null);
     }
 
     prevStateRef.current = curr;

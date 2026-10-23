@@ -78,7 +78,7 @@ const DEFAULT_CONFIG: NodeRendererConfig = {
 export class NodeRenderer {
   private app: Application;
   private container: PIXI.Container;
-  private particleContainer: PIXI.ParticleContainer;
+  private particleContainer: PIXI.Container;
   private labelContainer: PIXI.Container;
   private glowContainer: PIXI.Container;
 
@@ -121,16 +121,9 @@ export class NodeRenderer {
     this.container.addChild(this.glowContainer);
 
     // Particle container for nodes (optimal for massive node counts)
-    this.particleContainer = new PIXI.ParticleContainer(
-      this.config.particleContainerSize,
-      {
-        vertices: false,
-        position: true,
-        rotation: false,
-        uvs: false,
-        tint: true,
-      }
-    );
+    // This archived renderer stores Sprite children; PIXI 8 ParticleContainer
+    // accepts Particle instances, so use a regular sprite container here.
+    this.particleContainer = new PIXI.Container();
     this.particleContainer.name = 'NodeParticleContainer';
     this.container.addChild(this.particleContainer);
 
@@ -327,7 +320,7 @@ export class NodeRenderer {
     glow.x = node.x;
     glow.y = node.y;
     glow.alpha = state === 'playing' ? 0.8 : 0.5;
-    glow.blendMode = PIXI.BLEND_MODES.ADD;
+    glow.blendMode = 'add';
 
     const glowScale = (glowRadius * 2 * zoom) / this.config.baseNodeSize;
     glow.scale.set(glowScale);
@@ -350,8 +343,7 @@ export class NodeRenderer {
       fontFamily: this.config.labelFontFamily,
       fontSize: fontSize * zoom,
       fill: 0xffffff,
-      stroke: 0x000000,
-      strokeThickness: 2 * zoom,
+      stroke: { color: 0x000000, width: 2 * zoom },
       align: 'center',
     });
 

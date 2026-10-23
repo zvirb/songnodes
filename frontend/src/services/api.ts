@@ -173,13 +173,10 @@ export const graphApi = {
   // Get full graph data
   async getGraphData(filters?: SearchFilters): Promise<GraphApiResponse> {
     try {
-      // Fetch nodes and edges separately from working endpoints
-      const [nodesResponse, edgesResponse] = await Promise.all([
-        graphApiClient.get<{nodes: any[], total: number}>('/graph/nodes?limit=15000'),
-        graphApiClient.get<{edges: any[], total: number}>('/graph/edges?limit=50000')
-      ]);
+      // Load one consistent snapshot from the current silver catalog schema.
+      const response = await graphApiClient.get<{nodes: any[], edges: any[]}>('/graph/data');
 
-      if (nodesResponse.status === 'error' || edgesResponse.status === 'error') {
+      if (response.status === 'error') {
         return {
           data: { nodes: [], edges: [] },
           status: 'error',
@@ -195,7 +192,7 @@ export const graphApi = {
       }
 
       // Transform data to expected format
-      const nodes = nodesResponse.data.nodes?.map((node: any) => ({
+      const nodes = response.data.nodes?.map((node: any) => ({
         id: node.id,
         label: node.metadata?.title || node.metadata?.label || node.id,
         type: 'track' as const,
@@ -219,7 +216,7 @@ export const graphApi = {
 
       // Filter edges to only include those connecting loaded nodes
       // The API returns edges with source/target fields
-      const edges = (edgesResponse.data.edges || [])
+      const edges = (response.data.edges || [])
         .filter((edge: any) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
         .map((edge: any) => ({
           id: edge.id,
@@ -230,7 +227,7 @@ export const graphApi = {
         }));
 
       // Debug: Edge filtering info (disabled - too verbose)
-      // console.log(`Filtered ${edges.length} edges from ${edgesResponse.data.edges?.length || 0} total for ${nodes.length} nodes`);
+      // console.log(`Filtered ${edges.length} edges from ${response.data.edges?.length || 0} total for ${nodes.length} nodes`);
 
       const graphData: GraphData = { nodes, edges };
 

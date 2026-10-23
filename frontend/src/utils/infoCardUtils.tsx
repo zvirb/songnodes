@@ -53,11 +53,12 @@ export const getInfoFields = (type: InfoCardType, data: InfoCardData | null | un
       ];
 
     case 'stats':
+      const stats = data as { totalNodes?: number; totalEdges?: number; selectedNodes?: number; setlistTracks?: number };
       return [
-        { key: 'totalNodes', label: 'Total Tracks', value: data.totalNodes },
-        { key: 'totalEdges', label: 'Connections', value: data.totalEdges },
-        { key: 'selectedNodes', label: 'Selected', value: data.selectedNodes },
-        { key: 'setlistTracks', label: 'Setlist', value: data.setlistTracks },
+        { key: 'totalNodes', label: 'Total Tracks', value: stats.totalNodes },
+        { key: 'totalEdges', label: 'Connections', value: stats.totalEdges },
+        { key: 'selectedNodes', label: 'Selected', value: stats.selectedNodes },
+        { key: 'setlistTracks', label: 'Setlist', value: stats.setlistTracks },
       ];
 
     case 'setlist':

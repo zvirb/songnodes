@@ -25,7 +25,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.pool import QueuePool
 from sqlalchemy import text, select, func, bindparam
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 import prometheus_client
@@ -86,7 +85,6 @@ MAX_CONNECTIONS = int(os.getenv('MAX_CONNECTIONS', 1000))
 # Database engine with 2025 best practices for memory leak prevention
 engine = create_async_engine(
     DATABASE_URL,
-    poolclass=QueuePool,
     pool_size=15,  # Reduced from 20 to prevent overflow
     max_overflow=15,  # Reduced from 30 to prevent excessive connections
     pool_pre_ping=True,  # Validate connections before use (REQUIRED)
@@ -468,13 +466,13 @@ async def get_graph_nodes(
                                 SELECT DISTINCT
                                     tr.from_track_id,
                                     tr.to_track_id,
-                                    tr.transition_count
+                                    tr.occurrence_count
                                 FROM silver_track_transitions tr
                                 INNER JOIN graph_nodes n1 ON 'song_' || tr.from_track_id::text = n1.node_id
                                 INNER JOIN graph_nodes n2 ON 'song_' || tr.to_track_id::text = n2.node_id
                                 WHERE n1.node_type = 'song'
                                   AND n2.node_type = 'song'
-                                  AND tr.transition_count >= 1
+                                  AND tr.occurrence_count >= 1
                                   -- At least ONE endpoint must have a valid artist
                                   AND (
                                     (n1.artist_name IS NOT NULL AND n1.artist_name != '' AND n1.artist_name != 'Unknown')
@@ -761,18 +759,18 @@ async def get_graph_edges(
 
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY tr.transition_count DESC) as row_number,
+                               ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
                                'song_' || tr.from_track_id::text as source_id,
                                'song_' || tr.to_track_id::text as target_id,
-                               tr.transition_count::float as weight,
+                               tr.occurrence_count::float as weight,
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM silver_track_transitions tr
                         JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
                         JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
                         WHERE (tr.from_track_id = ANY(:song_ids) OR tr.to_track_id = ANY(:song_ids))
-                          AND tr.transition_count >= 1  -- Show all adjacency relationships
-                        ORDER BY transition_count DESC
+                          AND tr.occurrence_count >= 1  -- Show all adjacency relationships
+                        ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """).bindparams(
                         bindparam('song_ids', type_=ARRAY(UUID(as_uuid=True)))
@@ -788,17 +786,17 @@ async def get_graph_edges(
                     # Filter to only show the strongest adjacency relationships to reduce visual clutter
                     query = text("""
                         SELECT
-                               ROW_NUMBER() OVER (ORDER BY tr.transition_count DESC) as row_number,
+                               ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
                                'song_' || tr.from_track_id::text as source_id,
                                'song_' || tr.to_track_id::text as target_id,
-                               tr.transition_count::float as weight,
+                               tr.occurrence_count::float as weight,
                                'sequential' as edge_type,
                                COUNT(*) OVER() as total_count
                         FROM silver_track_transitions tr
                         JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
                         JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
-                        WHERE tr.transition_count >= 1  -- Show all adjacency relationships
-                        ORDER BY transition_count DESC
+                        WHERE tr.occurrence_count >= 1  -- Show all adjacency relationships
+                        ORDER BY occurrence_count DESC
                         LIMIT :limit OFFSET :offset
                     """)
                     result = await session.execute(query, {
@@ -934,9 +932,9 @@ async def lifespan(app: FastAPI):
 
     # Shutdown with proper cleanup
     if redis_pool:
-        await redis_pool.close()
+        await redis_pool.aclose()
     if redis_connection_pool:
-        redis_connection_pool.disconnect()
+        await redis_connection_pool.disconnect()
     await engine.dispose()
     logger.info("Graph Visualization API shutdown complete")
 
@@ -1048,23 +1046,23 @@ async def get_graph_data():
             # ✅ FIX: Use silver_enriched_tracks directly (same as REST API) instead of complex joins
             edges_query = text("""
                 SELECT
-                       ROW_NUMBER() OVER (ORDER BY tr.transition_count DESC) as row_number,
+                       ROW_NUMBER() OVER (ORDER BY tr.occurrence_count DESC) as row_number,
                        'song_' || tr.from_track_id::text as source_id,
                        'song_' || tr.to_track_id::text as target_id,
-                       tr.transition_count::float as weight,
+                       tr.occurrence_count::float as weight,
                        'sequential' as edge_type,
                        COUNT(*) OVER() as total_count
                 FROM silver_track_transitions tr
                 INNER JOIN silver_enriched_tracks t1 ON tr.from_track_id = t1.id
                 INNER JOIN silver_enriched_tracks t2 ON tr.to_track_id = t2.id
-                WHERE tr.transition_count >= 1  -- Show all adjacency relationships
+                WHERE tr.occurrence_count >= 1  -- Show all adjacency relationships
                   AND t1.artist_name IS NOT NULL AND t1.artist_name != ''
                   AND t1.artist_name != 'Unknown' AND t1.artist_name != 'Unknown Artist'
                   AND t1.artist_name != 'Various Artists' AND t1.artist_name != 'VA'
                   AND t2.artist_name IS NOT NULL AND t2.artist_name != ''
                   AND t2.artist_name != 'Unknown' AND t2.artist_name != 'Unknown Artist'
                   AND t2.artist_name != 'Various Artists' AND t2.artist_name != 'VA'
-                ORDER BY tr.transition_count DESC
+                ORDER BY tr.occurrence_count DESC
                 LIMIT 30000  -- Increased from 5000 to show full graph (current max: ~26k edges)
             """)
             edges_result = await session.execute(edges_query)
@@ -1243,9 +1241,9 @@ async def get_graph_stats():
                 edge_stats AS (
                     SELECT
                         COUNT(*) as total_edges,
-                        SUM(transition_count) as total_occurrences,
-                        AVG(transition_count) as avg_occurrence_count,
-                        MAX(transition_count) as max_occurrence_count
+                        SUM(occurrence_count) as total_occurrences,
+                        AVG(occurrence_count) as avg_occurrence_count,
+                        MAX(occurrence_count) as max_occurrence_count
                     FROM silver_track_transitions
                 ),
                 genre_stats AS (
@@ -1368,7 +1366,7 @@ async def test_adjacency():
                 FROM silver_track_transitions tr
                 JOIN tracks t1 ON tr.from_track_id = t1.id
                 JOIN tracks t2 ON tr.to_track_id = t2.id
-                WHERE tr.transition_count >= 1
+                WHERE tr.occurrence_count >= 1
             """)
             result = await session.execute(query)
             count = result.scalar()
@@ -1815,7 +1813,7 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                 SELECT
                     'song_' || tr.from_track_id::text as source_id,
                     'song_' || tr.to_track_id::text as target_id,
-                    tr.transition_count::float as weight,
+                    tr.occurrence_count::float as weight,
                     'adjacency' as edge_type,
                     -- Get connected track info
                     CASE
@@ -1844,8 +1842,8 @@ async def get_node_neighborhood(node_id: str, radius: int = 1):
                 LEFT JOIN tracks t1 ON tr.from_track_id = t1.id
                 LEFT JOIN tracks t2 ON tr.to_track_id = t2.id
                 WHERE (tr.from_track_id::text = :clean_node_id OR tr.to_track_id::text = :clean_node_id)
-                  AND tr.transition_count >= 1
-                ORDER BY tr.transition_count DESC
+                  AND tr.occurrence_count >= 1
+                ORDER BY tr.occurrence_count DESC
                 LIMIT 20
             """)
 

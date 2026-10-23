@@ -129,6 +129,13 @@ songnodes/
 
 ## 🚀 Quick Start
 
+See the maintained [architecture implementation plan](docs/IMPLEMENTATION_PLAN.md)
+and [current task status](STATUS.md) for migration scope, dependencies, and progress.
+
+For the tested minimal development stack, follow [Development baseline](docs/DEVELOPMENT.md).
+The historical full-platform instructions below reference Compose files that are
+not present in this checkout.
+
 For day-to-day contributor expectations, review [AGENTS.md](./AGENTS.md).
 
 ### Prerequisites

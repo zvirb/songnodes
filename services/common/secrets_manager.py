@@ -185,7 +185,7 @@ def get_redis_config() -> Dict[str, Any]:
     return {
         "host": get_secret("REDIS_HOST", "redis"),
         "port": int(get_secret("REDIS_PORT", "6379")),
-        "password": get_secret("REDIS_PASSWORD", "redis_secure_pass_2024"),
+        "password": get_secret("REDIS_PASSWORD", None),
         "decode_responses": True
     }
 

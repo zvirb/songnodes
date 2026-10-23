@@ -17,7 +17,7 @@
 
 import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { Viewport } from 'pixi-viewport';
-import type { Application, Rectangle, IPointData } from 'pixi.js';
+import type { Application, Rectangle, PointData } from 'pixi.js';
 import type { EnhancedGraphNode } from '../types';
 
 /* ============================================
@@ -135,7 +135,7 @@ export interface UseViewportReturn {
   currentZoom: number;
 
   /** Current center position */
-  currentCenter: IPointData;
+  currentCenter: PointData;
 
   /** Is viewport ready */
   isReady: boolean;
@@ -180,7 +180,7 @@ export function useViewport(
   // State
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const [currentZoom, setCurrentZoom] = useState(1);
-  const [currentCenter, setCurrentCenter] = useState<IPointData>({ x: 0, y: 0 });
+  const [currentCenter, setCurrentCenter] = useState<PointData>({ x: 0, y: 0 });
   const [isReady, setIsReady] = useState(false);
 
   // Refs
@@ -348,7 +348,8 @@ export function useViewport(
     maxY += height * padding;
 
     // Fit to bounding box
-    viewport.fit(true, minX, minY, maxX - minX, maxY - minY);
+    viewport.fit(true, maxX - minX, maxY - minY);
+    viewport.moveCenter((minX + maxX) / 2, (minY + maxY) / 2);
   }, [viewport]);
 
   /**

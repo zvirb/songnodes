@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import ForceGraph3D, { ForceGraph3DInstance } from 'react-force-graph-3d';
+import ForceGraph3D, { ForceGraphMethods } from 'react-force-graph-3d';
 import * as THREE from 'three';
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
@@ -31,6 +31,11 @@ import { Eye, Maximize2, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
  * - Material and geometry disposal
  * - Ref cleanup on unmount
  */
+
+function linkEndpointId(endpoint: string | number | { id?: string | number } | null | undefined): string {
+  const id = endpoint && typeof endpoint === 'object' ? endpoint.id : endpoint;
+  return id == null ? '' : String(id);
+}
 
 interface Graph3DProps {
   width?: number;
@@ -86,7 +91,7 @@ export const Graph3D: React.FC<Graph3DProps> = ({
   onNodeHover,
   className = '',
 }) => {
-  const fgRef = useRef<ForceGraph3DInstance>();
+  const fgRef = useRef<ForceGraphMethods>();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Store state
@@ -315,8 +320,8 @@ export const Graph3D: React.FC<Graph3DProps> = ({
     const connectedLinks = new Set<string>();
 
     enhancedGraphData.links.forEach(link => {
-      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      const sourceId = linkEndpointId(link.source);
+      const targetId = linkEndpointId(link.target);
 
       if (sourceId === node.id) {
         connectedNodeIds.add(targetId);

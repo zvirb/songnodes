@@ -1,26 +1,23 @@
 # Graph Visualization API Dockerfile
 # Optimized for high-performance graph data processing
 
-FROM public.ecr.aws/docker/library/python:3.11-slim
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Optional build secret supports cloud proxies without disabling TLS verification.
+RUN --mount=type=secret,id=proxy_ca,target=/usr/local/share/ca-certificates/cloud-proxy.crt \
+    update-ca-certificates
 
 # Copy requirements first for better Docker layer caching
 COPY services/graph-visualization-api/requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+RUN PIP_CERT=/etc/ssl/certs/ca-certificates.crt pip install --no-cache-dir -r requirements.txt
 
 # Copy common directory (contains secrets_manager.py)
-COPY common /app/common
+COPY services/common /app/common
 
 # Copy application code
 COPY services/graph-visualization-api/ .
@@ -32,7 +29,7 @@ USER appuser
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8084/health || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8084/health', timeout=5)"
 
 # Expose port
 EXPOSE 8084

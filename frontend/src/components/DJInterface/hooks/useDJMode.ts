@@ -38,7 +38,7 @@ import type { DJModeState } from '../types';
  *   return (
  *     <div>
  *       <button onClick={toggleMode}>
- *         Switch to {isPlanMode ? 'PLAY' : 'PLAN'}
+ *         Switch to {isPlanMode ? 'PLAY' : 'plan'}
  *       </button>
  *       {isPlanMode ? <PlanModePanel /> : <PlayModePanel />}
  *     </div>
@@ -53,14 +53,14 @@ export function useDJMode(initialMode: DJMode = 'play'): DJModeState {
    * Toggle between PLAN and PLAY modes
    */
   const toggleMode = useCallback(() => {
-    setMode(prev => prev === 'PLAN' ? 'play' : 'PLAN');
+    setMode(prev => prev === 'plan' ? 'play' : 'plan');
   }, []);
 
   /**
    * Explicitly set mode to PLAN
    */
   const setToPlan = useCallback(() => {
-    setMode('PLAN');
+    setMode('plan');
   }, []);
 
   /**
@@ -75,7 +75,7 @@ export function useDJMode(initialMode: DJMode = 'play'): DJModeState {
     toggleMode,
     setToPlan,
     setToPlay,
-    isPlanMode: mode === 'PLAN',
+    isPlanMode: mode === 'plan',
     isPlayMode: mode === 'play',
   };
 }

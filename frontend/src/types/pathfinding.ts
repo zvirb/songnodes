@@ -79,11 +79,32 @@ export interface PathResult {
   waypointsSkipped: string[]; // IDs of waypoints that couldn't be included
   alternativePaths?: PathResult[]; // Alternative paths if requested
   metadata: {
-    searchTime: number; // Time taken to find path (ms)
-    nodesExplored: number; // Nodes explored during search
+    searchTime?: number; // Time taken to find path (ms), when reported
+    nodesExplored?: number; // Nodes explored during search, when reported
     algorithmsUsed: string[]; // Algorithms used (Dijkstra, A*, etc.)
     optimizationPasses: number; // Number of optimization iterations
   };
+}
+
+// REST pathfinder response. Durations use milliseconds at this boundary.
+export interface ServerPathResult {
+  success: boolean;
+  path: Array<{
+    track: { id: string; name: string; artist: string; duration_ms: number;
+      camelot_key?: string; bpm?: number; energy?: number };
+    connection_strength?: number;
+    key_compatible: boolean;
+    cumulative_duration_ms: number;
+    is_synthetic_edge?: boolean;
+  }>;
+  total_duration_ms: number;
+  target_duration_ms: number;
+  duration_difference_ms: number;
+  waypoints_visited: string[];
+  waypoints_missed: string[];
+  average_connection_strength: number;
+  key_compatibility_score: number;
+  message: string;
 }
 
 export interface PathConstraints {

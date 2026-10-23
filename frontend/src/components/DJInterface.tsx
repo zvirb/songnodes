@@ -16,7 +16,7 @@ import GraphFilterPanel from './GraphFilterPanel';
 import { ArtistAttributionManager } from './ArtistAttributionManager';
 import { TracklistImporter } from './TracklistImporter';
 import { Track as DJTrack, DJMode } from '../types/dj';
-import { Track } from '../types/index';
+import { Track, GraphNode } from '../types/index';
 import useStore from '../store/useStore';
 import { useDataLoader } from '../hooks/useDataLoader';
 import { useIsMobile } from '../hooks/useIsMobile';

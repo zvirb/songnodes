@@ -189,7 +189,7 @@ export function useNodeSelection(options: UseNodeSelectionOptions): UseNodeSelec
     onFocusChange,
     maxSelection = 0,
     enableKeyboard = true,
-    initialSelection = new Set(),
+    initialSelection = new Set<string>(),
     initialFocus = null,
   } = { ...DEFAULT_OPTIONS, ...options };
 

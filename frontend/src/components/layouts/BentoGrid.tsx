@@ -20,14 +20,14 @@
  */
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { Card } from '../ui/Card';
 
 /**
  * BentoGrid Props
  */
-export interface BentoGridProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BentoGridProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'> {
   /**
    * Number of columns for desktop layout
    * @default 3
@@ -115,7 +115,7 @@ BentoGrid.displayName = 'BentoGrid';
 /**
  * BentoCard Props
  */
-export interface BentoCardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BentoCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'> {
   /**
    * Number of columns to span
    * @default 1
@@ -200,7 +200,7 @@ export const BentoCard = React.forwardRef<HTMLDivElement, BentoCardProps>(
     },
     ref
   ) => {
-    const itemVariants = animate
+    const itemVariants: Variants | undefined = animate
       ? {
           hidden: { opacity: 0, y: 20 },
           visible: {

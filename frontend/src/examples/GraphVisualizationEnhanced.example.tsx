@@ -144,7 +144,7 @@ export function GraphVisualizationEnhancedExample() {
   // ============================================================================
   // STEP 4: Enhanced updateNodeVisuals with Visual Encoding
   // ============================================================================
-  const updateNodeVisuals = useCallback((node: any, lodLevel: number) => {
+  const updateNodeVisuals = useCallback((node: any, lodLevel: LODLevel) => {
     if (!node.pixiNode || !node.pixiCircle || !node.pixiLabel) return;
 
     // Get visual properties from encoding
@@ -207,7 +207,7 @@ export function GraphVisualizationEnhancedExample() {
   // ============================================================================
   // STEP 5: Enhanced updateEdgeVisuals with Edge Bundling
   // ============================================================================
-  const updateEdgeVisuals = useCallback((edge: any, lodLevel: number) => {
+  const updateEdgeVisuals = useCallback((edge: any, lodLevel: LODLevel) => {
     if (!edge.pixiEdge || !edge.sourceNode || !edge.targetNode) return;
     if (typeof edge.sourceNode.x !== 'number' || typeof edge.sourceNode.y !== 'number' ||
         typeof edge.targetNode.x !== 'number' || typeof edge.targetNode.y !== 'number') {
@@ -337,7 +337,7 @@ export function GraphVisualizationEnhancedExample() {
           edge.isVisible = shouldRender;
 
           if (shouldRender) {
-            updateEdgeVisuals(edge, lodLevel);
+            updateEdgeVisuals(edge, lodLevel as LODLevel);
           }
         }
       });

@@ -266,7 +266,7 @@ export function enhancedRenderFrame(
 
   // Calculate LOD for all nodes
   if (enableLOD) {
-    const nodes = Array.from(enhancedNodesRef.current.values());
+    const nodes: { id: string; x?: number; y?: number }[] = Array.from(enhancedNodesRef.current.values());
     const viewport = viewportRef.current;
 
     // Create LOD viewport

@@ -27,9 +27,10 @@ import React, {
   useImperativeHandle,
   forwardRef,
   useCallback,
+  useMemo,
 } from 'react';
 import { Application } from 'pixi.js';
-import type { Container, IApplicationOptions } from 'pixi.js';
+import type { Container, ApplicationOptions } from 'pixi.js';
 import { GraphControls } from './GraphControls';
 import { Minimap } from './Minimap';
 import { NodeDetailsPanel } from './NodeDetailsPanel';
@@ -51,6 +52,7 @@ import {
 import type {
   GraphData,
   EnhancedGraphNode,
+  EnhancedGraphEdge,
   NodeClickEvent,
   ViewportChangeEvent,
   RenderStats,
@@ -134,7 +136,7 @@ export interface GraphVisualizationHandle {
   zoomToNode: (nodeId: string, duration?: number) => void;
 
   /** Export canvas as base64 image */
-  exportImage: () => string | undefined;
+  exportImage: () => Promise<string | undefined>;
 
   /** Get current statistics */
   getStats: () => RenderStats;
@@ -205,7 +207,7 @@ export const GraphVisualization = forwardRef<
   const lodManagerRef = useRef<LODManager | null>(null);
   const textureAtlasRef = useRef<TextureAtlas | null>(null);
   const frustumCullerRef = useRef<FrustumCuller | null>(null);
-  const quadtreeRef = useRef<Quadtree | null>(null);
+  const quadtreeRef = useRef<Quadtree<{ id: string; x: number; y: number }> | null>(null);
   const rafRef = useRef<number | null>(null);
   const frameCountRef = useRef<number>(0);
   const fpsRef = useRef<number>(0);
@@ -249,8 +251,17 @@ export const GraphVisualization = forwardRef<
 
   // Use external data if provided, otherwise use fetched data
   const graphData = externalData || fetchedData;
-  const activeNodes = externalData?.nodes || nodes;
-  const activeEdges = externalData?.edges || edges;
+  const activeNodes: EnhancedGraphNode[] = useMemo(() => (externalData?.nodes || nodes).map(node => ({
+    ...node, x: node.x ?? 0, y: node.y ?? 0,
+    lodLevel: 0, lastUpdateFrame: 0, isVisible: true,
+    screenRadius: 8, hitBoxRadius: 8,
+  })), [externalData?.nodes, nodes]);
+  const activeEdges: EnhancedGraphEdge[] = useMemo(() => (externalData?.edges || edges).map(edge => ({
+    ...edge,
+    source: typeof edge.source === 'string' ? edge.source : edge.source.id,
+    target: typeof edge.target === 'string' ? edge.target : edge.target.id,
+    lodLevel: 0, lastUpdateFrame: 0, isVisible: true, screenWidth: 1,
+  })), [externalData?.edges, edges]);
 
   // Hook 2: Physics simulation
   const {
@@ -296,6 +307,16 @@ export const GraphVisualization = forwardRef<
     nodes: activeNodes,
   });
 
+  const initialViewport = {
+    x: 0, y: 0, width, height, zoom: initialZoom,
+    bounds: { minX: 0, minY: 0, maxX: width, maxY: height },
+  };
+  const renderViewport = viewport ? {
+    x: viewport.left, y: viewport.top, width: viewport.worldScreenWidth,
+    height: viewport.worldScreenHeight, zoom: currentZoom,
+    bounds: { minX: viewport.left, minY: viewport.top, maxX: viewport.right, maxY: viewport.bottom },
+  } : initialViewport;
+
   // Hook 4: Node selection
   const {
     selectedIds,
@@ -319,7 +340,7 @@ export const GraphVisualization = forwardRef<
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const appOptions: Partial<IApplicationOptions> = {
+    const appOptions: Partial<ApplicationOptions> = {
       width,
       height,
       backgroundColor: 0x121212,
@@ -329,7 +350,7 @@ export const GraphVisualization = forwardRef<
       powerPreference: 'high-performance',
     };
 
-    const app = new Application(appOptions);
+    const app = new Application();
 
     // Wait for PIXI to initialize
     (async () => {
@@ -339,9 +360,9 @@ export const GraphVisualization = forwardRef<
       appRef.current = app;
 
       // Initialize infrastructure
-      lodManagerRef.current = new LODManager();
-      textureAtlasRef.current = new TextureAtlas(app);
-      frustumCullerRef.current = new FrustumCuller();
+      lodManagerRef.current = new LODManager(initialViewport);
+      textureAtlasRef.current = new TextureAtlas();
+      frustumCullerRef.current = new FrustumCuller(initialViewport);
       quadtreeRef.current = new Quadtree({
         x: 0,
         y: 0,
@@ -373,10 +394,6 @@ export const GraphVisualization = forwardRef<
         frustumCullerRef.current,
         {
           baseEdgeWidth: 2,
-          enableArrows: false,
-          enableCurves: true,
-          curveStrength: 0.2,
-          transitionDuration: 300,
         }
       );
 
@@ -392,13 +409,12 @@ export const GraphVisualization = forwardRef<
 
       nodeRendererRef.current?.cleanup();
       edgeRendererRef.current?.cleanup();
-      textureAtlasRef.current?.cleanup();
+      textureAtlasRef.current?.destroy();
 
       if (appRef.current) {
         appRef.current.destroy(true, {
           children: true,
           texture: true,
-          baseTexture: true,
         });
         appRef.current = null;
       }
@@ -444,8 +460,8 @@ export const GraphVisualization = forwardRef<
           ...node,
           x: simPos?.x ?? node.x ?? 0,
           y: simPos?.y ?? node.y ?? 0,
-          vx: simPos?.vx ?? 0,
-          vy: simPos?.vy ?? 0,
+          vx: node.vx ?? 0,
+          vy: node.vy ?? 0,
           isSelected: selectedIds.has(node.id),
           isHovered: hoveredNode === node.id,
           isFocused: focusedId === node.id,
@@ -468,26 +484,18 @@ export const GraphVisualization = forwardRef<
             id: node.id,
             x: node.x!,
             y: node.y!,
-            width: node.screenRadius * 2,
-            height: node.screenRadius * 2,
           });
         });
       }
 
       // Render edges first (background layer)
-      const edgeStats = edgeRendererRef.current!.render(
-        activeEdges,
-        nodeMap,
-        viewport,
-        currentZoom
-      );
+      edgeRendererRef.current!.render(activeEdges, nodeMap, renderViewport);
+      const edgeStats = edgeRendererRef.current!.getStats(activeEdges);
 
       // Render nodes (foreground layer)
-      const nodeStats = nodeRendererRef.current!.render(
-        enhancedNodes,
-        viewport,
-        currentZoom
-      );
+      frustumCullerRef.current!.updateSpatialIndex(enhancedNodes);
+      nodeRendererRef.current!.render(enhancedNodes, renderViewport);
+      const nodeStats = nodeRendererRef.current!.getStats();
 
       // Update render statistics
       setRenderStats({
@@ -495,9 +503,9 @@ export const GraphVisualization = forwardRef<
         frameTime: deltaTime,
         visibleNodes: nodeStats.visibleNodes,
         visibleEdges: edgeStats.visibleEdges,
-        drawCalls: nodeStats.drawCalls + edgeStats.drawCalls,
-        triangles: nodeStats.triangles + edgeStats.triangles,
-        memoryUsage: nodeStats.memoryUsageMB + edgeStats.memoryUsageMB,
+        drawCalls: undefined, // Not reported by the node renderer.
+        triangles: undefined, // Not measured.
+        memoryUsage: nodeStats.memoryUsageMB,
       });
 
       rafRef.current = requestAnimationFrame(render);
@@ -601,9 +609,9 @@ export const GraphVisualization = forwardRef<
       resetView: () => viewportControls?.resetView(),
       zoomToNode: (nodeId: string, duration?: number) =>
         viewportControls?.zoomToNode(nodeId, duration),
-      exportImage: () => {
+      exportImage: async () => {
         if (!appRef.current) return undefined;
-        return appRef.current.renderer.extract.base64(appRef.current.stage);
+        return appRef.current.renderer.extract.base64({ target: appRef.current.stage });
       },
       getStats: () => renderStats,
       pauseSimulation: () => simControls.pause(),
@@ -685,7 +693,7 @@ export const GraphVisualization = forwardRef<
       {showMinimap && isInitialized && viewport && activeNodes.length > 0 && (
         <Minimap
           nodes={activeNodes}
-          viewport={viewport}
+          viewport={renderViewport}
           currentZoom={currentZoom}
           onViewportChange={(x, y) => {
             viewportControls?.panTo(x, y, 300);

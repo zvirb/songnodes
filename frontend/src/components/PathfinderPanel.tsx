@@ -3,33 +3,8 @@ import { Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
 
-interface PathSegment {
-  track: {
-    id: string;
-    name: string;
-    artist: string;
-    duration_ms: number;
-    camelot_key?: string;
-    bpm?: number;
-  };
-  connection_strength?: number;
-  key_compatible: boolean;
-  cumulative_duration_ms: number;
-  is_synthetic_edge?: boolean;
-}
-
-interface PathfinderResult {
-  success: boolean;
-  path: PathSegment[];
-  total_duration_ms: number;
-  target_duration_ms: number;
-  duration_difference_ms: number;
-  waypoints_visited: string[];
-  waypoints_missed: string[];
-  average_connection_strength: number;
-  key_compatibility_score: number;
-  message: string;
-}
+import type { ServerPathResult as PathfinderResult } from '../types/pathfinding';
+import { adaptServerPath } from '../utils/serverPath';
 
 const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
@@ -149,7 +124,7 @@ export const PathfinderPanel: React.FC = () => {
 
       const resultData: PathfinderResult = await response.json();
       setResult(resultData);
-      pathfinding.setCurrentPath(resultData); // <-- ADD THIS LINE
+      pathfinding.setCurrentPath(adaptServerPath(resultData));
 
       if (!resultData.success) {
         setError(resultData.message);

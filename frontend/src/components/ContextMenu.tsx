@@ -136,7 +136,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             if (result.success) {
               console.log('✅ Route calculated successfully:', result.path.length, 'tracks');
             } else {
-              console.warn('⚠️ Route calculation failed:', result.error);
+              console.warn('⚠️ Route calculation failed:', 'No route found for the selected tracks');
             }
           } catch (error) {
             console.error('❌ Route calculation error:', error);

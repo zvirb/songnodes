@@ -50,8 +50,8 @@ export const getConnectedTracks = (
 
   for (const edge of edges) {
     // Safely get source and target IDs, whether they are strings or objects
-    const sourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
-    const targetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
+    const sourceId = edge.source;
+    const targetId = edge.target;
 
     let connectedId: string | null = null;
     if (sourceId === currentTrackId) {

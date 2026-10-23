@@ -643,7 +643,7 @@ export const PathBuilder: React.FC = () => {
                       { value: 'plateau', label: '⛰️ Plateau', desc: 'Steady energy' },
                       { value: 'wave', label: '🌊 Wave', desc: 'Multiple peaks' },
                       { value: 'custom', label: '🎛️ Custom', desc: 'Define your own' },
-                    ].map(option => (
+                    ].filter(option => option.value !== 'wave' || import.meta.env.VITE_ENABLE_WAVE_ROUTING === 'true').map(option => (
                       <button
                         key={option.value}
                         onClick={() => setEnergyCurve(option.value as EnergyFlowType)}
@@ -729,7 +729,7 @@ export const PathBuilder: React.FC = () => {
                           {pathfindingState.currentPath.success ? '✅ Path Found' : '❌ No Path Found'}
                         </h3>
                         <span className="text-sm">
-                          {pathfindingState.currentPath.metadata.searchTime}ms
+                          {pathfindingState.currentPath.metadata.searchTime == null ? 'Not reported' : `${pathfindingState.currentPath.metadata.searchTime}ms`}
                         </span>
                       </div>
 

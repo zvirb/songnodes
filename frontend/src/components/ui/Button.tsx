@@ -16,7 +16,7 @@
  */
 
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
+import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { motion, type HTMLMotionProps } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -108,7 +108,7 @@ const microInteractions = {
     scale: 1.02,
     y: -2,
     transition: {
-      type: 'spring',
+      type: 'spring' as const,
       stiffness: 400,
       damping: 17,
     },
@@ -116,7 +116,7 @@ const microInteractions = {
   tap: {
     scale: 0.98,
     transition: {
-      type: 'spring',
+      type: 'spring' as const,
       stiffness: 400,
       damping: 17,
     },
@@ -253,10 +253,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Slot
           className={cn(buttonVariants({ variant, size, fullWidth, className }))}
           ref={ref}
-          disabled={isDisabled}
           aria-busy={loading}
           aria-disabled={isDisabled}
           {...props}
+          onClickCapture={(event) => {
+            if (isDisabled) {
+              event.preventDefault();
+              event.stopPropagation();
+            } else {
+              props.onClickCapture?.(event as React.MouseEvent<HTMLButtonElement>);
+            }
+          }}
         >
           {/* Loading spinner (replaces leftIcon when loading) */}
           {loading && <Spinner className="h-4 w-4" />}
@@ -269,7 +276,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           )}
 
           {/* Button text */}
-          {children && <span className="truncate">{children}</span>}
+          <Slottable>{children}</Slottable>
 
           {/* Right icon */}
           {rightIcon && (

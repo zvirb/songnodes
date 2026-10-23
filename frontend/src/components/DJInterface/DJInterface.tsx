@@ -229,7 +229,7 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
       {/* Header Bar */}
       <DJHeader
         mode={mode}
-        onModeChange={(newMode) => newMode === 'PLAN' ? toggleMode() : toggleMode()}
+        onModeChange={(newMode) => newMode === 'plan' ? toggleMode() : toggleMode()}
         trackCount={tracks.length}
         connectionCount={graphData?.edges?.length || 0}
         onOpenArtistAttribution={() => setShowArtistAttribution(true)}

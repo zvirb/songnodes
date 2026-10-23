@@ -41,8 +41,8 @@ export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): Rea
   };
 
   const handlePlanClick = () => {
-    if (mode !== 'PLAN') {
-      onModeChange('PLAN');
+    if (mode !== 'plan') {
+      onModeChange('plan');
     }
   };
 
@@ -61,8 +61,8 @@ export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): Rea
       <button
         onClick={handlePlanClick}
         aria-label="Switch to PLAN mode"
-        aria-pressed={mode === 'PLAN'}
-        className={`${styles.modeButton} ${mode === 'PLAN' ? styles.modeButtonActive : ''}`}
+        aria-pressed={mode === 'plan'}
+        className={`${styles.modeButton} ${mode === 'plan' ? styles.modeButtonActive : ''}`}
         data-mode="plan"
       >
         📋 PLAN

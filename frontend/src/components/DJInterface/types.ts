@@ -99,7 +99,7 @@ export interface IntelligentBrowserConfig {
   showReasons: boolean;
 
   /** Grouping strategy for recommendations */
-  groupBy: 'compatibility' | 'energy' | 'bpm' | 'none';
+  groupBy: 'compatibility' | 'none';
 }
 
 /**

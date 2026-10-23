@@ -1,3 +1,5 @@
+import type { ViewportControls } from './hooks/useViewport';
+import type { SimulationControls } from './hooks/useGraphSimulation';
 /**
  * GraphControls Component
  * UI controls for viewport and simulation management
@@ -31,8 +33,6 @@ import {
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import type {
-  ViewportControls,
-  SimulationControls,
   SimulationState,
   RenderStats,
 } from './types';

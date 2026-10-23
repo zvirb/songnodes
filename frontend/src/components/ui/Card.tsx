@@ -59,7 +59,7 @@ const cardVariants = cva(
 );
 
 export interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'>,
     VariantProps<typeof cardVariants> {
   /**
    * Enable 3D hover effect (2025 Design Trend)

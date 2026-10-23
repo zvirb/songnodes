@@ -457,12 +457,12 @@ export class EdgeRenderer {
     const alpha = parseFloat(alphaStr);
 
     // Set line style
-    this.graphics.lineStyle({
+    this.graphics.setStrokeStyle({
       width,
       color,
       alpha,
-      cap: PIXI.LINE_CAP.ROUND,
-      join: PIXI.LINE_JOIN.ROUND,
+      cap: 'round',
+      join: 'round',
     });
 
     // Draw all edges in this group
@@ -470,6 +470,7 @@ export class EdgeRenderer {
       this.graphics.moveTo(edge.sourceX, edge.sourceY);
       this.graphics.lineTo(edge.targetX, edge.targetY);
     }
+    this.graphics.stroke();
   }
 
   /**

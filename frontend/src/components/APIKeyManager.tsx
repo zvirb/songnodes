@@ -12,28 +12,7 @@ import React, { useState, useEffect } from 'react';
  * - Visual status indicators
  */
 
-interface APIKeyRequirement {
-  service_name: string;
-  key_name: string;
-  display_name: string;
-  description: string;
-  required: boolean;
-  documentation_url: string;
-  display_order: number;
-}
-
-interface APIKey {
-  id: string;
-  service_name: string;
-  key_name: string;
-  masked_value: string;
-  description: string | null;
-  is_valid: boolean | null;
-  last_tested_at: string | null;
-  test_error: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type { APIKey, APIKeyRequirement } from '../types';
 
 interface APIKeyManagerProps {
   isOpen: boolean;

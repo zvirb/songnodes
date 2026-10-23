@@ -105,6 +105,8 @@ interface EnhancedGraphNode extends GraphNode, SimulationNodeDatum {
 
 // Enhanced edge interface for PIXI rendering
 interface EnhancedGraphEdge extends Omit<GraphEdge, 'source' | 'target'>, SimulationLinkDatum<EnhancedGraphNode> {
+  source: string | EnhancedGraphNode;
+  target: string | EnhancedGraphNode;
   pixiEdge?: PIXI.Graphics;
   sourceNode?: EnhancedGraphNode;
   targetNode?: EnhancedGraphNode;
@@ -664,7 +666,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Create sets for efficient lookup from the final, calculated path
     const pathNodeIds = new Set(currentPath?.path.map(p => p.track.id) || []);
-    const waypointIds = new Set(currentPath?.waypoints_visited || []);
+    const waypointIds = new Set(currentPath?.waypointsIncluded || []);
 
     // Pathfinding states take highest priority
     if (node.id === startTrackId) return COLOR_SCHEMES.node.startPoint;
@@ -2121,18 +2123,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
                   if (n.x !== undefined && n.y !== undefined &&
                       n.x >= minX && n.x <= maxX &&
                       n.y >= minY && n.y <= maxY) {
-                    graph.toggleNodeSelection(n.id, true); // Force select
+                    graph.selectNode(n.id); // Force select
                   }
                 });
 
                 console.log(`📦 Range selected ${useStore.getState().viewState.selectedNodes.size} nodes`);
               } else {
                 // Fallback: just select both nodes
-                graph.toggleNodeSelection(nodeId, true);
+                graph.selectNode(nodeId);
               }
             } else {
               // No last selected node, just select this one
-              graph.toggleNodeSelection(nodeId, true);
+              graph.selectNode(nodeId);
             }
           } else {
             // Single select: clear others ONLY if this node isn't the only one selected

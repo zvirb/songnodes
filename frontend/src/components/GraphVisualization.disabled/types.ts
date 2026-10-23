@@ -88,6 +88,8 @@ export interface GraphData {
  * Enhanced node with PIXI rendering properties
  */
 export interface EnhancedGraphNode extends GraphNode, SimulationNodeDatum {
+  x: number;
+  y: number;
   pixiNode?: PIXI.Container;
   pixiCircle?: PIXI.Graphics | PIXI.Sprite;
   pixiLabel?: PIXI.Text;
@@ -107,6 +109,8 @@ export interface EnhancedGraphNode extends GraphNode, SimulationNodeDatum {
  * Enhanced edge with PIXI rendering properties
  */
 export interface EnhancedGraphEdge extends Omit<GraphEdge, 'source' | 'target'>, SimulationLinkDatum<EnhancedGraphNode> {
+  source: string | EnhancedGraphNode;
+  target: string | EnhancedGraphNode;
   pixiEdge?: PIXI.Graphics;
   sourceNode?: EnhancedGraphNode;
   targetNode?: EnhancedGraphNode;
@@ -288,8 +292,8 @@ export interface RenderStats {
   frameTime: number;
   visibleNodes: number;
   visibleEdges: number;
-  drawCalls: number;
-  triangles: number;
+  drawCalls?: number;
+  triangles?: number;
   memoryUsage?: number;
 }
 

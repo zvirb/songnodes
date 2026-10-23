@@ -1,0 +1,62 @@
+name: songnodes-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: songnodes
+      POSTGRES_DB: songnodes
+      # Local development only; no database port is exposed to the host.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - dev-postgres:/var/lib/postgresql/data
+      - ./sql/migrations/medallion/001_bronze_layer_up.sql:/docker-entrypoint-initdb.d/001-bronze.sql:ro
+      - ./sql/migrations/medallion/002_silver_layer_up.sql:/docker-entrypoint-initdb.d/002-silver.sql:ro
+      - ./sql/migrations/medallion/006_track_adjacency_edges_up.sql:/docker-entrypoint-initdb.d/006-transitions.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U songnodes -d songnodes']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  graph-api:
+    build:
+      context: .
+      dockerfile: services/graph-visualization-api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://songnodes@postgres:5432/songnodes
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ''
+    ports: ['127.0.0.1:8084:8084']
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  rest-api:
+    build:
+      context: .
+      dockerfile: services/rest_api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://songnodes@postgres:5432/songnodes
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ''
+    ports: ['127.0.0.1:8082:8082']
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8082/health', timeout=5)"]
+      interval: 5s
+      timeout: 6s
+      retries: 20
+
+volumes:
+  dev-postgres:

@@ -5,34 +5,9 @@
 
 import { Track } from '../../types';
 
-export interface PathSegment {
-  track: {
-    id: string;
-    name: string;
-    artist: string;
-    duration_ms: number;
-    camelot_key?: string;
-    bpm?: number;
-    energy?: number;
-  };
-  connection_strength?: number;
-  key_compatible: boolean;
-  cumulative_duration_ms: number;
-  is_synthetic_edge?: boolean;
-}
-
-export interface PathfinderResult {
-  success: boolean;
-  path: PathSegment[];
-  total_duration_ms: number;
-  target_duration_ms: number;
-  duration_difference_ms: number;
-  waypoints_visited: string[];
-  waypoints_missed: string[];
-  average_connection_strength: number;
-  key_compatibility_score: number;
-  message: string;
-}
+import type { ServerPathResult } from '../../types/pathfinding';
+export type PathSegment = ServerPathResult['path'][number];
+export type PathfinderResult = ServerPathResult;
 
 export interface PathConstraints {
   targetDuration: number; // minutes

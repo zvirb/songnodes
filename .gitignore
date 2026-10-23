@@ -5,6 +5,7 @@
 .env.production
 
 # Dependencies
+.local-dev/
 node_modules/
 venv/
 .venv/
