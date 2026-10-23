@@ -6,7 +6,7 @@ Comprehensive metadata enrichment service implementing a waterfall pipeline stra
 
 This service enriches track metadata using a **sequential waterfall approach** based on research-driven best practices:
 
-1. **Spotify API** → Get ISRC, audio features, basic metadata
+1. **Spotify API** → Get ISRC and basic metadata (audio features are not used)
 2. **MusicBrainz** → Get canonical identifiers, relationships, artist data
 3. **Text search fallback** → When no identifiers available
 4. **Discogs** → Release-specific metadata (label, catalog number)

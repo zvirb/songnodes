@@ -21,6 +21,7 @@ from artist_populator import ArtistPopulator
 from title_normalizer import TitleNormalizer, FuzzyTitleMatcher
 from dj_profiler import DJProfiler
 from confidence_scorer import ConfidenceScorer, AttributionMethod
+from common.metadata.camelot import to_camelot
 
 logger = structlog.get_logger(__name__)
 
@@ -28,7 +29,7 @@ logger = structlog.get_logger(__name__)
 class MetadataEnrichmentPipeline:
     """
     Waterfall enrichment pipeline implementing the strategy:
-    1. spotify_id → Spotify API (get ISRC, audio features, basic metadata)
+    1. spotify_id → Spotify API (get ISRC and basic metadata; Spotify audio features are not used)
     2. ISRC → MusicBrainz (get musicbrainz_id, canonical identifiers)
     3. Text search fallback (artist/title) when no identifiers available
     4. Discogs for release-specific metadata
@@ -271,14 +272,6 @@ class MetadataEnrichmentPipeline:
                             isrc = spotify_data['isrc']
                             logger.info("✓ ISRC populated from Spotify", isrc=isrc)
 
-                        # Get audio features (user OAuth tokens have access)
-                        if self.spotify_client:
-                            audio_features = await self.spotify_client.get_audio_features(
-                                task.existing_spotify_id
-                            )
-                            if audio_features:
-                                metadata['audio_features'] = audio_features
-                                logger.info("✓ Spotify audio features retrieved")
                 except Exception as e:
                     logger.warning(
                         "Spotify enrichment failed - continuing with other sources",
@@ -301,15 +294,6 @@ class MetadataEnrichmentPipeline:
                         if spotify_isrc_data:
                             sources_used.append(EnrichmentSource.SPOTIFY)
                             metadata.update(spotify_isrc_data)
-
-                            # Get audio features (user OAuth tokens have access)
-                            if spotify_isrc_data.get('spotify_id'):
-                                audio_features = await self.spotify_client.get_audio_features(
-                                    spotify_isrc_data['spotify_id']
-                                )
-                                if audio_features:
-                                    metadata['audio_features'] = audio_features
-                                    logger.info("✓ Spotify audio features retrieved (ISRC search)")
                     except Exception as e:
                         logger.warning(
                             "Spotify ISRC search failed - continuing with other sources",
@@ -377,15 +361,6 @@ class MetadataEnrichmentPipeline:
                             sources_used.append(EnrichmentSource.SPOTIFY)
                             metadata.update(spotify_search)
                             logger.info("✓ Spotify text search successful")
-
-                            # Get audio features (user OAuth tokens have access)
-                            if spotify_search.get('spotify_id'):
-                                audio_features = await self.spotify_client.get_audio_features(
-                                    spotify_search['spotify_id']
-                                )
-                                if audio_features:
-                                    metadata['audio_features'] = audio_features
-                                    logger.info("✓ Spotify audio features retrieved (text search)")
                     except Exception as e:
                         logger.warning(
                             "Spotify text search failed - continuing with other sources",
@@ -502,23 +477,10 @@ class MetadataEnrichmentPipeline:
                         metadata['key'] = gsbpm_features['key']
                     logger.info("✓ GetSongBPM audio features retrieved", **gsbpm_features)
 
-            # Derive Camelot key from key/BPM data
-            if metadata.get('key'):
-                # Handle both string format ("C# minor") and numeric format (pitch class)
-                key_str = metadata['key']
-                if isinstance(key_str, str):
-                    # Parse string format "C# minor" → Camelot
-                    camelot_key = self._key_to_camelot(key_str)
-                    if camelot_key:
-                        metadata['camelot_key'] = camelot_key
-                elif isinstance(key_str, (int, float)) and metadata.get('audio_features'):
-                    # Old numeric format from Spotify (pitch class + mode)
-                    camelot_key = self._derive_camelot_key(
-                        metadata['audio_features'].get('key'),
-                        metadata['audio_features'].get('mode')
-                    )
-                    if camelot_key:
-                        metadata['camelot_key'] = camelot_key
+            # Derive Camelot key from the original key name (shared spec; None when unparseable)
+            camelot_key = to_camelot(metadata['key']) if isinstance(metadata.get('key'), str) else None
+            if camelot_key:
+                metadata['camelot_key'] = camelot_key
 
             # FINAL ISRC CHECK: Log warning if still missing
             final_isrc = metadata.get('isrc')
@@ -690,44 +652,13 @@ class MetadataEnrichmentPipeline:
                     updates.append("duration_ms = :duration_ms")
                     params['duration_ms'] = metadata['duration_ms']
 
-                # BPM from new sources or legacy audio_features
                 if metadata.get('bpm'):
                     updates.append("bpm = :bpm")
                     params['bpm'] = round(metadata['bpm'], 2)
-                elif metadata.get('audio_features', {}).get('tempo'):
-                    # Legacy Spotify tempo
-                    updates.append("bpm = :bpm")
-                    params['bpm'] = round(metadata['audio_features']['tempo'], 2)
-
-                # Key from new sources or legacy audio_features
-                # Initialize audio_features to avoid scoping issues
-                audio_features = metadata.get('audio_features', {})
 
                 if metadata.get('key') and isinstance(metadata['key'], str):
-                    # String format from AcousticBrainz/GetSongBPM/Sonoteller
                     updates.append("key = :key")
                     params['key'] = metadata['key']
-                elif audio_features.get('key') is not None:
-                    # Legacy Spotify numeric format
-                    key_map = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-                    key_num = audio_features['key']
-                    mode = audio_features.get('mode', 1)
-                    key_str = f"{key_map[key_num]} {'Major' if mode == 1 else 'Minor'}"
-                    updates.append("key = :key")
-                    params['key'] = key_str
-
-                # Only process additional audio features if they exist
-                if audio_features.get('energy') is not None:
-                    updates.append("energy = :energy")
-                    params['energy'] = round(audio_features['energy'], 2)
-
-                if audio_features.get('danceability') is not None:
-                    updates.append("danceability = :danceability")
-                    params['danceability'] = round(audio_features['danceability'], 2)
-
-                if audio_features.get('valence') is not None:
-                    updates.append("valence = :valence")
-                    params['valence'] = round(audio_features['valence'], 2)
 
                 # Release date
                 album = metadata.get('album', {})
@@ -917,103 +848,8 @@ class MetadataEnrichmentPipeline:
             )
 
     def _key_to_camelot(self, key_str: str) -> Optional[str]:
-        """
-        Convert string key notation (e.g., "C# minor", "D major") to Camelot notation
-
-        Args:
-            key_str: Key string like "C# minor" or "Ab major"
-
-        Returns:
-            Camelot notation like "5A" or "8B", or None if invalid
-        """
-        if not key_str:
-            return None
-
-        # Normalize and parse
-        key_str = key_str.strip().lower()
-
-        # Mapping from key names to Camelot
-        key_to_camelot = {
-            # Minor keys (A)
-            'a minor': '1A',
-            'e minor': '2A',
-            'b minor': '3A',
-            'f# minor': '4A', 'gb minor': '4A',
-            'c# minor': '5A', 'db minor': '5A',
-            'g# minor': '6A', 'ab minor': '6A',
-            'd# minor': '7A', 'eb minor': '7A',
-            'a# minor': '8A', 'bb minor': '8A',
-            'f minor': '9A',
-            'c minor': '10A',
-            'g minor': '11A',
-            'd minor': '12A',
-
-            # Major keys (B)
-            'c major': '8B',
-            'g major': '9B',
-            'd major': '10B',
-            'a major': '11B',
-            'e major': '12B',
-            'b major': '1B',
-            'f# major': '2B', 'gb major': '2B',
-            'c# major': '3B', 'db major': '3B',
-            'g# major': '4B', 'ab major': '4B',
-            'd# major': '5B', 'eb major': '5B',
-            'a# major': '6B', 'bb major': '6B',
-            'f major': '7B'
-        }
-
-        return key_to_camelot.get(key_str)
-
-    def _derive_camelot_key(self, key_num: Optional[int], mode: Optional[int]) -> Optional[str]:
-        """
-        Derive Camelot key notation from Spotify key and mode
-
-        Camelot Wheel mapping:
-        - A = Minor keys (mode = 0)
-        - B = Major keys (mode = 1)
-        - Numbers 1-12 represent the pitch class
-        """
-        if key_num is None or mode is None:
-            return None
-
-        # Camelot wheel mapping
-        # Key number: 0=C, 1=C#/Db, 2=D, 3=D#/Eb, 4=E, 5=F, 6=F#/Gb, 7=G, 8=G#/Ab, 9=A, 10=A#/Bb, 11=B
-        # Camelot numbers for minor (A) and major (B) keys
-        camelot_minor = {
-            9: '1A',   # A minor
-            4: '2A',   # E minor
-            11: '3A',  # B minor
-            6: '4A',   # F# minor
-            1: '5A',   # C# minor
-            8: '6A',   # G# minor
-            3: '7A',   # D# minor
-            10: '8A',  # A# minor
-            5: '9A',   # F minor
-            0: '10A',  # C minor
-            7: '11A',  # G minor
-            2: '12A'   # D minor
-        }
-
-        camelot_major = {
-            0: '8B',   # C major
-            7: '9B',   # G major
-            2: '10B',  # D major
-            9: '11B',  # A major
-            4: '12B',  # E major
-            11: '1B',  # B major
-            6: '2B',   # F# major
-            1: '3B',   # C# major
-            8: '4B',   # G# major
-            3: '5B',   # D# major
-            10: '6B',  # A# major
-            5: '7B'    # F major
-        }
-
-        if mode == 0:  # Minor
-            return camelot_minor.get(key_num)
-        else:  # Major
-            return camelot_major.get(key_num)
+        """Camelot code for a key name via the shared specification (None if unparseable)."""
+        return to_camelot(key_str)
 
     def _get_cache_key(self, track_id: str) -> str:
         """Generate cache key for track enrichment"""

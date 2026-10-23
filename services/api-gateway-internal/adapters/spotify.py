@@ -109,23 +109,6 @@ class SpotifyAdapter:
             use_cache=True
         )
 
-    async def get_audio_features(self, track_id: str) -> Dict[str, Any]:
-        """
-        Get audio features for a track.
-
-        Args:
-            track_id: Spotify track ID
-
-        Returns:
-            Audio features (tempo, key, energy, etc.)
-        """
-        # Run synchronous client method in thread pool
-        return await asyncio.to_thread(
-            self.client.get_audio_features,
-            spotify_id=track_id,
-            use_cache=True
-        )
-
     async def get_artist(self, artist_id: str) -> Dict[str, Any]:
         """
         Get artist metadata.

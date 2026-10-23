@@ -93,7 +93,7 @@ async def list_spiders():
             },
             {
                 "name": "spotify",
-                "description": "Audio features enrichment (BPM, key, energy, etc.)",
+                "description": "Playlist and track metadata (ISRC, duration, popularity)",
                 "layer": "Enrichment (Section 1.2)"
             },
             {

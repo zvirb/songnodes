@@ -54,7 +54,7 @@ class SpotifyClient:
         self.rate_limiter = RateLimiter(requests_per_second=3)
 
     async def _get_user_token_from_db(self) -> Optional[str]:
-        """Get user OAuth token from database (for audio features access) with automatic refresh"""
+        """Get user OAuth token from database with automatic refresh"""
         if not self.db_session_factory:
             return None
 
@@ -184,17 +184,17 @@ class SpotifyClient:
             return None
 
     async def _get_access_token(self) -> str:
-        """Get Spotify access token - prefers user tokens (for audio features) over client credentials"""
-        # Try user token first (has access to audio features)
+        """Get Spotify access token - prefers user tokens over client credentials"""
+        # Try user token first
         if self.user_token_mode:
             user_token = await self._get_user_token_from_db()
             if user_token:
-                logger.debug("Using Spotify user token (audio features enabled)")
+                logger.debug("Using Spotify user token")
                 return user_token
             else:
-                logger.info("No user token available, falling back to client credentials (no audio features)")
+                logger.info("No user token available, falling back to client credentials")
 
-        # Fallback to client credentials flow (no audio features access)
+        # Fallback to client credentials flow
         if self.access_token and time.time() < self.token_expires_at:
             return self.access_token
 
@@ -528,52 +528,6 @@ class SpotifyClient:
             return await self.circuit_breaker.call(_get_track)
         except (RetryExhausted, aiohttp.ClientError) as e:
             logger.error("Spotify get track failed", error=str(e), spotify_id=spotify_id)
-            return None
-
-    async def get_audio_features(self, spotify_id: str) -> Optional[Dict[str, Any]]:
-        """Get audio features for a track"""
-        await self.rate_limiter.wait()
-
-        cache_key = f"spotify:audio_features:{spotify_id}"
-
-        # Check cache
-        cached = await self.redis_client.get(cache_key)
-        if cached:
-            return json.loads(cached)
-
-        async def _get_features():
-            token = await self._get_access_token()
-            headers = {'Authorization': f'Bearer {token}'}
-
-            url = f"{self.base_url}/audio-features/{spotify_id}"
-
-            async def _api_call():
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url, headers=headers) as response:
-                        response.raise_for_status()
-                        features = await response.json()
-
-                        # Cache for 90 days (audio features don't change)
-                        await self.redis_client.setex(
-                            cache_key,
-                            90 * 24 * 3600,
-                            json.dumps(features)
-                        )
-
-                        return features
-
-            return await fetch_with_exponential_backoff(
-                _api_call,
-                max_retries=API_MAX_RETRIES,
-                initial_delay=API_INITIAL_DELAY,
-                max_delay=API_MAX_DELAY,
-                logger_context={'api': 'spotify', 'method': 'get_audio_features', 'spotify_id': spotify_id}
-            )
-
-        try:
-            return await self.circuit_breaker.call(_get_features)
-        except (RetryExhausted, aiohttp.ClientError) as e:
-            logger.error("Spotify audio features failed", error=str(e), spotify_id=spotify_id)
             return None
 
     async def search_by_isrc(self, isrc: str) -> Optional[Dict[str, Any]]:

@@ -54,7 +54,6 @@ cache_ttl:
   # Spotify
   spotify_track_metadata: 2592000    # 30 days
   spotify_search_results: 604800     # 7 days
-  spotify_audio_features: 7776000    # 90 days (stable)
 
   # MusicBrainz
   musicbrainz_isrc: 7776000          # 90 days (stable)

@@ -448,28 +448,6 @@ async def get_track(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/spotify/audio-features/{track_id}")
-async def get_spotify_audio_features(track_id: str):
-    """Get Spotify audio features."""
-    adapter = get_adapter("spotify")
-
-    try:
-        result = await adapter.get_audio_features(track_id)
-        return {
-            "provider": "spotify",
-            "track_id": track_id,
-            "data": result
-        }
-
-    except Exception as e:
-        logger.error(
-            "Get audio features failed",
-            track_id=track_id,
-            error=str(e)
-        )
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/admin/circuit-breakers")
 async def get_circuit_breakers():
     """Get circuit breaker states from unified clients."""

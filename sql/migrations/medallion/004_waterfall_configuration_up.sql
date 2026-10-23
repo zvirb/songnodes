@@ -120,7 +120,7 @@ COMMENT ON COLUMN enrichment_providers.supported_fields IS 'Array of metadata fi
 
 -- Insert provider definitions
 INSERT INTO enrichment_providers (provider_name, provider_type, supported_fields, requires_auth, auth_type) VALUES
-    ('spotify', 'api', ARRAY['spotify_id', 'isrc', 'release_date', 'duration_ms', 'bpm', 'key', 'energy', 'valence', 'danceability', 'genre'], TRUE, 'oauth'),
+    ('spotify', 'api', ARRAY['spotify_id', 'isrc', 'release_date', 'duration_ms', 'genre'], TRUE, 'oauth'),
     ('beatport', 'api', ARRAY['beatport_id', 'bpm', 'key', 'genre', 'release_date'], TRUE, 'api_key'),
     ('musicbrainz', 'api', ARRAY['musicbrainz_id', 'isrc', 'release_date', 'artist_name', 'track_title'], FALSE, NULL),
     ('lastfm', 'api', ARRAY['genre', 'play_count', 'tags'], TRUE, 'api_key'),
@@ -149,15 +149,14 @@ INSERT INTO metadata_enrichment_config (
     ('beatport_id', 'beatport', 1.00, NULL, NULL, NULL, NULL, NULL, NULL, 'identifier', 'Beatport track identifier', FALSE, 0.90),
 
     -- Musical Attributes (multiple sources with confidence thresholds)
-    ('bpm', 'beatport', 0.98, 'spotify', 0.85, 'acousticbrainz', 0.75, 'mixesdb', 0.60, 'musical_attribute', 'Beats per minute', TRUE, 0.70),
+    ('bpm', 'beatport', 0.98, 'acousticbrainz', 0.75, 'mixesdb', 0.60, NULL, NULL, 'musical_attribute', 'Beats per minute', TRUE, 0.70),
 
-    ('key', 'beatport', 0.95, 'spotify', 0.85, 'acousticbrainz', 0.70, 'mixesdb', 0.60, 'musical_attribute', 'Musical key (Camelot notation)', TRUE, 0.70),
+    ('key', 'beatport', 0.95, 'acousticbrainz', 0.70, 'mixesdb', 0.60, NULL, NULL, 'musical_attribute', 'Musical key (Camelot notation)', TRUE, 0.70),
 
-    ('energy', 'spotify', 0.90, 'acousticbrainz', 0.75, NULL, NULL, NULL, NULL, 'musical_attribute', 'Energy level (0-1)', FALSE, 0.60),
+    ('energy', 'acousticbrainz', 0.75, NULL, NULL, NULL, NULL, NULL, NULL, 'musical_attribute', 'Energy level (0-1)', FALSE, 0.60),
 
-    ('danceability', 'spotify', 0.90, 'acousticbrainz', 0.75, NULL, NULL, NULL, NULL, 'musical_attribute', 'Danceability score (0-1)', FALSE, 0.60),
+    ('danceability', 'acousticbrainz', 0.75, NULL, NULL, NULL, NULL, NULL, NULL, 'musical_attribute', 'Danceability score (0-1)', FALSE, 0.60),
 
-    ('valence', 'spotify', 0.90, NULL, NULL, NULL, NULL, NULL, NULL, 'musical_attribute', 'Musical positivity (0-1)', FALSE, 0.60),
 
     -- Genre (multiple sources, varying quality)
     ('genre', 'beatport', 0.90, 'spotify', 0.85, 'lastfm', 0.70, 'discogs', 0.65, 'metadata', 'Music genre classification', TRUE, 0.60),

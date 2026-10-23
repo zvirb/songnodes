@@ -65,7 +65,6 @@ The API Integration Gateway is a centralized service for managing all external A
 **Cache TTL Policies:**
 - Spotify track metadata: 30 days
 - Spotify search results: 7 days
-- Spotify audio features: 90 days (stable)
 - MusicBrainz ISRC: 90 days (stable)
 - Beatport BPM: 60 days
 - Last.fm genres: 14 days
@@ -113,13 +112,6 @@ curl -X POST http://localhost:8100/api/spotify/search \
 ```bash
 # Get Spotify track by ID
 curl http://localhost:8100/api/spotify/track/5KH0qbmre8xkRt5sNIbPrx
-```
-
-### Get Audio Features
-
-```bash
-# Get Spotify audio features (tempo, key, energy, etc.)
-curl http://localhost:8100/api/spotify/audio-features/5KH0qbmre8xkRt5sNIbPrx
 ```
 
 ### Health Check
