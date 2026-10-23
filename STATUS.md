@@ -2,11 +2,12 @@
 
 ## Current task
 
-Completed: merged the dependency-upgrade branch (`chore/upgrade-dependencies`, all frontend,
-Node-service and Python pins moved to latest) onto `work` on the integration branch
-`chore/upgrade-dependencies-on-work`, and corrected the code the upgrades broke.
-`work` and `origin/work` are unchanged. Not pushed.
-Next implementation task: the legacy catalog-write audit (unchanged from the previous checkpoint).
+Completed 2026-10-24 on branch `feature/catalog-writes-silver` (from `main`, not yet merged or pushed):
+the legacy REST catalog writes now operate on silver storage. Domain rules are in
+`services/rest_api/catalog_writes.py`; `services/rest_api/routers/catalog_writes.py` is the thin HTTP layer;
+the dead handlers were removed from `main.py`. No data was imported.
+Next implementation task: Milestone 2 follow-through (job status/idempotency/Celery for slow work) and the
+remaining legacy `/api/v1/*` surfaces still on old tables (see Resume point).
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
@@ -63,6 +64,17 @@ Started: 2026-10-24 (Australia/Sydney).
 - Not run: Docker builds, database-backed API tests, Chromium smoke, Playwright E2E, Python service test suites.
 - Known, not caused by the upgrade: `scrapers/llm_scraper_engine.py` uses the removed OpenAI `ChatCompletion` API; Node service Dockerfiles still use `node:18-alpine` and need a base-image bump to meet the new `engines` ranges; Node services have no lockfiles.
 
+## Catalog writes on silver (2026-10-24)
+
+- Artist create/rename/merge/delete, assign-artist, track create, tracklist import, `/artists/dirty` and `/tracks/missing-artist` now use `silver_enriched_artists`, `silver_enriched_tracks`, `silver_enriched_playlists`, `silver_playlist_tracks`, bronze lineage and `silver_track_transitions`. They previously queried `artists`/`track_artists`/`tracks`/`songs`/`song_adjacency`, which the minimal stack lacks, so every call returned 500.
+- Silver keeps the primary artist as `artist_name` text equal to `canonical_name`, so artist changes update artist and tracks (and DJ-set ownership) in one transaction. Rename keeps the old name as an alias; merge unions aliases/bronze ids and records `merged_artist_ids`.
+- Behaviour decisions: delete returns 409 while tracks or sets still use the artist (silver requires a valid artist); only role `primary` is stored; assign-artist only replaces an empty/generic placeholder; manual rows are `needs_review` with `enrichment_metadata.source = 'manual'` and unknown fields stay NULL; `POST /api/v1/tracks` now requires `artist_name`; duplicate tracks (case-insensitive artist+title) return 409; merge reports `repeated_titles` for review instead of deleting rows.
+- Tracklist import writes bronze first (positions kept as `source_track_id`), then silver tracks (exact case-insensitive match; fuzzy resolution stays Milestone 4), canonical-artist reuse by normalized name, an optional silver set when `dj_artist` is given, and directed N -> N+1 transitions with `occurrence_count`. Invalid rows are reported and break the chain rather than bridging a gap. Replaying an identical ordered list is a no-op (`replayed: true`, content-digest keyed).
+- Not changed: the two Gold-layer reads (`/api/v1/tracks/{id}/preview`, `/api/graph/*` legacy), scraper trigger, Celery/job status.
+
+Checks: 10 new database-backed tests in `tests/integration/test_dev_catalog_writes.py`; all 36 dev integration tests pass (`PYTHONIOENCODING=utf-8`, see below); synthetic rows cleaned (all catalog tables back to 0 rows).
+Known: `scripts/metadata_coverage.py` prints `->` arrows that fail under Windows' cp1252 when output is piped (one coverage CLI test errors without `PYTHONIOENCODING=utf-8`); not changed here.
+
 ## Validation results
 
 - `bash scripts/start-dev.sh`: passed, including a repeat run retaining the existing database volume. All four services reported healthy.
@@ -116,8 +128,9 @@ milestone 3; availability of complete real-set fixtures must be checked in miles
 
 ## Next steps
 
-1. Audit remaining legacy catalog writes against silver storage and shared metadata contracts. Preserve partial-update/null semantics and provenance.
-2. Obtain/import authorised real catalog/set fixtures when available; capture a new populated fixed-sample baseline and representative workload performance measurements.
-3. Continue domain consolidation and canonical identity/outbox work with the planned metadata provider/schema/consensus work packages.
+1. Milestone 2: job status, idempotency keys, bounded retries and dead-letter handling for slow work (Celery), and retire callers of the old data-transformer/data-validator write paths.
+2. Check the remaining legacy surfaces (`/api/v1/tracks/{id}/preview`, legacy `/api/graph/*` in rest_api, setlist/playlist writes) against silver.
+3. Obtain/import authorised real catalog/set fixtures when permitted, then capture a populated baseline (not done: no data imported).
+4. Continue with canonical identity/outbox work and the WP1-WP5 metadata program.
 
 Update this file whenever a new task begins and when work stops or a milestone completes.
