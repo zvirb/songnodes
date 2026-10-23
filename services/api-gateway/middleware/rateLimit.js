@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { redisClient } = require('../config/redis');
 const logger = require('../utils/logger');
 
@@ -22,7 +22,7 @@ class RedisStore {
           resetTime: new Date(Date.now() + this.expiry * 1000)
         };
       }
-      
+
       const current = await this.client.incr(redisKey);
       
       if (current === 1) {
@@ -43,6 +43,10 @@ class RedisStore {
         resetTime: new Date(Date.now() + this.expiry * 1000)
       };
     }
+  }
+
+  init(options) {
+    this.windowMs = options.windowMs;
   }
 
   async decrement(key) {
@@ -85,15 +89,20 @@ const generalLimiter = rateLimit({
   }),
   keyGenerator: (req) => {
     // Use user ID if authenticated, otherwise IP
-    return req.user ? `user:${req.user.id}` : `ip:${req.ip}`;
+    return req.user ? `user:${req.user.id}` : `ip:${ipKeyGenerator(req.ip)}`;
   },
   skip: (req) => {
     // Skip rate limiting for health checks
     return req.path.includes('/health');
   },
-  onLimitReached: (req, res, options) => {
+  handler: (req, res) => {
     const identifier = req.user ? req.user.email : req.ip;
     logger.warn(`Rate limit exceeded for ${identifier} on ${req.path}`);
+    res.status(429).json({
+      error: 'Too Many Requests',
+      message: 'Too many requests from this IP, please try again later.',
+      retryAfter: parseInt(process.env.RATE_LIMIT_WINDOW || 60)
+    });
   }
 });
 
@@ -114,16 +123,23 @@ const authLimiter = rateLimit({
   }),
   keyGenerator: (req) => {
     // Use email from request body if available, otherwise IP
-    return req.body?.email ? `email:${req.body.email}` : `ip:${req.ip}`;
+    return req.body?.email ? `email:${req.body.email}` : `ip:${ipKeyGenerator(req.ip)}`;
   },
-  onLimitReached: (req, res, options) => {
+  handler: (req, res) => {
     const identifier = req.body?.email || req.ip;
     logger.warn(`Authentication rate limit exceeded for ${identifier}`);
     
     // Additional security: temporarily block IP after repeated auth failures
     if (req.body?.email) {
-      redisClient.setEx(`block:auth:${req.ip}`, 15 * 60, 'blocked');
+      redisClient.setEx(`block:auth:${req.ip}`, 15 * 60, 'blocked').catch((error) => {
+        logger.warn('Unable to apply temporary authentication block:', error);
+      });
     }
+    res.status(429).json({
+      error: 'Too Many Authentication Attempts',
+      message: 'Too many authentication attempts, please try again in 15 minutes.',
+      retryAfter: 15 * 60
+    });
   }
 });
 
@@ -143,7 +159,7 @@ const apiKeyLimiter = rateLimit({
     expiry: 60
   }),
   keyGenerator: (req) => {
-    return `apikey:${req.headers['x-api-key']}`;
+    return `apikey:${req.headers['x-api-key'] || ''}`;
   },
   skip: (req) => {
     return !req.headers['x-api-key'];
@@ -177,7 +193,7 @@ const createTieredLimiter = (tier) => {
       expiry: config.window / 1000
     }),
     keyGenerator: (req) => {
-      return req.user ? `user:${req.user.id}` : `ip:${req.ip}`;
+      return req.user ? `user:${req.user.id}` : `ip:${ipKeyGenerator(req.ip)}`;
     }
   });
 };

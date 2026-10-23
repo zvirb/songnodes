@@ -17,9 +17,8 @@
 @import './styles/globals.css';
 
 /* Tailwind CSS layers */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 /* Legacy global.css for backward compatibility */
 @import './styles/global.css';

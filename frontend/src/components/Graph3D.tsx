@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import ForceGraph3D, { ForceGraph3DInstance } from 'react-force-graph-3d';
+import ForceGraph3D, { type ForceGraphMethods } from 'react-force-graph-3d';
 import * as THREE from 'three';
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
@@ -86,7 +86,7 @@ export const Graph3D: React.FC<Graph3DProps> = ({
   onNodeHover,
   className = '',
 }) => {
-  const fgRef = useRef<ForceGraph3DInstance>();
+  const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Store state
@@ -315,8 +315,11 @@ export const Graph3D: React.FC<Graph3DProps> = ({
     const connectedLinks = new Set<string>();
 
     enhancedGraphData.links.forEach(link => {
-      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      const source = link.source;
+      const target = link.target;
+      const sourceId = source && typeof source === 'object' ? (source as GraphNode).id : source;
+      const targetId = target && typeof target === 'object' ? (target as GraphNode).id : target;
+      if (sourceId == null || targetId == null) return;
 
       if (sourceId === node.id) {
         connectedNodeIds.add(targetId);

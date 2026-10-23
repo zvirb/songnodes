@@ -1,5 +1,4 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const argon2 = require('argon2');
 const { body, validationResult } = require('express-validator');
 const authMiddleware = require('../middleware/auth');

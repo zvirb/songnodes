@@ -78,23 +78,31 @@ const serviceProxies = {
 
 // Setup proxy middleware for each service
 Object.entries(serviceProxies).forEach(([path, config]) => {
-  app.use(path, createProxyMiddleware({
+  // pathFilter (not app.use(path, ...)) keeps the full URL so pathRewrite still matches the prefix
+  app.use(createProxyMiddleware({
+    pathFilter: path,
     ...config,
     changeOrigin: true,
     secure: false,
     timeout: 30000,
-    onError: (err, req, res) => {
-      logger.error(`Proxy error for ${path}:`, err.message);
-      res.status(503).json({ 
-        error: 'Service temporarily unavailable',
-        message: 'The requested service is currently offline'
-      });
+    on: {
+      error: (err, req, res) => {
+        logger.error(`Proxy error for ${path}:`, err.message);
+        if ('status' in res) {
+          res.status(503).json({
+            error: 'Service temporarily unavailable',
+            message: 'The requested service is currently offline'
+          });
+        } else {
+          res.destroy();
+        }
+      }
     }
   }));
 });
 
 // Catch-all for unknown routes
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',
     message: 'The requested endpoint does not exist',

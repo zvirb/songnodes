@@ -99,7 +99,7 @@ async function createServer() {
   app.addHook('onResponse', async (request, reply) => {
     if (request.startTime) {
       const duration = (Date.now() - request.startTime) / 1000;
-      const route = request.routerPath || request.url;
+      const route = request.routeOptions.url || request.url;
       metrics.httpRequestsTotal.inc({
         method: request.method,
         route: route,
@@ -218,14 +218,14 @@ async function createServer() {
       
       if (!token) {
         console.warn(`WebSocket connection ${connectionId} rejected: No authentication token provided`);
-        connection.socket.close(1008, 'Authentication required');
+        connection.close(1008, 'Authentication required');
         return;
       }
 
       const user = verifyToken(token);
       if (!user) {
         console.warn(`WebSocket connection ${connectionId} rejected: Invalid or expired token`);
-        connection.socket.close(1008, 'Invalid authentication token');
+        connection.close(1008, 'Invalid authentication token');
         return;
       }
 
@@ -235,7 +235,7 @@ async function createServer() {
       metrics.onWebSocketConnection();
 
       // Send welcome message
-      connection.socket.send(JSON.stringify({
+      connection.send(JSON.stringify({
         type: 'connected',
         connectionId,
         user: {
@@ -246,7 +246,7 @@ async function createServer() {
       }));
 
       // Handle incoming messages
-      connection.socket.on('message', (message) => {
+      connection.on('message', (message) => {
         // Track received message in metrics
         metrics.onWebSocketMessageReceived();
 
@@ -264,7 +264,7 @@ async function createServer() {
             case 'subscribe':
               // Handle channel subscriptions
               console.log(`Connection ${connectionId} subscribing to channel: ${data.channel}`);
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'subscription_confirmed',
                 channel: data.channel,
                 timestamp: Date.now(),
@@ -274,7 +274,7 @@ async function createServer() {
             case 'visualization_request':
               // Handle visualization data requests
               console.log(`Visualization request from ${connectionId}`, data.params);
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'visualization_data',
                 requestId: data.requestId,
                 data: { 
@@ -294,7 +294,7 @@ async function createServer() {
               // Handle user interactions (zoom, pan, etc.)
               console.log(`User interaction from ${connectionId}:`, data.interaction);
               // Echo back the interaction
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'user_interaction_broadcast',
                 connectionId,
                 user: {
@@ -308,7 +308,7 @@ async function createServer() {
               
             default:
               console.warn(`Unknown WebSocket message type: ${data.type} from connection ${connectionId}`);
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'error',
                 message: `Unknown message type: ${data.type}`,
                 timestamp: Date.now(),
@@ -316,7 +316,7 @@ async function createServer() {
           }
         } catch (error) {
           console.error('Error processing WebSocket message:', error);
-          connection.socket.send(JSON.stringify({
+          connection.send(JSON.stringify({
             type: 'error',
             message: 'Failed to process message',
             timestamp: Date.now(),
@@ -325,14 +325,14 @@ async function createServer() {
       });
 
       // Handle connection close
-      connection.socket.on('close', (code, reason) => {
+      connection.on('close', (code, reason) => {
         console.log(`WebSocket connection ${connectionId} closed: ${code} - ${reason || 'unknown'}`);
         // Track WebSocket disconnection in metrics
         metrics.onWebSocketDisconnection();
       });
 
       // Handle connection error
-      connection.socket.on('error', (error) => {
+      connection.on('error', (error) => {
         console.error(`WebSocket connection ${connectionId} error:`, error);
       });
     });

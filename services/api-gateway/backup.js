@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { exec } = require('child_process');
 const fs = require('fs').promises;
-const path = require('path');
 const multer = require('multer');
 
 // Configure multer for file uploads
@@ -140,7 +139,7 @@ router.get('/status', async (req, res) => {
     const sizeCmd = `PGPASSWORD="${DB_PASSWORD}" psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -t -c "SELECT pg_size_pretty(pg_database_size('${DB_NAME}'));"`;
 
     const dbSize = await new Promise((resolve, reject) => {
-      exec(sizeCmd, (error, stdout, stderr) => {
+      exec(sizeCmd, (error, stdout, _stderr) => {
         if (error) {
           reject(error);
         } else {
@@ -153,7 +152,7 @@ router.get('/status', async (req, res) => {
     const tableCountCmd = `PGPASSWORD="${DB_PASSWORD}" psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';"`;
 
     const tableCount = await new Promise((resolve, reject) => {
-      exec(tableCountCmd, (error, stdout, stderr) => {
+      exec(tableCountCmd, (error, stdout, _stderr) => {
         if (error) {
           reject(error);
         } else {

@@ -27,10 +27,10 @@ router.get('/detailed', async (req, res) => {
   };
 
   const startTime = Date.now();
+  const redisStart = Date.now();
 
   try {
     // Check Redis connection
-    const redisStart = Date.now();
     await redisClient.ping();
     checks.redis = {
       status: 'healthy',
@@ -55,8 +55,7 @@ router.get('/detailed', async (req, res) => {
     services.map(async (service) => {
       const serviceStart = Date.now();
       try {
-        const response = await fetch(service.url, { 
-          timeout: 5000,
+        const response = await fetch(service.url, {
           signal: AbortSignal.timeout(5000)
         });
         

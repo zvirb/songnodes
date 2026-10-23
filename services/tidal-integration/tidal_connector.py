@@ -7,6 +7,7 @@ import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import asyncpg
@@ -175,7 +176,7 @@ class TidalIntegration:
         assert self.session is not None
         if os.path.exists(self.session_file):
             try:
-                self.session.load_session_from_file(self.session_file)
+                self.session.load_session_from_file(Path(self.session_file))
                 if self.session.check_login():
                     self.logger.info("Loaded TIDAL session from %s", self.session_file)
                     return
@@ -184,10 +185,10 @@ class TidalIntegration:
                 self.logger.warning("Failed to load session file: %s", exc)
 
         self.logger.info("Starting TIDAL OAuth device flow")
-        success = self.session.login_oauth_simple()
-        if not success:  # pragma: no cover - user cancelled
+        self.session.login_oauth_simple()
+        if not self.session.check_login():  # pragma: no cover - user cancelled
             raise IntegrationDisabledError("TIDAL OAuth login failed; rerun with valid credentials")
-        self.session.save_session(self.session_file)
+        self.session.save_session_to_file(Path(self.session_file))
         self.logger.info("Stored new TIDAL session at %s", self.session_file)
 
     def _list_playlists_sync(self) -> List[Dict[str, Any]]:

@@ -215,7 +215,7 @@ export function useScreenReaderAnnouncement() {
  * Hook for debouncing constraint updates
  */
 export function useDebouncedConstraintUpdate(send: (event: any) => void, delay: number = 500) {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const debouncedUpdate = useCallback(
     (constraints: any) => {

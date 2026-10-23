@@ -21,7 +21,7 @@ export default defineConfig({
   plugins: [react(), timestampPlugin()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': resolve(import.meta.dirname, 'src'),
     },
   },
   define: {
@@ -65,21 +65,30 @@ export default defineConfig({
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        manualChunks: {
-          // Split large visualization components
-          'graph-visualization': ['./src/components/GraphVisualization.tsx'],
-          'pixi-vendor': ['pixi.js'],
-          'd3-vendor': ['d3-force', 'd3-quadtree'],
-          'ui-components': [
-            './src/components/DJInterface.tsx',
-            './src/components/SetlistBuilder.tsx',
-            './src/components/StatsPanel.tsx'
-          ]
-        }
+        codeSplitting: {
+          groups: [
+            {
+              name: 'graph-visualization',
+              test: /[\\/]src[\\/]components[\\/]GraphVisualization\.tsx$/,
+            },
+            {
+              name: 'pixi-vendor',
+              test: /node_modules[\\/]pixi\.js[\\/]/,
+            },
+            {
+              name: 'd3-vendor',
+              test: /node_modules[\\/]d3-(force|quadtree)[\\/]/,
+            },
+            {
+              name: 'ui-components',
+              test: /[\\/]src[\\/]components[\\/](DJInterface|SetlistBuilder|StatsPanel)\.tsx$/,
+            },
+          ],
+        },
       },
     },
     target: 'esnext',
-    minify: 'esbuild',
+    minify: 'oxc',
     sourcemap: true,
     chunkSizeWarningLimit: 1000, // Increase threshold to 1MB for large components
     // CRITICAL: Fix PIXI.js worker loading

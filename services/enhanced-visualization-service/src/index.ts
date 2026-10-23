@@ -90,7 +90,8 @@ async function createServer() {
   fastify.addHook('preHandler', contextMiddleware as any);
   fastify.addHook('preHandler', metricsMiddleware as any);
   fastify.setErrorHandler(async (error, request, reply) => {
-    await errorMiddleware(error, request as any, reply);
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    await errorMiddleware(normalizedError, request as any, reply);
   });
 
   return fastify;

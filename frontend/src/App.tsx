@@ -175,7 +175,7 @@ const App: React.FC = () => {
     // loadGraphData();
 
     // Performance monitoring in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       setShowPerformanceMonitor(true);
     }
 

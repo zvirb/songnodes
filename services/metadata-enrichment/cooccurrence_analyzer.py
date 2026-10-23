@@ -232,9 +232,8 @@ class CoOccurrenceAnalyzer:
         Uses Fellegi-Sunter model with Expectation-Maximization training
         """
         try:
-            from splink.duckdb.linker import DuckDBLinker
-            from splink.duckdb.blocking_rule_library import block_on
-            import splink.duckdb.comparison_library as cl
+            from splink import DuckDBAPI, Linker, SettingsCreator, block_on
+            from splink import comparison_library as cl
         except ImportError:
             logger.warning("splink not available, falling back to manual calculation")
             raise ImportError("splink library not installed")
@@ -248,31 +247,39 @@ class CoOccurrenceAnalyzer:
         if features_df.empty:
             return []
 
+        features_df = features_df.copy()
+        if "unique_id" not in features_df:
+            features_df["unique_id"] = range(len(features_df))
+
         # Define splink settings
-        settings = {
-            "link_type": "dedupe_only",
-            "blocking_rules_to_generate_predictions": [
+        settings = SettingsCreator(
+            link_type="dedupe_only",
+            blocking_rules_to_generate_predictions=[
                 block_on("candidate_artist"),
             ],
-            "comparisons": [
-                cl.exact_match("dj_is_candidate", term_frequency_adjustments=True),
-                cl.exact_match("artist_played_before", term_frequency_adjustments=True),
-                cl.exact_match("artist_played_after", term_frequency_adjustments=True),
-                cl.exact_match("label_match_before"),
-                cl.exact_match("label_match_after"),
-                cl.exact_match("dj_label_owner", term_frequency_adjustments=True),
+            comparisons=[
+                cl.ExactMatch("dj_is_candidate").configure(term_frequency_adjustments=True),
+                cl.ExactMatch("artist_played_before").configure(term_frequency_adjustments=True),
+                cl.ExactMatch("artist_played_after").configure(term_frequency_adjustments=True),
+                cl.ExactMatch("label_match_before"),
+                cl.ExactMatch("label_match_after"),
+                cl.ExactMatch("dj_label_owner").configure(term_frequency_adjustments=True),
             ],
-        }
+        )
 
-        # Create linker
-        linker = DuckDBLinker(features_df, settings)
+        # Splink 5 requires inputs to be registered with its database API.
+        db_api = DuckDBAPI()
+        linker = Linker(
+            db_api.register(features_df, dataset_display_name="candidate_artists"),
+            settings,
+        )
 
         # Estimate parameters using Expectation-Maximization
         try:
-            linker.estimate_u_using_random_sampling(max_pairs=1e6)
+            linker.training.estimate_u_using_random_sampling(max_pairs=1e6)
 
             # Estimate m probabilities
-            linker.estimate_parameters_using_expectation_maximisation(
+            linker.training.estimate_parameters_using_expectation_maximisation(
                 block_on("candidate_artist")
             )
         except Exception as e:
@@ -280,7 +287,7 @@ class CoOccurrenceAnalyzer:
             # Continue with default parameters
 
         # Predict matches
-        df_predictions = linker.predict()
+        df_predictions = linker.inference.predict().as_pandas_dataframe()
 
         # Convert to ArtistProbability objects
         probabilities = self._convert_splink_results(
@@ -311,8 +318,17 @@ class CoOccurrenceAnalyzer:
             ]
 
             if not artist_predictions.empty:
-                # Use splink probability
-                match_probability = artist_predictions['match_probability'].max()
+                if 'match_probability' in artist_predictions:
+                    match_probability = artist_predictions['match_probability'].max()
+                elif 'match_weight' in artist_predictions:
+                    match_weight = artist_predictions['match_weight'].max()
+                    match_probability = (
+                        1 / (1 + 2 ** -match_weight)
+                        if match_weight >= 0
+                        else 2 ** match_weight / (1 + 2 ** match_weight)
+                    )
+                else:
+                    match_probability = self._estimate_probability_from_features(group)
             else:
                 # No splink prediction, use feature-based estimate
                 match_probability = self._estimate_probability_from_features(group)
