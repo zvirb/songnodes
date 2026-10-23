@@ -6,6 +6,7 @@ import { api } from './services/api';
 import { PanelState } from './types';
 import './styles/global.css';
 import { QuickSearch } from './components/QuickSearch';
+import { Attributions } from './components/Attributions';
 import { useTokenRefresh } from './hooks/useTokenRefresh';
 
 // Lazy load components for performance
@@ -637,6 +638,7 @@ const App: React.FC = () => {
         </React.Suspense>
       </div>
       <QuickSearch />
+      <Attributions />
     </>
   );
 };

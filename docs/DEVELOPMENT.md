@@ -55,13 +55,47 @@ The startup script also applies `sql/migrations/013_ingestion_jobs_up.sql`
 `POST /api/v1/scrape/trigger` and `GET /api/v1/jobs`. Jobs are deduplicated by
 `(kind, idempotency_key)` (send an `Idempotency-Key` header to retry safely),
 retried with exponential backoff up to `max_attempts`, then dead-lettered;
-`POST /api/v1/jobs/{id}/retry` revives a dead job. The minimal stack runs no
-worker, so submitted jobs stay `queued`. Apply the migration explicitly outside
-this script; `013_ingestion_jobs_down.sql` drops the table and its history.
+`POST /api/v1/jobs/{id}/retry` revives a dead job. The `worker` container
+(Celery + RabbitMQ, both in `compose.dev.yaml`) executes them. Apply the
+migrations explicitly outside this script (`python migrate.py` in the worker
+image does it idempotently); `013_ingestion_jobs_down.sql` drops the table and
+its history.
+
+`sql/migrations/014_data_layer_up.sql` (also applied by the script) adds the
+data layer: metadata columns, per-source evidence, the transactional outbox, the
+rebuildable `projection_tracks`, merge history, entity-resolution decisions,
+backfill checkpoints, and the `playlist_id`/`position` bronze columns the scraper
+pipeline writes. See [DATA_LAYER.md](DATA_LAYER.md) for the design and
+[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for the cluster redeploy.
+
+### Providers and the worker
+
+The dev stack sets `ENRICHMENT_PROVIDERS=none`, so neither it nor its tests call any
+external provider. To try one, export its credentials and the allow-list before
+`start-dev.sh`, for example `TIDAL_CLIENT_ID=… TIDAL_CLIENT_SECRET=… ENRICHMENT_PROVIDERS=tidal,deezer`.
+Credentials are read from the host environment or an untracked `.env`; none are
+committed. Live provider contract checks are separate and opt-in:
+
+```bash
+RUN_LIVE_PROVIDER_TESTS=1 python -m unittest discover -s tests/live -v
+```
 
 ## Verify
 
 With Vite running:
+
+Backend tests (Docker running; set `PYTHONIOENCODING=utf-8` on Windows):
+
+```bash
+cd services && python -m pytest common/tests              # pure logic: Camelot, tempo, energy, consensus, matching,
+                                                         # providers (mocked HTTP), parsing, ER, secret/Spotify guards
+python -m unittest discover -s tests/integration -p "test_dev_*.py"   # real Postgres, real worker, REST and graph APIs
+```
+
+Rebuild an image after changing shared code (`services/common` is copied into
+the REST, graph and worker images): `docker build -f services/rest_api/Dockerfile -t songnodes-dev-rest-api .`
+(and `services/worker/Dockerfile` → `songnodes-dev-worker`), then
+`docker compose -f compose.dev.yaml up -d --no-build --force-recreate rest-api worker`.
 
 ```bash
 curl --fail http://127.0.0.1:8082/health

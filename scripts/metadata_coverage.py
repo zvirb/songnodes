@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'services'))
 from common.track_metadata import stored_metadata
 
-FIELDS = ('bpm', 'key', 'camelot_key', 'energy', 'isrc', 'tidal_id', 'deezer_id',
+FIELDS = ('bpm', 'key', 'camelot_key', 'energy', 'energy_canonical', 'isrc', 'tidal_id', 'deezer_id',
           'genre', 'record_label', 'mix_name', 'duration_ms', 'danceability', 'valence')
 VERSION = 1
 SQL = """
