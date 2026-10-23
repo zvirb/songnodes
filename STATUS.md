@@ -2,11 +2,12 @@
 
 ## Current task
 
-In progress: commit all accumulated changes and publish the current `work`
-branch to `origin`, as requested. Review tracked/untracked files and diff checks,
-commit the validated catalog/metadata/coverage work and maintained plan, then push
-without rewriting remote history. Next implementation task remains the legacy
-catalog-write audit.
+Completed: committed all accumulated changes as `f7eb5cc` and successfully
+pushed `work` to `origin/work`, with upstream tracking configured. The earlier
+baseline commit `883ee06` is included in the published branch. Diff formatting
+checks passed; existing validation results are retained below. This status update
+is included in a follow-up documentation commit on the same branch.
+Next implementation task: the legacy catalog-write audit.
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
@@ -80,8 +81,8 @@ Started: 2026-10-24 (Australia/Sydney).
 Read docs/DEVELOPMENT.md for startup and smoke-test commands. Development API
 containers and Vite were left running in the cloud instance; live processes do
 not necessarily survive a new session. This checkpoint includes the implementation
-and plan changes; use Git history to identify its commit. This API increment has
-new uncommitted changes following 883ee06.
+and plan changes; use Git history to identify its commit. The accumulated API, metadata, coverage and plan changes are committed and
+published on `origin/work` (implementation checkpoint `f7eb5cc`).
 
 Begin the next task by updating this file. Metadata transport is complete for the
 validated read paths; latest checks are 20 API tests, 38 frontend unit tests,
