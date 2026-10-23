@@ -388,6 +388,15 @@ class Registry(unittest.TestCase):
         configured = self.build({'TIDAL_CLIENT_ID': 'i', 'TIDAL_CLIENT_SECRET': 's', 'TIDAL_COUNTRY_CODE': 'US'})
         self.assertEqual(configured[0].country_code, 'US')
 
+    def test_helm_placeholder_credentials_do_not_enable_a_provider(self):
+        env = {'TIDAL_CLIENT_ID': 'CHANGE_ME', 'TIDAL_CLIENT_SECRET': 'CHANGE_ME', 'LASTFM_API_KEY': 'CHANGE_ME_lastfm',
+               'DISCOGS_API_TOKEN': 'change_me', 'GETSONGBPM_API_KEY': 'CHANGE_ME', 'GETSONGBPM_ENABLED': 'true'}
+        self.assertEqual([p.name for p in self.build(env)], ['deezer', 'musicbrainz'])
+
+    def test_discogs_accepts_the_helm_secret_name(self):
+        self.assertEqual([p.name for p in self.build({'DISCOGS_API_TOKEN': 't'})], ['deezer', 'musicbrainz', 'discogs'])
+        self.assertEqual([p.name for p in self.build({'DISCOGS_TOKEN': 't'})], ['deezer', 'musicbrainz', 'discogs'])
+
     def test_getsongbpm_needs_both_key_and_explicit_enablement(self):
         names = lambda env: [p.name for p in self.build(env)]  # noqa: E731
         self.assertNotIn('getsongbpm', names({'GETSONGBPM_API_KEY': 'g'}))

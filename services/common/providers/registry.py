@@ -19,6 +19,12 @@ from .tidal import TidalClient
 DEFAULT_ORDER = ('tidal', 'deezer', 'musicbrainz', 'discogs', 'lastfm', 'getsongbpm')
 
 
+def configured(value: Optional[str]) -> bool:
+    """A credential counts only if set to something real; the Helm chart's `CHANGE_ME...` placeholders do not."""
+    text = (value or '').strip()
+    return bool(text) and not text.upper().startswith('CHANGE_ME')
+
+
 def truthy(value: Optional[str]) -> bool:
     return (value or '').strip().lower() in ('1', 'true', 'yes', 'on')
 
@@ -36,18 +42,19 @@ def build_providers(env: Optional[Dict[str, str]] = None, **client_kwargs) -> Li
         return not listed or ('none' not in listed and name in listed)
 
     built: Dict[str, Provider] = {}
-    if wanted('tidal') and env.get('TIDAL_CLIENT_ID') and env.get('TIDAL_CLIENT_SECRET'):
+    if wanted('tidal') and configured(env.get('TIDAL_CLIENT_ID')) and configured(env.get('TIDAL_CLIENT_SECRET')):
         built['tidal'] = TidalClient(env['TIDAL_CLIENT_ID'], env['TIDAL_CLIENT_SECRET'],
                                      env.get('TIDAL_COUNTRY_CODE', 'AU'), **client_kwargs)
     if wanted('deezer'):
         built['deezer'] = DeezerClient(**client_kwargs)
     if wanted('musicbrainz'):
         built['musicbrainz'] = MusicBrainzClient(contact=env.get('MUSICBRAINZ_CONTACT'), **client_kwargs)
-    if wanted('discogs') and env.get('DISCOGS_TOKEN'):
-        built['discogs'] = DiscogsClient(env['DISCOGS_TOKEN'], **client_kwargs)
-    if wanted('lastfm') and env.get('LASTFM_API_KEY'):
+    discogs_token = env.get('DISCOGS_TOKEN') or env.get('DISCOGS_API_TOKEN')   # the Helm secret uses DISCOGS_API_TOKEN
+    if wanted('discogs') and configured(discogs_token):
+        built['discogs'] = DiscogsClient(discogs_token, **client_kwargs)
+    if wanted('lastfm') and configured(env.get('LASTFM_API_KEY')):
         built['lastfm'] = LastFmClient(env['LASTFM_API_KEY'], **client_kwargs)
-    if wanted('getsongbpm') and env.get('GETSONGBPM_API_KEY') and truthy(env.get('GETSONGBPM_ENABLED')):
+    if wanted('getsongbpm') and configured(env.get('GETSONGBPM_API_KEY')) and truthy(env.get('GETSONGBPM_ENABLED')):
         built['getsongbpm'] = GetSongBpmClient(env['GETSONGBPM_API_KEY'], enabled=True, **client_kwargs)
     groups = groups_from_env(env)
     for name, provider in built.items():

@@ -1,5 +1,6 @@
 {{- range $key, $svc := .Values.services }}
 {{- if $svc.enabled }}
+{{- if (($svc.service | default dict).ports) }}
 ---
 apiVersion: v1
 kind: Service
@@ -22,6 +23,7 @@ spec:
     {{- end }}
   selector:
     app.kubernetes.io/name: {{ $svc.name }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment

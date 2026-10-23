@@ -1,0 +1,48 @@
+{{- if and .Values.dataLayerMigrations.enabled .Values.services.worker.enabled }}
+{{- $worker := .Values.services.worker }}
+# Applies sql/migrations 012-014 using the worker image. The SQL is idempotent, so re-running is safe; the runner
+# waits for Postgres. post-install: the database exists by then; pre-upgrade: schema is ready before new pods start.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-layer-migrate
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "songnodes.labels" (dict "ctx" . "labels" (dict "app.kubernetes.io/name" "data-layer-migrate" "app.kubernetes.io/component" "migration")) | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: data-layer-migrate
+    spec:
+      restartPolicy: OnFailure
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.global.imagePullSecrets }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ printf "%s:%s" $worker.image.repository $worker.image.tag }}
+          imagePullPolicy: {{ $worker.image.pullPolicy | default "IfNotPresent" }}
+          command: ["python", "migrate.py"]
+          envFrom:
+            - configMapRef:
+                name: {{ default .Values.global.configMapName .Values.config.name }}
+            - secretRef:
+                name: {{ default .Values.global.secretName .Values.secrets.name }}
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+{{- end }}

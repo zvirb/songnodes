@@ -157,6 +157,13 @@ spec:
             memory: 512Mi
             cpu: 500m
 
+      worker:
+        enabled: true
+        image:
+          repository: localhost:5000/songnodes_worker
+          tag: latest
+          pullPolicy: Always
+
       scraperOrchestrator:
         enabled: true
         image:
