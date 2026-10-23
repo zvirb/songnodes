@@ -87,6 +87,8 @@ class Decision:
     score: float
     reasons: Tuple[str, ...] = field(default_factory=tuple)
     candidate: Optional[Track] = None
+    title_score: float = 0.0
+    artist_score: float = 0.0
 
 
 def normalize_isrc(value: Optional[str]) -> Optional[str]:
@@ -115,19 +117,28 @@ def match_candidate(target: Track, candidate: Track) -> Decision:
     title_score = similarity(parsed_t.base, parsed_c.base)
     artist_score = similarity(artist_key(target.artist), artist_key(candidate.artist))
     score = round(0.6 * title_score + 0.4 * artist_score, 4)
+    scores = {'title_score': title_score, 'artist_score': artist_score}
     if title_score < TITLE_THRESHOLD or artist_score < ARTIST_THRESHOLD:
-        return Decision('reject', score, tuple(reasons) + ('title_or_artist_below_threshold',), candidate)
+        return Decision('reject', score, tuple(reasons) + ('title_or_artist_below_threshold',), candidate, **scores)
     if parsed_t.versions != parsed_c.versions:
-        return Decision('reject', score, tuple(reasons) + ('version_mismatch',), candidate)
+        return Decision('reject', score, tuple(reasons) + ('version_mismatch',), candidate, **scores)
     if duration == 'beyond':
-        return Decision('reject', score, tuple(reasons) + ('duration_beyond_guard',), candidate)
+        return Decision('reject', score, tuple(reasons) + ('duration_beyond_guard',), candidate, **scores)
     if duration == 'unknown':
-        return Decision('review', score, tuple(reasons) + ('duration_unknown',), candidate)
-    return Decision('match', score, tuple(reasons) + ('fuzzy_version_and_duration_agree',), candidate)
+        return Decision('review', score, tuple(reasons) + ('duration_unknown',), candidate, **scores)
+    return Decision('match', score, tuple(reasons) + ('fuzzy_version_and_duration_agree',), candidate, **scores)
 
 
-def best_match(target: Track, candidates: Sequence[Track]) -> Decision:
-    """Pick one candidate. Several automatic matches on different recordings are ambiguous -> review."""
+UNIQUE_TITLE, UNIQUE_ARTIST = 0.97, 0.92
+
+
+def best_match(target: Track, candidates: Sequence[Track], unknown_duration: str = 'review') -> Decision:
+    """Pick one candidate. Several automatic matches on different recordings are ambiguous -> review.
+
+    `unknown_duration='unique_exact'` lets a candidate through when no duration is known on one side only if
+    it is the single candidate whose title (version included) and artist match almost exactly; with several
+    such candidates, or weaker text agreement, it stays a review item.
+    """
     decisions = sorted((match_candidate(target, c) for c in candidates), key=lambda d: (-d.score, d.candidate.ref or ''))
     matches = [d for d in decisions if d.outcome == 'match']
     isrc_matches = [d for d in matches if 'isrc_equal' in d.reasons]
@@ -138,6 +149,15 @@ def best_match(target: Track, candidates: Sequence[Track]) -> Decision:
     if len(matches) > 1:
         return Decision('review', matches[0].score, ('ambiguous_multiple_matches',), matches[0].candidate)
     reviews = [d for d in decisions if d.outcome == 'review']
+    if unknown_duration == 'unique_exact':
+        exact = [d for d in reviews if d.reasons[-1:] == ('duration_unknown',)
+                 and d.title_score >= UNIQUE_TITLE and d.artist_score >= UNIQUE_ARTIST]
+        if len(exact) == 1:
+            only = exact[0]
+            return Decision('match', only.score, only.reasons + ('unique_text_match_duration_unknown',), only.candidate,
+                            only.title_score, only.artist_score)
+        if len(exact) > 1:
+            return Decision('review', exact[0].score, ('ambiguous_multiple_matches',), exact[0].candidate)
     if reviews:
         return reviews[0]
     return decisions[0] if decisions else Decision('reject', 0.0, ('no_candidates',))

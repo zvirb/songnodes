@@ -44,6 +44,33 @@ UPDATE silver_enriched_tracks SET
     mix_name = COALESCE(mix_name, NULLIF(COALESCE(enrichment_metadata->>'mix_name', enrichment_metadata->>'version'), ''))
 WHERE enrichment_metadata IS NOT NULL;
 
+-- 1b. Bronze playlist membership with positions. The scraper persistence pipeline writes these two columns but no
+-- earlier migration creates them, so a fresh database would reject every scraped track.
+ALTER TABLE bronze_scraped_tracks
+    ADD COLUMN IF NOT EXISTS playlist_id UUID REFERENCES bronze_scraped_playlists(id) ON DELETE CASCADE,
+    ADD COLUMN IF NOT EXISTS position INTEGER;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'bronze_tracks_position_positive') THEN
+        ALTER TABLE bronze_scraped_tracks ADD CONSTRAINT bronze_tracks_position_positive
+            CHECK (position IS NULL OR position >= 1);
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_bronze_tracks_playlist ON bronze_scraped_tracks (playlist_id, position) WHERE playlist_id IS NOT NULL;
+-- One occurrence per position per playlist; skipped (with a notice) if legacy rows already violate it.
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM bronze_scraped_tracks WHERE playlist_id IS NOT NULL GROUP BY playlist_id, position HAVING count(*) > 1) THEN
+        RAISE NOTICE 'bronze_scraped_tracks has duplicate (playlist_id, position); uq_bronze_tracks_playlist_position not created';
+    ELSE
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_bronze_tracks_playlist_position ON bronze_scraped_tracks (playlist_id, position)
+            WHERE playlist_id IS NOT NULL AND position IS NOT NULL;
+    END IF;
+    IF EXISTS (SELECT 1 FROM silver_enriched_playlists WHERE bronze_id IS NOT NULL GROUP BY bronze_id HAVING count(*) > 1) THEN
+        RAISE NOTICE 'silver_enriched_playlists has duplicate bronze_id; uq_silver_playlists_bronze not created';
+    ELSE
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_silver_playlists_bronze ON silver_enriched_playlists (bronze_id) WHERE bronze_id IS NOT NULL;
+    END IF;
+END $$;
+
 -- 2. Source evidence: every provider/method measurement is kept, never overwritten.
 CREATE TABLE IF NOT EXISTS silver_track_metadata_evidence (
     id BIGSERIAL PRIMARY KEY,

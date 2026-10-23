@@ -25,7 +25,8 @@ class CatalogWrites(unittest.TestCase):
             DELETE FROM outbox_events WHERE payload::text LIKE '{m}'
                 OR aggregate_id IN (SELECT id FROM silver_enriched_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}')
                 OR aggregate_id IN (SELECT id FROM silver_enriched_artists WHERE canonical_name LIKE '{m}')
-                OR aggregate_id IN (SELECT id FROM bronze_scraped_playlists WHERE raw_json::text LIKE '{m}');
+                OR aggregate_id IN (SELECT id FROM silver_enriched_playlists WHERE bronze_id IN
+                    (SELECT id FROM bronze_scraped_playlists WHERE raw_json::text LIKE '{m}'));
             DELETE FROM entity_redirects WHERE history_id IN (SELECT id FROM entity_merge_history WHERE snapshot::text LIKE '{m}');
             DELETE FROM entity_merge_history WHERE snapshot::text LIKE '{m}';
             DELETE FROM silver_enriched_playlists WHERE playlist_name LIKE '{m}' OR artist_name LIKE '{m}'
@@ -216,11 +217,11 @@ class CatalogWrites(unittest.TestCase):
         status, data = request(8082, '/api/v1/tracks/import-tracklist', 'POST', {'tracks': tracks})
         self.assertEqual(status, 200, data)
         self.assertEqual((data['created'], data['failed'], data['transitions_created']), (2, 1, 0))
-        self.assertEqual([d['status'] for d in data['details']], ['failed', 'created', 'created'])
+        self.assertEqual([d['status'] for d in data['details']], ['created', 'failed', 'created'], 'entries are reported in position order')
         self.assertEqual(self.transitions('Before', 'After'), [])
         positions = sql(f"SELECT source_track_id FROM bronze_scraped_tracks WHERE raw_json::text LIKE '%{self.marker}%' "
                         f"ORDER BY source_track_id::int").split()
-        self.assertEqual(positions, ['1', '3'])  # original positions are preserved, not renumbered
+        self.assertEqual(positions, ['1', '2', '3'], 'bronze keeps every submitted row at its original position, invalid ones included')
 
     def test_import_resolves_artist_case_variants_to_one_canonical_artist(self):
         first = [self.entry('Case Artist', 'Alpha'), self.entry('Case Artist', 'Beta')]

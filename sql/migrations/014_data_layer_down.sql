@@ -2,6 +2,11 @@
 -- upgrade (the legacy JSONB originals are untouched). The waterfall configuration cleanup is not reverted:
 -- Spotify audio features are permanently unsupported.
 BEGIN;
+DROP INDEX IF EXISTS uq_silver_playlists_bronze;
+DROP INDEX IF EXISTS uq_bronze_tracks_playlist_position;
+DROP INDEX IF EXISTS idx_bronze_tracks_playlist;
+ALTER TABLE bronze_scraped_tracks DROP CONSTRAINT IF EXISTS bronze_tracks_position_positive;
+ALTER TABLE bronze_scraped_tracks DROP COLUMN IF EXISTS position, DROP COLUMN IF EXISTS playlist_id;
 DROP TABLE IF EXISTS backfill_checkpoints;
 DROP TABLE IF EXISTS er_decisions;
 DROP TABLE IF EXISTS entity_redirects;

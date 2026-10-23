@@ -25,6 +25,9 @@ class DataLayer(unittest.TestCase):
     def test_evidence_consensus_resolution_energy_and_camelot_repair(self):
         self.scenario('evidence')
 
+    def test_bronze_ingestion_is_complete_idempotent_and_concurrency_safe(self):
+        self.scenario('ingest')
+
 
 if __name__ == '__main__':
     unittest.main()

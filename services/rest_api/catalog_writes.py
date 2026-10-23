@@ -11,26 +11,13 @@ import json
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from common.datalayer import evidence, outbox
+from common.datalayer import evidence, ingest, outbox
 from common.datalayer.errors import CatalogError  # noqa: F401  (re-exported for callers)
+from common.metadata.names import (PLACEHOLDER_ARTISTS, PLACEHOLDER_PREFIXES, clean_name, is_placeholder_artist,  # noqa: F401
+                                   normalize)
 
-PLACEHOLDER_ARTISTS = ('', 'unknown', 'unknown artist', 'various', 'various artists', 'va')
-PLACEHOLDER_PREFIXES = ('va @', 'various artists @', 'unknown artist,', 'unknown artist @')
 IMPORT_SOURCE = 'user_import'
 IMPORT_SCRAPER_VERSION = 'rest-api-tracklist-import-v1'
-
-
-def clean_name(value: Optional[str]) -> str:
-    return (value or '').strip()
-
-
-def normalize(name: str) -> str:
-    return name.lower().strip()
-
-
-def is_placeholder_artist(name: Optional[str]) -> bool:
-    key = normalize(name or '')
-    return key in PLACEHOLDER_ARTISTS or key.startswith(PLACEHOLDER_PREFIXES)
 
 
 def require_artist_name(name: Optional[str]) -> str:
@@ -286,45 +273,24 @@ async def create_track(conn, track, artist_name: str) -> Dict[str, Any]:
     return dict(row)
 
 
-async def resolve_artist(conn, name: str) -> str:
-    """Return the canonical artist name for `name`, creating a manual-lineage artist when none matches."""
-    key = normalize(name)
-    existing = await conn.fetchval(
-        'SELECT canonical_name FROM silver_enriched_artists WHERE normalized_name = $1 ORDER BY created_at LIMIT 1', key)
-    if existing:
-        return existing
-    return await conn.fetchval("""
-        INSERT INTO silver_enriched_artists (bronze_ids, canonical_name, normalized_name, validation_status,
-                                             enrichment_metadata, deduplication_strategy)
-        VALUES ('{}', $1, $2, 'needs_review', $3::jsonb, 'manual')
-        ON CONFLICT (canonical_name) DO UPDATE SET canonical_name = EXCLUDED.canonical_name
-        RETURNING canonical_name
-    """, name, key, json.dumps({'source': IMPORT_SOURCE}))
-
-
 def import_digest(entries: List[Dict[str, str]]) -> str:
     ordered = [[normalize(e['artist']), normalize(e['title'])] for e in entries]
     return hashlib.sha256(json.dumps(ordered).encode()).hexdigest()
 
 
 async def import_tracklist(conn, tracks, dj_artist: Optional[str] = None, name: Optional[str] = None) -> Dict[str, Any]:
-    """Bronze first (positions preserved), then silver tracks, optional silver set, and N -> N+1 transitions.
+    """Bronze first (every submitted row keeps its position), then the canonical ingestion in `common.datalayer.ingest`.
 
     Replaying the same ordered list is a no-op: the bronze playlist is keyed by a content digest.
     """
     stats: Dict[str, Any] = {'created': 0, 'updated': 0, 'failed': 0, 'total': len(tracks), 'details': [],
                              'transitions_created': 0, 'replayed': False}
-    entries = []
-    for position, item in enumerate(tracks, start=1):
-        artist, title = clean_name(item.artist), clean_name(item.title)
-        if is_placeholder_artist(artist) or not title:
-            stats['failed'] += 1
-            stats['details'].append({'artist': item.artist, 'title': item.title, 'position': position,
-                                     'status': 'failed',
-                                     'error': 'A specific artist and a title are required'})
-            continue
-        entries.append({'artist': artist, 'title': title, 'position': position, 'track_number': item.track_number})
-    if not entries:
+    entries = [{'artist': clean_name(item.artist), 'title': clean_name(item.title), 'position': position,
+                'track_number': item.track_number} for position, item in enumerate(tracks, start=1)]
+    if not any(not is_placeholder_artist(e['artist']) and e['title'] for e in entries):
+        stats['failed'] = len(entries)
+        stats['details'] = [{'artist': e['artist'], 'title': e['title'], 'position': e['position'], 'status': 'failed',
+                             'error': 'A specific artist and a title are required'} for e in entries]
         return stats
     dj = require_artist_name(dj_artist) if dj_artist else None
     digest = import_digest(entries)
@@ -335,73 +301,21 @@ async def import_tracklist(conn, tracks, dj_artist: Optional[str] = None, name: 
                                                   playlist_name, artist_name)
             VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
             ON CONFLICT (source, source_url, source_playlist_id) DO NOTHING RETURNING id
-        """, IMPORT_SOURCE, url, digest, IMPORT_SCRAPER_VERSION, json.dumps({'tracks': entries}),
+        """, IMPORT_SOURCE, url, digest, IMPORT_SCRAPER_VERSION, json.dumps({'tracks': entries, 'total_tracks': len(entries)}),
             name or f'User import {digest[:8]}', dj)
         if playlist is None:
             stats['replayed'] = True
-            stats['details'] = [{'artist': e['artist'], 'title': e['title'], 'position': e['position'],
-                                 'status': 'unchanged'} for e in entries] + stats['details']
+            stats['details'] = [{'artist': e['artist'], 'title': e['title'], 'position': e['position'], 'status': 'unchanged'}
+                                for e in entries]
             return stats
-        silver_ids: Dict[int, UUID] = {}
         for entry in entries:
-            artist = await resolve_artist(conn, entry['artist'])
-            bronze = await conn.fetchval("""
-                INSERT INTO bronze_scraped_tracks (source, source_url, source_track_id, scraper_version, raw_json,
-                                                   artist_name, track_title)
-                VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7) RETURNING id
-            """, IMPORT_SOURCE, url, str(entry['position']), IMPORT_SCRAPER_VERSION, json.dumps(entry),
-                entry['artist'], entry['title'])
-            track = await conn.fetchval("""
-                SELECT id FROM silver_enriched_tracks
-                WHERE lower(artist_name) = lower($1) AND lower(track_title) = lower($2) ORDER BY created_at LIMIT 1
-            """, artist, entry['title'])
-            if track:
-                await conn.execute("""
-                    UPDATE silver_enriched_tracks
-                    SET additional_bronze_ids = COALESCE(additional_bronze_ids, '{}') || $2::uuid, updated_at = NOW()
-                    WHERE id = $1
-                """, track, bronze)
-                status = 'updated'
-            else:
-                track = await conn.fetchval("""
-                    INSERT INTO silver_enriched_tracks (bronze_id, artist_name, track_title, validation_status,
-                                                        enrichment_metadata)
-                    VALUES ($1, $2, $3, 'needs_review', $4::jsonb) RETURNING id
-                """, bronze, artist, entry['title'], json.dumps({'source': IMPORT_SOURCE}))
-                status = 'created'
-            stats['created' if status == 'created' else 'updated'] += 1
-            stats['details'].append({'artist': entry['artist'], 'title': entry['title'], 'position': entry['position'],
-                                     'status': status, 'track_id': str(track)})
-            silver_ids[entry['position']] = track
-            await outbox.append(conn, 'track', track, status, {'by': 'tracklist_import', 'position': entry['position']})
-        if dj:
-            silver_set = await conn.fetchval("""
-                INSERT INTO silver_enriched_playlists (bronze_id, playlist_name, artist_id, artist_name, track_count,
-                                                       validation_status, enrichment_metadata)
-                VALUES ($1, $2, (SELECT id FROM silver_enriched_artists WHERE canonical_name = $3), $3, $4,
-                        'needs_review', $5::jsonb) RETURNING id
-            """, playlist, name or f'User import {digest[:8]}', await resolve_artist(conn, dj), len(entries),
-                json.dumps({'source': IMPORT_SOURCE}))
-            for entry in entries:
-                await conn.execute(
-                    'INSERT INTO silver_playlist_tracks (playlist_id, track_id, position) VALUES ($1, $2, $3)',
-                    silver_set, silver_ids[entry['position']], entry['position'])
-        # Transitions only join positions N and N+1 that both imported; a skipped row breaks the chain.
-        for left in entries:
-            right_position = left['position'] + 1
-            if right_position not in silver_ids or silver_ids[left['position']] == silver_ids[right_position]:
-                continue
-            occurrence = json.dumps([{'playlist_id': str(playlist), 'position': left['position'],
-                                      'source': IMPORT_SOURCE}])
             await conn.execute("""
-                INSERT INTO silver_track_transitions (from_track_id, to_track_id, playlist_occurrences)
-                VALUES ($1, $2, $3::jsonb)
-                ON CONFLICT (from_track_id, to_track_id) DO UPDATE SET
-                    occurrence_count = silver_track_transitions.occurrence_count + 1, last_seen = NOW(),
-                    updated_at = NOW(),
-                    playlist_occurrences = silver_track_transitions.playlist_occurrences || EXCLUDED.playlist_occurrences
-            """, silver_ids[left['position']], silver_ids[right_position], occurrence)
-            stats['transitions_created'] += 1
-        await outbox.append(conn, 'setlist', playlist, 'imported', {
-            'tracks': len(entries), 'transitions': stats['transitions_created'], 'source': IMPORT_SOURCE})
+                INSERT INTO bronze_scraped_tracks (source, source_url, source_track_id, scraper_version, raw_json,
+                                                   artist_name, track_title, playlist_id, position)
+                VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)
+            """, IMPORT_SOURCE, url, str(entry['position']), IMPORT_SCRAPER_VERSION, json.dumps(entry),
+                entry['artist'], entry['title'], playlist, entry['position'])
+        result = await ingest.ingest_playlist(conn, playlist)
+    stats.update({'created': result['created'], 'updated': result['updated'], 'failed': result['failed'],
+                  'transitions_created': result['transitions'], 'details': result['entries']})
     return stats
