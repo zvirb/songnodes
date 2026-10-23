@@ -9,6 +9,7 @@ import time
 import unittest
 from uuid import uuid4
 
+from hygiene import remove_orphans, started_at
 from test_dev_workflows import ROOT, request, sql
 
 
@@ -32,22 +33,26 @@ def wait_for(job_id, states, timeout=60):
 class WorkerEndToEnd(unittest.TestCase):
     def setUp(self):
         self.marker = uuid4().hex[:12]
+        started = started_at(sql)
+        self.addCleanup(lambda: remove_orphans(sql, started))   # registered first, so it runs last
         self.addCleanup(self.cleanup)
 
     def cleanup(self):
         m = f'%{self.marker}%'
+        # 1) Remove the source rows first. Once they are gone, the live worker can only delete projection rows, never add them.
         sql(f"""BEGIN;
-            DELETE FROM outbox_events WHERE payload::text LIKE '{m}'
-                OR aggregate_id IN (SELECT id FROM silver_enriched_tracks WHERE track_title LIKE '{m}')
-                OR aggregate_id IN (SELECT id FROM silver_enriched_playlists WHERE playlist_name LIKE '{m}');
             DELETE FROM ingestion_jobs WHERE payload::text LIKE '{m}' OR idempotency_key LIKE '{m}'
                 OR idempotency_key ~ '^(backfill-after-ingest|backfill-next|proj-after-ingest|proj-after-backfill|ingest-next|ingest-after-scrape):';
-            DELETE FROM projection_tracks WHERE track_title LIKE '{m}';
             DELETE FROM silver_enriched_playlists WHERE playlist_name LIKE '{m}';
             DELETE FROM silver_enriched_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
             DELETE FROM silver_enriched_artists WHERE canonical_name LIKE '{m}';
             DELETE FROM bronze_scraped_tracks WHERE source_url LIKE '{m}';
             DELETE FROM bronze_scraped_playlists WHERE source_url LIKE '{m}';
+            COMMIT;""")
+        # 2) Then the derived rows and events (a late worker pass over a deleted track now removes, rather than writes, a row).
+        sql(f"""BEGIN;
+            DELETE FROM projection_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
+            DELETE FROM outbox_events WHERE payload::text LIKE '{m}';
             COMMIT;""")
 
     def test_worker_runs_jobs_submitted_over_rest(self):

@@ -12,6 +12,8 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
+from hygiene import remove_orphans, started_at
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -44,6 +46,8 @@ class DevelopmentWorkflows(unittest.TestCase):
         cls.targets = set()
         cls.marker = str(uuid4())
         # Register cleanup before inserting, so a setup error cannot strand rows.
+        started = started_at(sql)
+        cls.addClassCleanup(lambda: remove_orphans(sql, started))   # registered first, so it runs last (live worker projects asynchronously)
         cls.addClassCleanup(cls.cleanup)
         a, b, c, unknown = cls.ids
         sql(f"""BEGIN;

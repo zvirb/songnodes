@@ -9,6 +9,7 @@ import textwrap
 from uuid import uuid4
 import unittest
 
+from hygiene import remove_orphans, started_at
 from test_dev_workflows import ROOT, request, sql
 
 QUEUE_SCENARIO = textwrap.dedent('''
@@ -91,6 +92,8 @@ QUEUE_SCENARIO = textwrap.dedent('''
 class IngestionJobs(unittest.TestCase):
     def setUp(self):
         self.marker = uuid4().hex[:12]
+        started = started_at(sql)
+        self.addCleanup(lambda: remove_orphans(sql, started))   # registered first, so it runs last
         self.addCleanup(lambda: sql(f"DELETE FROM ingestion_jobs WHERE payload::text LIKE '%{self.marker}%' "
                                     f"OR kind LIKE '%{self.marker}%'"))
         self.addCleanup(lambda: sql(f"DELETE FROM silver_enriched_tracks WHERE track_title LIKE '%{self.marker}%'"))

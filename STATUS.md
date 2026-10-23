@@ -2,17 +2,13 @@
 
 ## Current task
 
-Started 2026-10-24 on `feature/catalog-writes-silver`: make the DATA LAYER code-complete, with synthetic tests only,
-so the first real scrape can run. Scope set by the user: audio processing (Milestone 8 and WP3 audio/calibration) is OUT;
-renderer (M7), wave routing (M6) and search (M5) are presentation/query layers and are NOT part of this pass. In scope:
-M2 worker, M3 identities/energy contract/outbox/schema, M4 normalization and entity resolution, WP1/WP2/WP4/WP5
-(provider clients, matching, per-field resolution, resumable backfill) and the non-audio part of WP3 (key/tempo/consensus).
-Standing rule from the user: a provider that no longer supplies the data we need is removed from all code and interfaces.
-Done so far: shared Camelot/tempo/energy modules; Spotify audio-features removed everywhere (guard test added).
-Docs unreachable for Deezer, GetSongBPM, MusicBrainz and Discogs (login shell/403/interstitial), so none are declared defunct;
-their clients are written from the user's spec and gated by credential-only live contract tests (unverified).
-TIDAL v2 OAS 1.10.206 (read 2026-10-24) defines track attributes bpm, key, keyScale; population is unverified.
-Next step: consensus, matching and field-resolution modules, then migration 014 (schema, evidence, outbox).
+Completed 2026-10-24 on `feature/catalog-writes-silver` (not merged or pushed): the data layer is code-complete and tested
+with synthetic data only, so the first real scrape can be run. Scope was narrowed by the user: audio processing is out
+(Milestone 8, WP3 audio/calibration); search, graph projection, wave routing and the Sigma renderer (M5-M7) were not part
+of this pass. No data was imported. Everything is documented in [docs/DATA_LAYER.md](docs/DATA_LAYER.md); the redeploy and
+first-scrape procedure is [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md).
+Next implementation task: after the first real scrape, capture the populated coverage baseline and run the credential-gated
+live provider checks; then M5-M7 if wanted. Do not claim any provider, threshold or throughput until measured on real data.
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
@@ -88,6 +84,43 @@ Known: `scripts/metadata_coverage.py` prints `->` arrows that fail under Windows
 - All GET endpoints of the REST API (excluding the provider auth routers) return non-5xx against the dev stack.
 - Checks: 5 new tests (`tests/integration/test_dev_jobs.py`) including a retry/backoff/dead-letter/lease/5-way concurrent claim scenario on real Postgres; all 41 dev integration tests pass with `PYTHONIOENCODING=utf-8`; synthetic rows cleaned (all tables 0 rows). Not run: Celery/RabbitMQ, the unified scraper, Playwright.
 
+## Data layer (2026-10-24)
+
+Built (all on `feature/catalog-writes-silver`, commits from `f3083c2` to `d51f65c`+):
+- `common/metadata`: shared `to_camelot` (golden tests for all 24 keys, enharmonics, Open Key; the retired converters shifted
+  every minor key by seven), tempo folding (genre-justified; ambiguous or out-of-range input is not folded), versioned energy
+  contract `energy-1` (1-10, provisional bands Warm 1.0-3.9 / Building 4.0-6.9 / Peak 7.0-10.0), BPM/key consensus (independent
+  sources, manual correction final, 0.5% tempo tolerance), version-aware matching (ISRC first, +-10 s duration guard,
+  `unique_exact` policy for unknown durations), per-field resolution (durations within 2 s agree), deterministic parsing.
+- `common/providers`: TIDAL v2, Deezer, MusicBrainz, Discogs, Last.fm (HTTPS), GetSongBPM (disabled until terms verified);
+  rate limiting, Retry-After backoff, no secrets in URLs; `ENRICHMENT_PROVIDERS` allow-list; `CHANGE_ME` placeholders ignored.
+- `common/datalayer`: jobs (idempotent, leased, bounded retries, dead-letter), transactional outbox with a commit-order-safe
+  cursor, rebuildable `projection_tracks`, reversible track/artist merges with redirects, evidence and Camelot repair,
+  canonical bronze->silver ingestion (complete playlists only, replay-safe, adopts legacy silver rows, concurrency-safe),
+  enrichment waterfall, resumable backfill, entity-resolution shadow mode, job handlers and runner.
+- `services/worker` (Celery + RabbitMQ) drains `ingestion_jobs`; migration runner `migrate.py`; compose, Helm chart 0.1.15
+  (worker, hook Job), Flux HelmRelease, Skaffold and the build script updated.
+- Migration `014_data_layer_up.sql` (idempotent, reversible, verified on a fresh volume) also adds the bronze
+  `playlist_id`/`position` columns the scraper pipeline writes but no migration created.
+- Removed: Spotify audio features everywhere (guard test), 38 committed database/broker/encryption secret defaults including a
+  literal credential (guard test).
+- REST: job enqueue/status/retry, review queue, merges/revert/canonical id, resolution review, outbox status, attributions;
+  canonical energy, band and review state exposed through REST and graph reads; frontend attribution footer.
+
+Checks run (all synthetic data; database left empty): `services/common` 111 unit tests; 57 integration tests twice in a row,
+none skipped (real Postgres, real Celery worker end to end, REST and graph APIs); frontend type-check 0 errors, 43 unit tests,
+production build; `helm lint` and render of chart and dev values; `start-dev.sh` end to end with 6 healthy containers;
+fresh-volume init and `migrate.py` from an empty database, repeated; live provider tests skip without credentials.
+
+NOT done / NOT verified:
+- No provider client has run against a live API with credentials. Docs for Deezer, GetSongBPM, MusicBrainz, Discogs could not
+  be read; TIDAL OAS was read but not its live responses (BPM/key population, array-filter style, auth form unconfirmed).
+- Not run: Playwright E2E (mandatory before merge per CLAUDE.md), Kubernetes deployment, the unified scraper, real playlists.
+- ER thresholds and tempo/genre ranges are judgement calls validated on synthetic cases; automatic merging is off.
+- Energy bands are provisional until ratified.
+- Legacy `data-transformer` ETL and the scraper pipeline's direct silver writes still exist (adopted, not removed).
+- Committed RabbitMQ runtime files under `data/rabbitmq/` and the historical credential in git history remain.
+
 ## Validation results
 
 - `bash scripts/start-dev.sh`: passed, including a repeat run retaining the existing database volume. All four services reported healthy.
@@ -141,9 +174,10 @@ milestone 3; availability of complete real-set fixtures must be checked in miles
 
 ## Next steps
 
-1. Milestone 2: add a worker that claims `ingestion_jobs` (Celery + RabbitMQ per the plan; the table already carries status, idempotency, retries and dead-letter), move slow scrape/enrichment dispatch onto it, and retire the old data-transformer/data-validator write paths.
-2. Provider routers (`music_auth`, `spotify_playlists`, `tidal_playlists`, `youtube_api`, `api_keys`) were not audited against silver or live providers.
-3. Obtain/import authorised real catalog/set fixtures when permitted, then capture a populated baseline (not done: no data imported).
-4. Milestone 3 canonical identity/energy contract, then the WP1-WP5 metadata program.
+1. Redeploy per `docs/DEPLOYMENT_CHECKLIST.md`, run the live provider checks, then one real scrape and inspect jobs, bronze
+   positions, transitions and the review queue before scaling up.
+2. Run the Playwright E2E suite and resolve failures before any merge to `main`.
+3. Capture the populated before/after coverage baseline; then tune thresholds, bands and provider priorities on real data.
+4. Optional later work: Milestones 5-7 (search, graph projection and wave routing, renderer) and 8 (audio), retire the legacy ETL.
 
 Update this file whenever a new task begins and when work stops or a milestone completes.

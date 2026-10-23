@@ -6,6 +6,7 @@ All records are synthetic, tagged with a per-run marker, and removed afterwards.
 from uuid import uuid4
 import unittest
 
+from hygiene import remove_orphans, started_at
 from test_dev_workflows import request, sql
 
 
@@ -17,6 +18,8 @@ class CatalogWrites(unittest.TestCase):
     def setUp(self):
         # One marker per test keeps counts independent of the other tests' synthetic rows.
         self.marker = uuid4().hex[:12]
+        started = started_at(sql)
+        self.addCleanup(lambda: remove_orphans(sql, started))   # registered first, so it runs last
         self.addCleanup(self.cleanup)
 
     def cleanup(self):

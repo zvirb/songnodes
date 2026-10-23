@@ -7,12 +7,15 @@ from uuid import uuid4
 import json
 import unittest
 
+from hygiene import remove_orphans, started_at
 from test_dev_workflows import request, sql
 
 
 class DataLayerApi(unittest.TestCase):
     def setUp(self):
         self.marker = uuid4().hex[:12]
+        started = started_at(sql)
+        self.addCleanup(lambda: remove_orphans(sql, started))   # registered first, so it runs last
         self.addCleanup(self.cleanup)
 
     def cleanup(self):
