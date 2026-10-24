@@ -36,8 +36,37 @@ Scope:
 
 **Checks run:** `tsc --noEmit` 0 errors · `vitest run src` 77/77 · `vite build` OK · `sync-design-system.sh --check` OK · Playwright screenshots of Home, Settings, Library and Set builder in dark and light, desktop and phone, with 0 page errors.
 
-### Commit 2: graph route restyle (follows)
-DJInterface onto design-system components and tokens, `graphColours()` for PIXI, child components.
+### Commit 2: graph route restyle
+
+**DJInterface**
+- Now a slim design-system toolbar: Play/Plan as a segmented control, neutral count tags, Filters, Settings and a More actions menu.
+- The right panel uses design-system Tabs. `?mode=` and `?tab=` are kept in sync with the URL.
+- Clear queue goes through a ConfirmDialog and a Toast.
+- The onboarding overlay is removed.
+
+**Graph colours**
+- `src/lib/graphColours.ts` reads tokens at runtime and recolours the PIXI graph on a theme change.
+- Neutral nodes, with rings for selected (lavender), now playing (amber), path and hover.
+- No glows. Labels in Inter 600 with a halo.
+
+**Child panels**
+- Moved onto tokens: IntelligentBrowser, KeyMoodPanel, CamelotWheel, PathfinderPanel, the TIDAL and Spotify panels, TargetTracksManager, TrackDetailsModal, ContextMenu, Settings, APIKeyManager and others.
+- Shared design-system pieces live in `components/ds/`.
+- Energy always renders as a 1–10 bar (`displayEnergy`). The Camelot wheel uses the standard mapping.
+- Invented fallbacks removed: no random waveform and no default energy.
+- Touched files go from 433 hex lines to 0, 299 rgba lines to 0, 289 emoji to 0, 25 alert/confirm calls to 0, and 9 z-index literals of 100 or more to 0.
+
+**Also**
+- Removed the tracked debug pages `public/debug-storage.html` and `public/test-credentials.html`.
+
+**Checks run:** `tsc` 0 errors · `vitest` 77/77 · `vite build` OK · Playwright screenshots of /graph in Play and Plan, Key & mood, dark and light, plus mocked data, the theme switch, the dialog and the context menu; 0 page errors.
+
+**Left on the graph route:**
+- No "Colour by" control or minimap dock yet.
+- The tab strip has no overflow menu.
+- EdgeDetailsModal should become a Popover.
+- The toast region is per page; it should move into the shell.
+- `DataQualityReview.css` and the duplicate Camelot tables still need migrating.
 
 ### Open
 - Migration phases 3–6 are still to do: ConfirmDialog and Toast everywhere, Track detail and Settings pages, deleting the legacy CSS, Tailwind and the `components/ui` kit, and widening CI conformance to all of `src/`.

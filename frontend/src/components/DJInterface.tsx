@@ -1,7 +1,10 @@
 import { trackFromNode as transformNodeToTrack } from '../utils/trackMetadata';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { HelpCircle } from 'lucide-react';
-import { NowPlayingDeck } from './NowPlayingDeck';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Play, ListChecks, SlidersHorizontal, Settings, FileText, UserPen, Trash2, Search, X,
+  Library, SearchX, ServerCrash, MousePointerClick,
+} from 'lucide-react';
 import { IntelligentBrowser } from './IntelligentBrowser';
 import GraphVisualization from './GraphVisualization';
 import MobileTrackExplorer from './MobileTrackExplorer';
@@ -16,12 +19,17 @@ import TargetTracksManager from './TargetTracksManager';
 import GraphFilterPanel from './GraphFilterPanel';
 import { ArtistAttributionManager } from './ArtistAttributionManager';
 import { TracklistImporter } from './TracklistImporter';
-import { Track as DJTrack, DJMode } from '../types/dj';
+import { DJMode } from '../types/dj';
 import { Track, GraphNode } from '../types/index';
 import useStore from '../store/useStore';
 import { useDataLoader } from '../hooks/useDataLoader';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { OnboardingOverlay } from './OnboardingOverlay';
+import { SN, StatusPill, KeyBadge, Bpm } from '../lib/songnodes';
+import {
+  SegmentedControl, Tabs, TabPanel, OverflowMenu, ConfirmDialog, ToastRegion, showToast,
+  EmptyPanel, ErrorPanel, LoadingPanel, TrackEnergy,
+} from './ds';
+import './DJInterface.graph.css';
 
 /**
  * DJInterface - Main container implementing dual-mode interface
@@ -32,12 +40,6 @@ import { OnboardingOverlay } from './OnboardingOverlay';
 interface DJInterfaceProps {
   initialMode?: DJMode;
 }
-
-// Stable constants and utility functions (moved outside component for performance)
-const CAMELOT_KEYS = ['1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A', '11A', '12A',
-                      '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'];
-
-const ONBOARDING_STORAGE_KEY = 'songnodes-onboarding-dismissed';
 
 // Optimized node validation function
 const isValidTrackNode = (node: any): boolean => {
@@ -72,64 +74,63 @@ const TrackListItem = React.memo<{
 
   return (
     <button
-      key={track.id}
+      type="button"
+      className="gx-row"
+      data-now={isNowPlaying ? '' : undefined}
+      aria-current={isNowPlaying ? 'true' : undefined}
       onClick={handleClick}
       onTouchEnd={handleTouchEnd}
       onContextMenu={handleContextMenu}
-      style={{
-        padding: '8px 10px',
-        backgroundColor: isNowPlaying ? 'rgba(126,211,33,0.2)' : 'transparent',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '6px',
-        color: '#F8F8F8',
-        textAlign: 'left',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        userSelect: 'none',
-        WebkitTouchCallout: 'none',
-        WebkitUserSelect: 'none',
-        minHeight: '52px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        width: '100%',
-        overflow: 'hidden'
-      }}
     >
-      <div style={{
-        fontSize: '13px',
-        fontWeight: 600,
-        lineHeight: '1.3',
-        marginBottom: '3px',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        maxWidth: '100%'
-      }}>
-        {track.name}
-      </div>
-      <div style={{
-        fontSize: '11px',
-        color: '#8E8E93',
-        lineHeight: '1.4',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        maxWidth: '100%'
-      }}>
-        {track.artist}
-        {track.bpm && <> • {track.bpm} BPM</>}
-        {track.key && <> • {track.key}</>}
-      </div>
+      <span className="gx-row__title">{track.name}</span>
+      <span className="gx-row__meta">
+        <span className="gx-row__artist">{track.artist}</span>
+        {track.bpm ? <Bpm value={track.bpm} /> : null}
+        {track.key || track.camelotKey ? <KeyBadge value={track.camelotKey || track.key} /> : null}
+      </span>
     </button>
   );
 });
+
+type RightTab = 'analysis' | 'keymood' | 'pathfinder' | 'tidal' | 'spotify' | 'targets';
+const RIGHT_TABS: { id: RightTab; label: string }[] = [
+  { id: 'analysis', label: 'Track analysis' },
+  { id: 'keymood', label: 'Key & mood' },
+  { id: 'pathfinder', label: 'Pathfinder' },
+  { id: 'tidal', label: 'TIDAL' },
+  { id: 'spotify', label: 'Spotify' },
+  { id: 'targets', label: 'Targets' },
+];
+const isRightTab = (v: string | null): v is RightTab => !!v && RIGHT_TABS.some((t) => t.id === v);
+const isMode = (v: string | null): v is DJMode => v === 'play' || v === 'plan';
+
+interface QueueClearResult {
+  total_items_cleared?: number;
+  cleared_queues?: Record<string, number>;
+}
 
 export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }) => {
   // Detect if we're on a mobile device
   const isMobile = useIsMobile();
 
-  const [mode, setMode] = useState<DJMode>(initialMode);
+  // Mode and right-panel tab live in the URL (?mode=play|plan, ?tab=…)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modeParam = searchParams.get('mode');
+  const tabParam = searchParams.get('tab');
+  // A deep link to a Plan-only tab (e.g. /paths → ?tab=pathfinder) opens Plan mode
+  const mode: DJMode = isMode(modeParam) ? modeParam : isRightTab(tabParam) ? 'plan' : initialMode;
+  const rightPanelTab: RightTab = isRightTab(tabParam) ? tabParam : 'analysis';
+
+  const updateParams = useCallback((patch: Record<string, string>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      Object.entries(patch).forEach(([k, v]) => next.set(k, v));
+      return next;
+    }, { replace: false });
+  }, [setSearchParams]);
+  const setMode = useCallback((m: DJMode) => updateParams({ mode: m }), [updateParams]);
+  const setRightPanelTab = useCallback((t: RightTab) => updateParams({ mode: 'plan', tab: t }), [updateParams]);
+
   const [nowPlaying, setNowPlaying] = useState<Track | null>(null);
 
   // Track inspection modal state
@@ -139,10 +140,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
   // Settings panel state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Orientation overlay state
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
-
   // Graph filter panel state
   const [showGraphFilters, setShowGraphFilters] = useState(false);
 
@@ -150,21 +147,21 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
   const [contextMenuTrack, setContextMenuTrack] = useState<Track | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
-  // Right panel tab state (PLAN mode)
-  const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'keymood' | 'pathfinder' | 'tidal' | 'spotify' | 'targets'>('analysis');
-
   // Artist Attribution Manager state
   const [showArtistAttribution, setShowArtistAttribution] = useState(false);
 
   // Tracklist Importer state
   const [showTracklistImporter, setShowTracklistImporter] = useState(false);
 
+  // Clear-queue confirmation
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [clearQueueError, setClearQueueError] = useState<string | null>(null);
 
   // Manual trigger states
   const [triggerStates, setTriggerStates] = useState({
-    targetSearch: { loading: false, lastTriggered: null },
-    scraperTasks: { loading: false, lastTriggered: null },
-    clearQueue: { loading: false, lastTriggered: null }
+    targetSearch: { loading: false, lastTriggered: null as string | null },
+    scraperTasks: { loading: false, lastTriggered: null as string | null },
+    clearQueue: { loading: false, lastTriggered: null as string | null }
   });
 
   // Library search state (PLAN mode)
@@ -179,22 +176,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
 
   // Load data and credentials
   useDataLoader();
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    try {
-      const dismissed = window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
-      setOnboardingDismissed(dismissed);
-      if (!dismissed) {
-        setShowOnboarding(true);
-      }
-    } catch (error) {
-      console.warn('[DJInterface] Unable to read onboarding preference:', error);
-    }
-  }, []);
 
   // Listen for openSettings event from child components (e.g., TidalPlaylistManager)
   useEffect(() => {
@@ -331,31 +312,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
     return scoredTracks;
   }, [tracks, librarySearchQuery]);
 
-  // Mode toggle handler
-  const toggleMode = () => {
-    setMode(mode === 'play' ? 'plan' : 'play');
-  };
-
-  const handleOnboardingDismiss = useCallback(() => {
-    setShowOnboarding(false);
-  }, []);
-
-  const handleOnboardingDisable = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
-      } catch (error) {
-        console.warn('[DJInterface] Unable to persist onboarding preference:', error);
-      }
-    }
-    setOnboardingDismissed(true);
-    setShowOnboarding(false);
-  }, []);
-
-  const onboardingTooltip = onboardingDismissed
-    ? 'Open the orientation guide again'
-    : 'Show a quick orientation guide';
-
   // Memoized event handlers to prevent child re-renders
   const handleTrackInspect = useCallback((track: Track) => {
     // Trigger zoom-to-node navigation for the selected track
@@ -464,23 +420,9 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
     }
   }, []);
 
+  /** Runs after the person confirms in the ConfirmDialog. */
   const clearQueue = useCallback(async () => {
-    // Confirm before clearing
-    const confirmed = window.confirm(
-      '⚠️ Are you sure you want to clear all queued scraping tasks?\n\n' +
-      'This will remove all pending tasks from:\n' +
-      '• High priority queue\n' +
-      '• Medium priority queue\n' +
-      '• Low priority queue\n' +
-      '• Main queue\n' +
-      '• Failed queue\n\n' +
-      'This action cannot be undone.'
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+    setClearQueueError(null);
     setTriggerStates(prev => ({
       ...prev,
       clearQueue: { ...prev.clearQueue, loading: true }
@@ -493,29 +435,25 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to clear queue: ${response.status}`);
+        throw new Error(`The server answered ${response.status}`);
       }
 
-      const result = await response.json();
-
-      alert(
-        `✅ Queue Cleared Successfully!\n\n` +
-        `Total items removed: ${result.total_items_cleared}\n\n` +
-        `Details:\n` +
-        `• High priority: ${result.cleared_queues.high}\n` +
-        `• Medium priority: ${result.cleared_queues.medium}\n` +
-        `• Low priority: ${result.cleared_queues.low}\n` +
-        `• Main queue: ${result.cleared_queues.main}\n` +
-        `• Failed queue: ${result.cleared_queues.failed}`
-      );
+      const result: QueueClearResult = await response.json();
+      const total = result.total_items_cleared;
 
       setTriggerStates(prev => ({
         ...prev,
         clearQueue: { loading: false, lastTriggered: new Date().toISOString() }
       }));
+      setConfirmClearOpen(false);
+      showToast(
+        total === undefined
+          ? 'Scraping queue cleared'
+          : `Scraping queue cleared: ${SN.format.count(total)} ${total === 1 ? 'task' : 'tasks'}`
+      );
     } catch (error) {
       console.error('Failed to clear queue:', error);
-      alert(`❌ Failed to clear queue: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setClearQueueError(error instanceof Error ? error.message : 'The request failed');
       setTriggerStates(prev => ({
         ...prev,
         clearQueue: { ...prev.clearQueue, loading: false }
@@ -523,572 +461,187 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
     }
   }, []);
 
+  const handleMenuAction = useCallback((id: string) => {
+    if (id === 'import') setShowTracklistImporter(true);
+    else if (id === 'attribution') setShowArtistAttribution(true);
+    else if (id === 'settings') setIsSettingsOpen(true);
+    else if (id === 'clear-queue') { setClearQueueError(null); setConfirmClearOpen(true); }
+  }, []);
+
+  const edgeCount = graphData?.edges?.length || 0;
+
+  // Loading and failure replace only the canvas; the panels keep their frame.
+  const graphCanvas = isLoading ? (
+    <div className="gx-state">
+      <LoadingPanel
+        message={tracks.length > 0 ? `Loading the graph: ${SN.format.count(tracks.length)} tracks so far…` : 'Loading the graph…'}
+      />
+    </div>
+  ) : error ? (
+    <div className="gx-state">
+      <ErrorPanel
+        icon={ServerCrash}
+        status="bad"
+        title="SongNodes couldn’t load the graph"
+        retry="Try again in a few minutes. If it keeps failing, check that the graph service is running."
+        actions={<button type="button" className="sn-btn" onClick={() => window.location.reload()}>Try again</button>}
+      >
+        {error}
+      </ErrorPanel>
+    </div>
+  ) : isMobile ? (
+    <MobileTrackExplorer />
+  ) : (
+    <GraphVisualization
+      onTrackSelect={handleTrackInspect}
+      onTrackRightClick={handleTrackRightClick}
+      nowPlayingId={nowPlaying?.id ?? null}
+    />
+  );
+
   return (
-    <div
-      className="app-container dj-interface"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        backgroundColor: 'var(--bg)',
-        color: 'var(--fg)',
-        fontFamily: 'var(--font-body)'
-      }}
-    >
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
-      {/* Header Bar */}
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '16px 24px',
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        backdropFilter: 'blur(10px)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <h1 style={{
-            margin: 0,
-            fontSize: '24px',
-            fontWeight: 700,
-            background: 'linear-gradient(90deg, #4A90E2, #7ED321)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
-            🎵 SongNodes DJ
-          </h1>
-
-          {/* Mode Toggle - Show both options with active highlight */}
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            padding: '4px',
-            borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.1)'
-          }}>
-            <button
-              onClick={() => setMode('play')}
-              aria-label="Switch to PLAY mode"
-              aria-pressed={mode === 'play'}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                backgroundColor: mode === 'play' ? '#7ED321' : 'transparent',
-                border: 'none',
-                borderRadius: '20px',
-                color: mode === 'play' ? '#FFFFFF' : '#8E8E93',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                opacity: mode === 'play' ? 1 : 0.7
-              }}
-            >
-              ▶️ PLAY
-            </button>
-            <button
-              onClick={() => setMode('plan')}
-              aria-label="Switch to PLAN mode"
-              aria-pressed={mode === 'plan'}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                backgroundColor: mode === 'plan' ? '#4A90E2' : 'transparent',
-                border: 'none',
-                borderRadius: '20px',
-                color: mode === 'plan' ? '#FFFFFF' : '#8E8E93',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                opacity: mode === 'plan' ? 1 : 0.7
-              }}
-            >
-              📋 PLAN
-            </button>
-          </div>
+    <div className="dj-interface gx">
+      {/* Page toolbar: the shell's AppHeader owns the wordmark and page title */}
+      <div className="gx-toolbar" role="toolbar" aria-label="Graph tools">
+        <SegmentedControl<DJMode>
+          label="Mode"
+          size="sm"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'play', label: 'Play', icon: Play },
+            { value: 'plan', label: 'Plan', icon: ListChecks },
+          ]}
+        />
+        <div className="gx-toolbar__meta" aria-live="polite">
+          {isLoading ? (
+            <StatusPill raw="running" label="Loading" />
+          ) : error ? (
+            <StatusPill raw="error" label="Not loaded" />
+          ) : (
+            <>
+              <span className="sn-tag"><span className="gx-count">{SN.format.count(tracks.length)}</span> {tracks.length === 1 ? 'track' : 'tracks'}</span>
+              <span className="sn-tag"><span className="gx-count">{SN.format.count(edgeCount)}</span> {edgeCount === 1 ? 'connection' : 'connections'}</span>
+            </>
+          )}
         </div>
-
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center',
-          overflowX: 'auto',
-          flexWrap: 'nowrap',
-          flex: 1,
-          minWidth: 0,
-          WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(255,255,255,0.3) transparent'
-        }}>
-          <span style={{
-            padding: '6px 12px',
-            backgroundColor: 'rgba(74,144,226,0.2)',
-            borderRadius: '12px',
-            fontSize: '12px',
-            color: '#4A90E2',
-            fontWeight: 600,
-            flexShrink: 0,
-            whiteSpace: 'nowrap'
-          }}>
-            {tracks.length} Tracks Loaded
-          </span>
-          <span style={{
-            padding: '6px 12px',
-            backgroundColor: 'rgba(126,211,33,0.2)',
-            borderRadius: '12px',
-            fontSize: '12px',
-            color: '#7ED321',
-            fontWeight: 600,
-            flexShrink: 0,
-            whiteSpace: 'nowrap'
-          }}>
-            {graphData?.edges?.length || 0} Connections
-          </span>
-
-          <button
-            onClick={() => setShowArtistAttribution(true)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(231,76,60,0.2)',
-              border: '1px solid rgba(231,76,60,0.4)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              marginRight: '8px',
-              flexShrink: 0,
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(231,76,60,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(231,76,60,0.2)';
-            }}
-          >
-            🎨 Fix Artist Attribution
+        <div className="gx-toolbar__actions">
+          <button type="button" className="sn-btn sn-btn--sm" onClick={() => setShowGraphFilters(true)}>
+            <SlidersHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+            Filters
           </button>
-
-          <button
-            onClick={() => setShowTracklistImporter(true)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(155,89,182,0.2)',
-              border: '1px solid rgba(155,89,182,0.4)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              marginRight: '8px',
-              flexShrink: 0,
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(155,89,182,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(155,89,182,0.2)';
-            }}
-          >
-            📝 Import Tracklist
+          <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => setIsSettingsOpen(true)}>
+            <Settings size={16} strokeWidth={2} aria-hidden="true" />
+            Settings
           </button>
-
-          <button
-            onClick={() => setShowGraphFilters(true)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              marginRight: '8px',
-              flexShrink: 0,
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
-            }}
-          >
-            🔧 Filters
-          </button>
-
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              flexShrink: 0,
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
-            }}
-          >
-            ⚙️ Settings
-          </button>
-
-          <button
-            onClick={() => setShowOnboarding(true)}
-            title={onboardingTooltip}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(69,90,100,0.2)',
-              border: '1px solid rgba(69,90,100,0.4)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              flexShrink: 0,
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(69,90,100,0.32)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(69,90,100,0.2)';
-            }}
-          >
-            <HelpCircle size={18} strokeWidth={1.8} />
-            Quick Tour
-          </button>
+          <OverflowMenu
+            small
+            onSelect={handleMenuAction}
+            items={[
+              { id: 'import', label: 'Import tracklist', icon: FileText, group: 'Library' },
+              { id: 'attribution', label: 'Fix artist attribution', icon: UserPen, group: 'Library' },
+              { id: 'clear-queue', label: 'Clear scraping queue…', icon: Trash2, destructive: true },
+            ]}
+          />
         </div>
-      </header>
-
-      {/* Loading State */}
-      {isLoading && (
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#8E8E93'
-        }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: '4px solid rgba(126,211,33,0.2)',
-            borderTop: '4px solid #7ED321',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            marginBottom: '16px'
-          }} />
-          <p style={{ fontSize: '16px', margin: 0 }}>Loading your music library...</p>
-          <p style={{ fontSize: '14px', margin: '8px 0 0 0', opacity: 0.7 }}>
-            Found {tracks.length} tracks so far
-          </p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && !isLoading && (
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#F56565',
-          textAlign: 'center',
-          padding: '40px'
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-          <h2 style={{ margin: '0 0 8px 0', color: '#F56565' }}>Failed to Load Music Library</h2>
-          <p style={{ margin: '0 0 24px 0', color: '#8E8E93', maxWidth: '400px' }}>
-            {error}
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#F56565',
-              border: 'none',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      )}
+      </div>
 
       {/* Main Content Area */}
-      {!isLoading && !error && (
-        <main style={{
-          flex: 1,
-          display: 'grid',
-          gridTemplateRows: '1fr',
-          gap: '16px',
-          padding: '16px',
-          overflow: 'hidden'
-        }}>
-        {/* PLAY Mode Layout */}
-        {mode === 'play' && (
-          <>
-            {/* Graph and Browser Section - Full Height */}
-            <section
-              className="visualization-section"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 480px',
-                gap: '16px',
-                overflow: 'hidden',
-                minHeight: 0,
-                height: '100%'
+      {mode === 'play' && (
+        <div className="gx-main gx-main--play visualization-section">
+          <section className="gx-panel gx-panel--canvas" aria-label="Track graph">
+            {graphCanvas}
+            {!isMobile && !isLoading && !error && (
+              <div className="gx-legend" aria-label="Legend">
+                <p className="gx-legend__title">Graph</p>
+                <ul className="sn-graph-controls__legend">
+                  <li className="sn-graph-controls__legend-note">All tracks alike; only states carry colour.</li>
+                  <li><span className="sn-graph-controls__ring" style={{ ['--c' as string]: 'var(--brand)' } as React.CSSProperties} aria-hidden="true" />Selected</li>
+                  <li><span className="sn-graph-controls__ring" style={{ ['--c' as string]: 'var(--now)' } as React.CSSProperties} aria-hidden="true" />Now playing</li>
+                  <li><span className="sn-graph-controls__ring" style={{ ['--c' as string]: 'var(--mod-paths)' } as React.CSSProperties} aria-hidden="true" />Path</li>
+                </ul>
+              </div>
+            )}
+          </section>
+
+          <section className="gx-panel gx-panel--scroll" aria-label="Next track suggestions">
+            <IntelligentBrowser
+              currentTrack={nowPlaying as any}
+              allTracks={tracks as any}
+              onTrackSelect={handleTrackInspect as any}
+              graphEdges={graphData?.edges || []} // Graph edges drive adjacency-based recommendations
+              config={{
+                maxRecommendations: 12,
+                showReasons: true,
+                groupBy: 'compatibility'
               }}
-            >
-              {/* Graph Visualization */}
-              <div style={{
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                overflow: 'hidden',
-                position: 'relative',
-                height: '100%',
-                width: '100%',
-                minHeight: 0
-              }}>
-                {isMobile ? (
-                  <MobileTrackExplorer />
-                ) : (
-                  <>
-                    <GraphVisualization
-                      onTrackSelect={handleTrackInspect}
-                      onTrackRightClick={handleTrackRightClick}
-                    />
+            />
+          </section>
+        </div>
+      )}
 
-                    {/* Graph Legend Overlay */}
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '20px',
-                      left: '20px',
-                      padding: '12px',
-                      backgroundColor: 'rgba(0,0,0,0.8)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      backdropFilter: 'blur(10px)'
-                    }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#8E8E93' }}>
-                        Node Colors
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', backgroundColor: '#7ED321', borderRadius: '50%' }} />
-                          <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Perfect Match</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', backgroundColor: '#F5A623', borderRadius: '50%' }} />
-                          <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Compatible</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', backgroundColor: '#4A90E2', borderRadius: '50%' }} />
-                          <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Default</span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Intelligent Browser */}
-              <div style={{
-                overflow: 'auto',
-                maxHeight: '100%'
-              }}>
-                <IntelligentBrowser
-                  currentTrack={nowPlaying as any}
-                  allTracks={tracks as any}
-                  onTrackSelect={handleTrackInspect as any}
-                  graphEdges={graphData?.edges || []} // ✅ Pass graph edges for adjacency-based recommendations
-                  config={{
-                    maxRecommendations: 12,
-                    showReasons: true,
-                    groupBy: 'compatibility'
-                  }}
-                />
-              </div>
-            </section>
-          </>
-        )}
-
-        {/* PLAN Mode Layout */}
-        {mode === 'plan' && (
-          <section style={{
-            display: 'grid',
-            gridTemplateColumns: '250px 1fr 350px',
-            gap: '20px',
-            height: '100%',
-            overflow: 'hidden'
-          }}>
-            {/* Library Browser */}
-            <div style={{
-              backgroundColor: 'rgba(0,0,0,0.6)',
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '16px' }}>Library</h3>
-
-              {/* Search Input */}
-              <div style={{ position: 'relative', marginBottom: '12px' }}>
+      {mode === 'plan' && (
+        <div className="gx-main gx-main--plan">
+          {/* Library Browser */}
+          <section className="gx-panel" aria-labelledby="gx-library-title">
+            <div className="gx-panel__head">
+              <h2 className="sn-title title-s" id="gx-library-title">Library</h2>
+            </div>
+            <div className="gx-panel__body">
+              <div className="gx-search">
+                <span className="gx-search__icon" aria-hidden="true"><Search size={16} strokeWidth={2} /></span>
                 <input
-                  type="text"
-                  placeholder="🔍 Search tracks, artists, BPM, key..."
+                  type="search"
+                  className="sn-input"
+                  aria-label="Search the library"
+                  placeholder="Search tracks"
                   value={librarySearchQuery}
                   onChange={(e) => setLibrarySearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 32px 10px 12px',
-                    backgroundColor: 'rgba(0,0,0,0.4)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '8px',
-                    color: '#F8F8F8',
-                    fontSize: '13px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(74,144,226,0.6)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-                  }}
                 />
                 {librarySearchQuery && (
                   <button
-                    onClick={() => setLibrarySearchQuery('')}
-                    style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      color: '#8E8E93',
-                      cursor: 'pointer',
-                      padding: '4px',
-                      fontSize: '16px',
-                      lineHeight: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'color 0.2s'
-                    }}
+                    type="button"
+                    className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm gx-search__clear"
+                    aria-label="Clear search"
                     title="Clear search"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = '#F8F8F8';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '#8E8E93';
-                    }}
+                    onClick={() => setLibrarySearchQuery('')}
                   >
-                    ✕
+                    <X size={16} strokeWidth={2} aria-hidden="true" />
                   </button>
                 )}
               </div>
 
-              {/* Results Counter */}
               {librarySearchQuery && (
-                <div style={{
-                  fontSize: '11px',
-                  color: '#8E8E93',
-                  marginBottom: '8px',
-                  padding: '0 4px'
-                }}>
-                  {filteredLibraryTracks.length} of {tracks.length} tracks
-                </div>
+                <p className="gx-results" role="status">
+                  {SN.format.count(filteredLibraryTracks.length)} of {SN.format.count(tracks.length)} tracks
+                </p>
               )}
 
-              {/* Track List */}
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-                overflowY: 'auto',
-                flex: 1,
-                minHeight: 0
-              }}>
-                {filteredLibraryTracks.length === 0 ? (
-                  <div style={{
-                    textAlign: 'center',
-                    color: '#8E8E93',
-                    padding: '60px 20px',
-                    fontSize: '14px'
-                  }}>
-                    {librarySearchQuery ? (
-                      <>
-                        <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🔍</div>
-                        <div style={{ fontWeight: 600, marginBottom: '8px' }}>No tracks found</div>
-                        <div style={{ fontSize: '12px', opacity: 0.7 }}>
-                          Try a different search term
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📚</div>
-                        <div>No tracks in library</div>
-                      </>
-                    )}
-                  </div>
+              {filteredLibraryTracks.length === 0 ? (
+                librarySearchQuery ? (
+                  <EmptyPanel
+                    compact
+                    icon={SearchX}
+                    title="No tracks match this search"
+                    meta={<span className="sn-tag">{librarySearchQuery}</span>}
+                    actions={<button type="button" className="sn-btn" onClick={() => setLibrarySearchQuery('')}>Clear search</button>}
+                  >
+                    None of the {SN.format.count(tracks.length)} tracks match.
+                  </EmptyPanel>
                 ) : (
-                  filteredLibraryTracks.map(track => (
+                  isLoading ? (
+                    <LoadingPanel message="Loading tracks…" rows={8} />
+                  ) : (
+                    <EmptyPanel compact icon={Library} title={error ? 'Library not loaded' : 'No tracks in the graph yet'}>
+                      {error
+                        ? 'The track list fills in once the graph loads.'
+                        : 'Tracks appear here once the graph has tracks with an artist and a title.'}
+                    </EmptyPanel>
+                  )
+                )
+              ) : (
+                <div className="gx-list">
+                  {filteredLibraryTracks.map(track => (
                     <TrackListItem
                       key={track.id}
                       track={track}
@@ -1096,259 +649,78 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
                       onInspect={handleTrackInspect}
                       onRightClick={handleTrackRightClick}
                     />
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Central Area - Graph and Analysis */}
-            <div style={{
-              backgroundColor: 'rgba(0,0,0,0.6)',
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              overflow: 'hidden',
-              height: '100%',
-              width: '100%',
-              minHeight: 0
-            }}>
-              {isMobile ? (
-                <MobileTrackExplorer />
-              ) : (
-                <GraphVisualization
-                  onTrackSelect={handleTrackInspect}
-                  onTrackRightClick={handleTrackRightClick}
-                />
+                  ))}
+                </div>
               )}
             </div>
-
-            {/* Right Panel with Tabs */}
-            <div style={{
-              backgroundColor: 'rgba(0,0,0,0.6)',
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              {/* Tab Header */}
-              <div style={{
-                display: 'flex',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                overflowX: 'auto',
-                flexWrap: 'nowrap',
-                WebkitOverflowScrolling: 'touch',
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(255,255,255,0.3) transparent'
-              }}>
-                <button
-                  onClick={() => setRightPanelTab('analysis')}
-                  style={{
-                    flexShrink: 0,
-                    padding: '12px 16px',
-                    backgroundColor: rightPanelTab === 'analysis' ? 'rgba(74,144,226,0.2)' : 'transparent',
-                    border: 'none',
-                    color: rightPanelTab === 'analysis' ? '#4A90E2' : '#8E8E93',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  Track Analysis
-                </button>
-                <button
-                  onClick={() => setRightPanelTab('keymood')}
-                  style={{
-                    flexShrink: 0,
-                    padding: '12px 16px',
-                    backgroundColor: rightPanelTab === 'keymood' ? 'rgba(74,144,226,0.2)' : 'transparent',
-                    border: 'none',
-                    color: rightPanelTab === 'keymood' ? '#4A90E2' : '#8E8E93',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  🎭 Key & Mood
-                </button>
-                <button
-                  onClick={() => setRightPanelTab('pathfinder')}
-                  style={{
-                    flexShrink: 0,
-                    padding: '12px 16px',
-                    backgroundColor: rightPanelTab === 'pathfinder' ? 'rgba(138,43,226,0.2)' : 'transparent',
-                    border: 'none',
-                    color: rightPanelTab === 'pathfinder' ? '#8A2BE2' : '#8E8E93',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  🗺️ Pathfinder
-                </button>
-                <button
-                  onClick={() => setRightPanelTab('tidal')}
-                  style={{
-                    flexShrink: 0,
-                    padding: '12px 16px',
-                    backgroundColor: rightPanelTab === 'tidal' ? 'rgba(74,144,226,0.2)' : 'transparent',
-                    border: 'none',
-                    color: rightPanelTab === 'tidal' ? '#4A90E2' : '#8E8E93',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  🎵 Tidal
-                </button>
-                <button
-                  onClick={() => setRightPanelTab('spotify')}
-                  style={{
-                    flexShrink: 0,
-                    padding: '12px 16px',
-                    backgroundColor: rightPanelTab === 'spotify' ? 'rgba(29,185,84,0.2)' : 'transparent',
-                    border: 'none',
-                    color: rightPanelTab === 'spotify' ? '#1DB954' : '#8E8E93',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  🎧 Spotify
-                </button>
-                <button
-                  onClick={() => setRightPanelTab('targets')}
-                  style={{
-                    flexShrink: 0,
-                    padding: '12px 16px',
-                    backgroundColor: rightPanelTab === 'targets' ? 'rgba(74,144,226,0.2)' : 'transparent',
-                    border: 'none',
-                    color: rightPanelTab === 'targets' ? '#4A90E2' : '#8E8E93',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  🎯 Targets
-                </button>
-              </div>
-
-              {/* Tab Content */}
-              <div style={{
-                flex: 1,
-                padding: '20px',
-                overflowY: 'auto'
-              }}>
-                {rightPanelTab === 'analysis' && (
-                  <>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Track Analysis</h3>
-                    {nowPlaying ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <h4 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#F8F8F8' }}>
-                            {nowPlaying.name}
-                          </h4>
-                          <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
-                            {nowPlaying.artist}
-                          </p>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>BPM</div>
-                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm || '---'}</div>
-                          </div>
-                          <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>KEY</div>
-                            <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key || '---'}</div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '8px' }}>ENERGY</div>
-                          {nowPlaying.energy !== undefined ? (
-                            <div style={{
-                              display: 'flex',
-                              gap: '2px',
-                              height: '20px'
-                            }}>
-                              {Array.from({ length: 10 }).map((_, i) => (
-                                <div
-                                  key={i}
-                                  style={{
-                                    flex: 1,
-                                    backgroundColor: i < nowPlaying.energy! ? '#7ED321' : 'rgba(255,255,255,0.1)',
-                                    borderRadius: '2px'
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: '14px', color: '#8E8E93' }}>---</div>
-                          )}
-                        </div>
-
-                        <button
-                          style={{
-                            padding: '12px',
-                            backgroundColor: '#4A90E2',
-                            border: 'none',
-                            borderRadius: '8px',
-                            color: '#FFFFFF',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Analyze Full Track
-                        </button>
-                      </div>
-                    ) : (
-                      <p style={{ color: '#8E8E93', fontSize: '14px' }}>
-                        Select a track to view analysis
-                      </p>
-                    )}
-                  </>
-                )}
-
-                {rightPanelTab === 'keymood' && (
-                  <KeyMoodPanel
-                    showInSidePanel={true}
-                    className="h-full"
-                  />
-                )}
-
-                {rightPanelTab === 'pathfinder' && (
-                  <PathfinderPanel />
-                )}
-
-                {rightPanelTab === 'tidal' && (
-                  <TidalPlaylistManager />
-                )}
-
-                {rightPanelTab === 'spotify' && (
-                  <SpotifyPlaylistManager />
-                )}
-
-                {rightPanelTab === 'targets' && (
-                  <TargetTracksManager />
-                )}
-              </div>
-            </div>
           </section>
-        )}
-        </main>
+
+          {/* Central Area - Graph */}
+          <section className="gx-panel gx-panel--canvas" aria-label="Track graph">
+            {graphCanvas}
+          </section>
+
+          {/* Right Panel with Tabs */}
+          <section className="gx-panel" aria-label="Plan tools">
+            <Tabs<RightTab>
+              label="Plan tools"
+              idBase="gx-plan"
+              tabs={RIGHT_TABS}
+              value={rightPanelTab}
+              onChange={setRightPanelTab}
+            />
+            <TabPanel idBase="gx-plan" id={rightPanelTab}>
+              {rightPanelTab === 'analysis' && (
+                nowPlaying ? (
+                  <div className="gx-analysis">
+                    <div>
+                      <h3 className="sn-title title-s">{nowPlaying.name}</h3>
+                      <p className="gx-analysis__artist">{nowPlaying.artist}</p>
+                    </div>
+                    <div className="gx-kv">
+                      <div className="gx-kv__cell">
+                        <div className="gx-kv__label">BPM</div>
+                        <Bpm value={nowPlaying.bpm} />
+                      </div>
+                      <div className="gx-kv__cell">
+                        <div className="gx-kv__label">Key</div>
+                        <KeyBadge value={nowPlaying.camelotKey || nowPlaying.key} withName />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="gx-kv__label">Energy</div>
+                      <TrackEnergy energy={nowPlaying.energy} scale={(nowPlaying as { energy_scale?: string }).energy_scale} />
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyPanel compact icon={MousePointerClick} title="No track selected">
+                    Pick a track in the library or the graph to see its BPM, key and energy.
+                  </EmptyPanel>
+                )
+              )}
+
+              {rightPanelTab === 'keymood' && (
+                <KeyMoodPanel showInSidePanel={true} />
+              )}
+
+              {rightPanelTab === 'pathfinder' && (
+                <PathfinderPanel />
+              )}
+
+              {rightPanelTab === 'tidal' && (
+                <TidalPlaylistManager />
+              )}
+
+              {rightPanelTab === 'spotify' && (
+                <SpotifyPlaylistManager />
+              )}
+
+              {rightPanelTab === 'targets' && (
+                <TargetTracksManager />
+              )}
+            </TabPanel>
+          </section>
+        </div>
       )}
 
       {/* Track Details Modal */}
@@ -1406,11 +778,24 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
         />
       )}
 
-      <OnboardingOverlay
-        open={showOnboarding}
-        onClose={handleOnboardingDismiss}
-        onDisable={handleOnboardingDisable}
-      />
+      <ConfirmDialog
+        open={confirmClearOpen}
+        title="Clear the scraping queue?"
+        confirmLabel="Clear queue"
+        busy={triggerStates.clearQueue.loading}
+        busyLabel="Clearing queue…"
+        onConfirm={clearQueue}
+        onCancel={() => setConfirmClearOpen(false)}
+        facts={[
+          'Removes every pending task from the high, medium, low, main and failed queues.',
+          'Target tracks and scraped playlists stay as they are.',
+          ...(clearQueueError ? [<span key="err" className="sn-field__error" role="alert">Couldn’t clear the queue: {clearQueueError}.</span>] : []),
+        ]}
+      >
+        Scrapers stop working through the queued searches. This can’t be undone.
+      </ConfirmDialog>
+
+      <ToastRegion />
     </div>
   );
 };

@@ -1,0 +1,23 @@
+/* Pathfinder tab. Tokens only. */
+.pf { display: flex; flex-direction: column; gap: var(--space-4); }
+.pf__intro, .pf__hint { margin: 0; font-size: 0.875rem; color: var(--fg-2); }
+.pf__label { font: 600 0.8125rem/1.3 var(--font-body); color: var(--fg-2); }
+.pf__help { font-size: 0.8125rem; color: var(--fg-3); }
+.pf__field { display: flex; flex-direction: column; gap: var(--space-1); }
+.pf__selected { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3); background: var(--brand-soft); border-radius: var(--radius-control); }
+.pf__selected-name { font-weight: 600; font-size: 0.875rem; }
+.pf__slot { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); background: var(--surface-2); border-radius: var(--radius-control); box-shadow: inset 3px 0 0 var(--mod-paths); }
+.pf__slot-main { flex: 1 1 auto; min-width: 0; min-height: 0; }
+.pf__pick { justify-content: flex-start; }
+.pf__value { font-family: var(--font-data); color: var(--fg); }
+.pf__range { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--fg-3); }
+.pf input[type="range"] { width: 100%; accent-color: var(--brand); }
+.pf__result { display: flex; flex-direction: column; gap: var(--space-3); }
+.pf__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-3); margin: 0; }
+.pf__facts dt { font-size: 0.75rem; color: var(--fg-2); }
+.pf__facts dd { margin: 0; font: 600 0.8125rem/1.4 var(--font-data); }
+.pf__path { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pf__step { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
+.pf__step[data-waypoint] .pf__num { box-shadow: 0 0 0 2px var(--mod-paths); }
+.pf__num { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-3); font: 600 0.75rem/1 var(--font-data); color: var(--fg); }
+.pf__step-main { flex: 1 1 auto; min-width: 0; }

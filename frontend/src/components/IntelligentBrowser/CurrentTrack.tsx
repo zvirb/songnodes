@@ -1,11 +1,13 @@
 /**
  * CurrentTrack Component
- * Display currently playing track with metadata
+ * The track playing now, with BPM, key, energy and length (design-system formats).
  */
 
 import React from 'react';
+import { AudioWaveform } from 'lucide-react';
 import type { Track } from './types';
-import { formatDuration } from './utils';
+import { Bpm, KeyBadge, SN } from '../../lib/songnodes';
+import { EmptyPanel, TrackEnergy } from '../ds';
 import styles from './IntelligentBrowser.module.css';
 
 interface CurrentTrackProps {
@@ -15,81 +17,45 @@ interface CurrentTrackProps {
 export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
   if (!track) {
     return (
-      <div className={styles.currentTrackEmpty} role="status">
-        <p className={styles.emptyMessage}>
-          Load a track to see intelligent recommendations
-        </p>
-      </div>
+      <EmptyPanel compact icon={AudioWaveform} title="Nothing playing yet">
+        Pick a track in the graph to see what to play next.
+      </EmptyPanel>
     );
   }
 
+  // trackFromNode (utils/trackMetadata) stores duration in seconds
+  const seconds = track.duration != null && track.duration > 0 ? track.duration : null;
+
   return (
-    <div className={styles.currentTrack} role="status" aria-label="Currently playing">
-      {/* Header */}
-      <div className={styles.currentTrackHeader}>
-        <div className={styles.currentTrackTitle}>
-          <h3 className={styles.trackName}>{track.name}</h3>
-          <p className={styles.trackArtist}>{track.artist}</p>
+    <section className={styles.current} aria-label="Now playing">
+      <div className={styles.currentHead}>
+        <div>
+          <h3 className={`sn-title title-s ${styles.currentName}`}>{track.name}</h3>
+          <p className={styles.currentArtist}>{track.artist}</p>
         </div>
-        <span className={styles.activeIndicator} aria-label="Co-Pilot Active">
-          Co-Pilot Active
-        </span>
+        <span className="sn-tag">Now playing</span>
       </div>
 
-      {/* Metrics Grid */}
-      <div className={styles.metricsGrid}>
-        {/* BPM */}
+      <div className={styles.metrics}>
         <div className={styles.metric}>
           <span className={styles.metricLabel}>BPM</span>
-          <span className={styles.metricValue} style={{ color: '#4A90E2' }}>
-            {track.bpm || '---'}
-          </span>
+          <Bpm value={track.bpm} />
         </div>
-
-        {/* Key */}
         <div className={styles.metric}>
-          <span className={styles.metricLabel}>KEY</span>
-          <span className={styles.metricValue} style={{ color: '#7ED321' }}>
-            {track.key || '---'}
-          </span>
+          <span className={styles.metricLabel}>Key</span>
+          <KeyBadge value={track.key} />
         </div>
-
-        {/* Energy */}
         <div className={styles.metric}>
-          <span className={styles.metricLabel}>ENERGY</span>
-          {track.energy !== undefined ? (
-            <div className={styles.energyBars} aria-label={`Energy level ${track.energy} out of 10`}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={styles.energyBar}
-                  style={{
-                    backgroundColor: i < Math.ceil(track.energy! / 2) ? '#7ED321' : 'rgba(255,255,255,0.1)'
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <span className={styles.metricValue}>---</span>
-          )}
+          <span className={styles.metricLabel}>Energy</span>
+          <TrackEnergy energy={track.energy} scale={(track as { energy_scale?: string }).energy_scale} />
         </div>
-
-        {/* Duration */}
         <div className={styles.metric}>
-          <span className={styles.metricLabel}>TIME</span>
-          <span className={styles.metricValue}>
-            {formatDuration(track.duration)}
-          </span>
+          <span className={styles.metricLabel}>Length</span>
+          {seconds != null
+            ? <span className={styles.metricValue}>{SN.format.duration(seconds)}</span>
+            : <span className="sn-none" title="Length not set">–</span>}
         </div>
       </div>
-
-      {/* Screen reader summary */}
-      <div className="sr-only">
-        Now playing: {track.name} by {track.artist}.
-        {track.bpm && ` ${track.bpm} BPM.`}
-        {track.key && ` Key: ${track.key}.`}
-        {track.energy && ` Energy level: ${track.energy} out of 10.`}
-      </div>
-    </div>
+    </section>
   );
 };

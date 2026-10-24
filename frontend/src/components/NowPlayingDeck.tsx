@@ -1,8 +1,9 @@
-import { formatStoredEnergy } from '../utils/trackMetadata';
+import { TrackEnergy } from './ds';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, Pause, Loader2 } from 'lucide-react';
 
 import { Track } from '../types/dj';
+import { tokenHex } from '../lib/graphColours';
 import { trackApi } from '../services/api';
 
 interface NowPlayingDeckProps {
@@ -26,8 +27,10 @@ const WaveformDisplay: React.FC<{
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const data = waveformData.length > 0 ? waveformData :
-      Array.from({ length: 120 }, () => Math.random() * 0.7 + 0.2);
+    // No waveform data → draw nothing (never a made-up waveform)
+    const data = waveformData;
+    if (data.length === 0) return;
+    const ink = (t: string) => `#${tokenHex(t).toString(16).padStart(6, '0')}`;
 
     const barWidth = canvas.width / data.length;
 
@@ -35,23 +38,14 @@ const WaveformDisplay: React.FC<{
       const x = index * barWidth;
       const barHeight = value * canvas.height;
       const y = (canvas.height - barHeight) / 2;
-
-      const gradient = ctx.createLinearGradient(x, 0, x, canvas.height);
-      gradient.addColorStop(0, '#4A90E2');
-      gradient.addColorStop(1, '#7ED321');
-      ctx.fillStyle = gradient;
-
+      ctx.fillStyle = ink('fg-3');
       ctx.fillRect(x, y, barWidth - 1, barHeight);
     });
 
     if (progress > 0) {
       const clampedProgress = Math.max(0, Math.min(progress, 1));
       const progressX = canvas.width * clampedProgress;
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.fillRect(0, 0, progressX, canvas.height);
-
-      ctx.fillStyle = '#7ED321';
+      ctx.fillStyle = ink('now');
       ctx.fillRect(progressX - 1, 0, 2, canvas.height);
     }
   }, [waveformData, progress]);
@@ -64,9 +58,9 @@ const WaveformDisplay: React.FC<{
       style={{
         width: '100%',
         height: `${height}px`,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'var(--surface-1)',
         borderRadius: '4px',
-        border: '1px solid rgba(255,255,255,0.2)'
+        border: '1px solid var(--line-strong)'
       }}
     />
   );
@@ -130,7 +124,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
 
     const waveform = Array.isArray(track.waveform) && track.waveform.length > 0
       ? track.waveform
-      : generateWaveform(track.id || `${track.name}-${track.artist}`);
+      : []; // no stored waveform → none drawn (never generated)
     setWaveformData(waveform);
 
     if (!track.id) {
@@ -249,28 +243,27 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
   const progressPercent = clamp(progress, 0, 1) * 100;
   const totalPreviewSeconds = previewDuration > 0 ? previewDuration : 30;
   const trackDurationSeconds = track?.duration ?? track?.duration_seconds ?? 0;
-  const energyDisplay = formatStoredEnergy(track?.energy, track?.energy_scale);
   const valencePercent = track?.valence !== undefined ? Math.round(track.valence * 100) : null;
 
   if (!track) {
     return (
       <div className="now-playing-deck-empty" style={{
         padding: '40px',
-        backgroundColor: 'rgba(0,0,0,0.9)',
+        backgroundColor: 'var(--surface-1)',
         borderRadius: '12px',
-        border: '2px solid rgba(255,255,255,0.1)',
+        border: '2px solid var(--line)',
         textAlign: 'center'
       }}>
         <p style={{
-          color: '#8E8E93',
-          fontSize: '18px',
+          color: 'var(--fg-2)',
+          fontSize: '1.125rem',
           margin: 0
         }}>
           No Track Selected
         </p>
         <p style={{
-          color: '#8E8E93',
-          fontSize: '14px',
+          color: 'var(--fg-2)',
+          fontSize: '0.875rem',
           marginTop: '8px'
         }}>
           Select a track from the graph or browser
@@ -285,10 +278,10 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
       flexDirection: 'column',
       gap: '14px',
       padding: '16px 20px',
-      backgroundColor: 'rgba(0,0,0,0.9)',
+      backgroundColor: 'var(--surface-1)',
       borderRadius: '12px',
-      border: '2px solid rgba(255,255,255,0.2)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      border: '2px solid var(--line-strong)',
+      boxShadow: 'var(--shadow-2)',
       height: '100%',
       maxHeight: '280px',
       overflow: 'hidden'
@@ -302,8 +295,8 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
         overflow: 'hidden'
       }}>
         <span style={{
-          color: '#FFFFFF',
-          fontSize: '18px',
+          color: 'var(--fg)',
+          fontSize: '1.125rem',
           fontWeight: 700,
           letterSpacing: '-0.5px',
           overflow: 'hidden',
@@ -312,29 +305,29 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
         }}>
           {track.name}
         </span>
-        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
+        <span style={{ color: 'var(--fg-2)', fontSize: '1rem', flexShrink: 0 }}>•</span>
         <span style={{
-          color: '#8E8E93',
-          fontSize: '14px',
+          color: 'var(--fg-2)',
+          fontSize: '0.875rem',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           flexShrink: 1
         }}>
           {track.artist}
         </span>
-        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
+        <span style={{ color: 'var(--fg-2)', fontSize: '1rem', flexShrink: 0 }}>•</span>
         <span style={{
-          color: '#4A90E2',
-          fontSize: '14px',
+          color: 'var(--brand)',
+          fontSize: '0.875rem',
           fontWeight: 600,
           flexShrink: 0
         }}>
           {track.bpm ?? '—'} BPM
         </span>
-        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
+        <span style={{ color: 'var(--fg-2)', fontSize: '1rem', flexShrink: 0 }}>•</span>
         <span style={{
-          color: '#7ED321',
-          fontSize: '14px',
+          color: 'var(--status-ok)',
+          fontSize: '0.875rem',
           fontWeight: 600,
           flexShrink: 0
         }}>
@@ -352,13 +345,13 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
           flexDirection: 'column',
           alignItems: 'center',
           padding: '8px 12px',
-          backgroundColor: 'rgba(74,144,226,0.08)',
+          backgroundColor: 'var(--surface-2)',
           borderRadius: '8px',
-          border: '1px solid rgba(74,144,226,0.25)'
+          border: '1px solid var(--surface-2)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--fg-2)',
+            fontSize: '0.6875rem',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             marginBottom: '4px'
@@ -366,12 +359,12 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
             Energy
           </span>
           <span style={{
-            color: '#7ED321',
-            fontSize: '20px',
+            color: 'var(--status-ok)',
+            fontSize: '1.25rem',
             fontWeight: 700,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {energyDisplay}
+            <TrackEnergy energy={track?.energy} scale={track?.energy_scale} />
           </span>
         </div>
 
@@ -380,13 +373,13 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
           flexDirection: 'column',
           alignItems: 'center',
           padding: '8px 12px',
-          backgroundColor: 'rgba(126,211,33,0.1)',
+          backgroundColor: 'var(--surface-2)',
           borderRadius: '8px',
-          border: '1px solid rgba(126,211,33,0.28)'
+          border: '1px solid var(--surface-2)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--fg-2)',
+            fontSize: '0.6875rem',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             marginBottom: '4px'
@@ -394,8 +387,8 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
             Valence
           </span>
           <span style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
+            color: 'var(--fg)',
+            fontSize: '1.25rem',
             fontWeight: 700,
             fontVariantNumeric: 'tabular-nums'
           }}>
@@ -408,13 +401,13 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
           flexDirection: 'column',
           alignItems: 'center',
           padding: '8px 12px',
-          backgroundColor: 'rgba(148,163,184,0.12)',
+          backgroundColor: 'var(--surface-2)',
           borderRadius: '8px',
-          border: '1px solid rgba(148,163,184,0.28)'
+          border: '1px solid var(--surface-2)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--fg-2)',
+            fontSize: '0.6875rem',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             marginBottom: '4px'
@@ -422,8 +415,8 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
             Genre
           </span>
           <span style={{
-            color: '#FFFFFF',
-            fontSize: '14px',
+            color: 'var(--fg)',
+            fontSize: '0.875rem',
             fontWeight: 600,
             textTransform: 'uppercase'
           }}>
@@ -436,13 +429,13 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
           flexDirection: 'column',
           alignItems: 'center',
           padding: '8px 12px',
-          backgroundColor: 'rgba(59,130,246,0.12)',
+          backgroundColor: 'var(--surface-2)',
           borderRadius: '8px',
-          border: '1px solid rgba(59,130,246,0.28)'
+          border: '1px solid var(--surface-2)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--fg-2)',
+            fontSize: '0.6875rem',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             marginBottom: '4px'
@@ -450,8 +443,8 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
             Length
           </span>
           <span style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
+            color: 'var(--fg)',
+            fontSize: '1.25rem',
             fontWeight: 700,
             fontVariantNumeric: 'tabular-nums'
           }}>
@@ -472,9 +465,9 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
                 width: '36px',
                 height: '36px',
                 borderRadius: '50%',
-                border: '1px solid rgba(255,255,255,0.2)',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                color: '#FFFFFF',
+                border: '1px solid var(--line-strong)',
+                backgroundColor: 'var(--surface-2)',
+                color: 'var(--fg)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -495,7 +488,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
                 position: 'relative',
                 height: '6px',
                 borderRadius: '999px',
-                backgroundColor: 'rgba(255,255,255,0.08)'
+                backgroundColor: 'var(--surface-2)'
               }}>
                 <div style={{
                   position: 'absolute',
@@ -503,7 +496,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
                   left: 0,
                   height: '100%',
                   width: `${progressPercent}%`,
-                  background: 'linear-gradient(90deg, #4A90E2, #7ED321)',
+                  background: 'var(--brand)',
                   borderRadius: '999px',
                   transition: 'width 0.12s ease-out'
                 }} />
@@ -519,8 +512,8 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
               />
             </div>
             <span style={{
-              fontSize: '12px',
-              color: '#8E8E93',
+              fontSize: '0.75rem',
+              color: 'var(--fg-2)',
               minWidth: '68px',
               textAlign: 'right'
             }}>
@@ -528,18 +521,18 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
             </span>
           </div>
           {isPreviewLoading && (
-            <span style={{ fontSize: '11px', color: '#8E8E93' }}>
+            <span style={{ fontSize: '0.6875rem', color: 'var(--fg-2)' }}>
               Fetching preview from connected services…
             </span>
           )}
           {previewError && (
-            <span style={{ fontSize: '11px', color: '#EF4444' }}>{previewError}</span>
+            <span style={{ fontSize: '0.6875rem', color: 'var(--status-bad)' }}>{previewError}</span>
           )}
         </div>
       ) : (
         <p style={{
-          fontSize: '12px',
-          color: '#8E8E93',
+          fontSize: '0.75rem',
+          color: 'var(--fg-2)',
           margin: 0
         }}>
           Connect Spotify or Tidal from settings to audition a 30s preview.

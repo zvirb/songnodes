@@ -1,4 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { RotateCcw } from 'lucide-react';
+import { SN } from '../lib/songnodes';
+import { Dialog } from './ds';
+import './GraphFilterPanel.css';
 import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
 
@@ -242,375 +246,80 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
     );
   }, []);
 
-  if (!isOpen) return null;
+  const maxStrength = Math.max(...connectionStrengths, 10);
+  const count = (n: number) => SN.format.count(n);
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(5px)'
-      }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <Dialog
+      open={isOpen}
+      title="Graph filters"
+      sub={`Showing ${count(filteredNodeCount)} of ${count(totalNodes)} tracks and ${count(filteredEdgeCount)} of ${count(totalEdges)} links`}
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="sn-btn sn-btn--quiet sn-dialog__foot-start" onClick={resetFilters}>
+            <RotateCcw size={16} strokeWidth={2} aria-hidden="true" />
+            Clear filters
+          </button>
+          <button type="button" className="sn-btn" onClick={onClose}>Cancel</button>
+          <button type="button" className="sn-btn sn-btn--primary" onClick={applyFilters}>
+            Show {count(filteredNodeCount)} tracks
+          </button>
+        </>
+      }
     >
-      <div
-        style={{
-          backgroundColor: '#1A1A1A',
-          borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          width: '90%',
-          maxWidth: '700px',
-          maxHeight: '85vh',
-          overflow: 'hidden',
-          color: '#FFFFFF'
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.1)'
-          }}
-        >
-          <div>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
-              🎛️ Graph Filters
-            </h2>
-            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#8E8E93' }}>
-              Showing {filteredNodeCount} of {totalNodes} nodes, {filteredEdgeCount} of {totalEdges} edges
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#8E8E93',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px'
-            }}
-          >
-            ×
-          </button>
+      <div className="gfp">
+        <div className="sn-field">
+          <label htmlFor="gfp-nodes">Most tracks <span className="gfp__value">{count(filteredNodeCount)}</span></label>
+          <input id="gfp-nodes" type="range" min="10" max={totalNodes} value={maxNodes} onChange={(e) => setMaxNodes(parseInt(e.target.value))} />
+          <span className="gfp__range"><span>10</span><span>{count(totalNodes)}</span></span>
         </div>
 
-        {/* Content */}
-        <div style={{ padding: '24px', maxHeight: '60vh', overflowY: 'auto' }}>
+        <div className="sn-field">
+          <label htmlFor="gfp-edges">Most links <span className="gfp__value">{count(filteredEdgeCount)}</span></label>
+          <input id="gfp-edges" type="range" min="10" max={totalEdges} value={maxEdges} onChange={(e) => setMaxEdges(parseInt(e.target.value))} />
+          <span className="gfp__range"><span>10</span><span>{count(totalEdges)}</span></span>
+        </div>
 
-          {/* Node Limit Slider */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
-                Maximum Nodes
-              </label>
-              <span style={{ fontSize: '14px', color: '#7ED321', fontWeight: 600 }}>
-                {filteredNodeCount} nodes
-              </span>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max={totalNodes}
-              value={maxNodes}
-              onChange={(e) => setMaxNodes(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: `linear-gradient(to right, #7ED321 0%, #7ED321 ${(maxNodes / totalNodes) * 100}%, #333 ${(maxNodes / totalNodes) * 100}%, #333 100%)`,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
-              <span>10</span>
-              <span>{maxNodes}</span>
-              <span>{totalNodes}</span>
-            </div>
-          </div>
+        <div className="sn-field">
+          <label htmlFor="gfp-strength">Fewest DJ plays per link <span className="gfp__value">{minConnectionStrength}+</span></label>
+          <input id="gfp-strength" type="range" min="1" max={maxStrength} value={minConnectionStrength} onChange={(e) => setMinConnectionStrength(parseInt(e.target.value))} />
+          <span className="gfp__range"><span>1</span><span>{maxStrength}</span></span>
+        </div>
 
-          {/* Edge Limit Slider */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
-                Maximum Edges
-              </label>
-              <span style={{ fontSize: '14px', color: '#4A90E2', fontWeight: 600 }}>
-                {filteredEdgeCount} edges
-              </span>
+        {years.length > 0 && (
+          <fieldset className="sn-field gfp__years">
+            <legend className="sn-field__label">Release years <span className="gfp__value">{yearRange[0]}–{yearRange[1]}</span></legend>
+            <div className="gfp__pair">
+              <input type="range" aria-label="Earliest release year" min={years[0]} max={years[years.length - 1]} value={yearRange[0]} onChange={(e) => setYearRange([parseInt(e.target.value), yearRange[1]])} />
+              <input type="range" aria-label="Latest release year" min={years[0]} max={years[years.length - 1]} value={yearRange[1]} onChange={(e) => setYearRange([yearRange[0], parseInt(e.target.value)])} />
             </div>
-            <input
-              type="range"
-              min="10"
-              max={totalEdges}
-              value={maxEdges}
-              onChange={(e) => setMaxEdges(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: `linear-gradient(to right, #4A90E2 0%, #4A90E2 ${(maxEdges / totalEdges) * 100}%, #333 ${(maxEdges / totalEdges) * 100}%, #333 100%)`,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
-              <span>10</span>
-              <span>{maxEdges}</span>
-              <span>{totalEdges}</span>
-            </div>
-          </div>
+            <span className="gfp__range"><span>{years[0]}</span><span>{years[years.length - 1]}</span></span>
+          </fieldset>
+        )}
 
-          {/* Connection Strength Filter */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
-                Minimum Connection Strength
-              </label>
-              <span style={{ fontSize: '14px', color: '#F39C12', fontWeight: 600 }}>
-                {minConnectionStrength}+
-              </span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max={Math.max(...connectionStrengths, 10)}
-              value={minConnectionStrength}
-              onChange={(e) => setMinConnectionStrength(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: `linear-gradient(to right, #F39C12 0%, #F39C12 ${(minConnectionStrength / Math.max(...connectionStrengths, 10)) * 100}%, #333 ${(minConnectionStrength / Math.max(...connectionStrengths, 10)) * 100}%, #333 100%)`,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
-              <span>1 (weakest)</span>
-              <span>{Math.max(...connectionStrengths, 10)} (strongest)</span>
-            </div>
-          </div>
-
-          {/* Year Range Filter */}
-          {years.length > 0 && (
-            <div style={{ marginBottom: '32px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
-                  Release Year Range
-                </label>
-                <span style={{ fontSize: '14px', color: '#9B59B6', fontWeight: 600 }}>
-                  {yearRange[0]} - {yearRange[1]}
+        <fieldset className="sn-checkbox-group gfp__genres">
+          <legend className="sn-checkbox-group__legend">Genres {selectedGenres.length ? <span className="gfp__value">{selectedGenres.length} selected</span> : null}</legend>
+          {genres.length === 0 ? (
+            <p className="gfp__none">No genres in the loaded tracks.</p>
+          ) : genres.map(({ genre, count: n }) => {
+            const isSelected = selectedGenres.includes(genre);
+            const filteredCount = filteredGenreCounts.get(genre) || 0;
+            return (
+              <label key={genre} className="sn-checkbox">
+                <input type="checkbox" checked={isSelected} onChange={() => toggleGenre(genre)} />
+                <span className="sn-checkbox__text">
+                  <span>
+                    {genre}
+                    <span className="sn-checkbox__count">{isSelected && filteredCount !== n ? `${count(filteredCount)} of ${count(n)}` : count(n)}</span>
+                  </span>
                 </span>
-              </div>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <input
-                  type="range"
-                  min={years[0]}
-                  max={years[years.length - 1]}
-                  value={yearRange[0]}
-                  onChange={(e) => setYearRange([parseInt(e.target.value), yearRange[1]])}
-                  style={{
-                    flex: 1,
-                    height: '6px',
-                    borderRadius: '3px',
-                    background: '#9B59B6',
-                    outline: 'none',
-                    cursor: 'pointer'
-                  }}
-                />
-                <input
-                  type="range"
-                  min={years[0]}
-                  max={years[years.length - 1]}
-                  value={yearRange[1]}
-                  onChange={(e) => setYearRange([yearRange[0], parseInt(e.target.value)])}
-                  style={{
-                    flex: 1,
-                    height: '6px',
-                    borderRadius: '3px',
-                    background: '#9B59B6',
-                    outline: 'none',
-                    cursor: 'pointer'
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
-                <span>{years[0]}</span>
-                <span>{years[years.length - 1]}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Genre Filter */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
-                Genres
               </label>
-              <span style={{ fontSize: '12px', color: '#8E8E93' }}>
-                {selectedGenres.length} selected
-              </span>
-            </div>
-            <div style={{
-              maxHeight: '200px',
-              overflowY: 'auto',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '8px'
-            }}>
-              {genres.map(({ genre, count }) => {
-                const isSelected = selectedGenres.includes(genre);
-                const filteredCount = filteredGenreCounts.get(genre) || 0;
-
-                return (
-                  <label
-                    key={genre}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      cursor: 'pointer',
-                      borderRadius: '6px',
-                      backgroundColor: isSelected ? 'rgba(126, 211, 33, 0.1)' : 'transparent',
-                      border: isSelected ? '1px solid rgba(126, 211, 33, 0.3)' : '1px solid transparent',
-                      marginBottom: '4px',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleGenre(genre)}
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          accentColor: '#7ED321',
-                          cursor: 'pointer'
-                        }}
-                      />
-                      <span style={{ fontSize: '13px', color: '#FFFFFF' }}>{genre}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      {isSelected && filteredCount !== count && (
-                        <span style={{ fontSize: '12px', color: '#7ED321', fontWeight: 600 }}>
-                          {filteredCount}
-                        </span>
-                      )}
-                      <span style={{ fontSize: '12px', color: '#8E8E93' }}>
-                        {count}
-                      </span>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 24px',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)'
-          }}
-        >
-          <button
-            onClick={resetFilters}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'transparent',
-              border: '1px solid #F56565',
-              borderRadius: '6px',
-              color: '#F56565',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(245, 101, 101, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            Reset All Filters
-          </button>
-
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              onClick={onClose}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'transparent',
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: '6px',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={applyFilters}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#7ED321',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#000000',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#8FE831';
-                e.currentTarget.style.transform = 'scale(1.02)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#7ED321';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              Apply Filters ({filteredNodeCount} nodes, {filteredEdgeCount} edges)
-            </button>
-          </div>
-        </div>
+            );
+          })}
+        </fieldset>
       </div>
-    </div>
+    </Dialog>
   );
 };
 

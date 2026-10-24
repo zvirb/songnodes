@@ -92,6 +92,25 @@ export function formatStoredEnergy(energy?: number, scale?: string): string {
     ? 'Unknown' : `${energy} (${scale || 'scale not recorded'})`;
 }
 
+/**
+ * Energy as shown to people (design-system/11-data-display.md, "Stored scales"):
+ * an integer 1–10 or null (rendered as an en dash). Never a default of 5,
+ * never a percentage. `converted` marks legacy 0–1 floats; `needsCheck` marks
+ * a 0–1 float stored without a scale.
+ */
+export interface DisplayEnergy { value: number | null; converted: boolean; needsCheck: boolean; raw?: number }
+export function displayEnergy(energy?: number | null, scale?: string | null): DisplayEnergy {
+  const raw = energy == null ? undefined : Number(energy);
+  const none: DisplayEnergy = { value: null, converted: false, needsCheck: false, raw };
+  if (raw === undefined || !Number.isFinite(raw) || raw <= 0 || raw > 10) return none;
+  const clamp = (n: number) => Math.min(10, Math.max(1, Math.round(n)));
+  if (scale === 'legacy_0_1') return raw <= 1 ? { value: clamp(raw * 10), converted: true, needsCheck: false, raw } : none;
+  if (scale === 'dj_1_10') return raw >= 1 ? { value: clamp(raw), converted: false, needsCheck: false, raw } : none;
+  if (raw <= 1 && !Number.isInteger(raw)) return { value: clamp(raw * 10), converted: true, needsCheck: true, raw };
+  if (Number.isInteger(raw)) return { value: raw, converted: false, needsCheck: false, raw };
+  return none;
+}
+
 /** The duration-based legacy router requires measurements for every supplied track. */
 export function routeTracksFromNodes(nodes: (GraphNode | Record<string, unknown>)[]) {
   return nodes.map(node => {

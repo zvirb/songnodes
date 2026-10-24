@@ -1,0 +1,24 @@
+/* Target tracks tab. Tokens only. */
+.ttm { display: flex; flex-direction: column; gap: var(--space-3); }
+.ttm__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.ttm__count { margin: 0; font-size: 0.875rem; color: var(--fg-2); }
+.ttm__num { font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg); }
+.ttm__actions { display: flex; align-items: center; gap: var(--space-2); }
+.ttm__filters { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.ttm__filters input[type="search"] { flex: 1 1 140px; min-width: 0; }
+.ttm__filters select { flex: 0 0 auto; }
+.ttm__bulk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--brand-soft); border-radius: var(--radius-control); font-size: 0.8125rem; }
+.ttm__selectall { align-self: flex-start; }
+.ttm__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ttm__item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1) var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--line); }
+.ttm__item[aria-selected="true"] { background: var(--brand-soft); }
+.ttm__main { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.ttm__tags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.ttm__progress { display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem; color: var(--fg-2); }
+.ttm__progress input { width: 100%; accent-color: var(--brand); }
+.ttm__row-actions { grid-column: 2; display: flex; align-items: center; gap: var(--space-1); }
+.ttm__add { display: flex; gap: var(--space-2); }
+.ttm__add .sn-input { flex: 1 1 auto; min-width: 0; }
+.ttm__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.ttm__chip-x { display: inline-flex; align-items: center; padding: 0; margin-left: 2px; border: 0; background: none; color: inherit; cursor: pointer; }
+.ttm__json { font-family: var(--font-data); font-size: 0.8125rem; width: 100%; }

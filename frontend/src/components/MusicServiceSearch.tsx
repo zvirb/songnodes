@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { Search, SearchX, Plus } from 'lucide-react';
+import { SN } from '../lib/songnodes';
+import { EmptyPanel } from './ds';
+import './MusicServiceSearch.css';
 import { api } from '../services/api';
-import clsx from 'clsx';
 
 interface MusicServiceTrack {
   id: string;
@@ -65,7 +68,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
       }
 
       if (allResults.length === 0 && services.length > 0) {
-        setError('No results found. Check your API keys in Settings.');
+        setError('No results from the services. Check that TIDAL and Spotify are connected in Settings.');
       }
 
       setSearchResults(allResults);
@@ -102,139 +105,80 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Search Controls */}
-      <div className="flex-shrink-0 space-y-4 p-4 border-b border-dj-gray">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Search for tracks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-          />
-          <select
-            value={selectedService}
-            onChange={(e) => setSelectedService(e.target.value as any)}
-            className="px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-          >
-            <option value="both">Both Services</option>
-            <option value="spotify">Spotify Only</option>
-            <option value="tidal">Tidal Only</option>
-          </select>
-          <button
-            onClick={handleSearch}
-            disabled={isSearching || !searchQuery.trim()}
-            className="px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all disabled:opacity-50"
-          >
-            {isSearching ? 'Searching...' : '🔍 Search'}
+    <div className="mss">
+      <div className="mss__controls" role="search">
+        <input
+          type="search"
+          className="sn-input"
+          placeholder="Artist and title"
+          aria-label="Search TIDAL and Spotify"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+        />
+        <select className="sn-input" aria-label="Services" value={selectedService} onChange={(e) => setSelectedService(e.target.value as any)}>
+          <option value="both">TIDAL and Spotify</option>
+          <option value="spotify">Spotify</option>
+          <option value="tidal">TIDAL</option>
+        </select>
+        <button type="button" className="sn-btn sn-btn--sm" onClick={handleSearch} disabled={isSearching || !searchQuery.trim()} aria-busy={isSearching || undefined}>
+          {isSearching ? <span className="sn-spinner" aria-hidden="true" /> : <Search size={16} strokeWidth={2} aria-hidden="true" />}
+          {isSearching ? 'Searching…' : 'Search'}
+        </button>
+      </div>
+
+      {error && (
+        <p className="sn-inline-message sn-inline-message--boxed" data-status="warn" role="alert">{error}</p>
+      )}
+
+      {selectedTracks.size > 0 && (
+        <div className="mss__bulk">
+          <span role="status">{selectedTracks.size} selected</span>
+          <button type="button" className="sn-btn sn-btn--sm" onClick={handleAddSelected}>
+            <Plus size={16} strokeWidth={2} aria-hidden="true" />
+            Add {selectedTracks.size} to targets
           </button>
+          <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={selectAll}>Select all {searchResults.length}</button>
+          <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={clearSelection}>Clear selection</button>
         </div>
+      )}
 
-        {error && (
-          <div className="bg-dj-danger bg-opacity-20 border border-dj-danger rounded p-3 text-sm">
-            {error}
-          </div>
-        )}
-
-        {selectedTracks.size > 0 && (
-          <div className="flex items-center justify-between p-3 bg-dj-black border border-dj-accent rounded">
-            <span className="text-sm">{selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected</span>
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddSelected}
-                className="px-3 py-1 bg-dj-accent text-black rounded text-sm hover:bg-opacity-90"
-              >
-                ➕ Add to Targets
-              </button>
-              <button
-                onClick={selectAll}
-                className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-              >
-                Select All
-              </button>
-              <button
-                onClick={clearSelection}
-                className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Search Results */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-        {isSearching ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dj-accent"></div>
-          </div>
-        ) : searchResults.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            {searchQuery ? 'No results found. Try a different search.' : 'Search for tracks to add to your target list'}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {searchResults.map((track) => (
-              <div
-                key={track.id}
-                className={clsx(
-                  "bg-dj-black border rounded-lg p-3 transition-all cursor-pointer",
-                  selectedTracks.has(track.id)
-                    ? "border-dj-accent bg-dj-accent bg-opacity-10"
-                    : "border-dj-gray hover:border-dj-accent"
-                )}
-                onClick={() => toggleTrackSelection(track.id)}
-              >
-                <div className="flex items-center gap-3">
-                  {/* Selection Checkbox */}
-                  <input
-                    type="checkbox"
-                    checked={selectedTracks.has(track.id)}
-                    onChange={() => {}}
-                    className="rounded border-dj-gray"
-                  />
-
-                  {/* Album Art */}
-                  {track.image_url && (
-                    <img
-                      src={track.image_url}
-                      alt={track.album}
-                      className="w-12 h-12 rounded"
-                    />
-                  )}
-
-                  {/* Track Info */}
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{track.title}</h4>
-                    <p className="text-sm text-gray-400">{track.artist}</p>
-                    {track.album && (
-                      <p className="text-xs text-gray-500">{track.album}</p>
-                    )}
-                  </div>
-
-                  {/* Service Badge */}
-                  <div className="flex items-center gap-2">
-                    {track.duration_ms && (
-                      <span className="text-xs text-gray-500">
-                        {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}
-                      </span>
-                    )}
-                    <span className={clsx(
-                      'px-2 py-1 rounded text-xs font-semibold uppercase',
-                      track.service === 'spotify' ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'
-                    )}>
-                      {track.service}
+      {isSearching ? (
+        <span className="sn-loading-state__inline" role="status"><span className="sn-spinner" aria-hidden="true" />Searching…</span>
+      ) : searchResults.length === 0 ? (
+        searchQuery && error === null ? (
+          <EmptyPanel compact icon={SearchX} title="No results">Try the artist and title in a different order.</EmptyPanel>
+        ) : !searchQuery ? (
+          <EmptyPanel compact icon={Search} title="Find tracks to target">Search TIDAL and Spotify, then add tracks to your target list.</EmptyPanel>
+        ) : null
+      ) : (
+        <ul className="mss__list">
+          {searchResults.map((track) => {
+            const sel = selectedTracks.has(track.id);
+            return (
+              <li key={track.id} className="mss__item" aria-selected={sel}>
+                <label className="sn-checkbox sn-checkbox--bare">
+                  <input type="checkbox" checked={sel} onChange={() => toggleTrackSelection(track.id)} aria-label={`Select ${track.artist} – ${track.title}`} />
+                </label>
+                {track.image_url && <img src={track.image_url} alt="" className="mss__art" />}
+                <div className="sn-track-cell mss__main">
+                  <span className="sn-track-cell__title">
+                    <span className="sn-track-cell__name" title={`${track.artist} – ${track.title}`}>
+                      <span className="sn-track-cell__artist">{track.artist} –</span> {track.title}
                     </span>
-                  </div>
+                  </span>
+                  <span className="sn-track-cell__meta">
+                    {track.album ? <span className="sn-track-cell__mix">{track.album}</span> : null}
+                    {track.album && track.duration_ms ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}
+                    {track.duration_ms ? <span className="sn-track-cell__dur">{SN.format.duration(track.duration_ms / 1000)}</span> : null}
+                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                <span className="sn-tag">{track.service === 'spotify' ? 'Spotify' : 'TIDAL'}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 };

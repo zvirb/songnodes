@@ -18,6 +18,8 @@ import {
 } from './hooks';
 import { calculateRecommendations, filterBySearch } from './utils';
 import type { Track, GraphEdge, IntelligentBrowserConfig } from './types';
+import { SearchX, ListMusic } from 'lucide-react';
+import { EmptyPanel } from '../ds';
 import styles from './IntelligentBrowser.module.css';
 
 interface IntelligentBrowserProps {
@@ -123,11 +125,11 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
     <div
       className={styles.container}
       role="region"
-      aria-label="Intelligent Track Browser"
+      aria-label="Up next"
       aria-describedby="browser-instructions"
     >
       {/* Screen reader instructions */}
-      <div id="browser-instructions" className="sr-only">
+      <div id="browser-instructions" className="sn-sr">
         Navigate with arrow keys. Press Enter to select a track.
         Press / to search. Press Escape to clear focus.
       </div>
@@ -137,15 +139,15 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        className="sr-only"
+        className="sn-sr"
       >
         {announcement}
       </div>
 
-      {/* Skip button */}
+      {/* Skip button (visible on focus only) */}
       <button
         type="button"
-        className="skip-link"
+        className="sn-skip"
         onClick={() => {
           const recommendationsList = document.getElementById('recommendations-list');
           recommendationsList?.focus();
@@ -158,6 +160,8 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
       {/* Current Track Display */}
       <CurrentTrack track={currentTrack} />
 
+      {currentTrack && (
+        <>
       {/* Search Bar */}
       <SearchBar
         value={state.searchQuery}
@@ -172,32 +176,35 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         resultCount={recommendations.length}
       />
 
+        </>
+      )}
+
       {/* Recommendations List */}
       <div
         ref={parentRef}
         id="recommendations-list"
-        className={styles.listContainer}
+        className={styles.list}
         role="listbox"
         aria-label="Track recommendations"
         aria-multiselectable="true"
         tabIndex={0}
       >
         {recommendations.length === 0 ? (
-          <div className={styles.emptyState} role="status">
-            <p className={styles.emptyMessage}>
-              {state.searchQuery
-                ? `No tracks found matching "${state.searchQuery}"`
-                : 'No compatible tracks found'}
-            </p>
-            {state.searchQuery && (
-              <button
-                onClick={() => dispatch({ type: 'SEARCH', payload: '' })}
-                className={styles.clearSearchButton}
-              >
-                Clear search
-              </button>
-            )}
-          </div>
+          state.searchQuery ? (
+            <EmptyPanel
+              compact
+              icon={SearchX}
+              title="No suggestions match this search"
+              meta={<span className="sn-tag">{state.searchQuery}</span>}
+              actions={<button type="button" className="sn-btn" onClick={() => dispatch({ type: 'SEARCH', payload: '' })}>Clear search</button>}
+            >
+              None of the {allRecommendations.length} suggestions match.
+            </EmptyPanel>
+          ) : currentTrack ? (
+            <EmptyPanel compact icon={ListMusic} title="No suggestions for this track">
+              Suggestions come from transitions DJs have played and from key, energy and tempo matches.
+            </EmptyPanel>
+          ) : null
         ) : (
           <div
             style={{
@@ -235,7 +242,7 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
 
       {/* Keyboard shortcuts help */}
       <details className={styles.help}>
-        <summary className={styles.helpSummary}>Keyboard Shortcuts</summary>
+        <summary>Keyboard shortcuts</summary>
         <dl className={styles.helpList}>
           <dt><kbd>↑ ↓</kbd></dt>
           <dd>Navigate tracks</dd>
@@ -253,7 +260,7 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
           <dd>Clear focus</dd>
 
           <dt><kbd>Home / End</kbd></dt>
-          <dd>First / Last track</dd>
+          <dd>First or last track</dd>
         </dl>
       </details>
     </div>

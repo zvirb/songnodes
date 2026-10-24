@@ -13,6 +13,10 @@ import React, { useState, useEffect } from 'react';
  */
 
 import type { APIKey, APIKeyRequirement } from '../types';
+import { Eye, EyeOff, ExternalLink, KeyRound } from 'lucide-react';
+import { SN, StatusPill } from '../lib/songnodes';
+import { Dialog, ConfirmDialog, Tabs, TabPanel, EmptyPanel, LoadingPanel, showToast } from './ds';
+import './APIKeyManager.css';
 
 interface APIKeyManagerProps {
   isOpen: boolean;
@@ -35,6 +39,8 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [activeService, setActiveService] = useState<string>('');
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ service: string; key: string; label: string } | null>(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
@@ -82,7 +88,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
     const keyValue = keyValues[serviceName]?.[keyName];
 
     if (!keyValue || keyValue.trim() === '') {
-      setErrorMessage('Please enter a value');
+      setErrorMessage('Enter the key first.');
       setSaveStatus('error');
       setTimeout(() => {
         setSaveStatus('idle');
@@ -160,29 +166,22 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
       const result = await response.json();
 
       if (response.ok) {
-        if (result.valid) {
-          alert(`✅ ${serviceName.toUpperCase()} - ${keyName}: ${result.message}`);
-        } else {
-          alert(`❌ ${serviceName.toUpperCase()} - ${keyName}: ${result.message}`);
-        }
+        setTestResult({ ok: !!result.valid, text: `${serviceName} ${keyName}: ${result.message}` });
+        if (result.valid) showToast(`${serviceName} key works`);
       } else {
-        alert(`❌ Test failed: ${result.detail || 'Unknown error'}`);
+        setTestResult({ ok: false, text: `The test didn’t run: ${result.detail || 'the API gave no reason'}` });
       }
 
       // Refresh keys to show updated test status
       await fetchExistingKeys();
     } catch (error) {
-      alert(`❌ Test error: ${error}`);
+      setTestResult({ ok: false, text: `The test didn’t run: ${error}` });
     } finally {
       setTesting((prev) => ({ ...prev, [testKey]: false }));
     }
   };
 
   const handleDeleteKey = async (serviceName: string, keyName: string) => {
-    if (!confirm(`Are you sure you want to delete ${serviceName}/${keyName}?`)) {
-      return;
-    }
-
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/v1/api-keys/${serviceName}/${keyName}`,
@@ -193,12 +192,15 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
 
       if (response.ok) {
         await fetchExistingKeys();
+        showToast(`${serviceName} key deleted`);
       } else {
         const errorData = await response.json();
-        alert(`Failed to delete: ${errorData.detail}`);
+        setTestResult({ ok: false, text: `Couldn’t delete the key: ${errorData.detail}` });
       }
     } catch (error) {
-      alert(`Delete error: ${error}`);
+      setTestResult({ ok: false, text: `Couldn’t delete the key: ${error}` });
+    } finally {
+      setPendingDelete(null);
     }
   };
 
@@ -228,341 +230,124 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
 
   const uniqueServices = [...new Set(requirements.map((req) => req.service_name))];
 
-  if (!isOpen) return null;
-
+  const tabs = uniqueServices.map((service) => ({ id: service, label: service.charAt(0).toUpperCase() + service.slice(1) }));
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.85)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000,
-        backdropFilter: 'blur(5px)',
-      }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        style={{
-          backgroundColor: '#1A1A1A',
-          borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          width: '90%',
-          maxWidth: '900px',
-          maxHeight: '85vh',
-          overflow: 'hidden',
-          color: '#FFFFFF',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+    <>
+      <Dialog
+        open={isOpen}
+        title="API keys"
+        sub="Keys for the scraper and enrichment services. Stored encrypted on the server (pgcrypto); never sent back in full."
+        size="l"
+        onClose={onClose}
+        footer={
+          <>
+            <span className="sn-dialog__foot-start" role="status">
+              {saveStatus === 'saved' && <StatusPill raw="saved" label="Key saved" />}
+              {saveStatus === 'error' && <span className="sn-field__error">{errorMessage || 'The key wasn’t saved.'}</span>}
+            </span>
+            <button type="button" className="sn-btn" onClick={onClose}>Close</button>
+          </>
+        }
       >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-          }}
-        >
-          <div>
-            <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 600 }}>
-              API Key Management
-            </h2>
-            <p style={{ margin: 0, fontSize: '13px', color: '#8E8E93' }}>
-              Configure API keys for scraper and enrichment services
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#8E8E93',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px',
-            }}
-          >
-            ×
-          </button>
-        </div>
+        {testResult && (
+          <p className="sn-inline-message sn-inline-message--boxed" data-status={testResult.ok ? 'ok' : 'bad'} role={testResult.ok ? 'status' : 'alert'}>
+            {testResult.text}
+          </p>
+        )}
 
-        {/* Service Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            overflowX: 'auto',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)',
-          }}
-        >
-          {uniqueServices.map((service) => {
-            const serviceReqs = getServiceRequirements(service);
-            const allConfigured = serviceReqs.every((req) => getExistingKey(service, req.key_name));
-            const someValid = serviceReqs.some((req) => {
-              const existing = getExistingKey(service, req.key_name);
-              return existing?.is_valid === true;
-            });
-
-            return (
-              <button
-                key={service}
-                onClick={() => setActiveService(service)}
-                style={{
-                  flex: '0 0 auto',
-                  padding: '16px 20px',
-                  backgroundColor: activeService === service ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  border: 'none',
-                  color: activeService === service ? '#FFFFFF' : '#8E8E93',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  borderBottom: activeService === service ? '2px solid #4A90E2' : '2px solid transparent',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                {service.toUpperCase()}
-                {allConfigured && someValid && <span style={{ color: '#7ED321' }}>✓</span>}
-                {allConfigured && !someValid && <span style={{ color: '#FFA500' }}>⚠</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#8E8E93' }}>
-              Loading API keys...
-            </div>
-          ) : (
-            <div>
-              {getServiceRequirements(activeService).map((req) => {
-                const existing = getExistingKey(activeService, req.key_name);
-                const inputKey = `${activeService}:${req.key_name}`;
-                const isShowingKey = showKeys[inputKey];
-                const isTesting = testing[inputKey];
-
-                return (
-                  <div
-                    key={inputKey}
-                    style={{
-                      marginBottom: '24px',
-                      padding: '20px',
-                      backgroundColor: 'rgba(255,255,255,0.03)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-                            {req.display_name}
-                          </h3>
-                          {req.required && (
-                            <span
-                              style={{
-                                fontSize: '11px',
-                                padding: '2px 8px',
-                                backgroundColor: '#F56565',
-                                borderRadius: '4px',
-                                fontWeight: 600,
-                              }}
-                            >
-                              REQUIRED
-                            </span>
-                          )}
-                          {existing?.is_valid === true && (
-                            <span style={{ color: '#7ED321', fontSize: '16px' }}>✓</span>
-                          )}
-                          {existing?.is_valid === false && (
-                            <span style={{ color: '#F56565', fontSize: '16px' }}>✗</span>
-                          )}
+        {tabs.length === 0 ? (
+          loading ? <LoadingPanel message="Loading API keys…" rows={3} /> : (
+            <EmptyPanel compact icon={KeyRound} title="No key requirements">
+              The API didn’t list any services that need keys. It may be offline.
+            </EmptyPanel>
+          )
+        ) : (
+          <>
+            <Tabs label="Services" idBase="akm" tabs={tabs} value={activeService} onChange={setActiveService} />
+            <TabPanel idBase="akm" id={activeService}>
+              {loading ? (
+                <LoadingPanel message="Loading API keys…" rows={3} />
+              ) : (
+                <div className="akm">
+                  {getServiceRequirements(activeService).map((req) => {
+                    const existing = getExistingKey(activeService, req.key_name);
+                    const inputKey = `${activeService}:${req.key_name}`;
+                    const isShowingKey = showKeys[inputKey];
+                    const isTesting = testing[inputKey];
+                    return (
+                      <section key={inputKey} className="akm__key" aria-labelledby={`akm-${inputKey}`}>
+                        <div className="akm__head">
+                          <h3 className="akm__name" id={`akm-${inputKey}`}>{req.display_name}</h3>
+                          {req.required && <span className="sn-tag">Required</span>}
+                          {existing?.is_valid === true && <StatusPill raw="ok" label="Works" />}
+                          {existing?.is_valid === false && <StatusPill raw="failed" label="Rejected" />}
+                          {existing && existing.is_valid == null && <StatusPill raw="untested" label="Not tested" />}
                         </div>
-                        <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#8E8E93' }}>
-                          {req.description}
-                        </p>
-                        <a
-                          href={req.documentation_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ fontSize: '12px', color: '#4A90E2', textDecoration: 'none' }}
-                        >
-                          Get API Key →
+                        <p className="akm__desc">{req.description}</p>
+                        <a className="sn-link sn-link--ext" href={req.documentation_url} target="_blank" rel="noopener noreferrer">
+                          Get a key <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
                         </a>
-                      </div>
-                    </div>
 
-                    {existing ? (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                          <div style={{ flex: 1, fontSize: '14px', color: '#8E8E93', fontFamily: 'monospace' }}>
-                            {existing.masked_value}
-                          </div>
-                          <button
-                            onClick={() => handleTestKey(activeService, req.key_name)}
-                            disabled={isTesting}
-                            style={{
-                              padding: '8px 16px',
-                              backgroundColor: '#4A90E2',
-                              border: 'none',
-                              borderRadius: '6px',
-                              color: '#FFFFFF',
-                              fontSize: '13px',
-                              cursor: isTesting ? 'wait' : 'pointer',
-                              opacity: isTesting ? 0.6 : 1,
-                            }}
-                          >
-                            {isTesting ? 'Testing...' : 'Test'}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteKey(activeService, req.key_name)}
-                            style={{
-                              padding: '8px 16px',
-                              backgroundColor: 'transparent',
-                              border: '1px solid #F56565',
-                              borderRadius: '6px',
-                              color: '#F56565',
-                              fontSize: '13px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-
-                        {existing.last_tested_at && (
-                          <div style={{ fontSize: '12px', color: '#8E8E93' }}>
-                            Last tested: {new Date(existing.last_tested_at).toLocaleString()}
-                            {existing.test_error && (
-                              <span style={{ color: '#F56565', marginLeft: '8px' }}>
-                                ({existing.test_error})
-                              </span>
+                        {existing ? (
+                          <>
+                            <div className="akm__row">
+                              <code className="akm__masked">{existing.masked_value}</code>
+                              <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleTestKey(activeService, req.key_name)} disabled={isTesting} aria-busy={isTesting || undefined}>
+                                {isTesting ? <span className="sn-spinner" aria-hidden="true" /> : null}
+                                {isTesting ? 'Testing…' : 'Test key'}
+                              </button>
+                              <button type="button" className="sn-btn sn-btn--sm sn-btn--danger-quiet" onClick={() => setPendingDelete({ service: activeService, key: req.key_name, label: req.display_name })}>
+                                Delete key…
+                              </button>
+                            </div>
+                            {existing.last_tested_at && (
+                              <p className="akm__meta">
+                                Tested {SN.format.dateTime(existing.last_tested_at)}
+                                {existing.test_error ? <span className="sn-field__error">{existing.test_error}</span> : null}
+                              </p>
                             )}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
-                        <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
-                          <div style={{ flex: 1, position: 'relative' }}>
-                            <input
-                              type={isShowingKey ? 'text' : 'password'}
-                              value={keyValues[activeService]?.[req.key_name] || ''}
-                              onChange={(e) => updateKeyValue(activeService, req.key_name, e.target.value)}
-                              placeholder={`Enter ${req.display_name}`}
-                              style={{
-                                width: '100%',
-                                padding: '10px 40px 10px 12px',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                borderRadius: '6px',
-                                color: '#FFFFFF',
-                                fontSize: '14px',
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => toggleShowKey(inputKey)}
-                              style={{
-                                position: 'absolute',
-                                right: '12px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'none',
-                                border: 'none',
-                                color: '#8E8E93',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                              }}
-                            >
-                              {isShowingKey ? '👁️' : '🙈'}
+                          </>
+                        ) : (
+                          <div className="akm__row">
+                            <div className="akm__secret">
+                              <input
+                                className="sn-input"
+                                type={isShowingKey ? 'text' : 'password'}
+                                aria-label={req.display_name}
+                                value={keyValues[activeService]?.[req.key_name] || ''}
+                                onChange={(e) => updateKeyValue(activeService, req.key_name, e.target.value)}
+                                placeholder={`Paste the ${req.display_name}`}
+                                autoComplete="off"
+                              />
+                              <button type="button" className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm akm__eye" onClick={() => toggleShowKey(inputKey)} aria-label={isShowingKey ? `Hide ${req.display_name}` : `Show ${req.display_name}`} title={isShowingKey ? 'Hide' : 'Show'}>
+                                {isShowingKey ? <EyeOff size={16} strokeWidth={2} aria-hidden="true" /> : <Eye size={16} strokeWidth={2} aria-hidden="true" />}
+                              </button>
+                            </div>
+                            <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleSaveKey(activeService, req.key_name)} disabled={saveStatus === 'saving'} aria-busy={saveStatus === 'saving' || undefined}>
+                              {saveStatus === 'saving' ? 'Saving…' : 'Save key'}
                             </button>
                           </div>
-                          <button
-                            onClick={() => handleSaveKey(activeService, req.key_name)}
-                            disabled={saveStatus === 'saving'}
-                            style={{
-                              padding: '10px 20px',
-                              backgroundColor: '#7ED321',
-                              border: 'none',
-                              borderRadius: '6px',
-                              color: '#FFFFFF',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              cursor: saveStatus === 'saving' ? 'wait' : 'pointer',
-                              opacity: saveStatus === 'saving' ? 0.6 : 1,
-                            }}
-                          >
-                            {saveStatus === 'saving' ? 'Saving...' : 'Save'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                        )}
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+            </TabPanel>
+          </>
+        )}
+      </Dialog>
 
-        {/* Footer */}
-        <div
-          style={{
-            padding: '16px 24px',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ fontSize: '12px', color: '#8E8E93' }}>
-            {saveStatus === 'saved' && <span style={{ color: '#7ED321' }}>✓ Saved successfully</span>}
-            {saveStatus === 'error' && <span style={{ color: '#F56565' }}>✗ {errorMessage || 'Save failed'}</span>}
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 24px',
-              backgroundColor: 'transparent',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '6px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}
-          >
-            Close
-          </button>
-        </div>
-
-        {/* Security Notice */}
-        <div
-          style={{
-            padding: '12px 24px',
-            backgroundColor: 'rgba(74,144,226,0.1)',
-            borderTop: '1px solid rgba(74,144,226,0.2)',
-            fontSize: '11px',
-            color: '#4A90E2',
-          }}
-        >
-          🔒 <strong>Security:</strong> All API keys are encrypted at rest using PostgreSQL pgcrypto.
-          Keys are never exposed in API responses.
-        </div>
-      </div>
-    </div>
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={`Delete the “${pendingDelete?.label ?? ''}” key?`}
+        confirmLabel="Delete key"
+        onConfirm={() => pendingDelete && handleDeleteKey(pendingDelete.service, pendingDelete.key)}
+        onCancel={() => setPendingDelete(null)}
+      >
+        The {pendingDelete?.service} scraper stops working until you add a new key. This can’t be undone.
+      </ConfirmDialog>
+    </>
   );
 };
 

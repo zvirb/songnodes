@@ -1,0 +1,57 @@
+/*
+ * Graph route (DJInterface) layout. Tokens only: every colour, size, radius and
+ * z-index comes from the SongNodes design system (design-system/tokens.css).
+ */
+.gx { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+
+/* Slim page toolbar under the shell header */
+.gx-toolbar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--line); background: var(--bg); min-height: 48px; flex: none; }
+.gx-toolbar__meta { display: flex; align-items: center; gap: var(--space-2); min-width: 0; flex: 1 1 auto; overflow: hidden; }
+.gx-toolbar__actions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
+.gx-count { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* Main area */
+.gx-main { flex: 1 1 auto; min-height: 0; display: grid; gap: var(--space-4); padding: var(--space-4); overflow: hidden; }
+.gx-main--play { grid-template-columns: minmax(0, 1fr) 480px; }
+.gx-main--plan { grid-template-columns: 260px minmax(0, 1fr) 360px; }
+@media (max-width: 1100px) {
+  .gx-main--play { grid-template-columns: minmax(0, 1fr) 380px; }
+  .gx-main--plan { grid-template-columns: 220px minmax(0, 1fr) 320px; }
+}
+@media (max-width: 760px) {
+  .gx-main--play, .gx-main--plan { grid-template-columns: minmax(0, 1fr); overflow: auto; }
+}
+
+.gx-panel { position: relative; min-height: 0; height: 100%; overflow: hidden; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.gx-panel--canvas { background: var(--bg); }
+.gx-panel--scroll { overflow: auto; }
+.gx-panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-4) var(--space-4) var(--space-2); }
+.gx-panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--space-2) var(--space-4) var(--space-4); }
+.gx-panel .sn-tabs__wrap { padding: 0 var(--space-2); flex: none; }
+.gx-panel .sn-tabs__panel { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--space-4); }
+.gx-state { flex: 1 1 auto; display: grid; place-items: center; padding: var(--space-8) var(--space-4); }
+
+/* Library list (Plan mode) */
+.gx-search { position: relative; margin-bottom: var(--space-2); }
+.gx-search .sn-input { width: 100%; padding-left: 34px; padding-right: 36px; }
+.gx-search__icon { position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--fg-3); pointer-events: none; display: inline-flex; }
+.gx-search__clear { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); }
+.gx-results { font-size: 0.75rem; color: var(--fg-3); margin: 0 0 var(--space-2); padding: 0 var(--space-1); }
+.gx-list { display: flex; flex-direction: column; gap: var(--space-1); }
+.gx-row { display: flex; flex-direction: column; justify-content: center; gap: 2px; width: 100%; min-height: 52px; padding: var(--space-2) var(--space-3); background: transparent; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--fg); text-align: left; cursor: pointer; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: background var(--duration-fast) var(--ease-standard); }
+.gx-row:hover { background: var(--hover-bg); }
+.gx-row[data-now] { box-shadow: inset 3px 0 0 var(--now); background: var(--surface-2); }
+.gx-row__title { font-size: 0.8125rem; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.gx-row__meta { display: flex; align-items: center; gap: var(--space-2); font-size: 0.75rem; color: var(--fg-2); line-height: 1.4; white-space: nowrap; overflow: hidden; max-width: 100%; }
+.gx-row__artist { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* Track analysis */
+.gx-analysis { display: flex; flex-direction: column; gap: var(--space-4); }
+.gx-analysis__artist { margin: var(--space-1) 0 0; color: var(--fg-2); font-size: 0.875rem; }
+.gx-kv { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.gx-kv__cell { padding: var(--space-3); background: var(--surface-2); border-radius: var(--radius-control); }
+.gx-kv__label { font: 600 0.75rem/1.3 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); margin-bottom: var(--space-1); }
+
+/* Graph legend overlay */
+.gx-legend { position: absolute; left: var(--space-3); bottom: var(--space-3); z-index: var(--z-sticky); max-width: 260px; padding: var(--space-2) var(--space-3); background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--radius-control); box-shadow: var(--shadow-2); }
+.gx-legend__title { font: 600 0.75rem/1.3 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); margin: 0 0 var(--space-1); }
