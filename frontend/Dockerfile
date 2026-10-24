@@ -27,6 +27,10 @@ RUN echo 'server { \
     root /usr/share/nginx/html; \
     index index.html; \
     \
+    # Docker's embedded DNS: upstream names are looked up per request (cached 10 s), \
+    # so a recreated rest-api or graph-api with a new address is found without a restart \
+    resolver 127.0.0.11 valid=10s ipv6=off; \
+    \
     # Long-term cache for hashed assets (JS, CSS with [hash] in filename) \
     # These have content hashes, so new versions get new URLs \
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
@@ -69,10 +73,10 @@ RUN echo 'server { \
         etag off; \
     } \
     \
-    # API proxy routing - Kubernetes ConfigMap will override this with correct service names \
-    # This is a fallback config for non-k8s deployments \
+    # API proxy routing to the Compose services; a variable makes nginx resolve the name at request time \
     location ~ ^/api/(graph|v1/visualization|user-setlists) { \
-        proxy_pass http://graph-visualization:8084; \
+        set $graph_api http://graph-visualization:8084; \
+        proxy_pass $graph_api; \
         proxy_http_version 1.1; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
@@ -83,7 +87,8 @@ RUN echo 'server { \
     } \
     \
     location /api/ { \
-        proxy_pass http://rest-api:8082; \
+        set $rest_api http://rest-api:8082; \
+        proxy_pass $rest_api; \
         proxy_http_version 1.1; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
