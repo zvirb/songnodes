@@ -23,7 +23,7 @@ Scraper → Bronze (raw playlists) → Silver (validated transitions) → Gold (
 
 - **Modularity:** Single-responsibility components
 - **Resilience:** Anti-detection, error handling, validation
-- **GitOps-First:** Git → Flux → Kubernetes (manual kubectl forbidden in production)
+- **Git-First:** every change reaches `main` through a pull request; the running stack is rebuilt from Git, never patched in place
 - **Data Integrity:** Bronze → Silver → Gold flow, no layer skipping
 
 ---
@@ -51,9 +51,9 @@ Scraper → Bronze (raw playlists) → Silver (validated transitions) → Gold (
 
 ### 3. Unified Scraper (MANDATORY)
 
-**Deployment:** `unified-scraper` is the ONLY scraper pod allowed
-**Forbidden:** Individual scraper deployments (`scraper-1001tracklists`, `scraper-mixesdb`, etc.)
-**Benefits:** 1GB pod vs 12GB+ (12+ pods), centralized resilience, single source of truth
+**Deployment:** `unified-scraper` is the ONLY scraper container allowed
+**Forbidden:** Individual scraper services (`scraper-1001tracklists`, `scraper-mixesdb`, etc.)
+**Benefits:** one 1GB container instead of 12+ (12GB+), centralized resilience, single source of truth
 
 ### 4. Design System (MANDATORY): single source of truth for formatting and design
 
@@ -78,52 +78,46 @@ Scraper → Bronze (raw playlists) → Silver (validated transitions) → Gold (
 
 ## 1. Setup
 
+SongNodes runs as plain Docker containers from `compose.dev.yaml` (Compose project
+`songnodes-dev`). There is no Kubernetes deployment for now; the Helm chart and Flux
+config under `deploy/` and `k8s/` are kept only for a possible later move and are not
+used. The full run and first-scrape procedure is `docs/DEPLOYMENT_CHECKLIST.md`.
+
 ### Prerequisites
-Kubernetes (K3s), kubectl, Flux CLI, Skaffold, Helm 3.x, local registry `localhost:5000`
+Docker with Compose v2, Git Bash on Windows (`scripts/*.sh`), Node 22, Python 3.11+
 
 ### Secrets
-```bash
-kubectl create secret generic songnodes-secrets \
-  --from-literal=POSTGRES_PASSWORD=your_password \
-  --from-literal=REDIS_PASSWORD=your_password \
-  --from-literal=RABBITMQ_PASSWORD=your_password \
-  --from-literal=ANTHROPIC_API_KEY=your_key \
-  --from-literal=SPOTIFY_CLIENT_ID=your_id \
-  --from-literal=SPOTIFY_CLIENT_SECRET=your_secret \
-  -n songnodes
-```
+Put credentials in your shell environment or an untracked `.env` next to `compose.dev.yaml`
+(never commit them). Provider keys, for example `TIDAL_CLIENT_ID`, `TIDAL_CLIENT_SECRET`,
+`LASTFM_API_KEY`, `DISCOGS_API_TOKEN`, plus `ENRICHMENT_PROVIDERS` to opt in (default `none`).
+Values starting `CHANGE_ME` count as not configured.
 
-### Deployment
+### Start
 ```bash
-# GitOps (automatic)
-flux reconcile source git songnodes && flux reconcile helmrelease songnodes -n flux-system
-
-# Development
-skaffold dev  # Hot-reload
+bash scripts/start-dev.sh   # applies migrations, builds every image, docker compose up --wait
 ```
+Re-run it after any code change. The Postgres volume `songnodes-dev_dev-postgres` is kept;
+never reset it to fix a problem.
 
 ---
 
 ## 2. Architecture
 
-### Services
-| Service | Port | Description |
+### Services (`compose.dev.yaml`)
+| Service | On your machine | Description |
 |---------|------|-------------|
-| Frontend | 3006 | React/PIXI.js graph visualization |
-| REST API | 8082 | FastAPI backend |
-| Graph API | 8084 | Graph data |
-| WebSocket API | 8083 | Real-time updates |
-| NLP Processor | 8086 | Tracklist extraction (Claude) |
-| Unified Scraper | 8012 | ALL spider types (single pod) |
-| PostgreSQL | 5433 | Primary database |
-| Redis | 6380 | Cache, sessions |
-| RabbitMQ | 5672/15672 | Message bus |
+| `frontend` | http://127.0.0.1:3006 | React/PIXI.js app behind nginx; proxies `/api` to the APIs |
+| `rest-api` | http://127.0.0.1:8082 | FastAPI backend |
+| `graph-api` | http://127.0.0.1:8084 | Graph data |
+| `unified-scraper` | http://127.0.0.1:8012 (container port 8000) | ALL spider types (single container) |
+| `worker` | – | Celery jobs: scrape, ingest, projection, enrichment |
+| `postgres`, `redis`, `rabbitmq` | not published | Database, cache, message bus (Compose network only) |
 
 ### Stack
 - **Frontend:** React 19, TypeScript, react-router, PIXI.js v8, D3.js, Zustand; styled only by the SongNodes design system (`design-system/`)
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic v2
 - **Scraping:** Scrapy 2.11+, scrapy-playwright
-- **Infrastructure:** Kubernetes only (Docker Compose forbidden)
+- **Infrastructure:** Docker Compose (`compose.dev.yaml`); no Kubernetes for now
 
 ---
 
@@ -138,30 +132,22 @@ skaffold dev  # Hot-reload
 **Format:** `type(scope): description`
 **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
-### GitOps (CRITICAL)
-**Correct:** Code → Git → Push → Flux → K8s
-**Forbidden:** `kubectl edit/patch/apply` (bypasses GitOps)
+### Git-First (CRITICAL)
+**Correct:** Code → branch → pull request → `main` → rebuild the stack from Git
+**Forbidden:** editing files inside running containers or hand-patching images
 
-### Image Pull Policy (CRITICAL)
-```yaml
-imagePullPolicy: {{ if eq .Values.image.tag "latest" }}Always{{ else }}IfNotPresent{{ end }}
-```
-**Why:** Kubernetes caches `:latest`; `IfNotPresent` causes stale code
-
-### Redeployment (`:latest` tags)
+### Rebuild after a change
 ```bash
-# 1. Build and push
-docker build -t localhost:5000/songnodes_scrapers:latest scrapers/
-docker push localhost:5000/songnodes_scrapers:latest
-
-# 2. Force fresh pull
-kubectl delete pods -n songnodes -l app=unified-scraper
-
-# 3. Verify
-kubectl logs -n songnodes -l app=unified-scraper --tail=50
+bash scripts/start-dev.sh                       # everything
+# or one service, e.g. after changing the scraper:
+docker build -f scrapers/Dockerfile.unified -t songnodes-dev-unified-scraper scrapers/
+docker compose -f compose.dev.yaml up -d --no-build --force-recreate unified-scraper
+docker compose -f compose.dev.yaml logs --tail=50 unified-scraper
 ```
 
-**Frontend:** MUST run `npm run build` before `docker build` (fresh dist/)
+**Stale code:** a container runs the image it was created from. After changing code,
+rebuild that image and recreate the container (`--force-recreate`); the frontend image
+runs `npm run build` itself.
 
 ---
 
@@ -169,12 +155,12 @@ kubectl logs -n songnodes -l app=unified-scraper --tail=50
 
 | Test | Command | When |
 |------|---------|------|
-| **E2E (MANDATORY)** | `npm run test:e2e` | **Before PR merge** |
+| **E2E (MANDATORY)** | `scripts/e2e-docker.sh` (Playwright Linux image, against the running stack) | **Before PR merge** |
 | Frontend Unit | `npm run test:unit` | Frontend dev |
 | **Design system sync (MANDATORY)** | `scripts/sync-design-system.sh --check` | **Every UI change** |
-| Backend Unit | `pytest` | Backend dev |
+| Backend | `python -m pytest` (root), `cd services && python -m pytest common/tests` | Backend dev |
 
-**E2E Requirements:** Zero console errors, sequential execution (`--workers=1`)
+**E2E Requirements:** Zero console errors, sequential execution (`--workers=1`), run against a frontend image rebuilt from the code under test. See `frontend/tests/README.md` and `tests/README.md`.
 
 ---
 
@@ -232,7 +218,7 @@ WHERE t1.canonical_track_id IS NOT NULL AND t2.canonical_track_id IS NOT NULL;
 
 **Unified Scraper API:**
 ```bash
-curl -X POST http://unified-scraper:8012/scrape -H "Content-Type: application/json" \
+curl -X POST http://127.0.0.1:8012/scrape -H "Content-Type: application/json" \
   -d '{
     "spider_name": "mixesdb",
     "search_params": {
@@ -244,7 +230,7 @@ curl -X POST http://unified-scraper:8012/scrape -H "Content-Type: application/js
 
 ### 5.2. Secrets Management
 
-**Single Source:** `.env` (local) or Kubernetes secrets (production)
+**Single Source:** the shell environment or an untracked `.env` next to `compose.dev.yaml`
 
 ```python
 from common.secrets_manager import get_database_url, validate_secrets
@@ -294,16 +280,12 @@ sprite.on('pointerup', (e) => {
 
 ## 6. Deployment
 
-### GitOps (Flux)
-```bash
-flux get helmreleases -n flux-system
-flux reconcile source git songnodes && flux reconcile helmrelease songnodes -n flux-system
-```
+The deployment is the Compose stack built from `main`:
 
-### Skaffold
 ```bash
-skaffold dev  # Hot-reload
-skaffold run -p production  # Specific profile
+git switch main && git pull
+bash scripts/start-dev.sh
+docker compose -f compose.dev.yaml ps   # every service healthy
 ```
 
 ---
@@ -312,23 +294,21 @@ skaffold run -p production  # Specific profile
 
 | Issue | Solution |
 |-------|----------|
-| Service errors | `kubectl get pods -n songnodes` |
-| Pod crashes | `kubectl logs -f <pod> -n songnodes` |
-| Stale code | Check `imagePullPolicy: Always`, delete pods to force pull |
-| Orphaned pods | `kubectl get pods -l app=rest-api` (check for multiple hashes) |
+| Service errors | `docker compose -f compose.dev.yaml ps` |
+| Container crashes | `docker compose -f compose.dev.yaml logs -f <service>` |
+| Stale code | Rebuild the image and `up -d --no-build --force-recreate <service>` (see §3) |
 | Spider ImportError | Use `scrapy crawl [spider]` NOT `runspider` |
 
 **Stale Code Detection:**
 ```bash
-kubectl get pods -n songnodes -o wide  # Check pod age
-git log -1 --format="%ai" -- services/rest_api/  # Last code change
-# If pod age > code modification → stale pods
-kubectl rollout restart deployment/rest-api -n songnodes
+docker compose -f compose.dev.yaml ps --format '{{.Service}} {{.CreatedAt}}'   # container age
+git log -1 --format="%ai" -- services/rest_api/                               # last code change
+# If the code is newer than the container, rebuild and recreate it
 ```
 
 **Database Backup:**
 ```bash
-kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > backup-$(date +%Y%m%d).dump
+docker compose -f compose.dev.yaml exec -T postgres pg_dump -U songnodes -Fc songnodes > backup-$(date +%Y%m%d).dump
 ```
 
 ---
@@ -337,10 +317,10 @@ kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > ba
 
 ### General
 ❌ Hardcoded credentials (use secrets)
-❌ `kubectl edit/patch` in production (bypasses GitOps)
-❌ `imagePullPolicy: IfNotPresent` for `:latest` (stale code)
+❌ Editing running containers or hand-patching images (rebuild from Git)
+❌ Testing against a container built from older code (stale code)
+❌ Resetting the Postgres volume to fix a problem
 ❌ Skipping E2E tests
-❌ Building frontend without `npm run build`
 
 ### Design-System-Specific
 ❌ **Hex, rgb() or named colours, px font sizes, raw z-index numbers** in app code (use tokens)
@@ -351,7 +331,7 @@ kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > ba
 ❌ **New Tailwind classes or new legacy `--color-*` variables** (both are being removed)
 
 ### Scraper-Specific
-❌ **Individual scraper deployments** (unified-scraper only)
+❌ **Individual scraper services** (unified-scraper only)
 ❌ **Partial tracklists** (complete playlists only)
 ❌ **Searching individual tracks** (search playlists containing tracks)
 ❌ **Ignoring positions** (positions create edges)
@@ -365,14 +345,14 @@ kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > ba
 
 | Task | Command |
 |------|---------|
-| System Status | `kubectl get pods -n songnodes` |
-| Deploy | `skaffold dev` |
-| View Logs | `kubectl logs -f deployment/[service] -n songnodes` |
-| **Trigger Scrape** | `curl -X POST http://unified-scraper:8012/scrape -d '{"spider_name":"mixesdb","search_params":{"search_query":"Deadmau5 Strobe","limit":5}}'` |
-| Check Bronze | `kubectl exec -n songnodes postgres-0 -- psql -U musicdb_user -d musicdb -c "SELECT COUNT(*) FROM bronze_scraped_playlists;"` |
-| Flux Sync | `flux reconcile source git songnodes && flux reconcile helmrelease songnodes -n flux-system` |
-| Restart Service | `kubectl rollout restart deployment/[service] -n songnodes` |
+| System Status | `docker compose -f compose.dev.yaml ps` |
+| Start / rebuild | `bash scripts/start-dev.sh` |
+| View Logs | `docker compose -f compose.dev.yaml logs -f [service]` |
+| **Trigger Scrape** | `curl -X POST "http://127.0.0.1:8082/api/v1/scrape/trigger?source=mixesdb&search_query=Deadmau5%20Strobe" -H "Idempotency-Key: <unique>"` |
+| Check Bronze | `docker compose -f compose.dev.yaml exec postgres psql -U songnodes -d songnodes -c "SELECT COUNT(*) FROM bronze_scraped_playlists;"` |
+| Restart Service | `docker compose -f compose.dev.yaml restart [service]` |
+| E2E | `bash scripts/e2e-docker.sh` |
 
 ---
 
-**Kubernetes-only deployment via Flux GitOps. Docker Compose not supported.**
+**Docker Compose deployment (`compose.dev.yaml`, `scripts/start-dev.sh`). No Kubernetes for now.**

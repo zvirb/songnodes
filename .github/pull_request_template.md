@@ -148,7 +148,6 @@
 <!-- List any infrastructure changes -->
 - [ ] N/A - No infrastructure changes
 - [ ] Docker Compose updated
-- [ ] Kubernetes manifests updated
 - [ ] Resource limits adjusted
 - [ ] New service added (requires deployment coordination)
 

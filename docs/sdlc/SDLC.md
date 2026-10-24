@@ -16,7 +16,7 @@ touches anything a person sees.
 | Design-system distribution | Source artifact → `design-system/` mirror → `scripts/sync-design-system.sh` → `frontend/src/styles/design-system/` (plus `VERSION`). Nothing is edited downstream. | `17-governance.md` "Distribution" |
 | Frontend migration | Phases 0–6 of `design-system/19-songnodes-migration.md`. Each phase ships on its own and removes what it replaces in the same change. | DS section 19 |
 | Data integrity | Bronze → Silver → Gold → Operational; no layer skipping. Unknown metadata stays unknown, never invented. | [CLAUDE.md](../../CLAUDE.md), [AGENTS.md](../../AGENTS.md) |
-| Delivery | GitOps (Git → Flux → Kubernetes); feature branches; conventional commits; E2E before merge | CLAUDE.md §3 |
+| Delivery | Git first (pull request → `main` → rebuild the Docker Compose stack; no Kubernetes for now); feature branches; conventional commits; E2E before merge | CLAUDE.md §3, §6 |
 | Open | Q9 score bands for recommendations: 80/60/40 until enough accepted picks exist, then fitted from Markus's own picks | `17-governance.md` open questions |
 
 ## §1 Lifecycle
@@ -24,7 +24,7 @@ touches anything a person sees.
 ```
   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
   │ 1 Define     │──▶│ 2 Design     │──▶│ 3 Build      │──▶│ 4 Verify     │──▶│ 5 Review     │──▶│ 6 Release    │
-  │ requirement, │   │ page pattern,│   │ tokens, sn-* │   │ unit, E2E,   │   │ PR checklist,│   │ GitOps,      │
+  │ requirement, │   │ page pattern,│   │ tokens, sn-* │   │ unit, E2E,   │   │ PR checklist,│   │ Compose,     │
   │ data source  │   │ components,  │   │ classes, SN  │   │ DS conformance│  │ independent  │   │ STATUS.md    │
   │              │   │ copy         │   │ helpers      │   │ and visual   │   │ verifier     │   │              │
   └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘   └──────┬───────┘
@@ -102,8 +102,8 @@ status: planned                   # planned → building → verified → releas
 - **Gate R1:** a reviewer, or a separate verifier agent that did not write the change, compares the rendered page against `docs/design-system/reference.html` and the component previews, and confirms D2/B1/V2/V3. Deviations are either fixed or recorded as `EX-NNN` exceptions approved by Markus (`17-governance` "Exceptions").
 
 ### 6 Release
-- **Purpose:** ship through GitOps.
-- **Outputs:** `npm run build` then `docker build`, Flux reconcile, STATUS.md result, and the page spec status set to `released`.
+- **Purpose:** ship from `main` through the Compose stack.
+- **Outputs:** `bash scripts/start-dev.sh` from `main` (it builds every image, including the frontend), STATUS.md result, and the page spec status set to `released`.
 - **Gate L1:** the release notes name the design-system version (`frontend/src/styles/design-system/VERSION`). No page ships on an older system version than the rest of the app.
 
 ### 7 Operate and drift
