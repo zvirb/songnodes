@@ -13,6 +13,24 @@ Deployment contradiction (flagged, not resolved): CLAUDE.md says Kubernetes only
 Docker Compose forbidden, but the documented and tested development stack is
 `compose.dev.yaml` (`scripts/start-dev.sh`). All checks here used that stack.
 
+### Close-out (step 5)
+
+Where `main` stands after #60, #61, #59 and step 3: every CLAUDE.md §4 gate has been
+run and passes (results under each step below). Branches: 26 stale branches archived
+as `archive/<name>` tags and deleted, plus the `archive/work` test branch; the graph-HUD
+minimap fix was ported (#59). Kept: `main`, `chore/upgrade-dependencies-on-work`, the
+three Dependabot branches, and `pr-review/55` (a ref on another remote, not on the list).
+
+Open, for a decision:
+- E2E in CI needs the Compose dev stack on the runner (Compose-vs-Kubernetes, above).
+- Hard-coded `http://localhost:8082` API bases in several components (step 2 notes).
+- EX-001 and EX-002 still need rows in the design-system artifact's register.
+- Graph node/edge behaviour is untested until a real scrape; the 1001tracklists spider
+  fixes (step 1) are untested against the live site.
+- 30 files in `frontend/design-system-pending.txt` (phases 4–6).
+
+Next task: the real-world scrape (Markus), then graph E2E assertions on its data.
+
 ### Step 1: Python test collection (`fix/pytest-collection`)
 
 Changes:
@@ -148,6 +166,52 @@ decision. Hard-coded `http://localhost:8082` API bases remain in several compone
 (`APIKeyManager`, `EditTrackModal`, `PathBuilder`, `PathfinderPanel`, settings and
 playlist managers, `useTokenRefresh`); none is hit by the current suite, but they will
 fail behind the nginx proxy in a deployed build.
+
+Merged 25 Oct 2026: #60 (step 1) and #61 (step 2), rebase merges, CI green on both.
+
+### Step 3: design-system phase 3 (`refactor/ds-phase3`)
+
+Scope decided by Markus (25 Oct 2026): every target file was unreferenced, so delete
+what `19-songnodes-migration.md` lists as unused or retired, move StatsPanel onto
+tokens, then widen the CI scan.
+
+- Deleted: `Graph3D`, `CamelotHelix3D`, `GraphModeToggle`, `GraphVisualizationWrapper`
+  (3D graph and helix retired by the plan), `InfoCard` with `useInfoCard` and
+  `infoCardUtils`, and `DataQualityReview` with its CSS (77 hex; its REST endpoint
+  `/api/data-quality/tracks/needs-review` is commented out, so it could not be mounted
+  as the plan's review queue yet). Dropped `three`, `@types/three` and
+  `react-force-graph-3d` (nothing else used them). The Ctrl+Shift+3 shortcut was
+  already gone.
+- `StatsPanel.tsx` (not mounted; not on the unused list): 12 hex and the d3
+  `schemeCategory10` palette replaced by tokens through inline SVG styles (`--fg`,
+  `--fg-3`, `--line`, `--chart-N`, `--key-*`; the invented HSL key colours are gone and
+  unknown keys stay neutral). px font sizes replaced by `data-s`, `data-strong`,
+  `body-strong` and `caption`; chart copy in sentence case.
+- Also removed: the unused hex `getContrastColor` in `lib/utils.ts` and an emoji in a
+  `useStore.ts` log.
+- CI conformance (`.github/workflows/design-system.yml`) now scans every tracked file
+  in `frontend/src` except the synced copy, `lib/graphColours.ts` and the 30 files in
+  `frontend/design-system-pending.txt`. A listed file that becomes clean or is deleted
+  fails CI until it is removed, so the list only shrinks. Checked locally: passes on
+  this branch, fails on a hex added to a clean page, fails on a stale pending entry.
+- Optional bundle item done: the graph chunk was 1.1 MB because its group came before
+  `pixi-vendor` and took pixi with it. With the vendor groups first: `pixi-vendor`
+  889 kB, `graph-visualization` 197 kB, no chunk-size warning.
+
+Results (25 Oct 2026, this branch rebased on `main` 9789e6f, dev stack up, frontend
+image built from this branch):
+- `scripts/e2e-docker.sh` (`--workers=1`, chromium/firefox/webkit): **307 passed**,
+  0 failed, 0 skipped, zero console errors (10.9 min). Visual baselines unchanged.
+- `npm run type-check` 0 errors; `npm run test:unit` 75 passed; `npm run build` passed
+  with no chunk-size warning; `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`
+  in sync (1.1.0); conformance scan run locally: passes.
+- `python -m pytest --collect-only -q` 78, 0 errors; `python -m pytest` 73 passed,
+  5 skipped; `cd services && python -m pytest common/tests` 112 passed.
+
+Still pending migration: the 30 files in `frontend/design-system-pending.txt`
+(DJInterface folder, legacy CSS `global.css`/`globals.css`/`tokens.css`, Camelot and
+energy utilities, SetlistBuilder, EditTrackModal, IntelligentBrowser.legacy, examples,
+and others), phases 4 to 6 of the plan.
 
 ## Previous run: full test suite — completed with blockers
 
