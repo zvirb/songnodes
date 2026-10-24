@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-// import { FixedSizeList as List } from 'react-window'; // Removed for TypeScript compatibility
 import Fuse from 'fuse.js';
 import { useDebounce } from 'react-use';
-import clsx from 'clsx';
-import { LocateFixed, ListPlus, Route } from 'lucide-react';
+import { LocateFixed, ListPlus, Route, Search, X, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { api } from '../services/api';
 import {
@@ -14,7 +12,6 @@ import {
   GraphNode
 } from '../types';
 
-// Musical key mappings for filtering
 const CAMELOT_KEYS = [
   '1A', '2A', '3A', '4A', '5A', '6A', '7A', '8A', '9A', '10A', '11A', '12A',
   '1B', '2B', '3B', '4B', '5B', '6B', '7B', '8B', '9B', '10B', '11B', '12B'
@@ -26,7 +23,6 @@ const GENRES = [
   'Garage', 'Disco', 'Funk', 'Jazz', 'Classical', 'Rock', 'Pop'
 ];
 
-// Recent searches storage key
 const RECENT_SEARCHES_KEY = 'songnodes-recent-searches';
 const MAX_RECENT_SEARCHES = 10;
 
@@ -112,14 +108,13 @@ const applyLocalFilters = (results: SearchResult[], filters: FilterState): Searc
 };
 
 const TrackSearch: React.FC<TrackSearchProps> = ({
-  className,
+  className = '',
   placeholder = "Search tracks, artists, albums...",
   showFilters = true,
   maxResults = 100,
   onTrackSelect,
   onClose
 }) => {
-  // Store hooks
   const {
     searchQuery,
     searchResults,
@@ -152,7 +147,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
 
   const graphNodes = useStore((state) => state.graphData.nodes);
 
-  // Local state
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -164,12 +158,9 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
-  // const listRef = useRef<any>(null); // Removed for now
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load recent searches from localStorage
   useEffect(() => {
     const savedSearches = localStorage.getItem(RECENT_SEARCHES_KEY);
     if (savedSearches) {
@@ -182,7 +173,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     }
   }, []);
 
-  // Initialize filters from store
   useEffect(() => {
     if (searchFilters) {
       setFilters(prev => ({
@@ -198,7 +188,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     }
   }, [searchFilters]);
 
-  // Load all tracks for local search (fallback when API is unavailable)
   useEffect(() => {
     const normaliseNodeToTrack = (node: GraphNode): Track | null => {
       const metadata = node.metadata || {};
@@ -251,7 +240,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     setAllTracks(sortedTracks);
   }, [graphNodes]);
 
-  // Fuse.js configuration for fuzzy search
   const fuseOptions = {
     keys: [
       { name: 'name', weight: 0.3 },
@@ -268,7 +256,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
 
   const fuse = useMemo(() => new Fuse(allTracks, fuseOptions), [allTracks]);
 
-  // Save search to recent searches function
   const saveToRecentSearches = useCallback((query: string, resultCount: number) => {
     const newSearch: RecentSearch = {
       query,
@@ -285,7 +272,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updatedSearches));
   }, [recentSearches]);
 
-  // Search function
   const performSearch = useCallback(async (rawQuery: string) => {
     const query = rawQuery.trim();
 
@@ -329,7 +315,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
       const filtered = applyLocalFilters(fallbackResults, filters);
       setSearchResults(filtered);
       resultsToPersist = filtered;
-      setSearchError('Realtime search is temporarily unavailable. Showing matches from the loaded graph.');
+      setSearchError('Realtime search is temporarily unavailable. Showing matches from loaded graph.');
     } finally {
       setIsSearching(false);
       setSelectedIndex(0);
@@ -340,15 +326,12 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     }
   }, [fuse, filters, maxResults, saveToRecentSearches, setSearchResults]);
 
-  // Debounced search effect
   useDebounce(() => {
     if (localQuery.trim()) {
       performSearch(localQuery);
     }
   }, DEFAULT_CONFIG.ui.debounceDelay, [localQuery, performSearch]);
 
-
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setLocalQuery(query);
@@ -361,7 +344,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     }
   };
 
-  // Handle input focus
   const handleInputFocus = () => {
     if (localQuery.trim().length === 0 && recentSearches.length > 0) {
       setShowRecentSearches(true);
@@ -371,16 +353,13 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     }
   };
 
-  // Handle input blur
   const handleInputBlur = () => {
-    // Delay to allow clicking on dropdown items
     setTimeout(() => {
       setShowDropdown(false);
       setShowRecentSearches(false);
     }, 200);
   };
 
-  // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const resultsCount = showRecentSearches ? recentSearches.length : searchResults.length;
 
@@ -403,15 +382,20 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
         break;
       case 'Escape':
         e.preventDefault();
-        setShowDropdown(false);
-        setShowRecentSearches(false);
-        searchInputRef.current?.blur();
-        onClose?.();
+        if (localQuery) {
+          setLocalQuery('');
+          setSearchQuery('');
+          setSearchResults([]);
+        } else {
+          setShowDropdown(false);
+          setShowRecentSearches(false);
+          searchInputRef.current?.blur();
+          onClose?.();
+        }
         break;
     }
   };
 
-  // Handle recent search click
   const handleRecentSearchClick = (query: string) => {
     setLocalQuery(query);
     setSearchQuery(query);
@@ -419,7 +403,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     performSearch(query);
   };
 
-  // Handle track selection
   const handleTrackSelect = (track: Track) => {
     selectNode(track.id);
     navigateToNode(track.id, { highlight: true, selectNode: true });
@@ -435,19 +418,16 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     onTrackSelect?.(track);
   };
 
-  // Handle add to setlist
   const handleAddToSetlist = (e: React.MouseEvent, track: Track) => {
     e.stopPropagation();
     addTrackToSetlist(track);
   };
 
-  // Handle add to path waypoints
   const handleAddToWaypoints = (e: React.MouseEvent, track: Track) => {
     e.stopPropagation();
     addWaypoint(track.id);
   };
 
-  // Filter change handlers
   const handleBpmRangeChange = (range: [number, number]) => {
     const newFilters = { ...filters, bpmRange: range };
     setFilters(newFilters);
@@ -480,432 +460,347 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
     localStorage.removeItem(RECENT_SEARCHES_KEY);
   };
 
-  // Virtualized list item renderer for recent searches
-  const RecentSearchItem: React.FC<{ index: number; style: React.CSSProperties }> = ({ index, style }) => {
-    const search = recentSearches[index];
-    if (!search) return null;
-
-    return (
-      <button
-        type="button"
-        style={{ ...style, width: '100%', textAlign: 'left' }}
-        className={clsx(
-          'px-4 py-2 cursor-pointer border-b border-gray-100 hover:bg-gray-50',
-          index === selectedIndex && 'bg-blue-50'
-        )}
-        onClick={() => handleRecentSearchClick(search.query)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-sm font-medium">{search.query}</span>
-          </div>
-          <span className="text-xs text-gray-500">{search.resultCount} results</span>
-        </div>
-      </button>
-    );
-  };
-
-  // Virtualized list item renderer for search results
-  const SearchResultItem: React.FC<{ index: number; style: React.CSSProperties }> = ({ index, style }) => {
-    const searchResult = searchResults[index];
-    if (!searchResult) return null;
-
-    const { track, score, matches } = searchResult;
-
-    return (
-      <button
-        type="button"
-        style={{ ...style, width: '100%', textAlign: 'left' }}
-        className={clsx(
-          'px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors',
-          index === selectedIndex && 'bg-blue-50',
-          viewState.selectedNodes.has(track.id) && 'ring-2 ring-blue-400'
-        )}
-        onClick={() => handleTrackSelect(track)}
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-1">
-              <h4 className="text-sm font-semibold text-gray-900 truncate">
-                {track.name}
-              </h4>
-              {score && (
-                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
-                  {Math.round(score * 100)}%
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-600 truncate mb-1">
-              by {track.artist}
-              {track.album && ` • ${track.album}`}
-            </p>
-            <div className="flex items-center space-x-3 text-xs text-gray-500">
-              {track.bpm && <span>{track.bpm} BPM</span>}
-              {track.camelotKey && <span>{track.camelotKey}</span>}
-              {track.genre && <span>{track.genre}</span>}
-              {track.year && <span>{track.year}</span>}
-            </div>
-
-            {/* Highlight matches */}
-            {matches.length > 0 && (
-              <div className="mt-2 text-xs text-gray-400">
-                Matches: {matches.map((match: any) => match.field).join(', ')}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-1 ml-3">
-            <button
-              onClick={(e) => handleFocusTrack(e, track)}
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-              title="Focus in graph"
-            >
-              <LocateFixed size={16} strokeWidth={1.8} />
-            </button>
-
-            <button
-              onClick={(e) => handleAddToSetlist(e, track)}
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-              title={currentSetlist ? 'Add to setlist' : 'Create a setlist to store this track'}
-              disabled={!currentSetlist}
-            >
-              <ListPlus size={16} strokeWidth={1.8} />
-            </button>
-
-            <button
-              onClick={(e) => handleAddToWaypoints(e, track)}
-              className={clsx(
-                'p-1.5 rounded transition-colors',
-                pathfindingState.selectedWaypoints.has(track.id)
-                  ? 'text-purple-500 bg-purple-50'
-                  : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
-              )}
-              title={pathfindingState.selectedWaypoints.has(track.id) ? 'Waypoint added' : 'Add to path waypoints'}
-              disabled={pathfindingState.selectedWaypoints.has(track.id)}
-            >
-              <Route size={16} strokeWidth={1.8} />
-            </button>
-          </div>
-        </div>
-      </button>
-    );
-  };
-
-
-  // Filter components
-  const BpmRangeFilter = () => (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">BPM Range</label>
-      <div className="flex items-center space-x-2">
-        <input
-          type="number"
-          value={filters.bpmRange[0]}
-          onChange={(e) => handleBpmRangeChange([parseInt(e.target.value) || 0, filters.bpmRange[1]])}
-          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          min="0"
-          max="300"
-        />
-        <span className="text-xs text-gray-500">to</span>
-        <input
-          type="number"
-          value={filters.bpmRange[1]}
-          onChange={(e) => handleBpmRangeChange([filters.bpmRange[0], parseInt(e.target.value) || 300])}
-          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          min="0"
-          max="300"
-        />
-      </div>
-    </div>
-  );
-
-  const KeyFilter = () => (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">Keys</label>
-      <div className="grid grid-cols-6 gap-1">
-        {CAMELOT_KEYS.map(key => (
-          <button
-            key={key}
-            onClick={() => {
-              const newKeys = filters.keys.includes(key)
-                ? filters.keys.filter(k => k !== key)
-                : [...filters.keys, key];
-              handleKeysChange(newKeys);
-            }}
-            className={clsx(
-              'px-2 py-1 text-xs rounded border transition-colors',
-              filters.keys.includes(key)
-                ? 'bg-blue-500 text-white border-blue-500'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            )}
-          >
-            {key}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const GenreFilter = () => (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">Genres</label>
-      <div className="space-y-1 max-h-32 overflow-y-auto">
-        {GENRES.map(genre => (
-          <label key={genre} className="flex items-center">
-            <input
-              type="checkbox"
-              checked={filters.genres.includes(genre)}
-              onChange={(e) => {
-                const newGenres = e.target.checked
-                  ? [...filters.genres, genre]
-                  : filters.genres.filter(g => g !== genre);
-                handleGenresChange(newGenres);
-              }}
-              className="mr-2 w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700">{genre}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
-    <div className={clsx('relative w-full', className)}>
+    <div className={className} style={{ position: 'relative', width: '100%' }}>
       {/* Search Input */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg
-            className="w-4 h-4 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </div>
+      <div style={{ position: 'relative', width: '100%' }}>
+        <span
+          style={{
+            position: 'absolute',
+            left: 'var(--space-3)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'var(--fg-3)',
+            pointerEvents: 'none',
+            display: 'inline-flex'
+          }}
+        >
+          <Search size={16} strokeWidth={2} aria-hidden="true" />
+        </span>
         <input
           ref={searchInputRef}
-          type="text"
+          type="search"
           value={localQuery}
           onChange={handleSearchChange}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full pl-10 pr-12 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="sn-input"
+          style={{
+            width: '100%',
+            height: 'var(--control-md)',
+            paddingLeft: 'var(--space-8)',
+            paddingRight: 'var(--space-8)'
+          }}
           autoComplete="off"
+          aria-label="Search tracks"
         />
 
-        {/* Loading indicator */}
-        {isSearching && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </div>
-        )}
-
-        {/* Clear button */}
-        {localQuery && (
+        {localQuery ? (
           <button
+            type="button"
             onClick={() => {
               setLocalQuery('');
               setSearchQuery('');
               setSearchResults([]);
               setShowDropdown(false);
             }}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            style={{
+              position: 'absolute',
+              right: 'var(--space-2)',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--fg-3)',
+              cursor: 'pointer',
+              padding: 'var(--space-1)',
+              borderRadius: 'var(--radius-chip)'
+            }}
+            aria-label="Clear search"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X size={16} strokeWidth={2} aria-hidden="true" />
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Search Results Dropdown */}
-      {showDropdown && (
+      {showDropdown ? (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-hidden"
+          style={{
+            position: 'absolute',
+            zIndex: 'var(--z-popover)',
+            width: '100%',
+            marginTop: 'var(--space-1)',
+            backgroundColor: 'var(--surface-1)',
+            border: '1px solid var(--line)',
+            borderRadius: 'var(--radius-control)',
+            boxShadow: 'var(--shadow-2)',
+            maxHeight: '384px',
+            overflow: 'hidden'
+          }}
         >
-          {searchError && (
+          {searchError ? (
             <div
               style={{
-                padding: '10px 16px',
-                backgroundColor: 'rgba(251, 191, 36, 0.15)',
-                borderBottom: '1px solid rgba(251, 191, 36, 0.35)',
-                color: '#965400',
-                fontSize: '12px'
+                padding: 'var(--space-2) var(--space-4)',
+                backgroundColor: 'var(--status-warn-bg)',
+                borderBottom: '1px solid var(--line)',
+                color: 'var(--status-warn)',
+                fontSize: '0.75rem'
               }}
             >
               {searchError}
             </div>
-          )}
+          ) : null}
 
           {/* Recent Searches */}
-          {showRecentSearches && recentSearches.length > 0 && (
+          {showRecentSearches && recentSearches.length > 0 ? (
             <>
-              <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              <div
+                style={{
+                  padding: 'var(--space-2) var(--space-4)',
+                  backgroundColor: 'var(--surface-2)',
+                  borderBottom: '1px solid var(--line)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <span className="label" style={{ color: 'var(--fg-3)' }}>
                   Recent Searches
                 </span>
                 <button
+                  type="button"
                   onClick={clearRecentSearches}
-                  className="text-xs text-gray-500 hover:text-gray-700"
+                  className="sn-btn sn-btn--quiet sn-btn--sm"
                 >
                   Clear
                 </button>
               </div>
-              <div className="max-h-48 overflow-y-auto">
-                {recentSearches.map((_search, index) => (
-                  <RecentSearchItem
+              <div style={{ maxHeight: '192px', overflowY: 'auto' }}>
+                {recentSearches.map((search, index) => (
+                  <button
                     key={`recent-${index}`}
-                    index={index}
-                    style={{}}
-                  />
+                    type="button"
+                    style={{
+                      width: '100%',
+                      padding: 'var(--space-2) var(--space-4)',
+                      textAlign: 'left',
+                      border: 'none',
+                      borderBottom: '1px solid var(--line)',
+                      backgroundColor: index === selectedIndex ? 'var(--hover-bg)' : 'transparent',
+                      color: 'var(--fg)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                    onClick={() => handleRecentSearchClick(search.query)}
+                  >
+                    <span style={{ fontSize: '0.875rem' }}>{search.query}</span>
+                    <span className="caption" style={{ color: 'var(--fg-3)' }}>{search.resultCount} results</span>
+                  </button>
                 ))}
               </div>
             </>
-          )}
+          ) : null}
 
           {/* Search Results */}
-          {!showRecentSearches && isSearching && (
-            <div className="px-4 py-4 space-y-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div
-                  key={`skeleton-${index}`}
-                  className="animate-pulse rounded-lg border border-gray-200 bg-gray-100 px-4 py-3"
-                >
-                  <div className="h-4 w-1/2 bg-gray-200 rounded mb-2" />
-                  <div className="h-3 w-2/3 bg-gray-200 rounded mb-2" />
-                  <div className="flex gap-2">
-                    <div className="h-3 w-16 bg-gray-200 rounded" />
-                    <div className="h-3 w-14 bg-gray-200 rounded" />
-                    <div className="h-3 w-12 bg-gray-200 rounded" />
-                  </div>
-                </div>
-              ))}
+          {!showRecentSearches && isSearching ? (
+            <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <span className="sn-spinner" aria-label="Loading search results" />
             </div>
-          )}
+          ) : null}
 
-          {!showRecentSearches && !isSearching && searchResults.length > 0 && (
+          {!showRecentSearches && !isSearching && searchResults.length > 0 ? (
             <>
-              <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
-                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              <div
+                style={{
+                  padding: 'var(--space-2) var(--space-4)',
+                  backgroundColor: 'var(--surface-2)',
+                  borderBottom: '1px solid var(--line)'
+                }}
+              >
+                <span className="label" style={{ color: 'var(--fg-3)' }}>
                   Search Results ({searchResults.length})
                 </span>
               </div>
-              <div className="max-h-72 overflow-y-auto">
-                {searchResults.map((result, index) => (
-                  <SearchResultItem
-                    key={`result-${result.track.id}`}
-                    index={index}
-                    style={{}}
-                  />
-                ))}
+              <div style={{ maxHeight: '288px', overflowY: 'auto' }}>
+                {searchResults.map((result, index) => {
+                  const { track, score } = result;
+                  const isSelected = index === selectedIndex;
+                  return (
+                    <div
+                      key={`result-${track.id}`}
+                      onClick={() => handleTrackSelect(track)}
+                      style={{
+                        padding: 'var(--space-2) var(--space-4)',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--line)',
+                        backgroundColor: isSelected ? 'var(--hover-bg)' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {track.name}
+                          </span>
+                          {score ? (
+                            <span className="sn-tag">{Math.round(score * 100)}%</span>
+                          ) : null}
+                        </div>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: 'var(--fg-2)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          by {track.artist}
+                        </p>
+                        <div style={{ display: 'flex', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)', marginTop: '2px' }}>
+                          {track.bpm ? <span style={{ fontFamily: 'var(--font-data)' }}>{track.bpm} BPM</span> : null}
+                          {track.camelotKey ? <span style={{ fontFamily: 'var(--font-data)' }}>{track.camelotKey}</span> : null}
+                          {track.genre ? <span>{track.genre}</span> : null}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', marginLeft: 'var(--space-2)' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleFocusTrack(e, track)}
+                          className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
+                          title="Focus in graph"
+                        >
+                          <LocateFixed size={16} strokeWidth={2} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleAddToSetlist(e, track)}
+                          className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
+                          title="Add to setlist"
+                          disabled={!currentSetlist}
+                        >
+                          <ListPlus size={16} strokeWidth={2} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleAddToWaypoints(e, track)}
+                          className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
+                          title="Add to path waypoints"
+                        >
+                          <Route size={16} strokeWidth={2} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </>
-          )}
+          ) : null}
 
-          {/* No Results */}
-          {!showRecentSearches && !isSearching && localQuery && searchResults.length === 0 && (
-            <div className="px-5 py-8 text-center text-gray-500 space-y-2">
-              <svg className="mx-auto h-8 w-8 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <p className="text-sm">No tracks found for “{localQuery}”.</p>
-              {allTracks.length === 0 ? (
-                <p className="text-xs text-gray-400">
-                  The library looks empty. Start the gateway stack with
-                  <span className="font-mono"> docker compose up -d postgres redis rest-api api-gateway</span>
-                  {' '}and feed targets to scrape.
-                </p>
-              ) : (
-                <p className="text-xs text-gray-400">
-                  Try widening your filters or queue new material in Target Tracks, then trigger the scrapers from the dashboard.
-                </p>
-              )}
+          {!showRecentSearches && !isSearching && localQuery && searchResults.length === 0 ? (
+            <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--fg-3)' }}>
+              <p style={{ margin: 0, color: 'var(--fg)' }}>No tracks found for “{localQuery}”.</p>
             </div>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
 
       {/* Advanced Filters */}
-      {showFilters && (
-        <div className="mt-4">
+      {showFilters ? (
+        <div style={{ marginTop: 'var(--space-3)' }}>
           <button
+            type="button"
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="sn-btn sn-btn--quiet sn-btn--sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}
           >
-            <svg
-              className={clsx(
-                'w-4 h-4 transition-transform',
-                showAdvancedFilters && 'rotate-90'
-              )}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight
+              size={16}
+              strokeWidth={2}
+              style={{ transform: showAdvancedFilters ? 'rotate(90deg)' : 'none', transition: 'transform var(--duration-fast)' }}
+            />
             <span>Advanced Filters</span>
-            {(filters.bpmRange[0] !== DEFAULT_FILTERS.bpmRange[0] ||
-              filters.bpmRange[1] !== DEFAULT_FILTERS.bpmRange[1] ||
-              filters.keys.length > 0 ||
-              filters.genres.length > 0) && (
-              <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
-                Active
-              </span>
-            )}
           </button>
 
-          {showAdvancedFilters && (
-            <div className="mt-3 p-4 bg-gray-50 rounded-lg space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <BpmRangeFilter />
-                <KeyFilter />
-                <GenreFilter />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={filters.hasPreview}
-                      onChange={(e) => {
-                        const newFilters = { ...filters, hasPreview: e.target.checked };
-                        setFilters(newFilters);
-                        setSearchFilters(convertFiltersToSearchFilters(newFilters));
-                        if (localQuery) performSearch(localQuery);
-                      }}
-                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Has Preview</span>
+          {showAdvancedFilters ? (
+            <div
+              style={{
+                marginTop: 'var(--space-2)',
+                padding: 'var(--space-4)',
+                backgroundColor: 'var(--surface-2)',
+                borderRadius: 'var(--radius-control)',
+                border: '1px solid var(--line)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--space-3)'
+              }}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
+                {/* BPM Filter */}
+                <div>
+                  <label className="label" style={{ display: 'block', marginBottom: 'var(--space-1)', color: 'var(--fg-3)' }}>
+                    BPM Range
                   </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <input
+                      type="number"
+                      value={filters.bpmRange[0]}
+                      onChange={(e) => handleBpmRangeChange([parseInt(e.target.value) || 0, filters.bpmRange[1]])}
+                      className="sn-input"
+                      style={{ width: '80px', height: 'var(--control-sm)' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>to</span>
+                    <input
+                      type="number"
+                      value={filters.bpmRange[1]}
+                      onChange={(e) => handleBpmRangeChange([filters.bpmRange[0], parseInt(e.target.value) || 300])}
+                      className="sn-input"
+                      style={{ width: '80px', height: 'var(--control-sm)' }}
+                    />
+                  </div>
                 </div>
 
+                {/* Key Filter */}
+                <div>
+                  <label className="label" style={{ display: 'block', marginBottom: 'var(--space-1)', color: 'var(--fg-3)' }}>
+                    Keys
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-1)', maxHeight: '100px', overflowY: 'auto' }}>
+                    {CAMELOT_KEYS.map(key => {
+                      const isSel = filters.keys.includes(key);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            const newKeys = isSel ? filters.keys.filter(k => k !== key) : [...filters.keys, key];
+                            handleKeysChange(newKeys);
+                          }}
+                          className={`sn-btn sn-btn--sm ${isSel ? 'sn-btn--primary' : 'sn-btn--quiet'}`}
+                        >
+                          {key}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
+                  type="button"
                   onClick={clearFilters}
-                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  className="sn-btn sn-btn--quiet sn-btn--sm"
                 >
                   Clear Filters
                 </button>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
