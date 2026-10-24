@@ -11,6 +11,7 @@ import React from 'react';
 import GraphVisualization from '../../GraphVisualization';
 import { IntelligentBrowser } from '../../IntelligentBrowser';
 import MobileTrackExplorer from '../../MobileTrackExplorer';
+import { Card } from '@/components/ui';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import type { PlayModePanelProps } from '../types';
 import styles from '../DJInterface.module.css';
@@ -59,35 +60,26 @@ export function PlayModePanel({
               onTrackRightClick={onTrackRightClick as any}
             />
 
-            {/* Graph Legend Overlay */}
-            <div style={{
-              position: 'absolute',
-              bottom: '20px',
-              left: '20px',
-              padding: '12px',
-              backgroundColor: 'rgba(0,0,0,0.8)',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#8E8E93' }}>
+            {/* Graph Legend Overlay using Card */}
+            <Card className={styles.graphLegend}>
+              <h4 className={styles.legendTitle}>
                 Node Colors
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#7ED321', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Perfect Match</span>
+              <div className={styles.legendList}>
+                <div className={styles.legendItem}>
+                  <div className={styles.legendDot} style={{ backgroundColor: 'var(--color-success)' }} />
+                  <span>Perfect Match</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#F5A623', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Compatible</span>
+                <div className={styles.legendItem}>
+                  <div className={styles.legendDot} style={{ backgroundColor: 'var(--color-warning)' }} />
+                  <span>Compatible</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#4A90E2', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Default</span>
+                <div className={styles.legendItem}>
+                  <div className={styles.legendDot} style={{ backgroundColor: 'var(--color-brand-secondary)' }} />
+                  <span>Default</span>
                 </div>
               </div>
-            </div>
+            </Card>
           </>
         )}
       </div>

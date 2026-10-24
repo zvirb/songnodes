@@ -24,14 +24,6 @@ import styles from './DJInterface.module.css';
  *
  * @param props - DJModeSelectorProps
  * @returns React component
- *
- * @example
- * ```tsx
- * <DJModeSelector
- *   mode="play"
- *   onModeChange={(mode) => console.log('Mode:', mode)}
- * />
- * ```
  */
 export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): React.ReactElement {
   const handlePlayClick = () => {
@@ -47,8 +39,9 @@ export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): Rea
   };
 
   return (
-    <div className={styles.modeSelector}>
+    <div className={styles.modeSelector} role="group" aria-label="DJ Mode Selection">
       <button
+        type="button"
         onClick={handlePlayClick}
         aria-label="Switch to PLAY mode"
         aria-pressed={mode === 'play'}
@@ -59,6 +52,7 @@ export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): Rea
       </button>
 
       <button
+        type="button"
         onClick={handlePlanClick}
         aria-label="Switch to PLAN mode"
         aria-pressed={mode === 'plan'}

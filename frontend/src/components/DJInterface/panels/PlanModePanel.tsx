@@ -8,6 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { Search, X } from 'lucide-react';
 import GraphVisualization from '../../GraphVisualization';
 import MobileTrackExplorer from '../../MobileTrackExplorer';
 import { PathfinderPanel } from '../../PathfinderPanel';
@@ -15,6 +16,7 @@ import { KeyMoodPanel } from '../../KeyMoodPanel';
 import TargetTracksManager from '../../TargetTracksManager';
 import { TidalPlaylistManager } from '../../TidalPlaylistManager';
 import { SpotifyPlaylistManager } from '../../SpotifyPlaylistManager';
+import { Input, Button, Card } from '@/components/ui';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { searchTracks } from '../utils/trackTransformers';
 import type { PlanModePanelProps } from '../types';
@@ -24,9 +26,9 @@ import styles from '../DJInterface.module.css';
  * PlanModePanel - Preparation mode layout
  *
  * Layout:
- * - Left: Library browser with search (250px)
+ * - Left: Library browser with search (280px)
  * - Center: Graph visualization (flexible)
- * - Right: Tabbed panel for analysis tools (350px)
+ * - Right: Tabbed panel for analysis tools (380px)
  *
  * Right Panel Tabs:
  * - Track Analysis: Now playing track details
@@ -41,11 +43,9 @@ import styles from '../DJInterface.module.css';
  */
 export function PlanModePanel({
   tracks,
-  selectedTrack,
   nowPlaying,
   onTrackSelect,
   onTrackRightClick,
-  graphEdges,
   librarySearchQuery,
   onSearchQueryChange,
   rightPanelTab,
@@ -64,41 +64,33 @@ export function PlanModePanel({
       <div className={styles.libraryPanel}>
         <h3 className={styles.libraryHeader}>Library</h3>
 
-        {/* Search Input */}
-        <div style={{ position: 'relative', marginBottom: '12px' }}>
-          <input
-            type="text"
-            placeholder="🔍 Search tracks, artists, BPM, key..."
+        {/* Search Input using Design System Input */}
+        <div className={styles.searchContainer}>
+          <Input
             value={librarySearchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
-            className={styles.searchInput}
+            placeholder="Search tracks, artists, BPM, key..."
+            leftIcon={<Search size={16} aria-hidden="true" />}
+            rightIcon={
+              librarySearchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => onSearchQueryChange('')}
+                  className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors p-1"
+                  aria-label="Clear search"
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              ) : undefined
+            }
             aria-label="Search library"
+            inputSize="sm"
           />
-          {librarySearchQuery && (
-            <button
-              onClick={() => onSearchQueryChange('')}
-              style={{
-                position: 'absolute',
-                right: '8px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#8E8E93',
-                cursor: 'pointer',
-                padding: '4px',
-                fontSize: '16px'
-              }}
-              aria-label="Clear search"
-            >
-              ✕
-            </button>
-          )}
         </div>
 
         {/* Results Counter */}
         {librarySearchQuery && (
-          <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '8px' }}>
+          <div className="text-xs text-[var(--color-text-tertiary)] mb-2 px-1">
             {filteredTracks.length} of {tracks.length} tracks
           </div>
         )}
@@ -106,57 +98,47 @@ export function PlanModePanel({
         {/* Track List */}
         <div className={styles.trackList}>
           {filteredTracks.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#8E8E93', padding: '60px 20px' }}>
+            <div className="text-center text-[var(--color-text-tertiary)] py-12 px-4">
               {librarySearchQuery ? (
                 <>
-                  <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🔍</div>
-                  <div style={{ fontWeight: 600, marginBottom: '8px' }}>No tracks found</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7 }}>Try a different search term</div>
+                  <div className="text-4xl mb-3 opacity-50">🔍</div>
+                  <div className="font-semibold mb-1 text-[var(--color-text-secondary)]">No tracks found</div>
+                  <div className="text-xs text-[var(--color-text-tertiary)]">Try a different search term</div>
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📚</div>
-                  <div>No tracks in library</div>
+                  <div className="text-4xl mb-3 opacity-50">📚</div>
+                  <div className="text-[var(--color-text-secondary)]">No tracks in library</div>
                 </>
               )}
             </div>
           ) : (
-            filteredTracks.map(track => (
-              <button
-                key={track.id}
-                onClick={() => onTrackSelect(track)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  if (onTrackRightClick) {
-                    onTrackRightClick(track, { x: e.clientX, y: e.clientY });
-                  }
-                }}
-                style={{
-                  padding: '8px 10px',
-                  backgroundColor: nowPlaying?.id === track.id ? 'rgba(126,211,33,0.2)' : 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '6px',
-                  color: '#F8F8F8',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  minHeight: '52px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  width: '100%'
-                }}
-              >
-                <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {track.name}
-                </div>
-                <div style={{ fontSize: '11px', color: '#8E8E93', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {track.artist}
-                  {track.bpm && <> • {track.bpm} BPM</>}
-                  {track.key && <> • {track.key}</>}
-                </div>
-              </button>
-            ))
+            filteredTracks.map(track => {
+              const isActive = nowPlaying?.id === track.id;
+              return (
+                <button
+                  key={track.id}
+                  type="button"
+                  onClick={() => onTrackSelect(track)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (onTrackRightClick) {
+                      onTrackRightClick(track, { x: e.clientX, y: e.clientY });
+                    }
+                  }}
+                  className={`${styles.trackItem} ${isActive ? styles.trackItemActive : ''}`}
+                >
+                  <div className={styles.trackItemTitle}>
+                    {track.name}
+                  </div>
+                  <div className={styles.trackItemMeta}>
+                    {track.artist}
+                    {track.bpm && <> • {track.bpm} BPM</>}
+                    {track.key && <> • {track.key}</>}
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
@@ -176,38 +158,56 @@ export function PlanModePanel({
       {/* Right: Tabbed Analysis Panel */}
       <div className={styles.rightPanel}>
         {/* Tab Header */}
-        <div className={styles.tabHeader}>
+        <div className={styles.tabHeader} role="tablist">
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'analysis'}
             onClick={() => onRightPanelTabChange('analysis')}
             className={`${styles.tabButton} ${rightPanelTab === 'analysis' ? styles.tabButtonActive : ''}`}
           >
             Track Analysis
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'keymood'}
             onClick={() => onRightPanelTabChange('keymood')}
             className={`${styles.tabButton} ${rightPanelTab === 'keymood' ? styles.tabButtonActive : ''}`}
           >
             🎭 Key & Mood
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'pathfinder'}
             onClick={() => onRightPanelTabChange('pathfinder')}
             className={`${styles.tabButton} ${rightPanelTab === 'pathfinder' ? styles.tabButtonActive : ''}`}
           >
             🗺️ Pathfinder
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'tidal'}
             onClick={() => onRightPanelTabChange('tidal')}
             className={`${styles.tabButton} ${rightPanelTab === 'tidal' ? styles.tabButtonActive : ''}`}
           >
             🎵 Tidal
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'spotify'}
             onClick={() => onRightPanelTabChange('spotify')}
             className={`${styles.tabButton} ${rightPanelTab === 'spotify' ? styles.tabButtonActive : ''}`}
           >
             🎧 Spotify
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'targets'}
             onClick={() => onRightPanelTabChange('targets')}
             className={`${styles.tabButton} ${rightPanelTab === 'targets' ? styles.tabButtonActive : ''}`}
           >
@@ -218,36 +218,58 @@ export function PlanModePanel({
         {/* Tab Content */}
         <div className={styles.tabContent}>
           {rightPanelTab === 'analysis' && (
-            <>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Track Analysis</h3>
+            <div>
+              <h3 className="text-base font-semibold mb-4 text-[var(--color-text-primary)]">Track Analysis</h3>
               {nowPlaying ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="flex flex-col gap-4">
                   <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#F8F8F8' }}>
+                    <h4 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">
                       {nowPlaying.name}
                     </h4>
-                    <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       {nowPlaying.artist}
                     </p>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>BPM</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm || '---'}</div>
-                    </div>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>KEY</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key || '---'}</div>
-                    </div>
+                  <div className={styles.analysisGrid}>
+                    <Card variant="default" className={styles.analysisMetricCard}>
+                      <div className={styles.metricLabel}>BPM</div>
+                      <div className={styles.metricValue}>{nowPlaying.bpm || '---'}</div>
+                    </Card>
+                    <Card variant="default" className={styles.analysisMetricCard}>
+                      <div className={styles.metricLabel}>KEY</div>
+                      <div className={styles.metricValue}>{nowPlaying.key || '---'}</div>
+                    </Card>
                   </div>
+
+                  {nowPlaying.energy !== undefined && (
+                    <div>
+                      <div className={styles.metricLabel}>ENERGY</div>
+                      <div className="flex gap-1 h-5 mt-1">
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-sm ${
+                              i < nowPlaying.energy!
+                                ? 'bg-[var(--color-brand-primary)]'
+                                : 'bg-[var(--color-bg-elevated-3)]'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button variant="primary" fullWidth className="mt-2">
+                    Analyze Full Track
+                  </Button>
                 </div>
               ) : (
-                <p style={{ color: '#8E8E93', fontSize: '14px' }}>
+                <p className="text-sm text-[var(--color-text-tertiary)]">
                   Select a track to view analysis
                 </p>
               )}
-            </>
+            </div>
           )}
 
           {rightPanelTab === 'keymood' && (

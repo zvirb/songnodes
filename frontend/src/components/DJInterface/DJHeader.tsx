@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { HelpCircle, Wand2, FileUp, Filter, Settings as SettingsIcon, Music } from 'lucide-react';
+import { Button, Badge } from '@/components/ui';
 import { DJModeSelector } from './DJModeSelector';
 import type { DJHeaderProps } from './types';
 import styles from './DJInterface.module.css';
@@ -46,7 +47,7 @@ export function DJHeader({
     <header className={styles.header}>
       <div className={styles.headerLeft}>
         <h1 className={styles.headerTitle}>
-          <Music size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} aria-hidden="true" />
+          <Music size={24} aria-hidden="true" />
           SongNodes DJ
         </h1>
 
@@ -54,59 +55,65 @@ export function DJHeader({
       </div>
 
       <div className={styles.headerRight}>
-        <span className={styles.statBadge}>
-          {trackCount} Tracks Loaded
-        </span>
+        <Badge variant="default" size="md">
+          {trackCount} Tracks
+        </Badge>
 
-        <span className={`${styles.statBadge} ${styles.success}`}>
+        <Badge variant="success" size="md">
           {connectionCount} Connections
-        </span>
+        </Badge>
 
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<Wand2 size={16} aria-hidden="true" />}
           onClick={onOpenArtistAttribution}
-          className={`${styles.headerButton} ${styles.danger}`}
+          className="border-[var(--color-brand-tertiary-muted)] text-[var(--color-brand-tertiary)] hover:bg-[var(--color-brand-tertiary-muted)]"
           aria-label="Fix artist attribution for unknown tracks"
         >
-          <Wand2 size={16} strokeWidth={2} aria-hidden="true" />
-          Fix Artist Attribution
-        </button>
+          Fix Attribution
+        </Button>
 
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<FileUp size={16} aria-hidden="true" />}
           onClick={onOpenTracklistImporter}
-          className={`${styles.headerButton} ${styles.info}`}
           aria-label="Import tracklist from text or file"
         >
-          <FileUp size={16} strokeWidth={2} aria-hidden="true" />
-          Import Tracklist
-        </button>
+          Import
+        </Button>
 
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<Filter size={16} aria-hidden="true" />}
           onClick={onOpenGraphFilters}
-          className={styles.headerButton}
           aria-label="Configure graph visualization filters"
         >
-          <Filter size={16} strokeWidth={2} aria-hidden="true" />
-          Graph Filters
-        </button>
+          Filters
+        </Button>
 
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<SettingsIcon size={16} aria-hidden="true" />}
           onClick={onOpenSettings}
-          className={styles.headerButton}
           aria-label="Open application settings"
         >
-          <SettingsIcon size={16} strokeWidth={2} aria-hidden="true" />
           Settings
-        </button>
+        </Button>
 
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<HelpCircle size={18} aria-hidden="true" />}
           onClick={onOpenOnboarding}
-          className={styles.headerButton}
           title={onboardingTooltip}
           aria-label={onboardingTooltip}
         >
-          <HelpCircle size={18} strokeWidth={1.8} />
-          Quick Tour
-        </button>
+          Guide
+        </Button>
       </div>
     </header>
   );
