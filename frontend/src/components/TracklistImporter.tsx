@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, DragEvent } from 'react';
+import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react';
 
 interface TracklistImporterProps {
   onClose: () => void;
@@ -26,12 +27,15 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   const [tracklistText, setTracklistText] = useState('');
   const [parsedTracks, setParsedTracks] = useState<ParsedTrack[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [importProgress, setImportProgress] = useState<number | null>(null);
   const [importStatus, setImportStatus] = useState<{
     success: number;
     failed: number;
     total: number;
   } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /**
    * Parse a single line to extract artist and title
@@ -107,10 +111,10 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   };
 
   /**
-   * Parse the entire tracklist textarea
+   * Parse tracklist text into ParsedTrack array
    */
-  const handleParse = () => {
-    const lines = tracklistText.split('\n');
+  const parseTextContent = (text: string) => {
+    const lines = text.split('\n');
     const parsed: ParsedTrack[] = [];
 
     for (const line of lines) {
@@ -126,18 +130,78 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   };
 
   /**
+   * Parse the entire tracklist textarea
+   */
+  const handleParse = () => {
+    parseTextContent(tracklistText);
+  };
+
+  /**
+   * Process dropped or selected file
+   */
+  const handleFile = (file: File) => {
+    if (!file.type.startsWith('text/') && !file.name.endsWith('.txt') && !file.name.endsWith('.csv') && !file.name.endsWith('.m3u')) {
+      setErrorMessage('Please upload a text file (.txt, .csv, or .m3u).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        setTracklistText(content);
+        parseTextContent(content);
+      }
+    };
+    reader.onerror = () => {
+      setErrorMessage('Failed to read the file.');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  /**
    * Import parsed tracks to backend
    */
   const handleImport = async () => {
     if (parsedTracks.length === 0) {
-      setErrorMessage('No tracks to import. Please paste a tracklist and click Parse first.');
+      setErrorMessage('No tracks to import. Please paste a tracklist or upload a file first.');
       return;
     }
 
     setIsProcessing(true);
+    setImportProgress(10);
     setErrorMessage(null);
 
     try {
+      setImportProgress(50);
       const response = await fetch('/api/v1/tracks/import-tracklist', {
         method: 'POST',
         headers: {
@@ -152,12 +216,15 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
         })
       });
 
+      setImportProgress(90);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || `Import failed with status ${response.status}`);
       }
 
       const result = await response.json();
+      setImportProgress(100);
       setImportStatus({
         success: result.created + result.updated,
         failed: result.failed,
@@ -174,186 +241,132 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
       setErrorMessage(error instanceof Error ? error.message : 'Failed to import tracklist');
     } finally {
       setIsProcessing(false);
+      setTimeout(() => setImportProgress(null), 1000);
     }
   };
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10000,
-        padding: '20px'
-      }}
+      className="fixed inset-0 bg-modal-overlay flex items-center justify-center z-modal p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="importer-dialog-title"
     >
       <div
-        style={{
-          backgroundColor: '#1E1E1E',
-          borderRadius: '12px',
-          padding: '24px',
-          maxWidth: '900px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}
+        className="bg-bg-elevated2 border border-border-default rounded-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar text-text-primary shadow-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
-        }}>
-          <h2 style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
-            fontWeight: 600,
-            margin: 0
-          }}>
-            📝 Import Tracklist
+        <div className="flex justify-between items-center mb-5 border-b border-border-subtle pb-3">
+          <h2 id="importer-dialog-title" className="text-xl font-bold text-text-primary flex items-center gap-2">
+            <FileText size={22} className="text-brand-primary" />
+            Import Tracklist
           </h2>
           <button
             onClick={onClose}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#8E8E93',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px 8px'
-            }}
+            className="text-text-tertiary hover:text-text-primary hover:bg-bg-elevated3 p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand-primary outline-none"
+            aria-label="Close modal"
           >
-            ✕
+            <X size={20} />
           </button>
         </div>
 
         {/* Instructions */}
-        <div style={{
-          backgroundColor: 'rgba(74,144,226,0.1)',
-          border: '1px solid rgba(74,144,226,0.3)',
-          borderRadius: '8px',
-          padding: '12px',
-          marginBottom: '16px'
-        }}>
-          <p style={{ color: '#4A90E2', fontSize: '13px', margin: '0 0 8px 0', fontWeight: 600 }}>
+        <div className="bg-info-bg border border-info-border rounded-lg p-3.5 mb-4 text-xs">
+          <p className="text-info font-semibold mb-1 flex items-center gap-1.5">
             ℹ️ How to use:
           </p>
-          <ul style={{ color: '#8E8E93', fontSize: '12px', margin: 0, paddingLeft: '20px' }}>
-            <li>Paste your tracklist below (one track per line)</li>
+          <ul className="text-text-secondary space-y-1 list-disc pl-5">
+            <li>Drop a file or paste your tracklist text below (one track per line)</li>
             <li>Supported formats: "Artist - Title", "1. Artist - Title", "Artist / Title"</li>
-            <li>Click "Parse" to preview how tracks will be imported</li>
-            <li>Click "Import to Database" to add tracks (creates new or updates existing)</li>
+            <li>Click "Parse Tracklist" to preview extracted tracks</li>
+            <li>Click "Import to Database" to save parsed tracks</li>
           </ul>
         </div>
 
+        {/* Dropzone Container */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-xl p-4 mb-4 transition-all text-center ${
+            isDraggingFile
+              ? 'border-brand-primary bg-brand-primary-muted'
+              : 'border-border-default bg-bg-elevated1 hover:border-border-strong'
+          }`}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            accept=".txt,.csv,.m3u"
+            className="hidden"
+          />
+          <div className="flex flex-col items-center justify-center gap-2 py-2">
+            <Upload size={32} className={isDraggingFile ? 'text-brand-primary animate-bounce' : 'text-text-tertiary'} />
+            <div className="text-sm text-text-secondary">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-brand-primary hover:underline font-semibold focus-visible:ring-2 focus-visible:ring-brand-primary rounded outline-none"
+              >
+                Click to upload
+              </button>{' '}
+              or drag & drop a file here
+            </div>
+            <p className="text-xs text-text-tertiary">Supports .txt, .csv, and .m3u files</p>
+          </div>
+        </div>
+
         {/* Textarea for tracklist input */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            color: '#FFFFFF',
-            fontSize: '14px',
-            fontWeight: 600,
-            marginBottom: '8px'
-          }}>
-            Tracklist (paste here):
+        <div className="mb-4">
+          <label className="block text-text-primary text-sm font-semibold mb-2">
+            Tracklist Text:
           </label>
           <textarea
             value={tracklistText}
             onChange={(e) => setTracklistText(e.target.value)}
             placeholder="Paste your tracklist here...&#10;Example:&#10;1. Axwell Λ Ingrosso - More Than You Know&#10;2. Vicetone - Walk Thru Fire (ft. Meron Ryan)&#10;3. Artist Name - Track Title"
-            style={{
-              width: '100%',
-              minHeight: '200px',
-              backgroundColor: '#2A2A2A',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#F8F8F8',
-              fontSize: '13px',
-              padding: '12px',
-              fontFamily: 'monospace',
-              resize: 'vertical'
-            }}
+            className="w-full min-h-[160px] bg-bg-elevated1 border border-border-default rounded-lg text-text-primary text-xs p-3 font-mono focus-visible:ring-2 focus-visible:ring-brand-primary outline-none resize-y"
           />
         </div>
 
-        {/* Parse button */}
-        <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
+        {/* Parse button & count badge */}
+        <div className="mb-4 flex items-center gap-3">
           <button
             onClick={handleParse}
             disabled={!tracklistText.trim()}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: tracklistText.trim() ? 'rgba(74,144,226,0.3)' : 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(74,144,226,0.5)',
-              borderRadius: '8px',
-              color: tracklistText.trim() ? '#FFFFFF' : '#8E8E93',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: tracklistText.trim() ? 'pointer' : 'not-allowed'
-            }}
+            className="px-4 py-2 bg-brand-secondary text-text-inverse font-semibold text-sm rounded-lg hover:bg-brand-secondary-hover focus-visible:ring-2 focus-visible:ring-brand-primary outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             🔍 Parse Tracklist
           </button>
           {parsedTracks.length > 0 && (
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              color: '#7ED321',
-              fontSize: '14px',
-              fontWeight: 600
-            }}>
-              ✓ {parsedTracks.length} tracks parsed
+            <span className="flex items-center gap-1.5 text-success font-semibold text-sm">
+              <CheckCircle size={16} /> {parsedTracks.length} tracks parsed
             </span>
           )}
         </div>
 
         {/* Preview parsed tracks */}
         {parsedTracks.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
-            <h3 style={{
-              color: '#FFFFFF',
-              fontSize: '16px',
-              fontWeight: 600,
-              marginBottom: '12px'
-            }}>
+          <div className="mb-4">
+            <h3 className="text-text-primary text-sm font-semibold mb-2">
               Preview ({parsedTracks.length} tracks):
             </h3>
-            <div style={{
-              maxHeight: '300px',
-              overflow: 'auto',
-              backgroundColor: '#2A2A2A',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '12px'
-            }}>
+            <div className="max-h-[220px] overflow-y-auto custom-scrollbar bg-bg-elevated1 border border-border-subtle rounded-lg p-3 space-y-1.5">
               {parsedTracks.map((track, index) => (
                 <div
                   key={index}
-                  style={{
-                    padding: '8px',
-                    marginBottom: '4px',
-                    backgroundColor: 'rgba(255,255,255,0.05)',
-                    borderRadius: '4px',
-                    fontSize: '13px'
-                  }}
+                  className="p-2 bg-bg-elevated2 border border-border-subtle rounded text-xs"
                 >
-                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>
+                  <div className="text-text-primary font-semibold">
                     {track.trackNumber && `${track.trackNumber}. `}
-                    <span style={{ color: '#4A90E2' }}>{track.artist}</span>
+                    <span className="text-brand-secondary">{track.artist}</span>
                     {' - '}
-                    <span style={{ color: '#7ED321' }}>{track.title}</span>
+                    <span className="text-success">{track.title}</span>
                   </div>
-                  <div style={{ color: '#8E8E93', fontSize: '11px', marginTop: '2px' }}>
+                  <div className="text-text-tertiary text-[11px] mt-0.5">
                     Original: {track.originalLine}
                   </div>
                 </div>
@@ -362,74 +375,64 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
           </div>
         )}
 
+        {/* Progress Bar */}
+        {importProgress !== null && (
+          <div className="mb-4 space-y-1.5">
+            <div className="flex justify-between text-xs text-text-secondary font-medium">
+              <span>Importing tracks...</span>
+              <span>{importProgress}%</span>
+            </div>
+            <div className="w-full bg-bg-elevated1 h-2 rounded-full overflow-hidden border border-border-subtle">
+              <div
+                className="bg-brand-primary h-full transition-all duration-300 ease-out rounded-full"
+                style={{ width: `${importProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Error message */}
         {errorMessage && (
-          <div style={{
-            backgroundColor: 'rgba(231,76,60,0.1)',
-            border: '1px solid rgba(231,76,60,0.3)',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '16px'
-          }}>
-            <p style={{ color: '#E74C3C', fontSize: '13px', margin: 0 }}>
-              ❌ {errorMessage}
-            </p>
+          <div className="bg-error-bg border border-error-border rounded-lg p-3 mb-4 flex items-center gap-2" role="alert">
+            <AlertCircle size={18} className="text-error flex-shrink-0" />
+            <p className="text-error text-xs flex-1">{errorMessage}</p>
           </div>
         )}
 
         {/* Import status */}
         {importStatus && (
-          <div style={{
-            backgroundColor: 'rgba(126,211,33,0.1)',
-            border: '1px solid rgba(126,211,33,0.3)',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '16px'
-          }}>
-            <p style={{ color: '#7ED321', fontSize: '14px', margin: 0, fontWeight: 600 }}>
-              ✓ Import Complete
+          <div className="bg-success-bg border border-success-border rounded-lg p-3 mb-4">
+            <p className="text-success text-sm font-semibold flex items-center gap-1.5">
+              <CheckCircle size={18} /> Import Complete
             </p>
-            <p style={{ color: '#8E8E93', fontSize: '12px', margin: '8px 0 0 0' }}>
+            <p className="text-text-secondary text-xs mt-1">
               {importStatus.success} tracks processed successfully
               {importStatus.failed > 0 && `, ${importStatus.failed} failed`}
             </p>
           </div>
         )}
 
-        {/* Import button */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+        {/* Modal actions */}
+        <div className="flex gap-3 justify-end pt-3 border-t border-border-subtle">
           <button
             onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
+            className="px-4 py-2 bg-bg-elevated3 text-text-primary border border-border-default font-semibold text-sm rounded-lg hover:bg-bg-elevated4 focus-visible:ring-2 focus-visible:ring-brand-primary outline-none transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleImport}
             disabled={parsedTracks.length === 0 || isProcessing}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: parsedTracks.length > 0 && !isProcessing
-                ? 'rgba(126,211,33,0.3)'
-                : 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(126,211,33,0.5)',
-              borderRadius: '8px',
-              color: parsedTracks.length > 0 && !isProcessing ? '#FFFFFF' : '#8E8E93',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: parsedTracks.length > 0 && !isProcessing ? 'pointer' : 'not-allowed'
-            }}
+            className="px-4 py-2 bg-brand-primary text-text-inverse font-semibold text-sm rounded-lg hover:bg-brand-primary-hover focus-visible:ring-2 focus-visible:ring-brand-primary outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
           >
-            {isProcessing ? '⏳ Importing...' : '📥 Import to Database'}
+            {isProcessing ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Importing...
+              </>
+            ) : (
+              '📥 Import to Database'
+            )}
           </button>
         </div>
       </div>

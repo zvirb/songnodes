@@ -171,10 +171,10 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
 
   const getQualityColor = (quality: string) => {
     switch (quality) {
-      case 'excellent': return 'var(--color-accent-primary)';
-      case 'good': return 'var(--color-accent-tertiary)';
-      case 'fair': return 'var(--color-accent-warning)';
-      case 'poor': return 'var(--color-accent-secondary)';
+      case 'excellent': return 'var(--color-success)';
+      case 'good': return 'var(--color-info)';
+      case 'fair': return 'var(--color-warning)';
+      case 'poor': return 'var(--color-error)';
       default: return 'var(--color-text-tertiary)';
     }
   };
@@ -183,11 +183,19 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="setlist-track-item"
+      className="setlist-track-item group bg-bg-elevated1 hover:bg-bg-elevated2 border border-border-subtle rounded-lg p-3 transition-all"
+      role="listitem"
+      aria-label={`Track ${index + 1}: ${track.name} by ${track.artist}`}
       {...attributes}
     >
-      <div className="setlist-track-content">
-        <div className="track-drag-handle" {...listeners}>
+      <div className="setlist-track-content flex items-center gap-3">
+        <div
+          className="track-drag-handle cursor-grab active:cursor-grabbing text-text-tertiary hover:text-text-primary p-1 rounded focus-visible:ring-2 focus-visible:ring-brand-primary outline-none"
+          {...listeners}
+          role="button"
+          tabIndex={0}
+          aria-label={`Reorder track ${index + 1}: ${track.name}`}
+        >
           ⋮⋮
         </div>
 
@@ -221,18 +229,20 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
           </div>
         </div>
 
-        <div className="track-actions">
+        <div className="track-actions flex items-center gap-1">
           <button
-            className="btn btn-small btn-icon"
+            className="btn btn-small btn-icon p-1.5 text-text-secondary hover:text-brand-primary hover:bg-bg-elevated3 rounded transition-colors focus-visible:ring-2 focus-visible:ring-brand-primary outline-none"
             onClick={() => onEdit(setlistTrack.id)}
             title="Edit track cues"
+            aria-label={`Edit track cues for ${track.name}`}
           >
             ✏️
           </button>
           <button
-            className="btn btn-small btn-icon btn-danger"
+            className="btn btn-small btn-icon btn-danger p-1.5 text-text-secondary hover:text-error hover:bg-error-bg rounded transition-colors focus-visible:ring-2 focus-visible:ring-brand-primary outline-none"
             onClick={() => onRemove(setlistTrack.id)}
             title="Remove from setlist"
+            aria-label={`Remove ${track.name} from setlist`}
           >
             ✕
           </button>
@@ -639,13 +649,14 @@ const SetlistBuilder: React.FC = () => {
     <div className="setlist-builder">
       {/* Error Message Display */}
       {errorMessage && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+        <div className="p-3 bg-error-bg border border-error-border rounded-lg mb-4" role="alert">
           <div className="flex items-start justify-between">
-            <p className="text-red-800 text-sm flex-1">{errorMessage}</p>
+            <p className="text-error text-sm flex-1">{errorMessage}</p>
             <button
-              className="ml-2 text-red-600 hover:text-red-800 font-bold"
+              className="ml-2 text-error hover:text-brand-tertiary-hover font-bold focus-visible:ring-2 focus-visible:ring-brand-primary rounded p-0.5 outline-none"
               onClick={() => setErrorMessage(null)}
               title="Dismiss error"
+              aria-label="Dismiss error"
             >
               ✕
             </button>
@@ -720,7 +731,7 @@ const SetlistBuilder: React.FC = () => {
                 </div>
               ) : (
                 <SortableContext items={sortableTrackIds} strategy={verticalListSortingStrategy}>
-                  <div className="setlist-tracks">
+                  <div className="setlist-tracks space-y-2" role="list" aria-label="Setlist track list">
                     {currentSetlist.tracks.map((setlistTrack, index) => {
                       const nextTrack = currentSetlist.tracks[index + 1]?.track;
                       return (

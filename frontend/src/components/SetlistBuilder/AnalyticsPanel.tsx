@@ -47,7 +47,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ setlist }) => {
 
   if (setlist.tracks.length < 2) {
     return (
-      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+      <div className="p-4 text-center text-text-tertiary">
         Add at least 2 tracks to see analytics
       </div>
     );
@@ -57,90 +57,90 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ setlist }) => {
     <div className="space-y-4">
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
+        <div className="p-4 bg-bg-elevated1 border border-border-subtle rounded-lg">
+          <div className="flex items-center gap-2 text-info mb-1">
             <Music size={16} />
             <span className="text-sm font-medium">Tracks</span>
           </div>
-          <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+          <div className="text-2xl font-bold text-text-primary">
             {analytics.trackCount}
           </div>
         </div>
 
-        <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
+        <div className="p-4 bg-bg-elevated1 border border-border-subtle rounded-lg">
+          <div className="flex items-center gap-2 text-brand-secondary mb-1">
             <Clock size={16} />
             <span className="text-sm font-medium">Duration</span>
           </div>
-          <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+          <div className="text-2xl font-bold text-text-primary">
             {formatDuration(analytics.totalDuration)}
           </div>
         </div>
 
-        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-          <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
+        <div className="p-4 bg-bg-elevated1 border border-border-subtle rounded-lg">
+          <div className="flex items-center gap-2 text-success mb-1">
             <TrendingUp size={16} />
             <span className="text-sm font-medium">Avg BPM</span>
           </div>
-          <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+          <div className="text-2xl font-bold text-text-primary">
             {analytics.avgBpm}
           </div>
         </div>
 
-        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-          <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
+        <div className="p-4 bg-bg-elevated1 border border-border-subtle rounded-lg">
+          <div className="flex items-center gap-2 text-warning mb-1">
             <Zap size={16} />
             <span className="text-sm font-medium">Key Changes</span>
           </div>
-          <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+          <div className="text-2xl font-bold text-text-primary">
             {analytics.keyChanges}
           </div>
         </div>
       </div>
 
       {/* Flow Chart */}
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+      <div className="p-4 bg-bg-elevated1 rounded-lg border border-border-default">
+        <h4 className="text-sm font-semibold text-text-primary mb-4">
           BPM & Energy Flow
         </h4>
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle)" />
             <XAxis
               dataKey="index"
-              tick={{ fontSize: 12 }}
-              stroke="#9ca3af"
+              tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }}
+              stroke="var(--color-border-default)"
             />
             <YAxis
               yAxisId="bpm"
               orientation="left"
-              tick={{ fontSize: 12 }}
-              stroke="#3b82f6"
-              label={{ value: 'BPM', angle: -90, position: 'insideLeft' }}
+              tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }}
+              stroke="var(--color-brand-secondary)"
+              label={{ value: 'BPM', angle: -90, position: 'insideLeft', fill: 'var(--color-text-secondary)' }}
             />
             <YAxis
               yAxisId="energy"
               orientation="right"
-              tick={{ fontSize: 12 }}
-              stroke="#f59e0b"
-              label={{ value: 'Energy %', angle: 90, position: 'insideRight' }}
+              tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }}
+              stroke="var(--color-warning)"
+              label={{ value: 'Energy %', angle: 90, position: 'insideRight', fill: 'var(--color-text-secondary)' }}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1f2937',
-                border: 'none',
-                borderRadius: '8px',
-                color: '#fff',
+                backgroundColor: 'var(--color-bg-elevated-3)',
+                border: '1px solid var(--color-border-default)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--color-text-primary)',
               }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ color: 'var(--color-text-secondary)' }} />
             <Line
               yAxisId="bpm"
               type="monotone"
               dataKey="bpm"
-              stroke="#3b82f6"
+              stroke="var(--color-brand-secondary)"
               strokeWidth={2}
-              dot={{ fill: '#3b82f6', r: 4 }}
+              dot={{ fill: 'var(--color-brand-secondary)', r: 4 }}
               activeDot={{ r: 6 }}
               name="BPM"
             />
@@ -148,9 +148,9 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ setlist }) => {
               yAxisId="energy"
               type="monotone"
               dataKey="energy"
-              stroke="#f59e0b"
+              stroke="var(--color-warning)"
               strokeWidth={2}
-              dot={{ fill: '#f59e0b', r: 4 }}
+              dot={{ fill: 'var(--color-warning)', r: 4 }}
               activeDot={{ r: 6 }}
               name="Energy %"
             />
