@@ -2,7 +2,8 @@ import { routeTracksFromNodes } from '../utils/trackMetadata';
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { Track } from '../types';
+import { Badge } from './ui/Badge';
+import { Button } from './ui/Button';
 
 import type { ServerPathResult as PathfinderResult } from '../types/pathfinding';
 import { adaptServerPath } from '../utils/serverPath';
@@ -132,15 +133,15 @@ export const PathfinderPanel: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden text-[var(--color-text-primary)]">
       <div className="flex-shrink-0">
-        <h2 className="text-xl font-semibold mb-4">DJ Set Pathfinder</h2>
-        <p className="text-sm text-gray-600 mb-4">
+        <h2 className="text-xl font-semibold mb-[var(--space-4)]">DJ Set Pathfinder</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-[var(--space-4)]">
           Create intelligent DJ sets using graph connections and harmonic mixing
         </p>
         {tracks.length === 0 && (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
+          <div className="p-[var(--space-3)] bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] rounded-[var(--radius-panel)] mb-[var(--space-4)]">
+            <p className="text-sm text-[var(--color-warning)]">
               Loading tracks... Please wait for the graph visualization to load data.
             </p>
           </div>
@@ -149,115 +150,152 @@ export const PathfinderPanel: React.FC = () => {
 
       {/* Currently Selected Track Info */}
       {currentlySelectedTrack && (
-        <div className="flex-shrink-0 p-3 bg-purple-50 border border-purple-200 rounded-md">
-          <div className="text-xs font-semibold text-purple-700 mb-1">Currently Selected Track:</div>
-          <div className="font-medium text-sm">{currentlySelectedTrack.name || currentlySelectedTrack.title}</div>
-          <div className="text-xs text-gray-600">{currentlySelectedTrack.artist}</div>
+        <div className="flex-shrink-0 p-[var(--space-3)] mb-[var(--space-4)] bg-[var(--color-bg-elevated-2)] border border-[var(--color-brand-secondary)] rounded-[var(--radius-panel)]">
+          <div className="text-xs font-semibold text-[var(--color-brand-secondary)] mb-[var(--space-1)]">
+            Currently Selected Track:
+          </div>
+          <div className="font-medium text-sm text-[var(--color-text-primary)]">
+            {currentlySelectedTrack.name || currentlySelectedTrack.title}
+          </div>
+          <div className="text-xs text-[var(--color-text-secondary)]">{currentlySelectedTrack.artist}</div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+      <div className="flex-1 overflow-y-auto space-y-[var(--space-4)] pr-[var(--space-2)]">
         {/* Track Selection */}
-        <div className="space-y-3">
+        <div className="space-y-[var(--space-3)]">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-[var(--space-1)]">
               Start Track *
             </label>
             {startTrack ? (
-              <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-center justify-between p-[var(--space-3)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-[var(--radius-panel)]">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{startTrack.name || startTrack.title}</div>
-                  <div className="text-sm text-gray-600 truncate">{startTrack.artist}</div>
+                  <div className="font-medium truncate text-[var(--color-text-primary)]">
+                    {startTrack.name || startTrack.title}
+                  </div>
+                  <div className="text-sm text-[var(--color-text-secondary)] truncate">{startTrack.artist}</div>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="xs"
                   onClick={() => pathfinding.setStartTrack(null as any)}
-                  className="ml-2 px-3 py-1.5 text-xs bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 rounded-md font-medium transition-colors"
+                  className="ml-[var(--space-2)] text-[var(--color-error)] border-[var(--color-error-border)] hover:bg-[var(--color-error-bg)]"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
+              <Button
+                variant="outline"
+                fullWidth
                 onClick={useSelectedTrackAsStart}
                 disabled={!currentlySelectedTrack || tracks.length === 0}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-green-400 hover:text-green-800 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
-                aria-label={currentlySelectedTrack ? `Use ${currentlySelectedTrack.name} as start track` : 'Select a track on the graph first'}
+                className="border-dashed text-sm flex items-center justify-center gap-[var(--space-2)]"
+                aria-label={
+                  currentlySelectedTrack
+                    ? `Use ${currentlySelectedTrack.name} as start track`
+                    : 'Select a track on the graph first'
+                }
               >
                 {currentlySelectedTrack && <Check size={16} strokeWidth={2} aria-hidden="true" />}
                 {currentlySelectedTrack ? 'Use Selected Track as Start' : 'Select a track on the graph first'}
-              </button>
+              </Button>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-[var(--space-1)]">
               End Track (Optional)
             </label>
             {endTrack ? (
-              <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center justify-between p-[var(--space-3)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded-[var(--radius-panel)]">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{endTrack.name || endTrack.title}</div>
-                  <div className="text-sm text-gray-600 truncate">{endTrack.artist}</div>
+                  <div className="font-medium truncate text-[var(--color-text-primary)]">
+                    {endTrack.name || endTrack.title}
+                  </div>
+                  <div className="text-sm text-[var(--color-text-secondary)] truncate">{endTrack.artist}</div>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="xs"
                   onClick={() => pathfinding.setEndTrack(null as any)}
-                  className="ml-2 px-3 py-1.5 text-xs bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 rounded-md font-medium transition-colors"
+                  className="ml-[var(--space-2)] text-[var(--color-error)] border-[var(--color-error-border)] hover:bg-[var(--color-error-bg)]"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
+              <Button
+                variant="outline"
+                fullWidth
                 onClick={useSelectedTrackAsEnd}
                 disabled={!currentlySelectedTrack || tracks.length === 0}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-400 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
-                aria-label={currentlySelectedTrack ? `Use ${currentlySelectedTrack.name} as end track` : 'Select a track on the graph first'}
+                className="border-dashed text-sm flex items-center justify-center gap-[var(--space-2)]"
+                aria-label={
+                  currentlySelectedTrack
+                    ? `Use ${currentlySelectedTrack.name} as end track`
+                    : 'Select a track on the graph first'
+                }
               >
                 {currentlySelectedTrack && <Check size={16} strokeWidth={2} aria-hidden="true" />}
                 {currentlySelectedTrack ? 'Use Selected Track as End' : 'Select a track on the graph first'}
-              </button>
+              </Button>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-[var(--space-1)]">
               Waypoints (Optional) - Tracks that must be included
             </label>
-            <div className="space-y-2 mb-2">
+            <div className="space-y-[var(--space-2)] mb-[var(--space-2)]">
               {waypoints.map(waypoint => (
-                <div key={waypoint.id} className="flex items-center justify-between p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div
+                  key={waypoint.id}
+                  className="flex items-center justify-between p-[var(--space-2)] bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] rounded-[var(--radius-panel)]"
+                >
                   <div className="text-sm flex-1 min-w-0">
-                    <div className="font-medium truncate">{waypoint.name || waypoint.title}</div>
-                    <div className="text-gray-600 truncate">{waypoint.artist}</div>
+                    <div className="font-medium truncate text-[var(--color-text-primary)]">
+                      {waypoint.name || waypoint.title}
+                    </div>
+                    <div className="text-[var(--color-text-secondary)] truncate">{waypoint.artist}</div>
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="xs"
                     onClick={() => removeWaypoint(waypoint.id)}
-                    className="ml-2 px-3 py-1.5 text-xs bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 rounded-md font-medium transition-colors"
+                    className="ml-[var(--space-2)] text-[var(--color-error)] border-[var(--color-error-border)] hover:bg-[var(--color-error-bg)]"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
-            <button
+            <Button
+              variant="outline"
+              fullWidth
               onClick={useSelectedTrackAsWaypoint}
               disabled={!currentlySelectedTrack || tracks.length === 0}
-              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-yellow-400 hover:text-yellow-800 hover:bg-yellow-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
-              aria-label={currentlySelectedTrack ? `Add ${currentlySelectedTrack.name} as waypoint` : 'Select a track on the graph first'}
+              className="border-dashed text-sm flex items-center justify-center gap-[var(--space-2)]"
+              aria-label={
+                currentlySelectedTrack
+                  ? `Add ${currentlySelectedTrack.name} as waypoint`
+                  : 'Select a track on the graph first'
+              }
             >
               {currentlySelectedTrack && <Check size={16} strokeWidth={2} aria-hidden="true" />}
               {currentlySelectedTrack ? 'Use Selected Track as Waypoint' : 'Select a track on the graph first'}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Duration Settings */}
-        <div className="space-y-3">
+        <div className="space-y-[var(--space-3)]">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-[var(--space-1)]">
               Target Duration: {Math.floor(targetDuration / 60)}h {targetDuration % 60}m
             </label>
             <input
@@ -267,16 +305,16 @@ export const PathfinderPanel: React.FC = () => {
               step="5"
               value={targetDuration}
               onChange={(e) => setTargetDuration(Number(e.target.value))}
-              className="w-full"
+              className="w-full accent-[var(--color-brand-primary)]"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-[var(--color-text-tertiary)]">
               <span>15 min</span>
               <span>4 hours</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-[var(--space-1)]">
               Duration Tolerance: ±{tolerance} min
             </label>
             <input
@@ -286,9 +324,9 @@ export const PathfinderPanel: React.FC = () => {
               step="1"
               value={tolerance}
               onChange={(e) => setTolerance(Number(e.target.value))}
-              className="w-full"
+              className="w-full accent-[var(--color-brand-primary)]"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-[var(--color-text-tertiary)]">
               <span>±1 min</span>
               <span>±30 min</span>
             </div>
@@ -296,41 +334,44 @@ export const PathfinderPanel: React.FC = () => {
         </div>
 
         {/* Options */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-[var(--space-2)]">
           <input
             type="checkbox"
             id="key-matching"
             checked={preferKeyMatching}
             onChange={(e) => setPreferKeyMatching(e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+            className="w-4 h-4 accent-[var(--color-brand-primary)] border-[var(--color-border-default)] rounded-[var(--radius-sm)]"
           />
-          <label htmlFor="key-matching" className="text-sm text-gray-700">
+          <label htmlFor="key-matching" className="text-sm text-[var(--color-text-primary)]">
             Use Camelot key matching as tiebreaker
           </label>
         </div>
 
         {/* Find Path Button */}
-        <button
+        <Button
           onClick={findPath}
           disabled={!startTrack || isSearching || tracks.length === 0}
-          className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          loading={isSearching}
+          fullWidth
+          variant="primary"
+          size="lg"
         >
           {isSearching ? 'Finding Path...' : 'Find Path'}
-        </button>
+        </Button>
 
-        {/* Error */}
+        {/* Error State */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className="p-[var(--space-3)] bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-[var(--radius-panel)]">
+            <p className="text-[var(--color-error)] text-sm">{error}</p>
           </div>
         )}
 
         {/* Results */}
         {result && result.success && (
-          <div className="space-y-4">
-            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-              <h3 className="font-semibold text-green-900 mb-2">Path Found!</h3>
-              <div className="text-sm text-green-800 space-y-1">
+          <div className="space-y-[var(--space-4)]">
+            <div className="p-[var(--space-4)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-[var(--radius-panel)]">
+              <h3 className="font-semibold text-[var(--color-success)] mb-[var(--space-2)]">Path Found!</h3>
+              <div className="text-sm text-[var(--color-text-primary)] space-y-[var(--space-1)]">
                 <p>Tracks: {result.path.length}</p>
                 <p>Duration: {formatDuration(result.total_duration_ms)} (target: {formatDuration(result.target_duration_ms)})</p>
                 <p>Difference: {formatDuration(result.duration_difference_ms)}</p>
@@ -341,9 +382,9 @@ export const PathfinderPanel: React.FC = () => {
 
               {/* Show info if synthetic edges were used */}
               {result.path.some((segment: any) => segment.is_synthetic_edge) && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <div className="flex items-center gap-2 text-sm text-yellow-800">
-                    <span className="text-yellow-600 font-bold">⚡</span>
+                <div className="mt-[var(--space-3)] p-[var(--space-3)] bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] rounded-[var(--radius-panel)]">
+                  <div className="flex items-center gap-[var(--space-2)] text-sm text-[var(--color-warning)]">
+                    <span className="font-bold">⚡</span>
                     <div>
                       <span className="font-semibold">Harmonic Links Used:</span> Some tracks weren't directly connected in playlists, so we used harmonic key compatibility to bridge the gap.
                     </div>
@@ -354,34 +395,49 @@ export const PathfinderPanel: React.FC = () => {
 
             {/* Path Display */}
             <div>
-              <h3 className="font-semibold mb-2">Generated Path</h3>
-              <div className="space-y-1">
+              <h3 className="font-semibold mb-[var(--space-2)] text-[var(--color-text-primary)]">Generated Path</h3>
+              <div className="space-y-[var(--space-1)]">
                 {(() => {
                   const waypointsVisitedSet = new Set(result.waypoints_visited);
                   return result.path.map((segment, index) => {
                     const isWaypoint = waypointsVisitedSet.has(segment.track.id);
                     return (
-                      <div key={index} className={`flex items-center gap-2 p-2 rounded ${isWaypoint ? 'bg-yellow-100 border-l-4 border-yellow-400' : 'bg-gray-50'}`}>
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${isWaypoint ? 'bg-yellow-500 text-white' : 'bg-blue-600 text-white'}`}>
+                      <div
+                        key={index}
+                        className={`flex items-center gap-[var(--space-2)] p-[var(--space-2)] rounded-[var(--radius-panel)] border ${
+                          isWaypoint
+                            ? 'bg-[var(--color-warning-bg)] border-[var(--color-warning-border)]'
+                            : 'bg-[var(--color-bg-elevated-1)] border-[var(--color-border-subtle)]'
+                        }`}
+                      >
+                        <Badge
+                          variant={isWaypoint ? 'warning' : 'default'}
+                          size="sm"
+                          className="w-7 h-7 rounded-full flex items-center justify-center p-0 shrink-0 font-bold"
+                        >
                           {index + 1}
-                        </div>
+                        </Badge>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{segment.track.name}</div>
-                          <div className="text-sm text-gray-600 truncate">{segment.track.artist}</div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="font-medium truncate text-[var(--color-text-primary)]">
+                            {segment.track.name}
+                          </div>
+                          <div className="text-sm text-[var(--color-text-secondary)] truncate">
+                            {segment.track.artist}
+                          </div>
+                          <div className="text-xs text-[var(--color-text-tertiary)] mt-[var(--space-1)] flex items-center gap-[var(--space-2)]">
                             {isWaypoint && (
-                              <span className="mr-2 px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded-full text-xs font-semibold">Waypoint</span>
+                              <Badge variant="warning" size="sm">Waypoint</Badge>
                             )}
-                            {segment.track.camelot_key}
+                            <span>{segment.track.camelot_key}</span>
                             {segment.key_compatible && index > 0 && (
-                              <span className="ml-2 text-green-600">✓ Compatible</span>
+                              <span className="text-[var(--color-success)]">✓ Compatible</span>
                             )}
                             {segment.is_synthetic_edge && index > 0 && (
-                              <span className="ml-2 text-yellow-600 font-semibold">⚡ Harmonic Link</span>
+                              <span className="text-[var(--color-warning)] font-semibold">⚡ Harmonic Link</span>
                             )}
                           </div>
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-[var(--color-text-tertiary)]">
                           {formatDuration(segment.track.duration_ms)}
                         </div>
                       </div>

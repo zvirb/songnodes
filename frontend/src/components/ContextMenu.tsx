@@ -401,106 +401,193 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     };
   }, [onClose]);
 
+  // Manage key navigation focus among menu items
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!menuRef.current) return;
+        const buttons = Array.from(
+          menuRef.current.querySelectorAll<HTMLButtonElement>('button:not([disabled])')
+        );
+        if (buttons.length === 0) return;
+
+        const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        if (e.key === 'ArrowDown') {
+          const nextIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
+          buttons[nextIndex]?.focus();
+        } else {
+          const prevIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
+          buttons[prevIndex]?.focus();
+        }
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    // Focus first active menu item upon render
+    const timer = setTimeout(() => {
+      if (menuRef.current) {
+        const firstButton = menuRef.current.querySelector<HTMLButtonElement>('button:not([disabled])');
+        firstButton?.focus();
+      }
+    }, 50);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+      clearTimeout(timer);
+    };
+  }, [onClose]);
+
   const position = calculatePosition();
   const menuItems = getMenuItems();
 
   return (
     <>
       {createPortal(
-        <div
-          ref={menuRef}
-          className="context-menu"
-          style={{
-            position: 'fixed',
-            left: position.left,
-            top: position.top,
-            zIndex: 10000,
-            minWidth: '200px',
-            backgroundColor: 'rgba(30, 30, 40, 0.98)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(10px)',
-            padding: '4px',
-            animation: 'fadeIn 0.15s ease-out'
-          }}
-        >
-          {menuItems.map((item, index) => {
-            if (item.divider) {
+        <>
+          {/* Transparent Backdrop to dismiss context menu */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 'var(--z-dropdown)',
+              backgroundColor: 'transparent'
+            }}
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                onClose();
+              }
+            }}
+          />
+
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label="Context Menu"
+            className="context-menu"
+            style={{
+              position: 'fixed',
+              left: position.left,
+              top: position.top,
+              zIndex: 'calc(var(--z-dropdown) + 1)',
+              minWidth: '200px',
+              backgroundColor: 'var(--color-panel-bg)',
+              border: '1px solid var(--color-border-default)',
+              borderRadius: 'var(--radius-panel)',
+              boxShadow: 'var(--shadow-dropdown)',
+              backdropFilter: 'blur(12px)',
+              padding: 'var(--space-1)',
+              animation: 'fadeIn var(--duration-fast) var(--ease-out)'
+            }}
+          >
+            {menuItems.map((item, index) => {
+              if (item.divider) {
+                return (
+                  <div
+                    key={index}
+                    role="separator"
+                    style={{
+                      height: '1px',
+                      backgroundColor: 'var(--color-border-subtle)',
+                      margin: 'var(--space-1) 0'
+                    }}
+                  />
+                );
+              }
+
               return (
-                <div
+                <button
                   key={index}
+                  role="menuitem"
+                  className="context-menu-item"
+                  onClick={item.action}
+                  disabled={item.disabled}
                   style={{
-                    height: '1px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    margin: '4px 0'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    padding: 'var(--space-2) var(--space-3)',
+                    backgroundColor: 'transparent',
+                    color: item.disabled ? 'var(--color-text-disabled)' : 'var(--color-text-primary)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: item.disabled ? 'not-allowed' : 'pointer',
+                    fontSize: 'var(--font-size-sm)',
+                    transition: 'all var(--duration-fast) var(--ease-out)',
+                    textAlign: 'left',
+                    outline: 'none'
                   }}
-                />
-              );
-            }
-
-            return (
-              <button
-                key={index}
-                className="context-menu-item"
-                onClick={item.action}
-                disabled={item.disabled}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  padding: '8px 12px',
-                  backgroundColor: 'transparent',
-                  color: item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: item.disabled ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.15s ease',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={(e) => {
-                  if (!item.disabled) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                    e.currentTarget.style.color = '#fff';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)';
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {item.icon}
-                  {item.label}
-                </span>
-                {item.shortcut && (
-                  <span style={{
-                    fontSize: '11px',
-                    opacity: 0.6,
-                    marginLeft: '20px'
-                  }}>
-                    {item.shortcut}
+                  onMouseEnter={(e) => {
+                    if (!item.disabled) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated-3)';
+                      e.currentTarget.style.color = 'var(--color-text-primary)';
+                      e.currentTarget.style.boxShadow = 'var(--glow-accent-sm)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = item.disabled ? 'var(--color-text-disabled)' : 'var(--color-text-primary)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                  onFocus={(e) => {
+                    if (!item.disabled) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated-3)';
+                      e.currentTarget.style.color = 'var(--color-text-primary)';
+                      e.currentTarget.style.boxShadow = 'var(--glow-accent-sm)';
+                    }
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = item.disabled ? 'var(--color-text-disabled)' : 'var(--color-text-primary)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    {item.icon}
+                    {item.label}
                   </span>
-                )}
-              </button>
-            );
-          })}
+                  {item.shortcut && (
+                    <span style={{
+                      fontSize: 'var(--font-size-xs)',
+                      opacity: 0.6,
+                      marginLeft: 'var(--space-4)'
+                    }}>
+                      {item.shortcut}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
 
-          <style>{`
-            @keyframes fadeIn {
-              from {
-                opacity: 0;
-                transform: scale(0.95);
+            <style>{`
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                  transform: scale(0.95);
+                }
+                to {
+                  opacity: 1;
+                  transform: scale(1);
+                }
               }
-              to {
-                opacity: 1;
-                transform: scale(1);
-              }
-            }
-          `}</style>
-        </div>,
+            `}</style>
+          </div>
+        </>,
         document.body
       )}
 

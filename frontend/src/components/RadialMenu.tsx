@@ -301,9 +301,9 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(2px)',
-          zIndex: 9999,
+          backgroundColor: 'var(--color-modal-overlay)',
+          backdropFilter: 'blur(12px)',
+          zIndex: 'var(--z-dropdown)',
           cursor: 'pointer'
         }}
         onMouseDown={(e) => {
@@ -316,12 +316,14 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
       {/* Radial Menu */}
       <div
         ref={menuRef}
+        role="menu"
+        aria-label="Context Actions Menu"
         style={{
           position: 'fixed',
           left: x,
           top: y,
           transform: 'translate(-50%, -50%)',
-          zIndex: 10000,
+          zIndex: 'calc(var(--z-dropdown) + 1)',
           width: RADIUS * 2 + ITEM_RADIUS * 2,
           height: RADIUS * 2 + ITEM_RADIUS * 2,
           pointerEvents: 'none'
@@ -348,10 +350,10 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
                 y1="50%"
                 x2={`calc(50% + ${pos.x}px)`}
                 y2={`calc(50% + ${pos.y}px)`}
-                stroke={selectedIndex === index ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'}
+                stroke={selectedIndex === index ? 'var(--color-brand-primary)' : 'var(--color-border-default)'}
                 strokeWidth={selectedIndex === index ? 2 : 1}
                 style={{
-                  transition: 'all 0.2s ease'
+                  transition: 'all var(--duration-fast) var(--ease-out)'
                 }}
               />
             );
@@ -367,13 +369,15 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
             transform: `translate(-50%, -50%) scale(${isAnimating ? 0 : 1})`,
             width: CENTER_RADIUS * 2,
             height: CENTER_RADIUS * 2,
-            borderRadius: '50%',
-            backgroundColor: 'rgba(30, 30, 40, 0.95)',
-            border: '2px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: 'var(--radius-full)',
+            backgroundColor: 'var(--color-panel-bg)',
+            border: '2px solid var(--color-border-default)',
+            boxShadow: 'var(--shadow-lg)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transition: 'transform var(--duration-base) var(--ease-spring)',
             pointerEvents: 'auto',
             cursor: 'pointer'
           }}
@@ -381,8 +385,9 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           <div style={{
             width: '8px',
             height: '8px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.8)'
+            borderRadius: 'var(--radius-full)',
+            backgroundColor: 'var(--color-brand-primary)',
+            boxShadow: 'var(--glow-accent-sm)'
           }} />
         </div>
 
@@ -394,6 +399,9 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           return (
             <div
               key={item.id}
+              role="menuitem"
+              tabIndex={0}
+              aria-label={item.label}
               style={{
                 position: 'absolute',
                 left: '50%',
@@ -401,39 +409,49 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
                 transform: `translate(-50%, -50%) translate(${pos.x}px, ${pos.y}px) scale(${isAnimating ? 0 : isSelected ? 1.15 : 1})`,
                 width: ITEM_RADIUS * 2,
                 height: ITEM_RADIUS * 2,
-                borderRadius: '50%',
-                backgroundColor: isSelected ? item.color : 'rgba(30, 30, 40, 0.95)',
-                border: `2px solid ${isSelected ? item.color : 'rgba(255, 255, 255, 0.2)'}`,
+                borderRadius: 'var(--radius-full)',
+                backgroundColor: isSelected ? item.color : 'var(--color-bg-elevated-2)',
+                border: `2px solid ${isSelected ? item.color : 'var(--color-border-default)'}`,
+                boxShadow: isSelected ? 'var(--glow-accent-md, 0 0 20px rgba(0, 255, 65, 0.6))' : 'var(--shadow-dropdown)',
+                backdropFilter: 'blur(12px)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all 0.2s ease',
+                transition: 'all var(--duration-fast) var(--ease-out)',
                 cursor: 'pointer',
                 pointerEvents: 'auto',
                 opacity: item.disabled ? 0.5 : 1,
-                animation: `fadeIn ${0.3 + index * 0.05}s ease-out`
+                animation: `fadeIn var(--duration-fast) var(--ease-out)`
               }}
               onMouseEnter={() => !item.disabled && setSelectedIndex(index)}
               onMouseLeave={() => setSelectedIndex(null)}
               onClick={() => !item.disabled && item.action()}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && !item.disabled) {
+                  e.preventDefault();
+                  item.action();
+                }
+              }}
             >
               <div style={{
-                color: isSelected ? '#fff' : 'rgba(255, 255, 255, 0.8)',
-                transition: 'color 0.2s ease'
+                color: isSelected ? 'var(--color-white)' : 'var(--color-text-secondary)',
+                transition: 'color var(--duration-fast) var(--ease-out)'
               }}>
                 {item.icon}
               </div>
               {isSelected && (
                 <div style={{
                   position: 'absolute',
-                  bottom: '-25px',
-                  fontSize: '12px',
-                  color: '#fff',
+                  bottom: '-28px',
+                  fontSize: 'var(--font-size-xs)',
+                  color: 'var(--color-tooltip-text)',
                   whiteSpace: 'nowrap',
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
+                  backgroundColor: 'var(--color-tooltip-bg)',
+                  border: '1px solid var(--color-border-subtle)',
+                  boxShadow: 'var(--shadow-tooltip)',
+                  padding: 'var(--space-1) var(--space-2)',
+                  borderRadius: 'var(--radius-tooltip)',
                   pointerEvents: 'none'
                 }}>
                   {item.label}
