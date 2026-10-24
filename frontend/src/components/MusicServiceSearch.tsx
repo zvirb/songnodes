@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import clsx from 'clsx';
+import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Badge } from './ui';
 
 interface MusicServiceTrack {
   id: string;
@@ -104,134 +105,151 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
   return (
     <div className="h-full flex flex-col">
       {/* Search Controls */}
-      <div className="flex-shrink-0 space-y-4 p-4 border-b border-dj-gray">
-        <div className="flex gap-2">
-          <input
+      <div className="flex-shrink-0 space-y-4 p-4 border-b border-[var(--color-border-subtle)]">
+        <div className="flex gap-2 items-center">
+          <Input
             type="text"
             placeholder="Search for tracks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="flex-1"
           />
-          <select
+          <Select
             value={selectedService}
-            onChange={(e) => setSelectedService(e.target.value as any)}
-            className="px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+            onValueChange={(val) => setSelectedService(val as any)}
           >
-            <option value="both">Both Services</option>
-            <option value="spotify">Spotify Only</option>
-            <option value="tidal">Tidal Only</option>
-          </select>
-          <button
+            <SelectTrigger className="w-[160px] bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-[var(--color-text-primary)]">
+              <SelectValue placeholder="Service" />
+            </SelectTrigger>
+            <SelectContent className="bg-[var(--color-bg-elevated-2)] border-[var(--color-border-default)] text-[var(--color-text-primary)]">
+              <SelectItem value="both">Both Services</SelectItem>
+              <SelectItem value="spotify">Spotify Only</SelectItem>
+              <SelectItem value="tidal">Tidal Only</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
             onClick={handleSearch}
-            disabled={isSearching || !searchQuery.trim()}
-            className="px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all disabled:opacity-50"
+            loading={isSearching}
+            disabled={!searchQuery.trim()}
+            variant="primary"
           >
-            {isSearching ? 'Searching...' : '🔍 Search'}
-          </button>
+            Search
+          </Button>
         </div>
 
         {error && (
-          <div className="bg-dj-danger bg-opacity-20 border border-dj-danger rounded p-3 text-sm">
+          <div className="bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-[var(--radius-base)] p-3 text-sm text-[var(--color-error)]">
             {error}
           </div>
         )}
 
         {selectedTracks.size > 0 && (
-          <div className="flex items-center justify-between p-3 bg-dj-black border border-dj-accent rounded">
-            <span className="text-sm">{selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected</span>
+          <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated-2)] border border-[var(--color-brand-primary)] rounded-[var(--radius-base)]">
+            <span className="text-sm text-[var(--color-text-primary)] font-medium">
+              {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
+            </span>
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={handleAddSelected}
-                className="px-3 py-1 bg-dj-accent text-black rounded text-sm hover:bg-opacity-90"
+                size="sm"
+                variant="primary"
               >
-                ➕ Add to Targets
-              </button>
-              <button
+                Add to Targets
+              </Button>
+              <Button
                 onClick={selectAll}
-                className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+                size="sm"
+                variant="secondary"
               >
                 Select All
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={clearSelection}
-                className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
+                size="sm"
+                variant="ghost"
               >
                 Clear
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </div>
 
       {/* Search Results */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+      <div className="flex-1 overflow-y-auto p-4">
         {isSearching ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dj-accent"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-brand-primary)]"></div>
           </div>
         ) : searchResults.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-[var(--color-text-tertiary)] py-8">
             {searchQuery ? 'No results found. Try a different search.' : 'Search for tracks to add to your target list'}
           </div>
         ) : (
           <div className="space-y-2">
-            {searchResults.map((track) => (
-              <div
-                key={track.id}
-                className={clsx(
-                  "bg-dj-black border rounded-lg p-3 transition-all cursor-pointer",
-                  selectedTracks.has(track.id)
-                    ? "border-dj-accent bg-dj-accent bg-opacity-10"
-                    : "border-dj-gray hover:border-dj-accent"
-                )}
-                onClick={() => toggleTrackSelection(track.id)}
-              >
-                <div className="flex items-center gap-3">
+            {searchResults.map((track) => {
+              const isSelected = selectedTracks.has(track.id);
+              return (
+                <div
+                  key={track.id}
+                  className={clsx(
+                    "bg-[var(--color-bg-elevated-1)] border rounded-[var(--radius-card)] p-3 transition-all cursor-pointer flex items-center gap-3",
+                    isSelected
+                      ? "border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-muted)]"
+                      : "border-[var(--color-card-border)] hover:border-[var(--color-border-strong)]"
+                  )}
+                  onClick={() => toggleTrackSelection(track.id)}
+                >
                   {/* Selection Checkbox */}
                   <input
                     type="checkbox"
-                    checked={selectedTracks.has(track.id)}
+                    checked={isSelected}
                     onChange={() => {}}
-                    className="rounded border-dj-gray"
+                    className="w-4 h-4 rounded border-[var(--color-border-default)] accent-[var(--color-brand-primary)] cursor-pointer"
                   />
 
                   {/* Album Art */}
-                  {track.image_url && (
+                  {track.image_url ? (
                     <img
                       src={track.image_url}
-                      alt={track.album}
-                      className="w-12 h-12 rounded"
+                      alt={track.album || track.title}
+                      className="w-12 h-12 rounded-[var(--radius-sm)] object-cover shrink-0"
                     />
+                  ) : (
+                    <div className="w-12 h-12 rounded-[var(--radius-sm)] bg-[var(--color-bg-elevated-3)] shrink-0 flex items-center justify-center text-xs text-[var(--color-text-tertiary)]">
+                      🎵
+                    </div>
                   )}
 
                   {/* Track Info */}
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{track.title}</h4>
-                    <p className="text-sm text-gray-400">{track.artist}</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm text-[var(--color-text-primary)] truncate">{track.title}</h4>
+                    <p className="text-xs text-[var(--color-text-secondary)] truncate">{track.artist}</p>
                     {track.album && (
-                      <p className="text-xs text-gray-500">{track.album}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)] truncate">{track.album}</p>
                     )}
                   </div>
 
-                  {/* Service Badge */}
-                  <div className="flex items-center gap-2">
+                  {/* Service Badge and Duration */}
+                  <div className="flex items-center gap-2 shrink-0">
                     {track.duration_ms && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[var(--color-text-tertiary)] font-mono">
                         {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}
                       </span>
                     )}
                     <span className={clsx(
-                      'px-2 py-1 rounded text-xs font-semibold uppercase',
-                      track.service === 'spotify' ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'
+                      'px-2 py-0.5 rounded-[var(--radius-badge)] text-xs font-semibold uppercase',
+                      track.service === 'spotify'
+                        ? 'bg-[#1DB954]/20 text-[#1DB954] border border-[#1DB954]/30'
+                        : 'bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/30'
                     )}>
                       {track.service}
                     </span>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

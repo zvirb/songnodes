@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from './ui';
 
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -215,87 +216,63 @@ const OAuthCallback: React.FC = () => {
     handleOAuthCallback();
   }, []);
 
+  const serviceTitle = service.charAt(0).toUpperCase() + service.slice(1);
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      backgroundColor: '#1a1a1a',
-      color: '#ffffff',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      padding: '20px'
-    }}>
-      <div style={{
-        textAlign: 'center',
-        maxWidth: '500px',
-        padding: '40px',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.1)'
-      }}>
-        {/* Status Icon */}
-        <div style={{ fontSize: '64px', marginBottom: '20px' }}>
-          {status === 'processing' && '⏳'}
-          {status === 'success' && '✅'}
-          {status === 'error' && '❌'}
-        </div>
+    <div className="fixed inset-0 bg-[var(--color-bg-base)] text-[var(--color-text-primary)] flex items-center justify-center p-4 z-50">
+      <Card className="w-full max-w-md bg-[var(--color-card-bg)] border border-[var(--color-card-border)] shadow-[var(--shadow-modal)] text-[var(--color-text-primary)] p-6 text-center">
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center mb-3">
+            {status === 'processing' && (
+              <Badge variant="default" size="lg" className="animate-pulse">
+                Authenticating...
+              </Badge>
+            )}
+            {status === 'success' && (
+              <Badge variant="success" size="lg">
+                Connected
+              </Badge>
+            )}
+            {status === 'error' && (
+              <Badge variant="error" size="lg">
+                Authentication Error
+              </Badge>
+            )}
+          </div>
 
-        {/* Title */}
-        <h1 style={{ margin: '0 0 16px 0', fontSize: '24px' }}>
-          {status === 'processing' && `Authenticating with ${service.charAt(0).toUpperCase() + service.slice(1)}`}
-          {status === 'success' && 'Authentication Successful!'}
-          {status === 'error' && 'Authentication Failed'}
-        </h1>
+          <CardTitle className="text-xl font-bold text-[var(--color-text-primary)]">
+            {status === 'processing' && `Connecting to ${serviceTitle}`}
+            {status === 'success' && 'Authentication Successful!'}
+            {status === 'error' && 'Authentication Failed'}
+          </CardTitle>
+        </CardHeader>
 
-        {/* Message */}
-        <p style={{ margin: 0, fontSize: '16px', color: '#8E8E93', lineHeight: 1.5 }}>
-          {message}
-        </p>
+        <CardContent className="pt-2 text-center space-y-6">
+          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            {message}
+          </p>
 
-        {/* Loading Spinner */}
-        {status === 'processing' && (
-          <div style={{
-            marginTop: '24px',
-            width: '40px',
-            height: '40px',
-            border: '4px solid rgba(255,255,255,0.1)',
-            borderTop: '4px solid #1DB954',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '24px auto 0'
-          }} />
-        )}
+          {/* Loader Spinner */}
+          {status === 'processing' && (
+            <div className="flex justify-center py-2">
+              <div className="w-10 h-10 border-4 border-[var(--color-bg-elevated-3)] border-t-[var(--color-brand-primary)] rounded-full animate-spin" />
+            </div>
+          )}
 
-        {/* Manual close button for errors */}
-        {status === 'error' && (
-          <button
-            onClick={() => window.opener ? window.close() : window.location.href = '/'}
-            style={{
-              marginTop: '24px',
-              padding: '10px 20px',
-              backgroundColor: '#4A90E2',
-              border: 'none',
-              borderRadius: '6px',
-              color: '#ffffff',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}
-          >
-            Close Window
-          </button>
-        )}
-      </div>
-
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
+          {/* Manual close button for errors */}
+          {status === 'error' && (
+            <div className="pt-2">
+              <Button
+                onClick={() => (window.opener ? window.close() : (window.location.href = '/'))}
+                variant="primary"
+                fullWidth
+              >
+                Close Window
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
