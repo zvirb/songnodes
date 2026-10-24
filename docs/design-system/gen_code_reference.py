@@ -276,7 +276,7 @@ def fallback(comp):
     src = p.read_text(encoding="utf-8")
     body = re.search(r"<body>(.*)</body>", src, re.S)
     body = body.group(1) if body else src
-    body = re.sub(r"<script\b.*?</script>", "", body, flags=re.S | re.I)
+    body = re.sub(r"<script\b.*?</script[^>]*>", "", body, flags=re.S | re.I)
     body = re.sub(r'\s*<div class="sn-preview__label"[^>]*>.*?</div>', "", body, flags=re.S)
     m = re.match(r'\s*<div class="sn-preview[^"]*"[^>]*>(.*)</div>\s*$', body, re.S)
     inner = m.group(1) if m else body
