@@ -1,53 +1,30 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+
+// Styles, in order (design-system/17-governance: tokens.css, then bundle.css, then app CSS).
+// 1. Legacy stylesheets, kept only until migration phase 6 removes them.
 import './styles/tokens.css';
 import './styles/globals.css';
+import './styles/global.css';
+// 2. The design system: single source of truth for every formatting and design decision.
+import './styles/design-system/tokens.css';
+import './styles/design-system/bundle.css';
+// 3. Legacy variable names re-pointed at design-system tokens, then app-level layout.
+import './styles/legacy-aliases.css';
+import './styles/app.css';
+// 4. window.SongNodes helpers (format, camelot, compat, status, prefs, icons).
+import { SN } from './lib/songnodes';
+import App from './App';
 
-// Disable right-click context menu for cleaner UX
+SN.prefs.init();
+
+// Right-click on the graph canvas opens the app's own context menu, not the browser's.
 document.addEventListener('contextmenu', (e) => {
-  if (e.target instanceof HTMLCanvasElement) {
-    e.preventDefault();
-  }
+  if (e.target instanceof HTMLCanvasElement) e.preventDefault();
 });
 
-// Prevent zoom on mobile double-tap
-let lastTouchEnd = 0;
-document.addEventListener('touchend', (e) => {
-  const now = Date.now();
-  if (now - lastTouchEnd <= 300) {
-    e.preventDefault();
-  }
-  lastTouchEnd = now;
-}, { passive: false });
-
-// Performance monitoring
-const startTime = performance.now();
-
-// Hide loading screen once React app is ready
-function hideLoadingScreen() {
-  const loader = document.getElementById('loading');
-  if (loader) {
-    loader.style.opacity = '0';
-    loader.style.transition = 'opacity 0.3s ease-out';
-    setTimeout(() => {
-      loader.style.display = 'none';
-    }, 300);
-  }
-
-  // Performance metrics tracked silently
-}
-
-// Mount the app
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
-
-// Hide loading screen after initial render
-setTimeout(hideLoadingScreen, 100);

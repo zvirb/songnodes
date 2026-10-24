@@ -1,0 +1,281 @@
+<!-- @dsCard group="Charts" height=655 subtitle="Key × energy library coverage and plays-by-day calendar per show; single-hue ramp with min and max; counts on focus; arrow-key cell navigation" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Heatmap — preview</title>
+<style>
+  .pv-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+  @media (max-width: 760px) { .pv-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-grid">
+    <section class="sn-card sn-m-harmony">
+      <figure class="sn-chart-frame sn-heatmap" aria-labelledby="kTitle">
+        <div class="sn-chart-frame__head">
+          <div class="sn-chart-frame__titles">
+            <h3 class="sn-title title-s" id="kTitle"><span class="sn-lead">Key &amp; mood:</span> Library coverage</h3>
+            <p class="sn-chart-frame__sub">Tracks per Camelot key and energy · 1,284 tracks</p>
+          </div>
+        </div>
+        <div class="sn-row" style="justify-content: space-between">
+          <span class="sn-heatmap__ramp" id="kRamp"></span>
+        </div>
+        <div class="sn-chart-frame__plot" id="kPlot"></div>
+        <p class="sn-heatmap__readout" id="kRead" aria-live="polite"></p>
+      </figure>
+    </section>
+    <section class="sn-card sn-m-sources">
+      <figure class="sn-chart-frame sn-heatmap" aria-labelledby="cTitle">
+        <div class="sn-chart-frame__head">
+          <div class="sn-chart-frame__titles">
+            <h3 class="sn-title title-s" id="cTitle"><span class="sn-lead">Sources:</span> Plays by day</h3>
+            <p class="sn-chart-frame__sub">Library tracks played per episode · 12 weeks, 3 Aug – 24 Oct 2026</p>
+          </div>
+        </div>
+        <div class="sn-row" role="group" aria-label="Show" id="cShows"></div>
+        <span class="sn-heatmap__ramp" id="cRamp"></span>
+        <div class="sn-chart-frame__plot" id="cPlot"></div>
+        <p class="sn-heatmap__readout" id="cRead" aria-live="polite"></p>
+      </figure>
+    </section>
+  </div>
+</div>
+<script>
+/* chart kit (inlined into each chart preview by build.py; React apps use d3-scale/recharts instead) */
+var K = (function () {
+  var NS = "http://www.w3.org/2000/svg", n = 0;
+  function el(tag, a, parent) {
+    var e = document.createElementNS(NS, tag);
+    if (a) for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(parent, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), parent); t.textContent = s; return t; }
+  function h(tag, cls, s) { var e = document.createElement(tag); if (cls) e.className = cls; if (s != null) e.textContent = s; return e; }
+  function uid(p) { n += 1; return (p || "k") + n; }
+  /** one linear scale per axis: domain -> range, with nice ticks */
+  function linear(d0, d1, r0, r1) {
+    var f = function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); };
+    f.invert = function (px) { return d0 + (px - r0) / (r1 - r0) * (d1 - d0); };
+    f.ticks = function (step) { var o = []; for (var v = Math.ceil(d0 / step) * step; v <= d1 + 1e-9; v += step) o.push(+v.toFixed(6)); return o; };
+    f.domain = [d0, d1]; f.range = [r0, r1];
+    return f;
+  }
+  /** band scale for categories: index -> left edge of the mark, with a capped mark width */
+  function band(count, r0, r1, pad, cap) {
+    var step = (r1 - r0) / count, bw = Math.min(step * (1 - pad), cap || Infinity);
+    var f = function (i) { return r0 + i * step + (step - bw) / 2; };
+    f.mid = function (i) { return r0 + i * step + step / 2; };
+    f.index = function (px) { return Math.max(0, Math.min(count - 1, Math.floor((px - r0) / step))); };
+    f.bw = bw; f.step = step;
+    return f;
+  }
+  /** column with a 4px rounded data end and a square baseline */
+  function barPath(x, y, w, hgt, r) {
+    if (hgt <= 0) return "";
+    r = Math.min(r == null ? 4 : r, w / 2, hgt);
+    return "M" + x + "," + (y + hgt) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + hgt) + "Z";
+  }
+  /** diagonal hatch pattern for simulated / preview data (stroke = --sim via class) */
+  function hatch(svg) {
+    var id = uid("hatch"), defs = svg.querySelector("defs") || el("defs", null, svg);
+    var p = el("pattern", { id: id, patternUnits: "userSpaceOnUse", width: 6, height: 6, patternTransform: "rotate(45)" }, defs);
+    el("line", { x1: 0, y1: 0, x2: 0, y2: 6, "class": "sn-chart-frame__hatch" }, p);
+    return "url(#" + id + ")";
+  }
+  function rem() { return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; }
+  /** one tooltip per chart; rows = [{key:"line"|"rect"|"dot"|"", c:"var(--chart-1)", value, label, dash}] */
+  function tip(host) {
+    var d = h("div", "sn-chart-frame__tip"); d.setAttribute("role", "presentation"); d.hidden = true; host.appendChild(d);
+    return {
+      show: function (x, y, title, rows) {
+        d.textContent = "";
+        if (title) d.appendChild(h("div", "sn-chart-frame__tip-title", title));
+        (rows || []).forEach(function (r) {
+          var row = h("div", "sn-chart-frame__tip-row");
+          var k = h("span", "sn-chart-frame__tip-key" + (r.key ? " sn-chart-frame__tip-key--" + r.key : ""));
+          if (r.c) k.style.setProperty("--c", r.c);
+          if (r.dash) k.classList.add("sn-chart-frame__tip-key--dash");
+          row.appendChild(k);
+          row.appendChild(h("span", "sn-chart-frame__tip-value", r.value));
+          row.appendChild(h("span", "sn-chart-frame__tip-label", r.label));
+          d.appendChild(row);
+        });
+        d.hidden = false;
+        var hw = host.clientWidth, tw = d.offsetWidth, th = d.offsetHeight;
+        var left = x + 14; if (left + tw > hw - 4) left = Math.max(4, x - tw - 14);
+        var top = Math.max(4, y - th - 10);
+        d.style.left = left + "px"; d.style.top = top + "px";
+      },
+      hide: function () { d.hidden = true; }
+    };
+  }
+  /** one tab stop per plot: arrows / Home / End move the active index; pointer maps x -> index */
+  function nav(target, count, pxToIndex, onIndex, opts) {
+    opts = opts || {}; var cur = -1;
+    function set(i) { if (i == null || i < 0) { cur = -1; onIndex(-1); return; } cur = Math.max(0, Math.min(count - 1, i)); onIndex(cur); }
+    target.addEventListener("keydown", function (e) {
+      var k = e.key, i = cur < 0 ? (opts.start || 0) : cur;
+      if (k === "ArrowRight" || k === "ArrowUp") i = cur < 0 ? i : i + 1;
+      else if (k === "ArrowLeft" || k === "ArrowDown") i = cur < 0 ? i : i - 1;
+      else if (k === "Home") i = 0; else if (k === "End") i = count - 1;
+      else if (k === "Escape") { set(-1); return; } else return;
+      e.preventDefault(); set(i);
+    });
+    target.addEventListener("focus", function () { if (cur < 0) set(opts.start || 0); });
+    target.addEventListener("blur", function () { set(-1); });
+    target.addEventListener("pointermove", function (e) { var b = target.getBoundingClientRect(); set(pxToIndex(e.clientX - b.left, e.clientY - b.top)); });
+    target.addEventListener("pointerleave", function () { if (document.activeElement !== target) set(-1); });
+    return { set: set, get: function () { return cur; } };
+  }
+  /** re-render on container resize (charts are drawn at 1 user unit = 1 CSS px) */
+  function fit(host, draw) {
+    var w = 0;
+    function go() { var nw = host.clientWidth; if (nw && Math.abs(nw - w) > 1) { w = nw; draw(nw); } }
+    if (window.ResizeObserver) new ResizeObserver(go).observe(host);
+    go();
+  }
+  /** "View as table" toggle: swaps plot and table, keeps focus on the button */
+  function tableToggle(btn, plot, table) {
+    var S = window.SongNodes;
+    function paint(on) { btn.innerHTML = S.icon(on ? "chart-line" : "table-2") + (on ? "View as chart" : "View as table"); }
+    paint(false);
+    btn.addEventListener("click", function () { var on = table.hidden; table.hidden = !on; plot.hidden = on; paint(on); });
+  }
+  return { el: el, text: text, h: h, uid: uid, linear: linear, band: band, barPath: barPath, hatch: hatch, rem: rem, tip: tip, nav: nav, fit: fit, tableToggle: tableToggle };
+})();
+
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var BINS = [0, 1, 4, 8, 13, 19, 26]; // lower bounds of steps 0..6
+  function step(n) { var s = 0; for (var i = 0; i < BINS.length; i++) if (n >= BINS[i]) s = i; return s; }
+  function ramp(el, min, max, none) {
+    el.innerHTML = "<span>" + min + '</span><span class="sn-heatmap__ramp-steps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>' + max + "</span>" +
+      (none ? '<span class="sn-heatmap__ramp-none">' + none + "</span>" : "");
+    el.setAttribute("aria-label", "Colour scale from " + min + " to " + max + (none ? ". Dashed outline: " + none : ""));
+  }
+
+  /** grid heatmap: rows × cols of rect cells, roving focus, arrow keys, counts on focus */
+  function heat(host, read, cfg) {
+    var rem = K.rem(), cw = cfg.cw, ch = cfg.ch, lw = cfg.lw, top = cfg.top;
+    var gapX = function (c) { var g = 0; (cfg.gapsAfter || []).forEach(function (a) { if (c > a) g += 4; }); return g; };
+    var W = lw + cfg.cols.length * cw + gapX(cfg.cols.length) + 2, H = top + cfg.rows.length * ch + 2;
+    host.textContent = "";
+    var svg = K.el("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, role: "grid", "aria-labelledby": cfg.labelledby, "aria-describedby": cfg.labelledby + "h", style: "max-width:100%;width:" + W + "px" }, host);
+    K.el("desc", { id: cfg.labelledby + "h" }, svg).textContent = "Use the arrow keys to move between cells. Home and End jump to the start and end of a row.";
+    var head = K.el("g", { role: "row" }, svg);
+    K.text(head, 0, top - 6, cfg.corner, { role: "columnheader", "class": "sn-chart-frame__axis-title" });
+    cfg.cols.forEach(function (c, j) { if (c.label) K.text(head, lw + j * cw + gapX(j) + cw / 2, top - 6, c.label, { "class": "sn-chart-frame__tick", "text-anchor": "middle", role: "columnheader", "aria-label": c.aria || c.label }); });
+    (cfg.colGroups || []).forEach(function (g) { K.text(svg, lw + g.at * cw + gapX(g.at), top - rem * 1.35, g.label, { "class": "sn-chart-frame__axis-title", "aria-hidden": "true" }); });
+    var cells = [], ring = K.el("rect", { "class": "sn-heatmap__ring", visibility: "hidden", rx: 3 }), count = K.el("text", { "class": "sn-heatmap__count", visibility: "hidden" });
+    cfg.rows.forEach(function (r, i) {
+      var g = K.el("g", { role: "row" }, svg), y = top + i * ch;
+      var rh = K.el("g", { role: "rowheader", "aria-label": r.aria || r.label }, g);
+      if (r.key) { K.el("circle", { cx: 5, cy: y + ch / 2, r: 4, "class": "sn-heatmap__key-dot", "data-key": r.key }, rh); }
+      if (r.label) K.text(rh, r.key ? 14 : 0, y + ch / 2 + 4, r.label, { "class": "sn-heatmap__row-label", "aria-hidden": "true" });
+      cells.push(cfg.cols.map(function (c, j) {
+        var v = cfg.value(i, j), x = lw + j * cw + gapX(j);
+        var a = { x: x + 1, y: y + 1, width: cw - 2, height: ch - 2, rx: 2, "class": "sn-heatmap__cell", role: "gridcell", tabindex: -1, "aria-label": cfg.describe(i, j, v) };
+        if (v === null) a["data-none"] = ""; else if (v === "future") a["data-future"] = ""; else a["data-step"] = step(v);
+        var rect = K.el("rect", a, g); rect._v = v; rect._rc = [i, j];
+        return rect;
+      }));
+    });
+    svg.appendChild(ring); svg.appendChild(count);
+    var cur = cfg.start || [0, 0];
+    cells[cur[0]][cur[1]].setAttribute("tabindex", 0);
+    function show(rect, focus) {
+      if (!rect) { ring.setAttribute("visibility", "hidden"); count.setAttribute("visibility", "hidden"); return; }
+      var x = +rect.getAttribute("x"), y = +rect.getAttribute("y"), w = +rect.getAttribute("width"), h = +rect.getAttribute("height");
+      ring.setAttribute("x", x - 1); ring.setAttribute("y", y - 1); ring.setAttribute("width", w + 2); ring.setAttribute("height", h + 2);
+      ring.setAttribute("class", "sn-heatmap__ring" + (focus ? " sn-heatmap__ring--focus" : "")); ring.setAttribute("visibility", "visible");
+      var v = rect._v;
+      if (typeof v === "number" && ch >= 14) {
+        count.textContent = v; count.setAttribute("x", x + w / 2); count.setAttribute("y", y + h / 2 + 3.5);
+        count.style.fill = step(v) >= 5 ? "var(--on-brand)" : "var(--fg)";
+        count.setAttribute("visibility", "visible");
+      } else count.setAttribute("visibility", "hidden");
+      read.innerHTML = cfg.readout(rect._rc[0], rect._rc[1], v);
+    }
+    svg.addEventListener("focusin", function (e) { if (e.target._rc) { cur = e.target._rc; show(e.target, true); } });
+    svg.addEventListener("focusout", function () { show(null); read.innerHTML = cfg.idle; });
+    svg.addEventListener("pointerover", function (e) { if (e.target._rc) show(e.target, false); });
+    svg.addEventListener("pointerleave", function () { var a = document.activeElement; if (a && a._rc) show(a, true); else { show(null); read.innerHTML = cfg.idle; } });
+    svg.addEventListener("keydown", function (e) {
+      var r = cur[0], c = cur[1], R = cells.length, C = cells[0].length;
+      if (e.key === "ArrowRight") c = Math.min(C - 1, c + 1); else if (e.key === "ArrowLeft") c = Math.max(0, c - 1);
+      else if (e.key === "ArrowDown") r = Math.min(R - 1, r + 1); else if (e.key === "ArrowUp") r = Math.max(0, r - 1);
+      else if (e.key === "Home") c = 0; else if (e.key === "End") c = C - 1; else return;
+      e.preventDefault();
+      cells[cur[0]][cur[1]].setAttribute("tabindex", -1);
+      cur = [r, c]; var n = cells[r][c]; n.setAttribute("tabindex", 0); n.focus();
+    });
+    read.innerHTML = cfg.idle;
+  }
+
+  /* ---------- key × energy ---------- */
+  var keys = []; for (var k = 1; k <= 12; k++) { keys.push(k + "A"); keys.push(k + "B"); }
+  var keyW = { 1: 0.7, 2: 0.6, 3: 0.55, 4: 0.9, 5: 1.0, 6: 1.1, 7: 1.15, 8: 1.3, 9: 1.1, 10: 1.0, 11: 0.85, 12: 0.75 };
+  var eW = [0.15, 0.3, 0.55, 0.8, 1.0, 1.0, 0.95, 0.85, 0.55, 0.25];
+  var kv = keys.map(function (key, i) {
+    var num = parseInt(key, 10), minor = key.slice(-1) === "A";
+    return eW.map(function (w, j) { var v = Math.round(26 * keyW[num] * w * (minor ? 1.25 : 0.45) + ((i * 7 + j * 3) % 5) - 2); return Math.max(0, v); });
+  });
+  var kmax = Math.max.apply(null, kv.map(function (r) { return Math.max.apply(null, r); }));
+  ramp(document.getElementById("kRamp"), 0, kmax);
+  var kRead = document.getElementById("kRead");
+  heat(document.getElementById("kPlot"), kRead, {
+    labelledby: "kTitle", corner: "Key", cw: 30, ch: 17, lw: 46, top: 40, gapsAfter: [3, 6], start: [14, 6],
+    rows: keys.map(function (c) { return { label: c, key: c, aria: c + " " + S.keyName(c) }; }),
+    cols: eW.map(function (_, j) { return { label: String(j + 1), aria: "Energy " + (j + 1) }; }),
+    colGroups: [{ at: 0, label: "Low" }, { at: 4, label: "Building" }, { at: 7, label: "High" }],
+    value: function (i, j) { return kv[i][j]; },
+    describe: function (i, j, v) { return keys[i] + " " + S.keyName(keys[i]) + ", energy " + (j + 1) + ": " + F.count(v) + (v === 1 ? " track" : " tracks"); },
+    readout: function (i, j, v) { return S.html.key(keys[i], true) + " · energy <b>" + (j + 1) + "</b>: <b>" + F.count(v) + "</b> " + (v === 1 ? "track" : "tracks") + (v === 0 ? ". A gap worth filling" : ""); },
+    idle: "Hover or focus a cell for its count. Stronger lavender means more tracks."
+  });
+
+  /* ---------- calendar: plays by day by show ---------- */
+  var shows = [{ id: "all", name: "All shows" }, { id: "pbs", name: "PBS Soul Time", day: 1 }, { id: "rrr", name: "3RRR Superfreak", day: 4 }, { id: "jjj", name: "triple j Mix Up", day: 5 }];
+  var start = new Date(2026, 7, 3), today = new Date(2026, 9, 24);
+  var DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function plays(showId, w, d) {
+    var s = shows.filter(function (x) { return x.id === showId; })[0];
+    if (s.id === "all") { var hit = shows.slice(1).filter(function (x) { return x.day === d; })[0]; return hit ? plays(hit.id, w, d) : null; }
+    if (d !== s.day) return null;
+    if (s.id === "pbs" && w === 6) return null; // no episode (station fundraiser)
+    return [3, 5, 4, 7, 6, 9, 0, 8, 11, 10, 13, 15][(w + (s.id === "rrr" ? 3 : s.id === "jjj" ? 6 : 0)) % 12] + (s.id === "jjj" ? 3 : 0);
+  }
+  var cur = "all", cRead = document.getElementById("cRead");
+  function drawCal() {
+    var cmax = 0;
+    for (var w = 0; w < 12; w++) for (var d = 0; d < 7; d++) { var v = plays(cur, w, d); if (typeof v === "number" && v > cmax) cmax = v; }
+    ramp(document.getElementById("cRamp"), 0, cmax, "No episode");
+    var cols = [], groups = [];
+    for (var w2 = 0; w2 < 12; w2++) {
+      var dt = new Date(start.getTime() + w2 * 7 * 864e5);
+      cols.push({ label: w2 % 2 === 0 ? String(dt.getDate()) : "", aria: "Week of " + dt.getDate() + " " + MON[dt.getMonth()] });
+      if (w2 === 0 || new Date(start.getTime() + (w2 - 1) * 7 * 864e5).getMonth() !== dt.getMonth()) groups.push({ at: w2, label: MON[dt.getMonth()] });
+    }
+    function dateOf(r, c) { return new Date(start.getTime() + (c * 7 + r) * 864e5); }
+    heat(document.getElementById("cPlot"), cRead, {
+      labelledby: "cTitle", corner: "Day", cw: 22, ch: 22, lw: 34, top: 40, start: [5, 11],
+      rows: DAYS.map(function (d) { return { label: d, aria: d }; }), cols: cols, colGroups: groups,
+      value: function (r, c) { var dt = dateOf(r, c); if (dt > today) return "future"; return plays(cur, c, r); },
+      describe: function (r, c, v) { var dt = dateOf(r, c); return S.format.day(dt) + ": " + (v === "future" ? "not yet" : v === null ? "no episode" : v + " library tracks played"); },
+      readout: function (r, c, v) { var dt = dateOf(r, c); return "<b>" + S.format.day(dt) + "</b> · " + (v === "future" ? "not yet aired" : v === null ? "no episode" : "<b>" + v + "</b> library tracks played"); },
+      idle: "Hover or focus a day for its count. Dashed outline: no episode that day."
+    });
+  }
+  var seg = document.getElementById("cShows");
+  seg.innerHTML = shows.map(function (s) { return '<button class="sn-chip" type="button" aria-pressed="' + (s.id === cur) + '" data-id="' + s.id + '">' + S.esc(s.name) + "</button>"; }).join("");
+  seg.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return; cur = b.getAttribute("data-id");
+    seg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); drawCal();
+  });
+  drawCal();
+})();
+</script>
+</body>
+</html>

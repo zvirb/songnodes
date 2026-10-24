@@ -1,0 +1,41 @@
+<!-- @dsCard group="Charts" height=332 subtitle="Sizes 24, 40 and 64; value in the centre from 40 up; label beside; empty and complete" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ProgressRing — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Sizes · 24 inline, 40 in cards, 64 on hub tiles</div>
+  <div class="sn-preview__row" id="sizes" style="gap: var(--space-8)"></div>
+  <div class="sn-preview__label">In context · tonal module cards</div>
+  <div class="sn-preview__row" id="ctx" style="align-items: stretch"></div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var SW = { 24: 3, 40: 4, 64: 6 };
+  /** ring(value 0–1, size, label, detail) -> HTML */
+  function ring(p, size, label, detail) {
+    var sw = SW[size], r = (size - sw) / 2, c = 2 * Math.PI * r, pct = Math.round(p * 100);
+    var svg = '<svg class="sn-progress-ring__svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + " " + size + '" aria-hidden="true">' +
+      '<circle class="sn-progress-ring__track" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke-width="' + sw + '"/>' +
+      (p > 0 ? '<circle class="sn-progress-ring__fill" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke-width="' + sw + '" stroke-dasharray="' + c.toFixed(2) + '" stroke-dashoffset="' + (c * (1 - p)).toFixed(2) + '"/>' : "") + "</svg>";
+    return '<span class="sn-progress-ring sn-progress-ring--' + size + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="' + S.esc(label) + '"' + (detail ? ' aria-valuetext="' + S.esc(pct + "%, " + detail) + '"' : "") + ">" +
+      '<span class="sn-progress-ring__box">' + svg + (size >= 40 ? '<span class="sn-progress-ring__value" aria-hidden="true">' + pct + (size >= 64 ? "%" : "") + "</span>" : "") + "</span>" +
+      '<span class="sn-progress-ring__text"><b>' + S.esc(label) + "</b><span>" + (size < 40 ? pct + "% · " : "") + S.esc(detail || "") + "</span></span></span>";
+  }
+  document.getElementById("sizes").innerHTML =
+    ring(0.72, 24, "Target tracks found", "36 of 50") +
+    ring(0.48, 40, "Library keyed", "616 of 1,284 tracks") +
+    ring(0.72, 64, "Target tracks found", "36 of 50 this month");
+  function card(mod, title, inner) {
+    return '<section class="sn-card sn-card--tonal sn-card--compact sn-m-' + mod + '" style="min-width: 240px; flex: 1">' +
+      '<div class="sn-card__head">' + S.icon(S.module(mod).icon, { cls: "sn-m-icon" }) + '<span class="body-strong">' + title + "</span></div>" + inner + "</section>";
+  }
+  document.getElementById("ctx").innerHTML =
+    card("sources", "Target tracks", ring(0.72, 40, "Found", "36 of 50 · 14 still missing")) +
+    card("harmony", "Key coverage", ring(0.48, 40, "Keyed", "616 of 1,284 · run key analysis")) +
+    card("pipeline", "Audio analysis", ring(0, 40, "Not started", "Queued for 22:00") + ring(1, 24, "Beat grids", "Done for all 1,284"));
+})();
+</script>
+</body>
+</html>

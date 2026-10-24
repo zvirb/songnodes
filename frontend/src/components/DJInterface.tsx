@@ -529,10 +529,10 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
-        backgroundColor: '#0A0A0A',
-        color: '#FFFFFF',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        height: '100%',
+        backgroundColor: 'var(--bg)',
+        color: 'var(--fg)',
+        fontFamily: 'var(--font-body)'
       }}
     >
       <style>

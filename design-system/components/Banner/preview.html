@@ -1,0 +1,49 @@
+<!-- @dsCard group="Feedback" height=532 subtitle="Under a page header; warn, info, ok (dismissible) and bad (not dismissible); one per page" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Banner — preview</title>
+<style>
+  .page { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); }
+  .page__head { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; background: var(--surface-1); border-bottom: 1px solid var(--line); }
+  .page__body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="page">
+    <div class="page__head" id="head"></div>
+    <div class="page__body" id="b1"></div>
+  </div>
+  <div class="sn-preview__label">Other kinds (each shown alone on its own page)</div>
+  <div class="sn-stack" id="more"></div>
+</div>
+<script>
+  var S = window.SongNodes, I = S.icon;
+  var ICON = { ok: "circle-check", warn: "triangle-alert", bad: "circle-x", info: "info" };
+  function banner(o) {
+    return '<div class="sn-banner" data-status="' + o.status + '" role="' + (o.status === "bad" ? "alert" : "status") + '" id="' + o.id + '">' +
+      '<span class="sn-banner__icon">' + I(ICON[o.status]) + '</span>' +
+      '<div class="sn-banner__body"><p class="sn-banner__content"><span class="sn-banner__title">' + o.title + '</span>' + o.text + '</p>' +
+      (o.actions ? '<div class="sn-banner__actions">' + o.actions + '</div>' : "") + '</div>' +
+      (o.dismiss ? '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-banner__dismiss" type="button" aria-label="Dismiss: ' + o.dismiss + '" data-dismiss="' + o.id + '">' + I("x") + '</button>' : '<span></span>') +
+      '</div>';
+  }
+  document.getElementById("head").innerHTML = '<button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="Open menu">' + I("menu") + '</button>' + S.html.title("Set builder", "Peak time Friday", "title-s");
+  document.getElementById("b1").innerHTML = banner({ id: "bn1", status: "warn", title: "Sets are shaped on energy alone.",
+    text: " Only 611 of 1,284 tracks have a key and BPM so far. The rest are placed by energy until the next weekly build adds them.",
+    actions: '<button class="sn-btn sn-btn--sm" type="button">Show tracks without a key</button>', dismiss: "key and BPM notice" }) +
+    '<div class="sn-card sn-card--flat"><span class="sn-dim">Running order, energy wave and transitions sit below the banner.</span></div>';
+  document.getElementById("more").innerHTML =
+    banner({ id: "bn2", status: "bad", title: "TIDAL is disconnected.", text: " Sets can’t be sent on Saturday’s weekly run until you reconnect.",
+      actions: '<span class="sn-m-services"><button class="sn-btn sn-btn--sm sn-btn--mod" type="button">Reconnect TIDAL</button></span>' }) +
+    banner({ id: "bn3", status: "info", title: "Next weekly build: Sat 31 Oct, 06:00.", text: " Radio plays from PBS, 3RRR and triple j until Friday night are included.", dismiss: "weekly build notice" }) +
+    banner({ id: "bn4", status: "ok", title: "This week’s build is in.", text: " 48 new tracks and 12 new edges were added to the crate.",
+      actions: '<button class="sn-btn sn-btn--sm" type="button">See new tracks</button>', dismiss: "build finished notice" });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-dismiss]"); if (!b) return;
+    var el = document.getElementById(b.getAttribute("data-dismiss")); el.hidden = true;
+    document.getElementById("head").querySelector("button").focus();
+  });
+</script>
+</body>
+</html>

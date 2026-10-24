@@ -1,0 +1,45 @@
+<!-- @dsCard group="Inputs" height=365 subtitle="Native select for short lists: default, inline sort, help, error, disabled; when to switch to a searchable combobox" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SelectField — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-5) var(--space-6); }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-grid">
+    <div class="sn-field sn-select-field">
+      <label for="sf-heard">Heard on</label>
+      <select class="sn-select" id="sf-heard">
+        <option value="">Any show</option><option>PBS Soul Time</option><option selected>3RRR Superfreak</option><option>triple j Mix Up</option><option>ARIA Club Chart</option>
+      </select>
+    </div>
+    <div class="sn-field sn-select-field">
+      <label for="sf-shape">Set shape</label>
+      <span class="sn-field__help" id="sf-shape-help">Sets the target energy wave.</span>
+      <select class="sn-select" id="sf-shape" aria-describedby="sf-shape-help">
+        <option>Journey, two peaks</option><option selected>Peak time, three waves</option><option>Warm-up opener</option><option>Closing</option><option>Steady groove</option>
+      </select>
+    </div>
+    <div class="sn-field sn-select-field">
+      <label for="sf-pool">Track pool</label>
+      <select class="sn-select" id="sf-pool" aria-invalid="true" aria-describedby="sf-pool-err">
+        <option value="" selected>Choose a pool</option><option>Whole library</option><option>High rotation only</option><option>Played on 2+ shows</option>
+      </select>
+      <span class="sn-field__error" id="sf-pool-err">Choose a track pool to build the set from.</span>
+    </div>
+    <div class="sn-field sn-select-field">
+      <label for="sf-src">Spotify playlist</label>
+      <select class="sn-select" id="sf-src" disabled aria-describedby="sf-src-why"><option>Connect Spotify first</option></select>
+      <span class="sn-field__help" id="sf-src-why">Connect Spotify in Services to list your playlists.</span>
+    </div>
+  </div>
+  <div class="sn-preview__row" style="justify-content: space-between; border-top: 1px solid var(--line); padding-top: var(--space-3)">
+    <div class="sn-field sn-select-field sn-select-field--inline">
+      <label for="sf-sort">Sort by</label>
+      <select class="sn-select" id="sf-sort"><option>Last heard</option><option>Energy</option><option>BPM</option><option>Key</option><option>Artist</option></select>
+    </div>
+    <p class="body-s sn-dim" style="margin:0; max-width: 46ch">More than about 15 options, or names you would rather type (artists, labels)? Use a searchable combobox instead.</p>
+  </div>
+</div>
+</body>
+</html>

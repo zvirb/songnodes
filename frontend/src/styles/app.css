@@ -1,0 +1,18 @@
+/*
+ * App-level layout for the SongNodes shell. Tokens and classes only: every value
+ * here is a design-system token (design-system/tokens.css). No hex, no px font sizes.
+ */
+
+/* The legacy stylesheets locked the page to the viewport for the old full-screen
+   DJ interface. Pages now scroll; only the graph route fills the viewport. */
+html, body { height: auto; min-height: 100%; overflow: auto; }
+body { position: static; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+#root { height: auto; min-height: 100vh; width: auto; overflow: visible; isolation: isolate; }
+svg.sn-icon { display: inline-block; }
+
+.sn-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Graph route: the DJ interface fills the space under the 56px AppHeader. */
+.sn-graph-route { position: relative; height: calc(100dvh - var(--header-h)); min-height: 0; overflow: hidden; }
+.sn-graph-route > .dj-interface { height: 100%; }
+.sn-graph-route__loading { display: flex; align-items: center; justify-content: center; gap: var(--space-3); height: 100%; color: var(--fg-2); }

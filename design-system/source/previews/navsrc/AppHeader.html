@@ -1,0 +1,67 @@
+<!-- @dsCard group="Navigation" height=520 subtitle="Desktop library page, graph page with Play/Plan switch, 400px phone; hamburger opens the drawer, overflow menu works" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AppHeader — preview</title>
+<style>
+  .stage { position: relative; border: 1px solid var(--line); }
+  .phone { position: relative; width: 400px; max-width: 100%; border: 1px solid var(--line); }
+  .faux { padding: 16px; color: var(--fg-3); font-size: 0.8125rem; min-height: 40px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root" style="position:relative">
+  <div class="sn-preview__label" data-drawer-inert>Desktop · Library page</div>
+  <div class="stage" style="z-index:3" data-drawer-inert id="h1"></div>
+  <div class="sn-preview__label" data-drawer-inert>Desktop · Graph page with the Play/Plan switch</div>
+  <div class="stage" style="z-index:2" data-drawer-inert id="h2"></div>
+  <div class="sn-preview__label" data-drawer-inert>Phone · 400px</div>
+  <div class="phone" style="z-index:1" data-drawer-inert id="h3"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+  <div id="drawerHost"></div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+/*@@menu@@*/
+/*@@seg@@*/
+/*@@drawer@@*/
+  var NOW = new Date("2026-10-24T21:30:00+11:00");
+  var kb = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K";
+  var menuItems = [
+    { h: "This page" }, { id: "reload", icon: "refresh-cw", label: "Reload graph data" }, { id: "import", icon: "file-input", label: "Import tracklist…" },
+    { sep: 1 }, { id: "prefs", icon: "sliders-horizontal", label: "Preferences" }, { id: "keys", icon: "keyboard", label: "Keyboard shortcuts", kbd: "?" },
+    { sep: 1 }, { id: "signout", icon: "log-out", label: "Sign out" }
+  ];
+  function header(n, o) {
+    var stamp = new Date(o.stamp);
+    return '<header class="sn-app-header"><div class="sn-app-header__bar">' +
+      '<div class="sn-app-header__start"><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" data-opener aria-expanded="false" aria-controls="nav" aria-label="Open navigation">' + S.icon("menu") + '</button>' +
+      '<span class="sn-app-header__wordmark">SongNodes</span></div>' +
+      '<span class="sn-app-header__divider" aria-hidden="true"></span>' +
+      '<p class="sn-app-header__title"><span class="sn-lead">' + S.esc(o.lead) + ':</span> ' + S.esc(o.title) + '</p>' +
+      (o.mode ? '<div class="sn-app-header__mode">' + snSegHtml("Mode", [{ value: "play", label: "Play" }, { value: "plan", label: "Plan" }], o.mode, "sn-segmented-control--sm") + "</div>" : "") +
+      '<div class="sn-app-header__end">' +
+      '<span class="sn-app-header__stamp">' + S.icon("clock", { size: 14 }) + '<span class="sn-app-header__stamp-text">Updated </span><time datetime="' + stamp.toISOString() + '" title="Updated ' + S.format.stamp(stamp) + '">' + S.format.relative(stamp, NOW) + '</time></span>' +
+      '<span class="sn-pill sn-app-header__conn" data-status="' + o.conn[0] + '" title="Live updates: ' + S.esc(o.conn[1]) + '"><span class="sn-app-header__conn-text">' + S.esc(o.conn[1]) + '</span><span class="sn-sr"> live updates</span></span>' +
+      '<button class="sn-btn sn-btn--sm sn-app-header__search" type="button" aria-keyshortcuts="Control+K Meta+K /" data-search>' + S.icon("search", { size: 16 }) + '<span class="sn-app-header__search-label">Search</span><kbd aria-hidden="true">' + kb + "</kbd></button>" +
+      snMenuButton("more" + n, "More actions", menuItems) +
+      "</div></div></header>" + '<div class="faux">' + S.esc(o.page) + "</div>";
+  }
+  document.getElementById("h1").innerHTML = header(1, { lead: "Library", title: "Melbourne crate", stamp: "2026-10-24T06:00:00+11:00", conn: ["ok", "Live"], page: "1,284 tracks · crate table below the header" });
+  document.getElementById("h2").innerHTML = header(2, { lead: "Graph", title: "Adjacency", mode: "plan", stamp: "2026-10-24T20:55:00+11:00", conn: ["warn", "Reconnecting…"], page: "Plan mode: library list, graph and the right tab panel" });
+  document.getElementById("h3").innerHTML = header(3, { lead: "Graph", title: "Adjacency", mode: "play", stamp: "2026-10-24T20:55:00+11:00", conn: ["bad", "Offline"], page: "Play mode: force graph and recommendations" });
+  document.getElementById("drawerHost").innerHTML = snDrawerHtml("nav", "library", { pipeline: ["2", "scrapers paused", "warn"], sources: ["4", "imports to review"] }, true);
+  [1, 2, 3].forEach(function (n) {
+    snMenu(document.getElementById("more" + n + "-btn"), document.getElementById("more" + n), function (it) { snSay(it.textContent.trim() + " chosen"); });
+  });
+  document.querySelectorAll(".sn-segmented-control").forEach(function (g) { snSeg(g, function (v) { snSay((v === "play" ? "Play" : "Plan") + " mode"); }); });
+  var openers = Array.prototype.slice.call(document.querySelectorAll("[data-opener]"));
+  snDrawer(document.getElementById("nav"), openers, function (a) { snSay("Opened " + a.textContent.trim()); });
+  document.addEventListener("keydown", function (e) {
+    var typing = /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable;
+    if ((e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey) || (e.key === "/" && !typing)) { e.preventDefault(); document.querySelector("[data-search]").focus(); snSay("Quick search opens here"); }
+  });
+})();
+</script>
+</body>
+</html>

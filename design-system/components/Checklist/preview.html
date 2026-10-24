@@ -1,0 +1,44 @@
+<!-- @dsCard group="Data" height=566 subtitle="Track readiness, import validation and pre-release checks: passed, failed, warning and pending rows with glyphs, notes and a counts summary" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Checklist — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__row" style="align-items:flex-start;gap:16px">
+    <section class="sn-card sn-card--compact" style="flex:1 1 300px" aria-labelledby="c1">
+      <h3 class="sn-title title-s" id="c1"><span class="sn-lead">Ready to play:</span> Slow Burner</h3>
+      <div class="sn-checklist-summary" id="s1"></div>
+      <ul class="sn-checklist" id="l1"></ul>
+    </section>
+    <section class="sn-card sn-card--compact" style="flex:1 1 380px" aria-labelledby="c2">
+      <h3 class="sn-title title-s" id="c2"><span class="sn-lead">Import check:</span> triple j Mix Up, 23 Oct</h3>
+      <div class="sn-checklist-summary" id="s2"></div>
+      <ul class="sn-checklist" id="l2"></ul>
+    </section>
+  </div>
+  <div class="sn-preview__label">Compact (inside a table cell or tooltip)</div>
+  <ul class="sn-checklist sn-checklist--compact" id="l3" style="max-width:320px"></ul>
+</div>
+<script>
+  var S = window.SongNodes;
+  var ICON = { pass: "check", fail: "x", warn: "triangle-alert", pending: "circle-dot" }, WORD = { pass: "Passed", fail: "Failed", warn: "Warning", pending: "Not checked yet" };
+  /* Preview helper mirroring <Checklist items={[{state,label,note,aside}]} />. */
+  function list(items) {
+    return items.map(function (i) {
+      return '<li class="sn-checklist__item" data-state="' + i[0] + '"><span class="sn-checklist__glyph">' + S.icon(ICON[i[0]]) + '</span><span class="sn-checklist__text"><span class="sn-checklist__label"><span class="sn-sr">' + WORD[i[0]] + ": </span>" + S.esc(i[1]) + "</span>" +
+        (i[2] ? '<span class="sn-checklist__note">' + S.esc(i[2]) + "</span>" : "") + "</span>" + (i[3] ? '<span class="sn-checklist__aside">' + S.esc(i[3]) + "</span>" : "<span></span>") + "</li>";
+    }).join("");
+  }
+  function summary(items) {
+    var c = { pass: 0, fail: 0, warn: 0, pending: 0 }; items.forEach(function (i) { c[i[0]]++; });
+    var w = { pass: "passed", fail: "failed", warn: "to look at", pending: "not checked" };
+    return ["pass", "fail", "warn", "pending"].filter(function (k) { return c[k]; }).map(function (k) { return '<span data-state="' + k + '"><span class="sn-checklist-summary__n">' + c[k] + "</span> " + w[k] + "</span>"; }).join("");
+  }
+  var a = [["pass", "Has key", "", "9A"], ["pass", "Has BPM", "", "133"], ["warn", "Energy checked", "Estimated as 7 from BPM and source; listen and confirm.", ""], ["fail", "Has TIDAL link", "No TIDAL match for this ISRC. Search TIDAL by title or link it by hand.", ""], ["pending", "Beatport match", "Checks on the Sunday run.", ""]];
+  var b = [["pass", "File read", "", "2 h 01 min"], ["pass", "Tracks parsed", "", "31 of 31"], ["warn", "Artists matched", "3 artists need attribution, e.g. “IC & Sammy Virji”.", "28 of 31"], ["fail", "Timestamps in order", "Track 14 starts before track 13 (1:02:10 vs 1:04:55). Fix the times and import again.", ""], ["pass", "No duplicates", "", ""]];
+  document.getElementById("s1").innerHTML = summary(a); document.getElementById("l1").innerHTML = list(a);
+  document.getElementById("s2").innerHTML = summary(b); document.getElementById("l2").innerHTML = list(b);
+  document.getElementById("l3").innerHTML = list([["pass", "Key and BPM"], ["warn", "Energy estimated"], ["pending", "TIDAL link"]]);
+</script>
+</body>
+</html>

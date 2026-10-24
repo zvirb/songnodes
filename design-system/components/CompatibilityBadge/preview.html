@@ -1,0 +1,36 @@
+<!-- @dsCard group="Music" height=539 subtitle="Perfect, compatible, possible, clash and unknown pills with glyphs; the key rule table; BPM and energy verdicts" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CompatibilityBadge — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Levels</div>
+  <div class="sn-preview__row" id="levels"></div>
+  <div class="sn-preview__label">Key rules (SongNodes.compat, from 8A)</div>
+  <div class="sn-tablebox">
+    <table class="sn-table sn-table--compact sn-compatibility-badge-rules">
+      <caption class="sn-sr">Camelot key moves and how they are rated</caption>
+      <thead><tr><th scope="col">Move</th><th scope="col">Example</th><th scope="col">Verdict</th><th scope="col">Why</th></tr></thead>
+      <tbody id="rules"></tbody>
+    </table>
+  </div>
+  <div class="sn-preview__label">BPM verdicts (bpmStep) · energy verdicts (energyStep)</div>
+  <div class="sn-preview__row" id="bpm"></div>
+  <div class="sn-preview__row" id="energy"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  function badge(level, label, outline) { return '<span class="sn-pill sn-compatibility-badge' + (outline ? " sn-pill--outline" : "") + '" data-compat="' + level + '">' + S.esc(label) + '</span>'; }
+  document.getElementById("levels").innerHTML = badge("perfect", "Perfect") + badge("compatible", "Compatible") + badge("possible", "Possible") + badge("clash", "Clash") + badge("unknown", "Key unknown") +
+    badge("perfect", "Perfect", 1) + badge("compatible", "Compatible", 1) + badge("possible", "Possible", 1) + badge("clash", "Clash", 1);
+  var rules = [["Same key", "8A → 8A", "Same key, any blend works"], ["±1 on the wheel", "8A → 9A", "Neighbour key, smooth"], ["±1 on the wheel", "8A → 7A", "Neighbour key, smooth"],
+    ["Relative major/minor", "8A → 8B", "Same notes, mood shifts"], ["+2 energy boost", "8A → 10A", "Audible lift, use on a build"], ["+7 lift", "8A → 3A", "One semitone up, a dramatic lift"], ["Anything else", "8A → 2B", "Keys fight; cut or use a break"]];
+  document.getElementById("rules").innerHTML = rules.map(function (r) {
+    var ab = r[1].split(" → "), v = S.compat(ab[0], ab[1]);
+    return "<tr><td>" + r[0] + '</td><td>' + S.html.key(ab[0]) + ' <span class="sn-dim">→</span> ' + S.html.key(ab[1]) + "</td><td>" + badge(v.level, v.label, 1) + '</td><td class="sn-muted">' + r[2] + "</td></tr>";
+  }).join("");
+  document.getElementById("bpm").innerHTML = [[124, 125], [124, 128], [124, 130], [124, 140]].map(function (p) { var v = S.bpmStep(p[0], p[1]); return badge(v.level, v.label); }).join("");
+  document.getElementById("energy").innerHTML = [[6, 7], [7, 7], [8, 5], [7, 6], [5, 7]].map(function (p) { var v = S.energyStep(p[0], p[1], p[0] === 7 && p[1] === 6 ? 8 : null); return badge(v.level, v.label); }).join("");
+</script>
+</body>
+</html>

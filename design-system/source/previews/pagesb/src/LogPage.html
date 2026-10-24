@@ -1,0 +1,306 @@
+<!-- @dsCard group="Pages" width=1280 height=2400 subtitle="Target tracks (log page): priority chips, selectable table with bulk Activate, Pause, Archive and Delete, completion rings, last searched, row menus; Add target track dialog; append-only weekly run log" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>LogPage — preview</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <a class="sn-skip" href="#main">Skip to content</a>
+  <div id="sh-head" data-drawer-inert></div>
+  <main class="sn-page-log" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+
+    <section class="sn-page-log__section" aria-label="Target tracks">
+      <div class="sn-page-log__toolbar">
+        <div id="chips-pri"></div>
+        <div id="chips-state"></div>
+        <div class="sn-page-log__toolbar-end" id="summary"></div>
+      </div>
+      <div class="sn-data-table sn-data-table--stack" id="dt">
+        <div class="sn-data-table__bar">
+          <span class="sn-data-table__count" id="count" aria-live="polite"></span>
+          <div class="sn-page-log__bulk" role="toolbar" aria-label="Bulk actions for selected target tracks" id="bulk" hidden>
+            <button class="sn-btn sn-btn--sm" type="button" data-bulk="active">Activate</button>
+            <button class="sn-btn sn-btn--sm" type="button" data-bulk="paused">Pause</button>
+            <button class="sn-btn sn-btn--sm" type="button" data-bulk="archived">Archive</button>
+            <button class="sn-btn sn-btn--sm sn-btn--danger-quiet" type="button" data-bulk="delete">Delete…</button>
+            <span class="sn-page-log__bulk-sep" aria-hidden="true"></span>
+            <button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" data-bulk="clear">Clear selection</button>
+          </div>
+        </div>
+        <div class="sn-tablebox sn-data-table__box" style="--sn-data-table-max: none">
+          <table class="sn-table">
+            <caption>Target tracks, newest first · <span class="sn-sr">Column headers with buttons are sortable.</span><span aria-hidden="true">Sort by any column header</span></caption>
+            <thead><tr id="head"></tr></thead>
+            <tbody id="body"></tbody>
+          </table>
+        </div>
+      </div>
+      <p class="sn-sr" aria-live="polite" id="announce"></p>
+    </section>
+
+    <section class="sn-page-log__section" aria-labelledby="form-h">
+      <div class="sn-section-heading sn-section-heading--rule">
+        <h2 class="sn-title title-s" id="form-h"><span class="sn-lead">Entry:</span> Add target track</h2>
+        <p class="sn-section-heading__caveat">Opens from the primary button as a medium dialog; shown here open, as a picture. The real one is a modal with Esc, focus trap and focus return.</p>
+      </div>
+      <div class="sn-dialog__stage sn-page-log__stage" id="stage"></div>
+    </section>
+
+    <section class="sn-page-log__section" aria-labelledby="run-h">
+      <div class="sn-section-heading sn-section-heading--rule">
+        <h2 class="sn-title title-m" id="run-h"><span class="sn-lead">Target tracks:</span> Run log</h2>
+        <span class="sn-section-heading__count">8 runs</span>
+        <div class="sn-section-heading__end"><span class="sn-freshness-stamp">Next run <time datetime="2026-10-24T19:00:00Z">Sun 25 Oct, 06:00 AEDT</time></span></div>
+        <p class="sn-section-heading__caveat">Append-only: one row per weekly search run, newest first. Rows are never edited; corrections show up in the next run.</p>
+      </div>
+      <div class="sn-data-table sn-data-table--stack">
+        <div class="sn-tablebox sn-data-table__box" style="--sn-data-table-max: none">
+          <table class="sn-table">
+            <caption>Weekly target-track search runs, Sundays at 06:00</caption>
+            <thead><tr><th scope="col">Run</th><th scope="col" class="num">Added</th><th scope="col" class="num">Updated</th><th scope="col" class="num">Errors</th><th scope="col" class="num">Duration</th><th scope="col">Result</th><th scope="col" class="sn-data-table__actions"><span class="sn-sr">Details</span></th></tr></thead>
+            <tbody id="runs"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="sh-drawer"></div>
+  <dialog class="sn-dialog sn-dialog--m" id="add" aria-labelledby="add-title"></dialog>
+  <dialog class="sn-dialog sn-dialog--s sn-confirm-dialog" id="confirm" role="alertdialog" aria-modal="true" aria-labelledby="cf-t" aria-describedby="cf-d"></dialog>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="sn-toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+/*@COMMON@*/
+(function () {
+  snShell({ mod: "sources", title: "Target tracks", stampVerb: "Searched", stamp: "2026-10-24T18:30:00+11:00" });
+  $("ph").innerHTML = snPageHeader("ph", {
+    mod: "sources", here: "Target tracks", title: "Target tracks",
+    desc: "12 tracks SongNodes is hunting for on 1001tracklists, MixesDB and Setlist.fm. 4 are fully found.",
+    stampVerb: "Searched", stamp: "2026-10-24T18:30:00+11:00",
+    secondary: [["import", "upload", "Import JSON"]],
+    menu: [{ h: "Target tracks" }, { id: "export", icon: "download", label: "Export as JSON" }, { id: "search", icon: "refresh-cw", label: "Search all active now" }, { h: "View" }, { id: "showarch", label: "Show archived", checked: false }],
+    primary: ["add", "plus", "Add target track"]
+  });
+
+  var T = [
+    { id: 12, a: "Overmono", t: "Is U", g: ["Breakbeat"], terms: ["is u", "overmono is u"], p: "critical", s: "active", c: 1, plays: 2, at: "2026-10-24T18:30:00+11:00", miss: "key, BPM, TIDAL link" },
+    { id: 11, a: "Barry Can't Swim", t: "Sunsleeper", g: ["House"], terms: ["sunsleeper"], p: "low", s: "active", c: 3, plays: 12, at: "2026-10-24T18:30:00+11:00", miss: "TIDAL link" },
+    { id: 10, a: "Four Tet", t: "Baby", g: ["House"], terms: ["four tet baby", "ellie goulding four tet"], p: "medium", s: "paused", c: 2, plays: 9, at: "2026-10-11T06:00:00+11:00", miss: "key, BPM" },
+    { id: 9, a: "Joy Orbison", t: "Flight FM", g: ["UK garage"], terms: ["flight fm", "joy o flight"], p: "high", s: "active", c: 0, plays: 0, at: "2026-10-24T18:30:00+11:00", miss: "everything", none: true },
+    { id: 8, a: "Bicep", t: "Apricots", g: ["Breakbeat"], terms: ["apricots"], p: "medium", s: "active", c: 3, plays: 19, at: "2026-10-24T18:30:00+11:00", miss: "Beatport match" },
+    { id: 7, a: "Fred again..", t: "Delilah (pull me out of this)", g: ["House"], terms: ["delilah"], p: "low", s: "archived", c: 4, plays: 64, at: "2026-10-04T06:00:00+11:00" },
+    { id: 6, a: "Ross From Friends", t: "Talk To Me You'll Drown", g: ["House", "Lo-fi house"], terms: ["talk to me youll drown"], p: "medium", s: "active", c: 1, plays: 3, at: "2026-10-24T18:30:00+11:00", miss: "key, BPM, TIDAL link" },
+    { id: 5, a: "Peggy Gou", t: "(It Goes Like) Nanana", g: ["House"], terms: ["nanana", "it goes like"], p: "low", s: "paused", c: 4, plays: 57, at: "2026-10-18T06:00:00+11:00" },
+    { id: 4, a: "Josh Baker", t: "Lost In Muzik", g: ["House"], terms: ["lost in muzik"], p: "high", s: "active", c: 4, plays: 31, at: "2026-10-24T18:30:00+11:00" },
+    { id: 3, a: "Sammy Virji", t: "If U Need It", g: ["UK garage"], terms: ["if u need it", "virji need it"], p: "critical", s: "active", c: 2, plays: 14, at: "2026-10-24T21:05:00+11:00", miss: "key, TIDAL link" },
+    { id: 2, a: "Interplanetary Criminal", t: "Slow Burner", g: ["UK garage"], terms: ["slow burner"], p: "medium", s: "active", c: 3, plays: 22, at: "2026-10-24T18:30:00+11:00", miss: "TIDAL link" },
+    { id: 1, a: "Overmono", t: "So U Kno", g: ["UK garage", "Breakbeat"], terms: ["so u kno"], p: "high", s: "active", c: 4, plays: 38, at: "2026-10-24T18:30:00+11:00" }
+  ];
+  var PRI = ["critical", "high", "medium", "low"], PRI_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+  /* Priority is a category: neutral tags. Only Critical breaks out as a red bad pill (it needs action now). */
+  var PRI_TAG = { high: "High", medium: "Medium", low: "Low" };
+  function priCell(p) { return p === "critical" ? snRaw(p, "priority") : '<span class="sn-tag sn-category-tag">' + PRI_TAG[p] + "</span>"; }
+  var STATE = { active: ["running", "Searching"], paused: ["idle", "Paused"], archived: ["idle", "Archived"] };
+  var st = { sort: "added", dir: "descending", sel: {}, pri: {}, states: { active: true, paused: true, archived: false }, nextId: 13 };
+
+  function chipGroup(id, label, items) {
+    return '<div class="sn-filter-chip-group" role="group" aria-labelledby="lg-' + id + '" data-group="' + id + '"><div class="sn-filter-chip-group__head"><span class="sn-filter-chip-group__legend" id="lg-' + id + '">' + label + '</span><button type="button" class="sn-filter-chip-group__clear" hidden>Clear</button></div><ul class="sn-filter-chip-group__list">' +
+      items.map(function (c) { return '<li><button type="button" class="sn-chip sn-filter-chip" aria-pressed="' + c.on + '" data-v="' + c.v + '" data-label="' + S.esc(c.label) + '"' + (c.n === 0 ? " data-empty" : "") + "><span>" + S.esc(c.label) + '</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>' + c.n + '<span class="sn-sr"> tracks</span></span></button></li>'; }).join("") + "</ul></div>";
+  }
+  function chips() {
+    $("chips-pri").innerHTML = chipGroup("pri", "Priority", PRI.map(function (p) { return { v: p, label: S.status(p, "priority").label, n: T.filter(function (x) { return x.p === p; }).length, on: !!st.pri[p] }; }));
+    $("chips-state").innerHTML = chipGroup("state", "State", ["active", "paused", "archived"].map(function (s) { return { v: s, label: { active: "Active", paused: "Paused", archived: "Archived" }[s], n: T.filter(function (x) { return x.s === s; }).length, on: st.states[s] }; }));
+    document.querySelectorAll(".sn-filter-chip-group").forEach(syncClear);
+  }
+  function syncClear(grp) { var on = grp.querySelectorAll('.sn-filter-chip[aria-pressed="true"]').length, clr = grp.querySelector(".sn-filter-chip-group__clear"); clr.hidden = on === 0 || grp.dataset.group === "state"; clr.textContent = "Clear (" + on + ")"; clr.setAttribute("aria-label", "Clear " + on + " priority filter" + (on === 1 ? "" : "s")); }
+  function ring(p, label, detail) {
+    var size = 24, sw = 3, r = (size - sw) / 2, c = 2 * Math.PI * r, pct = Math.round(p * 100);
+    return '<span class="sn-progress-ring sn-progress-ring--24" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="' + S.esc(label) + '" aria-valuetext="' + S.esc(pct + "%, " + detail) + '"><span class="sn-progress-ring__box"><svg class="sn-progress-ring__svg" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle class="sn-progress-ring__track" cx="12" cy="12" r="' + r + '" stroke-width="3"/>' +
+      (p > 0 ? '<circle class="sn-progress-ring__fill" cx="12" cy="12" r="' + r + '" stroke-width="3" stroke-dasharray="' + c.toFixed(2) + '" stroke-dashoffset="' + (c * (1 - p)).toFixed(2) + '"/>' : "") + '</svg></span><span class="sn-progress-ring__text"><span>' + S.esc(detail.split(" checks")[0]) + "</span></span></span>";
+  }
+  function ring40(p, label, detail) {
+    var size = 40, sw = 4, r = 18, c = 2 * Math.PI * r, pct = Math.round(p * 100);
+    return '<span class="sn-progress-ring sn-progress-ring--40" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="' + S.esc(label) + '" aria-valuetext="' + S.esc(pct + "%, " + detail) + '"><span class="sn-progress-ring__box"><svg class="sn-progress-ring__svg" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle class="sn-progress-ring__track" cx="20" cy="20" r="18" stroke-width="4"/><circle class="sn-progress-ring__fill" cx="20" cy="20" r="18" stroke-width="4" stroke-dasharray="' + c.toFixed(2) + '" stroke-dashoffset="' + (c * (1 - p)).toFixed(2) + '"/></svg><span class="sn-progress-ring__value" aria-hidden="true">' + pct + '</span></span><span class="sn-progress-ring__text"><b>' + S.esc(label) + "</b><span>" + S.esc(detail) + "</span></span></span>";
+  }
+  function summary() {
+    var live = T.filter(function (x) { return x.s !== "archived"; }), full = live.filter(function (x) { return x.c === 4; }).length;
+    $("summary").innerHTML = ring40(full / live.length, "Fully found", full + " of " + live.length + " · " + (live.length - full) + " still missing data");
+  }
+  var COLS = [
+    { id: "track", label: "Track", sort: function (x) { return (x.a + " " + x.t).toLowerCase(); } },
+    { id: "p", label: "Priority", sort: function (x) { return PRI_ORDER[x.p]; } },
+    { id: "s", label: "State", sort: function (x) { return x.s; } },
+    { id: "c", label: "Found", sort: function (x) { return x.c; } },
+    { id: "plays", label: "In tracklists", num: true, sort: function (x) { return x.plays; } },
+    { id: "at", label: "Last searched", num: true, sort: function (x) { return x.at; } },
+    { id: "added", label: "Added", hidden: true, sort: function (x) { return x.id; } }
+  ];
+  function shown() {
+    var anyPri = PRI.some(function (p) { return st.pri[p]; });
+    var c = COLS.filter(function (x) { return x.id === st.sort; })[0], m = st.dir === "ascending" ? 1 : -1;
+    return T.filter(function (x) { return st.states[x.s] && (!anyPri || st.pri[x.p]); }).sort(function (p, q) { var a = c.sort(p), b = c.sort(q); return a < b ? -m : a > b ? m : (p.a + p.t < q.a + q.t ? -1 : 1); });
+  }
+  function selIds() { return Object.keys(st.sel).filter(function (k) { return st.sel[k]; }).map(Number); }
+  function head(rows) {
+    var n = rows.filter(function (x) { return st.sel[x.id]; }).length;
+    var h = '<th scope="col" class="sn-data-table__sel"><input type="checkbox" id="all" aria-label="Select all ' + rows.length + ' shown target tracks"' + (n && n === rows.length ? " checked" : "") + (rows.length ? "" : " disabled") + "></th>";
+    COLS.forEach(function (c) { if (c.hidden) return; var on = st.sort === c.id; h += '<th scope="col"' + (c.num ? ' class="num"' : "") + " data-sortable" + (on ? ' aria-sort="' + st.dir + '"' : "") + '><button type="button" data-sort="' + c.id + '">' + c.label + "</button></th>"; });
+    h += '<th scope="col" class="sn-data-table__actions"><span class="sn-sr">Actions</span></th>';
+    $("head").innerHTML = h;
+    var all = $("all"); all.indeterminate = n > 0 && n < rows.length;
+    var sel = selIds().length;
+    $("count").textContent = sel ? sel + " selected" : T.length + " target tracks · " + rows.length + " shown";
+    $("bulk").hidden = !sel;
+  }
+  function searched(x) {
+    var age = (NOW - new Date(x.at)) / 864e5, abs = F.stamp(x.at);
+    var t = '<time datetime="' + new Date(x.at).toISOString() + '" title="' + abs + '" tabindex="0" data-tip="Searched ' + abs + '" data-tip-describe>' + F.relative(x.at, NOW) + "</time>";
+    return '<span class="sn-freshness-stamp">' + (age > 8 ? '<span class="sn-freshness-stamp__stale">' + t + "</span>" : "<span>" + t + "</span>") + "</span>";
+  }
+  function row(x) {
+    var name = x.a + " – " + x.t, menuId = "rm" + x.id;
+    var items = [{ id: "edit", icon: "pencil", label: "Edit target track…" }, { id: "now", icon: "refresh-cw", label: "Search now", reason: x.s === "archived" ? "Restore it first" : "" },
+      x.s === "active" ? { id: "paused", icon: "pause", label: "Pause searching" } : { id: "active", icon: "play", label: x.s === "archived" ? "Restore and search" : "Resume searching" },
+      x.s !== "archived" ? { id: "archived", icon: "archive", label: "Archive" } : null, { sep: 1 }, { id: "delete", icon: "trash-2", label: "Delete…", danger: true }].filter(Boolean);
+    items.forEach(function (i) { if (i.reason === "") delete i.reason; });
+    var detail = x.c + " of 4 checks" + (x.miss ? ": missing " + x.miss : ": found in tracklists, key, BPM and TIDAL link");
+    return "<tr data-id=\"" + x.id + "\"" + (st.sel[x.id] ? " data-selected" : "") + ">" +
+      '<td class="sn-data-table__sel"><input type="checkbox" data-id="' + x.id + '" aria-label="Select ' + S.esc(name) + '"' + (st.sel[x.id] ? " checked" : "") + "></td>" +
+      '<td class="sn-data-table__track">' + snTrack({ a: x.a, t: x.t, mix: x.g.join(", "), label: x.terms.length + (x.terms.length === 1 ? " search term" : " search terms"), flagInfo: x.none ? "Not found yet" : "" }) + "</td>" +
+      '<td data-label="Priority">' + priCell(x.p) + "</td>" +
+      '<td data-label="State">' + snPill(STATE[x.s][0], STATE[x.s][1], true) + "</td>" +
+      '<td data-label="Found">' + ring(x.c / 4, "Found for " + name, detail) + "</td>" +
+      '<td class="num" data-label="In tracklists">' + (x.plays ? F.count(x.plays) : '<span class="sn-none">–</span>') + "</td>" +
+      '<td class="num" data-label="Last searched">' + searched(x) + "</td>" +
+      '<td class="sn-data-table__actions">' + snMenuButton(menuId, "More actions for " + name, items, { sm: true, icon: "ellipsis-vertical" }) + "</td></tr>";
+  }
+  function render() {
+    var rows = shown();
+    head(rows);
+    $("body").innerHTML = rows.length ? rows.map(row).join("") :
+      '<tr class="sn-data-table__state" data-state="empty"><td colspan="8"><div class="sn-data-table__state-inner"><span class="sn-data-table__state-title">No target tracks match these filters</span><span>None of the 12 target tracks is ' + PRI.filter(function (p) { return st.pri[p]; }).map(function (p) { return S.status(p, "priority").label.toLowerCase(); }).join(" or ") + " in the states shown. Clear a filter to see more.</span><button class=\"sn-btn sn-btn--sm\" type=\"button\" data-clear-all>Clear filters</button></div></td></tr>";
+    snMenusIn($("body"), function (it, btn) { act(it.getAttribute("data-id"), [Number(btn.closest("tr").getAttribute("data-id"))], btn); });
+    summary();
+  }
+  function setState(ids, s) { var prev = {}; T.forEach(function (x) { if (ids.indexOf(x.id) >= 0) { prev[x.id] = x.s; x.s = s; } }); return prev; }
+  function plural(n) { return n + (n === 1 ? " target track" : " target tracks"); }
+  function act(what, ids, opener) {
+    var names = T.filter(function (x) { return ids.indexOf(x.id) >= 0; });
+    if (what === "active" || what === "paused") { setState(ids, what); chips(); render(); snSay((what === "active" ? "Searching again: " : "Paused: ") + plural(ids.length)); }
+    else if (what === "archived") {
+      var prev = setState(ids, "archived"); ids.forEach(function (i) { st.sel[i] = false; }); chips(); render();
+      snToast("Archived " + (ids.length === 1 ? "<q>" + S.esc(names[0].a + " – " + names[0].t) + "</q>" : plural(ids.length)) + ".", "Undo", function () { T.forEach(function (x) { if (prev[x.id]) x.s = prev[x.id]; }); chips(); render(); snSay("Archive undone"); });
+    }
+    else if (what === "delete") confirmDelete(ids, opener);
+    else if (what === "now") snToast("Searching for <q>" + S.esc(names[0].a + " – " + names[0].t) + "</q> on 3 sources.", null);
+    else if (what === "edit") openAdd(opener, names[0]);
+  }
+  /* ConfirmDialog */
+  var cf = $("confirm"), cfOpener = null;
+  function confirmDelete(ids, opener) {
+    cfOpener = opener;
+    var one = ids.length === 1 ? T.filter(function (x) { return x.id === ids[0]; })[0] : null;
+    var title = one ? "Delete “" + one.a + " – " + one.t + "”?" : "Delete " + plural(ids.length) + "?";
+    cf.innerHTML = '<div class="sn-dialog__head"><span class="sn-confirm-dialog__icon">' + I("trash-2") + '</span><h2 class="sn-title title-s sn-dialog__title" id="cf-t">' + S.esc(title) + "</h2></div>" +
+      '<div class="sn-dialog__body" id="cf-d"><p class="sn-confirm-dialog__text">SongNodes stops searching for ' + (one ? "it" : "them") + " and removes " + (one ? "its" : "their") + " search history. <strong>This can’t be undone.</strong></p>" +
+      '<ul class="sn-confirm-dialog__facts"><li>Tracks already in the library stay there.</li><li>To stop searching but keep the history, archive instead.</li></ul></div>' +
+      '<div class="sn-dialog__foot"><button class="sn-btn" type="button" data-cancel>Cancel</button><button class="sn-btn sn-btn--danger" type="button" data-confirm>Delete ' + (one ? "target track" : plural(ids.length)) + "</button></div>";
+    cf._ids = ids; cf.showModal(); cf.querySelector("[data-cancel]").focus();
+  }
+  cf.addEventListener("click", function (e) {
+    if (e.target.closest("[data-cancel]")) cf.close();
+    if (e.target.closest("[data-confirm]")) { var ids = cf._ids, n = ids.length; T = T.filter(function (x) { return ids.indexOf(x.id) < 0; }); ids.forEach(function (i) { delete st.sel[i]; }); cf.close(); chips(); render(); snToast("Deleted " + plural(n) + ".", null); }
+  });
+  cf.addEventListener("close", function () { if (cfOpener && document.contains(cfOpener)) cfOpener.focus(); else $("count").focus && $("main").focus(); });
+
+  /* Add target track dialog */
+  var GENRES = ["House", "UK garage", "Breakbeat", "Techno", "Lo-fi house", "Speed garage", "Bassline", "Deep house"];
+  function form(p, x) {
+    return '<div class="sn-dialog__head"><div class="sn-dialog__title"><h2 class="sn-title title-s" id="' + p + '-title"><span class="sn-lead">Target track:</span> ' + (x ? S.esc(x.a + " – " + x.t) : "New") + "</h2>" +
+      '<p class="sn-dialog__sub">SongNodes searches 1001tracklists, MixesDB and Setlist.fm for it on every weekly run.</p></div>' +
+      '<button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="Close" data-close>' + I("x") + "</button></div>" +
+      '<form class="sn-dialog__body" method="dialog" id="' + p + '-form" novalidate><div class="sn-page-log__form">' +
+      '<div class="sn-field sn-text-field"><label class="sn-text-field__label" for="' + p + '-t"><span>Title</span></label><input class="sn-input" id="' + p + '-t" value="' + (x ? S.esc(x.t) : "Flight FM") + '" autocomplete="off" required aria-describedby="' + p + '-t-err"' + (p === "add" ? " autofocus" : "") + '><span class="sn-field__error" id="' + p + '-t-err" hidden>Enter the track title.</span></div>' +
+      '<div class="sn-field sn-text-field"><label class="sn-text-field__label" for="' + p + '-a"><span>Artist</span></label><span class="sn-field__help" id="' + p + '-a-h">As the label writes it, e.g. “Fred again..”</span><input class="sn-input" id="' + p + '-a" value="' + (x ? S.esc(x.a) : "Joy Orbison") + '" autocomplete="off" aria-describedby="' + p + '-a-h"></div>' +
+      chipField(p + "-g", "Genres", "Press Enter or a comma to add.", x ? x.g : ["UK garage"], "Add a genre") +
+      chipField(p + "-s", "Search terms", "Extra spellings to match in tracklists. Any term counts.", x ? x.terms : ["flight fm", "joy o flight"], "Add a term") +
+      '<div class="sn-field sn-select-field"><label for="' + p + '-p">Priority</label><select class="sn-select" id="' + p + '-p" aria-describedby="' + p + '-p-h">' +
+      PRI.map(function (k) { return '<option value="' + k + '"' + ((x ? x.p : "high") === k ? " selected" : "") + ">" + S.status(k, "priority").label + "</option>"; }).join("") + '</select><span class="sn-field__help" id="' + p + '-p-h">Critical and high are searched first.</span></div>' +
+      "</div></form>" +
+      '<div class="sn-dialog__foot"><button class="sn-btn" type="button" data-close>Cancel</button><button class="sn-btn sn-btn--primary" type="submit" form="' + p + '-form">' + (x ? "Save changes" : "Add target track") + "</button></div>";
+  }
+  function chipField(id, label, help, vals, ph) {
+    return '<div class="sn-field sn-chip-input sn-page-log__wide" id="' + id + '"><label class="sn-field__label" for="' + id + '-in">' + label + '</label><span class="sn-field__help" id="' + id + '-h">' + help + '</span>' +
+      '<div class="sn-chip-input__box"><ul class="sn-chip-input__list" aria-label="' + label + ' added">' + vals.map(function (v, i) { return '<li class="sn-chip-input__chip">' + S.esc(v) + '<button type="button" class="sn-chip-input__remove" data-i="' + i + '" aria-label="Remove ' + S.esc(v) + '">' + I("x") + "</button></li>"; }).join("") + "</ul>" +
+      '<input class="sn-chip-input__text" id="' + id + '-in" autocomplete="off" spellcheck="false" placeholder="' + ph + '" aria-describedby="' + id + '-h ' + id + '-msg"></div><span class="sn-chip-input__msg" id="' + id + '-msg" aria-live="polite"></span></div>';
+  }
+  function chipValues(ci) { return Array.prototype.map.call(ci.querySelectorAll(".sn-chip-input__chip"), function (li) { return li.firstChild.textContent; }); }
+  function wireChips(root) {
+    root.addEventListener("keydown", function (e) {
+      var inp = e.target; if (!inp.matches || !inp.matches(".sn-chip-input__text")) return;
+      var ci = inp.closest(".sn-chip-input"), vals = chipValues(ci), msg = ci.querySelector(".sn-chip-input__msg");
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault(); var v = inp.value.replace(/,/g, "").trim().replace(/\s+/g, " "); if (!v) return;
+        if (vals.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) { msg.textContent = "“" + v + "” is already added."; msg.setAttribute("data-kind", "warn"); return; }
+        vals.push(v); redraw(ci, vals); inp.value = ""; msg.removeAttribute("data-kind"); msg.textContent = "Added " + v + ".";
+      } else if (e.key === "Backspace" && !inp.value && vals.length) { var gone = vals.pop(); redraw(ci, vals); msg.textContent = "Removed " + gone + "."; }
+    });
+    root.addEventListener("click", function (e) { var r = e.target.closest(".sn-chip-input__remove"); if (!r) return; var ci = r.closest(".sn-chip-input"), vals = chipValues(ci), gone = vals.splice(+r.dataset.i, 1)[0]; redraw(ci, vals); ci.querySelector(".sn-chip-input__msg").textContent = "Removed " + gone + "."; ci.querySelector("input").focus(); });
+  }
+  function redraw(ci, vals) { ci.querySelector(".sn-chip-input__list").innerHTML = vals.map(function (v, i) { return '<li class="sn-chip-input__chip">' + S.esc(v) + '<button type="button" class="sn-chip-input__remove" data-i="' + i + '" aria-label="Remove ' + S.esc(v) + '">' + I("x") + "</button></li>"; }).join(""); }
+  $("stage").innerHTML = '<div class="sn-dialog sn-dialog--m" role="dialog" aria-labelledby="st-title" inert>' + form("st") + "</div>";
+  var dlg = $("add"), dlgOpener = null, editing = null;
+  function openAdd(opener, x) {
+    dlgOpener = opener; editing = x || null; dlg.innerHTML = form("add", x); dlg.showModal(); $("add-t").focus();
+  }
+  wireChips(dlg);
+  dlg.addEventListener("click", function (e) { if (e.target.closest("[data-close]")) dlg.close(); });
+  dlg.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var t = $("add-t"), err = $("add-t-err");
+    if (!t.value.trim()) { err.hidden = false; t.setAttribute("aria-invalid", "true"); t.focus(); return; }
+    var rec = { a: $("add-a").value.trim() || "Unknown artist", t: t.value.trim(), g: chipValues($("add-g")), terms: chipValues($("add-s")), p: $("add-p").value };
+    if (editing) { Object.assign(editing, rec); dlg.close(); render(); snToast("Saved <q>" + S.esc(rec.a + " – " + rec.t) + "</q>.", null); return; }
+    rec.id = st.nextId++; rec.s = "active"; rec.c = 0; rec.plays = 0; rec.at = NOW.toISOString(); rec.none = true; rec.miss = "everything";
+    T.unshift(rec); st.sort = "added"; st.dir = "descending"; dlg.close(); chips(); render();
+    snToast("Added <q>" + S.esc(rec.a + " – " + rec.t) + "</q>. First search on the next run.", null);
+  });
+  dlg.addEventListener("close", function () { if (dlgOpener) dlgOpener.focus(); });
+
+  /* events */
+  $("ph").addEventListener("click", function (e) { var b = e.target.closest('[data-act="add"]'); if (b) openAdd(b); if (e.target.closest('[data-act="import"]')) snSay("Import JSON opens a file picker in the app"); });
+  snMenusIn($("ph"), function (it) {
+    if (it.getAttribute("data-id") === "showarch") { st.states.archived = it.getAttribute("aria-checked") === "true"; chips(); render(); snSay(st.states.archived ? "Showing archived" : "Archived hidden"); }
+    else snSay(it.querySelector(".sn-overflow-menu__text").textContent + " chosen");
+  });
+  document.addEventListener("click", function (e) {
+    var c = e.target.closest(".sn-filter-chip");
+    if (c) { var on = c.getAttribute("aria-pressed") !== "true", g = c.closest(".sn-filter-chip-group").dataset.group, v = c.dataset.v; if (g === "pri") st.pri[v] = on; else st.states[v] = on; chips(); render(); var again = document.querySelector('.sn-filter-chip-group[data-group="' + g + '"] [data-v="' + v + '"]'); if (again) again.focus(); snSay(c.dataset.label + (on ? " on" : " off") + ". " + shown().length + " shown"); return; }
+    var clr = e.target.closest(".sn-filter-chip-group__clear, [data-clear-all]");
+    if (clr) { st.pri = {}; chips(); render(); var first = document.querySelector('[data-group="pri"] .sn-filter-chip'); if (first) first.focus(); snSay("Priority filters cleared"); return; }
+    var sb = e.target.closest("button[data-sort]");
+    if (sb) { var id = sb.getAttribute("data-sort"); if (st.sort === id) st.dir = st.dir === "ascending" ? "descending" : "ascending"; else { st.sort = id; st.dir = "ascending"; } render(); $("head").querySelector('[data-sort="' + id + '"]').focus(); $("announce").textContent = "Sorted by " + sb.textContent + ", " + st.dir; return; }
+    var bb = e.target.closest("[data-bulk]");
+    if (bb) { var what = bb.getAttribute("data-bulk"), ids = selIds(); if (what === "clear") { st.sel = {}; render(); return; } act(what, ids, bb); }
+  });
+  $("dt").addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.id === "all") { shown().forEach(function (x) { st.sel[x.id] = t.checked; }); render(); $("all").focus(); }
+    else if (t.hasAttribute("data-id")) { st.sel[t.getAttribute("data-id")] = t.checked; t.closest("tr").toggleAttribute("data-selected", t.checked); head(shown()); }
+  });
+  /* runs */
+  var RUNS = [["2026-10-18T06:00:00+11:00", 3, 9, 0, 252, "completed"], ["2026-10-11T06:00:00+11:00", 1, 10, 2, 408, "partial"], ["2026-10-04T06:00:00+11:00", 2, 8, 0, 235, "completed"], ["2026-09-27T06:00:00+10:00", 0, 0, 1, 31, "failed"],
+    ["2026-09-20T06:00:00+10:00", 4, 6, 0, 280, "completed"], ["2026-09-13T06:00:00+10:00", 1, 7, 0, 238, "completed"], ["2026-09-06T06:00:00+10:00", 2, 5, 0, 245, "completed"], ["2026-08-30T06:00:00+10:00", 3, 4, 1, 312, "partial"]];
+  $("runs").innerHTML = RUNS.map(function (r) {
+    var why = r[5] === "failed" ? "MixesDB login rejected; nothing was searched." : r[5] === "partial" ? r[3] + (r[3] === 1 ? " source" : " sources") + " timed out; the rest finished." : "";
+    return '<tr><td data-label="Run"><span class="sn-mono">' + F.day(r[0]) + " " + new Date(r[0]).getFullYear() + ", " + F.time(r[0]) + " " + F.zone(r[0]) + "</span></td>" +
+      '<td class="num" data-label="Added">' + r[1] + '</td><td class="num" data-label="Updated">' + r[2] + '</td><td class="num" data-label="Errors">' + r[3] + '</td><td class="num" data-label="Duration">' + F.duration(r[4]) + "</td>" +
+      '<td data-label="Result">' + snRaw(r[5]) + (why ? ' <span class="body-s sn-dim">' + S.esc(why) + "</span>" : "") + "</td>" +
+      '<td class="sn-data-table__actions"><a class="sn-link sn-m-pipeline" href="#pipeline/jobs">Job log<span class="sn-sr"> for ' + F.day(r[0]) + "</span></a></td></tr>";
+  }).join("");
+  chips(); render(); snTips(document.getElementById("root"));
+})();
+</script>
+</body>
+</html>

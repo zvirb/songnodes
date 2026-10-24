@@ -1,0 +1,62 @@
+<!-- @dsCard group="Inputs" height=312 subtitle="Saved key shown masked with Test and Replace; new key entry with reveal toggle, Test result pill, last-tested stamp, Get an API key link" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SecretField — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }</style>
+</head>
+<body>
+<div class="sn-preview sn-m-services" id="root">
+  <div class="pv-grid">
+    <div class="sn-card sn-card--flat" id="c1"></div>
+    <div class="sn-card sn-card--flat" id="c2"></div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var stamp = "24 Oct 2026, 06:00 AEDT";
+  function saved(o) {
+    return '<div class="sn-secret-field" id="' + o.id + '">' +
+      '<div class="sn-secret-field__head"><span class="sn-secret-field__label" id="' + o.id + '-l">' + o.label + '</span>' + o.link + '</div>' +
+      '<div class="sn-secret-field__row" data-view="saved"><div class="sn-secret-field__saved" role="group" aria-labelledby="' + o.id + '-l">' + S.icon("lock") + '<span><span class="sn-sr">Saved key ending </span><span aria-hidden="true">' + o.masked + '</span><span class="sn-sr">' + o.masked.slice(-4).split("").join(" ") + '</span></span></div>' +
+        '<button type="button" class="sn-btn" data-test>Test key</button><button type="button" class="sn-btn sn-btn--quiet" data-replace>Replace key</button></div>' +
+      '<div class="sn-secret-field__row" data-view="edit" hidden><div class="sn-secret-field__box">' +
+        '<input class="sn-input" type="password" id="' + o.id + '-in" aria-labelledby="' + o.id + '-l" aria-describedby="' + o.id + '-st" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="Paste the new key">' +
+        '<button type="button" class="sn-secret-field__reveal" aria-pressed="false" aria-label="Show key">' + S.icon("eye") + '</button></div>' +
+        '<button type="button" class="sn-btn" data-test>Test key</button><button type="button" class="sn-btn sn-btn--quiet" data-cancel>Cancel</button></div>' +
+      '<div class="sn-secret-field__status" id="' + o.id + '-st" aria-live="polite">' + o.status + '</div></div>';
+  }
+  var ext = function (href, text) { return '<a class="sn-link sn-link--ext body-s" href="' + href + '" target="_blank" rel="noopener">' + text + '<span class="sn-sr">, opens in a new tab</span></a>'; };
+  document.getElementById("c1").innerHTML = '<h3 class="sn-title title-s"><span class="sn-lead">API key:</span> Setlist.fm</h3>' +
+    saved({ id: "k1", label: "Setlist.fm API key", masked: "sk-…3f9a", link: ext("https://api.setlist.fm/docs/1.0/index.html", "Get an API key"),
+      status: S.html.pill("healthy", "Key works") + '<span class="sn-secret-field__stamp">Last tested ' + stamp + '</span>' });
+  document.getElementById("c2").innerHTML = '<h3 class="sn-title title-s"><span class="sn-lead">Connection:</span> Spotify</h3>' +
+    saved({ id: "k2", label: "Spotify client secret", masked: "…77c2", link: ext("https://developer.spotify.com/dashboard", "Open Spotify dashboard"),
+      status: S.html.pill("failed", "Key refused") + '<span>Spotify returned 401 invalid_client. Copy the secret again from the dashboard.</span><span class="sn-secret-field__stamp">Tested 24 Oct 2026, 21:30 AEDT</span>' });
+  // second card starts in edit mode to show the entry state
+  (function () { var f = document.getElementById("k2"); f.querySelector('[data-view="saved"]').hidden = true; f.querySelector('[data-view="edit"]').hidden = false; f.querySelector("input").value = "8d1c0b7e2f4a49c3b5e6a1d077c2"; })();
+
+  document.addEventListener("click", function (e) {
+    var f = e.target.closest(".sn-secret-field"); if (!f) return;
+    var st = f.querySelector(".sn-secret-field__status"), inp = f.querySelector("input");
+    var rv = e.target.closest(".sn-secret-field__reveal");
+    if (rv) { var on = rv.getAttribute("aria-pressed") !== "true"; rv.setAttribute("aria-pressed", on); rv.setAttribute("aria-label", on ? "Hide key" : "Show key"); rv.innerHTML = S.icon(on ? "eye-off" : "eye"); inp.type = on ? "text" : "password"; return; }
+    if (e.target.closest("[data-replace]")) { f.querySelector('[data-view="saved"]').hidden = true; f.querySelector('[data-view="edit"]').hidden = false; inp.value = ""; inp.focus(); st.textContent = ""; return; }
+    if (e.target.closest("[data-cancel]")) { f.querySelector('[data-view="edit"]').hidden = true; f.querySelector('[data-view="saved"]').hidden = false; f.querySelector("[data-replace]").focus(); return; }
+    var t = e.target.closest("[data-test]");
+    if (t) {
+      var editing = !f.querySelector('[data-view="edit"]').hidden;
+      if (editing && !inp.value.trim()) { st.innerHTML = S.html.pill("failed", "No key") + "<span>Paste a key, then test it.</span>"; inp.setAttribute("aria-invalid", "true"); inp.focus(); return; }
+      inp.removeAttribute("aria-invalid");
+      t.setAttribute("aria-busy", "true"); t.disabled = true; t.innerHTML = '<span class="sn-spinner"></span>Testing…';
+      st.innerHTML = S.html.pill("running", "Testing");
+      setTimeout(function () {
+        t.removeAttribute("aria-busy"); t.disabled = false; t.textContent = "Test key";
+        var ok = !editing || inp.value.trim().length >= 24;
+        st.innerHTML = (ok ? S.html.pill("healthy", "Key works") : S.html.pill("failed", "Key refused") + "<span>The key is too short. Copy it again from the dashboard.</span>") +
+          '<span class="sn-secret-field__stamp">Last tested ' + S.format.stamp(new Date()) + '</span>';
+      }, 900);
+    }
+  });
+</script>
+</body>
+</html>

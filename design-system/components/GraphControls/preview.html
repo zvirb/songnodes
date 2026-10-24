@@ -1,0 +1,238 @@
+<!-- @dsCard group="Graph" height=498 subtitle="Canvas overlay: zoom, fit, reset, pause layout, link layers, Colour by (Neutral default, Energy, Key, Genre) with a legend per mode, minimap and node count; dock bottom-right, bottom bar on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>GraphControls — preview</title></head>
+<body>
+<div class="sn-preview sn-m-graph" id="root">
+  <div class="sn-preview__label">Play mode canvas · try the buttons and Colour by; layers opens a popover</div>
+  <div class="sn-graph-controls" style="height: 420px" id="gc">
+    <svg class="sn-graph-controls__canvas" id="canvas" role="img" aria-label="Track graph, 1,284 nodes and 5,210 links"><g id="world"></g></svg>
+    <div class="sn-graph-controls__count" id="count">1,284 nodes · 5,210 links</div>
+    <div class="sn-graph-controls__status" id="status" hidden><span class="sn-pill" data-status="idle">Layout paused</span></div>
+    <div class="sn-graph-controls__colour" role="group" aria-labelledby="colourLbl">
+      <span class="sn-graph-controls__colour-label" id="colourLbl">Colour by</span>
+      <div class="sn-seg" role="group" aria-labelledby="colourLbl" id="colourSeg"><button type="button" data-mode="neutral" aria-pressed="true">Neutral</button><button type="button" data-mode="energy" aria-pressed="false">Energy</button><button type="button" data-mode="key" aria-pressed="false">Key</button><button type="button" data-mode="genre" aria-pressed="false">Genre</button></div>
+      <ul class="sn-graph-controls__legend" id="legend" aria-label="Legend"></ul>
+    </div>
+    <div class="sn-graph-controls__mini" role="img" aria-label="Minimap: the highlighted box shows the part of the graph on screen"><svg viewBox="0 0 168 112" id="mini" preserveAspectRatio="none"></svg></div>
+    <div class="sn-graph-controls__dock" role="group" aria-label="Graph controls" id="dock">
+      <div class="sn-graph-controls__group">
+        <button class="sn-btn sn-btn--icon" type="button" id="zin" aria-label="Zoom in" title="Zoom in"></button>
+        <div class="sn-graph-controls__zoom" id="zval" aria-hidden="true">100%</div>
+        <button class="sn-btn sn-btn--icon" type="button" id="zout" aria-label="Zoom out" title="Zoom out"></button>
+        <button class="sn-btn sn-btn--icon" type="button" id="fit" aria-label="Fit graph to screen" title="Fit graph to screen"></button>
+        <button class="sn-btn sn-btn--icon" type="button" id="reset" aria-label="Reset view" title="Reset view"></button>
+      </div>
+      <div class="sn-graph-controls__group">
+        <button class="sn-btn sn-btn--icon" type="button" id="pause" aria-label="Pause layout" title="Pause layout"></button>
+        <div class="sn-graph-controls__layers-wrap">
+          <button class="sn-btn sn-btn--icon" type="button" id="layersBtn" aria-label="Link layers" title="Link layers" aria-expanded="false" aria-controls="layers"></button>
+          <div class="sn-graph-controls__layers" id="layers" hidden role="group" aria-labelledby="layersH">
+            <h4 id="layersH">Show links</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="sn-sr" aria-live="polite" id="live"></p>
+  </div>
+</div>
+<script>
+/* chart kit (inlined into each chart preview by build.py; React apps use d3-scale/recharts instead) */
+var K = (function () {
+  var NS = "http://www.w3.org/2000/svg", n = 0;
+  function el(tag, a, parent) {
+    var e = document.createElementNS(NS, tag);
+    if (a) for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(parent, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), parent); t.textContent = s; return t; }
+  function h(tag, cls, s) { var e = document.createElement(tag); if (cls) e.className = cls; if (s != null) e.textContent = s; return e; }
+  function uid(p) { n += 1; return (p || "k") + n; }
+  /** one linear scale per axis: domain -> range, with nice ticks */
+  function linear(d0, d1, r0, r1) {
+    var f = function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); };
+    f.invert = function (px) { return d0 + (px - r0) / (r1 - r0) * (d1 - d0); };
+    f.ticks = function (step) { var o = []; for (var v = Math.ceil(d0 / step) * step; v <= d1 + 1e-9; v += step) o.push(+v.toFixed(6)); return o; };
+    f.domain = [d0, d1]; f.range = [r0, r1];
+    return f;
+  }
+  /** band scale for categories: index -> left edge of the mark, with a capped mark width */
+  function band(count, r0, r1, pad, cap) {
+    var step = (r1 - r0) / count, bw = Math.min(step * (1 - pad), cap || Infinity);
+    var f = function (i) { return r0 + i * step + (step - bw) / 2; };
+    f.mid = function (i) { return r0 + i * step + step / 2; };
+    f.index = function (px) { return Math.max(0, Math.min(count - 1, Math.floor((px - r0) / step))); };
+    f.bw = bw; f.step = step;
+    return f;
+  }
+  /** column with a 4px rounded data end and a square baseline */
+  function barPath(x, y, w, hgt, r) {
+    if (hgt <= 0) return "";
+    r = Math.min(r == null ? 4 : r, w / 2, hgt);
+    return "M" + x + "," + (y + hgt) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + hgt) + "Z";
+  }
+  /** diagonal hatch pattern for simulated / preview data (stroke = --sim via class) */
+  function hatch(svg) {
+    var id = uid("hatch"), defs = svg.querySelector("defs") || el("defs", null, svg);
+    var p = el("pattern", { id: id, patternUnits: "userSpaceOnUse", width: 6, height: 6, patternTransform: "rotate(45)" }, defs);
+    el("line", { x1: 0, y1: 0, x2: 0, y2: 6, "class": "sn-chart-frame__hatch" }, p);
+    return "url(#" + id + ")";
+  }
+  function rem() { return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; }
+  /** one tooltip per chart; rows = [{key:"line"|"rect"|"dot"|"", c:"var(--chart-1)", value, label, dash}] */
+  function tip(host) {
+    var d = h("div", "sn-chart-frame__tip"); d.setAttribute("role", "presentation"); d.hidden = true; host.appendChild(d);
+    return {
+      show: function (x, y, title, rows) {
+        d.textContent = "";
+        if (title) d.appendChild(h("div", "sn-chart-frame__tip-title", title));
+        (rows || []).forEach(function (r) {
+          var row = h("div", "sn-chart-frame__tip-row");
+          var k = h("span", "sn-chart-frame__tip-key" + (r.key ? " sn-chart-frame__tip-key--" + r.key : ""));
+          if (r.c) k.style.setProperty("--c", r.c);
+          if (r.dash) k.classList.add("sn-chart-frame__tip-key--dash");
+          row.appendChild(k);
+          row.appendChild(h("span", "sn-chart-frame__tip-value", r.value));
+          row.appendChild(h("span", "sn-chart-frame__tip-label", r.label));
+          d.appendChild(row);
+        });
+        d.hidden = false;
+        var hw = host.clientWidth, tw = d.offsetWidth, th = d.offsetHeight;
+        var left = x + 14; if (left + tw > hw - 4) left = Math.max(4, x - tw - 14);
+        var top = Math.max(4, y - th - 10);
+        d.style.left = left + "px"; d.style.top = top + "px";
+      },
+      hide: function () { d.hidden = true; }
+    };
+  }
+  /** one tab stop per plot: arrows / Home / End move the active index; pointer maps x -> index */
+  function nav(target, count, pxToIndex, onIndex, opts) {
+    opts = opts || {}; var cur = -1;
+    function set(i) { if (i == null || i < 0) { cur = -1; onIndex(-1); return; } cur = Math.max(0, Math.min(count - 1, i)); onIndex(cur); }
+    target.addEventListener("keydown", function (e) {
+      var k = e.key, i = cur < 0 ? (opts.start || 0) : cur;
+      if (k === "ArrowRight" || k === "ArrowUp") i = cur < 0 ? i : i + 1;
+      else if (k === "ArrowLeft" || k === "ArrowDown") i = cur < 0 ? i : i - 1;
+      else if (k === "Home") i = 0; else if (k === "End") i = count - 1;
+      else if (k === "Escape") { set(-1); return; } else return;
+      e.preventDefault(); set(i);
+    });
+    target.addEventListener("focus", function () { if (cur < 0) set(opts.start || 0); });
+    target.addEventListener("blur", function () { set(-1); });
+    target.addEventListener("pointermove", function (e) { var b = target.getBoundingClientRect(); set(pxToIndex(e.clientX - b.left, e.clientY - b.top)); });
+    target.addEventListener("pointerleave", function () { if (document.activeElement !== target) set(-1); });
+    return { set: set, get: function () { return cur; } };
+  }
+  /** re-render on container resize (charts are drawn at 1 user unit = 1 CSS px) */
+  function fit(host, draw) {
+    var w = 0;
+    function go() { var nw = host.clientWidth; if (nw && Math.abs(nw - w) > 1) { w = nw; draw(nw); } }
+    if (window.ResizeObserver) new ResizeObserver(go).observe(host);
+    go();
+  }
+  /** "View as table" toggle: swaps plot and table, keeps focus on the button */
+  function tableToggle(btn, plot, table) {
+    var S = window.SongNodes;
+    function paint(on) { btn.innerHTML = S.icon(on ? "chart-line" : "table-2") + (on ? "View as chart" : "View as table"); }
+    paint(false);
+    btn.addEventListener("click", function () { var on = table.hidden; table.hidden = !on; plot.hidden = on; paint(on); });
+  }
+  return { el: el, text: text, h: h, uid: uid, linear: linear, band: band, barPath: barPath, hatch: hatch, rem: rem, tip: tip, nav: nav, fit: fit, tableToggle: tableToggle };
+})();
+
+(function () {
+  var S = window.SongNodes;
+  function $(id) { return document.getElementById(id); }
+  $("zin").innerHTML = S.icon("zoom-in"); $("zout").innerHTML = S.icon("zoom-out"); $("fit").innerHTML = S.icon("maximize-2"); $("reset").innerHTML = S.icon("rotate-ccw"); $("layersBtn").innerHTML = S.icon("layers");
+  // mock graph (seeded)
+  var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var W = 1000, H = 640, nodes = [], edges = [], TYPES = [["adjacency", "Played back to back"], ["similarity", "Similar sound"], ["key", "Compatible key"], ["collab", "Same artists"], ["genre", "Same genre"]];
+  var centres = [[300, 260], [640, 220], [520, 450], [800, 430], [200, 470]];
+  var KEYS = ["5A", "6A", "7A", "8A", "9A", "10A", "8B", "11B", "4A", "12A"];
+  for (var i = 0; i < 90; i++) { var c = centres[i % 5]; nodes.push({ x: c[0] + (rnd() - 0.5) * 220, y: c[1] + (rnd() - 0.5) * 170, r: 2 + rnd() * rnd() * 9,
+    e: rnd() < 0.06 ? 0 : 1 + Math.floor(rnd() * 10), k: rnd() < 0.06 ? "" : KEYS[Math.floor(rnd() * KEYS.length)], g: 1 + ((i % 5) + (rnd() < 0.25 ? Math.floor(rnd() * 8) : 0)) % 8 }); }
+  nodes[0].x = 300; nodes[0].y = 260; nodes[0].r = 11; nodes[0].now = true; nodes[1].x = 640; nodes[1].y = 220; nodes[1].r = 9; nodes[1].sel = true;
+  for (var j = 0; j < 150; j++) { var a = Math.floor(rnd() * 90), b = (a + 5 * Math.floor(1 + rnd() * 3)) % 90; edges.push({ a: a, b: b, t: TYPES[Math.floor(rnd() * 5)][0] }); }
+  var world = $("world"), layerOn = { adjacency: true, similarity: true, key: true, collab: false, genre: false };
+  var gE = K.el("g", null, world), gN = K.el("g", null, world);
+  function drawEdges() {
+    gE.textContent = "";
+    edges.forEach(function (e) { if (!layerOn[e.t]) return; var a = nodes[e.a], b = nodes[e.b]; K.el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, "class": "sn-graph-controls__edge" + (e.t === "similarity" ? " sn-graph-controls__edge--similarity" : e.t === "key" ? " sn-graph-controls__edge--key" : "") }, gE); });
+  }
+  /* Colour by: Neutral (default) / Energy / Key / Genre. Selected (lavender) and now (amber + "Now" tag) sit on top in every mode. */
+  var GENRES = ["House", "Techno", "UK garage", "Electro", "Breaks", "Drum and bass", "Ambient", "Other"], mode = "neutral";
+  function fill(n) {
+    if (mode === "energy") return n.e ? "var(--energy-" + n.e + ")" : null;
+    if (mode === "key") return n.k ? "var(--key-" + n.k.toLowerCase() + ")" : null;
+    if (mode === "genre") return "var(--chart-" + n.g + ")";
+    return "";
+  }
+  function drawNodes() {
+    gN.textContent = "";
+    nodes.forEach(function (n) {
+      var f = fill(n), a = { cx: n.x, cy: n.y, r: n.r, "class": "sn-graph-controls__node" + (f === null ? " sn-graph-controls__node--hollow" : "") };
+      if (f) a.style = "--c:" + f;
+      K.el("circle", a, gN);
+      if (n.sel) K.el("circle", { cx: n.x, cy: n.y, r: n.r + 4, "class": "sn-graph-controls__ring-selected" }, gN);
+      if (n.now) { K.el("circle", { cx: n.x, cy: n.y, r: n.r + 4, "class": "sn-graph-controls__ring-now" }, gN);
+        K.el("rect", { x: n.x - 15, y: n.y - n.r - 23, width: 30, height: 14, rx: 3, "class": "sn-graph-controls__now-tag" }, gN);
+        K.text(gN, n.x, n.y - n.r - 16, "Now", { "class": "sn-graph-controls__now-text" }); }
+    });
+  }
+  function li(sw, t) { return "<li>" + sw + "<span>" + t + "</span></li>"; }
+  function drawLegend() {
+    var h = "";
+    if (mode === "energy") { h = '<li><span class="sn-graph-controls__ramp" aria-hidden="true">'; for (var i = 1; i <= 10; i++) h += '<i style="--c: var(--energy-' + i + ')"></i>'; h += "</span></li>" + '<li class="sn-graph-controls__legend-note">Energy 1–10: Low 1–4 · Building 5–7 · High 8–10. Hollow: energy ?</li>'; }
+    else if (mode === "key") { h = ["5A", "6A", "7A", "8A", "9A", "10A", "8B", "11B"].map(function (k) { return "<li>" + S.html.key(k) + "</li>"; }).join("") + '<li class="sn-graph-controls__legend-note">Camelot wheel colours. Hollow: key ?</li>'; }
+    else if (mode === "genre") { h = GENRES.map(function (g, i) { return li('<span class="sn-graph-controls__dot" style="--c: var(--chart-' + (i + 1) + ')" aria-hidden="true"></span>', g); }).join(""); }
+    else { h = '<li class="sn-graph-controls__legend-note">All tracks alike; only states carry colour.</li>'; }
+    h += li('<span class="sn-graph-controls__ring" style="--c: var(--brand)" aria-hidden="true"></span>', "Selected") + li('<span class="sn-graph-controls__ring" style="--c: var(--now)" aria-hidden="true"></span>', "Now playing");
+    $("legend").innerHTML = h;
+  }
+  drawNodes(); drawLegend();
+  var cseg = $("colourSeg");
+  cseg.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; mode = b.dataset.mode;
+    cseg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); drawNodes(); drawLegend(); $("live").textContent = "Colour by " + b.textContent.toLowerCase(); });
+  drawEdges();
+  // minimap
+  var mini = $("mini"); nodes.forEach(function (n) { K.el("circle", { cx: n.x * 168 / W, cy: n.y * 112 / H, r: 1.4, "class": "sn-graph-controls__mini-dot" }, mini); });
+  var view = K.el("rect", { "class": "sn-graph-controls__mini-view", rx: 2 }, mini);
+  // view state
+  var zoom = 1, FIT = 1;
+  function apply(announce) {
+    var box = $("canvas").getBoundingClientRect(), cw = box.width || 900, ch = box.height || 420;
+    var base = Math.min(cw / W, ch / H), s = base * zoom;
+    world.setAttribute("transform", "translate(" + (cw / 2 - W / 2 * s) + "," + (ch / 2 - H / 2 * s) + ") scale(" + s + ")");
+    var vw = Math.min(168, 168 * (cw / s) / W), vh = Math.min(112, 112 * (ch / s) / H);
+    view.setAttribute("x", 84 - vw / 2); view.setAttribute("y", 56 - vh / 2); view.setAttribute("width", vw); view.setAttribute("height", vh);
+    $("zval").textContent = Math.round(zoom * 100) + "%";
+    $("zout").disabled = zoom <= 0.25; $("zin").disabled = zoom >= 4;
+    if (announce) $("live").textContent = announce;
+  }
+  $("zin").onclick = function () { zoom = Math.min(4, +(zoom * 1.25).toFixed(3)); apply("Zoom " + Math.round(zoom * 100) + "%"); };
+  $("zout").onclick = function () { zoom = Math.max(0.25, +(zoom / 1.25).toFixed(3)); apply("Zoom " + Math.round(zoom * 100) + "%"); };
+  $("fit").onclick = function () { zoom = FIT; apply("Whole graph in view"); };
+  $("reset").onclick = function () { zoom = 1; apply("View reset to 100%"); };
+  var paused = false;
+  function paintPause() { $("pause").innerHTML = S.icon(paused ? "play" : "pause"); var l = paused ? "Resume layout" : "Pause layout"; $("pause").setAttribute("aria-label", l); $("pause").title = l; $("status").hidden = !paused; }
+  $("pause").onclick = function () { paused = !paused; paintPause(); $("live").textContent = paused ? "Layout paused" : "Layout running"; };
+  paintPause();
+  // layers popover
+  var pop = $("layers"), lb = $("layersBtn");
+  TYPES.forEach(function (t) {
+    var l = document.createElement("label"); l.className = "sn-check";
+    l.innerHTML = '<input type="checkbox"' + (layerOn[t[0]] ? " checked" : "") + '><svg width="24" height="10" aria-hidden="true"><line x1="1" y1="5" x2="23" y2="5" class="sn-graph-controls__edge' + (t[0] === "similarity" ? " sn-graph-controls__edge--similarity" : t[0] === "key" ? " sn-graph-controls__edge--key" : "") + ' sn-graph-controls__edge--key-sample"/></svg>' + t[1];
+    l.querySelector("input").addEventListener("change", function (e) { layerOn[t[0]] = e.target.checked; drawEdges(); });
+    pop.appendChild(l);
+  });
+  function setPop(open) { pop.hidden = !open; lb.setAttribute("aria-expanded", open); if (open) pop.querySelector("input").focus(); }
+  lb.onclick = function () { setPop(pop.hidden); };
+  pop.addEventListener("keydown", function (e) { if (e.key === "Escape") { setPop(false); lb.focus(); } });
+  document.addEventListener("click", function (e) { if (!pop.hidden && !pop.contains(e.target) && e.target !== lb && !lb.contains(e.target)) setPop(false); });
+  if (window.ResizeObserver) new ResizeObserver(function () { apply(); }).observe($("gc"));
+  apply();
+})();
+</script>
+</body>
+</html>

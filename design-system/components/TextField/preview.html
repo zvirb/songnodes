@@ -1,0 +1,65 @@
+<!-- @dsCard group="Inputs" height=349 subtitle="Label with help, optional marking, character count, error with aria-invalid, read-only, disabled with reason, multi-line" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TextField — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5) var(--space-6); }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-grid">
+    <div class="sn-field sn-text-field">
+      <label class="sn-text-field__label" for="tf-name"><span>Set name</span><span class="sn-text-field__count" id="tf-name-count" aria-hidden="true">18 / 40</span></label>
+      <span class="sn-field__help" id="tf-name-help">Shown on the saved sets list and in the TIDAL playlist title.</span>
+      <input class="sn-input" id="tf-name" value="Peak time Friday 3" maxlength="60" data-max="40" aria-describedby="tf-name-help tf-name-sr">
+      <span class="sn-sr" id="tf-name-sr" aria-live="polite"></span>
+    </div>
+
+    <div class="sn-field sn-text-field">
+      <label class="sn-text-field__label" for="tf-venue"><span>Venue <span class="sn-text-field__optional">(optional)</span></span></label>
+      <span class="sn-field__help" id="tf-venue-help">For your notes only, for example “Miscellania, Sat 24 Oct”.</span>
+      <input class="sn-input" id="tf-venue" aria-describedby="tf-venue-help" placeholder="">
+    </div>
+
+    <div class="sn-field sn-text-field">
+      <label class="sn-text-field__label" for="tf-isrc"><span>ISRC</span></label>
+      <span class="sn-field__help" id="tf-isrc-help">12 characters, letters and numbers, for example GBCEN2300412.</span>
+      <input class="sn-input sn-input--data" id="tf-isrc" value="GBCEN23004" aria-invalid="true" aria-describedby="tf-isrc-help tf-isrc-err" spellcheck="false" autocapitalize="characters">
+      <span class="sn-field__error" id="tf-isrc-err">ISRC must be 12 characters. This one has 10.</span>
+    </div>
+
+    <div class="sn-field sn-text-field">
+      <label class="sn-text-field__label" for="tf-sid"><span>Spotify ID</span></label>
+      <span class="sn-field__help" id="tf-sid-help">Read-only: set by the Spotify match. Unlink the track to change it.</span>
+      <input class="sn-input sn-input--data" id="tf-sid" value="2b8fOow8UzyDFAE27YhOZM" readonly aria-describedby="tf-sid-help">
+    </div>
+
+    <div class="sn-field sn-text-field">
+      <label class="sn-text-field__label" for="tf-pl"><span>TIDAL playlist name</span></label>
+      <input class="sn-input" id="tf-pl" value="Naarm weekly" disabled aria-describedby="tf-pl-why">
+      <span class="sn-text-field__reason" id="tf-pl-why"></span>
+    </div>
+
+    <div class="sn-field sn-text-field">
+      <label class="sn-text-field__label" for="tf-notes"><span>Transition notes <span class="sn-text-field__optional">(optional)</span></span><span class="sn-text-field__count" id="tf-notes-count" aria-hidden="true"></span></label>
+      <textarea class="sn-textarea" id="tf-notes" data-max="140" aria-describedby="tf-notes-sr" rows="3">Loop the last 16 bars of Glue, bring So U Kno in on the breakdown, then cut the low end for 8 bars and swap at the drop.</textarea>
+      <span class="sn-sr" id="tf-notes-sr" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  document.getElementById("tf-pl-why").innerHTML = S.icon("lock", { size: 14 }) + '<span>Connect TIDAL in Services to name the playlist.</span>';
+  function count(el) {
+    var max = +el.dataset.max, n = el.value.length, out = document.getElementById(el.id + "-count"), sr = document.getElementById(el.id + "-sr");
+    var over = n > max;
+    out.textContent = n + " / " + max; out.toggleAttribute("data-over", over);
+    el.setAttribute("aria-invalid", over ? "true" : "false");
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { // announce after typing pauses, only near or over the limit (GOV.UK character count)
+      sr.textContent = over ? "You have " + (n - max) + " characters too many" : (max - n <= 10 ? "You have " + (max - n) + " characters remaining" : "");
+    }, 700);
+  }
+  document.querySelectorAll("[data-max]").forEach(function (el) { count(el); el.addEventListener("input", function () { count(el); }); });
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# Design-system conformance (design-system/17-governance.md, "Conformance checking").
+# The SongNodes design system in design-system/ is the single source of truth for every
+# formatting and design decision; this workflow keeps the frontend copy in sync and stops
+# new raw colours, emoji and browser dialogs in code that has moved onto the system.
+name: design-system
+
+on:
+  pull_request:
+    paths: ["design-system/**", "frontend/**", "scripts/sync-design-system.sh", ".github/workflows/design-system.yml"]
+  push:
+    branches: [main, develop]
+    paths: ["design-system/**", "frontend/**", "scripts/sync-design-system.sh"]
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frontend copy matches design-system/
+        run: bash scripts/sync-design-system.sh --check
+      - name: No raw colours, emoji or browser dialogs in migrated code
+        # Migrated areas only; legacy components join this list as each migration phase lands.
+        run: |
+          set -euo pipefail
+          paths="frontend/src/shell frontend/src/pages frontend/src/lib/songnodes.tsx frontend/src/lib/graphColours.ts frontend/src/features frontend/src/App.tsx frontend/src/main.tsx frontend/src/styles/app.css"
+          status=0
+          if grep -rnE "#[0-9a-fA-F]{3,8}\b|rgba?\(" $paths --include=*.ts --include=*.tsx --include=*.css | grep -v "design-system exception"; then echo "::error::Raw colour found; use a design-system token"; status=1; fi
+          # Emoji ranges; the design system's own status glyphs (● ◐ ○ ▲ ✓ ✕ ↻) are allowed.
+          if LC_ALL=C.UTF-8 grep -rnP "[\x{1F300}-\x{1FAFF}\x{2600}-\x{26FF}]" $paths; then echo "::error::Emoji found; use a Lucide icon plus a word"; status=1; fi
+          if grep -rnE "\b(window\.)?(alert|confirm|prompt)\(" $paths --include=*.ts --include=*.tsx | grep -v "^\s*//"; then echo "::error::Browser dialog found; use ConfirmDialog/Toast"; status=1; fi
+          exit $status
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: Type-check, unit tests and build
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npx tsc --noEmit -p .
+          npx vitest run src
+          npx vite build

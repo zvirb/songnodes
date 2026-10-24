@@ -1,0 +1,46 @@
+<!-- @dsCard group="Data" height=323 subtitle="Where a track was heard: radio shows, tracklist sites, charts with position, stores; +N with the full list on click; in a table cell and a tonal card" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SourceBadge — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Single source</div>
+  <div class="sn-preview__row" id="single"></div>
+  <div class="sn-preview__label">Several sources (+N opens the list)</div>
+  <div class="sn-preview__row" id="multi" style="gap:24px"></div>
+  <div class="sn-preview__label">Inside a tonal card</div>
+  <div class="sn-card sn-card--compact sn-card--tonal sn-m-sources" style="max-width:420px">
+    <strong>Interplanetary Criminal – Slow Burner</strong>
+    <div class="sn-row" id="tonal"></div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes, n = 0;
+  var ICON = { radio: "radio-tower", list: "list-music", chart: "chart-column", store: "disc-3" };
+  /* Preview helper mirroring <SourceBadge sources=[...] />. */
+  function badge(list) {
+    var first = list[0], id = "src-" + (++n);
+    var h = '<span class="sn-source-badge"><span class="sn-source-badge__name" title="' + S.esc(first.name + (first.detail ? " " + first.detail : "")) + '">' + S.icon(ICON[first.kind], { size: 14 }) + S.esc(first.name) +
+      (first.detail ? ' <span class="sn-source-badge__detail">' + S.esc(first.detail) + "</span>" : "") + "</span>";
+    if (list.length > 1) {
+      h += '<button class="sn-source-badge__more" type="button" aria-expanded="false" aria-controls="' + id + '" aria-label="' + (list.length - 1) + ' more sources">+' + (list.length - 1) + '</button>' +
+        '<ul class="sn-source-badge__pop" id="' + id + '" hidden>' + list.map(function (s) { return "<li><span>" + S.esc(s.name) + "</span><span>" + S.esc(s.when || s.detail || "") + "</span></li>"; }).join("") + "</ul>";
+    }
+    return h + "</span>";
+  }
+  var A = { name: "PBS Soul Time", kind: "radio", when: "Sat 17 Oct" }, B = { name: "3RRR Superfreak", kind: "radio", when: "Thu 22 Oct" }, C = { name: "triple j Mix Up", kind: "radio", when: "Fri 23 Oct" },
+      D = { name: "ARIA Club Chart", kind: "chart", detail: "#12 · 4w" }, E = { name: "1001tracklists", kind: "list", when: "14 sets" }, F = { name: "MixesDB", kind: "list", when: "3 mixes" },
+      G = { name: "Beatport", kind: "store", detail: "Top 100 #41" }, H = { name: "Spotify", kind: "store", when: "playlist add" };
+  document.getElementById("single").innerHTML = [A, B, C, D, E, F, G, H].map(function (s) { return badge([s]); }).join("");
+  document.getElementById("multi").innerHTML = badge([C, A, B, D]) + badge([E, F, H]) + badge([D, C]);
+  document.getElementById("tonal").innerHTML = badge([C, D, E]);
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest(".sn-source-badge__more");
+    document.querySelectorAll(".sn-source-badge__more[aria-expanded=true]").forEach(function (o) { if (o !== b) { o.setAttribute("aria-expanded", "false"); document.getElementById(o.getAttribute("aria-controls")).hidden = true; } });
+    if (!b) return;
+    var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", String(open)); document.getElementById(b.getAttribute("aria-controls")).hidden = !open;
+  });
+  document.addEventListener("keydown", function (ev) { if (ev.key !== "Escape") return; var o = document.querySelector(".sn-source-badge__more[aria-expanded=true]"); if (o) { o.click(); o.focus(); } });
+</script>
+</body>
+</html>

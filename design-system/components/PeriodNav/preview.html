@@ -1,0 +1,99 @@
+<!-- @dsCard group="Navigation" height=290 subtitle="Week view on the current week (This week disabled), month view in the past, and the 400px phone layout; arrows, [ and ] step, scale switch re-labels" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>PeriodNav — preview</title>
+<style> .phone { width: 400px; max-width: 100%; } </style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Radio plays · week (current period) · press [ or ] anywhere</div>
+  <div id="n1"></div>
+  <div class="sn-preview__label">ARIA Club Chart · month, three months back</div>
+  <div id="n2"></div>
+  <div class="sn-preview__label">Phone · 400px</div>
+  <div class="phone" id="n3"></div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  /* preview helper: radiogroup with roving tabindex (APG radio group: arrows move and check, wrap, skip disabled) */
+  function snSeg(group, onChange) {
+    function radios() { return Array.prototype.slice.call(group.querySelectorAll('[role="radio"]')); }
+    function pick(r, focus) {
+      if (!r || r.getAttribute("aria-disabled") === "true") return;
+      radios().forEach(function (x) { var on = x === r; x.setAttribute("aria-checked", on ? "true" : "false"); x.tabIndex = on ? 0 : -1; });
+      if (focus) r.focus();
+      if (onChange) onChange(r.getAttribute("data-value"), r);
+    }
+    radios().forEach(function (x) { x.tabIndex = x.getAttribute("aria-checked") === "true" ? 0 : -1; });
+    group.addEventListener("click", function (e) { var r = e.target.closest('[role="radio"]'); if (r) pick(r, true); });
+    group.addEventListener("keydown", function (e) {
+      var rs = radios().filter(function (x) { return x.getAttribute("aria-disabled") !== "true"; }), i = rs.indexOf(document.activeElement);
+      if (i < 0) return;
+      var d = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : (e.key === "ArrowLeft" || e.key === "ArrowUp") ? -1 : 0;
+      if (d) { e.preventDefault(); pick(rs[(i + d + rs.length) % rs.length], true); }
+      else if (e.key === "Home") { e.preventDefault(); pick(rs[0], true); }
+      else if (e.key === "End") { e.preventDefault(); pick(rs[rs.length - 1], true); }
+      else if (e.key === " ") { e.preventDefault(); pick(document.activeElement, true); }
+    });
+    return { set: function (v) { pick(group.querySelector('[data-value="' + v + '"]'), false); } };
+  }
+  /** Build the markup for a segmented control. opts: [{value,label,icon,disabled,reason}] */
+  function snSegHtml(label, opts, value, cls) {
+    var S = window.SongNodes;
+    return '<div class="sn-seg sn-segmented-control' + (cls ? " " + cls : "") + '" role="radiogroup" aria-label="' + S.esc(label) + '">' + opts.map(function (o) {
+      return '<button type="button" role="radio" data-value="' + o.value + '" aria-checked="' + (o.value === value) + '"' + (o.disabled ? ' aria-disabled="true" title="' + S.esc(o.reason || "") + '"' : "") + (o.aria ? ' aria-label="' + S.esc(o.aria) + '"' : "") + ">" + (o.icon ? S.icon(o.icon, { size: 16 }) : "") + (o.label ? S.esc(o.label) : "") + "</button>";
+    }).join("") + "</div>";
+  }
+
+  var TODAY = new Date("2026-10-24T12:00:00+11:00");
+  function startOf(d, scale) {
+    var x = new Date(d.getTime());
+    if (scale === "week") { var dow = (x.getDay() + 6) % 7; x.setDate(x.getDate() - dow); }
+    if (scale === "month") x.setDate(1);
+    return x;
+  }
+  function step(d, scale, n) { var x = new Date(d.getTime()); if (scale === "day") x.setDate(x.getDate() + n); else if (scale === "week") x.setDate(x.getDate() + 7 * n); else x.setMonth(x.getMonth() + n); return x; }
+  function label(d, scale) {
+    if (scale === "day") return '<span class="sn-lead">' + new Intl.DateTimeFormat("en-AU", { weekday: "long", timeZone: S.timeZone }).format(d) + "</span> " + S.format.date(d);
+    if (scale === "week") return '<span class="sn-lead">Week of</span> ' + S.format.date(d);
+    return new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric", timeZone: S.timeZone }).format(d);
+  }
+  var NOUN = { day: "Today", week: "This week", month: "This month" }, UNIT = { day: "day", week: "week", month: "month" };
+  function make(host, id, scale, offset, hint) {
+    var st = { scale: scale, d: step(startOf(TODAY, scale), scale, offset) };
+    host.innerHTML = '<div class="sn-period-nav" role="group" aria-label="Period"><div class="sn-period-nav__bar">' +
+      '<div class="sn-period-nav__steps"><button class="sn-btn sn-btn--icon sn-btn--sm" type="button" data-step="-1" aria-keyshortcuts="[">' + S.icon("chevron-left") + "</button>" +
+      '<button class="sn-btn sn-btn--icon sn-btn--sm" type="button" data-step="1" aria-keyshortcuts="]">' + S.icon("chevron-right") + "</button></div>" +
+      '<button class="sn-btn sn-btn--sm" type="button" data-today></button>' +
+      '<h2 class="sn-period-nav__label" aria-live="polite" id="' + id + '-label"></h2>' +
+      (hint ? '<span class="sn-period-nav__hint"><kbd>[</kbd><kbd>]</kbd> previous / next</span>' : "") +
+      '<div class="sn-period-nav__scale">' + snSegHtml("Time scale", [{ value: "day", label: "Day" }, { value: "week", label: "Week" }, { value: "month", label: "Month" }], scale, "sn-segmented-control--sm") + "</div></div></div>";
+    var prev = host.querySelector('[data-step="-1"]'), next = host.querySelector('[data-step="1"]'), today = host.querySelector("[data-today]"), lab = host.querySelector(".sn-period-nav__label");
+    function render() {
+      var cur = startOf(TODAY, st.scale).getTime() === st.d.getTime();
+      lab.innerHTML = label(st.d, st.scale);
+      prev.setAttribute("aria-label", "Previous " + UNIT[st.scale]); prev.title = "Previous " + UNIT[st.scale] + " ( [ )";
+      next.setAttribute("aria-label", "Next " + UNIT[st.scale]); next.title = "Next " + UNIT[st.scale] + " ( ] )";
+      today.textContent = NOUN[st.scale];
+      if (cur) { today.setAttribute("aria-disabled", "true"); today.title = "Already showing " + NOUN[st.scale].toLowerCase(); } else { today.removeAttribute("aria-disabled"); today.title = "Jump to " + NOUN[st.scale].toLowerCase(); }
+    }
+    function go(n) { st.d = step(st.d, st.scale, n); render(); }
+    prev.addEventListener("click", function () { go(-1); }); next.addEventListener("click", function () { go(1); });
+    today.addEventListener("click", function () { if (today.getAttribute("aria-disabled") !== "true") { st.d = startOf(TODAY, st.scale); render(); } });
+    snSeg(host.querySelector(".sn-segmented-control"), function (v) { st.d = startOf(st.d, v); st.scale = v; render(); });
+    render();
+    return go;
+  }
+  var go1 = make(document.getElementById("n1"), "a", "week", 0, true);
+  make(document.getElementById("n2"), "b", "month", -3, true);
+  make(document.getElementById("n3"), "c", "week", -1, false);
+  /* [ and ] step the page's main PeriodNav, unless the person is typing */
+  document.addEventListener("keydown", function (e) {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "[") { e.preventDefault(); go1(-1); } else if (e.key === "]") { e.preventDefault(); go1(1); }
+  });
+})();
+</script>
+</body>
+</html>

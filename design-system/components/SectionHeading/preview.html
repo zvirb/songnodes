@@ -1,0 +1,34 @@
+<!-- @dsCard group="Data" height=258 subtitle="Thin–bold section titles at title-m and title-s with count, right-side action or link, caveat line, and a ruled variant" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SectionHeading — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-section-heading sn-section-heading--rule">
+    <h2 class="sn-title title-m"><span class="sn-lead">Crate:</span> Needs an energy check</h2>
+    <span class="sn-section-heading__count">47 tracks</span>
+    <div class="sn-section-heading__end"><button class="sn-btn sn-btn--sm" type="button" id="b1"></button></div>
+    <p class="sn-section-heading__caveat" id="cav"></p>
+  </div>
+  <div class="sn-section-heading">
+    <h2 class="sn-title title-m"><span class="sn-lead">Set builder:</span> Saved sets</h2>
+    <span class="sn-section-heading__count">6</span>
+    <div class="sn-section-heading__end"><a class="sn-link sn-m-sets" href="#sets">See all sets</a></div>
+  </div>
+  <div class="sn-section-heading">
+    <h3 class="sn-title title-s"><span class="sn-lead">Sources:</span> Heard this week</h3>
+    <span class="sn-section-heading__count">38</span>
+    <div class="sn-section-heading__end"><a class="sn-link sn-m-sources" href="#sources">Open Sources</a></div>
+  </div>
+  <div class="sn-section-heading">
+    <h3 class="sn-title title-s"><span class="sn-lead">Pipeline:</span> Scraper health</h3>
+    <p class="sn-section-heading__caveat">Checked every 5 min. Counts reset at midnight AEDT.</p>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  document.getElementById("b1").innerHTML = S.icon("download") + "Export CSV";
+  document.getElementById("cav").innerHTML = S.icon("info", { size: 15 }) + "<span>Energy is estimated from BPM and source; 47 tracks need a check.</span>";
+</script>
+</body>
+</html>

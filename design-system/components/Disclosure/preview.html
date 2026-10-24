@@ -1,0 +1,53 @@
+<!-- @dsCard group="Data" height=443 subtitle="Native details/summary sections with rotating chevron and a hint; remembers open state per section; boxed variant for filter panels" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Disclosure — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Plain, stacked (method notes) — open state is remembered on this device</div>
+  <div style="max-width:720px">
+    <details class="sn-disclosure" data-remember="library.how-energy" open>
+      <summary><span class="sn-disclosure__chev"></span>How energy is scored<span class="sn-disclosure__hint">1 to 10</span></summary>
+      <div class="sn-disclosure__body">
+        <p>Energy starts from BPM and the show a track was heard on, then moves up or down one step for vocals, drums and key. Tracks with only a BPM get an estimate and a “Check energy” flag.</p>
+        <p>Low is 1–4, Building 5–7, High 8–10. Sets climb one step at a time and drop 2–3 after a peak.</p>
+      </div>
+    </details>
+    <details class="sn-disclosure" data-remember="library.method">
+      <summary><span class="sn-disclosure__chev"></span>How the library is built<span class="sn-disclosure__hint">weekly, Mondays 06:00</span></summary>
+      <div class="sn-disclosure__body"><p>Each Monday the run reads the week's PBS, 3RRR and triple j playlists and the ARIA Club Chart, matches every play to TIDAL, Deezer and Beatport, and adds new tracks to the crate.</p></div>
+    </details>
+    <details class="sn-disclosure" data-remember="library.rotation">
+      <summary><span class="sn-disclosure__chev"></span>How rotation is worked out<span class="sn-disclosure__hint">run of 24 Oct 2026</span></summary>
+      <div class="sn-disclosure__body">
+        <p>High rotation and Vault are worked out by the weekly run from the library’s own play data.</p>
+        <p><b>High rotation:</b> heard on 2 or more different shows in the run window, or on the ARIA Club Chart for 4 weeks or fewer (new or rising). Everything else heard is Standard. This rule reproduces all 294 tracks of this run.</p>
+        <p><b>Vault:</b> not set yet. There are 15 days of play history; the threshold is learned once there are 8 weeks, from the 90th percentile of gaps between repeat plays and 3× the median show cadence, using the larger. Until then no track moves to Vault.</p>
+      </div>
+    </details>
+  </div>
+  <div class="sn-preview__label">Boxed (advanced filters in the rail)</div>
+  <div style="max-width:320px">
+    <details class="sn-disclosure sn-disclosure--boxed" data-remember="library.advanced">
+      <summary><span class="sn-disclosure__chev"></span>Advanced filters<span class="sn-disclosure__hint">2 on</span></summary>
+      <div class="sn-disclosure__body sn-stack" style="gap:4px">
+        <label class="sn-check"><input type="checkbox" checked> Has key and BPM</label>
+        <label class="sn-check"><input type="checkbox"> Needs an energy check</label>
+        <label class="sn-check"><input type="checkbox" checked> Played on 2+ shows</label>
+      </div>
+    </details>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  document.querySelectorAll(".sn-disclosure__chev").forEach(function (c) { c.innerHTML = S.icon("chevron-right"); });
+  /* Remember open state per section (per-viewer convenience; works without storage). */
+  document.querySelectorAll("details[data-remember]").forEach(function (d) {
+    var k = "sn-disclosure:" + d.getAttribute("data-remember"), v = null;
+    try { v = localStorage.getItem(k); } catch (e) {}
+    if (v === "1") d.open = true; else if (v === "0") d.open = false;
+    d.addEventListener("toggle", function () { try { localStorage.setItem(k, d.open ? "1" : "0"); } catch (e) {} });
+  });
+</script>
+</body>
+</html>

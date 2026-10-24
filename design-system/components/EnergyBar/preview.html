@@ -1,0 +1,48 @@
+<!-- @dsCard group="Music" height=417 subtitle="Row size 1–10, detail size with tier label, target marker, unknown energy, check-energy flag, 10-step legend with tier gaps" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>EnergyBar — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Row size (table cells), 1 to 10</div>
+  <div class="sn-preview__row" id="rows" style="gap:16px"></div>
+  <div class="sn-preview__label">Flags and gaps · unknown · needs an energy check · with set target</div>
+  <div class="sn-preview__row" id="flags" style="gap:28px"></div>
+  <div class="sn-preview__label">Detail size (track detail, slot editor)</div>
+  <div class="sn-preview__row" id="large" style="gap:40px"></div>
+  <div class="sn-preview__label">Scale legend</div>
+  <div id="legend"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  /* Preview helper mirroring the React EnergyBar: S.html.energy() plus target, size, unknown and flag. */
+  function bar(e, o) {
+    o = o || {};
+    var segs = "";
+    for (var i = 1; i <= 10; i++) segs += '<i class="' + (e && i <= e ? "on" : "") + (o.target === i ? " target" : "") + '"></i>';
+    var cls = "sn-energy sn-energy-bar" + (o.lg ? " sn-energy-bar--lg" : "") + (e ? "" : " sn-energy-bar--unknown");
+    var t = e ? S.tier(e) : null;
+    var sr = e ? " of 10, " + t + " tier" + (o.target ? ", target " + o.target : "") + (o.check ? ", estimated, needs a check" : "") : "Energy not set";
+    var out = '<span class="' + cls + '"' + (e ? ' title="Energy ' + e + " · " + S.TIER_LABEL[t] + '"' : ' title="Energy not set"') + '>' +
+      '<span class="sn-energy__bar" aria-hidden="true">' + segs + '</span>' +
+      '<span class="sn-energy__n"' + (e ? "" : ' aria-hidden="true"') + '>' + (e || "–") + '</span>' +
+      '<span class="sn-sr">' + sr + '</span>';
+    if (o.lg && e) out += '<span class="sn-energy-bar__tier" aria-hidden="true">' + S.TIER_LABEL[t] + '</span>';
+    if (o.target) out += '<span class="sn-energy-bar__target" aria-hidden="true">target ' + o.target + '</span>';
+    if (o.check) out += '<span class="sn-energy-bar__flag" aria-hidden="true">Check</span>';
+    return out + '</span>';
+  }
+  var r = ""; for (var i = 1; i <= 10; i++) r += bar(i); document.getElementById("rows").innerHTML = r;
+  document.getElementById("flags").innerHTML = bar(null) + bar(6, { check: true }) + bar(7, { target: 8 }) + bar(8, { target: 8 });
+  document.getElementById("large").innerHTML = bar(3, { lg: true }) + bar(6, { lg: true }) + bar(9, { lg: true, check: true });
+  var L = '<div class="sn-energy-bar-legend" role="img" aria-label="Energy scale 1 to 10: Low 1 to 4, Building 5 to 7, High 8 to 10">';
+  var cols = [1, 2, 3, 4, 0, 5, 6, 7, 0, 8, 9, 10];
+  cols.forEach(function (n) { L += n ? '<span class="sn-energy-bar-legend__sw" data-e="' + n + '"></span>' : "<span></span>"; });
+  cols.forEach(function (n) { L += n ? '<span class="sn-energy-bar-legend__n">' + n + "</span>" : "<span></span>"; });
+  L += '<span class="sn-energy-bar-legend__tier sn-energy-bar-legend__tier--low">Low</span>' +
+       '<span class="sn-energy-bar-legend__tier sn-energy-bar-legend__tier--building">Building</span>' +
+       '<span class="sn-energy-bar-legend__tier sn-energy-bar-legend__tier--high">High</span></div>';
+  document.getElementById("legend").innerHTML = L;
+</script>
+</body>
+</html>

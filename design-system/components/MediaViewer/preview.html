@@ -1,0 +1,119 @@
+<!-- @dsCard group="Surfaces" height=576 subtitle="Artwork, waveform and photo with zoom and pan, caption, source and alt text, prev/next, close; arrows, +/−, 0 and Esc" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>MediaViewer — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__row">
+    <button class="sn-btn sn-btn--sm" type="button" id="full">${max}Open full screen</button>
+    <span class="sn-field__help">Click the picture or use the keys: ← → move, + − zoom, 0 fits, drag to pan when zoomed, Esc closes.</span>
+  </div>
+  <div class="sn-media-viewer sn-media-viewer--contained" id="mv" role="dialog" aria-labelledby="mv-name" tabindex="-1">
+    <div class="sn-media-viewer__bar">
+      <span class="sn-media-viewer__name" id="mv-name"></span>
+      <span class="sn-media-viewer__count" id="mv-count" aria-live="polite"></span>
+      <div class="sn-media-viewer__tools">
+        <button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" data-z="-1" aria-label="Zoom out"></button>
+        <span class="sn-media-viewer__zoom" id="mv-zoom">100%</span>
+        <button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" data-z="1" aria-label="Zoom in"></button>
+        <button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" data-z="0" aria-label="Fit to screen"></button>
+        <button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" id="mv-close" aria-label="Close viewer"></button>
+      </div>
+    </div>
+    <div class="sn-media-viewer__stage" id="mv-stage">
+      <button class="sn-btn sn-btn--icon sn-media-viewer__nav sn-media-viewer__nav--prev" type="button" data-step="-1" aria-label="Previous"></button>
+      <div class="sn-media-viewer__media" id="mv-media"></div>
+      <button class="sn-btn sn-btn--icon sn-media-viewer__nav sn-media-viewer__nav--next" type="button" data-step="1" aria-label="Next"></button>
+    </div>
+    <div class="sn-media-viewer__caption">
+      <span class="sn-media-viewer__title" id="mv-title"></span>
+      <span id="mv-source"></span>
+      <span class="sn-media-viewer__alt" id="mv-alt"></span>
+    </div>
+  </div>
+  <div id="reopenWrap" hidden><button class="sn-btn" type="button" id="reopen">Open artwork viewer</button></div>
+</div>
+<script>
+  var S = window.SongNodes, I = S.icon;
+  document.getElementById("full").innerHTML = I("maximize-2") + "Open full screen";
+  [["-1", "zoom-out"], ["1", "zoom-in"], ["0", "minimize-2"]].forEach(function (z) { document.querySelector('[data-z="' + z[0] + '"]').innerHTML = I(z[1]); });
+  document.getElementById("mv-close").innerHTML = I("x");
+  document.querySelector('[data-step="-1"]').innerHTML = I("chevron-left");
+  document.querySelector('[data-step="1"]').innerHTML = I("chevron-right");
+
+  function art() { // image placeholder (gradients allowed for placeholders only)
+    return '<svg viewBox="0 0 300 300" width="300" height="300" style="max-width:100%;height:auto;display:block"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--energy-2)"/><stop offset="1" style="stop-color:var(--energy-9)"/></linearGradient></defs>' +
+      '<rect width="300" height="300" style="fill:var(--energy-1)"/><rect x="0" y="40" width="300" height="34" fill="url(#g)"/><rect x="0" y="110" width="300" height="20" fill="url(#g)" opacity=".7"/><rect x="0" y="170" width="300" height="56" fill="url(#g)" opacity=".85"/><rect x="0" y="252" width="300" height="10" fill="url(#g)" opacity=".5"/></svg>';
+  }
+  function wave() {
+    var b = "", n = 120;
+    for (var i = 0; i < n; i++) { var t = i / n, a = (t < 0.1 ? t * 6 : t > 0.5 && t < 0.58 ? 0.15 : t > 0.92 ? (1 - t) * 6 : 0.55 + 0.4 * Math.abs(Math.sin(i * 1.7))) * 70; b += '<rect x="' + (i * 5) + '" y="' + (80 - a) + '" width="3" height="' + (2 * a) + '" rx="1" style="fill:var(--fg-2)"/>'; }
+    return '<svg viewBox="0 0 600 175" width="600" height="175" style="max-width:100%;height:auto;display:block">' + b +
+      '<line x1="52" y1="0" x2="52" y2="160" style="stroke:var(--now);stroke-width:2"/><line x1="548" y1="0" x2="548" y2="160" style="stroke:var(--now);stroke-width:2"/>' +
+      '<text x="56" y="172" style="fill:var(--fg-2);font:11px var(--font-data)">cue in 0:32</text><text x="544" y="172" text-anchor="end" style="fill:var(--fg-2);font:11px var(--font-data)">cue out 5:40</text></svg>';
+  }
+  function photo() {
+    return '<svg viewBox="0 0 400 260" width="400" height="260" style="max-width:100%;height:auto;display:block"><rect width="400" height="260" style="fill:var(--surface-3)"/><rect x="40" y="150" width="320" height="60" rx="6" style="fill:var(--surface-2)"/>' +
+      '<circle cx="120" cy="180" r="18" style="fill:var(--line-strong)"/><circle cx="280" cy="180" r="18" style="fill:var(--line-strong)"/><rect x="170" y="60" width="60" height="90" rx="4" style="fill:var(--line-strong)"/></svg>';
+  }
+  var ITEMS = [
+    { name: "Bicep – Glue · cover", svg: art, title: "Bicep – Glue (cover art)", source: "Source: Beatport · 1,400 × 1,400", alt: "Horizontal bands of indigo fading to amber on a dark violet ground." },
+    { name: "Overmono – So U Kno · waveform", svg: wave, title: "Overmono – So U Kno (waveform, 6:12)", source: "Source: SongNodes audio analysis · 22 Oct 2026, 03:14 AEDT", alt: "Waveform: quiet intro, builds from 0:32, breakdown at 3:10, outro from 5:40. Mix cues marked at 0:32 and 5:40." },
+    { name: "3RRR Superfreak · studio", svg: photo, title: "3RRR Superfreak in the studio, 17 Oct 2026", source: "Source: 3RRR · photo by the station", alt: "Placeholder photo: a mixing desk with two turntables in front of a speaker." }
+  ];
+  var mv = document.getElementById("mv"), stage = document.getElementById("mv-stage"), media = document.getElementById("mv-media");
+  var idx = 0, zoom = 1, x = 0, y = 0;
+  function apply() {
+    media.style.setProperty("--z", zoom); media.style.setProperty("--x", x + "px"); media.style.setProperty("--y", y + "px");
+    document.getElementById("mv-zoom").textContent = Math.round(zoom * 100) + "%";
+    if (zoom > 1) stage.setAttribute("data-zoomed", ""); else stage.removeAttribute("data-zoomed");
+  }
+  function show(i) {
+    idx = (i + ITEMS.length) % ITEMS.length; var it = ITEMS[idx];
+    media.innerHTML = it.svg(); media.setAttribute("role", "img"); media.setAttribute("aria-label", it.alt);
+    document.getElementById("mv-name").textContent = it.name;
+    document.getElementById("mv-count").textContent = (idx + 1) + " of " + ITEMS.length;
+    document.getElementById("mv-title").textContent = it.title;
+    document.getElementById("mv-source").textContent = it.source;
+    document.getElementById("mv-alt").innerHTML = "<b>Alt text:</b> " + S.esc(it.alt);
+    zoom = 1; x = 0; y = 0; apply();
+  }
+  function setZoom(d) { zoom = d === 0 ? 1 : Math.min(4, Math.max(1, zoom + d * 0.5)); if (zoom === 1) { x = 0; y = 0; } apply(); }
+  mv.addEventListener("click", function (e) {
+    var z = e.target.closest("[data-z]"); if (z) setZoom(Number(z.getAttribute("data-z")));
+    var s = e.target.closest("[data-step]"); if (s) show(idx + Number(s.getAttribute("data-step")));
+  });
+  mv.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") { var d = e.key === "ArrowLeft" ? -1 : 1; if (zoom > 1) { x -= d * 40; apply(); } else show(idx + d); e.preventDefault(); }
+    else if ((e.key === "ArrowUp" || e.key === "ArrowDown") && zoom > 1) { y -= (e.key === "ArrowUp" ? -1 : 1) * 40; apply(); e.preventDefault(); }
+    else if (e.key === "+" || e.key === "=") setZoom(1);
+    else if (e.key === "-") setZoom(-1);
+    else if (e.key === "0") setZoom(0);
+    else if (e.key === "Escape") { e.preventDefault(); closeViewer(); }
+    else if (e.key === "Tab" && isFull) {   // full screen is modal: keep focus inside
+      var f = mv.querySelectorAll("button"), first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+  var drag = null;
+  stage.addEventListener("pointerdown", function (e) { if (zoom <= 1 || e.target.closest("button")) return; drag = { sx: e.clientX - x, sy: e.clientY - y }; stage.setPointerCapture(e.pointerId); stage.setAttribute("data-panning", ""); });
+  stage.addEventListener("pointermove", function (e) { if (!drag) return; x = e.clientX - drag.sx; y = e.clientY - drag.sy; apply(); });
+  stage.addEventListener("pointerup", function () { drag = null; stage.removeAttribute("data-panning"); });
+  media.addEventListener("dblclick", function () { setZoom(zoom > 1 ? 0 : 1); });
+
+  var full = document.getElementById("full"), reopen = document.getElementById("reopen"), wrap = document.getElementById("reopenWrap"), isFull = false;
+  function closeViewer() {
+    if (isFull) { isFull = false; mv.classList.add("sn-media-viewer--contained"); mv.removeAttribute("aria-modal"); full.focus(); return; }
+    mv.hidden = true; wrap.hidden = false; reopen.focus();
+  }
+  document.getElementById("mv-close").addEventListener("click", closeViewer);
+  reopen.addEventListener("click", function () { mv.hidden = false; wrap.hidden = true; mv.focus(); });
+  full.addEventListener("click", function () {
+    mv.hidden = false; wrap.hidden = true; isFull = true; mv.classList.remove("sn-media-viewer--contained"); mv.setAttribute("aria-modal", "true");
+    document.getElementById("mv-close").focus();
+  });
+  show(0);
+</script>
+</body>
+</html>

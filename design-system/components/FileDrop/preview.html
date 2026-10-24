@@ -1,0 +1,89 @@
+<!-- @dsCard group="Inputs" height=766 subtitle="Drop zone with accepted types and size limit, drag-over state, parsed file row with summary, per-file errors, remove" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>FileDrop — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: var(--space-5) var(--space-6); align-items: start; }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-grid">
+    <div id="a"></div>
+    <div id="b"></div>
+  </div>
+  <div class="sn-preview__label">Drag-over state</div>
+  <div id="c" style="max-width: 520px"></div>
+</div>
+<script>
+  var S = window.SongNodes, n = 0;
+  function zone(o) {
+    var id = "fd" + (++n);
+    return '<div class="sn-file-drop" id="' + id + '" data-accept="' + o.accept.join(",") + '" data-max="' + o.max + '"' + (o.multiple ? " data-multiple" : "") + '>' +
+      '<span class="sn-file-drop__label" id="' + id + '-l">' + o.label + '</span>' +
+      '<div class="sn-file-drop__zone"' + (o.over ? " data-dragover" : "") + '>' + S.icon(o.over ? "file-input" : "upload") +
+        '<div class="sn-file-drop__zone-text"><strong>' + (o.over ? "Drop to add " + (o.multiple ? "the files" : "the file") : '<span class="sn-file-drop__drag">Drag ' + (o.multiple ? "files" : "a file") + ' here, or choose ' + (o.multiple ? "them" : "one") + '</span>') + '</strong>' +
+        '<span class="sn-file-drop__accept" id="' + id + '-h">' + o.hint + '</span></div>' +
+        '<input type="file" class="sn-sr sn-file-drop__input" id="' + id + '-in" accept="' + o.accept.join(",") + '"' + (o.multiple ? " multiple" : "") + ' aria-labelledby="' + id + '-l ' + id + '-btn" aria-describedby="' + id + '-h">' +
+        '<label for="' + id + '-in" class="sn-btn sn-btn--sm sn-file-drop__choose" id="' + id + '-btn">' + (o.multiple ? "Choose files" : "Choose file") + '</label>' +
+      '</div><ul class="sn-file-drop__files" aria-label="Selected files">' + (o.files || []).map(row).join("") + '</ul>' +
+      '<div class="sn-sr" aria-live="polite" data-live></div></div>';
+  }
+  function kb(b) { return b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + " KB" : (b / 1048576).toFixed(1) + " MB"; }
+  function row(f) {
+    var err = f.error;
+    return '<li class="sn-file-drop__file"' + (err ? " data-error" : "") + '>' + S.icon(err ? "circle-alert" : (/json$/.test(f.name) ? "file-json" : "file-text")) +
+      '<div class="sn-file-drop__name"><b>' + S.esc(f.name) + '</b><span class="sn-file-drop__size">' + kb(f.size) + '</span></div>' +
+      '<button type="button" class="sn-btn sn-btn--quiet sn-btn--icon sn-btn--sm" aria-label="Remove ' + S.esc(f.name) + '" data-remove>' + S.icon("x") + '</button>' +
+      (f.progress != null ? '<div class="sn-file-drop__progress" role="progressbar" aria-label="Reading ' + S.esc(f.name) + '" aria-valuenow="' + f.progress + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + f.progress + '%"></i></div>' : "") +
+      '<div class="sn-file-drop__result' + (err ? " sn-file-drop__result--error" : "") + '">' + (err ? '<span>' + err + '</span>' : (f.result || "")) + '</div></li>';
+  }
+  document.getElementById("a").innerHTML = zone({ label: "Import a set", accept: [".json"], max: 5, hint: "Set JSON exported from SongNodes, up to 5 MB",
+    files: [{ name: "peak-time-friday.json", size: 18432, result: S.html.pill("ok", "Read") + "<span>14 tracks: 12 in library, 2 new</span>" }] });
+  document.getElementById("b").innerHTML = zone({ label: "Import tracklists", accept: [".txt", ".csv"], max: 2, multiple: true, hint: ".txt or .csv, one track per line, up to 2 MB each",
+    files: [
+      { name: "3RRR-Superfreak-2026-10-18.txt", size: 2210, result: S.html.pill("ok", "Read") + "<span>22 lines: 19 tracks, 3 not read</span>" },
+      { name: "PBS-Soul-Time-2026-10-21.csv", size: 4120, progress: 60, result: S.html.pill("running", "Reading") },
+      { name: "boiler-room-overmono.m4a", size: 48211000, error: "The selected file must be a .txt or .csv file." },
+      { name: "triple-j-mix-up-full-year.csv", size: 3500000, error: "The selected file must be smaller than 2 MB. Split it by month and import each part." }
+    ] });
+  document.getElementById("c").innerHTML = zone({ label: "Import target tracks", accept: [".json"], max: 5, over: true, hint: "Target tracks JSON, up to 5 MB" });
+
+  function validate(z, f) {
+    var acc = z.dataset.accept.split(","), ext = "." + f.name.split(".").pop().toLowerCase();
+    if (acc.indexOf(ext) < 0) return "The selected file must be a " + acc.join(" or ") + " file.";
+    if (f.size > +z.dataset.max * 1048576) return "The selected file must be smaller than " + z.dataset.max + " MB.";
+    if (f.size === 0) return "The selected file is empty.";
+    return null;
+  }
+  function add(z, files) {
+    var list = z.querySelector(".sn-file-drop__files"), msgs = [];
+    if (!z.hasAttribute("data-multiple")) { list.innerHTML = ""; files = files.slice(0, 1); }
+    files.forEach(function (f) {
+      var err = validate(z, f), lines = null;
+      list.insertAdjacentHTML("beforeend", row({ name: f.name, size: f.size, error: err, result: err ? "" : S.html.pill("running", "Reading") }));
+      var li = list.lastElementChild; msgs.push(f.name + (err ? ": " + err : " added"));
+      if (!err) f.text().then(function (t) {
+        var r = li.querySelector(".sn-file-drop__result");
+        if (/json$/i.test(f.name)) { try { var j = JSON.parse(t), k = (j.tracks || j).length || 0; r.innerHTML = S.html.pill("ok", "Read") + "<span>" + k + " tracks</span>"; } catch (x) { li.setAttribute("data-error", ""); r.className = "sn-file-drop__result sn-file-drop__result--error"; r.textContent = "This file isn’t valid JSON. Export it again from SongNodes."; } }
+        else { lines = t.split(/\r?\n/).filter(function (l) { return l.trim(); }).length; r.innerHTML = S.html.pill("ok", "Read") + "<span>" + lines + " lines</span>"; }
+      });
+    });
+    z.querySelector("[data-live]").textContent = msgs.join(". ");
+  }
+  document.addEventListener("change", function (e) { if (e.target.matches(".sn-file-drop__input")) { add(e.target.closest(".sn-file-drop"), Array.prototype.slice.call(e.target.files)); e.target.value = ""; } });
+  document.addEventListener("click", function (e) {
+    var r = e.target.closest("[data-remove]"); if (!r) return;
+    var z = r.closest(".sn-file-drop"), li = r.closest("li"), name = li.querySelector("b").textContent;
+    var next = li.nextElementSibling || li.previousElementSibling; li.remove();
+    z.querySelector("[data-live]").textContent = name + " removed";
+    (next ? next.querySelector("[data-remove]") : z.querySelector(".sn-file-drop__choose")).focus();
+  });
+  ["dragenter", "dragover"].forEach(function (t) { document.addEventListener(t, function (e) { var zz = e.target.closest && e.target.closest(".sn-file-drop__zone"); if (zz) { e.preventDefault(); zz.setAttribute("data-dragover", ""); } }); });
+  ["dragleave", "drop"].forEach(function (t) { document.addEventListener(t, function (e) {
+    var zz = e.target.closest && e.target.closest(".sn-file-drop__zone"); if (!zz) return;
+    if (t === "dragleave" && zz.contains(e.relatedTarget)) return;
+    e.preventDefault(); zz.removeAttribute("data-dragover");
+    if (t === "drop" && e.dataTransfer) add(zz.closest(".sn-file-drop"), Array.prototype.slice.call(e.dataTransfer.files));
+  }); });
+</script>
+</body>
+</html>

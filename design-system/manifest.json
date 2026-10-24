@@ -1,0 +1,1868 @@
+{
+  "manifestVersion": 3,
+  "name": "SongNodes",
+  "namespace": "SongNodes",
+  "files": [
+    "01-writing.md",
+    "02-information-architecture.md",
+    "03-colour.md",
+    "05-layout.md",
+    "06-interaction-accessibility.md",
+    "07-feedback-status.md",
+    "08-motion.md",
+    "09-cognitive-load.md",
+    "10-navigation.md",
+    "11-data-display.md",
+    "12-inputs.md",
+    "13-page-patterns.md",
+    "14-identity-icons.md",
+    "15-print-export.md",
+    "16-platform.md",
+    "17-governance.md",
+    "18-music-domain.md",
+    "19-songnodes-migration.md",
+    "assets/Icons/README.md",
+    "components/AppHeader/README.md",
+    "components/AuthCallbackPage/README.md",
+    "components/Banner/README.md",
+    "components/BpmReadout/README.md",
+    "components/Breadcrumbs/README.md",
+    "components/Button/README.md",
+    "components/CamelotWheel/README.md",
+    "components/Card/README.md",
+    "components/CategoryTag/README.md",
+    "components/ChartFrame/README.md",
+    "components/Checkbox/README.md",
+    "components/Checklist/README.md",
+    "components/ChipInput/README.md",
+    "components/CommandPalette/README.md",
+    "components/CompatibilityBadge/README.md",
+    "components/ConfirmDialog/README.md",
+    "components/ConnectionStatus/README.md",
+    "components/ContextMenu/README.md",
+    "components/CopyButton/README.md",
+    "components/DailyViewPage/README.md",
+    "components/DataTable/README.md",
+    "components/DateField/README.md",
+    "components/Dialog/README.md",
+    "components/Disclosure/README.md",
+    "components/EmptyState/README.md",
+    "components/EnergyBar/README.md",
+    "components/EnergyWave/README.md",
+    "components/ErrorPage/README.md",
+    "components/ErrorState/README.md",
+    "components/FigureTile/README.md",
+    "components/FileDrop/README.md",
+    "components/FilterChip/README.md",
+    "components/FilterRail/README.md",
+    "components/FreshnessStamp/README.md",
+    "components/GraphControls/README.md",
+    "components/GraphExplorerPage/README.md",
+    "components/GraphStyles/README.md",
+    "components/Heatmap/README.md",
+    "components/HomePage/README.md",
+    "components/InlineMessage/README.md",
+    "components/KeyBadge/README.md",
+    "components/KeyPicker/README.md",
+    "components/KeyValueGrid/README.md",
+    "components/LauncherCard/README.md",
+    "components/LibraryPage/README.md",
+    "components/LoadingState/README.md",
+    "components/LogPage/README.md",
+    "components/MatrixPage/README.md",
+    "components/MediaViewer/README.md",
+    "components/MonitoringPage/README.md",
+    "components/NavDrawer/README.md",
+    "components/NumberField/README.md",
+    "components/OverflowMenu/README.md",
+    "components/PageHeader/README.md",
+    "components/PeriodNav/README.md",
+    "components/PhotoCapture/README.md",
+    "components/Popover/README.md",
+    "components/PreferencesPanel/README.md",
+    "components/PrintSheet/README.md",
+    "components/ProgressBar/README.md",
+    "components/ProgressRing/README.md",
+    "components/RangeSlider/README.md",
+    "components/RetiredPageNotice/README.md",
+    "components/SearchField/README.md",
+    "components/SecretField/README.md",
+    "components/SectionHeading/README.md",
+    "components/SegmentedControl/README.md",
+    "components/SelectField/README.md",
+    "components/ServiceStatus/README.md",
+    "components/SetBuilderPage/README.md",
+    "components/SetCard/README.md",
+    "components/SetSlot/README.md",
+    "components/SettingsPage/README.md",
+    "components/ShortcutSheet/README.md",
+    "components/ShowMore/README.md",
+    "components/SideSheet/README.md",
+    "components/SourceBadge/README.md",
+    "components/Sparkline/README.md",
+    "components/StagedProgress/README.md",
+    "components/StatusPill/README.md",
+    "components/Switch/README.md",
+    "components/Tabs/README.md",
+    "components/TextField/README.md",
+    "components/TextLink/README.md",
+    "components/Toast/README.md",
+    "components/Tooltip/README.md",
+    "components/TrackCell/README.md",
+    "components/TrackDetailPage/README.md",
+    "components/TracklistPaste/README.md",
+    "components/TransitionNote/README.md",
+    "components/WaveformStrip/README.md",
+    "components/WeeklyGridPage/README.md",
+    "components/bundle.css",
+    "components/bundle.js",
+    "components/index.d.ts",
+    "fonts/inter-latin-wght-italic.woff2",
+    "fonts/inter-latin-wght-normal.woff2",
+    "fonts/jetbrains-mono-latin-wght-normal.woff2",
+    "fonts/sora-latin-wght-normal.woff2",
+    "source/bundle.src.js",
+    "source/css/00-core.css",
+    "source/css/01-keys.css",
+    "source/css/02-theme-media.css",
+    "source/css/10-navigation.css",
+    "source/css/20-inputs.css",
+    "source/css/30-data.css",
+    "source/css/40-charts.css",
+    "source/css/50-feedback.css",
+    "source/css/60-pages-a.css",
+    "source/css/61-pages-b.css",
+    "source/previews/charts-src/CamelotWheel.html",
+    "source/previews/charts-src/ChartFrame.html",
+    "source/previews/charts-src/EnergyWave.html",
+    "source/previews/charts-src/GraphControls.html",
+    "source/previews/charts-src/GraphStyles.html",
+    "source/previews/charts-src/Heatmap.html",
+    "source/previews/charts-src/ProgressBar.html",
+    "source/previews/charts-src/ProgressRing.html",
+    "source/previews/charts-src/Sparkline.html",
+    "source/previews/charts-src/WaveformStrip.html",
+    "source/previews/charts-src/kit.js",
+    "source/previews/navsrc/AppHeader.html",
+    "source/previews/navsrc/Breadcrumbs.html",
+    "source/previews/navsrc/CommandPalette.html",
+    "source/previews/navsrc/ContextMenu.html",
+    "source/previews/navsrc/LauncherCard.html",
+    "source/previews/navsrc/NavDrawer.html",
+    "source/previews/navsrc/OverflowMenu.html",
+    "source/previews/navsrc/PageHeader.html",
+    "source/previews/navsrc/PeriodNav.html",
+    "source/previews/navsrc/PreferencesPanel.html",
+    "source/previews/navsrc/SegmentedControl.html",
+    "source/previews/navsrc/ShortcutSheet.html",
+    "source/previews/navsrc/ShowMore.html",
+    "source/previews/navsrc/Tabs.html",
+    "source/previews/navsrc/_drawer.js",
+    "source/previews/navsrc/_menu.js",
+    "source/previews/navsrc/_seg.js",
+    "source/previews/pagesA/kit_base.js",
+    "source/previews/pagesA/kit_page.js",
+    "source/previews/pagesA/src/AuthCallbackPage.html",
+    "source/previews/pagesA/src/GraphExplorerPage.html",
+    "source/previews/pagesA/src/HomePage.html",
+    "source/previews/pagesA/src/LibraryPage.html",
+    "source/previews/pagesA/src/SetBuilderPage.html",
+    "source/previews/pagesA/src/SettingsPage.html",
+    "source/previews/pagesA/src/TrackDetailPage.html",
+    "source/previews/pagesb/src/DailyViewPage.html",
+    "source/previews/pagesb/src/ErrorPage.html",
+    "source/previews/pagesb/src/LogPage.html",
+    "source/previews/pagesb/src/MatrixPage.html",
+    "source/previews/pagesb/src/MonitoringPage.html",
+    "source/previews/pagesb/src/PrintSheet.html",
+    "source/previews/pagesb/src/RetiredPageNotice.html",
+    "source/previews/pagesb/src/WeeklyGridPage.html",
+    "source/previews/pagesb/src/common.js",
+    "source/previews/pagesb/src/kit.js",
+    "source/types/10-navigation.d.ts",
+    "source/types/20-inputs.d.ts",
+    "source/types/30-data.d.ts",
+    "source/types/40-charts.d.ts",
+    "source/types/50-feedback.d.ts",
+    "source/types/60-pages-a.d.ts",
+    "source/types/61-pages-b.d.ts",
+    "tokens.css"
+  ],
+  "libraries": [],
+  "components": [
+    {
+      "name": "AppHeader",
+      "group": "Navigation",
+      "summary": "The one sticky 56px bar at the top of every SongNodes page: hamburger, wordmark, the current page's title, and a fixed set of status and tools on the right."
+    },
+    {
+      "name": "AuthCallbackPage",
+      "group": "Pages",
+      "summary": "The page Spotify and TIDAL send you back to after sign-in: it shows progress, then says you are connected or what went wrong."
+    },
+    {
+      "name": "Banner",
+      "group": "Feedback",
+      "summary": "A persistent page-level message under the page header about a condition that affects the whole page, with at most one action and, for non-critical messages, a…"
+    },
+    {
+      "name": "BpmReadout",
+      "group": "Music",
+      "summary": "BPM in mono with tabular figures: whole numbers as \"124\", fractional as \"123.5\", with a half- or double-time reading in brackets (\"87 (174)\")."
+    },
+    {
+      "name": "Breadcrumbs",
+      "group": "Navigation",
+      "summary": "A trail of the levels above the current view, for drill-downs (Library › Bicep › Glue) and the mobile explorer's navigation trail, with each link in its destin…"
+    },
+    {
+      "name": "Button",
+      "group": "Actions",
+      "summary": "Buttons start an action on this page; links go somewhere else."
+    },
+    {
+      "name": "CamelotWheel",
+      "group": "Music",
+      "summary": "The Camelot wheel as a selector and a map: 12 numbers around a clock face, outer ring B (major, lighter key colours), inner ring A (minor, darker), the playing…"
+    },
+    {
+      "name": "Card",
+      "group": "Data",
+      "summary": "A 14px container that groups one thing: neutral by default, tonal in its module's colours on hub pages, with media, compact list and whole-card link variants."
+    },
+    {
+      "name": "CategoryTag",
+      "group": "Data",
+      "summary": "A small neutral tag for what kind of thing something is: genre, pillar, rotation, remix type or graph edge type."
+    },
+    {
+      "name": "ChartFrame",
+      "group": "Charts",
+      "summary": "The shared anatomy every SongNodes chart is built from: thin–bold title, subtitle with unit and period, direct labels or a legend row, quiet axes, a tooltip on…"
+    },
+    {
+      "name": "Checkbox",
+      "group": "Inputs",
+      "summary": "Native checkboxes and radio buttons with large hit areas, grouped in a fieldset with a legend, plus select-all with an indeterminate state for tables and a dis…"
+    },
+    {
+      "name": "Checklist",
+      "group": "Data",
+      "summary": "A list of checks with passed, failed, warning and pending rows, each with a glyph, a short label and an optional note on what to do, plus a counts summary."
+    },
+    {
+      "name": "ChipInput",
+      "group": "Inputs",
+      "summary": "A free-entry field that turns typed values into removable chips: Enter or a comma adds, Backspace on an empty field removes the last chip, duplicates are rejec…"
+    },
+    {
+      "name": "CommandPalette",
+      "group": "Navigation",
+      "summary": "Quick search across tracks, artists, sets, pages and actions, opened with Ctrl/⌘ K or / from anywhere, showing key, BPM and energy in track rows."
+    },
+    {
+      "name": "CompatibilityBadge",
+      "group": "Music",
+      "summary": "A traffic-light verdict on a move between two tracks (perfect, compatible, possible, clash), as a pill with a mandatory glyph and words."
+    },
+    {
+      "name": "ConfirmDialog",
+      "group": "Surfaces",
+      "summary": "Confirms a destructive action by naming the object, the consequence and who it affects, with a danger button labelled verb + object and Cancel focused by defau…"
+    },
+    {
+      "name": "ConnectionStatus",
+      "group": "Status",
+      "summary": "Shows whether live updates (the WebSocket) are flowing: Live, Reconnecting (with the attempt), Offline (with the age of the data on screen), or a named source…"
+    },
+    {
+      "name": "ContextMenu",
+      "group": "Navigation",
+      "summary": "The right-click, long-press or Shift+F10 menu on graph nodes, edges, the empty canvas and table rows, using the same look and keyboard model as OverflowMenu."
+    },
+    {
+      "name": "CopyButton",
+      "group": "Actions",
+      "summary": "Copies a tracklist, ID, ISRC, link or file path to the clipboard, swaps its icon to a check for 2 seconds and announces \"Copied\"; when the browser refuses, it…"
+    },
+    {
+      "name": "DailyViewPage",
+      "group": "Pages",
+      "summary": "A read-only view of one day: radio plays per show for \"Radio plays: Sat 24 Oct\", with 24-hour times, which plays were new to the library, and a now line in the…"
+    },
+    {
+      "name": "DataTable",
+      "group": "Data",
+      "summary": "The table for every list of records: sortable headers, sticky header, right-aligned numbers, selection, row actions, grouping, flagged and now rows, density, a…"
+    },
+    {
+      "name": "DateField",
+      "group": "Inputs",
+      "summary": "Date entry in en-AU order (day, month, year) as three short boxes, shown back as \"Fri 24 Oct 2026\", with range presets such as \"Last 7 days\" for filters like \"…"
+    },
+    {
+      "name": "Dialog",
+      "group": "Surfaces",
+      "summary": "A modal dialog for a focused task that must be finished or cancelled before going back to the page, such as editing a track's cues and transitions."
+    },
+    {
+      "name": "Disclosure",
+      "group": "Data",
+      "summary": "A show/hide section on native / , with a rotating chevron, an optional hint, and its open state remembered per section on this device."
+    },
+    {
+      "name": "EmptyState",
+      "group": "Feedback",
+      "summary": "Fills a panel that has nothing to show yet, says what will appear there and why it is empty, and offers the one action that fills it; a panel is never blank."
+    },
+    {
+      "name": "EnergyBar",
+      "group": "Music",
+      "summary": "The 10-segment energy meter (sn-energy): segments fill indigo to amber, with gaps after 4 and 7 marking the Low, Building and High tiers."
+    },
+    {
+      "name": "EnergyWave",
+      "group": "Music",
+      "summary": "The set's energy wave: one bar per running-order slot coloured by its energy (1–10), the chosen shape's target wave dashed over it, the Building tier shaded, t…"
+    },
+    {
+      "name": "ErrorPage",
+      "group": "Pages",
+      "summary": "The nginx 404.html and 50x.html pages: static HTML and inline CSS, no JavaScript, wordmark, a plain explanation, what to do next, and the request ID on server…"
+    },
+    {
+      "name": "ErrorState",
+      "group": "Feedback",
+      "summary": "Explains a failed load in a panel: what happened, what it affects, whether retrying will help, and the one action that fixes it, keeping the last good data vis…"
+    },
+    {
+      "name": "FigureTile",
+      "group": "Data",
+      "summary": "A headline number with its label: the stats row at the top of a page, in Sora with tabular figures, neutral by default."
+    },
+    {
+      "name": "FileDrop",
+      "group": "Inputs",
+      "summary": "A visible drop zone with a \"Choose file\" button for importing set JSON, target-track JSON or tracklist .txt/.csv files, stating accepted types and size, then l…"
+    },
+    {
+      "name": "FilterChip",
+      "group": "Inputs",
+      "summary": "Toggle chips that narrow a list: pick any number in a group (pillars, energy tiers, rotation, tags), see how many tracks each one holds, and clear the group in…"
+    },
+    {
+      "name": "FilterRail",
+      "group": "Inputs",
+      "summary": "The library filter panel: a sticky rail-w rail beside the crate on desktop, and a \"Filters (3)\" button with removable active-filter chips that opens the same p…"
+    },
+    {
+      "name": "FreshnessStamp",
+      "group": "Status",
+      "summary": "Says how current the data on screen is: an absolute Melbourne stamp, a relative age, a warning once it goes stale, and an \"Updating…\" state that keeps the old…"
+    },
+    {
+      "name": "GraphControls",
+      "group": "Graph",
+      "summary": "The overlay controls on the graph canvas: zoom in and out, fit, reset, pause or resume the layout, link layers, 2D/3D, a minimap and the node and link count."
+    },
+    {
+      "name": "GraphExplorerPage",
+      "group": "Pages",
+      "summary": "The graph workspace: what to play next from the track that is on now, with the graph around it and one selected track open beside it."
+    },
+    {
+      "name": "GraphStyles",
+      "group": "Graph",
+      "summary": "The visual encoding of the force graph, as a spec the PIXI renderer follows: node states, size by connections, fill modes, labels, link types and weights, plus…"
+    },
+    {
+      "name": "Heatmap",
+      "group": "Charts",
+      "summary": "A grid of cells shaded by count on one sequential ramp, from surface-2 (none) to brand lavender (most): key × energy coverage of the library, and a plays-by-da…"
+    },
+    {
+      "name": "HomePage",
+      "group": "Pages",
+      "summary": "The launcher at /: what changed since your last visit, one tonal card per module and a health strip, so you can jump anywhere in one tap."
+    },
+    {
+      "name": "InlineMessage",
+      "group": "Feedback",
+      "summary": "A short status message attached to a field, row or card section, with a status glyph and text and no dismiss."
+    },
+    {
+      "name": "KeyBadge",
+      "group": "Music",
+      "summary": "A musical key as a Camelot-coloured dot plus the code in mono (\"● 8A\"), with the key name (\"A minor\") in detail views and tooltips."
+    },
+    {
+      "name": "KeyPicker",
+      "group": "Inputs",
+      "summary": "Choose one or more Camelot keys from a compact 12 × 2 grid (minor A row, major B row), each key shown as its wheel-colour dot plus the code in mono, with a one…"
+    },
+    {
+      "name": "KeyValueGrid",
+      "group": "Data",
+      "summary": "A grid of labels and values for detail views, with mono values for data, copyable IDs and an en dash for anything missing."
+    },
+    {
+      "name": "LauncherCard",
+      "group": "Navigation",
+      "summary": "A hub tile that takes you into one module: tonal card in the module's colour with its icon, a thin–bold title, one-line summary, one or two key figures and a s…"
+    },
+    {
+      "name": "LibraryPage",
+      "group": "Pages",
+      "summary": "The crate: filter, search and sort every track in the Melbourne club library, then build a set from what is left."
+    },
+    {
+      "name": "LoadingState",
+      "group": "Feedback",
+      "summary": "The single loading idiom: skeletons shaped like the content on first load, a slim top line and \"Updating…\" stamp when refreshing data that is already shown, an…"
+    },
+    {
+      "name": "LogPage",
+      "group": "Pages",
+      "summary": "A page of records that accumulate (target tracks, the import log, run history, attribution fixes): filter chips, a selectable table with bulk actions, an entry…"
+    },
+    {
+      "name": "MatrixPage",
+      "group": "Pages",
+      "summary": "Two crossed lists on one page: tracks × sources (which shows and sites played which track, ● with counts) and a keys × energy coverage heatmap whose cells filt…"
+    },
+    {
+      "name": "MediaViewer",
+      "group": "Surfaces",
+      "summary": "A full-screen viewer for artwork, photos and track waveforms with zoom and pan, caption with source and alt text, previous/next, and close."
+    },
+    {
+      "name": "MonitoringPage",
+      "group": "Pages",
+      "summary": "The planned SongNodes Pipeline health page: answers \"is anything broken right now\" with one banner, live connection state, headline figures, scraper and proxy…"
+    },
+    {
+      "name": "NavDrawer",
+      "group": "Navigation",
+      "summary": "The left overlay drawer that holds every SongNodes destination, opened from the AppHeader hamburger and hidden the rest of the time."
+    },
+    {
+      "name": "NumberField",
+      "group": "Inputs",
+      "summary": "A number input with its unit inside the box (BPM, min, %, bars), minus and plus steppers, a stated range and mono digits."
+    },
+    {
+      "name": "OverflowMenu",
+      "group": "Navigation",
+      "summary": "The predictable home for secondary actions: a \"More actions\" button with an ellipsis that opens a keyboard-operable menu of grouped actions, destructive last."
+    },
+    {
+      "name": "PageHeader",
+      "group": "Navigation",
+      "summary": "The header region at the top of a page's content: module band, thin–bold title, one-line description, freshness stamp and the page's actions in one fixed order."
+    },
+    {
+      "name": "PeriodNav",
+      "group": "Navigation",
+      "summary": "The one way to move through time in SongNodes: previous/next, jump to now, the period's name and a Day/Week/Month scale, with [ and ] on the keyboard."
+    },
+    {
+      "name": "PhotoCapture",
+      "group": "Inputs",
+      "summary": "Adds one image (a crate photo of a record sleeve, artwork for a set) by taking a photo or choosing a file, then shows a square preview with Retake, Remove phot…"
+    },
+    {
+      "name": "Popover",
+      "group": "Surfaces",
+      "summary": "A small click-opened panel anchored to its trigger for interactive content: spare-track suggestions, a column chooser, key detail with compatible keys."
+    },
+    {
+      "name": "PreferencesPanel",
+      "group": "Navigation",
+      "summary": "Per-device display preferences, applied live as you choose: theme (System, Dark, Light, Booth), text size, row density and reduce motion."
+    },
+    {
+      "name": "PrintSheet",
+      "group": "Pages",
+      "summary": "The A4 portrait printout of a set: thin–bold title, set meta, running order (slot, time in, track, BPM, key code and name, energy number with a greyscale patte…"
+    },
+    {
+      "name": "ProgressBar",
+      "group": "Charts",
+      "summary": "Shows how much of a job is done: a neutral bar with a label and a count or percent, an indeterminate bar while there is no estimate, and a segmented bar for jo…"
+    },
+    {
+      "name": "ProgressRing",
+      "group": "Charts",
+      "summary": "A compact completion ring for summaries on cards and in rows: how much of a goal is done (target tracks found 72%, library keyed 48%)."
+    },
+    {
+      "name": "RangeSlider",
+      "group": "Inputs",
+      "summary": "A single- or dual-thumb slider with tick labels and editable number boxes beside it, for ranges such as BPM 120–130, release years or a minimum connection stre…"
+    },
+    {
+      "name": "RetiredPageNotice",
+      "group": "Pages",
+      "summary": "Tells someone who followed an old route or link that the page moved (and where, as a link in the destination module's colour) or that it is retired with no rep…"
+    },
+    {
+      "name": "SearchField",
+      "group": "Inputs",
+      "summary": "A search box with a search icon, a clear button, a live result count (\"42 of 1,284 tracks\"), a typo-tolerant \"Did you mean Overmono?\" line and the \"/\" shortcut."
+    },
+    {
+      "name": "SecretField",
+      "group": "Inputs",
+      "summary": "Entry and management of an API key or client secret: a saved key is only ever shown masked (\"sk-…3f9a\"), a new key is typed masked with a reveal toggle, and \"T…"
+    },
+    {
+      "name": "SectionHeading",
+      "group": "Data",
+      "summary": "A heading for a section inside a page: the thin–bold title at title-m or title-s, with an optional count, a right-side action or link, and a one-line caveat."
+    },
+    {
+      "name": "SegmentedControl",
+      "group": "Navigation",
+      "summary": "Pick one of 2–4 mutually exclusive modes for the same content, such as Play/Plan, Wheel/Flow/Both or Day/Week/Month."
+    },
+    {
+      "name": "SelectField",
+      "group": "Inputs",
+      "summary": "A styled native (sn-select) for choosing one option from a short, fixed list."
+    },
+    {
+      "name": "ServiceStatus",
+      "group": "Data",
+      "summary": "One row per connected music service (Spotify, TIDAL, Beatport) showing its connection state, account and expiry, and the one action that fixes it."
+    },
+    {
+      "name": "SetBuilderPage",
+      "group": "Pages",
+      "summary": "Shape a set from the crate, check every transition and save it: controls, energy wave, running order and saved sets on one page."
+    },
+    {
+      "name": "SetCard",
+      "group": "Music",
+      "summary": "The card for a saved set: name, shape, length, track count, peaks, a mini energy wave, its \"Send to TIDAL\" state, when it was updated, and Open / Duplicate."
+    },
+    {
+      "name": "SetSlot",
+      "group": "Music",
+      "summary": "A running-order row: slot number, energy against the slot's target, the TrackCell, BPM and key, and lock / move up / move down / remove, with spare suggestions…"
+    },
+    {
+      "name": "SettingsPage",
+      "group": "Pages",
+      "summary": "The Services module page: connect streaming services, manage API keys, set appearance and move your data in and out."
+    },
+    {
+      "name": "ShortcutSheet",
+      "group": "Navigation",
+      "summary": "The single keyboard-shortcut help surface, opened with ?, listing every shortcut by where it works, as key-cap tables."
+    },
+    {
+      "name": "ShowMore",
+      "group": "Navigation",
+      "summary": "Loads long tables in batches (\"Showing 150 of 1,284 tracks\" + \"Show 300 more\") and pages review queues with numbered pagination, without losing the reader's pl…"
+    },
+    {
+      "name": "SideSheet",
+      "group": "Surfaces",
+      "summary": "A right-side panel for details and filters that sits beside the work (non-modal) on desktop and becomes a modal bottom sheet with a grab handle on phones."
+    },
+    {
+      "name": "SourceBadge",
+      "group": "Data",
+      "summary": "A neutral badge naming where a track was heard or found (a radio show, tracklist site, chart or store), with \"+N\" opening the full list."
+    },
+    {
+      "name": "Sparkline",
+      "group": "Charts",
+      "summary": "A word-sized trend: plays per week over the last 12 weeks, drawn as a thin neutral line with the latest point emphasised, and the low and high points revealed…"
+    },
+    {
+      "name": "StagedProgress",
+      "group": "Feedback",
+      "summary": "Shows a long or multi-step job as ordered steps with honest state, the current step's detail, elapsed time, an estimate only when known, and Cancel where the j…"
+    },
+    {
+      "name": "StatusPill",
+      "group": "Status",
+      "summary": "The one status vocabulary: seven statuses, each a pill with a glyph and a word, mapped from every backend enum through SongNodes.status()."
+    },
+    {
+      "name": "Switch",
+      "group": "Inputs",
+      "summary": "An on/off control for a setting that takes effect immediately, with the setting stated in the label and its state shown by thumb position and the words On and…"
+    },
+    {
+      "name": "Tabs",
+      "group": "Navigation",
+      "summary": "Swap between views of the same thing inside a page, such as a track's overview, plays and transitions, with an active line in the module colour."
+    },
+    {
+      "name": "TextField",
+      "group": "Inputs",
+      "summary": "A single- or multi-line text input with a visible label, optional help text, an inline error tied to the input, an optional character count, and clear optional…"
+    },
+    {
+      "name": "TextLink",
+      "group": "Actions",
+      "summary": "A link takes the colour of the module it opens, is always underlined (1px, offset 3px) and set in weight 600, so colour tells you where you will land and the u…"
+    },
+    {
+      "name": "Toast",
+      "group": "Feedback",
+      "summary": "A brief, transient confirmation that an action finished (\"Set saved\"), with at most one action such as Undo."
+    },
+    {
+      "name": "Tooltip",
+      "group": "Surfaces",
+      "summary": "A short supplementary label shown on hover and keyboard focus: an icon button's name, the key name behind \"8A\", the absolute time behind \"3 h ago\"."
+    },
+    {
+      "name": "TrackCell",
+      "group": "Music",
+      "summary": "The standard track identity: \"Artist – Title\" on line one, mix name · label · duration on line two, plus the now-playing marker, flags and service links."
+    },
+    {
+      "name": "TrackDetailPage",
+      "group": "Pages",
+      "summary": "Everything about one track: key, tempo, energy, sections, where it was heard, what it plays well with and its IDs."
+    },
+    {
+      "name": "TracklistPaste",
+      "group": "Inputs",
+      "summary": "A paste box for a tracklist with a live preview table that shows how each line was read (in library, new, not read) and an Import button that stays disabled un…"
+    },
+    {
+      "name": "TransitionNote",
+      "group": "Music",
+      "summary": "The thin strip between two running-order rows that says how the move lands: energy step, key move, BPM delta and genre switch, each with a verdict glyph."
+    },
+    {
+      "name": "WaveformStrip",
+      "group": "Music",
+      "summary": "The audio-analysis view of one track: a neutral waveform envelope with intro and outro regions, breakdowns, vocal segments, cue points, the energy curve and th…"
+    },
+    {
+      "name": "WeeklyGridPage",
+      "group": "Pages",
+      "summary": "Shows × days for one week: plays and new tracks per cell, today's column marked in --now, totals per day and per show, and one list per day on phones."
+    }
+  ],
+  "assetGroups": [
+    {
+      "name": "Icons",
+      "tile": "xs",
+      "order": [
+        "share-2.svg",
+        "library-big.svg",
+        "list-music.svg",
+        "route.svg",
+        "piano.svg",
+        "radio-tower.svg",
+        "activity.svg",
+        "plug.svg",
+        "archive.svg",
+        "archive-restore.svg",
+        "arrow-down.svg",
+        "arrow-up.svg",
+        "arrow-up-down.svg",
+        "audio-waveform.svg",
+        "bell.svg",
+        "bug.svg",
+        "calendar.svg",
+        "calendar-range.svg",
+        "camera.svg",
+        "chart-column.svg",
+        "chart-line.svg",
+        "check.svg",
+        "chevron-down.svg",
+        "chevron-left.svg",
+        "chevron-right.svg",
+        "chevron-up.svg",
+        "circle-alert.svg",
+        "circle-check.svg",
+        "circle-dot.svg",
+        "circle-help.svg",
+        "circle-x.svg",
+        "clipboard-check.svg",
+        "clock.svg",
+        "cloud-off.svg",
+        "copy.svg",
+        "crosshair.svg",
+        "database.svg",
+        "disc-3.svg",
+        "download.svg",
+        "ellipsis.svg",
+        "ellipsis-vertical.svg",
+        "external-link.svg",
+        "eye.svg",
+        "eye-off.svg",
+        "file-input.svg",
+        "file-json.svg",
+        "file-text.svg",
+        "flag.svg",
+        "focus.svg",
+        "funnel.svg",
+        "gauge.svg",
+        "git-merge.svg",
+        "grip-vertical.svg",
+        "hash.svg",
+        "headphones.svg",
+        "history.svg",
+        "house.svg",
+        "image.svg",
+        "info.svg",
+        "keyboard.svg",
+        "layers.svg",
+        "layout-grid.svg",
+        "link.svg",
+        "list.svg",
+        "list-filter.svg",
+        "locate-fixed.svg",
+        "lock.svg",
+        "lock-open.svg",
+        "log-out.svg",
+        "map-pin.svg",
+        "maximize-2.svg",
+        "menu.svg",
+        "minimize-2.svg",
+        "minus.svg",
+        "monitor.svg",
+        "moon.svg",
+        "music.svg",
+        "pause.svg",
+        "pencil.svg",
+        "play.svg",
+        "plus.svg",
+        "printer.svg",
+        "redo-2.svg",
+        "refresh-cw.svg",
+        "rotate-ccw.svg",
+        "save.svg",
+        "scan-search.svg",
+        "search.svg",
+        "server.svg",
+        "settings.svg",
+        "shuffle.svg",
+        "skip-forward.svg",
+        "sliders-horizontal.svg",
+        "star.svg",
+        "sun.svg",
+        "table-2.svg",
+        "tag.svg",
+        "timer.svg",
+        "trash-2.svg",
+        "triangle-alert.svg",
+        "undo-2.svg",
+        "upload.svg",
+        "user.svg",
+        "wand-sparkles.svg",
+        "wifi.svg",
+        "wifi-off.svg",
+        "x.svg",
+        "zoom-in.svg",
+        "zoom-out.svg"
+      ],
+      "files": [
+        {
+          "path": "assets/Icons/share-2.svg",
+          "id": "7f251d5ebdb9f4503b485febaf7b9fa8"
+        },
+        {
+          "path": "assets/Icons/library-big.svg",
+          "id": "7fc9743432cdf7576f59851fcbc58bac"
+        },
+        {
+          "path": "assets/Icons/list-music.svg",
+          "id": "4722fb0ff2caee14f72fddbd226e4562"
+        },
+        {
+          "path": "assets/Icons/route.svg",
+          "id": "e21cbcd6e38b1bbff09e3fdcaf957475"
+        },
+        {
+          "path": "assets/Icons/piano.svg",
+          "id": "4269cabc4b386da63f6de6a4c7628304"
+        },
+        {
+          "path": "assets/Icons/radio-tower.svg",
+          "id": "3191799447ea7a394c92a898ebf8693d"
+        },
+        {
+          "path": "assets/Icons/activity.svg",
+          "id": "635abcf5e541a82aa2ba7e9139bfc15e"
+        },
+        {
+          "path": "assets/Icons/plug.svg",
+          "id": "7dc466267e2d8166e83996175cc4134a"
+        },
+        {
+          "path": "assets/Icons/archive.svg",
+          "id": "1807816612642d357ea4e9d8119a1fe1"
+        },
+        {
+          "path": "assets/Icons/archive-restore.svg",
+          "id": "0ad852dbafdb30b75fd818fff2eb43f0"
+        },
+        {
+          "path": "assets/Icons/arrow-down.svg",
+          "id": "99ade6666fb0b12b3fc553ab7387d16b"
+        },
+        {
+          "path": "assets/Icons/arrow-up.svg",
+          "id": "439e550eaeb629d4701215773602ea5b"
+        },
+        {
+          "path": "assets/Icons/arrow-up-down.svg",
+          "id": "5e19424cf0c4c1d182c8445fc44dd6db"
+        },
+        {
+          "path": "assets/Icons/audio-waveform.svg",
+          "id": "2ccb270d8f63ed368bdb8fe84c9c2194"
+        },
+        {
+          "path": "assets/Icons/bell.svg",
+          "id": "cc6de2b44550fa872d928a5c25d02b4c"
+        },
+        {
+          "path": "assets/Icons/bug.svg",
+          "id": "cafe7ed3ecf1097b41e14a678bc30ba0"
+        },
+        {
+          "path": "assets/Icons/calendar.svg",
+          "id": "f0463455fd178945d061c303e079d8ce"
+        },
+        {
+          "path": "assets/Icons/calendar-range.svg",
+          "id": "0d932d2e8530a8718ac3920bb6f6e001"
+        },
+        {
+          "path": "assets/Icons/camera.svg",
+          "id": "8d5116749e34c4fb5038948c1e501a6c"
+        },
+        {
+          "path": "assets/Icons/chart-column.svg",
+          "id": "9da5b9a0c646a296b4f1ef18b8ebd748"
+        },
+        {
+          "path": "assets/Icons/chart-line.svg",
+          "id": "bea57dec5255a09b4e01b64fa33856ab"
+        },
+        {
+          "path": "assets/Icons/check.svg",
+          "id": "80691f3c3c09cd64cee5b8f128ca5d2c"
+        },
+        {
+          "path": "assets/Icons/chevron-down.svg",
+          "id": "b60b5f1c87c02737731c4df183566d6a"
+        },
+        {
+          "path": "assets/Icons/chevron-left.svg",
+          "id": "ca3a067bff429a1fd99349fb610b476c"
+        },
+        {
+          "path": "assets/Icons/chevron-right.svg",
+          "id": "e5e9d3633035d9e21b1f093f09638d88"
+        },
+        {
+          "path": "assets/Icons/chevron-up.svg",
+          "id": "85c03491e831470ecba75b820ba81ae0"
+        },
+        {
+          "path": "assets/Icons/circle-alert.svg",
+          "id": "c4856dfe22e619f0f2e53ed43200bc9b"
+        },
+        {
+          "path": "assets/Icons/circle-check.svg",
+          "id": "836452f0cddb488005342ecfa52c1e12"
+        },
+        {
+          "path": "assets/Icons/circle-dot.svg",
+          "id": "9f27ecbf92276db1714921a78d44dd5e"
+        },
+        {
+          "path": "assets/Icons/circle-help.svg",
+          "id": "d1c8d1e016c2d9e84938bf31c3adb935"
+        },
+        {
+          "path": "assets/Icons/circle-x.svg",
+          "id": "e2684bf18f278d3809db37064d6ce03e"
+        },
+        {
+          "path": "assets/Icons/clipboard-check.svg",
+          "id": "c0c316193aa584e45747cd8d90b6dac1"
+        },
+        {
+          "path": "assets/Icons/clock.svg",
+          "id": "ed95855edb18da713adf9521c65e6edc"
+        },
+        {
+          "path": "assets/Icons/cloud-off.svg",
+          "id": "eeaf6ff8ffadf4ff9e416f5ed3766964"
+        },
+        {
+          "path": "assets/Icons/copy.svg",
+          "id": "7fe03b84e01e93232ba407a0282c91cd"
+        },
+        {
+          "path": "assets/Icons/crosshair.svg",
+          "id": "f9d211ee9425173b06f17a9c4653edf3"
+        },
+        {
+          "path": "assets/Icons/database.svg",
+          "id": "af8c1759e5d5b09f3a0660f5727bb4c1"
+        },
+        {
+          "path": "assets/Icons/disc-3.svg",
+          "id": "b249f77fac122fbd74563e56a149ed15"
+        },
+        {
+          "path": "assets/Icons/download.svg",
+          "id": "025f634dfd33bc1db7d2f9467fa0f759"
+        },
+        {
+          "path": "assets/Icons/ellipsis.svg",
+          "id": "ab5c56659699d482e765714b01c3c755"
+        },
+        {
+          "path": "assets/Icons/ellipsis-vertical.svg",
+          "id": "18edd92fbe8b6ebe72b28060a259dbda"
+        },
+        {
+          "path": "assets/Icons/external-link.svg",
+          "id": "c86742f4a8d18d618164536dcc9cbb82"
+        },
+        {
+          "path": "assets/Icons/eye.svg",
+          "id": "1f569d2ac90e7b818cb27d607278e1b6"
+        },
+        {
+          "path": "assets/Icons/eye-off.svg",
+          "id": "ff5dee169336c27288bf547829cabf35"
+        },
+        {
+          "path": "assets/Icons/file-input.svg",
+          "id": "9949a8a871b3eaa2b67efdde92205069"
+        },
+        {
+          "path": "assets/Icons/file-json.svg",
+          "id": "328d868275d7150747b88e1a225dbed0"
+        },
+        {
+          "path": "assets/Icons/file-text.svg",
+          "id": "cebcb63981db5eb1cbc650d78cd1bd86"
+        },
+        {
+          "path": "assets/Icons/flag.svg",
+          "id": "f1215cfb72efc7c01c512c617e258ed6"
+        },
+        {
+          "path": "assets/Icons/focus.svg",
+          "id": "abdbed33888b508980a3f72faadae3b9"
+        },
+        {
+          "path": "assets/Icons/funnel.svg",
+          "id": "5c604a3442a07fe261c7d80b66ccc34e"
+        },
+        {
+          "path": "assets/Icons/gauge.svg",
+          "id": "a2691a2b0cad546a2066de19096a6733"
+        },
+        {
+          "path": "assets/Icons/git-merge.svg",
+          "id": "56be8dc00325a3ddb7bc21ada9a07c13"
+        },
+        {
+          "path": "assets/Icons/grip-vertical.svg",
+          "id": "8a731de9788194a79b6db1b491b92fec"
+        },
+        {
+          "path": "assets/Icons/hash.svg",
+          "id": "eb34a183a5eb072632046facb3ad8848"
+        },
+        {
+          "path": "assets/Icons/headphones.svg",
+          "id": "1cd5f0a9add2e309f14905f3ac808120"
+        },
+        {
+          "path": "assets/Icons/history.svg",
+          "id": "808f3bb8f8061d1be6ee2a4525035ec2"
+        },
+        {
+          "path": "assets/Icons/house.svg",
+          "id": "e7ec95dbd9cc34cf1977582fea20fd5a"
+        },
+        {
+          "path": "assets/Icons/image.svg",
+          "id": "bdb5cb7ed542f4b76b6085650910a074"
+        },
+        {
+          "path": "assets/Icons/info.svg",
+          "id": "e3c4fcf29426bd19d322a3bea7c1b290"
+        },
+        {
+          "path": "assets/Icons/keyboard.svg",
+          "id": "7cb816dc1ef8ab4b7dbe265f24ecc69f"
+        },
+        {
+          "path": "assets/Icons/layers.svg",
+          "id": "45ecd8515f6cdc2f1b8bd81f8a99e807"
+        },
+        {
+          "path": "assets/Icons/layout-grid.svg",
+          "id": "edaf3efd12d2aab1ee87aea42a4d63f3"
+        },
+        {
+          "path": "assets/Icons/link.svg",
+          "id": "dab4f742300eecdbf386f9c572403a59"
+        },
+        {
+          "path": "assets/Icons/list.svg",
+          "id": "9a91ebcb248fb6fc55c1c52bad4146c8"
+        },
+        {
+          "path": "assets/Icons/list-filter.svg",
+          "id": "94757279cc8bb77737e027c8fb7eada6"
+        },
+        {
+          "path": "assets/Icons/locate-fixed.svg",
+          "id": "bd61e2c7399ab11f06389e6dcdc766c9"
+        },
+        {
+          "path": "assets/Icons/lock.svg",
+          "id": "e96baf7e8802740436daebf9527d1a69"
+        },
+        {
+          "path": "assets/Icons/lock-open.svg",
+          "id": "68b4e61db58c8b0895857fb3a2a98f26"
+        },
+        {
+          "path": "assets/Icons/log-out.svg",
+          "id": "2b26863dc015af5269d853181e04724c"
+        },
+        {
+          "path": "assets/Icons/map-pin.svg",
+          "id": "358a3661d5362cf33d5a16cef0e4a7d7"
+        },
+        {
+          "path": "assets/Icons/maximize-2.svg",
+          "id": "13e49a4a60a2854dc97f1dd56503acea"
+        },
+        {
+          "path": "assets/Icons/menu.svg",
+          "id": "eccc963f0cb96958870c664d7125adb5"
+        },
+        {
+          "path": "assets/Icons/minimize-2.svg",
+          "id": "afd74d1d55143b0e7dcb324f91353ee8"
+        },
+        {
+          "path": "assets/Icons/minus.svg",
+          "id": "8af2a4860c681e6414ee3956fdf1d7cf"
+        },
+        {
+          "path": "assets/Icons/monitor.svg",
+          "id": "48a3ed7326751645a24a15aefbd7e427"
+        },
+        {
+          "path": "assets/Icons/moon.svg",
+          "id": "962488f7c492abe701ba5b560f9e6a24"
+        },
+        {
+          "path": "assets/Icons/music.svg",
+          "id": "775847916bc23dfbd6c6d7018dc3bd72"
+        },
+        {
+          "path": "assets/Icons/pause.svg",
+          "id": "04e81e6bf16e797bcb65cf635b131b47"
+        },
+        {
+          "path": "assets/Icons/pencil.svg",
+          "id": "66bd557490e856f95e650a771e5a5778"
+        },
+        {
+          "path": "assets/Icons/play.svg",
+          "id": "917eeb4b1ca4df5e59b002e01f702395"
+        },
+        {
+          "path": "assets/Icons/plus.svg",
+          "id": "ce52ff8d1a3dbff5a37f9ddf2d7282de"
+        },
+        {
+          "path": "assets/Icons/printer.svg",
+          "id": "3895a5868e82157e939565f1682e77fa"
+        },
+        {
+          "path": "assets/Icons/redo-2.svg",
+          "id": "f2b86b5f873c4b03d23bf51b9dcf2749"
+        },
+        {
+          "path": "assets/Icons/refresh-cw.svg",
+          "id": "5eb6c726e68e1c614230311b90fac137"
+        },
+        {
+          "path": "assets/Icons/rotate-ccw.svg",
+          "id": "b7724f509f1cf73cf339bcd1eeecdd74"
+        },
+        {
+          "path": "assets/Icons/save.svg",
+          "id": "c612547d8b5a42eca488b95e92f6cacd"
+        },
+        {
+          "path": "assets/Icons/scan-search.svg",
+          "id": "a5e5b1a28e690ba8e0491e2bfac39a99"
+        },
+        {
+          "path": "assets/Icons/search.svg",
+          "id": "d5333c1d9d024a256f8a2e0431c37a5b"
+        },
+        {
+          "path": "assets/Icons/server.svg",
+          "id": "712ff989ba50ab946f836bc8f4f6ca09"
+        },
+        {
+          "path": "assets/Icons/settings.svg",
+          "id": "b5ef2b2508c38462ca1416c551b6d4ea"
+        },
+        {
+          "path": "assets/Icons/shuffle.svg",
+          "id": "64605bfcfef189570aa27197ac799599"
+        },
+        {
+          "path": "assets/Icons/skip-forward.svg",
+          "id": "d62bd2e18bdce43d05c90fca4e87bf9a"
+        },
+        {
+          "path": "assets/Icons/sliders-horizontal.svg",
+          "id": "5585df97ca6167f9bcfa7ae6f426ef8c"
+        },
+        {
+          "path": "assets/Icons/star.svg",
+          "id": "5056fa4dfc99a075824045096df6d8dc"
+        },
+        {
+          "path": "assets/Icons/sun.svg",
+          "id": "a6bdb91c36839f3eb521502707b9c994"
+        },
+        {
+          "path": "assets/Icons/table-2.svg",
+          "id": "18a46f57227a11ac8bc6ce2ea16556aa"
+        },
+        {
+          "path": "assets/Icons/tag.svg",
+          "id": "09635674e8bf4fdd97efa9c299269e15"
+        },
+        {
+          "path": "assets/Icons/timer.svg",
+          "id": "a7c47c75a0691b89c5aa147861f33ad6"
+        },
+        {
+          "path": "assets/Icons/trash-2.svg",
+          "id": "cf910a682dbec6349cb24c55aaaf06f1"
+        },
+        {
+          "path": "assets/Icons/triangle-alert.svg",
+          "id": "c37ecf3b393fb40a980416562a332172"
+        },
+        {
+          "path": "assets/Icons/undo-2.svg",
+          "id": "3e33ccbf522457928bc8c5189ab70c2e"
+        },
+        {
+          "path": "assets/Icons/upload.svg",
+          "id": "5fdf0ab2b5588e474b6f8ff70a999acf"
+        },
+        {
+          "path": "assets/Icons/user.svg",
+          "id": "22062c2c9da3c834264e32f06b7724d2"
+        },
+        {
+          "path": "assets/Icons/wand-sparkles.svg",
+          "id": "65e7b43eb8a55b1791dd4f0cbb539723"
+        },
+        {
+          "path": "assets/Icons/wifi.svg",
+          "id": "ea9d997a246e0ddaa3e5571e8d994f7a"
+        },
+        {
+          "path": "assets/Icons/wifi-off.svg",
+          "id": "13a41aeb7cded6af16ac76a328e86550"
+        },
+        {
+          "path": "assets/Icons/x.svg",
+          "id": "6c0d80c2c739c84ff9195cf66b19695b"
+        },
+        {
+          "path": "assets/Icons/zoom-in.svg",
+          "id": "761441500ff7db2fb23398bcd838077d"
+        },
+        {
+          "path": "assets/Icons/zoom-out.svg",
+          "id": "d9a13c7f43af36f32e221daa91444545"
+        }
+      ]
+    }
+  ],
+  "storage": {
+    "files": {
+      "assets/Icons/activity.svg": {
+        "store": "blob",
+        "id": "635abcf5e541a82aa2ba7e9139bfc15e",
+        "bytes": 346,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/archive-restore.svg": {
+        "store": "blob",
+        "id": "0ad852dbafdb30b75fd818fff2eb43f0",
+        "bytes": 381,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/archive.svg": {
+        "store": "blob",
+        "id": "1807816612642d357ea4e9d8119a1fe1",
+        "bytes": 334,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/arrow-down.svg": {
+        "store": "blob",
+        "id": "99ade6666fb0b12b3fc553ab7387d16b",
+        "bytes": 259,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/arrow-up-down.svg": {
+        "store": "blob",
+        "id": "5e19424cf0c4c1d182c8445fc44dd6db",
+        "bytes": 304,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/arrow-up.svg": {
+        "store": "blob",
+        "id": "439e550eaeb629d4701215773602ea5b",
+        "bytes": 258,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/audio-waveform.svg": {
+        "store": "blob",
+        "id": "2ccb270d8f63ed368bdb8fe84c9c2194",
+        "bytes": 326,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/bell.svg": {
+        "store": "blob",
+        "id": "cc6de2b44550fa872d928a5c25d02b4c",
+        "bytes": 390,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/bug.svg": {
+        "store": "blob",
+        "id": "cafe7ed3ecf1097b41e14a678bc30ba0",
+        "bytes": 585,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/calendar-range.svg": {
+        "store": "blob",
+        "id": "0d932d2e8530a8718ac3920bb6f6e001",
+        "bytes": 408,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/calendar.svg": {
+        "store": "blob",
+        "id": "f0463455fd178945d061c303e079d8ce",
+        "bytes": 320,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/camera.svg": {
+        "store": "blob",
+        "id": "8d5116749e34c4fb5038948c1e501a6c",
+        "bytes": 434,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chart-column.svg": {
+        "store": "blob",
+        "id": "9da5b9a0c646a296b4f1ef18b8ebd748",
+        "bytes": 311,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chart-line.svg": {
+        "store": "blob",
+        "id": "bea57dec5255a09b4e01b64fa33856ab",
+        "bytes": 278,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/check.svg": {
+        "store": "blob",
+        "id": "80691f3c3c09cd64cee5b8f128ca5d2c",
+        "bytes": 239,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chevron-down.svg": {
+        "store": "blob",
+        "id": "b60b5f1c87c02737731c4df183566d6a",
+        "bytes": 236,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chevron-left.svg": {
+        "store": "blob",
+        "id": "ca3a067bff429a1fd99349fb610b476c",
+        "bytes": 238,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chevron-right.svg": {
+        "store": "blob",
+        "id": "e5e9d3633035d9e21b1f093f09638d88",
+        "bytes": 237,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chevron-up.svg": {
+        "store": "blob",
+        "id": "85c03491e831470ecba75b820ba81ae0",
+        "bytes": 238,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/circle-alert.svg": {
+        "store": "blob",
+        "id": "c4856dfe22e619f0f2e53ed43200bc9b",
+        "bytes": 326,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/circle-check.svg": {
+        "store": "blob",
+        "id": "836452f0cddb488005342ecfa52c1e12",
+        "bytes": 275,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/circle-dot.svg": {
+        "store": "blob",
+        "id": "9f27ecbf92276db1714921a78d44dd5e",
+        "bytes": 276,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/circle-help.svg": {
+        "store": "blob",
+        "id": "d1c8d1e016c2d9e84938bf31c3adb935",
+        "bytes": 316,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/circle-x.svg": {
+        "store": "blob",
+        "id": "e2684bf18f278d3809db37064d6ce03e",
+        "bytes": 287,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/clipboard-check.svg": {
+        "store": "blob",
+        "id": "c0c316193aa584e45747cd8d90b6dac1",
+        "bytes": 377,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/clock.svg": {
+        "store": "blob",
+        "id": "ed95855edb18da713adf9521c65e6edc",
+        "bytes": 268,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/cloud-off.svg": {
+        "store": "blob",
+        "id": "eeaf6ff8ffadf4ff9e416f5ed3766964",
+        "bytes": 379,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/copy.svg": {
+        "store": "blob",
+        "id": "7fe03b84e01e93232ba407a0282c91cd",
+        "bytes": 336,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/crosshair.svg": {
+        "store": "blob",
+        "id": "f9d211ee9425173b06f17a9c4653edf3",
+        "bytes": 400,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/database.svg": {
+        "store": "blob",
+        "id": "af8c1759e5d5b09f3a0660f5727bb4c1",
+        "bytes": 323,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/disc-3.svg": {
+        "store": "blob",
+        "id": "b249f77fac122fbd74563e56a149ed15",
+        "bytes": 354,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/download.svg": {
+        "store": "blob",
+        "id": "025f634dfd33bc1db7d2f9467fa0f759",
+        "bytes": 312,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/ellipsis-vertical.svg": {
+        "store": "blob",
+        "id": "18edd92fbe8b6ebe72b28060a259dbda",
+        "bytes": 306,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/ellipsis.svg": {
+        "store": "blob",
+        "id": "ab5c56659699d482e765714b01c3c755",
+        "bytes": 306,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/external-link.svg": {
+        "store": "blob",
+        "id": "c86742f4a8d18d618164536dcc9cbb82",
+        "bytes": 326,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/eye-off.svg": {
+        "store": "blob",
+        "id": "ff5dee169336c27288bf547829cabf35",
+        "bytes": 495,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/eye.svg": {
+        "store": "blob",
+        "id": "1f569d2ac90e7b818cb27d607278e1b6",
+        "bytes": 357,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/file-input.svg": {
+        "store": "blob",
+        "id": "9949a8a871b3eaa2b67efdde92205069",
+        "bytes": 421,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/file-json.svg": {
+        "store": "blob",
+        "id": "328d868275d7150747b88e1a225dbed0",
+        "bytes": 530,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/file-text.svg": {
+        "store": "blob",
+        "id": "cebcb63981db5eb1cbc650d78cd1bd86",
+        "bytes": 432,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/flag.svg": {
+        "store": "blob",
+        "id": "f1215cfb72efc7c01c512c617e258ed6",
+        "bytes": 370,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/focus.svg": {
+        "store": "blob",
+        "id": "abdbed33888b508980a3f72faadae3b9",
+        "bytes": 389,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/funnel.svg": {
+        "store": "blob",
+        "id": "5c604a3442a07fe261c7d80b66ccc34e",
+        "bytes": 370,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/gauge.svg": {
+        "store": "blob",
+        "id": "a2691a2b0cad546a2066de19096a6733",
+        "bytes": 275,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/git-merge.svg": {
+        "store": "blob",
+        "id": "56be8dc00325a3ddb7bc21ada9a07c13",
+        "bytes": 307,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/grip-vertical.svg": {
+        "store": "blob",
+        "id": "8a731de9788194a79b6db1b491b92fec",
+        "bytes": 398,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/hash.svg": {
+        "store": "blob",
+        "id": "eb34a183a5eb072632046facb3ad8848",
+        "bytes": 364,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/headphones.svg": {
+        "store": "blob",
+        "id": "1cd5f0a9add2e309f14905f3ac808120",
+        "bytes": 347,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/history.svg": {
+        "store": "blob",
+        "id": "808f3bb8f8061d1be6ee2a4525035ec2",
+        "bytes": 318,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/house.svg": {
+        "store": "blob",
+        "id": "e7ec95dbd9cc34cf1977582fea20fd5a",
+        "bytes": 380,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/image.svg": {
+        "store": "blob",
+        "id": "bdb5cb7ed542f4b76b6085650910a074",
+        "bytes": 352,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/info.svg": {
+        "store": "blob",
+        "id": "e3c4fcf29426bd19d322a3bea7c1b290",
+        "bytes": 288,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/keyboard.svg": {
+        "store": "blob",
+        "id": "7cb816dc1ef8ab4b7dbe265f24ecc69f",
+        "bytes": 437,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/layers.svg": {
+        "store": "blob",
+        "id": "45ecd8515f6cdc2f1b8bd81f8a99e807",
+        "bytes": 504,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/layout-grid.svg": {
+        "store": "blob",
+        "id": "edaf3efd12d2aab1ee87aea42a4d63f3",
+        "bytes": 407,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/library-big.svg": {
+        "store": "blob",
+        "id": "7fc9743432cdf7576f59851fcbc58bac",
+        "bytes": 403,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/link.svg": {
+        "store": "blob",
+        "id": "dab4f742300eecdbf386f9c572403a59",
+        "bytes": 356,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/list-filter.svg": {
+        "store": "blob",
+        "id": "94757279cc8bb77737e027c8fb7eada6",
+        "bytes": 272,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/list-music.svg": {
+        "store": "blob",
+        "id": "4722fb0ff2caee14f72fddbd226e4562",
+        "bytes": 326,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/list.svg": {
+        "store": "blob",
+        "id": "9a91ebcb248fb6fc55c1c52bad4146c8",
+        "bytes": 338,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/locate-fixed.svg": {
+        "store": "blob",
+        "id": "bd61e2c7399ab11f06389e6dcdc766c9",
+        "bytes": 431,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/lock-open.svg": {
+        "store": "blob",
+        "id": "68b4e61db58c8b0895857fb3a2a98f26",
+        "bytes": 305,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/lock.svg": {
+        "store": "blob",
+        "id": "e96baf7e8802740436daebf9527d1a69",
+        "bytes": 306,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/log-out.svg": {
+        "store": "blob",
+        "id": "2b26863dc015af5269d853181e04724c",
+        "bytes": 311,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/map-pin.svg": {
+        "store": "blob",
+        "id": "358a3661d5362cf33d5a16cef0e4a7d7",
+        "bytes": 356,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/maximize-2.svg": {
+        "store": "blob",
+        "id": "13e49a4a60a2854dc97f1dd56503acea",
+        "bytes": 300,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/menu.svg": {
+        "store": "blob",
+        "id": "eccc963f0cb96958870c664d7125adb5",
+        "bytes": 273,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/minimize-2.svg": {
+        "store": "blob",
+        "id": "afd74d1d55143b0e7dcb324f91353ee8",
+        "bytes": 302,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/minus.svg": {
+        "store": "blob",
+        "id": "8af2a4860c681e6414ee3956fdf1d7cf",
+        "bytes": 232,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/monitor.svg": {
+        "store": "blob",
+        "id": "48a3ed7326751645a24a15aefbd7e427",
+        "bytes": 340,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/moon.svg": {
+        "store": "blob",
+        "id": "962488f7c492abe701ba5b560f9e6a24",
+        "bytes": 334,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/music.svg": {
+        "store": "blob",
+        "id": "775847916bc23dfbd6c6d7018dc3bd72",
+        "bytes": 302,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/pause.svg": {
+        "store": "blob",
+        "id": "04e81e6bf16e797bcb65cf635b131b47",
+        "bytes": 310,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/pencil.svg": {
+        "store": "blob",
+        "id": "66bd557490e856f95e650a771e5a5778",
+        "bytes": 374,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/piano.svg": {
+        "store": "blob",
+        "id": "4269cabc4b386da63f6de6a4c7628304",
+        "bytes": 421,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/play.svg": {
+        "store": "blob",
+        "id": "917eeb4b1ca4df5e59b002e01f702395",
+        "bytes": 306,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/plug.svg": {
+        "store": "blob",
+        "id": "7dc466267e2d8166e83996175cc4134a",
+        "bytes": 354,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/plus.svg": {
+        "store": "blob",
+        "id": "ce52ff8d1a3dbff5a37f9ddf2d7282de",
+        "bytes": 253,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/printer.svg": {
+        "store": "blob",
+        "id": "3895a5868e82157e939565f1682e77fa",
+        "bytes": 400,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/radio-tower.svg": {
+        "store": "blob",
+        "id": "3191799447ea7a394c92a898ebf8693d",
+        "bytes": 467,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/redo-2.svg": {
+        "store": "blob",
+        "id": "f2b86b5f873c4b03d23bf51b9dcf2749",
+        "bytes": 305,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/refresh-cw.svg": {
+        "store": "blob",
+        "id": "5eb6c726e68e1c614230311b90fac137",
+        "bytes": 383,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/rotate-ccw.svg": {
+        "store": "blob",
+        "id": "b7724f509f1cf73cf339bcd1eeecdd74",
+        "bytes": 294,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/route.svg": {
+        "store": "blob",
+        "id": "e21cbcd6e38b1bbff09e3fdcaf957475",
+        "bytes": 338,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/save.svg": {
+        "store": "blob",
+        "id": "c612547d8b5a42eca488b95e92f6cacd",
+        "bytes": 411,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/scan-search.svg": {
+        "store": "blob",
+        "id": "a5e5b1a28e690ba8e0491e2bfac39a99",
+        "bytes": 416,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/search.svg": {
+        "store": "blob",
+        "id": "d5333c1d9d024a256f8a2e0431c37a5b",
+        "bytes": 272,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/server.svg": {
+        "store": "blob",
+        "id": "712ff989ba50ab946f836bc8f4f6ca09",
+        "bytes": 404,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/settings.svg": {
+        "store": "blob",
+        "id": "b5ef2b2508c38462ca1416c551b6d4ea",
+        "bytes": 583,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/share-2.svg": {
+        "store": "blob",
+        "id": "7f251d5ebdb9f4503b485febaf7b9fa8",
+        "bytes": 406,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/shuffle.svg": {
+        "store": "blob",
+        "id": "64605bfcfef189570aa27197ac799599",
+        "bytes": 432,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/skip-forward.svg": {
+        "store": "blob",
+        "id": "d62bd2e18bdce43d05c90fca4e87bf9a",
+        "bytes": 330,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/sliders-horizontal.svg": {
+        "store": "blob",
+        "id": "5585df97ca6167f9bcfa7ae6f426ef8c",
+        "bytes": 398,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/star.svg": {
+        "store": "blob",
+        "id": "5056fa4dfc99a075824045096df6d8dc",
+        "bytes": 588,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/sun.svg": {
+        "store": "blob",
+        "id": "a6bdb91c36839f3eb521502707b9c994",
+        "bytes": 461,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/table-2.svg": {
+        "store": "blob",
+        "id": "18a46f57227a11ac8bc6ce2ea16556aa",
+        "bytes": 301,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/tag.svg": {
+        "store": "blob",
+        "id": "09635674e8bf4fdd97efa9c299269e15",
+        "bytes": 427,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/timer.svg": {
+        "store": "blob",
+        "id": "a7c47c75a0691b89c5aa147861f33ad6",
+        "bytes": 321,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/trash-2.svg": {
+        "store": "blob",
+        "id": "cf910a682dbec6349cb24c55aaaf06f1",
+        "bytes": 377,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/triangle-alert.svg": {
+        "store": "blob",
+        "id": "c37ecf3b393fb40a980416562a332172",
+        "bytes": 339,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/undo-2.svg": {
+        "store": "blob",
+        "id": "3e33ccbf522457928bc8c5189ab70c2e",
+        "bytes": 306,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/upload.svg": {
+        "store": "blob",
+        "id": "5fdf0ab2b5588e474b6f8ff70a999acf",
+        "bytes": 312,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/user.svg": {
+        "store": "blob",
+        "id": "22062c2c9da3c834264e32f06b7724d2",
+        "bytes": 296,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/wand-sparkles.svg": {
+        "store": "blob",
+        "id": "65e7b43eb8a55b1791dd4f0cbb539723",
+        "bytes": 508,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/wifi-off.svg": {
+        "store": "blob",
+        "id": "13a41aeb7cded6af16ac76a328e86550",
+        "bytes": 476,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/wifi.svg": {
+        "store": "blob",
+        "id": "ea9d997a246e0ddaa3e5571e8d994f7a",
+        "bytes": 348,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/x.svg": {
+        "store": "blob",
+        "id": "6c0d80c2c739c84ff9195cf66b19695b",
+        "bytes": 257,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/zoom-in.svg": {
+        "store": "blob",
+        "id": "761441500ff7db2fb23398bcd838077d",
+        "bytes": 367,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/zoom-out.svg": {
+        "store": "blob",
+        "id": "d9a13c7f43af36f32e221daa91444545",
+        "bytes": 328,
+        "type": "image/svg+xml"
+      }
+    },
+    "blobBytesUsed": 38386
+  }
+}

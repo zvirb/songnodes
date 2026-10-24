@@ -1,0 +1,41 @@
+<!-- @dsCard group="Inputs" height=447 subtitle="Settings that apply at once: on, off, saved confirmation, disabled with reason" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Switch — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-card sn-card--flat" style="max-width: 620px">
+    <h2 class="sn-title title-s"><span class="sn-lead">Settings:</span> Weekly run and display</h2>
+    <ul class="sn-switch-list" id="list"></ul>
+  </div>
+  <div class="sn-sr" aria-live="polite" id="live"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var ROWS = [
+    { id: "tidal", label: "Send to TIDAL on the weekly run", desc: "Each Monday at 06:00 the newest saved set becomes a TIDAL playlist.", on: true },
+    { id: "sprite", label: "Sprite mode (performance)", desc: "Draws graph nodes as flat sprites. Faster on older laptops; edges lose their curve.", on: false },
+    { id: "spotify", label: "Match new tracks on Spotify", desc: "", on: false, disabled: "Connect Spotify in Services to turn this on." }
+  ];
+  document.getElementById("list").innerHTML = ROWS.map(function (r) {
+    return '<li class="sn-switch">' +
+      '<div class="sn-switch__text"><span class="sn-switch__label" id="sw-' + r.id + '-l">' + r.label + '</span>' +
+      (r.desc || r.disabled ? '<span class="sn-switch__desc" id="sw-' + r.id + '-d">' + (r.disabled ? S.icon("lock", { size: 13 }) + " " + r.disabled : r.desc) + '</span>' : "") +
+      '<span class="sn-switch__saved" id="sw-' + r.id + '-s" aria-hidden="true"></span></div>' +
+      '<button type="button" role="switch" class="sn-switch__control" id="sw-' + r.id + '" aria-checked="' + r.on + '" aria-labelledby="sw-' + r.id + '-l"' + (r.desc || r.disabled ? ' aria-describedby="sw-' + r.id + '-d"' : "") + (r.disabled ? ' aria-disabled="true"' : "") + '>' +
+      '<span class="sn-switch__state" aria-hidden="true">' + (r.on ? "On" : "Off") + '</span><span class="sn-switch__track" aria-hidden="true"><span class="sn-switch__thumb"></span></span></button></li>';
+  }).join("");
+  var live = document.getElementById("live");
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".sn-switch__control"), lab = e.target.closest(".sn-switch__label");
+    if (lab) b = document.getElementById(lab.id.replace(/-l$/, ""));
+    if (!b || b.getAttribute("aria-disabled") === "true") return;
+    var on = b.getAttribute("aria-checked") !== "true";
+    b.setAttribute("aria-checked", on); b.querySelector(".sn-switch__state").textContent = on ? "On" : "Off";
+    var s = document.getElementById(b.id + "-s"); s.textContent = "Saved " + S.format.time(new Date());
+    live.textContent = document.getElementById(b.id + "-l").textContent + (on ? " on" : " off") + ". Saved.";
+    if (lab) b.focus();
+  });
+</script>
+</body>
+</html>

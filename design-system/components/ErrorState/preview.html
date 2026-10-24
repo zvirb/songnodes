@@ -1,0 +1,70 @@
+<!-- @dsCard group="Feedback" height=1056 subtitle="Timeout with last good data; offline, auth expired, not found, server error with reference ID, validation" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ErrorState — preview</title>
+<style>
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Timeout · TIDAL playlists, with the last data that loaded</div>
+  <div id="main"></div>
+  <div class="sn-preview__label">Other causes</div>
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+  var S = window.SongNodes, I = S.icon, H = S.html;
+  function err(o) {
+    return '<section class="sn-error-state" data-status="' + o.status + '" aria-labelledby="' + o.id + '">' +
+      '<div class="sn-error-state__icon">' + I(o.icon) + '</div>' +
+      '<h3 class="sn-error-state__title" id="' + o.id + '">' + o.title + '</h3>' +
+      '<div class="sn-error-state__text">' + o.text + '</div>' +
+      (o.retry ? '<p class="sn-error-state__retry"' + (o.helps === false ? ' data-helps="no"' : "") + '>' + o.retry + '</p>' : "") +
+      (o.actions ? '<div class="sn-error-state__actions">' + o.actions + '</div>' : "") +
+      (o.last || "") + '</section>';
+  }
+  var last = '<div class="sn-error-state__last">' +
+    '<div class="sn-error-state__stamp">Showing playlists from <time datetime="2026-10-24T06:00+11:00">24 Oct 2026, 06:00 AEDT</time></div>' +
+    '<div class="sn-tablebox"><table class="sn-table sn-table--compact"><thead><tr><th scope="col">Playlist</th><th scope="col" class="num">Tracks</th><th scope="col">Last change</th></tr></thead><tbody>' +
+    '<tr><td>Peak time Friday</td><td class="num">18</td><td><span class="sn-mono">23 Oct 2026</span></td></tr>' +
+    '<tr><td>Warm-up at Revolver</td><td class="num">22</td><td><span class="sn-mono">19 Oct 2026</span></td></tr></tbody></table></div></div>';
+  document.getElementById("main").innerHTML = err({
+    id: "e0", status: "warn", icon: "timer", title: "TIDAL is slow right now",
+    text: "TIDAL took longer than 20 s to send your playlists. Your library and sets are not affected.",
+    retry: "Retrying usually works within a minute.",
+    actions: '<button class="sn-btn" type="button" id="retry0">' + I("refresh-cw") + 'Retry</button>',
+    last: last
+  });
+  document.getElementById("grid").innerHTML =
+    err({ id: "e1", status: "warn", icon: "wifi-off", title: "You’re offline",
+      text: "The crate can’t refresh until this device reconnects. Changes to the open set are kept on this device.",
+      retry: "Retry once you’re back online.",
+      actions: '<button class="sn-btn" type="button">' + I("refresh-cw") + 'Retry</button>' }) +
+    err({ id: "e2", status: "warn", icon: "plug", title: "Your TIDAL connection has expired",
+      text: "TIDAL asks you to sign in again every 30 days. Until then, sets can’t be sent on the weekly run.",
+      retry: "Retrying won’t help until you reconnect.", helps: false,
+      actions: '<span class="sn-m-services"><button class="sn-btn sn-btn--mod" type="button">Reconnect TIDAL</button></span>' }) +
+    err({ id: "e3", status: "info", icon: "scan-search", title: "This set was deleted",
+      text: "“Closing at Sub Club” was deleted on 22 Oct 2026, 23:10 AEDT. Its tracks are still in the library.",
+      retry: "Retrying won’t bring it back.", helps: false,
+      actions: '<a class="sn-link sn-m-sets" href="#sets">Go to saved sets</a>' }) +
+    err({ id: "e4", status: "bad", icon: "server", title: "SongNodes couldn’t load the graph",
+      text: "The graph service returned an error (503). This is on our side, not your data.",
+      retry: "Try again in a few minutes. If it keeps happening, send the reference below.",
+      actions: '<button class="sn-btn" type="button">' + I("refresh-cw") + 'Try again</button>' +
+        '<span class="sn-error-state__ref">Reference <code id="ref">ref 7f3a-92c1</code><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="copyRef">' + I("copy") + '<span>Copy</span></button></span>' }) +
+    err({ id: "e5", status: "bad", icon: "circle-alert", title: "Fix 2 fields to save the set",
+      text: '<ul class="sn-error-state__fields"><li><a class="sn-link" href="#len">Length</a>: enter 30 to 360 minutes</li><li><a class="sn-link" href="#mix">Genre mix</a>: weights must add up to 100%</li></ul>',
+      actions: "" });
+  document.getElementById("copyRef").addEventListener("click", function () {
+    var b = this; try { navigator.clipboard && navigator.clipboard.writeText("ref 7f3a-92c1").catch(function () {}); } catch (e) {}
+    b.lastChild.textContent = "Copied"; setTimeout(function () { b.lastChild.textContent = "Copy"; }, 2000);
+  });
+  document.getElementById("retry0").addEventListener("click", function () {
+    this.setAttribute("aria-busy", "true"); this.innerHTML = '<span class="sn-spinner" aria-hidden="true"></span>Retrying…';
+    var b = this; setTimeout(function () { b.removeAttribute("aria-busy"); b.innerHTML = I("refresh-cw") + "Retry"; }, 1500);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!-- @dsCard group="Data" height=721 subtitle="Neutral card with footer actions, tonal card for each module, media card, compact list card, whole-card link; equal heights in a grid" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Card — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Neutral · footer actions · media · compact list · clickable (heights aligned)</div>
+  <div class="sn-card-grid">
+    <section class="sn-card" aria-labelledby="n1">
+      <div class="sn-card__eyebrow">This week</div>
+      <h3 class="sn-title title-s" id="n1">38 new tracks</h3>
+      <p class="sn-card__text">Mostly UK garage from triple j Mix Up and PBS Soul Time. 9 need an energy check.</p>
+      <div class="sn-card__foot"><button class="sn-btn sn-btn--sm" type="button">Review new tracks</button><button class="sn-btn sn-btn--quiet sn-btn--sm" type="button">Dismiss</button></div>
+    </section>
+    <article class="sn-card sn-card--media sn-m-sources" aria-labelledby="n2">
+      <div class="sn-card__media sn-card__media--placeholder" id="media" aria-hidden="true"></div>
+      <div class="sn-card__body">
+        <div class="sn-card__eyebrow">Radio · Sat 17 Oct</div>
+        <h3 class="sn-title title-s" id="n2">PBS Soul Time</h3>
+        <p class="sn-card__text">24 tracks, 6 new to the library.</p>
+      </div>
+    </article>
+    <section class="sn-card sn-card--list" aria-labelledby="n3">
+      <div class="sn-card__head"><h3 class="sn-title title-s" id="n3"><span class="sn-lead">Top:</span> heard most</h3></div>
+      <ul class="sn-card__list" id="top"></ul>
+    </section>
+    <article class="sn-card sn-card--link sn-m-sets">
+      <div class="sn-card__eyebrow">Saved set · updated 22 Oct</div>
+      <h3 class="sn-title title-s"><a class="sn-card__primary" href="#set-peak-time-friday">Peak time Friday</a></h3>
+      <p class="sn-card__text">92 min · 18 tracks · three waves. The whole card opens the set.</p>
+      <div class="sn-card__foot"><a class="sn-link sn-card__raise" href="#export">Copy tracklist</a></div>
+    </article>
+  </div>
+  <div class="sn-preview__label">Tonal, one per module (hub page)</div>
+  <div class="sn-card-grid" id="tonal" style="--sn-card-min:200px"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  document.getElementById("media").innerHTML = S.icon("radio-tower", { size: 36 });
+  document.getElementById("top").innerHTML = [["Bicep – Glue", 9], ["Sammy Virji – If U Need It", 7], ["Overmono – So U Kno", 6], ["Josh Baker – Lost In Muzik", 5]].map(function (t) { return "<li><span>" + S.esc(t[0]) + '</span><span class="sn-mono sn-dim">' + t[1] + " shows</span></li>"; }).join("");
+  var stat = { graph: "4,812 nodes · 21,390 edges", library: "1,284 tracks · 47 to check", sets: "6 saved sets", paths: "3 saved routes", harmony: "Most common: 8A", sources: "38 added last run", pipeline: "6 of 7 scrapers running", services: "Spotify connected · TIDAL expired" };
+  document.getElementById("tonal").innerHTML = S.modules.map(function (m) {
+    return '<a class="sn-card sn-card--tonal sn-card--compact sn-m-' + m.key + '" href="#' + m.key + '"><div class="sn-card__head">' + S.icon(m.icon, { cls: "sn-m-icon" }) + '<strong>' + S.esc(m.label) + '</strong></div><span class="sn-card__text">' + S.esc(m.summary) + '</span><span class="sn-mono sn-card__text">' + S.esc(stat[m.key]) + "</span></a>";
+  }).join("");
+</script>
+</body>
+</html>

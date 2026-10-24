@@ -1,0 +1,99 @@
+<!-- @dsCard group="Feedback" height=600 subtitle="Weekly library build running (done in green, running, waiting) with elapsed, estimate and Cancel; tracklist import with a failed step" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>StagedProgress — preview</title>
+<style>
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="two">
+    <section class="sn-card sn-m-pipeline" aria-labelledby="t1">
+      <div class="sn-staged-progress" id="build">
+        <div class="sn-staged-progress__head">
+          <h2 class="sn-title title-s" id="t1"><span class="sn-lead">Weekly build:</span> Sat 24 Oct</h2>
+          <div class="sn-staged-progress__time"><span>Elapsed <b id="elapsed">4:18</b></span><span id="eta">About 3 min left</span></div>
+        </div>
+        <ol class="sn-staged-progress__steps" id="steps"></ol>
+        <p class="sn-sr" aria-live="polite" id="announce"></p>
+        <p class="sn-staged-progress__notice" id="notice"></p>
+        <div class="sn-staged-progress__foot"><button class="sn-btn" type="button" id="cancel">Cancel build</button></div>
+      </div>
+    </section>
+
+    <section class="sn-card sn-m-sources" aria-labelledby="t2">
+      <div class="sn-staged-progress">
+        <div class="sn-staged-progress__head">
+          <h2 class="sn-title title-s" id="t2"><span class="sn-lead">Import:</span> Ben UFO at Sub Club</h2>
+          <div class="sn-staged-progress__time"><span>Stopped after <b>0:41</b></span></div>
+        </div>
+        <ol class="sn-staged-progress__steps">
+          <li class="sn-staged-progress__step" data-state="done">
+            <span class="sn-staged-progress__glyph" aria-hidden="true"></span>
+            <span class="sn-staged-progress__name">Read tracklist from 1001tracklists</span>
+            <span class="sn-staged-progress__state">● Done · 0:06</span>
+            <p class="sn-staged-progress__detail">24 tracks, 3 marked ID</p>
+          </li>
+          <li class="sn-staged-progress__step" data-state="failed">
+            <span class="sn-staged-progress__glyph" aria-hidden="true"></span>
+            <span class="sn-staged-progress__name">Match against MixesDB</span>
+            <span class="sn-staged-progress__state">Failed · 0:35</span>
+            <p class="sn-staged-progress__detail">MixesDB did not answer within 30 s. The 24 tracks read so far are kept.</p>
+            <div class="sn-staged-progress__actions"><button class="sn-btn sn-btn--sm" type="button">Retry this step</button><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button">Skip MixesDB</button></div>
+          </li>
+          <li class="sn-staged-progress__step" data-state="waiting">
+            <span class="sn-staged-progress__glyph" aria-hidden="true"></span>
+            <span class="sn-staged-progress__name">Add tracks and edges to the graph</span>
+            <span class="sn-staged-progress__state">Not started</span>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var steps = [
+    { name: "Fetch radio plays", state: "done", time: "0:42", detail: "1,912 plays from PBS Soul Time, 3RRR Superfreak and triple j Mix Up" },
+    { name: "Match plays to tracks", state: "running", done: 312, total: 500 },
+    { name: "Look up key and BPM", state: "waiting" },
+    { name: "Update the crate", state: "waiting" },
+    { name: "Send sets to TIDAL", state: "waiting" }
+  ];
+  var elapsed = 258;
+  function render() {
+    document.getElementById("steps").innerHTML = steps.map(function (s, i) {
+      var label = { done: "● Done · " + s.time, running: "Running", waiting: "Waiting", cancelled: "Cancelled", failed: "Failed" }[s.state];
+      var h = '<li class="sn-staged-progress__step" data-state="' + s.state + '"' + (s.state === "running" ? ' aria-current="step"' : "") + '>' +
+        '<span class="sn-staged-progress__glyph" aria-hidden="true"></span>' +
+        '<span class="sn-staged-progress__name">' + S.esc(s.name) + '</span>' +
+        '<span class="sn-staged-progress__state">' + label + '</span>';
+      if (s.detail) h += '<p class="sn-staged-progress__detail">' + S.esc(s.detail) + "</p>";
+      if (s.state === "running") {
+        h += '<p class="sn-staged-progress__detail">Matching ' + S.format.count(s.done) + " of " + S.format.count(s.total) + " tracks</p>" +
+          '<div class="sn-staged-progress__meter" role="progressbar" aria-label="' + S.esc(s.name) + '" aria-valuemin="0" aria-valuemax="' + s.total + '" aria-valuenow="' + s.done + '" aria-valuetext="' + s.done + " of " + s.total + ' tracks"><i style="--p:' + (100 * s.done / s.total).toFixed(1) + '%"></i></div>';
+      }
+      return h + "</li>";
+    }).join("");
+    document.getElementById("elapsed").textContent = S.format.duration(elapsed);
+  }
+  document.getElementById("notice").innerHTML = S.icon("info") + "<span>You can leave this page. The build keeps running and the crate updates when it finishes.</span>";
+  render();
+  var timer = setInterval(function () {
+    elapsed++;
+    var r = steps[1];
+    if (r.state === "running" && r.done < r.total) r.done = Math.min(r.total, r.done + 7);
+    render();
+  }, 1000);
+  document.getElementById("cancel").addEventListener("click", function () {
+    clearInterval(timer);
+    steps.forEach(function (s) { if (s.state !== "done") s.state = "cancelled"; });
+    render();
+    document.getElementById("eta").textContent = "Cancelled";
+    document.getElementById("announce").textContent = "Build cancelled. Plays fetched so far are kept.";
+    this.disabled = true;
+  });
+</script>
+</body>
+</html>

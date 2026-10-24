@@ -1,0 +1,33 @@
+<!-- @dsCard group="Navigation" height=550 subtitle="Home hub grid: one tonal card per module with icon, thin–bold title, summary, two key figures, and a status pill only where attention is needed" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>LauncherCard — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Home · 3-up grid at 960px (1-up on phones)</div>
+  <div class="sn-launcher-card__grid" id="grid"></div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  var cards = [
+    { mod: "sets", title: "12 saved sets", summary: "Peak time Friday was saved 24 Oct 2026, 21:30.", figs: [["92 min", "longest set"], ["18", "tracks in the latest"]] },
+    { mod: "library", title: "1,284 tracks", summary: "36 added this week from radio plays and the ARIA Club Chart.", figs: [["36", "new this week"], ["212", "high rotation"]], pill: ["warn", "41 need an energy check"] },
+    { mod: "graph", title: "8,903 connections", summary: "Adjacency edges from 2,140 real sets, plus similarity and key links.", figs: [["8,903", "edges"], ["2,140", "sets read"]] },
+    { mod: "paths", title: "3 saved routes", summary: "Glue to Lost In Muzik, 7 steps, energy 6 → 9.", figs: [["7", "steps, longest"], ["0", "key clashes"]] },
+    { mod: "sources", title: "PBS, 3RRR, triple j", summary: "Radio plays and tracklists imported every Monday at 06:00.", figs: [["147", "plays this week"], ["4", "imports to review"]], pill: ["info", "4 to review"] },
+    { mod: "pipeline", title: "9 scrapers", summary: "MixesDB and Setlist.fm paused after repeated errors.", figs: [["7", "running"], ["2", "paused"]], pill: ["bad", "2 paused after errors"] }
+  ];
+  document.getElementById("grid").innerHTML = cards.map(function (c, i) {
+    var m = S.module(c.mod), id = "lc" + i;
+    return '<a class="sn-card sn-card--tonal sn-launcher-card sn-m-' + c.mod + '" href="#' + c.mod + '" aria-labelledby="' + id + '-t" aria-describedby="' + id + "-s " + id + "-f" + (c.pill ? " " + id + "-p" : "") + '">' +
+      '<div class="sn-card__head"><span class="sn-launcher-card__icon">' + S.icon(m.icon) + "</span>" + (c.pill ? '<span class="sn-pill" data-status="' + c.pill[0] + '" id="' + id + '-p">' + S.esc(c.pill[1]) + "</span>" : "") + "</div>" +
+      '<h3 class="sn-title title-s" id="' + id + '-t"><span class="sn-lead">' + S.esc(m.label) + ":</span> " + S.esc(c.title) + "</h3>" +
+      '<p class="sn-launcher-card__summary" id="' + id + '-s">' + S.esc(c.summary) + "</p>" +
+      '<dl class="sn-launcher-card__figures" id="' + id + '-f">' + c.figs.map(function (f) { return '<div class="sn-launcher-card__figure"><dt>' + S.esc(f[1]) + "</dt><dd>" + S.esc(f[0]) + "</dd></div>"; }).join("") + "</dl>" +
+      "</a>";
+  }).join("");
+})();
+</script>
+</body>
+</html>

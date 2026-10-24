@@ -1,0 +1,87 @@
+<!-- @dsCard group="Navigation" height=640 subtitle="Theme, text size, density and reduce motion, applied live through SongNodes.prefs and saved on this device; a sample table shows the effect" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>PreferencesPanel — preview</title>
+<style>
+  .layout { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .sample { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="layout">
+    <section class="sn-preferences-panel" aria-labelledby="pp-title">
+      <div class="sn-preferences-panel__head"><h2 class="sn-title title-m" id="pp-title">Preferences</h2><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" aria-label="Close preferences" id="pp-close"></button></div>
+      <div class="sn-preferences-panel__body">
+        <div class="sn-preferences-panel__set">
+          <span class="sn-field__label" id="lbl-theme">Theme</span>
+          <div class="sn-preferences-panel__themes" role="radiogroup" aria-labelledby="lbl-theme" aria-describedby="theme-help" id="theme"></div>
+          <p class="sn-preferences-panel__help" id="theme-help">Booth is pure black with larger type and the highest contrast, for dark DJ booths.</p>
+        </div>
+        <div class="sn-preferences-panel__set">
+          <span class="sn-field__label" id="lbl-size">Text size</span>
+          <div id="size"></div>
+        </div>
+        <div class="sn-preferences-panel__set">
+          <span class="sn-field__label" id="lbl-density">Row density</span>
+          <div id="density"></div>
+          <p class="sn-preferences-panel__help">Compact fits more tracks on screen: 32px rows instead of 40px.</p>
+        </div>
+        <fieldset class="sn-preferences-panel__set">
+          <legend>Reduce motion</legend>
+          <div class="sn-preferences-panel__radios">
+            <label class="sn-check"><input type="radio" name="motion" value="system" checked> <span>Follow this device’s setting <span class="sn-dim" id="sysMotion"></span></span></label>
+            <label class="sn-check"><input type="radio" name="motion" value="reduce"> <span>Always reduce motion</span></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="sn-preferences-panel__foot"><span>Saved on this device only</span><button class="sn-btn sn-btn--quiet sn-btn--sm" type="button" id="reset">Reset to defaults</button></div>
+    </section>
+    <div class="sample">
+      <div class="sn-preview__label">Sample · changes apply as you choose</div>
+      <h3 class="sn-title title-s" style="margin:0"><span class="sn-lead">Library:</span> Melbourne crate</h3>
+      <div class="sn-tablebox"><table class="sn-table" aria-label="Sample tracks"><thead><tr><th>Track</th><th>Key</th><th class="num">BPM</th><th>Energy</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <p class="sn-dim" style="margin:0;font-size:0.8125rem" id="state"></p>
+    </div>
+  </div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes, P = S.prefs, root = document.documentElement;
+/*@@menu@@*/
+/*@@seg@@*/
+  var MOTION_KEY = "sn-motion";
+  function readMotion() { try { return localStorage.getItem(MOTION_KEY) || "system"; } catch (e) { return "system"; } }
+  /** Not in SongNodes.prefs yet: sets html[data-motion="reduce"] and remembers it. */
+  function setMotion(v) { try { if (v === "reduce") localStorage.setItem(MOTION_KEY, v); else localStorage.removeItem(MOTION_KEY); } catch (e) {} if (v === "reduce") root.setAttribute("data-motion", "reduce"); else root.removeAttribute("data-motion"); }
+  var sysReduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById("sysMotion").textContent = "(currently " + (sysReduce ? "reduced" : "full motion") + ")";
+  document.getElementById("pp-close").innerHTML = S.icon("x");
+  document.getElementById("rows").innerHTML = [["Bicep – Glue", "8A", 130, 6], ["Overmono – So U Kno", "9A", 131, 7], ["Sammy Virji – If U Need It", "10A", 134, 8]].map(function (r) { return "<tr><td>" + S.esc(r[0]) + "</td><td>" + S.html.key(r[1]) + '</td><td class="num">' + r[2] + "</td><td>" + S.html.energy(r[3]) + "</td></tr>"; }).join("");
+
+  var cur = P.get(), themeNow = root.getAttribute("data-theme") || "dark";
+  var THEMES = [["system", "System", "monitor"], ["dark", "Dark", "moon"], ["light", "Light", "sun"], ["booth", "Booth", "headphones"]];
+  var themeVal = cur.theme !== "system" && cur.theme === themeNow ? cur.theme : "system";
+  var tg = document.getElementById("theme");
+  tg.innerHTML = THEMES.map(function (t) { return '<button type="button" class="sn-preferences-panel__theme" role="radio" data-value="' + t[0] + '" aria-checked="' + (t[0] === themeVal) + '">' + S.icon(t[2]) + "<span>" + t[1] + '</span><span class="sn-preferences-panel__check" aria-hidden="true">✓</span></button>'; }).join("");
+  document.getElementById("size").innerHTML = snSegHtml("Text size", [{ value: "s", label: "S", aria: "Small" }, { value: "m", label: "M", aria: "Medium (default)" }, { value: "l", label: "L", aria: "Large" }, { value: "xl", label: "XL", aria: "Extra large" }], cur.textSize, "sn-segmented-control--block").replace('aria-label="Text size"', 'aria-labelledby="lbl-size"');
+  document.getElementById("density").innerHTML = snSegHtml("Row density", [{ value: "comfortable", label: "Comfortable" }, { value: "compact", label: "Compact" }], cur.density, "sn-segmented-control--block").replace('aria-label="Row density"', 'aria-labelledby="lbl-density"');
+  var motion = readMotion(); document.querySelector('input[name="motion"][value="' + motion + '"]').checked = true;
+
+  function state() { var g = P.get(); document.getElementById("state").textContent = "Theme " + g.theme + " (showing " + root.getAttribute("data-theme") + ") · text " + g.textSize.toUpperCase() + " · " + g.density + " rows · motion " + (readMotion() === "reduce" ? "always reduced" : "follows device"); }
+  var NAMES = { system: "System", dark: "Dark", light: "Light", booth: "Booth", s: "small", m: "medium", l: "large", xl: "extra large" };
+  var themeCtl = snSeg(tg, function (v) { P.setTheme(v); snSay("Theme set to " + NAMES[v]); state(); });
+  var sizeCtl = snSeg(document.querySelector("#size .sn-segmented-control"), function (v) { P.setTextSize(v); snSay("Text size set to " + NAMES[v]); state(); });
+  var denCtl = snSeg(document.querySelector("#density .sn-segmented-control"), function (v) { P.setDensity(v); snSay(v === "compact" ? "Compact rows" : "Comfortable rows"); state(); });
+  document.querySelectorAll('input[name="motion"]').forEach(function (r) { r.addEventListener("change", function () { setMotion(r.value); snSay(r.value === "reduce" ? "Motion always reduced" : "Motion follows this device"); state(); }); });
+  document.getElementById("reset").addEventListener("click", function () {
+    themeCtl.set("system"); sizeCtl.set("m"); denCtl.set("comfortable");
+    document.querySelector('input[name="motion"][value="system"]').checked = true; setMotion("system");
+    snSay("Preferences reset to defaults"); state();
+  });
+  state();
+})();
+</script>
+</body>
+</html>

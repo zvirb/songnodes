@@ -1,0 +1,314 @@
+<!-- @dsCard group="Charts" height=1050 subtitle="Line and bar chart anatomy: direct labels, legend row, reference line, now marker, preview region, tooltip on hover and focus, table view, empty and loading" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ChartFrame — preview</title>
+<style>
+  .pv-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+  @media (max-width: 720px) { .pv-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Line chart · direct labels, reference line, now marker, preview region</div>
+  <section class="sn-card">
+    <figure class="sn-chart-frame" id="lineFig" aria-labelledby="lineTitle">
+      <div class="sn-chart-frame__head">
+        <div class="sn-chart-frame__titles">
+          <h3 class="sn-title title-s" id="lineTitle"><span class="sn-lead">Library:</span> Plays per week by pillar</h3>
+          <p class="sn-chart-frame__sub">Radio plays of library tracks · 12 weeks, 3 Aug – 24 Oct 2026 · 2-week projection</p>
+        </div>
+        <div class="sn-chart-frame__actions"><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="lineToggle" aria-controls="lineTable lineFig-plot"></button></div>
+      </div>
+      <div class="sn-chart-frame__plot" id="lineFig-plot"></div>
+      <div class="sn-chart-frame__table" id="lineTable" hidden></div>
+      <p class="sn-sr" aria-live="polite" id="lineLive"></p>
+      <figcaption class="sn-chart-frame__note">Source: PBS, 3RRR and triple j playlists, matched to the library on the weekly run. Times in AEDT.</figcaption>
+    </figure>
+  </section>
+
+  <div class="pv-grid">
+    <div class="sn-stack">
+      <div class="sn-preview__label">Bar chart · single series, no legend</div>
+      <section class="sn-card">
+        <figure class="sn-chart-frame" id="barFig" aria-labelledby="barTitle">
+          <div class="sn-chart-frame__head">
+            <div class="sn-chart-frame__titles">
+              <h3 class="sn-title title-s" id="barTitle"><span class="sn-lead">Library:</span> Tracks by BPM</h3>
+              <p class="sn-chart-frame__sub">1,284 tracks with a BPM · as of 24 Oct 2026</p>
+            </div>
+            <div class="sn-chart-frame__actions"><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="barToggle" aria-controls="barTable barFig-plot"></button></div>
+          </div>
+          <div class="sn-chart-frame__plot" id="barFig-plot"></div>
+          <div class="sn-chart-frame__table" id="barTable" hidden></div>
+          <p class="sn-sr" aria-live="polite" id="barLive"></p>
+        </figure>
+      </section>
+    </div>
+    <div class="sn-stack">
+      <div class="sn-preview__label">Legend row · more than 3 series</div>
+      <section class="sn-card sn-card--compact">
+        <ul class="sn-chart-frame__legend" aria-label="Legend" id="legendRow"></ul>
+      </section>
+      <div class="sn-preview__label">Empty</div>
+      <div class="sn-chart-frame__state" id="emptyState">
+        <p class="sn-chart-frame__state-title">No plays in this period</p>
+        <p class="sn-chart-frame__state-help">Nothing from PBS Soul Time matched the library between 3 Aug and 24 Oct. Widen the date range or choose another show.</p>
+        <button class="sn-btn sn-btn--sm" type="button">Clear show filter</button>
+      </div>
+      <div class="sn-preview__label">Loading</div>
+      <div class="sn-chart-frame__state" aria-busy="true" aria-label="Loading plays per week">
+        <div class="sn-chart-frame__skel" aria-hidden="true" id="skel"></div>
+        <p class="sn-chart-frame__state-help">Loading plays…</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+/* chart kit (inlined into each chart preview by build.py; React apps use d3-scale/recharts instead) */
+var K = (function () {
+  var NS = "http://www.w3.org/2000/svg", n = 0;
+  function el(tag, a, parent) {
+    var e = document.createElementNS(NS, tag);
+    if (a) for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(parent, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), parent); t.textContent = s; return t; }
+  function h(tag, cls, s) { var e = document.createElement(tag); if (cls) e.className = cls; if (s != null) e.textContent = s; return e; }
+  function uid(p) { n += 1; return (p || "k") + n; }
+  /** one linear scale per axis: domain -> range, with nice ticks */
+  function linear(d0, d1, r0, r1) {
+    var f = function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); };
+    f.invert = function (px) { return d0 + (px - r0) / (r1 - r0) * (d1 - d0); };
+    f.ticks = function (step) { var o = []; for (var v = Math.ceil(d0 / step) * step; v <= d1 + 1e-9; v += step) o.push(+v.toFixed(6)); return o; };
+    f.domain = [d0, d1]; f.range = [r0, r1];
+    return f;
+  }
+  /** band scale for categories: index -> left edge of the mark, with a capped mark width */
+  function band(count, r0, r1, pad, cap) {
+    var step = (r1 - r0) / count, bw = Math.min(step * (1 - pad), cap || Infinity);
+    var f = function (i) { return r0 + i * step + (step - bw) / 2; };
+    f.mid = function (i) { return r0 + i * step + step / 2; };
+    f.index = function (px) { return Math.max(0, Math.min(count - 1, Math.floor((px - r0) / step))); };
+    f.bw = bw; f.step = step;
+    return f;
+  }
+  /** column with a 4px rounded data end and a square baseline */
+  function barPath(x, y, w, hgt, r) {
+    if (hgt <= 0) return "";
+    r = Math.min(r == null ? 4 : r, w / 2, hgt);
+    return "M" + x + "," + (y + hgt) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + hgt) + "Z";
+  }
+  /** diagonal hatch pattern for simulated / preview data (stroke = --sim via class) */
+  function hatch(svg) {
+    var id = uid("hatch"), defs = svg.querySelector("defs") || el("defs", null, svg);
+    var p = el("pattern", { id: id, patternUnits: "userSpaceOnUse", width: 6, height: 6, patternTransform: "rotate(45)" }, defs);
+    el("line", { x1: 0, y1: 0, x2: 0, y2: 6, "class": "sn-chart-frame__hatch" }, p);
+    return "url(#" + id + ")";
+  }
+  function rem() { return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; }
+  /** one tooltip per chart; rows = [{key:"line"|"rect"|"dot"|"", c:"var(--chart-1)", value, label, dash}] */
+  function tip(host) {
+    var d = h("div", "sn-chart-frame__tip"); d.setAttribute("role", "presentation"); d.hidden = true; host.appendChild(d);
+    return {
+      show: function (x, y, title, rows) {
+        d.textContent = "";
+        if (title) d.appendChild(h("div", "sn-chart-frame__tip-title", title));
+        (rows || []).forEach(function (r) {
+          var row = h("div", "sn-chart-frame__tip-row");
+          var k = h("span", "sn-chart-frame__tip-key" + (r.key ? " sn-chart-frame__tip-key--" + r.key : ""));
+          if (r.c) k.style.setProperty("--c", r.c);
+          if (r.dash) k.classList.add("sn-chart-frame__tip-key--dash");
+          row.appendChild(k);
+          row.appendChild(h("span", "sn-chart-frame__tip-value", r.value));
+          row.appendChild(h("span", "sn-chart-frame__tip-label", r.label));
+          d.appendChild(row);
+        });
+        d.hidden = false;
+        var hw = host.clientWidth, tw = d.offsetWidth, th = d.offsetHeight;
+        var left = x + 14; if (left + tw > hw - 4) left = Math.max(4, x - tw - 14);
+        var top = Math.max(4, y - th - 10);
+        d.style.left = left + "px"; d.style.top = top + "px";
+      },
+      hide: function () { d.hidden = true; }
+    };
+  }
+  /** one tab stop per plot: arrows / Home / End move the active index; pointer maps x -> index */
+  function nav(target, count, pxToIndex, onIndex, opts) {
+    opts = opts || {}; var cur = -1;
+    function set(i) { if (i == null || i < 0) { cur = -1; onIndex(-1); return; } cur = Math.max(0, Math.min(count - 1, i)); onIndex(cur); }
+    target.addEventListener("keydown", function (e) {
+      var k = e.key, i = cur < 0 ? (opts.start || 0) : cur;
+      if (k === "ArrowRight" || k === "ArrowUp") i = cur < 0 ? i : i + 1;
+      else if (k === "ArrowLeft" || k === "ArrowDown") i = cur < 0 ? i : i - 1;
+      else if (k === "Home") i = 0; else if (k === "End") i = count - 1;
+      else if (k === "Escape") { set(-1); return; } else return;
+      e.preventDefault(); set(i);
+    });
+    target.addEventListener("focus", function () { if (cur < 0) set(opts.start || 0); });
+    target.addEventListener("blur", function () { set(-1); });
+    target.addEventListener("pointermove", function (e) { var b = target.getBoundingClientRect(); set(pxToIndex(e.clientX - b.left, e.clientY - b.top)); });
+    target.addEventListener("pointerleave", function () { if (document.activeElement !== target) set(-1); });
+    return { set: set, get: function () { return cur; } };
+  }
+  /** re-render on container resize (charts are drawn at 1 user unit = 1 CSS px) */
+  function fit(host, draw) {
+    var w = 0;
+    function go() { var nw = host.clientWidth; if (nw && Math.abs(nw - w) > 1) { w = nw; draw(nw); } }
+    if (window.ResizeObserver) new ResizeObserver(go).observe(host);
+    go();
+  }
+  /** "View as table" toggle: swaps plot and table, keeps focus on the button */
+  function tableToggle(btn, plot, table) {
+    var S = window.SongNodes;
+    function paint(on) { btn.innerHTML = S.icon(on ? "chart-line" : "table-2") + (on ? "View as chart" : "View as table"); }
+    paint(false);
+    btn.addEventListener("click", function () { var on = table.hidden; table.hidden = !on; plot.hidden = on; paint(on); });
+  }
+  return { el: el, text: text, h: h, uid: uid, linear: linear, band: band, barPath: barPath, hatch: hatch, rem: rem, tip: tip, nav: nav, fit: fit, tableToggle: tableToggle };
+})();
+
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function dm(d) { return d.getDate() + " " + MON[d.getMonth()]; }
+
+  /* ---------- line chart: plays per week by pillar ---------- */
+  var weeks = []; for (var i = 0; i < 14; i++) weeks.push(new Date(2026, 7, 3 + i * 7));
+  var ACTUAL = 12, NOW_X = 11 + 5.9 / 7; // Sat 24 Oct, 21:30 inside the week of 19 Oct
+  var series = [
+    { name: "House", c: "var(--chart-1)", shape: "circle", v: [38, 41, 36, 44, 47, 43, 49, 52, 48, 55, 51, 46, 53, 56] },
+    { name: "Techno", c: "var(--chart-2)", shape: "square", v: [29, 31, 33, 30, 35, 38, 36, 40, 42, 39, 44, 37, 45, 47] },
+    { name: "UK garage", c: "var(--chart-3)", shape: "diamond", v: [12, 14, 13, 17, 16, 19, 22, 21, 25, 24, 27, 23, 28, 30] }
+  ];
+  var TARGET = 40;
+  function marker(g, shape, cx, cy, c, r) {
+    var a = { "class": "sn-chart-frame__dot", style: "--c:" + c };
+    if (shape === "square") return K.el("rect", Object.assign(a, { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, rx: 1 }), g);
+    if (shape === "diamond") return K.el("path", Object.assign(a, { d: "M" + cx + "," + (cy - r - 1) + "l" + (r + 1) + "," + (r + 1) + "l" + -(r + 1) + "," + (r + 1) + "l" + -(r + 1) + "," + -(r + 1) + "z" }), g);
+    return K.el("circle", Object.assign(a, { cx: cx, cy: cy, r: r }), g);
+  }
+  var lineHost = document.getElementById("lineFig-plot"), lineTip = K.tip(lineHost), lineLive = document.getElementById("lineLive");
+  function drawLine(w) {
+    var rem = K.rem(), H = Math.round(15 * rem + 40), ml = rem * 2.2, mr = rem * 5.6, mt = rem * 1.9, mb = rem * 1.9;
+    lineHost.querySelectorAll("svg").forEach(function (s) { s.remove(); });
+    var svg = K.el("svg", { width: w, height: H, viewBox: "0 0 " + w + " " + H, tabindex: 0, role: "group", "aria-roledescription": "line chart", "aria-labelledby": "lineTitle", "aria-describedby": "lineDesc" });
+    lineHost.insertBefore(svg, lineHost.firstChild);
+    var desc = K.el("desc", { id: "lineDesc" }, svg);
+    desc.textContent = "House leads every week and peaked at 55 plays in the week of 5 Oct. Techno passed the target of 40 in September. UK garage has roughly doubled since August. The last two weeks are a projection. Use the left and right arrow keys to read each week.";
+    var x = K.linear(0, 13, ml, w - mr), y = K.linear(0, 60, H - mb, mt), fill = K.hatch(svg);
+    // preview region (hatched, labelled)
+    var px0 = x(NOW_X), px1 = x(13) + 6;
+    K.el("rect", { x: px0, y: mt - 4, width: px1 - px0, height: H - mb - mt + 4, fill: fill, "class": "sn-chart-frame__sim-area", opacity: 0.45 }, svg);
+    // grid + y ticks
+    y.ticks(20).forEach(function (v) {
+      K.el("line", { x1: ml, x2: w - mr + 8, y1: Math.round(y(v)) + 0.5, y2: Math.round(y(v)) + 0.5, "class": v === 0 ? "sn-chart-frame__base" : "sn-chart-frame__grid" }, svg);
+      K.text(svg, ml - 8, y(v) + 4, String(v), { "class": "sn-chart-frame__tick", "text-anchor": "end" });
+    });
+    // x ticks, every 2nd week (every 4th when narrow)
+    var every = (x(2) - x(0)) < 4 * rem ? 4 : 2;
+    weeks.forEach(function (d, i) { if (i % every === 0) K.text(svg, x(i), H - mb + rem * 1.15, dm(d), { "class": "sn-chart-frame__tick", "text-anchor": "middle" }); });
+    // reference line
+    K.el("line", { x1: ml, x2: w - mr + 8, y1: y(TARGET), y2: y(TARGET), "class": "sn-chart-frame__ref" }, svg);
+    var rl = K.text(svg, ml + 6, y(TARGET) - 6, "Rotation target 40", { "class": "sn-chart-frame__ref-label" });
+    // lines: actual solid, projection dashed
+    series.forEach(function (s) {
+      var pts = s.v.map(function (v, i) { return x(i) + "," + y(v); });
+      K.el("polyline", { points: pts.slice(0, ACTUAL).join(" "), "class": "sn-chart-frame__line", style: "--c:" + s.c }, svg);
+      K.el("polyline", { points: pts.slice(ACTUAL - 1).join(" "), "class": "sn-chart-frame__line sn-chart-frame__line--proj", style: "--c:" + s.c }, svg);
+    });
+    // now marker
+    K.el("line", { x1: px0, x2: px0, y1: mt - 4, y2: H - mb, "class": "sn-chart-frame__now" }, svg);
+    var tagW = rem * 2.4;
+    K.el("rect", { x: px0 - tagW / 2, y: mt - rem * 1.6, width: tagW, height: rem * 1.2, rx: 3, "class": "sn-chart-frame__now-tag" }, svg);
+    K.text(svg, px0, mt - rem * 0.68, "Now", { "class": "sn-chart-frame__now-text", "text-anchor": "middle" });
+    var pbg = K.el("rect", { "class": "sn-chart-frame__sim-label-bg", rx: 2 }, svg);
+    var pl = K.text(svg, px1 - 4, H - mb - 7, "Preview", { "class": "sn-chart-frame__sim-label", "text-anchor": "end" });
+    var pb = pl.getBBox(); pbg.setAttribute("x", pb.x - 3); pbg.setAttribute("y", pb.y - 1); pbg.setAttribute("width", pb.width + 6); pbg.setAttribute("height", pb.height + 2);
+    // end markers on the last actual week + direct labels at the projection end, nudged apart with leaders
+    series.forEach(function (s) { marker(svg, s.shape, x(ACTUAL - 1), y(s.v[ACTUAL - 1]), s.c, 4); });
+    var labs = series.map(function (s) { return { s: s, y0: y(s.v[13]), y: y(s.v[13]) }; }).sort(function (a, b) { return a.y0 - b.y0; });
+    var gap = rem * 1.05;
+    for (var k = 1; k < labs.length; k++) if (labs[k].y - labs[k - 1].y < gap) labs[k].y = labs[k - 1].y + gap;
+    labs.forEach(function (l) {
+      var lx = x(13) + 10;
+      if (Math.abs(l.y - l.y0) > 3) K.el("line", { x1: x(13) + 3, y1: l.y0, x2: lx - 2, y2: l.y, "class": "sn-chart-frame__leader" }, svg);
+      K.text(svg, lx, l.y + 4, l.s.name, { "class": "sn-chart-frame__label" });
+    });
+    // interaction layer
+    var layer = K.el("g", null, svg), cross = null;
+    K.nav(svg, 14, function (px) { return Math.round(x.invert(px)); }, function (i) {
+      layer.textContent = "";
+      if (i < 0) { lineTip.hide(); return; }
+      var cx = x(i);
+      K.el("line", { x1: cx, x2: cx, y1: mt - 4, y2: H - mb, "class": "sn-chart-frame__cross" }, layer);
+      series.forEach(function (s) { marker(layer, s.shape, cx, y(s.v[i]), s.c, 4.5); });
+      var proj = i >= ACTUAL, partial = i === ACTUAL - 1;
+      var title = "Week of " + dm(weeks[i]) + (proj ? " · projection (preview)" : partial ? " · week to date" : "");
+      var rows = series.slice().sort(function (a, b) { return b.v[i] - a.v[i]; }).map(function (s) { return { key: "line", c: s.c, dash: proj, value: String(s.v[i]), label: s.name }; });
+      lineTip.show(cx, y(Math.max.apply(null, series.map(function (s) { return s.v[i]; }))), title, rows);
+      lineLive.textContent = title + ": " + rows.map(function (r) { return r.label + " " + r.value; }).join(", ") + ".";
+    }, { start: ACTUAL - 1 });
+  }
+  K.fit(lineHost, drawLine);
+  // table view (text alternative)
+  (function () {
+    var t = '<div class="sn-tablebox"><table class="sn-table sn-table--compact"><caption>Plays per week by pillar, 3 Aug – 1 Nov 2026. Last two rows are a projection.</caption><thead><tr><th scope="col">Week of</th>' +
+      series.map(function (s) { return '<th scope="col" class="num">' + S.esc(s.name) + "</th>"; }).join("") + "</tr></thead><tbody>";
+    weeks.forEach(function (d, i) {
+      t += "<tr><th scope=\"row\">" + dm(d) + (i === ACTUAL - 1 ? ' <span class="sn-tag">Week to date</span>' : i >= ACTUAL ? ' <span class="sn-tag">Preview</span>' : "") + "</th>" +
+        series.map(function (s) { return '<td class="num">' + s.v[i] + "</td>"; }).join("") + "</tr>";
+    });
+    document.getElementById("lineTable").innerHTML = t + "</tbody></table></div>";
+    K.tableToggle(document.getElementById("lineToggle"), lineHost, document.getElementById("lineTable"));
+  })();
+
+  /* ---------- bar chart: tracks by BPM bucket ---------- */
+  var buckets = [["Under 120", 46], ["120–123", 182], ["124–126", 311], ["127–129", 264], ["130–132", 198], ["133–135", 141], ["136–139", 96], ["140 and up", 46]];
+  var short = ["<120", "120–123", "124–126", "127–129", "130–132", "133–135", "136–139", "140+"];
+  var total = buckets.reduce(function (a, b) { return a + b[1]; }, 0);
+  var barHost = document.getElementById("barFig-plot"), barTip = K.tip(barHost), barLive = document.getElementById("barLive");
+  function drawBars(w) {
+    var rem = K.rem(), H = Math.round(12 * rem + 40), ml = rem * 2.4, mr = 4, mt = rem * 1.2, mb = rem * 2;
+    barHost.querySelectorAll("svg").forEach(function (s) { s.remove(); });
+    var svg = K.el("svg", { width: w, height: H, viewBox: "0 0 " + w + " " + H, tabindex: 0, role: "group", "aria-roledescription": "bar chart", "aria-labelledby": "barTitle", "aria-describedby": "barDesc" });
+    barHost.insertBefore(svg, barHost.firstChild);
+    K.el("desc", { id: "barDesc" }, svg).textContent = "Most tracks sit between 124 and 129 BPM: 575 of 1,284. Use the left and right arrow keys to read each bucket.";
+    var y = K.linear(0, 350, H - mb, mt), x = K.band(buckets.length, ml, w - mr, 0.3, 24);
+    y.ticks(100).forEach(function (v) {
+      K.el("line", { x1: ml, x2: w - mr, y1: Math.round(y(v)) + 0.5, y2: Math.round(y(v)) + 0.5, "class": v === 0 ? "sn-chart-frame__base" : "sn-chart-frame__grid" }, svg);
+      K.text(svg, ml - 8, y(v) + 4, F.count(v), { "class": "sn-chart-frame__tick", "text-anchor": "end" });
+    });
+    var skip = x.step < rem * 3.1;
+    var bars = buckets.map(function (b, i) {
+      var p = K.el("path", { d: K.barPath(x(i), y(b[1]), x.bw, y(0) - y(b[1]), 4), "class": "sn-chart-frame__bar", style: "--c: var(--chart-1)" }, svg);
+      if (!skip || i % 2 === 0) K.text(svg, x.mid(i), H - mb + rem * 1.15, short[i], { "class": "sn-chart-frame__tick", "text-anchor": "middle" });
+      return p;
+    });
+    K.text(svg, x.mid(2), y(311) - 6, "311", { "class": "sn-chart-frame__value", "text-anchor": "middle" });
+    K.nav(svg, buckets.length, function (px) { return x.index(px); }, function (i) {
+      bars.forEach(function (b, j) { if (j === i) b.setAttribute("data-active", ""); else b.removeAttribute("data-active"); });
+      if (i < 0) { barTip.hide(); return; }
+      var b = buckets[i], pct = F.percent(b[1] / total);
+      barTip.show(x.mid(i), y(b[1]), b[0] + " BPM", [{ key: "rect", c: "var(--chart-1)", value: F.count(b[1]), label: "tracks · " + pct + " of library" }]);
+      barLive.textContent = b[0] + " BPM: " + F.count(b[1]) + " tracks, " + pct + " of library.";
+    }, { start: 2 });
+  }
+  K.fit(barHost, drawBars);
+  (function () {
+    var t = '<div class="sn-tablebox"><table class="sn-table sn-table--compact"><caption>Tracks by BPM bucket, 24 Oct 2026</caption><thead><tr><th scope="col">BPM</th><th scope="col" class="num">Tracks</th><th scope="col" class="num">Share</th></tr></thead><tbody>';
+    buckets.forEach(function (b) { t += "<tr><td>" + b[0] + '</td><td class="num">' + F.count(b[1]) + '</td><td class="num">' + F.percent(b[1] / total) + "</td></tr>"; });
+    document.getElementById("barTable").innerHTML = t + "</tbody></table></div>";
+    K.tableToggle(document.getElementById("barToggle"), barHost, document.getElementById("barTable"));
+  })();
+
+  /* ---------- legend row, loading skeleton ---------- */
+  var lg = [["House", 1], ["Techno", 2], ["UK garage", 3], ["Electro", 4], ["Breaks", 5]];
+  document.getElementById("legendRow").innerHTML = lg.map(function (l) { return '<li><span class="sn-chart-frame__key" style="--c: var(--chart-' + l[1] + ')"></span>' + l[0] + "</li>"; }).join("") +
+    '<li><span class="sn-chart-frame__key sn-chart-frame__key--ref"></span>Rotation target</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="12" height="12" aria-hidden="true"><defs><pattern id="lgH" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" class="sn-chart-frame__hatch"/></pattern></defs><rect x="0.5" y="0.5" width="11" height="11" rx="2" fill="url(#lgH)" class="sn-chart-frame__sim" style="opacity:1;stroke-dasharray:none"/></svg>Preview</li>';
+  document.getElementById("skel").innerHTML = [40, 62, 90, 78, 66, 52, 38, 24].map(function (h) { return '<span class="sn-skel" style="height:' + h + '%"></span>'; }).join("");
+})();
+</script>
+</body>
+</html>

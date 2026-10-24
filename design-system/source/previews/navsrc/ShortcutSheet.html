@@ -1,0 +1,79 @@
+<!-- @dsCard group="Navigation" height=1130 subtitle="The one keyboard help surface, opened with ?: global, graph, set builder and review-queue shortcuts as key-cap tables, plus the conflicts that were removed" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ShortcutSheet — preview</title>
+<style>
+  .stage { position: relative; height: 1090px; border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; background: var(--bg); }
+  .faux { padding: 16px; display: flex; gap: 12px; align-items: center; color: var(--fg-3); font-size: 0.8125rem; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="stage" id="stage">
+    <div class="faux" id="faux"><button class="sn-btn sn-btn--sm" type="button" id="opener" aria-haspopup="dialog" aria-keyshortcuts="Shift+?"></button><span>Press ? anywhere outside a text field</span></div>
+    <div class="sn-shortcut-sheet__scrim sn-shortcut-sheet__scrim--contained" id="scrim">
+      <div class="sn-shortcut-sheet" role="dialog" aria-modal="true" aria-labelledby="ks-title" id="sheet" tabindex="-1">
+        <div class="sn-shortcut-sheet__head"><h2 class="sn-title title-m" id="ks-title">Keyboard shortcuts</h2><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" id="close" aria-label="Close keyboard shortcuts"></button></div>
+        <div class="sn-shortcut-sheet__body" id="body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  var mac = /Mac|iPhone|iPad/.test(navigator.platform), CTRL = mac ? "⌘" : "Ctrl";
+  /* key spec: "Ctrl+K|/" = alternatives split by |, combos by +, sequences by " then " */
+  function keys(spec) {
+    return spec.split("|").map(function (alt) {
+      return alt.split(" then ").map(function (seq) { return (seq === "+" ? ["+"] : seq.split("+")).map(function (k) { return "<kbd>" + S.esc(k === "Ctrl" ? CTRL : k) + "</kbd>"; }).join(""); }).join('<span class="sn-shortcut-sheet__then">then</span>');
+    }).join('<span class="sn-shortcut-sheet__or">or</span>');
+  }
+  var GROUPS = [
+    ["Everywhere", "Work in any page, except while typing in a field", [["Ctrl+K|/", "Open quick search"], ["?", "Show this list"], ["[|]", "Previous or next day, week or month"], ["G then L", "Go to Library"], ["G then S", "Go to Set builder"], ["G then G", "Go to Graph"], ["Esc", "Close the top-most menu, panel or dialog"]]],
+    ["Graph", "When the graph canvas has focus", [["Space", "Pause or resume the layout"], ["←|→|↑|↓", "Pan the view"], ["+|−", "Zoom in or out"], ["F", "Fit the graph to the screen"], ["Esc", "Clear the selection"], ["Tab|Shift+Tab", "Cycle through selected tracks"], ["Enter", "Open track info"], ["Shift+F10", "Open the context menu"]]],
+    ["Set builder", "When a running-order slot has focus", [["L", "Lock or unlock the slot"], ["Alt+↑|Alt+↓", "Move the slot up or down"], ["Ctrl+Z", "Undo"], ["Ctrl+Shift+Z", "Redo"]]],
+    ["Data-quality review", "When the review queue has focus", [["A", "Approve the match"], ["R", "Reject the match"], ["S", "Skip for now"]]]
+  ];
+  var REMOVED = [
+    ["Ctrl+F", "opened the search panel; it is the browser’s find again. Use Ctrl K or /."],
+    ["Ctrl+R", "reloaded graph data in one place and reset filters in another; it reloads the page again. Use More actions › Reload graph data."],
+    ["Ctrl+P", "opened the path panel; it prints again."],
+    ["1–4, Alt 1–5, ⌘1–5", "switched tools and panels (⌘1–5 also switches browser tabs). Replaced by G then L, S or G."],
+    ["Ctrl+B", "toggled a sidebar that the navigation drawer replaces."],
+    ["H, Ctrl+/", "two help shortcuts (one only wrote to the console). Replaced by ?."],
+    ["Space in lists", "skipped review items and picked recommendations, clashing with scrolling and buttons. Skip is S; Space only pauses the graph."],
+    ["Shift+Delete", "cleared the whole setlist with no confirmation. Now Clear set… in More actions, with a confirmation."],
+    ["Ctrl+Shift+3", "toggled the 3D graph, which is retired; it is also the macOS screenshot shortcut."],
+    ["D", "debug overlay; development builds only."]
+  ];
+  var h = "";
+  GROUPS.forEach(function (g) {
+    h += '<table class="sn-shortcut-sheet__table"><caption>' + S.esc(g[0]) + "<small>" + S.esc(g[1]) + "</small></caption><tbody>" +
+      g[2].map(function (r) { return '<tr><th scope="row">' + keys(r[0]) + "</th><td>" + S.esc(r[1]) + "</td></tr>"; }).join("") + "</tbody></table>";
+  });
+  h += '<section class="sn-shortcut-sheet__removed" aria-labelledby="ks-removed"><h3 id="ks-removed">Removed because they clashed with the browser or each other</h3><ul>' +
+    REMOVED.map(function (r) { return "<li><b>" + S.esc(r[0].replace(/Ctrl/g, CTRL)) + "</b> " + S.esc(r[1]) + "</li>"; }).join("") + "</ul></section>";
+  document.getElementById("body").innerHTML = h;
+  document.getElementById("close").innerHTML = S.icon("x");
+  var opener = document.getElementById("opener"); opener.innerHTML = S.icon("keyboard", { size: 16 }) + "Keyboard shortcuts";
+  var scrim = document.getElementById("scrim"), sheet = document.getElementById("sheet"), faux = document.getElementById("faux");
+  function open() { scrim.hidden = false; faux.inert = true; sheet.focus(); }
+  function close() { scrim.hidden = true; faux.inert = false; opener.focus(); }
+  opener.addEventListener("click", open);
+  document.getElementById("close").addEventListener("click", close);
+  scrim.addEventListener("mousedown", function (e) { if (e.target === scrim) close(); });
+  sheet.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { e.preventDefault(); close(); }
+    if (e.key === "Tab") { e.preventDefault(); document.getElementById("close").focus(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    var typing = /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable;
+    if (e.key === "?" && !typing && scrim.hidden) { e.preventDefault(); open(); }
+  });
+  /* shown open on load without moving focus */
+  faux.inert = true;
+})();
+</script>
+</body>
+</html>

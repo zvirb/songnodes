@@ -1,0 +1,84 @@
+<!-- @dsCard group="Inputs" height=339 subtitle="Free-entry genre chips: Enter or comma adds, Backspace removes last, duplicate rejected with message, suggestion list" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ChipInput — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5) var(--space-6); align-items: start; }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Type “ga” to see suggestions; add “Deep house” again to see the duplicate message</div>
+  <div class="pv-grid" style="min-height: 260px"><!-- room for the open suggestion list -->
+    <div id="a"></div>
+    <div id="b"></div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes, n = 0;
+  var GENRES = [["Deep house", 214], ["UK garage", 254], ["Speed garage", 41], ["Breakbeat", 131], ["Electro", 66], ["Acid house", 76], ["Minimal", 49], ["Dub techno", 58], ["Bassline", 37], ["Garage house", 22]];
+  function input(o) {
+    var id = "ci" + (++n);
+    return '<div class="sn-field sn-chip-input" id="' + id + '" data-sugg="' + (o.sugg ? 1 : 0) + '">' +
+      '<label class="sn-field__label" for="' + id + '-in">' + o.label + '</label>' +
+      '<span class="sn-field__help" id="' + id + '-h">' + o.help + '</span>' +
+      '<div class="sn-chip-input__box"><ul class="sn-chip-input__list" aria-label="' + o.label + ' added"></ul>' +
+        '<input class="sn-chip-input__text" id="' + id + '-in" autocomplete="off" spellcheck="false" placeholder="' + o.placeholder + '"' +
+        (o.sugg ? ' role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="' + id + '-menu"' : "") + ' aria-describedby="' + id + '-h ' + id + '-msg">' +
+      (o.sugg ? '<ul class="sn-chip-input__menu" role="listbox" id="' + id + '-menu" aria-label="Suggested genres" hidden></ul>' : "") + '</div>' +
+      '<span class="sn-chip-input__msg" id="' + id + '-msg" aria-live="polite"></span></div>';
+  }
+  document.getElementById("a").innerHTML = input({ label: "Genres", help: "Press Enter or a comma to add. Backspace removes the last one.", placeholder: "Add a genre", sugg: true });
+  document.getElementById("b").innerHTML = input({ label: "Search terms", help: "Tracks matching any term are included.", placeholder: "Add a term" });
+  var STATE = { ci1: ["Deep house", "UK garage"], ci2: ["vocal", "piano", "dub mix"] };
+  function render(ci, keepFocus) {
+    var list = ci.querySelector(".sn-chip-input__list");
+    list.innerHTML = STATE[ci.id].map(function (c, i) { return '<li class="sn-chip-input__chip">' + S.esc(c) + '<button type="button" class="sn-chip-input__remove" data-i="' + i + '" aria-label="Remove ' + S.esc(c) + '">' + S.icon("x") + '</button></li>'; }).join("");
+  }
+  function msg(ci, t, kind) { var m = ci.querySelector(".sn-chip-input__msg"); m.textContent = t; if (kind) m.setAttribute("data-kind", kind); else m.removeAttribute("data-kind"); }
+  function add(ci, v) {
+    v = v.replace(/,/g, "").trim().replace(/\s+/g, " "); if (!v) return false;
+    var arr = STATE[ci.id], dup = arr.filter(function (x) { return x.toLowerCase() === v.toLowerCase(); })[0];
+    if (dup) { msg(ci, "“" + dup + "” is already added.", "warn"); var i = arr.indexOf(dup), chip = ci.querySelectorAll(".sn-chip-input__chip")[i]; chip.setAttribute("data-flash", ""); setTimeout(function () { chip.removeAttribute("data-flash"); }, 1200); return false; }
+    arr.push(v); render(ci); msg(ci, "Added " + v + ". " + arr.length + " in total."); return true;
+  }
+  function menu(ci) {
+    var m = ci.querySelector(".sn-chip-input__menu"); if (!m) return;
+    var inp = ci.querySelector("input"), q = inp.value.trim().toLowerCase(), have = STATE[ci.id].map(function (x) { return x.toLowerCase(); });
+    var opts = q ? GENRES.filter(function (g) { return g[0].toLowerCase().indexOf(q) >= 0 && have.indexOf(g[0].toLowerCase()) < 0; }).slice(0, 6) : [];
+    m.innerHTML = opts.map(function (g, i) {
+      var k = g[0].toLowerCase().indexOf(q), lab = S.esc(g[0].slice(0, k)) + "<mark>" + S.esc(g[0].slice(k, k + q.length)) + "</mark>" + S.esc(g[0].slice(k + q.length));
+      return '<li class="sn-chip-input__option" role="option" id="' + ci.id + '-o' + i + '" aria-selected="false" data-v="' + S.esc(g[0]) + '"><span>' + lab + '</span><small>' + S.format.count(g[1]) + ' tracks</small></li>';
+    }).join("");
+    m.hidden = !opts.length; inp.setAttribute("aria-expanded", opts.length ? "true" : "false"); inp.removeAttribute("aria-activedescendant");
+  }
+  function move(ci, d) {
+    var o = Array.prototype.slice.call(ci.querySelectorAll(".sn-chip-input__option")); if (!o.length) return false;
+    var i = o.findIndex(function (x) { return x.getAttribute("aria-selected") === "true"; }); i = (i + d + o.length + (i < 0 && d < 0 ? 1 : 0)) % o.length;
+    o.forEach(function (x, j) { x.setAttribute("aria-selected", j === i); }); ci.querySelector("input").setAttribute("aria-activedescendant", o[i].id); o[i].scrollIntoView({ block: "nearest" }); return true;
+  }
+  document.querySelectorAll(".sn-chip-input").forEach(function (ci) { render(ci); });
+  // Static demo states: suggestions open for "ga" in Genres, duplicate message in Search terms.
+  (function () { var a = document.getElementById("ci1"), b = document.getElementById("ci2"); a.querySelector("input").value = "ga"; menu(a); move(a, 1); msg(b, "“piano” is already added.", "warn"); })();
+  document.addEventListener("keydown", function (e) {
+    var inp = e.target; if (!inp.matches(".sn-chip-input__text")) return;
+    var ci = inp.closest(".sn-chip-input"), sel = ci.querySelector('.sn-chip-input__option[aria-selected="true"]');
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { if (move(ci, e.key === "ArrowDown" ? 1 : -1)) e.preventDefault(); return; }
+    if (e.key === "Escape") { var m = ci.querySelector(".sn-chip-input__menu"); if (m && !m.hidden) { e.preventDefault(); m.hidden = true; inp.setAttribute("aria-expanded", "false"); } return; }
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); if (add(ci, sel ? sel.dataset.v : inp.value)) inp.value = ""; menu(ci); return; }
+    if (e.key === "Backspace" && !inp.value && STATE[ci.id].length) { var gone = STATE[ci.id].pop(); render(ci); msg(ci, "Removed " + gone + "."); }
+  });
+  document.addEventListener("input", function (e) { if (e.target.matches(".sn-chip-input__text")) { var ci = e.target.closest(".sn-chip-input"); if (ci.querySelector(".sn-chip-input__msg").dataset.kind) msg(ci, ""); menu(ci); } });
+  document.addEventListener("paste", function (e) {
+    var inp = e.target; if (!inp.matches || !inp.matches(".sn-chip-input__text")) return;
+    var t = (e.clipboardData || window.clipboardData).getData("text"); if (t.indexOf(",") < 0) return;
+    e.preventDefault(); var ci = inp.closest(".sn-chip-input"); t.split(",").forEach(function (p) { add(ci, p); }); inp.value = "";
+  });
+  document.addEventListener("mousedown", function (e) { var o = e.target.closest(".sn-chip-input__option"); if (o) { e.preventDefault(); var ci = o.closest(".sn-chip-input"); add(ci, o.dataset.v); ci.querySelector("input").value = ""; menu(ci); } });
+  document.addEventListener("click", function (e) {
+    var r = e.target.closest(".sn-chip-input__remove");
+    if (r) { var ci = r.closest(".sn-chip-input"), gone = STATE[ci.id].splice(+r.dataset.i, 1)[0]; render(ci); msg(ci, "Removed " + gone + "."); ci.querySelector("input").focus(); return; }
+    var box = e.target.closest(".sn-chip-input__box"); if (box && e.target === box) box.querySelector("input").focus();
+  });
+  document.addEventListener("focusout", function (e) { if (e.target.matches && e.target.matches(".sn-chip-input__text")) { var ci = e.target.closest(".sn-chip-input"), m = ci.querySelector(".sn-chip-input__menu"); if (m) { m.hidden = true; e.target.setAttribute("aria-expanded", "false"); } } });
+</script>
+</body>
+</html>

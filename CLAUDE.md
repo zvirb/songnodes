@@ -55,6 +55,25 @@ Scraper → Bronze (raw playlists) → Silver (validated transitions) → Gold (
 **Forbidden:** Individual scraper deployments (`scraper-1001tracklists`, `scraper-mixesdb`, etc.)
 **Benefits:** 1GB pod vs 12GB+ (12+ pods), centralized resilience, single source of truth
 
+### 4. Design System (MANDATORY): single source of truth for formatting and design
+
+**Source:** [`design-system/`](design-system/README.md), the SongNodes design system (version in `design-system/tokens.json`, mirrored from the published design-system artifact). It decides **every** formatting and design question in the frontend and in the music library: colour, typography, spacing, radius, shadow, z-index, motion, icons, copy, date/number formatting, component markup and page patterns. If anything else disagrees (older CSS, a component, a library default or taste), the design system wins. A conflict that the system does not settle is a change to the system, not a local override.
+
+**Read before UI work:** `design-system/README.md` (brand book and component index), then the sections the task touches (`01-writing` … `19-songnodes-migration`, including `04-typography`), and the card `design-system/api/components/<Comp>.md` plus `components/<Comp>/README.md` for every component you use. Quick references: [`docs/design-system/README.md`](docs/design-system/README.md) (how it works here), [`docs/design-system/reference.html`](docs/design-system/reference.html) (rendered examples), [`docs/design-system/CODE_REFERENCE.md`](docs/design-system/CODE_REFERENCE.md) (code only).
+
+**How the frontend consumes it:**
+- `scripts/sync-design-system.sh` copies `tokens.css`, `bundle.css`, `bundle.js`, fonts and types into `frontend/src/styles/design-system/` and writes `VERSION`. Never edit that folder. `--check` fails CI if it drifts.
+- Import order (`frontend/src/main.tsx`): legacy CSS → `design-system/tokens.css` → `design-system/bundle.css` → `legacy-aliases.css` → `app.css`.
+- React: `frontend/src/lib/songnodes.tsx` (`SN` helpers, `SnIcon`, `Title`, `EnergyBar`, `KeyBadge`, `Bpm`, `StatusPill`, `CompatPill`, `MODULE_ROUTES`) and `frontend/src/shell/` (`AppShell` with `usePageHeader`, `PageHeader`, `EmptyState`, `SectionHeading`, `LauncherCard`, `PreferencesPanel`).
+
+**Rules:**
+- **Colour and values:** no hex, `rgb()`, named colours, px font sizes, ad-hoc radii, shadows or z-index numbers in app code. Use tokens (`var(--…)`) and `sn-*` classes only.
+- **Type:** Sora titles (thin–bold: dimmed lead-in plus bold title), Inter body, JetBrains Mono for BPM, keys, durations and IDs.
+- **Writing:** en-AU, sentence case, Australia/Melbourne 24-hour time. Missing values are an en dash (`sn-none`). No emoji in the interface. Lucide icons plus a word.
+- **Formatting and mapping:** dates, durations, counts and BPM go through `SN.format`. Keys go through `SN.camelot`/`keyName` (8A = A minor). Transitions go through `SN.compat`/`energyStep`/`bpmStep`. Statuses go through `SN.status`, shown as glyph plus word.
+- **Interaction:** one primary button per view. Never `alert`/`confirm`/`prompt`: use `ConfirmDialog` and `Toast`. The NavDrawer is the only site navigation.
+- **Changing the system:** change it at the source (the design-system artifact, or `design-system/source/*` followed by `build_tokens.py` and `build_bundle.py`), bump the version per `design-system/17-governance.md`, then re-sync. Never patch it downstream.
+
 ---
 
 ## 1. Setup
@@ -101,7 +120,7 @@ skaffold dev  # Hot-reload
 | RabbitMQ | 5672/15672 | Message bus |
 
 ### Stack
-- **Frontend:** React 18.3.1, TypeScript 5.5.4, PIXI.js v8.5.2, D3.js, Zustand 4.5.5
+- **Frontend:** React 19, TypeScript, react-router, PIXI.js v8, D3.js, Zustand; styled only by the SongNodes design system (`design-system/`)
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic v2
 - **Scraping:** Scrapy 2.11+, scrapy-playwright
 - **Infrastructure:** Kubernetes only (Docker Compose forbidden)
@@ -151,7 +170,8 @@ kubectl logs -n songnodes -l app=unified-scraper --tail=50
 | Test | Command | When |
 |------|---------|------|
 | **E2E (MANDATORY)** | `npm run test:e2e` | **Before PR merge** |
-| Frontend Unit | `npm test` | Frontend dev |
+| Frontend Unit | `npm run test:unit` | Frontend dev |
+| **Design system sync (MANDATORY)** | `scripts/sync-design-system.sh --check` | **Every UI change** |
 | Backend Unit | `pytest` | Backend dev |
 
 **E2E Requirements:** Zero console errors, sequential execution (`--workers=1`)
@@ -321,6 +341,14 @@ kubectl exec -n songnodes postgres-0 -- pg_dump -U musicdb_user -Fc musicdb > ba
 ❌ `imagePullPolicy: IfNotPresent` for `:latest` (stale code)
 ❌ Skipping E2E tests
 ❌ Building frontend without `npm run build`
+
+### Design-System-Specific
+❌ **Hex, rgb() or named colours, px font sizes, raw z-index numbers** in app code (use tokens)
+❌ **Editing `frontend/src/styles/design-system/`** (it is synced; change the source and re-sync)
+❌ **Emoji in the UI**, Title Case labels, "N/A"/"Unknown" for missing values
+❌ **Hand-formatted dates, BPM, keys or energy** (use `SN.format`, `SN.camelot`, `EnergyBar`)
+❌ **`alert()` / `confirm()`**, a second primary button, a visible nav bar or site tabs
+❌ **New Tailwind classes or new legacy `--color-*` variables** (both are being removed)
 
 ### Scraper-Specific
 ❌ **Individual scraper deployments** (unified-scraper only)

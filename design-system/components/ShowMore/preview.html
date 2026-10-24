@@ -1,0 +1,82 @@
+<!-- @dsCard group="Navigation" height=566 subtitle="Show more under a crate table (count, batch button, last-batch wording, focus moves to the first new row), the large-count wording, and numbered pagination for the review queue" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ShowMore — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Show more · heard on PBS Soul Time this month</div>
+  <div>
+    <div class="sn-tablebox"><table class="sn-table sn-table--compact" aria-label="Tracks heard on PBS Soul Time" id="tbl"><thead><tr><th>Track</th><th>Key</th><th class="num">BPM</th><th>Energy</th><th>Last heard</th></tr></thead><tbody></tbody></table></div>
+    <div class="sn-show-more" id="sm1"><span class="sn-show-more__count" role="status" id="sm1-count"></span><div class="sn-show-more__actions"><button class="sn-btn sn-btn--sm" type="button" id="sm1-btn"></button><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="sm1-all"></button></div></div>
+  </div>
+  <div class="sn-preview__label">Wording at full scale · library crate</div>
+  <div class="sn-show-more"><span class="sn-show-more__count">Showing <b>150</b> of <b>1,284</b> tracks</span><div class="sn-show-more__actions"><button class="sn-btn sn-btn--sm" type="button">Show 300 more</button></div></div>
+  <div class="sn-preview__label">Pagination · data-quality review queue</div>
+  <div class="sn-show-more">
+    <span class="sn-show-more__count" id="pg-count"></span>
+    <nav aria-label="Review queue pages"><ul class="sn-show-more__pages" id="pages"></ul></nav>
+  </div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  var T = [["Bicep – Glue", "8A", 130, 6], ["Overmono – So U Kno", "9A", 131, 7], ["Fred again.. – Delilah (pull me out of this)", "10A", 136, 9], ["Ross From Friends – Talk To Me You'll Drown", "8A", 128, 6], ["Interplanetary Criminal – Slow Burner", "9A", 132, 7], ["Sammy Virji – If U Need It", "10A", 134, 8],
+    ["Peggy Gou – (It Goes Like) Nanana", "11A", 130, 8], ["Josh Baker – Lost In Muzik", "11A", 136, 9], ["Four Tet – Baby", "4A", 124, 5], ["Jamie xx – Gosh", "7A", 126, 7], ["Floating Points – Ratio", "5A", 125, 6], ["Kettama – It Gets Better", "12A", 138, 9],
+    ["Prospa – Want Need Love", "6A", 128, 8], ["Chaos In The CBD – Midnight In Peckham", "3A", 122, 4], ["Jamie xx – Life", "9B", 124, 6]];
+  var BATCH = 6, shown = 0, tb = document.querySelector("#tbl tbody"), btn = document.getElementById("sm1-btn"), all = document.getElementById("sm1-all"), cnt = document.getElementById("sm1-count");
+  var day = new Date("2026-10-24T12:00:00+11:00");
+  function add(n) {
+    var first = null;
+    for (var i = shown; i < Math.min(shown + n, T.length); i++) {
+      var r = T[i], tr = document.createElement("tr"), d = new Date(day.getTime() - i * 86400000 * 1.7);
+      tr.innerHTML = "<td>" + S.esc(r[0]) + "</td><td>" + S.html.key(r[1]) + '</td><td class="num">' + r[2] + "</td><td>" + S.html.energy(r[3]) + '</td><td class="data">' + S.format.day(d) + "</td>";
+      if (shown > 0) { tr.className = "sn-show-more__new"; }
+      if (!first) first = tr;
+      tb.appendChild(tr);
+    }
+    var added = Math.min(n, T.length - shown);
+    shown += added;
+    return { first: first, added: added };
+  }
+  function update(msg) {
+    var left = T.length - shown;
+    cnt.innerHTML = "Showing <b>" + S.format.count(shown) + "</b> of <b>" + S.format.count(T.length) + "</b> tracks" + (msg ? '<span class="sn-sr">. ' + msg + "</span>" : "");
+    btn.hidden = all.hidden = left === 0;
+    btn.textContent = left > BATCH ? "Show " + BATCH + " more" : "Show the last " + left;
+    all.textContent = "Show all " + S.format.count(T.length);
+    all.hidden = left <= BATCH;
+  }
+  function more(n) {
+    tb.querySelectorAll(".sn-show-more__new").forEach(function (r) { r.className = ""; });
+    var res = add(n);
+    /* keep the reading position: new rows are appended under the old ones and focus moves to the first new row */
+    res.first.tabIndex = -1; res.first.focus({ preventScroll: true });
+    update(res.added + " more tracks added");
+  }
+  btn.addEventListener("click", function () { more(BATCH); });
+  all.addEventListener("click", function () { more(T.length); });
+  add(BATCH); update();
+
+  /* pagination */
+  var TOTAL = 214, PER = 20, PAGES = Math.ceil(TOTAL / PER), page = 4, ul = document.getElementById("pages");
+  function nums() { var out = [1], i; for (i = page - 1; i <= page + 1; i++) if (i > 1 && i < PAGES) out.push(i); out.push(PAGES); var res = []; out.forEach(function (n, k) { if (k && n - out[k - 1] > 1) res.push(0); res.push(n); }); return res; }
+  function renderPages(focusIdx) {
+    var a = (page - 1) * PER + 1, b = Math.min(page * PER, TOTAL);
+    document.getElementById("pg-count").innerHTML = "Items <b>" + a + "–" + b + "</b> of <b>" + TOTAL + "</b> waiting for review";
+    var h = '<li><button class="sn-show-more__page" type="button" data-go="' + (page - 1) + '"' + (page === 1 ? ' aria-disabled="true"' : "") + ' aria-label="Previous page">' + S.icon("chevron-left", { size: 16 }) + "</button></li>";
+    nums().forEach(function (n) { h += n ? '<li><button class="sn-show-more__page" type="button" data-go="' + n + '"' + (n === page ? ' aria-current="page"' : "") + ' aria-label="Page ' + n + '">' + n + "</button></li>" : '<li class="sn-show-more__gap" aria-hidden="true">…</li>'; });
+    h += '<li><button class="sn-show-more__page" type="button" data-go="' + (page + 1) + '"' + (page === PAGES ? ' aria-disabled="true"' : "") + ' aria-label="Next page">' + S.icon("chevron-right", { size: 16 }) + "</button></li>";
+    ul.innerHTML = h;
+    if (focusIdx) { var f = ul.querySelector('[data-go="' + focusIdx + '"]') || ul.querySelector('[aria-current="page"]'); f.focus(); }
+  }
+  ul.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-go]"); if (!b || b.getAttribute("aria-disabled") === "true") return;
+    var wasArrow = /Previous|Next/.test(b.getAttribute("aria-label"));
+    page = +b.getAttribute("data-go"); renderPages(wasArrow ? b.getAttribute("data-go") : page);
+    if (wasArrow) { var arrow = ul.querySelector('[aria-label="' + b.getAttribute("aria-label") + '"]'); if (arrow && arrow.getAttribute("aria-disabled") !== "true") arrow.focus(); }
+  });
+  renderPages();
+})();
+</script>
+</body>
+</html>

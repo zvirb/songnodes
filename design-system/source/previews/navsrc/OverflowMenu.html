@@ -1,0 +1,49 @@
+<!-- @dsCard group="Navigation" height=640 subtitle="Open menu with groups, a checkbox item, a disabled item with its reason and the destructive item last; closed small variant on a table row; arrows, typeahead, Esc" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>OverflowMenu — preview</title>
+<style>
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 620px; }
+  .row { display: flex; align-items: center; gap: 12px; max-width: 620px; padding: 4px 8px 4px 12px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface-1); }
+  .row > span:first-child { flex: 1; }
+  .spacer { height: 400px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Page actions · open</div>
+  <div class="bar" style="position:relative;z-index:2">
+    <h2 class="sn-title title-s"><span class="sn-lead">Set builder:</span> Peak time Friday</h2>
+    <div id="m1"></div>
+  </div>
+  <div class="spacer" aria-hidden="true"></div>
+  <div class="sn-preview__label">Row actions · small, closed</div>
+  <div class="row" style="position:relative;z-index:1"><span>Overmono – So U Kno</span><span id="k"></span><span class="sn-bpm"><b>131</b> BPM</span><div id="m2"></div></div>
+  <p class="sn-dim" style="margin:0;font-size:0.8125rem">Last action: <span id="out">none yet</span></p>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+/*@@menu@@*/
+  document.getElementById("k").innerHTML = S.html.key("9A");
+  document.getElementById("m1").innerHTML = snMenuButton("om1", "More actions", [
+    { h: "Set" }, { id: "dup", icon: "copy", label: "Duplicate set" }, { id: "ren", icon: "pencil", label: "Rename set" }, { id: "csv", icon: "download", label: "Export as CSV" }, { id: "json", icon: "file-json", label: "Export as JSON" },
+    { h: "Share" }, { id: "tidal", icon: "upload", label: "Send to TIDAL on the weekly run", reason: "Connect TIDAL in Services first" }, { id: "print", icon: "printer", label: "Print running order", kbd: "Ctrl P" },
+    { h: "View" }, { id: "spares", label: "Show spare suggestions", checked: true },
+    { sep: 1 }, { id: "del", icon: "trash-2", label: "Delete set…", danger: true }
+  ], { quiet: false });
+  document.getElementById("m2").innerHTML = snMenuButton("om2", "More actions for Overmono – So U Kno", [
+    { id: "info", icon: "info", label: "View track info" }, { id: "add", icon: "plus", label: "Add to set…" }, { id: "start", icon: "map-pin", label: "Set as starting track" },
+    { sep: 1 }, { id: "rm", icon: "trash-2", label: "Remove from crate", danger: true }
+  ], { sm: true });
+  var out = document.getElementById("out");
+  function done(it) { var t = it.querySelector(".sn-overflow-menu__text").textContent; if (it.hasAttribute("aria-checked")) t += it.getAttribute("aria-checked") === "true" ? ": on" : ": off"; out.textContent = t; snSay(t); }
+  var a = snMenu(document.getElementById("om1-btn"), document.getElementById("om1"), done);
+  snMenu(document.getElementById("om2-btn"), document.getElementById("om2"), done);
+  /* shown open on load without taking focus */
+  document.getElementById("om1").hidden = false; document.getElementById("om1-btn").setAttribute("aria-expanded", "true");
+})();
+</script>
+</body>
+</html>

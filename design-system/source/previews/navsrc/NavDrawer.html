@@ -1,0 +1,47 @@
+<!-- @dsCard group="Navigation" height=740 subtitle="Open over a faux Set builder page: groups, module icons, current page, count and attention badges; Esc, scrim, close button and focus trap work" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>NavDrawer — preview</title>
+<style>
+  .stage { position: relative; height: 690px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--bg); }
+  .faux-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .faux-row { height: 40px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; color: var(--fg-2); font-size: 0.875rem; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="stage" id="stage">
+    <div data-drawer-inert>
+      <header class="sn-app-header"><div class="sn-app-header__bar">
+        <div class="sn-app-header__start"><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" id="opener" aria-expanded="false" aria-controls="nav" aria-label="Open navigation"></button><span class="sn-app-header__wordmark">SongNodes</span></div>
+        <span class="sn-app-header__divider" aria-hidden="true"></span>
+        <p class="sn-app-header__title" id="pageTitle"><span class="sn-lead">Set builder:</span> Peak time Friday</p>
+      </div></header>
+      <div class="faux-body" id="faux"></div>
+    </div>
+    <div id="drawerHost"></div>
+  </div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+/*@@menu@@*/
+/*@@drawer@@*/
+  document.getElementById("opener").innerHTML = S.icon("menu");
+  var rows = [["Bicep – Glue", 6, "8A", 130], ["Overmono – So U Kno", 7, "9A", 131], ["Interplanetary Criminal – Slow Burner", 7, "9A", 132], ["Sammy Virji – If U Need It", 8, "10A", 134], ["Fred again.. – Delilah (pull me out of this)", 9, "10A", 136], ["Josh Baker – Lost In Muzik", 9, "11A", 136], ["Peggy Gou – (It Goes Like) Nanana", 8, "11A", 130]];
+  document.getElementById("faux").innerHTML = rows.map(function (r, i) { return '<div class="faux-row"><span class="sn-mono">' + (i + 1) + "</span>" + S.html.energy(r[1]) + "<span>" + S.esc(r[0]) + "</span>" + S.html.key(r[2]) + '<span class="sn-bpm"><b>' + r[3] + "</b> BPM</span></div>"; }).join("");
+  document.getElementById("drawerHost").innerHTML = snDrawerHtml("nav", "sets", { sets: ["12", "saved sets"], sources: ["4", "imports to review"], pipeline: ["2", "scrapers paused after errors", "warn"] }, true);
+  var drawer = document.getElementById("nav"), opener = document.getElementById("opener");
+  snDrawer(drawer, [opener], function (a) {
+    var k = a.getAttribute("data-key"), m = S.module(k);
+    document.getElementById("pageTitle").innerHTML = m ? '<span class="sn-lead">' + S.esc(m.label) + ":</span> " + S.esc(m.summary) : '<span class="sn-lead">SongNodes:</span> ' + (k === "home" ? "Home" : "Preferences");
+    snSay("Opened " + a.querySelector(".sn-nav-drawer__label").textContent);
+  });
+  /* shown open on load without moving focus; a click on the hamburger opens it the normal way */
+  drawer.setAttribute("data-open", ""); opener.setAttribute("aria-expanded", "true");
+  document.querySelectorAll("[data-drawer-inert]").forEach(function (el) { el.inert = true; });
+})();
+</script>
+</body>
+</html>

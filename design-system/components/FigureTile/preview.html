@@ -1,0 +1,56 @@
+<!-- @dsCard group="Data" height=387 subtitle="Naarm stats row (neutral), with delta, status pill and filtered-view link; tonal tiles in a module hub; loading" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>FigureTile — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Library stats row (neutral)</div>
+  <div class="sn-figure-tile-row" role="list" aria-label="Library at a glance">
+    <div class="sn-figure-tile" role="listitem">
+      <span class="sn-figure-tile__figure">1,284</span>
+      <span class="sn-figure-tile__label">Tracks in the library</span>
+      <span class="sn-figure-tile__delta">+38 added last run</span>
+    </div>
+    <div class="sn-figure-tile" role="listitem">
+      <span class="sn-figure-tile__figure">212</span>
+      <span class="sn-figure-tile__label">High rotation</span>
+      <div class="sn-figure-tile__foot"><a class="sn-link sn-m-library" href="#rotation-high">Show these</a></div>
+    </div>
+    <div class="sn-figure-tile" role="listitem">
+      <span class="sn-figure-tile__figure">+38</span>
+      <span class="sn-figure-tile__label">Added last run</span>
+      <span class="sn-figure-tile__delta">Mon 19 Oct, 06:00</span>
+    </div>
+    <div class="sn-figure-tile" role="listitem">
+      <span class="sn-figure-tile__figure">611</span>
+      <span class="sn-figure-tile__label">With key and BPM</span>
+      <span class="sn-figure-tile__delta">48% of the library</span>
+    </div>
+    <div class="sn-figure-tile" role="listitem">
+      <span class="sn-figure-tile__figure">47</span>
+      <span class="sn-figure-tile__label">Need an energy check</span>
+      <div class="sn-figure-tile__foot"><span class="sn-pill sn-status-pill" data-status="warn">To check</span><a class="sn-link sn-m-library" href="#needs-check">Review</a></div>
+    </div>
+  </div>
+
+  <div class="sn-preview__label">Tonal, inside a module hub (Pipeline) · loading</div>
+  <div class="sn-figure-tile-row sn-m-pipeline" style="max-width:720px">
+    <div class="sn-figure-tile sn-figure-tile--tonal">
+      <span class="sn-figure-tile__figure">6<span class="sn-figure-tile__unit">of 7</span></span>
+      <span class="sn-figure-tile__label">Scrapers running</span>
+      <div class="sn-figure-tile__foot"><span class="sn-pill sn-status-pill" data-status="bad">1 paused after errors</span></div>
+    </div>
+    <div class="sn-figure-tile sn-figure-tile--tonal">
+      <span class="sn-figure-tile__figure">14,902</span>
+      <span class="sn-figure-tile__label">Tracklists scraped</span>
+      <span class="sn-figure-tile__delta">+412 in the last 24 h</span>
+    </div>
+    <div class="sn-figure-tile sn-figure-tile--tonal sn-figure-tile--skeleton" aria-busy="true">
+      <span class="sn-skel"></span>
+      <span class="sn-figure-tile__label">Enrichment queue</span>
+      <span class="sn-sr">Loading</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

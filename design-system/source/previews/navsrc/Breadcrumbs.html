@@ -1,0 +1,48 @@
+<!-- @dsCard group="Navigation" height=316 subtitle="Drill-down trail with destination module colours, a long trail collapsed behind a button, and the mobile explorer's navigation trail at 400px" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Breadcrumbs — preview</title>
+<style> .phone { width: 400px; max-width: 100%; } </style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Drill-down · Library to a track and its edge</div>
+  <div id="b1"></div>
+  <div class="sn-preview__label">Long trail · middle collapsed (select … to show it)</div>
+  <div id="b2"></div>
+  <div class="sn-preview__label">Mobile track explorer · navigation trail, 400px</div>
+  <div class="phone" id="b3"></div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  /** items: [{mod,text,href,icon}] last = current page (no link) */
+  function crumbs(label, items, opts) {
+    opts = opts || {};
+    var h = '<nav class="sn-breadcrumbs' + (opts.trail ? " sn-breadcrumbs--trail" : "") + '" aria-label="' + S.esc(label) + '">' + (opts.caption ? '<span class="sn-breadcrumbs__caption" aria-hidden="true">' + S.esc(opts.caption) + "</span>" : "") + '<ol class="sn-breadcrumbs__list">';
+    items.forEach(function (it, i) {
+      var last = i === items.length - 1;
+      if (it.collapse) { h += '<li class="sn-breadcrumbs__item" data-collapse><button class="sn-breadcrumbs__collapse" type="button" aria-label="Show ' + it.collapse.length + ' more levels">…</button></li>'; it.collapse.forEach(function (c) { h += '<li class="sn-breadcrumbs__item" hidden data-hidden>' + '<a class="sn-link sn-m-' + c.mod + '" href="#">' + S.esc(c.text) + "</a></li>"; }); return; }
+      h += '<li class="sn-breadcrumbs__item">' + (last ? '<span class="sn-breadcrumbs__current" aria-current="page">' + S.esc(it.text) + "</span>" : '<a class="sn-link sn-m-' + it.mod + '" href="#"' + (it.title ? ' title="' + S.esc(it.title) + '"' : "") + ">" + (it.icon ? S.icon(S.module(it.mod).icon, { size: 14 }) : "") + S.esc(it.text) + "</a>") + "</li>";
+    });
+    return h + "</ol></nav>";
+  }
+  document.getElementById("b1").innerHTML = crumbs("Breadcrumb", [{ mod: "library", text: "Library", icon: 1 }, { mod: "library", text: "Bicep" }, { mod: "library", text: "Glue" }, { text: "Glue → So U Kno" }]);
+  document.getElementById("b2").innerHTML = crumbs("Breadcrumb", [
+    { mod: "sources", text: "Sources", icon: 1 },
+    { collapse: [{ mod: "sources", text: "Radio plays" }, { mod: "sources", text: "PBS Soul Time" }, { mod: "sources", text: "Episode 24 Oct 2026" }] },
+    { mod: "library", text: "Overmono – So U Kno", icon: 1 }, { text: "Artist attribution" }]);
+  document.getElementById("b3").innerHTML = crumbs("Navigation trail", [
+    { mod: "graph", text: "Bicep – Glue", title: "Bicep – Glue" }, { mod: "graph", text: "Overmono – So U Kno", title: "Overmono – So U Kno" },
+    { mod: "graph", text: "Interplanetary Criminal – Slow Burner", title: "Interplanetary Criminal – Slow Burner" }, { text: "Sammy Virji – If U Need It" }], { trail: true, caption: "Navigation trail" });
+  document.querySelectorAll("[data-collapse] button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var li = b.parentNode, list = li.parentNode;
+      list.querySelectorAll("[data-hidden]").forEach(function (x) { x.hidden = false; });
+      var first = list.querySelector("[data-hidden] a"); li.remove(); first.focus();
+    });
+  });
+})();
+</script>
+</body>
+</html>

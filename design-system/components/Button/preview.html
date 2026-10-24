@@ -1,0 +1,30 @@
+<!-- @dsCard group="Actions" height=215 subtitle="Primary, secondary, quiet, module, danger; sizes; icon-only; busy and disabled" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Button — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Kinds</div>
+  <div class="sn-preview__row">
+    <button class="sn-btn sn-btn--primary" type="button">Build set</button>
+    <button class="sn-btn" type="button">Try another take</button>
+    <button class="sn-btn sn-btn--quiet" type="button">Clear filters</button>
+    <span class="sn-m-sets"><button class="sn-btn sn-btn--mod" type="button">Open in Set builder</button></span>
+    <button class="sn-btn sn-btn--danger" type="button">Delete set</button>
+  </div>
+  <div class="sn-preview__label">Sizes, icon-only and states</div>
+  <div class="sn-preview__row" id="row2"></div>
+</div>
+<script>
+  var S = window.SongNodes, r = document.getElementById("row2");
+  r.innerHTML =
+    '<button class="sn-btn sn-btn--sm" type="button">' + S.icon("plus") + 'Add track</button>' +
+    '<button class="sn-btn" type="button">' + S.icon("copy") + 'Copy tracklist</button>' +
+    '<button class="sn-btn sn-btn--lg" type="button">' + S.icon("wand-sparkles") + 'Try another take</button>' +
+    '<button class="sn-btn sn-btn--icon" type="button" aria-label="Lock slot 3">' + S.icon("lock") + '</button>' +
+    '<button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="More actions">' + S.icon("ellipsis") + '</button>' +
+    '<button class="sn-btn" type="button" aria-busy="true"><span class="sn-spinner"></span>Saving…</button>' +
+    '<button class="sn-btn sn-btn--primary" type="button" disabled>Save set</button>';
+</script>
+</body>
+</html>

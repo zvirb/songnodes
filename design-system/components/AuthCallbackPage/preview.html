@@ -1,0 +1,61 @@
+<!-- @dsCard group="Pages" width=1280 height=560 subtitle="OAuth return page without the shell: the three states side by side (checking with TIDAL, connected with a way back, sign-in refused with the reason and Try again); stacks on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AuthCallbackPage — preview</title></head>
+<body>
+<div class="sn-preview sn-page" id="root">
+  <main class="sn-page-auth sn-m-services" id="main">
+    <p class="sn-page-auth__wordmark">SongNodes</p>
+    <div class="sn-page-auth__states">
+      <div class="sn-stack">
+        <p class="sn-preview__label sn-page-auth__label">1 · Processing</p>
+        <section class="sn-card sn-page-auth__card" aria-labelledby="p-t" aria-busy="true">
+          <div class="sn-staged-progress">
+            <div class="sn-staged-progress__head"><h1 class="sn-title title-s sn-page-auth__lead" id="p-t"><span class="sn-spinner" aria-hidden="true"></span><span><span class="sn-lead">Connecting:</span> TIDAL</span></h1></div>
+            <ol class="sn-staged-progress__steps">
+              <li class="sn-staged-progress__step" data-state="done"><span class="sn-staged-progress__glyph" aria-hidden="true"></span><span class="sn-staged-progress__name">Check the sign-in with TIDAL</span><span class="sn-staged-progress__state">● Done · 0:01</span></li>
+              <li class="sn-staged-progress__step" data-state="running" aria-current="step"><span class="sn-staged-progress__glyph" aria-hidden="true"></span><span class="sn-staged-progress__name">Save the connection</span><span class="sn-staged-progress__state">Running</span></li>
+              <li class="sn-staged-progress__step" data-state="waiting"><span class="sn-staged-progress__glyph" aria-hidden="true"></span><span class="sn-staged-progress__name">Return to Settings</span><span class="sn-staged-progress__state">Waiting</span></li>
+            </ol>
+            <p class="sn-sr" role="status">Connecting to TIDAL: saving the connection.</p>
+          </div>
+          <p class="sn-page-auth__foot"><span>Keep this window open. It takes a few seconds.</span></p>
+        </section>
+      </div>
+      <div class="sn-stack">
+        <p class="sn-preview__label sn-page-auth__label">2 · Connected</p>
+        <section class="sn-card sn-page-auth__card" aria-labelledby="s-t">
+          <h1 class="sn-title title-s" id="s-t"><span class="sn-lead">TIDAL:</span> Connected</h1>
+          <div class="sn-service-status" role="status"><span class="sn-service-status__mark" aria-hidden="true">Ti</span>
+            <div class="sn-service-status__main"><div class="sn-service-status__name">TIDAL <span class="sn-pill sn-status-pill" data-status="ok">Connected</span></div>
+              <div class="sn-service-status__detail">Connected to TIDAL as <span class="sn-mono">markusz</span>. Monday’s “Send to TIDAL” run is back on. You can close this window.</div></div></div>
+          <p class="sn-page-auth__foot"><a class="sn-link sn-m-services" href="#settings">Return to SongNodes</a><span>Returning to Settings in <span class="sn-mono" id="count">2</span> s</span></p>
+        </section>
+      </div>
+      <div class="sn-stack">
+        <p class="sn-preview__label sn-page-auth__label">3 · Sign-in refused</p>
+        <div class="sn-page-auth__card">
+          <section class="sn-error-state" data-status="bad" aria-labelledby="e-t" role="alert">
+            <div class="sn-error-state__icon" id="ei"></div>
+            <h1 class="sn-error-state__title" id="e-t">TIDAL did not accept the sign-in</h1>
+            <div class="sn-error-state__text">The sign-in link expired before TIDAL sent it back: links last 10 minutes. Nothing was changed; Spotify stays connected.</div>
+            <p class="sn-error-state__retry">Trying again starts a fresh sign-in with TIDAL.</p>
+            <div class="sn-error-state__actions"><button class="sn-btn sn-btn--primary" type="button" id="retry"></button><a class="sn-link sn-m-services" href="#settings">Back to Settings</a></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes, n = 2;
+  document.getElementById("ei").innerHTML = S.icon("circle-x");
+  var r = document.getElementById("retry");
+  r.innerHTML = S.icon("refresh-cw") + "Try again";
+  r.addEventListener("click", function () { r.setAttribute("aria-busy", "true"); r.innerHTML = '<span class="sn-spinner" aria-hidden="true"></span>Opening TIDAL…'; setTimeout(function () { r.removeAttribute("aria-busy"); r.innerHTML = S.icon("refresh-cw") + "Try again"; }, 1500); });
+  var c = document.getElementById("count"), t = setInterval(function () { n = n > 0 ? n - 1 : 2; c.textContent = n; }, 1000);
+})();
+</script>
+</body>
+</html>

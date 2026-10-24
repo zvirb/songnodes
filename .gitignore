@@ -246,3 +246,7 @@ services/data-transformer/silver_to_gold_etl.py
 setup-phoenix-integration.sh
 .gemini/
 gha-creds-*.json
+
+# Music library export served by the /library and /sets pages (scripts/sync-music-library.sh)
+!frontend/public/data/
+!frontend/public/data/music-library.json

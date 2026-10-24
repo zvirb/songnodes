@@ -4,6 +4,29 @@
 
 SongNodes is a comprehensive music data platform that combines intelligent scraping, graph visualization, and real-time analytics. Built with containerized microservices and AI-powered data processing, it provides interactive graph-based insights into music relationships, track adjacencies, and performance analytics.
 
+## 🎨 Design system: single source of truth
+
+**Every formatting and design decision in SongNodes comes from the SongNodes design system** in [`design-system/`](design-system/README.md). That covers colour, type, spacing, shape, icons, motion, copy and number/date formatting, plus component markup and page patterns. The same system also styles the music library (Naarm Set Builder). If a component, a guideline or an older stylesheet disagrees with the design system, the design system wins. Nothing is styled ad hoc.
+
+| What | Where |
+|---|---|
+| The system (brand book, 19 guideline sections, 92 components, tokens, fonts, icons, build scripts) | [`design-system/`](design-system/README.md), a mirror of the published design-system artifact (version in `design-system/tokens.json`) |
+| How it works here, and how to change it | [`docs/design-system/README.md`](docs/design-system/README.md) |
+| Rendered reference: what everything should look like | [`docs/design-system/reference.html`](docs/design-system/reference.html) (self-contained copy: `reference.standalone.html`) |
+| Code-only reference for agents | [`docs/design-system/CODE_REFERENCE.md`](docs/design-system/CODE_REFERENCE.md) |
+| Frontend copy (synced, never edited) | `frontend/src/styles/design-system/` via `scripts/sync-design-system.sh` (`--check` in CI) |
+| Typed helpers and shell for React | `frontend/src/lib/songnodes.tsx`, `frontend/src/shell/` |
+| Where it sits in the lifecycle | [`docs/sdlc/SDLC.md`](docs/sdlc/SDLC.md): every phase has a design-system gate |
+
+The rules in brief:
+- Never write a colour, font size, radius, shadow or z-index literal. Use a token.
+- Build from the system's `sn-*` classes and components.
+- Format every date, time, duration, count, BPM and key through `SongNodes.format`, `camelot` and `compat`.
+- Map every status through `SongNodes.status`.
+- Sora for titles, Inter for body text, JetBrains Mono for data.
+- en-AU, sentence case, Australia/Melbourne time.
+- No emoji in the interface. One primary button per view.
+
 ## 🚀 Key Features
 
 ### Core Features
@@ -72,11 +95,11 @@ SongNodes is a comprehensive music data platform that combines intelligent scrap
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **Framework**: React 18.3.1 + TypeScript 5.5.4 + Vite 5
+- **Framework**: React 19 + TypeScript + Vite, routed with react-router (`frontend/src/App.tsx`)
 - **State Management**: Zustand 4.5.5 for reactive state
 - **Visualization**: D3.js force simulation + PIXI.js v8.5.2 (WebGL rendering)
 - **Search**: Fuse.js 7.0.0 for fuzzy search with typo tolerance
-- **UI**: Tailwind CSS + Custom components (CamelotWheel, AdvancedSearch)
+- **UI**: the SongNodes design system (`design-system/`): tokens, `sn-*` component classes, `window.SongNodes` helpers, self-hosted Sora / Inter / JetBrains Mono, Lucide icons. Tailwind is retired (it was never compiled) and is removed in migration phase 6.
 
 ### Backend
 - **API Framework**: Python FastAPI with async/await patterns
@@ -105,8 +128,10 @@ SongNodes is a comprehensive music data platform that combines intelligent scrap
 ```
 songnodes/
 ├── musicdb_scrapy/           # Cloned scraper repository
+├── design-system/            # SongNodes design system: single source of truth for all formatting and design
 ├── docs/                     # Comprehensive documentation
-│   ├── sdlc/                # SDLC documentation
+│   ├── design-system/       # How the design system works, rendered reference, code-only reference
+│   ├── sdlc/                # SDLC (design-system gates in every phase)
 │   ├── architecture/        # System architecture
 │   ├── orchestration/       # Workflow implementation
 │   └── deployment/          # Deployment guides
@@ -357,7 +382,8 @@ kubectl port-forward svc/grafana-service 3000:3000 -n songnodes
 ## 📝 Documentation
 
 Comprehensive documentation available in `/docs`:
-- [SDLC Overview](docs/sdlc/01-project-overview.md)
+- **[Design system](design-system/README.md)**: single source of truth for all formatting and design ([how it works](docs/design-system/README.md), [rendered reference](docs/design-system/reference.html), [code reference](docs/design-system/CODE_REFERENCE.md))
+- [SDLC](docs/sdlc/SDLC.md): lifecycle with design-system gates
 - [Container Architecture](docs/architecture/container-architecture.md)
 - [Orchestration Workflow](docs/orchestration/workflow-implementation.md)
 - [Deployment Guide](docs/deployment/deployment-guide.md)

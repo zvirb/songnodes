@@ -1,0 +1,63 @@
+<!-- @dsCard group="Navigation" height=640 subtitle="Set builder page with saved stamp, Pipeline page with attention pill, and the 400px phone layout where secondary actions fold into More actions" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>PageHeader — preview</title>
+<style>
+  .phone { width: 400px; max-width: 100%; }
+  .wrap { position: relative; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Set builder · fixed order: band, title, description, meta, then secondary → More actions → primary</div>
+  <div class="wrap" style="z-index:3" id="p1"></div>
+  <div class="sn-preview__label">Pipeline · attention needed</div>
+  <div class="wrap" style="z-index:2" id="p2"></div>
+  <div class="sn-preview__label">Phone · 400px</div>
+  <div class="wrap phone" style="z-index:1" id="p3"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+/*@@menu@@*/
+  function ph(n, o) {
+    var m = S.module(o.mod), st = new Date(o.stamp);
+    var menu = (o.secondary || []).map(function (b) { return { id: b[0], icon: b[1], label: b[2], cls: "sn-page-header__narrow-only" }; }).concat(o.menu);
+    return '<header class="sn-page-header sn-m-' + o.mod + '">' +
+      '<div class="sn-page-header__band">' + S.icon(m.icon, { size: 16 }) + '<a class="sn-link" href="#' + o.mod + '">' + S.esc(m.label) + '</a>' +
+      (o.here ? '<span class="sn-page-header__band-sep" aria-hidden="true">›</span><span class="sn-page-header__band-here">' + S.esc(o.here) + "</span>" : "") + "</div>" +
+      '<div class="sn-page-header__main"><div class="sn-page-header__text">' + S.html.title(m.label, o.title, "title-m") +
+      '<p class="sn-page-header__desc">' + S.esc(o.desc) + "</p>" +
+      '<p class="sn-page-header__meta"><span class="sn-page-header__stamp">' + S.icon("clock", { size: 14 }) + S.esc(o.stampVerb) + ' <time datetime="' + st.toISOString() + '">' + S.format.stamp(st) + "</time></span>" + (o.pill || "") + "</p></div>" +
+      '<div class="sn-page-header__actions">' +
+      (o.secondary || []).map(function (b) { return '<button class="sn-btn sn-page-header__secondary" type="button">' + S.icon(b[1]) + S.esc(b[2]) + "</button>"; }).join("") +
+      snMenuButton("pm" + n, "More actions", menu, { quiet: false }) +
+      '<button class="sn-btn sn-btn--primary" type="button">' + S.icon(o.primary[0]) + S.esc(o.primary[1]) + "</button>" +
+      "</div></div></header>";
+  }
+  var setMenu = [
+    { h: "Set" }, { id: "dup", icon: "copy", label: "Duplicate set" }, { id: "export", icon: "download", label: "Export as CSV" },
+    { id: "tidal", icon: "upload", label: "Send to TIDAL on the weekly run" },
+    { sep: 1 }, { id: "del", icon: "trash-2", label: "Delete set…", danger: true }
+  ];
+  var cfg = {
+    mod: "sets", here: "Saved sets", title: "Peak time Friday", desc: "Three waves over 92 min: 18 tracks, House 50 · Techno 30 · UK garage 20.",
+    stampVerb: "Saved", stamp: "2026-10-24T21:30:00+11:00",
+    secondary: [["copy-tracklist", "copy", "Copy tracklist"], ["take", "wand-sparkles", "Try another take"]],
+    menu: setMenu, primary: ["save", "Save set"]
+  };
+  document.getElementById("p1").innerHTML = ph(1, cfg);
+  document.getElementById("p2").innerHTML = ph(2, {
+    mod: "pipeline", title: "Scraper health", desc: "Nine scrapers feed tracklists, radio plays and links into the library.",
+    stampVerb: "Checked", stamp: "2026-10-24T21:25:00+11:00", pill: S.html.pill("circuit_open", "2 paused after errors"),
+    secondary: [["logs", "file-text", "View job log"]],
+    menu: [{ h: "Scrapers" }, { id: "pause", icon: "pause", label: "Pause all scrapers" }, { id: "proxies", icon: "server", label: "Test proxies" }, { id: "csv", icon: "download", label: "Export health as CSV" }],
+    primary: ["refresh-cw", "Retry paused scrapers"]
+  });
+  document.getElementById("p3").innerHTML = ph(3, cfg);
+  [1, 2, 3].forEach(function (n) { snMenu(document.getElementById("pm" + n + "-btn"), document.getElementById("pm" + n), function (it) { snSay(it.textContent.trim() + " chosen"); }); });
+})();
+</script>
+</body>
+</html>

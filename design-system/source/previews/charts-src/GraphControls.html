@@ -1,0 +1,135 @@
+<!-- @dsCard group="Graph" height=498 subtitle="Canvas overlay: zoom, fit, reset, pause layout, link layers, Colour by (Neutral default, Energy, Key, Genre) with a legend per mode, minimap and node count; dock bottom-right, bottom bar on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>GraphControls — preview</title></head>
+<body>
+<div class="sn-preview sn-m-graph" id="root">
+  <div class="sn-preview__label">Play mode canvas · try the buttons and Colour by; layers opens a popover</div>
+  <div class="sn-graph-controls" style="height: 420px" id="gc">
+    <svg class="sn-graph-controls__canvas" id="canvas" role="img" aria-label="Track graph, 1,284 nodes and 5,210 links"><g id="world"></g></svg>
+    <div class="sn-graph-controls__count" id="count">1,284 nodes · 5,210 links</div>
+    <div class="sn-graph-controls__status" id="status" hidden><span class="sn-pill" data-status="idle">Layout paused</span></div>
+    <div class="sn-graph-controls__colour" role="group" aria-labelledby="colourLbl">
+      <span class="sn-graph-controls__colour-label" id="colourLbl">Colour by</span>
+      <div class="sn-seg" role="group" aria-labelledby="colourLbl" id="colourSeg"><button type="button" data-mode="neutral" aria-pressed="true">Neutral</button><button type="button" data-mode="energy" aria-pressed="false">Energy</button><button type="button" data-mode="key" aria-pressed="false">Key</button><button type="button" data-mode="genre" aria-pressed="false">Genre</button></div>
+      <ul class="sn-graph-controls__legend" id="legend" aria-label="Legend"></ul>
+    </div>
+    <div class="sn-graph-controls__mini" role="img" aria-label="Minimap: the highlighted box shows the part of the graph on screen"><svg viewBox="0 0 168 112" id="mini" preserveAspectRatio="none"></svg></div>
+    <div class="sn-graph-controls__dock" role="group" aria-label="Graph controls" id="dock">
+      <div class="sn-graph-controls__group">
+        <button class="sn-btn sn-btn--icon" type="button" id="zin" aria-label="Zoom in" title="Zoom in"></button>
+        <div class="sn-graph-controls__zoom" id="zval" aria-hidden="true">100%</div>
+        <button class="sn-btn sn-btn--icon" type="button" id="zout" aria-label="Zoom out" title="Zoom out"></button>
+        <button class="sn-btn sn-btn--icon" type="button" id="fit" aria-label="Fit graph to screen" title="Fit graph to screen"></button>
+        <button class="sn-btn sn-btn--icon" type="button" id="reset" aria-label="Reset view" title="Reset view"></button>
+      </div>
+      <div class="sn-graph-controls__group">
+        <button class="sn-btn sn-btn--icon" type="button" id="pause" aria-label="Pause layout" title="Pause layout"></button>
+        <div class="sn-graph-controls__layers-wrap">
+          <button class="sn-btn sn-btn--icon" type="button" id="layersBtn" aria-label="Link layers" title="Link layers" aria-expanded="false" aria-controls="layers"></button>
+          <div class="sn-graph-controls__layers" id="layers" hidden role="group" aria-labelledby="layersH">
+            <h4 id="layersH">Show links</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="sn-sr" aria-live="polite" id="live"></p>
+  </div>
+</div>
+<script>
+/*KIT*/
+(function () {
+  var S = window.SongNodes;
+  function $(id) { return document.getElementById(id); }
+  $("zin").innerHTML = S.icon("zoom-in"); $("zout").innerHTML = S.icon("zoom-out"); $("fit").innerHTML = S.icon("maximize-2"); $("reset").innerHTML = S.icon("rotate-ccw"); $("layersBtn").innerHTML = S.icon("layers");
+  // mock graph (seeded)
+  var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var W = 1000, H = 640, nodes = [], edges = [], TYPES = [["adjacency", "Played back to back"], ["similarity", "Similar sound"], ["key", "Compatible key"], ["collab", "Same artists"], ["genre", "Same genre"]];
+  var centres = [[300, 260], [640, 220], [520, 450], [800, 430], [200, 470]];
+  var KEYS = ["5A", "6A", "7A", "8A", "9A", "10A", "8B", "11B", "4A", "12A"];
+  for (var i = 0; i < 90; i++) { var c = centres[i % 5]; nodes.push({ x: c[0] + (rnd() - 0.5) * 220, y: c[1] + (rnd() - 0.5) * 170, r: 2 + rnd() * rnd() * 9,
+    e: rnd() < 0.06 ? 0 : 1 + Math.floor(rnd() * 10), k: rnd() < 0.06 ? "" : KEYS[Math.floor(rnd() * KEYS.length)], g: 1 + ((i % 5) + (rnd() < 0.25 ? Math.floor(rnd() * 8) : 0)) % 8 }); }
+  nodes[0].x = 300; nodes[0].y = 260; nodes[0].r = 11; nodes[0].now = true; nodes[1].x = 640; nodes[1].y = 220; nodes[1].r = 9; nodes[1].sel = true;
+  for (var j = 0; j < 150; j++) { var a = Math.floor(rnd() * 90), b = (a + 5 * Math.floor(1 + rnd() * 3)) % 90; edges.push({ a: a, b: b, t: TYPES[Math.floor(rnd() * 5)][0] }); }
+  var world = $("world"), layerOn = { adjacency: true, similarity: true, key: true, collab: false, genre: false };
+  var gE = K.el("g", null, world), gN = K.el("g", null, world);
+  function drawEdges() {
+    gE.textContent = "";
+    edges.forEach(function (e) { if (!layerOn[e.t]) return; var a = nodes[e.a], b = nodes[e.b]; K.el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, "class": "sn-graph-controls__edge" + (e.t === "similarity" ? " sn-graph-controls__edge--similarity" : e.t === "key" ? " sn-graph-controls__edge--key" : "") }, gE); });
+  }
+  /* Colour by: Neutral (default) / Energy / Key / Genre. Selected (lavender) and now (amber + "Now" tag) sit on top in every mode. */
+  var GENRES = ["House", "Techno", "UK garage", "Electro", "Breaks", "Drum and bass", "Ambient", "Other"], mode = "neutral";
+  function fill(n) {
+    if (mode === "energy") return n.e ? "var(--energy-" + n.e + ")" : null;
+    if (mode === "key") return n.k ? "var(--key-" + n.k.toLowerCase() + ")" : null;
+    if (mode === "genre") return "var(--chart-" + n.g + ")";
+    return "";
+  }
+  function drawNodes() {
+    gN.textContent = "";
+    nodes.forEach(function (n) {
+      var f = fill(n), a = { cx: n.x, cy: n.y, r: n.r, "class": "sn-graph-controls__node" + (f === null ? " sn-graph-controls__node--hollow" : "") };
+      if (f) a.style = "--c:" + f;
+      K.el("circle", a, gN);
+      if (n.sel) K.el("circle", { cx: n.x, cy: n.y, r: n.r + 4, "class": "sn-graph-controls__ring-selected" }, gN);
+      if (n.now) { K.el("circle", { cx: n.x, cy: n.y, r: n.r + 4, "class": "sn-graph-controls__ring-now" }, gN);
+        K.el("rect", { x: n.x - 15, y: n.y - n.r - 23, width: 30, height: 14, rx: 3, "class": "sn-graph-controls__now-tag" }, gN);
+        K.text(gN, n.x, n.y - n.r - 16, "Now", { "class": "sn-graph-controls__now-text" }); }
+    });
+  }
+  function li(sw, t) { return "<li>" + sw + "<span>" + t + "</span></li>"; }
+  function drawLegend() {
+    var h = "";
+    if (mode === "energy") { h = '<li><span class="sn-graph-controls__ramp" aria-hidden="true">'; for (var i = 1; i <= 10; i++) h += '<i style="--c: var(--energy-' + i + ')"></i>'; h += "</span></li>" + '<li class="sn-graph-controls__legend-note">Energy 1–10: Low 1–4 · Building 5–7 · High 8–10. Hollow: energy ?</li>'; }
+    else if (mode === "key") { h = ["5A", "6A", "7A", "8A", "9A", "10A", "8B", "11B"].map(function (k) { return "<li>" + S.html.key(k) + "</li>"; }).join("") + '<li class="sn-graph-controls__legend-note">Camelot wheel colours. Hollow: key ?</li>'; }
+    else if (mode === "genre") { h = GENRES.map(function (g, i) { return li('<span class="sn-graph-controls__dot" style="--c: var(--chart-' + (i + 1) + ')" aria-hidden="true"></span>', g); }).join(""); }
+    else { h = '<li class="sn-graph-controls__legend-note">All tracks alike; only states carry colour.</li>'; }
+    h += li('<span class="sn-graph-controls__ring" style="--c: var(--brand)" aria-hidden="true"></span>', "Selected") + li('<span class="sn-graph-controls__ring" style="--c: var(--now)" aria-hidden="true"></span>', "Now playing");
+    $("legend").innerHTML = h;
+  }
+  drawNodes(); drawLegend();
+  var cseg = $("colourSeg");
+  cseg.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; mode = b.dataset.mode;
+    cseg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); drawNodes(); drawLegend(); $("live").textContent = "Colour by " + b.textContent.toLowerCase(); });
+  drawEdges();
+  // minimap
+  var mini = $("mini"); nodes.forEach(function (n) { K.el("circle", { cx: n.x * 168 / W, cy: n.y * 112 / H, r: 1.4, "class": "sn-graph-controls__mini-dot" }, mini); });
+  var view = K.el("rect", { "class": "sn-graph-controls__mini-view", rx: 2 }, mini);
+  // view state
+  var zoom = 1, FIT = 1;
+  function apply(announce) {
+    var box = $("canvas").getBoundingClientRect(), cw = box.width || 900, ch = box.height || 420;
+    var base = Math.min(cw / W, ch / H), s = base * zoom;
+    world.setAttribute("transform", "translate(" + (cw / 2 - W / 2 * s) + "," + (ch / 2 - H / 2 * s) + ") scale(" + s + ")");
+    var vw = Math.min(168, 168 * (cw / s) / W), vh = Math.min(112, 112 * (ch / s) / H);
+    view.setAttribute("x", 84 - vw / 2); view.setAttribute("y", 56 - vh / 2); view.setAttribute("width", vw); view.setAttribute("height", vh);
+    $("zval").textContent = Math.round(zoom * 100) + "%";
+    $("zout").disabled = zoom <= 0.25; $("zin").disabled = zoom >= 4;
+    if (announce) $("live").textContent = announce;
+  }
+  $("zin").onclick = function () { zoom = Math.min(4, +(zoom * 1.25).toFixed(3)); apply("Zoom " + Math.round(zoom * 100) + "%"); };
+  $("zout").onclick = function () { zoom = Math.max(0.25, +(zoom / 1.25).toFixed(3)); apply("Zoom " + Math.round(zoom * 100) + "%"); };
+  $("fit").onclick = function () { zoom = FIT; apply("Whole graph in view"); };
+  $("reset").onclick = function () { zoom = 1; apply("View reset to 100%"); };
+  var paused = false;
+  function paintPause() { $("pause").innerHTML = S.icon(paused ? "play" : "pause"); var l = paused ? "Resume layout" : "Pause layout"; $("pause").setAttribute("aria-label", l); $("pause").title = l; $("status").hidden = !paused; }
+  $("pause").onclick = function () { paused = !paused; paintPause(); $("live").textContent = paused ? "Layout paused" : "Layout running"; };
+  paintPause();
+  // layers popover
+  var pop = $("layers"), lb = $("layersBtn");
+  TYPES.forEach(function (t) {
+    var l = document.createElement("label"); l.className = "sn-check";
+    l.innerHTML = '<input type="checkbox"' + (layerOn[t[0]] ? " checked" : "") + '><svg width="24" height="10" aria-hidden="true"><line x1="1" y1="5" x2="23" y2="5" class="sn-graph-controls__edge' + (t[0] === "similarity" ? " sn-graph-controls__edge--similarity" : t[0] === "key" ? " sn-graph-controls__edge--key" : "") + ' sn-graph-controls__edge--key-sample"/></svg>' + t[1];
+    l.querySelector("input").addEventListener("change", function (e) { layerOn[t[0]] = e.target.checked; drawEdges(); });
+    pop.appendChild(l);
+  });
+  function setPop(open) { pop.hidden = !open; lb.setAttribute("aria-expanded", open); if (open) pop.querySelector("input").focus(); }
+  lb.onclick = function () { setPop(pop.hidden); };
+  pop.addEventListener("keydown", function (e) { if (e.key === "Escape") { setPop(false); lb.focus(); } });
+  document.addEventListener("click", function (e) { if (!pop.hidden && !pop.contains(e.target) && e.target !== lb && !lb.contains(e.target)) setPop(false); });
+  if (window.ResizeObserver) new ResizeObserver(function () { apply(); }).observe($("gc"));
+  apply();
+})();
+</script>
+</body>
+</html>

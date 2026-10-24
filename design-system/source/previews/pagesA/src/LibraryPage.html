@@ -1,0 +1,177 @@
+<!-- @dsCard group="Pages" width=1280 height=1700 subtitle="The Naarm library rebuilt: page header, four figure tiles, keyed-coverage banner, sticky filter rail, sortable crate table with energy, key, BPM, pillar, rotation and sources, show more; phone: Filters (3) sheet and stacked cards" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>LibraryPage — preview</title></head>
+<body>
+<div class="sn-preview sn-page" id="root">
+  <a class="sn-skip" href="#main">Skip to main content</a>
+  <div id="hdr" data-drawer-inert></div>
+  <main class="sn-page__main sn-page-library" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+    <div class="sn-figure-tile-row" role="list" aria-label="Library at a glance" id="tiles"></div>
+    <div class="sn-banner" data-status="info" role="status" id="banner"></div>
+    <div class="sn-page-library__body">
+      <div class="sn-filter-rail" id="rail"></div>
+      <div class="sn-page-library__crate">
+        <div class="sn-data-table sn-data-table--stack" id="dt">
+          <div class="sn-data-table__bar"><span class="sn-data-table__count" id="count" aria-live="polite">846 tracks match · showing 12</span></div>
+          <div class="sn-tablebox sn-data-table__box">
+            <table class="sn-table">
+              <caption class="sn-sr">Crate, 12 of 846 matching tracks. Column headers with buttons are sortable.</caption>
+              <thead><tr id="head"></tr></thead>
+              <tbody id="body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="sn-show-more">
+          <span class="sn-show-more__count" role="status">Showing <b>12</b> of <b>846</b> tracks</span>
+          <div class="sn-show-more__actions"><button class="sn-btn sn-btn--sm" type="button">Show 150 more</button><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button">Show all 846</button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="drw"></div>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+/*KIT*/
+  snShell({ lead: "Library", title: "Melbourne club library", stamp: "2026-10-24T06:00:00+11:00", current: "library" });
+  document.getElementById("ph").innerHTML = snPageHeader({ mod: "library", title: "Melbourne club library",
+    desc: "Every track heard on PBS, 3RRR and triple j, plus the ARIA Club Chart, with TIDAL, Deezer and Beatport links.",
+    stampVerb: "Built", stamp: "2026-10-24T06:00:00+11:00",
+    secondary: [["csv", "download", "Export CSV"]],
+    menu: [{ h: "Library" }, { id: "import", icon: "file-input", label: "Import tracklist…" }, { id: "copy", icon: "copy", label: "Copy filtered tracklist" }, { id: "print", icon: "printer", label: "Print crate" }],
+    primary: ["list-music", "Build set from filters"] });
+
+  document.getElementById("tiles").innerHTML = [
+    ["1,284", "Tracks in the library", "+36 this week"],
+    ["212", "Heard this week", "on 9 shows"],
+    ["38", "Need an energy check", "", '<span class="sn-pill sn-status-pill" data-status="warn">To check</span><a class="sn-link sn-m-library" href="#check">Review</a>'],
+    ["94%", "Have key and BPM", "1,207 of 1,284"]
+  ].map(function (t) {
+    return '<div class="sn-figure-tile" role="listitem"><span class="sn-figure-tile__figure">' + t[0] + '</span><span class="sn-figure-tile__label">' + t[1] + "</span>" + (t[2] ? '<span class="sn-figure-tile__delta">' + t[2] + "</span>" : "") + (t[3] ? '<div class="sn-figure-tile__foot">' + t[3] + "</div>" : "") + "</div>";
+  }).join("");
+
+  document.getElementById("banner").innerHTML = '<span class="sn-banner__icon">' + S.icon("info") + '</span><div class="sn-banner__body"><p class="sn-banner__content"><span class="sn-banner__title">77 tracks have no key or BPM yet.</span> Sets place them on energy alone; Monday’s run matches them against Beatport and SongNodes audio analysis.</p>' +
+    '<div class="sn-banner__actions"><button class="sn-btn sn-btn--sm" type="button">Show tracks without a key</button></div></div>' +
+    '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-banner__dismiss" type="button" aria-label="Dismiss: key and BPM notice">' + S.icon("x") + "</button>";
+
+  /* ---- FilterRail (rail at 1024 px and wider, Filters (n) + sheet below) ---- */
+  var SECTIONS = [
+    { id: "pillar", label: "Pillar", chips: [["House", 612], ["Techno", 418], ["UK garage", 254]] },
+    { id: "tier", label: "Energy tier", tier: true, chips: [["low", 301], ["building", 587], ["high", 396]] },
+    { id: "rot", label: "Rotation", chips: [["High", 88], ["Standard", 1196], ["Vault", 0]] },
+    { id: "tags", label: "Tags", chips: [["Vocal", 214], ["Breakbeat", 131], ["Acid", 76], ["Piano", 58]] }
+  ];
+  var CHECKS = [["key", "Has key and BPM", 1207], ["energy", "Needs an energy check", 38], ["shows", "Played on 2+ shows", 412]];
+  var ROTNOTE = '<details class="sn-disclosure"><summary><span class="sn-disclosure__chev">' + S.icon("chevron-right") + '</span>How rotation is worked out</summary><div class="sn-disclosure__body">' +
+        '<p>High rotation and Vault are worked out by the weekly run from the library’s own play data.</p><p>High: heard on 2 or more different shows in the run window, or on the ARIA Club Chart for 4 weeks or fewer. Everything else heard is Standard.</p><p>Vault: learned once there are 8 weeks of plays (15 days so far), so no track is in the Vault yet.</p></div></details>';
+  var START = { pillar: ["House", "UK garage"], checks: ["key"] };
+  var rail = document.getElementById("rail");
+  function railBody() {
+    var h = '<div class="sn-filter-rail__section"><form class="sn-search-field" role="search" onsubmit="return false" data-empty><label class="sn-sr" for="q">Search tracks</label><div class="sn-search-field__box"><span class="sn-search-field__icon">' + S.icon("search") + '</span>' +
+      '<input class="sn-input sn-search-field__input" type="search" id="q" placeholder="Search tracks" autocomplete="off" aria-keyshortcuts="/"><span class="sn-search-field__end"><kbd class="sn-search-field__kbd" aria-hidden="true">/</kbd><button type="button" class="sn-search-field__clear" aria-label="Clear search">' + S.icon("x") + "</button></span></div></form></div>";
+    SECTIONS.forEach(function (s) {
+      h += '<div class="sn-filter-rail__section sn-filter-chip-group" role="group" aria-labelledby="f-' + s.id + '"><div class="sn-filter-chip-group__head"><span class="sn-filter-chip-group__legend" id="f-' + s.id + '">' + s.label + '</span></div><ul class="sn-filter-chip-group__list">' +
+        s.chips.map(function (c) { var label = s.tier ? S.TIER_LABEL[c[0]] : c[0], on = (START[s.id] || []).indexOf(c[0]) >= 0;
+          return '<li><button type="button" class="sn-chip sn-filter-chip" aria-pressed="' + on + '" data-label="' + S.esc(label) + '"' + (s.tier ? ' data-tier="' + c[0] + '"' : "") + (c[1] === 0 ? " data-empty" : "") + ">" + (s.tier ? '<span class="sn-filter-chip__tier" aria-hidden="true"><i></i><i></i><i></i></span>' : "") + "<span>" + S.esc(label) + '</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>' + S.format.count(c[1]) + '<span class="sn-sr"> tracks</span></span></button></li>'; }).join("") + "</ul>" + (s.id === "rot" ? ROTNOTE : "") + "</div>";
+      if (s.id === "rot") h += '<div class="sn-filter-rail__section sn-field sn-select-field"><label for="heard">Heard on</label><select class="sn-select" id="heard">' + ["Any show", "PBS Soul Time", "3RRR Superfreak", "triple j Mix Up", "ARIA Club Chart"].map(function (o, i) { return '<option value="' + (i ? S.esc(o) : "") + '">' + o + "</option>"; }).join("") + "</select></div>";
+    });
+    h += '<div class="sn-filter-rail__section sn-checkbox-group" role="group" aria-labelledby="f-checks"><span class="sn-filter-chip-group__legend" id="f-checks">Track checks</span><div class="sn-filter-rail__checks">' +
+      CHECKS.map(function (c) { return '<label class="sn-checkbox"><input type="checkbox" data-label="' + c[1] + '"' + (START.checks.indexOf(c[0]) >= 0 ? " checked" : "") + '><span class="sn-checkbox__text"><span>' + c[1] + '<span class="sn-checkbox__count">' + S.format.count(c[2]) + "</span></span></span></label>"; }).join("") + "</div></div>";
+    return h;
+  }
+  rail.innerHTML = '<div class="sn-filter-rail__bar"><div class="sn-filter-rail__bar-row"><button type="button" class="sn-btn sn-filter-rail__trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="rail-panel">' + S.icon("list-filter") + '<span data-trigger-label>Filters</span></button><button type="button" class="sn-btn sn-btn--quiet sn-btn--sm" data-clear>Clear filters</button></div><ul class="sn-filter-rail__summary" aria-label="Active filters"></ul></div>' +
+    '<div class="sn-filter-rail__scrim" data-close></div><aside class="sn-filter-rail__panel" id="rail-panel" aria-labelledby="rail-title"><div class="sn-filter-rail__head"><h2 class="sn-filter-rail__title" id="rail-title">Filters</h2><button type="button" class="sn-btn sn-btn--quiet sn-btn--sm" data-clear>Clear filters</button>' +
+    '<button type="button" class="sn-btn sn-btn--quiet sn-btn--icon sn-btn--sm sn-filter-rail__close" aria-label="Close filters" data-close>' + S.icon("x") + '</button></div><div class="sn-filter-rail__body">' + railBody() + '</div><div class="sn-filter-rail__foot"><button type="button" class="sn-btn sn-btn--primary" data-close data-show>Show tracks</button></div></aside>';
+  var sheetMq = window.matchMedia("(max-width: 1023.98px)");
+  function active() {
+    var a = [];
+    rail.querySelectorAll('.sn-filter-chip[aria-pressed="true"]').forEach(function (c) { a.push({ label: c.dataset.label, el: c }); });
+    var sel = rail.querySelector("select"); if (sel.value) a.push({ label: "Heard on " + sel.value, el: sel });
+    rail.querySelectorAll("input[type=checkbox]:checked").forEach(function (c) { a.push({ label: c.dataset.label, el: c }); });
+    var q = rail.querySelector("input[type=search]"); if (q.value) a.push({ label: "“" + q.value + "”", el: q });
+    return a;
+  }
+  function sync() {
+    var a = active(), n = a.length, shown = n ? Math.max(0, Math.round(1284 * Math.pow(0.87, n))) : 1284;
+    rail.querySelector("[data-trigger-label]").textContent = n ? "Filters (" + n + ")" : "Filters";
+    rail.querySelectorAll("[data-clear]").forEach(function (b) { b.hidden = n === 0; });
+    rail.querySelector("[data-show]").textContent = "Show " + S.format.count(shown) + " tracks";
+    var sum = rail.querySelector(".sn-filter-rail__summary");
+    sum.innerHTML = a.map(function (x, i) { return '<li><button type="button" class="sn-filter-rail__active" data-remove="' + i + '" aria-label="Remove filter: ' + S.esc(x.label) + '">' + S.esc(x.label) + S.icon("x") + "</button></li>"; }).join(""); sum._a = a;
+    rail.querySelector(".sn-search-field").toggleAttribute("data-empty", !rail.querySelector("input[type=search]").value);
+  }
+  function setSheetRole() { var p = rail.querySelector(".sn-filter-rail__panel"); if (sheetMq.matches) { p.setAttribute("role", "dialog"); p.setAttribute("aria-modal", "true"); } else { p.removeAttribute("role"); p.removeAttribute("aria-modal"); } }
+  setSheetRole(); sheetMq.addEventListener && sheetMq.addEventListener("change", setSheetRole);
+  sync();
+  rail.addEventListener("click", function (e) {
+    var c = e.target.closest(".sn-filter-chip"); if (c) { c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") !== "true"); sync(); return; }
+    var tr = rail.querySelector(".sn-filter-rail__trigger");
+    if (e.target.closest(".sn-filter-rail__trigger")) { rail.setAttribute("data-open", ""); tr.setAttribute("aria-expanded", "true"); setTimeout(function () { rail.querySelector(".sn-filter-rail__close").focus(); }, 20); return; }
+    if (e.target.closest("[data-clear]")) { rail.querySelectorAll(".sn-filter-chip").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); rail.querySelectorAll("input[type=checkbox]").forEach(function (x) { x.checked = false; }); rail.querySelector("select").value = ""; rail.querySelector("input[type=search]").value = ""; sync(); return; }
+    if (e.target.closest("[data-close]")) { rail.removeAttribute("data-open"); tr.setAttribute("aria-expanded", "false"); tr.focus(); return; }
+    var r = e.target.closest("[data-remove]"); if (r) { var x = r.closest("ul")._a[+r.dataset.remove].el; if (x.matches(".sn-filter-chip")) x.setAttribute("aria-pressed", "false"); else if (x.type === "checkbox") x.checked = false; else x.value = ""; sync(); tr.focus(); }
+    if (e.target.closest(".sn-search-field__clear")) { var q = rail.querySelector("input[type=search]"); q.value = ""; sync(); q.focus(); }
+  });
+  rail.addEventListener("change", sync); rail.addEventListener("input", sync);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && rail.hasAttribute("data-open")) { rail.removeAttribute("data-open"); rail.querySelector(".sn-filter-rail__trigger").focus(); } });
+
+  /* ---- Crate table ---- */
+  var T = [
+    { a: "Overmono", t: "So U Kno", mix: "Extended mix", dur: 372, e: 7, k: "9A", b: 130, p: "UK garage", r: "High", src: ["triple j Mix Up", "PBS Soul Time", "1001tracklists"], last: "2026-10-23", links: ["TIDAL", "Beatport"] },
+    { a: "Bicep", t: "Glue", mix: "Original mix", dur: 269, e: 6, k: "8A", b: 130, p: "House", r: "High", src: ["3RRR Superfreak", "MixesDB", "1001tracklists", "Spotify"], last: "2026-10-22", links: ["TIDAL", "Deezer", "Beatport"] },
+    { a: "Interplanetary Criminal", t: "Slow Burner", mix: "Original mix", dur: 341, e: 7, k: "9A", b: 133, p: "UK garage", r: "Standard", src: ["triple j Mix Up", "ARIA Club Chart"], last: "2026-10-17", links: ["TIDAL"], check: true },
+    { a: "Josh Baker", t: "Lost In Muzik", mix: "Original mix", dur: 398, e: 6, k: "8A", b: 126, p: "House", r: "High", src: ["PBS Soul Time", "Beatport"], last: "2026-10-21", links: ["Beatport"] },
+    { a: "Fred again..", t: "Delilah (pull me out of this)", mix: "Original mix", dur: 260, e: 8, k: "11B", b: 140, p: "House", r: "Standard", src: ["triple j Mix Up"], last: "2026-10-10", links: ["TIDAL", "Deezer"] },
+    { a: "Ross From Friends", t: "Talk To Me You'll Drown", mix: "Original mix", dur: 402, e: 4, k: "5A", b: 122, p: "House", r: "Standard", src: ["3RRR Superfreak", "MixesDB"], last: "2026-08-30", links: ["TIDAL"] },
+    { a: "Sammy Virji", t: "If U Need It", mix: "Original mix", dur: 223, e: 8, k: "4A", b: 136, p: "UK garage", r: "High", src: ["triple j Mix Up", "1001tracklists", "ARIA Club Chart"], last: "2026-10-23", links: ["TIDAL", "Beatport"] },
+    { a: "Peggy Gou", t: "(It Goes Like) Nanana", mix: "Edit", dur: 238, e: 7, k: "10A", b: 124, p: "House", r: "Standard", src: ["PBS Soul Time", "Spotify"], last: "2026-10-19", links: ["TIDAL", "Deezer", "Beatport"], check: true },
+    { a: "Interplanetary Criminal", t: "Wiley Flow", mix: "VIP", dur: 318, e: 5, k: "10A", b: 132, p: "UK garage", r: "Standard", src: ["1001tracklists"], last: "2026-07-11", links: [] },
+    { a: "Josh Baker", t: "Nobody Else", mix: "Extended mix", dur: 411, e: 5, k: "7A", b: 127, p: "House", r: "Standard", src: ["PBS Soul Time"], last: "2026-09-26", links: ["Beatport"] },
+    { a: "Sammy Virji", t: "Find My Way", mix: "Original mix", dur: 214, e: 9, k: "12A", b: 136, p: "UK garage", r: "Standard", src: ["triple j Mix Up", "3RRR Superfreak"], last: "2026-10-20", links: ["TIDAL"] },
+    { a: "Peggy Gou", t: "Starry Night", mix: "Original mix", dur: 274, e: 6, k: "6A", b: 123, p: "House", r: "Standard", src: ["3RRR Superfreak"], last: "2026-06-14", links: ["TIDAL", "Deezer"] }
+  ];
+  var ROT = { High: 0, Standard: 1, Vault: 2 };
+  function keyOrder(k) { var c = S.camelot(k); return c ? parseInt(c, 10) * 2 + (c.slice(-1) === "B" ? 1 : 0) : 999; }
+  var COLS = [
+    { id: "e", label: "Energy", sort: function (x) { return x.e; }, cell: function (x) { return S.html.energy(x.e); } },
+    { id: "track", label: "Track", sort: function (x) { return (x.a + " " + x.t).toLowerCase(); } },
+    { id: "b", label: "BPM", num: true, sort: function (x) { return x.b; }, cell: function (x) { return '<span class="sn-bpm"><b>' + x.b + "</b></span>"; } },
+    { id: "k", label: "Key", sort: function (x) { return keyOrder(x.k); }, cell: function (x) { return S.html.key(x.k); } },
+    { id: "p", label: "Pillar", sort: function (x) { return x.p; }, cell: function (x) { return '<span class="sn-tag sn-category-tag">' + x.p + "</span>"; } },
+    { id: "r", label: "Rotation", sort: function (x) { return ROT[x.r]; }, cell: function (x) { return '<span class="sn-tag sn-category-tag' + (x.r === "High" ? " sn-category-tag--high" : x.r === "Vault" ? " sn-category-tag--vault" : "") + '">' + (x.r === "High" ? "High rotation" : x.r) + "</span>"; } },
+    { id: "h", label: "Heard", num: true, sort: function (x) { return x.src.length; }, cell: function (x) { return '<span class="sn-source-badge"><span class="sn-source-badge__name" title="' + S.esc(x.src.join(", ")) + '">' + S.icon("radio-tower", { size: 14 }) + x.src.length + '<span class="sn-sr"> sources: ' + S.esc(x.src.join(", ")) + "</span></span></span>"; } }
+  ]; /* "Last heard", Links and IDs are optional columns (column chooser), not shown by default */
+  var st = { sort: "e", dir: "descending" };
+  function trackCell(x) {
+    return '<div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name" title="' + S.esc(x.a + " – " + x.t) + '"><span class="sn-track-cell__artist">' + S.esc(x.a) + " –</span> " + S.esc(x.t) + "</span></span>" +
+      '<span class="sn-track-cell__meta"><span class="sn-track-cell__mix">' + S.esc(x.mix) + '</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">' + S.format.duration(x.dur) + "</span>" + (x.check ? '<span class="sn-track-cell__flag">Check energy</span>' : "") +
+      (x.links.length ? '<span class="sn-track-cell__links">' + x.links.map(function (l) { return '<a class="sn-link sn-link--ext" href="#" target="_blank" rel="noopener" aria-label="' + S.esc(x.a + " – " + x.t) + " on " + l + ', opens in a new tab">' + l + "</a>"; }).join("") + "</span>" : "") + "</span></div>";
+  }
+  function render() {
+    document.getElementById("head").innerHTML = COLS.map(function (c) {
+      return '<th scope="col"' + (c.num ? ' class="num"' : "") + (c.sort ? " data-sortable" : "") + (st.sort === c.id ? ' aria-sort="' + st.dir + '"' : "") + ">" + (c.sort ? '<button type="button" data-sort="' + c.id + '">' + c.label + "</button>" : c.label) + "</th>";
+    }).join("") + '<th scope="col" class="sn-data-table__actions"><span class="sn-sr">Actions</span></th>';
+    var c = COLS.filter(function (x) { return x.id === st.sort; })[0], m = st.dir === "ascending" ? 1 : -1;
+    var rows = T.slice().sort(function (p, q) { var a = c.sort(p), b = c.sort(q); if (a < b) return -m; if (a > b) return m; return (p.a + p.t) < (q.a + q.t) ? -1 : 1; });
+    document.getElementById("body").innerHTML = rows.map(function (x) {
+      return "<tr" + (x.check ? " data-flag" : "") + ">" + COLS.map(function (col) {
+        return col.id === "track" ? '<td class="sn-data-table__track">' + trackCell(x) + "</td>" : "<td" + (col.num ? ' class="num"' : "") + ' data-label="' + col.label + '">' + col.cell(x) + "</td>";
+      }).join("") + '<td class="sn-data-table__actions"><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" data-add="' + S.esc(x.a + " – " + x.t) + '" aria-label="Add ' + S.esc(x.a + " – " + x.t) + ' to set">' + S.icon("plus") + "</button></td></tr>";
+    }).join("");
+  }
+  render();
+  document.getElementById("head").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sort]"); if (!b) return; var id = b.dataset.sort;
+    if (st.sort === id) st.dir = st.dir === "ascending" ? "descending" : "ascending"; else { st.sort = id; st.dir = "ascending"; }
+    render(); document.querySelector('[data-sort="' + id + '"]').focus(); snSay("Sorted by " + b.textContent + ", " + st.dir);
+  });
+  document.getElementById("body").addEventListener("click", function (e) { var b = e.target.closest("[data-add]"); if (b) snToast("Added <q>" + S.esc(b.dataset.add) + "</q> to <q>Peak time Friday</q>", "circle-check", "Undo"); });
+  snWire();
+})();
+</script>
+</body>
+</html>

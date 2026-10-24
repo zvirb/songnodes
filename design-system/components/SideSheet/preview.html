@@ -1,0 +1,89 @@
+<!-- @dsCard group="Surfaces" height=548 subtitle="Track details beside the graph (non-modal, pushes content); switch to filters; bottom sheet with grab handle and scrim on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SideSheet — preview</title>
+<style>
+  .shell { height: 500px; border: 1px solid var(--line); border-radius: 14px; }
+  .canvas { height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--sunk); }
+  .canvas svg { flex: 1; width: 100%; min-height: 0; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-side-sheet__layout shell" id="layout">
+    <div class="sn-side-sheet__main canvas sn-m-graph" id="main">
+      <div class="sn-row">
+        <button class="sn-btn sn-btn--sm" type="button" data-show="track" aria-controls="sheet">Show track details</button>
+        <button class="sn-btn sn-btn--sm" type="button" data-show="filters" aria-controls="sheet">${filters}Filters</button>
+      </div>
+      <svg viewBox="0 0 400 220" aria-label="Graph around Bicep – Glue" role="img" id="graph"></svg>
+    </div>
+    <div class="sn-side-sheet__scrim" id="scrim" hidden></div>
+    <aside class="sn-side-sheet" id="sheet" aria-labelledby="sheet-title"></aside>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes, I = S.icon, H = S.html;
+  document.querySelector('[data-show="filters"]').innerHTML = I("sliders-horizontal") + "Filters";
+  // a few nodes and edges as backdrop
+  var N = [[200, 110, 9], [90, 60, 6], [320, 50, 6], [110, 180, 6], [300, 170, 6], [40, 130, 4], [370, 110, 4]], g = "";
+  [[0, 1], [0, 2], [0, 3], [0, 4], [1, 5], [2, 6], [4, 6]].forEach(function (e) { g += '<line x1="' + N[e[0]][0] + '" y1="' + N[e[0]][1] + '" x2="' + N[e[1]][0] + '" y2="' + N[e[1]][1] + '" style="stroke:var(--line-strong);stroke-width:1.5"/>'; });
+  N.forEach(function (n, i) { g += '<circle cx="' + n[0] + '" cy="' + n[1] + '" r="' + n[2] + '" style="fill:' + (i ? "var(--m-muted)" : "var(--m)") + ';stroke:' + (i ? "none" : "var(--now)") + ';stroke-width:3"/>'; });
+  document.getElementById("graph").innerHTML = g;
+
+  function cp(k) { var c = S.compat("5A", k); return H.compat(c.level, c.label); }
+  var VIEWS = {
+    track: { title: '<span class="sn-lead">Track:</span> Bicep – Glue',
+      body: '<div class="sn-side-sheet__section"><dl class="sn-side-sheet__facts">' +
+          '<dt>Energy</dt><dd>' + H.energy(6) + '</dd><dt>BPM</dt><dd><span class="sn-bpm">130</span></dd>' +
+          '<dt>Key</dt><dd>' + H.key("5A", true) + '</dd><dt>Length</dt><dd class="sn-mono">5:48</dd>' +
+          '<dt>Pillar</dt><dd><span class="sn-tag">Techno</span></dd><dt>Heard on</dt><dd><span class="sn-tag">PBS Soul Time</span> <span class="sn-tag">triple j Mix Up</span></dd>' +
+          '<dt>ISRC</dt><dd class="data-s">GBCFB1700512</dd></dl></div>' +
+        '<div class="sn-side-sheet__section"><h3 class="sn-eyebrow sn-side-sheet__label">Played next to</h3><ul class="sn-side-sheet__list">' +
+          [["8A", "Overmono – So U Kno"], ["6A", "Ross From Friends – Talk To Me You’ll Drown"], ["5A", "Interplanetary Criminal – Slow Burner"], ["4A", "Peggy Gou – (It Goes Like) Nanana"]].map(function (r) {
+            return '<li class="sn-side-sheet__item">' + H.key(r[0]) + '<span>' + S.esc(r[1]) + '</span>' + cp(r[0]) + '</li>'; }).join("") + '</ul></div>' +
+        '<div class="sn-side-sheet__section"><h3 class="sn-eyebrow sn-side-sheet__label">Links</h3><div class="sn-row"><a class="sn-link sn-link--ext" href="#tidal">TIDAL</a><a class="sn-link sn-link--ext" href="#beatport">Beatport</a></div></div>',
+      foot: '<span class="sn-m-paths"><button class="sn-btn sn-btn--mod" type="button">Start a path here</button></span><button class="sn-btn sn-btn--primary" type="button">Add to set</button>' },
+    filters: { title: "Graph filters",
+      body: '<fieldset class="sn-side-sheet__section"><legend class="sn-eyebrow">Pillar</legend><div class="sn-row"><button class="sn-chip" aria-pressed="true" type="button">House</button><button class="sn-chip" aria-pressed="true" type="button">Techno</button><button class="sn-chip" aria-pressed="false" type="button">UK garage</button></div></fieldset>' +
+        '<fieldset class="sn-side-sheet__section"><legend class="sn-eyebrow">Edges</legend>' +
+          '<label class="sn-check"><input type="checkbox" checked> Played next to each other</label><label class="sn-check"><input type="checkbox" checked> Compatible keys</label><label class="sn-check"><input type="checkbox"> Same genre</label></fieldset>' +
+        '<div class="sn-field"><label for="minE">Minimum energy</label><select class="sn-select" id="minE"><option>Any</option><option selected>5 · Building</option><option>8 · High</option></select></div>',
+      foot: '<button class="sn-btn sn-btn--quiet" type="button">Reset</button><button class="sn-btn sn-btn--primary" type="button" data-close>Show 412 tracks</button>' }
+  };
+  var sheet = document.getElementById("sheet"), scrim = document.getElementById("scrim"), opener = null;
+  var phone = window.matchMedia("(max-width: 767.98px)");
+  function open(view, focus) {
+    var v = VIEWS[view];
+    sheet.innerHTML = '<span class="sn-side-sheet__handle" aria-hidden="true"></span>' +
+      '<div class="sn-side-sheet__head"><h2 class="sn-title title-s sn-side-sheet__title" id="sheet-title" tabindex="-1">' + v.title + '</h2>' +
+      '<button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="Close ' + (view === "track" ? "track details" : "filters") + '" data-close>' + I("x") + '</button></div>' +
+      '<div class="sn-side-sheet__body">' + v.body + '</div><div class="sn-side-sheet__foot">' + v.foot + '</div>';
+    sheet.hidden = false;
+    if (phone.matches) { sheet.setAttribute("role", "dialog"); sheet.setAttribute("aria-modal", "true"); scrim.hidden = false; document.getElementById("main").inert = true; }
+    else { sheet.removeAttribute("role"); sheet.removeAttribute("aria-modal"); scrim.hidden = true; document.getElementById("main").inert = false; }
+    if (focus) document.getElementById("sheet-title").focus();
+  }
+  function close() {
+    sheet.hidden = true; scrim.hidden = true; document.getElementById("main").inert = false;
+    if (opener) opener.focus();
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-show]"); if (b) { opener = b; open(b.getAttribute("data-show"), true); }
+    if (e.target.closest("[data-close]")) close();
+    if (e.target === scrim) close();
+    var c = e.target.closest(".sn-chip"); if (c) c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (sheet.hidden) return;
+    if (e.key === "Escape" && (phone.matches || sheet.contains(document.activeElement))) close();
+    if (e.key === "Tab" && phone.matches) {   // modal on phones: keep focus inside
+      var f = sheet.querySelectorAll("button, [href], input, select, [tabindex='-1']"), first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+  open("track", false);
+</script>
+</body>
+</html>

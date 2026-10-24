@@ -1,0 +1,87 @@
+<!-- @dsCard group="Inputs" height=404 subtitle="Dual-thumb BPM and release-year ranges with editable numbers and ticks; single-thumb connection strength; keyboard and drag" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>RangeSlider — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Drag a thumb or the track, or use arrows, Page Up/Down, Home/End; type in the boxes</div>
+  <div class="sn-stack" style="gap: var(--space-6); max-width: 620px" id="list"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var CFG = [
+    { id: "bpm", label: "BPM range", min: 100, max: 150, step: 1, big: 10, values: [120, 130], names: ["Minimum BPM", "Maximum BPM"], ticks: [100, 110, 120, 130, 140, 150],
+      text: function (v) { return v + " BPM"; }, readout: function (a, b) { return a + "–" + b + " BPM"; }, help: "Tracks outside the range stay in the library; they are left out of this set." },
+    { id: "year", label: "Release year", min: 1990, max: 2026, step: 1, big: 5, values: [2015, 2026], names: ["Earliest release year", "Latest release year"], ticks: [1990, 2000, 2010, 2020, 2026],
+      text: function (v) { return String(v); }, readout: function (a, b) { return a + "–" + b; } },
+    { id: "str", label: "Minimum connection strength", min: 0, max: 100, step: 5, big: 20, values: [65], names: ["Minimum connection strength"], ticks: [0, 25, 50, 75, 100],
+      text: function (v) { return v + "%"; }, readout: function (a) { return a + "% and stronger"; }, help: "Hides graph edges weaker than this. Adjacency from real sets counts most." }
+  ];
+  function pct(c, v) { return (v - c.min) / (c.max - c.min) * 100; }
+  function build(c) {
+    var dual = c.values.length === 2, ch = String(c.max).length;
+    var num = function (i) { return '<input class="sn-range-slider__num" inputmode="numeric" style="--rs-ch:' + ch + '" id="' + c.id + '-n' + i + '" aria-label="' + c.names[i] + '" data-i="' + i + '" value="' + c.values[i] + '">'; };
+    var thumb = function (i) { return '<div class="sn-range-slider__thumb" role="slider" tabindex="0" data-i="' + i + '" aria-label="' + c.names[i] + '"></div>'; };
+    return '<div class="sn-range-slider" role="group" aria-labelledby="' + c.id + '-l" id="' + c.id + '">' +
+      '<div class="sn-range-slider__head"><span class="sn-range-slider__label" id="' + c.id + '-l">' + c.label + '</span><span class="sn-range-slider__readout" aria-hidden="true"></span></div>' +
+      '<div class="sn-range-slider__main">' + (dual ? num(0) : "") +
+        '<div class="sn-range-slider__rail"><div class="sn-range-slider__track"></div><div class="sn-range-slider__fill"></div>' + thumb(0) + (dual ? thumb(1) : "") +
+        '<div class="sn-range-slider__ticks" aria-hidden="true">' + c.ticks.map(function (t) { return '<span class="sn-range-slider__tick" style="left:' + pct(c, t) + '%">' + t + '</span>'; }).join("") + '</div></div>' +
+        (dual ? num(1) : num(0)) + '</div>' +
+      '<span class="sn-range-slider__error" hidden></span>' +
+      (c.help ? '<span class="sn-range-slider__help">' + c.help + '</span>' : "") + '</div>';
+  }
+  document.getElementById("list").innerHTML = CFG.map(build).join("");
+
+  function render(c) {
+    var el = document.getElementById(c.id), v = c.values, dual = v.length === 2;
+    el.querySelectorAll(".sn-range-slider__thumb").forEach(function (t, i) {
+      t.style.left = pct(c, v[i]) + "%";
+      t.setAttribute("aria-valuenow", v[i]); t.setAttribute("aria-valuetext", c.text(v[i]));
+      t.setAttribute("aria-valuemin", dual && i === 1 ? v[0] : c.min); t.setAttribute("aria-valuemax", dual && i === 0 ? v[1] : c.max);
+    });
+    var f = el.querySelector(".sn-range-slider__fill");
+    f.style.left = dual ? pct(c, v[0]) + "%" : "0%"; f.style.width = (dual ? pct(c, v[1]) - pct(c, v[0]) : pct(c, v[0])) + "%";
+    el.querySelectorAll(".sn-range-slider__num").forEach(function (n) { if (document.activeElement !== n) n.value = v[+n.dataset.i]; n.removeAttribute("aria-invalid"); });
+    el.querySelector(".sn-range-slider__readout").textContent = c.readout(v[0], v[1]);
+    el.querySelector(".sn-range-slider__error").hidden = true;
+  }
+  function setv(c, i, x) {
+    var v = c.values, lo = i === 1 ? v[0] : c.min, hi = i === 0 && v.length === 2 ? v[1] : c.max;
+    x = Math.round((x - c.min) / c.step) * c.step + c.min; v[i] = Math.min(hi, Math.max(lo, x)); render(c);
+  }
+  CFG.forEach(render);
+  function cfgOf(el) { var id = el.closest(".sn-range-slider").id; return CFG.filter(function (c) { return c.id === id; })[0]; }
+
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (t.matches(".sn-range-slider__thumb")) {
+      var c = cfgOf(t), i = +t.dataset.i, v = c.values[i], k = e.key, d = null;
+      if (k === "ArrowRight" || k === "ArrowUp") d = v + c.step; else if (k === "ArrowLeft" || k === "ArrowDown") d = v - c.step;
+      else if (k === "PageUp") d = v + c.big; else if (k === "PageDown") d = v - c.big; else if (k === "Home") d = c.min; else if (k === "End") d = c.max;
+      if (d !== null) { e.preventDefault(); setv(c, i, d); }
+    } else if (t.matches(".sn-range-slider__num") && e.key === "Enter") { commit(t); }
+  });
+  function commit(n) {
+    var c = cfgOf(n), x = parseInt(n.value.replace(/[^\d]/g, ""), 10), el = document.getElementById(c.id), err = el.querySelector(".sn-range-slider__error");
+    if (isNaN(x) || x < c.min || x > c.max) { n.setAttribute("aria-invalid", "true"); n.setAttribute("aria-describedby", c.id + "-err"); err.id = c.id + "-err"; err.hidden = false; err.textContent = "Enter " + c.names[+n.dataset.i].toLowerCase() + " from " + c.min + " to " + c.max + "."; return; }
+    setv(c, +n.dataset.i, x); n.value = c.values[+n.dataset.i]; n.removeAttribute("aria-describedby");
+  }
+  document.addEventListener("change", function (e) { if (e.target.matches(".sn-range-slider__num")) commit(e.target); });
+
+  var drag = null;
+  document.addEventListener("pointerdown", function (e) {
+    var rail = e.target.closest(".sn-range-slider__rail"); if (!rail) return;
+    var c = cfgOf(rail), r = rail.getBoundingClientRect(), x = c.min + (e.clientX - r.left) / r.width * (c.max - c.min), i = 0;
+    var th = e.target.closest(".sn-range-slider__thumb");
+    if (th) i = +th.dataset.i; else if (c.values.length === 2) i = Math.abs(x - c.values[0]) <= Math.abs(x - c.values[1]) ? 0 : 1;
+    if (c.values.length === 2 && c.values[0] === c.values[1]) i = x > c.values[0] ? 1 : 0;
+    drag = { c: c, i: i, rail: rail }; rail.setPointerCapture(e.pointerId);
+    var t = rail.querySelectorAll(".sn-range-slider__thumb")[i]; t.focus(); t.setAttribute("data-drag", "");
+    setv(c, i, x); e.preventDefault();
+  });
+  document.addEventListener("pointermove", function (e) { if (!drag) return; var r = drag.rail.getBoundingClientRect(); setv(drag.c, drag.i, drag.c.min + (e.clientX - r.left) / r.width * (drag.c.max - drag.c.min)); });
+  document.addEventListener("pointerup", function () { if (!drag) return; drag.rail.querySelectorAll("[data-drag]").forEach(function (t) { t.removeAttribute("data-drag"); }); drag = null; });
+</script>
+</body>
+</html>

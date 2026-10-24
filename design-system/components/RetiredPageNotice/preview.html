@@ -1,0 +1,262 @@
+<!-- @dsCard group="Pages" width=1280 height=1060 subtitle="Moved page (old Target tracks tab → Sources: Target tracks) with the new place as a link in its module colour, reason, dates and an opt-in redirect with no countdown; retired page with no replacement (debug-storage.html)" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>RetiredPageNotice — preview</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <a class="sn-skip" href="#main">Skip to content</a>
+  <div id="sh-head" data-drawer-inert></div>
+  <main class="sn-page-retired" id="main" tabindex="-1" data-drawer-inert>
+    <section class="sn-card sn-page-retired__card" aria-labelledby="moved-h">
+      <span class="sn-page-retired__icon" id="ic1" aria-hidden="true"></span>
+      <h1 class="sn-title title-l" id="moved-h">This page has moved</h1>
+      <p class="body-l sn-muted">Target tracks used to be a tab in the Plan view’s right panel. They now have their own page in Sources, with priority filters, bulk actions and a run log.</p>
+      <p class="sn-page-retired__dest"><a class="sn-link sn-m-sources" href="#/sources/targets" id="dest">Go to Sources: Target tracks</a></p>
+      <dl class="sn-page-retired__facts">
+        <dt>Old address</dt><dd><code>/?mode=plan&amp;tab=targets</code></dd>
+        <dt>New address</dt><dd><code>/sources/targets</code></dd>
+        <dt>Moved</dt><dd>24 Oct 2026</dd>
+        <dt>This notice</dt><dd>Shows until 22 Jan 2027; after that the old address goes straight to the new page.</dd>
+      </dl>
+      <label class="sn-checkbox"><input type="checkbox" id="auto" aria-describedby="auto-h"><span class="sn-checkbox__text"><span>Skip this notice on this device</span><span class="sn-checkbox__hint" id="auto-h">Off by default. When on, the old address opens Target tracks directly; there is no countdown.</span></span></label>
+      <p class="sn-inline-message" data-status="ok" id="auto-msg" hidden>Saved. Next time the old address opens Target tracks directly.</p>
+    </section>
+  </main>
+  <div class="sn-page-retired" aria-label="Variant: retired, no replacement" role="region" style="padding-top:0">
+    <span class="sn-preview__label" style="align-self:stretch">Variant · retired, no replacement</span>
+    <section class="sn-card sn-page-retired__card" aria-labelledby="gone-h">
+      <span class="sn-page-retired__icon" id="ic2" aria-hidden="true"></span>
+      <h2 class="sn-title title-l" id="gone-h">This page is retired</h2>
+      <p class="body-l sn-muted">debug-storage.html was a developer tool for looking inside saved settings. It is no longer part of SongNodes and nothing replaces it.</p>
+      <dl class="sn-page-retired__facts">
+        <dt>Address</dt><dd><code>/debug-storage.html</code></dd>
+        <dt>Retired</dt><dd>24 Oct 2026</dd>
+        <dt>From 22 Jan 2027</dt><dd>This address answers “Gone” (410).</dd>
+      </dl>
+      <p class="sn-row"><a class="sn-link" href="#/">Go to Home</a><span class="sn-dim">·</span><span>Theme and text size are in <a class="sn-link sn-m-services" href="#/settings#appearance">Services: Settings</a></span></p>
+    </section>
+  </div>
+  <div id="sh-drawer"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+/* ---- page kit (inlined into each page preview by pagesb/build.py): shell, menus, segmented control, tooltip, toast, page header ---- */
+var S = window.SongNodes, I = S.icon, F = S.format, H = S.html;
+var NOW = new Date("2026-10-24T21:30:00+11:00"); /* fixed "now" for the previews: Sat 24 Oct 2026, 21:30 AEDT */
+function $(id) { return document.getElementById(id); }
+/* APG menu keyboard model (from OverflowMenu) */
+function snVisible(list) { return Array.prototype.filter.call(list, function (el) { return el.offsetParent !== null || el.getClientRects().length > 0; }); }
+function snMenuKeys(menu, close) {
+  var buf = "", timer = 0;
+  function items() { return snVisible(menu.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')); }
+  menu.addEventListener("keydown", function (e) {
+    var it = items(), i = it.indexOf(document.activeElement), n = it.length;
+    if (!n) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); it[(i + 1) % n].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); it[(i - 1 + n) % n].focus(); }
+    else if (e.key === "Home" || e.key === "PageUp") { e.preventDefault(); it[0].focus(); }
+    else if (e.key === "End" || e.key === "PageDown") { e.preventDefault(); it[n - 1].focus(); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
+    else if (e.key === "Tab") { close(false); }
+    else if (e.key.length === 1 && /\S/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      clearTimeout(timer); buf += e.key.toLowerCase(); timer = setTimeout(function () { buf = ""; }, 600);
+      for (var k = 1; k <= n; k++) { var c = it[(i + k) % n], t = (c.querySelector(".sn-overflow-menu__text") || c).textContent.trim().toLowerCase(); if (t.indexOf(buf) === 0) { c.focus(); break; } }
+    }
+  });
+  return items;
+}
+function snMenu(btn, menu, onSelect) {
+  function open(last) { menu.hidden = false; btn.setAttribute("aria-expanded", "true"); var it = items(); var t = last ? it[it.length - 1] : it[0]; if (t) t.focus(); }
+  function close(back) { if (menu.hidden) return; menu.hidden = true; btn.setAttribute("aria-expanded", "false"); if (back) btn.focus(); }
+  var items = snMenuKeys(menu, close);
+  btn.addEventListener("click", function () { if (menu.hidden) open(false); else close(true); });
+  btn.addEventListener("keydown", function (e) { if (e.key === "ArrowDown") { e.preventDefault(); open(false); } else if (e.key === "ArrowUp") { e.preventDefault(); open(true); } });
+  menu.addEventListener("click", function (e) {
+    var it = e.target.closest('[role^="menuitem"]'); if (!it) return;
+    if (it.getAttribute("aria-disabled") === "true") return;
+    if (it.hasAttribute("aria-checked")) it.setAttribute("aria-checked", it.getAttribute("aria-checked") === "true" ? "false" : "true");
+    close(true); if (onSelect) onSelect(it);
+  });
+  document.addEventListener("pointerdown", function (e) { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) close(false); });
+  return { open: open, close: close };
+}
+function snSay(msg) { var l = $("sn-live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } }
+/** items: {h} | {sep} | {id,icon,label,kbd,reason,danger,checked,cls} */
+function snMenuHtml(id, labelledby, items, cls) {
+  var h = '<div class="sn-overflow-menu__menu' + (cls ? " " + cls : "") + '" role="menu" id="' + id + '" aria-labelledby="' + labelledby + '" hidden>', open = false, n = 0;
+  items.forEach(function (it) {
+    if (it.h) { if (open) h += "</div>"; n++; h += '<div role="group" aria-labelledby="' + id + "-h" + n + '"><div class="sn-overflow-menu__heading" id="' + id + "-h" + n + '" role="presentation">' + S.esc(it.h) + "</div>"; open = true; return; }
+    if (it.sep) { if (open) { h += "</div>"; open = false; } h += '<div class="sn-overflow-menu__sep" role="separator"></div>'; return; }
+    var rid = it.reason ? id + "-r" + (++n) : "";
+    h += '<button type="button" tabindex="-1" class="sn-overflow-menu__item' + (it.danger ? " sn-overflow-menu__item--danger" : "") + (it.cls ? " " + it.cls : "") + '" role="' + (it.checked != null ? "menuitemcheckbox" : "menuitem") + '"' +
+      (it.checked != null ? ' aria-checked="' + it.checked + '"' : "") + (it.id ? ' data-id="' + it.id + '"' : "") + (it.reason ? ' aria-disabled="true" aria-describedby="' + rid + '"' : "") + ">" +
+      I(it.checked != null ? "check" : (it.icon || "circle-dot"), { size: 16 }) + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
+      (it.reason ? '<span class="sn-overflow-menu__reason" id="' + rid + '">' + S.esc(it.reason) + "</span>" : "") + "</span>" + (it.kbd ? "<kbd>" + S.esc(it.kbd) + "</kbd>" : "") + "</button>";
+  });
+  if (open) h += "</div>";
+  return h + "</div>";
+}
+function snMenuButton(id, label, items, opts) {
+  opts = opts || {};
+  return '<div class="sn-overflow-menu"><button class="sn-btn sn-btn--icon' + (opts.quiet === false ? "" : " sn-btn--quiet") + (opts.sm ? " sn-btn--sm" : "") + '" type="button" id="' + id + '-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="' + id + '" aria-label="' + S.esc(label) + '">' + I(opts.icon || "ellipsis") + "</button>" + snMenuHtml(id, id + "-btn", items, opts.cls) + "</div>";
+}
+/** wire every menu button inside root (call after rendering) */
+function snMenusIn(root, onSelect) {
+  root.querySelectorAll('.sn-overflow-menu > button[aria-haspopup="menu"]').forEach(function (b) {
+    if (b._wired) return; b._wired = true;
+    snMenu(b, document.getElementById(b.getAttribute("aria-controls")), function (it) { if (onSelect) onSelect(it, b); else snSay(it.querySelector(".sn-overflow-menu__text").textContent + " chosen"); });
+  });
+}
+/* APG radio group (from SegmentedControl) */
+function snSeg(group, onChange) {
+  function radios() { return Array.prototype.slice.call(group.querySelectorAll('[role="radio"]')); }
+  function pick(r, focus) {
+    if (!r || r.getAttribute("aria-disabled") === "true") return;
+    radios().forEach(function (x) { var on = x === r; x.setAttribute("aria-checked", on ? "true" : "false"); x.tabIndex = on ? 0 : -1; });
+    if (focus) r.focus();
+    if (onChange) onChange(r.getAttribute("data-value"), r);
+  }
+  radios().forEach(function (x) { x.tabIndex = x.getAttribute("aria-checked") === "true" ? 0 : -1; });
+  group.addEventListener("click", function (e) { var r = e.target.closest('[role="radio"]'); if (r) pick(r, true); });
+  group.addEventListener("keydown", function (e) {
+    var rs = radios().filter(function (x) { return x.getAttribute("aria-disabled") !== "true"; }), i = rs.indexOf(document.activeElement);
+    if (i < 0) return;
+    var d = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : (e.key === "ArrowLeft" || e.key === "ArrowUp") ? -1 : 0;
+    if (d) { e.preventDefault(); pick(rs[(i + d + rs.length) % rs.length], true); }
+  });
+}
+function snSegHtml(label, opts, value, cls) {
+  return '<div class="sn-seg sn-segmented-control' + (cls ? " " + cls : "") + '" role="radiogroup" aria-label="' + S.esc(label) + '">' + opts.map(function (o) {
+    return '<button type="button" role="radio" data-value="' + o.value + '" aria-checked="' + (o.value === value) + '">' + (o.icon ? I(o.icon, { size: 16 }) : "") + S.esc(o.label) + "</button>";
+  }).join("") + "</div>";
+}
+/* modal drawer (from NavDrawer) */
+function snDrawer(drawer, openers) {
+  var panel = drawer.querySelector(".sn-nav-drawer__panel"), scrim = drawer.querySelector(".sn-nav-drawer__scrim"), last = null;
+  var outside = Array.prototype.slice.call(document.querySelectorAll("[data-drawer-inert]"));
+  function focusables() { return snVisible(panel.querySelectorAll('a[href],button:not([disabled]),[tabindex="0"]')); }
+  function open(from) { last = from || openers[0]; drawer.setAttribute("data-open", ""); openers.forEach(function (o) { o.setAttribute("aria-expanded", "true"); }); outside.forEach(function (el) { el.inert = true; }); var cur = panel.querySelector('[aria-current="page"]'); (cur || focusables()[0]).focus(); }
+  function close() { drawer.removeAttribute("data-open"); openers.forEach(function (o) { o.setAttribute("aria-expanded", "false"); }); outside.forEach(function (el) { el.inert = false; }); (last || openers[0]).focus(); }
+  openers.forEach(function (o) { o.addEventListener("click", function () { open(o); }); });
+  scrim.addEventListener("click", close);
+  drawer.querySelectorAll("[data-drawer-close]").forEach(function (b) { b.addEventListener("click", close); });
+  panel.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { e.preventDefault(); close(); return; }
+    if (e.key !== "Tab") return;
+    var f = focusables(), first = f[0], end = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); end.focus(); }
+    else if (!e.shiftKey && document.activeElement === end) { e.preventDefault(); first.focus(); }
+  });
+  panel.addEventListener("click", function (e) { var a = e.target.closest("a.sn-nav-drawer__item"); if (!a) return; e.preventDefault(); snSay("Opened " + a.querySelector(".sn-nav-drawer__label").textContent); close(); });
+}
+function snDrawerHtml(id, current, counts) {
+  counts = counts || {};
+  var groups = [["Make", ["sets", "paths"]], ["Explore", ["graph", "library", "harmony"]], ["Collect", ["sources"]], ["System", ["pipeline", "services"]]];
+  function row(key, label, icon, mod) {
+    var c = counts[key];
+    return '<li><a class="sn-nav-drawer__item' + (mod ? " sn-m-" + key : "") + '" href="#' + key + '"' + (current === key ? ' aria-current="page"' : "") + ">" + I(icon, { size: 20 }) +
+      '<span class="sn-nav-drawer__label">' + S.esc(label) + "</span>" +
+      (c ? '<span class="' + (c[2] ? 'sn-pill" data-status="' + c[2] : "sn-nav-drawer__count") + '">' + c[0] + '<span class="sn-sr"> ' + S.esc(c[1]) + "</span></span>" : "") + "</a></li>";
+  }
+  var h = '<div class="sn-nav-drawer" id="' + id + '"><div class="sn-nav-drawer__scrim"></div>' +
+    '<div class="sn-nav-drawer__panel" role="dialog" aria-modal="true" aria-label="Site navigation">' +
+    '<div class="sn-nav-drawer__head"><span class="sn-nav-drawer__wordmark">SongNodes</span><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" data-drawer-close aria-label="Close navigation">' + I("x") + "</button></div>" +
+    '<nav class="sn-nav-drawer__nav" aria-label="Main"><ul class="sn-nav-drawer__list">' + row("home", "Home", "house", false) + "</ul>";
+  groups.forEach(function (g, gi) {
+    h += '<div class="sn-nav-drawer__group"><h2 class="sn-nav-drawer__heading" id="' + id + "-g" + gi + '">' + g[0] + '</h2><ul class="sn-nav-drawer__list" aria-labelledby="' + id + "-g" + gi + '">';
+    g[1].forEach(function (k) { var m = S.module(k); h += row(k, m.label, m.icon, true); });
+    h += "</ul></div>";
+  });
+  return h + '</nav><div class="sn-nav-drawer__foot"><a class="sn-nav-drawer__item" href="#preferences">' + I("sliders-horizontal", { size: 20 }) + '<span class="sn-nav-drawer__label">Preferences</span></a></div></div></div>';
+}
+/** App shell: header into #sh-head, drawer into #sh-drawer. o = {mod, title, stamp, stampVerb, conn:[state, words]} */
+function snShell(o) {
+  var m = S.module(o.mod) || { label: o.lead || "SongNodes" }, st = new Date(o.stamp || "2026-10-24T06:00:00+11:00");
+  $("sh-head").innerHTML = '<header class="sn-app-header"><div class="sn-app-header__bar">' +
+    '<div class="sn-app-header__start"><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" id="sh-open" aria-expanded="false" aria-controls="nav" aria-label="Open navigation">' + I("menu") + "</button>" +
+    '<span class="sn-app-header__wordmark">SongNodes</span></div><span class="sn-app-header__divider" aria-hidden="true"></span>' +
+    '<p class="sn-app-header__title"><span class="sn-lead">' + S.esc(m.label) + ":</span> " + S.esc(o.title) + "</p>" +
+    '<div class="sn-app-header__end">' +
+    '<span class="sn-app-header__stamp">' + I("clock", { size: 14 }) + '<span class="sn-app-header__stamp-text">' + S.esc(o.stampVerb || "Updated") + ' </span><time datetime="' + st.toISOString() + '" title="' + S.esc((o.stampVerb || "Updated") + " " + F.stamp(st)) + '">' + F.relative(st, NOW) + "</time></span>" +
+    (o.conn ? '<span class="sn-connection-status" data-state="' + o.conn[0] + '" role="status">' + S.esc(o.conn[1]) + "</span>" : "") +
+    '<button class="sn-btn sn-btn--sm sn-app-header__search" type="button" aria-keyshortcuts="Control+K Meta+K /">' + I("search", { size: 16 }) + '<span class="sn-app-header__search-label">Search</span><kbd aria-hidden="true">Ctrl K</kbd></button>' +
+    "</div></div></header>";
+  $("sh-drawer").innerHTML = snDrawerHtml("nav", o.mod, o.counts);
+  snDrawer($("nav"), [$("sh-open")]);
+}
+/** PageHeader (fixed order: band, title, desc, meta; secondary → More actions → primary) */
+function snPageHeader(id, o) {
+  var m = S.module(o.mod), st = o.stamp ? new Date(o.stamp) : null;
+  var menu = (o.secondary || []).map(function (b) { return { id: b[0], icon: b[1], label: b[2], cls: "sn-page-header__narrow-only" }; }).concat(o.menu || []);
+  return '<header class="sn-page-header sn-m-' + o.mod + '">' +
+    '<div class="sn-page-header__band">' + I(m.icon, { size: 16 }) + '<a class="sn-link" href="#' + o.mod + '">' + S.esc(m.label) + "</a>" +
+    (o.here ? '<span class="sn-page-header__band-sep" aria-hidden="true">›</span><span class="sn-page-header__band-here">' + S.esc(o.here) + "</span>" : "") + "</div>" +
+    '<div class="sn-page-header__main"><div class="sn-page-header__text"><h1 class="sn-title title-m"><span class="sn-lead">' + S.esc(o.lead || m.label) + ":</span> " + S.esc(o.title) + "</h1>" +
+    '<p class="sn-page-header__desc">' + o.desc + "</p>" +
+    '<p class="sn-page-header__meta">' + (st ? '<span class="sn-page-header__stamp">' + I("clock", { size: 14 }) + S.esc(o.stampVerb) + ' <time datetime="' + st.toISOString() + '">' + F.stamp(st) + "</time></span>" : "") + (o.meta || "") + "</p></div>" +
+    '<div class="sn-page-header__actions">' +
+    (o.secondary || []).map(function (b) { return '<button class="sn-btn sn-page-header__secondary" type="button" data-act="' + b[0] + '">' + I(b[1]) + S.esc(b[2]) + "</button>"; }).join("") +
+    (menu.length ? snMenuButton(id + "-more", "More actions", menu, { quiet: false }) : "") +
+    (o.primary ? '<button class="sn-btn sn-btn--primary" type="button" data-act="' + o.primary[0] + '">' + I(o.primary[1]) + S.esc(o.primary[2]) + "</button>" : "") +
+    "</div></div></header>";
+}
+/* tooltip: 500 ms in, 0 out, hover + focus, Esc, hoverable (from Tooltip) */
+function snTips(root) {
+  var tip = document.createElement("div"); tip.className = "sn-tooltip"; tip.id = "sn-tip"; tip.setAttribute("role", "tooltip"); tip.hidden = true; document.body.appendChild(tip);
+  var timer = null, owner = null;
+  function place(el) {
+    var r = el.getBoundingClientRect(), t = tip.getBoundingClientRect(), gap = 6;
+    var top = r.top - t.height - gap; if (top < 4) top = r.bottom + gap;
+    var left = Math.min(Math.max(4, r.left + r.width / 2 - t.width / 2), document.documentElement.clientWidth - t.width - 4);
+    tip.style.top = (top + window.scrollY) + "px"; tip.style.left = (left + window.scrollX) + "px";
+  }
+  function show(el) { owner = el; tip.innerHTML = el.getAttribute("data-tip-html") || S.esc(el.getAttribute("data-tip")); tip.hidden = false; place(el); if (el.hasAttribute("data-tip-describe")) el.setAttribute("aria-describedby", "sn-tip"); }
+  function hide() { clearTimeout(timer); timer = null; tip.hidden = true; if (owner) owner.removeAttribute("aria-describedby"); owner = null; }
+  function later(el) { clearTimeout(timer); timer = setTimeout(function () { show(el); }, 500); }
+  root.addEventListener("pointerover", function (e) { var el = e.target.closest("[data-tip],[data-tip-html]"); if (el && el !== owner) later(el); });
+  root.addEventListener("pointerout", function (e) { var el = e.target.closest("[data-tip],[data-tip-html]"); if (el && !el.contains(e.relatedTarget) && !tip.contains(e.relatedTarget)) hide(); });
+  tip.addEventListener("pointerleave", function (e) { if (!owner || !owner.contains(e.relatedTarget)) hide(); });
+  root.addEventListener("focusin", function (e) { var el = e.target.closest("[data-tip],[data-tip-html]"); if (el) later(el); else hide(); });
+  root.addEventListener("focusout", function (e) { if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest("[data-tip],[data-tip-html]")) hide(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && (owner || timer)) hide(); });
+  return { hide: hide, now: function (el) { clearTimeout(timer); show(el); } };
+}
+/* toast: one visible, Undo action, 8 s with an action (pauses on hover/focus) */
+function snToast(html, action, onAction) {
+  var region = $("sn-toasts"); if (!region) return;
+  region.innerHTML = '<div class="sn-toast"><span class="sn-toast__icon">' + I("circle-check") + '</span><span class="sn-toast__text">' + html + "</span>" +
+    (action ? '<button class="sn-btn sn-btn--sm sn-toast__action" type="button" data-toast-act>' + S.esc(action) + "</button>" : "") +
+    '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-toast__close" type="button" aria-label="Dismiss notification" data-toast-close>' + I("x") + "</button></div>";
+  var t = region.firstChild, left = action ? 8000 : 4000, start = Date.now(), timer;
+  function gone() { if (t.parentNode) t.parentNode.removeChild(t); }
+  function run() { start = Date.now(); timer = setTimeout(gone, left); }
+  function pause() { clearTimeout(timer); left -= Date.now() - start; }
+  t.addEventListener("pointerenter", pause); t.addEventListener("pointerleave", run); t.addEventListener("focusin", pause); t.addEventListener("focusout", run);
+  t.addEventListener("keydown", function (e) { if (e.key === "Escape") gone(); });
+  t.addEventListener("click", function (e) { if (e.target.closest("[data-toast-close]")) gone(); if (e.target.closest("[data-toast-act]")) { gone(); if (onAction) onAction(); } });
+  run();
+}
+/** track cell markup. x = {a, t, mix, label, dur, flag, flagInfo, now} */
+function snTrack(x) {
+  var meta = [];
+  if (x.mix) meta.push('<span class="sn-track-cell__mix">' + S.esc(x.mix) + "</span>");
+  if (x.label) meta.push("<span>" + S.esc(x.label) + "</span>");
+  if (x.dur) meta.push('<span class="sn-track-cell__dur">' + F.duration(x.dur) + "</span>");
+  var m = meta.join('<span class="sn-track-cell__sep" aria-hidden="true">·</span>');
+  if (x.flag) m += '<span class="sn-track-cell__flag">' + S.esc(x.flag) + "</span>";
+  if (x.flagInfo) m += '<span class="sn-track-cell__flag sn-track-cell__flag--info">' + S.esc(x.flagInfo) + "</span>";
+  return '<div class="sn-track-cell"><span class="sn-track-cell__title">' + (x.now ? '<span class="sn-track-cell__now">' + I("audio-waveform", { size: 14 }) + "<span>Now</span></span>" : "") +
+    '<span class="sn-track-cell__name" title="' + S.esc(x.a + " – " + x.t) + '"><span class="sn-track-cell__artist">' + S.esc(x.a) + " –</span> " + S.esc(x.t) + "</span></span>" +
+    (m ? '<span class="sn-track-cell__meta">' + m + "</span>" : "") + "</div>";
+}
+function snPill(status, label, outline) { return '<span class="sn-pill sn-status-pill' + (outline ? " sn-pill--outline" : "") + '" data-status="' + status + '">' + S.esc(label) + "</span>"; }
+function snRaw(raw, domain, outline) { var s = S.status(raw, domain); return snPill(s.status, s.label, outline); }
+
+(function () {
+  snShell({ lead: "SongNodes", title: "Page moved", stampVerb: "Updated", stamp: "2026-10-24T06:00:00+11:00" });
+  $("ic1").innerHTML = I("route"); $("ic2").innerHTML = I("archive");
+  $("auto").addEventListener("change", function () { $("auto-msg").hidden = !this.checked; try { localStorage.setItem("sn-skip-moved-targets", this.checked ? "1" : ""); } catch (e) {} });
+})();
+</script>
+</body>
+</html>

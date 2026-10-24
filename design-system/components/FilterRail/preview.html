@@ -1,0 +1,148 @@
+<!-- @dsCard group="Inputs" height=695 subtitle="Desktop rail (sticky, rail-w) beside the crate; phone and tablet: Filters (n) button, active-filter chips, side sheet" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>FilterRail — preview</title>
+<style>
+  .pv-desk { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-start; }
+  .pv-crate { flex-basis: 240px; }
+  .pv-crate { flex: 1; min-width: 0; }
+  .pv-phone { width: 380px; max-width: 100%; border: 1px solid var(--line); border-radius: var(--radius-card); padding: var(--space-3); background: var(--bg); display: flex; flex-direction: column; gap: var(--space-3); }
+  #rail-desk .sn-filter-rail__panel { max-height: 620px; } /* preview frame: show the rail scrolling inside its sticky box */
+  .pv-cols { display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-cols">
+    <div class="sn-stack" style="flex: 1 1 520px; min-width: 0">
+      <div class="sn-preview__label">Desktop and laptop (1024 px and wider): sticky rail</div>
+      <div class="pv-desk">
+        <div class="sn-filter-rail" data-layout="rail" id="rail-desk"></div>
+        <div class="pv-crate sn-card sn-card--flat">
+          <h2 class="sn-title title-s"><span class="sn-lead">Library:</span> Crate</h2>
+          <p class="body-s sn-muted" style="margin:0" role="status" data-count-out></p>
+          <div class="sn-stack" style="gap:var(--space-2)" id="crate"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sn-stack" style="flex: 0 1 380px; min-width: 0">
+      <div class="sn-preview__label">Phone and tablet: button opens a side sheet</div>
+      <div class="pv-phone">
+        <div class="sn-filter-rail" data-layout="sheet" id="rail-phone"></div>
+        <p class="body-s sn-muted" style="margin:0" data-count-out-phone></p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var SECTIONS = [
+    { id: "pillar", label: "Pillar", chips: [["House", 612], ["Techno", 418], ["UK garage", 254]] },
+    { id: "tier", label: "Energy tier", tier: true, chips: [["low", 301], ["building", 587], ["high", 396]] },
+    { id: "rot", label: "Rotation", chips: [["High", 88], ["Standard", 1196], ["Vault", 0]] },
+    { id: "tags", label: "Tags", chips: [["Vocal", 214], ["Breakbeat", 131], ["Acid", 76], ["Piano", 58]] }
+  ];
+  var CHECKS = [["key", "Has key and BPM", 1102], ["energy", "Needs an energy check", 37], ["shows", "Played on 2+ shows", 412]];
+  var START = { pillar: ["House"], tier: ["high"], checks: ["key"] };
+  function body(p) {
+    var h = '<div class="sn-filter-rail__section"><form class="sn-search-field" role="search" onsubmit="return false" data-empty>' +
+      '<label class="sn-sr" for="' + p + '-q">Search tracks</label><div class="sn-search-field__box"><span class="sn-search-field__icon">' + S.icon("search") + '</span>' +
+      '<input class="sn-input sn-search-field__input" type="search" id="' + p + '-q" placeholder="Search artist or title" autocomplete="off">' +
+      '<span class="sn-search-field__end"><button type="button" class="sn-search-field__clear" aria-label="Clear search">' + S.icon("x") + '</button></span></div></form></div>';
+    SECTIONS.forEach(function (s) {
+      h += '<div class="sn-filter-rail__section sn-filter-chip-group" role="group" aria-labelledby="' + p + '-' + s.id + '">' +
+        '<div class="sn-filter-chip-group__head"><span class="sn-filter-chip-group__legend" id="' + p + '-' + s.id + '">' + s.label + '</span></div><ul class="sn-filter-chip-group__list">' +
+        s.chips.map(function (c) {
+          var label = s.tier ? S.TIER_LABEL[c[0]] : c[0], on = (START[s.id] || []).indexOf(c[0]) >= 0;
+          return '<li><button type="button" class="sn-chip sn-filter-chip" aria-pressed="' + on + '" data-f="' + s.id + '" data-label="' + S.esc(label) + '"' + (s.tier ? ' data-tier="' + c[0] + '"' : "") + (c[1] === 0 ? " data-empty" : "") + '>' +
+            (s.tier ? '<span class="sn-filter-chip__tier" aria-hidden="true"><i></i><i></i><i></i></span>' : "") + '<span>' + S.esc(label) + '</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>' + S.format.count(c[1]) + '<span class="sn-sr"> tracks</span></span></button></li>';
+        }).join("") + '</ul></div>';
+      if (s.id === "rot") {
+        h += '<div class="sn-filter-rail__section sn-field sn-select-field"><label for="' + p + '-heard">Heard on</label><select class="sn-select" id="' + p + '-heard" data-f="heard">' +
+          ["Any show", "PBS Soul Time", "3RRR Superfreak", "triple j Mix Up", "ARIA Club Chart"].map(function (o, i) { return '<option value="' + (i ? S.esc(o) : "") + '">' + o + '</option>'; }).join("") + '</select></div>';
+      }
+    });
+    h += '<div class="sn-filter-rail__section sn-checkbox-group" role="group" aria-labelledby="' + p + '-checks"><span class="sn-filter-chip-group__legend" id="' + p + '-checks">Track checks</span><div class="sn-filter-rail__checks">' +
+      CHECKS.map(function (c) { return '<label class="sn-checkbox"><input type="checkbox" data-f="checks" data-label="' + c[1] + '"' + ((START.checks.indexOf(c[0]) >= 0) ? " checked" : "") + '><span class="sn-checkbox__text"><span>' + c[1] + '<span class="sn-checkbox__count">' + S.format.count(c[2]) + '</span></span></span></label>'; }).join("") + '</div></div>';
+    return h;
+  }
+  function build(el) {
+    var p = el.id, sheet = el.dataset.layout === "sheet";
+    el.innerHTML =
+      '<div class="sn-filter-rail__bar"><div class="sn-filter-rail__bar-row">' +
+        '<button type="button" class="sn-btn sn-filter-rail__trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="' + p + '-panel">' + S.icon("list-filter") + '<span data-trigger-label>Filters</span></button>' +
+        '<button type="button" class="sn-btn sn-btn--quiet sn-btn--sm" data-clear>Clear filters</button></div>' +
+        '<ul class="sn-filter-rail__summary" aria-label="Active filters"></ul></div>' +
+      '<div class="sn-filter-rail__scrim" data-close></div>' +
+      '<' + (sheet ? 'div role="dialog" aria-modal="true" aria-labelledby="' + p + '-title"' : 'aside aria-labelledby="' + p + '-title"') + ' class="sn-filter-rail__panel" id="' + p + '-panel">' +
+        '<div class="sn-filter-rail__head"><h2 class="sn-filter-rail__title" id="' + p + '-title">Filters</h2>' +
+          '<button type="button" class="sn-btn sn-btn--quiet sn-btn--sm" data-clear>Clear filters</button>' +
+          '<button type="button" class="sn-btn sn-btn--quiet sn-btn--icon sn-btn--sm sn-filter-rail__close" aria-label="Close filters" data-close>' + S.icon("x") + '</button></div>' +
+        '<div class="sn-filter-rail__body">' + body(p) + '</div>' +
+        '<div class="sn-filter-rail__foot"><button type="button" class="sn-btn sn-btn--primary" data-close data-show>Show tracks</button></div>' +
+      '</' + (sheet ? "div" : "aside") + '>';
+    if (sheet) el.querySelector(".sn-filter-rail__head [data-clear]").remove(); else el.querySelector(".sn-filter-rail__bar").remove();
+    sync(el);
+  }
+  function active(el) {
+    var a = [];
+    el.querySelectorAll('.sn-filter-chip[aria-pressed="true"]').forEach(function (c) { a.push({ label: c.dataset.label, el: c }); });
+    var sel = el.querySelector("select"); if (sel && sel.value) a.push({ label: "Heard on " + sel.value, el: sel });
+    el.querySelectorAll('input[type=checkbox]:checked').forEach(function (c) { a.push({ label: c.dataset.label, el: c }); });
+    var q = el.querySelector("input[type=search]"); if (q && q.value) a.push({ label: "“" + q.value + "”", el: q });
+    return a;
+  }
+  function sync(el) {
+    var a = active(el), n = a.length, shown = Math.max(0, Math.round(1284 * Math.pow(0.42, n)));
+    var t = el.querySelector("[data-trigger-label]"); if (t) t.textContent = n ? "Filters (" + n + ")" : "Filters";
+    el.querySelectorAll("[data-clear]").forEach(function (b) { b.hidden = n === 0; });
+    var show = el.querySelector("[data-show]"); if (show) show.textContent = "Show " + S.format.count(shown) + " tracks";
+    var sum = el.querySelector(".sn-filter-rail__summary");
+    if (sum) { sum.innerHTML = a.map(function (x, i) { return '<li><button type="button" class="sn-filter-rail__active" data-remove="' + i + '" aria-label="Remove filter: ' + S.esc(x.label) + '">' + S.esc(x.label) + S.icon("x") + '</button></li>'; }).join(""); sum._a = a; }
+    var out = el.id === "rail-desk" ? document.querySelector("[data-count-out]") : document.querySelector("[data-count-out-phone]");
+    if (out) out.textContent = S.format.count(shown) + " of 1,284 tracks";
+    var q = el.querySelector(".sn-search-field"); if (q) q.toggleAttribute("data-empty", !q.querySelector("input").value);
+  }
+  function clearAll(el) {
+    el.querySelectorAll(".sn-filter-chip").forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+    el.querySelectorAll("input[type=checkbox]").forEach(function (c) { c.checked = false; });
+    el.querySelectorAll("select").forEach(function (s) { s.value = ""; });
+    el.querySelectorAll("input[type=search]").forEach(function (s) { s.value = ""; });
+    sync(el);
+  }
+  var lastTrigger = null;
+  function openSheet(el) { el.setAttribute("data-open", ""); var tr = el.querySelector(".sn-filter-rail__trigger"); tr.setAttribute("aria-expanded", "true"); lastTrigger = tr; setTimeout(function () { el.querySelector(".sn-filter-rail__close").focus(); }, 20); }
+  function closeSheet(el) { el.removeAttribute("data-open"); var tr = el.querySelector(".sn-filter-rail__trigger"); tr.setAttribute("aria-expanded", "false"); tr.focus(); }
+
+  ["rail-desk", "rail-phone"].forEach(function (id) { build(document.getElementById(id)); });
+  document.getElementById("crate").innerHTML = [["Josh Baker – Lost In Muzik", 8, "9A", 126], ["Overmono – So U Kno", 9, "10A", 132], ["Peggy Gou – (It Goes Like) Nanana", 8, "8A", 130]].map(function (t) {
+    return '<div class="sn-row body-s" style="justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:var(--space-2)"><span>' + S.esc(t[0]) + '</span><span class="sn-row">' + S.html.energy(t[1]) + S.html.key(t[2]) + '</span></div>';
+  }).join("");
+
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest(".sn-filter-rail"); if (!el) return;
+    var c = e.target.closest(".sn-filter-chip"); if (c) { c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") !== "true"); sync(el); return; }
+    if (e.target.closest(".sn-filter-rail__trigger")) { openSheet(el); return; }
+    if (e.target.closest("[data-clear]")) { clearAll(el); return; }
+    if (e.target.closest("[data-close]")) { closeSheet(el); return; }
+    var r = e.target.closest("[data-remove]"); if (r) {
+      var x = r.parentNode.parentNode._a[+r.dataset.remove].el;
+      if (x.matches(".sn-filter-chip")) x.setAttribute("aria-pressed", "false"); else if (x.type === "checkbox") x.checked = false; else x.value = "";
+      sync(el); var first = el.querySelector(".sn-filter-rail__active") || el.querySelector(".sn-filter-rail__trigger"); first.focus(); return;
+    }
+    if (e.target.closest(".sn-search-field__clear")) { var q = el.querySelector("input[type=search]"); q.value = ""; sync(el); q.focus(); }
+  });
+  document.addEventListener("change", function (e) { var el = e.target.closest(".sn-filter-rail"); if (el) sync(el); });
+  document.addEventListener("input", function (e) { var el = e.target.closest(".sn-filter-rail"); if (el && e.target.type === "search") sync(el); });
+  document.addEventListener("keydown", function (e) {
+    var el = document.querySelector(".sn-filter-rail[data-open]"); if (!el) return;
+    if (e.key === "Escape") { e.preventDefault(); closeSheet(el); return; }
+    if (e.key === "Tab") {
+      var f = Array.prototype.filter.call(el.querySelectorAll(".sn-filter-rail__panel button, .sn-filter-rail__panel input, .sn-filter-rail__panel select"), function (x) { return !x.hidden && x.offsetParent !== null; });
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+</script>
+</body>
+</html>

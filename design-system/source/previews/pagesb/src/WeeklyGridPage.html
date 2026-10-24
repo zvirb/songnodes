@@ -1,0 +1,113 @@
+<!-- @dsCard group="Pages" width=1280 height=985 subtitle="Radio plays for the week of 19 Oct 2026: shows × Mon–Sun with plays and new tracks per cell, today marked, totals row and column, arrow-key cells with tooltip detail; one list per day on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>WeeklyGridPage — preview</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <a class="sn-skip" href="#main">Skip to content</a>
+  <div id="sh-head" data-drawer-inert></div>
+  <main class="sn-page-weekly" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+    <section class="sn-page-weekly__section" aria-label="Week">
+      <div id="weeknav"></div>
+      <div class="sn-figure-tile-row" role="list" aria-label="Week at a glance" id="tiles"></div>
+    </section>
+    <section class="sn-page-weekly__section" aria-labelledby="grid-h">
+      <div class="sn-section-heading">
+        <h2 class="sn-title title-s" id="grid-h"><span class="sn-lead">Plays:</span> show by day</h2>
+        <p class="sn-section-heading__caveat">Each cell: library-relevant plays, then how many were tracks new to the crate. Use the arrow keys to move between cells; details show on focus.</p>
+      </div>
+      <div class="sn-tablebox sn-page-weekly__gridbox">
+        <table class="sn-table sn-page-weekly__grid" role="grid" aria-labelledby="grid-h" id="grid"></table>
+      </div>
+      <ol class="sn-page-weekly__days" id="days" aria-label="Plays by day"></ol>
+      <p class="sn-sr" aria-live="polite" id="readout"></p>
+    </section>
+  </main>
+  <div id="sh-drawer"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+/*@COMMON@*/
+(function () {
+  snShell({ mod: "sources", title: "Radio plays", stampVerb: "Updated", stamp: "2026-10-24T21:24:00+11:00" });
+  $("ph").innerHTML = snPageHeader("ph", {
+    mod: "sources", here: "Radio plays", lead: "Radio plays", title: "Week of 19 Oct 2026",
+    desc: "Plays per show and day from PBS, 3RRR, triple j and Balance Selections, feeding the weekly run. Days and air times are read from each source’s schedule in the library data; the ones shown are examples.",
+    stampVerb: "Radio plays as of", stamp: "2026-10-24T21:24:00+11:00",
+    meta: snPill("info", "View only")
+  });
+  var DAYS = []; for (var i = 0; i < 7; i++) DAYS.push(new Date(Date.UTC(2026, 9, 19 + i, 1)));
+  var TODAY = 5; /* Sat 24 Oct */
+  var SHOWS = [
+    /* Real sources from the library's source list; days and air times are EXAMPLES: the page reads them from each source's schedule in the library data */
+    { name: "PBS Elektrosophy", id: "PBS_Elektrosophy", slot: "22:00–00:00", d: { 0: [9, 2], 3: [11, 3] } },
+    { name: "PBS Electric Sunset", id: "PBS_ElectricSunset", slot: "13:00–15:00", d: { 2: [8, 2], 5: [8, 3] } },
+    { name: "3RRR Feel The Floor", id: "RRR_FeelTheFloor", slot: "18:00–20:00", d: { 1: [6, 1], 5: [7, 2] } },
+    { name: "triple j Doof", id: "triplej_Doof", slot: "19:00–22:00", d: { 4: [12, 3], 5: [6, 2] }, onAir: 5 },
+    { name: "Balance Selections", id: "Balance_Selections", slot: "weekly mix", d: { 3: [5, 1] } }
+  ];
+  var LAST = SHOWS.length; /* totals row index */
+  function iso(d) { return d.toISOString().slice(0, 10); }
+  function dayName(i) { return F.day(iso(DAYS[i])); }
+  var colTot = DAYS.map(function (_, j) { var p = 0, n = 0, any = false; SHOWS.forEach(function (s) { if (s.d[j]) { p += s.d[j][0]; n += s.d[j][1]; any = true; } }); return any ? [p, n] : null; });
+  var rowTot = SHOWS.map(function (s) { var p = 0, n = 0; Object.keys(s.d).forEach(function (k) { p += s.d[k][0]; n += s.d[k][1]; }); return [p, n]; });
+  var week = rowTot.reduce(function (a, b) { return [a[0] + b[0], a[1] + b[1]]; }, [0, 0]);
+  $("tiles").innerHTML = [[week[0], "Plays this week", "Mon 19 – Sat 24 Oct so far"], [week[1], "New to library", "go to review on Sunday’s run"], [colTot[TODAY][0], "Plays today", SHOWS.filter(function (s) { return s.d[TODAY]; }).length + " shows so far"], ["8", "Episodes", "of 9 scheduled; 1 still to air"]].map(function (t) {
+    return '<div class="sn-figure-tile" role="listitem"><span class="sn-figure-tile__figure">' + t[0] + '</span><span class="sn-figure-tile__label">' + t[1] + '</span><span class="sn-figure-tile__delta">' + t[2] + "</span></div>";
+  }).join("");
+  function cell(v, j, tipHead) {
+    if (j > TODAY) return '<span class="sn-page-weekly__future">Not yet</span>';
+    if (!v) return '<span class="sn-none" aria-hidden="true">–</span><span class="sn-sr">No episode</span>';
+    return '<span class="sn-page-weekly__cell"><span class="sn-page-weekly__plays">' + v[0] + '</span><span class="sn-page-weekly__new">' + v[1] + " new</span></span>";
+  }
+  function tip(s, j) {
+    var v = s ? s.d[j] : colTot[j], who = s ? s.name : "All shows";
+    if (j > TODAY) return dayName(j) + " · " + who + ": not aired yet";
+    if (!v) return dayName(j) + " · " + who + ": no episode";
+    return dayName(j) + " · " + who + (s ? " " + s.slot : "") + ": " + v[0] + " plays, " + v[1] + " new to library" + (s && s.onAir === j ? " · on air until " + s.slot.split("–")[1] : "");
+  }
+  var h = '<thead><tr role="row"><th scope="col" role="columnheader">Show</th>' + DAYS.map(function (d, j) {
+    var lab = dayName(j).split(" ").slice(0, 2).join(" ");
+    return '<th scope="col" role="columnheader"' + (j === TODAY ? ' data-today aria-current="date"' : "") + ">" + (j <= TODAY ? '<a class="sn-link sn-m-sources" href="#/plays/' + iso(d) + '" tabindex="-1">' + lab + "</a>" : lab) + (j === TODAY ? '<span class="sn-page-weekly__today-word">Today</span>' : "") + "</th>";
+  }).join("") + '<th scope="col" role="columnheader">Week</th></tr></thead><tbody>';
+  SHOWS.forEach(function (s, i) {
+    h += '<tr role="row"><th scope="row" role="rowheader"><span class="sn-page-weekly__show">' + S.esc(s.name) + "<small>" + s.slot + "</small></span></th>" +
+      DAYS.map(function (_, j) { return '<td role="gridcell" tabindex="-1" data-r="' + i + '" data-c="' + j + '"' + (j === TODAY ? " data-today" : "") + ' data-tip="' + S.esc(tip(s, j)) + '" aria-label="' + S.esc(tip(s, j)) + '">' + cell(s.d[j], j) + "</td>"; }).join("") +
+      '<td role="gridcell" tabindex="-1" class="sn-page-weekly__sum" data-r="' + i + '" data-c="7" data-tip="' + S.esc(s.name + " this week: " + rowTot[i][0] + " plays, " + rowTot[i][1] + " new") + '" aria-label="' + S.esc(s.name + " this week: " + rowTot[i][0] + " plays, " + rowTot[i][1] + " new") + '">' + cell(rowTot[i], 0) + "</td></tr>";
+  });
+  h += '</tbody><tfoot><tr role="row"><th scope="row" role="rowheader">All shows</th>' + DAYS.map(function (_, j) { return '<td role="gridcell" tabindex="-1" data-r="' + LAST + '" data-c="' + j + '"' + (j === TODAY ? " data-today" : "") + ' data-tip="' + S.esc(tip(null, j)) + '" aria-label="' + S.esc(tip(null, j)) + '">' + cell(colTot[j], j) + "</td>"; }).join("") +
+    '<td role="gridcell" tabindex="-1" data-r="' + LAST + '" data-c="7" data-tip="Week of 19 Oct: ' + week[0] + " plays, " + week[1] + ' new" aria-label="Week of 19 Oct: ' + week[0] + " plays, " + week[1] + ' new">' + cell(week, 0) + "</td></tr></tfoot>";
+  $("grid").innerHTML = h;
+  /* roving focus: one tab stop, arrows / Home / End; the tooltip repeats the cell's label */
+  var grid = $("grid"), cur = [0, TODAY];
+  function at(r, c) { return grid.querySelector('[data-r="' + r + '"][data-c="' + c + '"]'); }
+  at(cur[0], cur[1]).tabIndex = 0;
+  var tips = snTips($("root"));
+  grid.addEventListener("keydown", function (e) {
+    var r = cur[0], c = cur[1];
+    if (e.key === "ArrowRight") c = Math.min(7, c + 1); else if (e.key === "ArrowLeft") c = Math.max(0, c - 1);
+    else if (e.key === "ArrowDown") r = Math.min(LAST, r + 1); else if (e.key === "ArrowUp") r = Math.max(0, r - 1);
+    else if (e.key === "Home") c = 0; else if (e.key === "End") c = 7;
+    else if (e.key === "Enter" && c <= TODAY) { snSay("Opens radio plays for " + dayName(c)); return; } else return;
+    e.preventDefault(); at(cur[0], cur[1]).tabIndex = -1; cur = [r, c]; var n = at(r, c); n.tabIndex = 0; n.focus(); tips.now(n);
+  });
+  grid.addEventListener("click", function (e) { var td = e.target.closest("td[role=gridcell]"); if (!td) return; at(cur[0], cur[1]).tabIndex = -1; cur = [+td.dataset.r, +td.dataset.c]; td.tabIndex = 0; td.focus(); });
+  /* phone: one list per day */
+  $("days").innerHTML = DAYS.map(function (d, j) {
+    var rows = SHOWS.filter(function (s) { return s.d[j]; });
+    return '<li class="sn-card sn-card--list sn-page-weekly__day"' + (j === TODAY ? " data-today" : "") + '><div class="sn-card__head sn-page-weekly__day-head"><h3 class="sn-title title-s">' + (j <= TODAY ? '<a class="sn-link sn-m-sources" href="#/plays/' + iso(d) + '">' + F.day(iso(d)) + "</a>" : F.day(iso(d))) + (j === TODAY ? '<span class="sn-page-weekly__today-word">Today</span>' : "") + "</h3>" +
+      '<span class="body-s sn-muted">' + (j > TODAY ? "Not aired yet" : colTot[j] ? colTot[j][0] + " plays · " + colTot[j][1] + " new" : "No episodes") + "</span></div>" +
+      (rows.length && j <= TODAY ? '<ul class="sn-card__list">' + rows.map(function (s) { return "<li><span>" + S.esc(s.name) + ' <span class="sn-dim sn-mono">' + s.slot + '</span></span><span class="sn-mono">' + s.d[j][0] + " · " + s.d[j][1] + " new</span></li>"; }).join("") + "</ul>" : "") + "</li>";
+  }).join("");
+  /* PeriodNav (week, no scale) */
+  $("weeknav").innerHTML = '<div class="sn-period-nav" role="group" aria-label="Week"><div class="sn-period-nav__bar"><div class="sn-period-nav__steps">' +
+    '<button class="sn-btn sn-btn--icon sn-btn--sm" type="button" aria-keyshortcuts="[" aria-label="Previous week" title="Previous week ( [ )" data-step="-1">' + I("chevron-left") + "</button>" +
+    '<button class="sn-btn sn-btn--icon sn-btn--sm" type="button" aria-keyshortcuts="]" aria-label="Next week" title="No plays after this week" aria-disabled="true" data-step="1">' + I("chevron-right") + "</button></div>" +
+    '<button class="sn-btn sn-btn--sm" type="button" aria-disabled="true" title="Already showing this week">This week</button>' +
+    '<h2 class="sn-period-nav__label" aria-live="polite"><span class="sn-lead">Week of</span> 19 Oct 2026</h2><span class="sn-period-nav__hint"><kbd>[</kbd><kbd>]</kbd> previous / next</span></div></div>';
+  $("weeknav").addEventListener("click", function (e) { var b = e.target.closest('[data-step="-1"]'); if (b) snSay("Opens the week of 12 Oct 2026"); });
+})();
+</script>
+</body>
+</html>

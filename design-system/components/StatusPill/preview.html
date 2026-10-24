@@ -1,0 +1,38 @@
+<!-- @dsCard group="Status" height=795 subtitle="Seven statuses with glyph and word; outline variant for dense tables; backend enum mapping via SongNodes.status()" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>StatusPill — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Vocabulary</div>
+  <div class="sn-preview__row" id="vocab"></div>
+  <div class="sn-preview__label">Outline, for dense tables · large</div>
+  <div class="sn-preview__row" id="outline"></div>
+  <div class="sn-preview__label">Backend enums → SongNodes.status()</div>
+  <div class="sn-status-pill-map" id="map"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  function pill(status, label, cls) { return '<span class="sn-pill sn-status-pill' + (cls ? " " + cls : "") + '" data-status="' + status + '">' + S.esc(label) + '</span>'; }
+  var vocab = [["ok", "Healthy"], ["fair", "Medium confidence"], ["warn", "Degraded"], ["bad", "Failed"], ["info", "Note"], ["running", "Running"], ["idle", "Queued"]];
+  document.getElementById("vocab").innerHTML = vocab.map(function (v) { return pill(v[0], v[1]); }).join("");
+  document.getElementById("outline").innerHTML = vocab.map(function (v) { return pill(v[0], v[1], "sn-pill--outline"); }).join("") +
+    pill("ok", "Saved", "sn-status-pill--lg") + pill("running", "Saving…", "sn-status-pill--lg");
+  var groups = [
+    ["TaskStatus (scraper jobs)", ["pending", "running", "completed", "failed", "cancelled", "timeout"]],
+    ["ScraperStatus", ["idle", "running", "error", "disabled", "circuit_open"]],
+    ["ProxyStatus", ["healthy", "degraded", "failed", "untested"]],
+    ["EnrichmentStatus", ["pending", "in_progress", "completed", "failed", "partial"]],
+    ["CircuitState", ["closed", "half_open", "open"]],
+    ["Health strings", ["healthy", "degraded", "unhealthy", "not_configured"]],
+    ["Save states", ["saving", "saved", "error"]]
+  ];
+  document.getElementById("map").innerHTML = groups.map(function (g) {
+    return '<section class="sn-status-pill-map__group"><h3>' + S.esc(g[0]) + '</h3>' + g[1].map(function (raw) {
+      var s = S.status(raw);
+      return '<div class="sn-status-pill-map__row"><code class="sn-status-pill-map__raw">' + raw + '</code>' + pill(s.status, s.label, "sn-pill--outline") + '</div>';
+    }).join("") + '</section>';
+  }).join("");
+</script>
+</body>
+</html>

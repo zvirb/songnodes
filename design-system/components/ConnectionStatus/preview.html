@@ -1,0 +1,31 @@
+<!-- @dsCard group="Status" height=315 subtitle="Compact header form: live, reconnecting (attempt 2), offline, source unreachable; banner form for offline and reconnecting" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ConnectionStatus — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Compact (header, right side)</div>
+  <div class="sn-preview__row" style="gap:20px">
+    <span class="sn-connection-status" data-state="live" role="status" title="Live updates connected since 21:02">Live</span>
+    <span class="sn-connection-status" data-state="reconnecting" role="status">Reconnecting <span class="sn-connection-status__sub">attempt 2</span></span>
+    <span class="sn-connection-status" data-state="offline" role="status">Offline <span class="sn-connection-status__sub">data from 21:30</span></span>
+    <span class="sn-connection-status" data-state="partial" role="status">1001tracklists unreachable</span>
+  </div>
+  <div class="sn-preview__label">Banner (top of the page, below the header)</div>
+  <div class="sn-connection-status-banner" data-state="offline" role="status">
+    <span class="sn-connection-status-banner__msg"><b>Offline.</b> Showing data from 24 Oct 2026, 21:30 AEDT. Changes you make are kept on this device and sent when the connection is back.</span>
+    <button class="sn-btn sn-btn--sm" type="button" id="retry">Retry now</button>
+  </div>
+  <div class="sn-connection-status-banner" data-state="reconnecting" role="status" id="rec">
+    <span class="sn-connection-status-banner__msg"><b>Reconnecting live updates.</b> <span id="att">Attempt 2 of 5</span>, next try in 8 s. The graph keeps showing the last data.</span>
+  </div>
+  <div class="sn-connection-status-banner" data-state="partial" role="status">
+    <span class="sn-connection-status-banner__msg"><b>1001tracklists is unreachable.</b> Scraping paused at 21:12; other sources carry on. Pipeline retries every 15 min.</span>
+    <a class="sn-link sn-m-pipeline" href="#pipeline">Open Pipeline</a>
+  </div>
+</div>
+<script>
+  document.getElementById("retry").addEventListener("click", function () { this.setAttribute("aria-busy", "true"); this.innerHTML = '<span class="sn-spinner"></span>Retrying…'; });
+</script>
+</body>
+</html>

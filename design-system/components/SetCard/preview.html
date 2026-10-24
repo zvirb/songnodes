@@ -1,0 +1,30 @@
+<!-- @dsCard group="Music" height=371 subtitle="Saved set cards in Set builder tonal colour: shape, length, track count, peaks, mini energy wave, Send to TIDAL state, updated stamp, open and duplicate" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SetCard — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-card-grid sn-m-sets" id="grid" style="--sn-card-min:260px"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var NOW = "2026-10-23T22:00:00Z";
+  var sets = [
+    { name: "Peak time Friday", shape: "Peak time three waves", min: 92, n: 18, peaks: 3, wave: [5, 6, 7, 8, 9, 7, 6, 7, 8, 9, 10, 7, 6, 7, 8, 9, 9, 7], tidal: ["ok", "Sent to TIDAL 20 Oct"], at: "2026-10-22T09:15:00Z" },
+    { name: "Sunday warm-up at Section 8", shape: "Warm-up opener", min: 60, n: 12, peaks: 0, wave: [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7], tidal: ["idle", "Queued for Sunday's run"], at: "2026-10-23T20:40:00Z" },
+    { name: "Garage journey", shape: "Journey two peaks", min: 120, n: 24, peaks: 2, wave: [4, 5, 6, 7, 7, 8, 9, 6, 5, 6, 7, 8, 8, 9, 10, 10, 7, 6, 5, 6, 6, 5, 4, 4], tidal: ["bad", "TIDAL send failed: sign-in expired"], at: "2026-10-18T05:00:00Z" }
+  ];
+  document.getElementById("grid").innerHTML = sets.map(function (s, i) {
+    var wave = s.wave.map(function (e) { return '<i data-e="' + e + '" style="height:' + e * 10 + '%"></i>'; }).join("");
+    return '<article class="sn-card sn-card--tonal sn-set-card" aria-labelledby="set' + i + '">' +
+      '<div class="sn-card__head"><span class="sn-tag sn-category-tag">' + S.esc(s.shape) + "</span></div>" +
+      '<h3 class="sn-set-card__name" id="set' + i + '">' + S.esc(s.name) + "</h3>" +
+      '<div class="sn-set-card__stats"><span>' + s.min + " min</span><span>" + s.n + " tracks</span><span>" + (s.peaks ? s.peaks + (s.peaks === 1 ? " peak" : " peaks") : "no peak") + "</span></div>" +
+      '<div class="sn-set-card__wave" role="img" aria-label="Energy wave: ' + s.wave.join(", ") + '">' + wave + "</div>" +
+      '<div class="sn-set-card__meta"><span class="sn-pill sn-status-pill" data-status="' + s.tidal[0] + '">' + S.esc(s.tidal[1]) + "</span></div>" +
+      '<div class="sn-set-card__meta"><time datetime="' + s.at + '" title="' + S.format.stamp(s.at) + '">Updated ' + S.format.relative(s.at, NOW) + "</time></div>" +
+      '<div class="sn-card__foot"><a class="sn-link" href="#set-' + i + '" aria-label="Open ' + S.esc(s.name) + '">Open set</a><button class="sn-btn sn-btn--sm" type="button" aria-label="Duplicate ' + S.esc(s.name) + '">' + S.icon("copy") + "Duplicate</button></div></article>";
+  }).join("");
+</script>
+</body>
+</html>

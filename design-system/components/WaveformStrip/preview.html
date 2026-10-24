@@ -1,0 +1,228 @@
+<!-- @dsCard group="Music" height=392 subtitle="Waveform envelope, intro and outro, breakdowns, vocal segments, cue points, energy curve, playhead; beat grid when zoomed; arrow keys move the playhead" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>WaveformStrip — preview</title></head>
+<body>
+<div class="sn-preview sn-m-pipeline" id="root">
+  <section class="sn-card">
+    <figure class="sn-chart-frame sn-waveform-strip" aria-labelledby="wTitle">
+      <div class="sn-chart-frame__head">
+        <div class="sn-chart-frame__titles">
+          <h3 class="sn-title title-s" id="wTitle"><span class="sn-lead">Audio analysis:</span> Bicep – Glue</h3>
+          <p class="sn-chart-frame__sub"><span class="sn-mono">4:29 · 130 BPM · </span><span class="sn-key" data-key="8A">8A</span> <span class="sn-key__name">A minor</span> · analysed 24 Oct 2026, 06:00 AEDT</p>
+        </div>
+        <div class="sn-chart-frame__actions">
+          <button class="sn-btn sn-btn--sm sn-btn--icon" type="button" id="zout" aria-label="Zoom out of the waveform"></button>
+          <span class="sn-mono body-s sn-muted" id="zval" aria-live="polite">1×</span>
+          <button class="sn-btn sn-btn--sm sn-btn--icon" type="button" id="zin" aria-label="Zoom in on the waveform"></button>
+        </div>
+      </div>
+      <ul class="sn-chart-frame__legend" aria-label="Legend" id="legend"></ul>
+      <div class="sn-waveform-strip__scroll" id="scroll"></div>
+      <p class="sn-waveform-strip__readout" id="read" aria-hidden="true"></p>
+    </figure>
+  </section>
+</div>
+<script>
+/* chart kit (inlined into each chart preview by build.py; React apps use d3-scale/recharts instead) */
+var K = (function () {
+  var NS = "http://www.w3.org/2000/svg", n = 0;
+  function el(tag, a, parent) {
+    var e = document.createElementNS(NS, tag);
+    if (a) for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(parent, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), parent); t.textContent = s; return t; }
+  function h(tag, cls, s) { var e = document.createElement(tag); if (cls) e.className = cls; if (s != null) e.textContent = s; return e; }
+  function uid(p) { n += 1; return (p || "k") + n; }
+  /** one linear scale per axis: domain -> range, with nice ticks */
+  function linear(d0, d1, r0, r1) {
+    var f = function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); };
+    f.invert = function (px) { return d0 + (px - r0) / (r1 - r0) * (d1 - d0); };
+    f.ticks = function (step) { var o = []; for (var v = Math.ceil(d0 / step) * step; v <= d1 + 1e-9; v += step) o.push(+v.toFixed(6)); return o; };
+    f.domain = [d0, d1]; f.range = [r0, r1];
+    return f;
+  }
+  /** band scale for categories: index -> left edge of the mark, with a capped mark width */
+  function band(count, r0, r1, pad, cap) {
+    var step = (r1 - r0) / count, bw = Math.min(step * (1 - pad), cap || Infinity);
+    var f = function (i) { return r0 + i * step + (step - bw) / 2; };
+    f.mid = function (i) { return r0 + i * step + step / 2; };
+    f.index = function (px) { return Math.max(0, Math.min(count - 1, Math.floor((px - r0) / step))); };
+    f.bw = bw; f.step = step;
+    return f;
+  }
+  /** column with a 4px rounded data end and a square baseline */
+  function barPath(x, y, w, hgt, r) {
+    if (hgt <= 0) return "";
+    r = Math.min(r == null ? 4 : r, w / 2, hgt);
+    return "M" + x + "," + (y + hgt) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + hgt) + "Z";
+  }
+  /** diagonal hatch pattern for simulated / preview data (stroke = --sim via class) */
+  function hatch(svg) {
+    var id = uid("hatch"), defs = svg.querySelector("defs") || el("defs", null, svg);
+    var p = el("pattern", { id: id, patternUnits: "userSpaceOnUse", width: 6, height: 6, patternTransform: "rotate(45)" }, defs);
+    el("line", { x1: 0, y1: 0, x2: 0, y2: 6, "class": "sn-chart-frame__hatch" }, p);
+    return "url(#" + id + ")";
+  }
+  function rem() { return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; }
+  /** one tooltip per chart; rows = [{key:"line"|"rect"|"dot"|"", c:"var(--chart-1)", value, label, dash}] */
+  function tip(host) {
+    var d = h("div", "sn-chart-frame__tip"); d.setAttribute("role", "presentation"); d.hidden = true; host.appendChild(d);
+    return {
+      show: function (x, y, title, rows) {
+        d.textContent = "";
+        if (title) d.appendChild(h("div", "sn-chart-frame__tip-title", title));
+        (rows || []).forEach(function (r) {
+          var row = h("div", "sn-chart-frame__tip-row");
+          var k = h("span", "sn-chart-frame__tip-key" + (r.key ? " sn-chart-frame__tip-key--" + r.key : ""));
+          if (r.c) k.style.setProperty("--c", r.c);
+          if (r.dash) k.classList.add("sn-chart-frame__tip-key--dash");
+          row.appendChild(k);
+          row.appendChild(h("span", "sn-chart-frame__tip-value", r.value));
+          row.appendChild(h("span", "sn-chart-frame__tip-label", r.label));
+          d.appendChild(row);
+        });
+        d.hidden = false;
+        var hw = host.clientWidth, tw = d.offsetWidth, th = d.offsetHeight;
+        var left = x + 14; if (left + tw > hw - 4) left = Math.max(4, x - tw - 14);
+        var top = Math.max(4, y - th - 10);
+        d.style.left = left + "px"; d.style.top = top + "px";
+      },
+      hide: function () { d.hidden = true; }
+    };
+  }
+  /** one tab stop per plot: arrows / Home / End move the active index; pointer maps x -> index */
+  function nav(target, count, pxToIndex, onIndex, opts) {
+    opts = opts || {}; var cur = -1;
+    function set(i) { if (i == null || i < 0) { cur = -1; onIndex(-1); return; } cur = Math.max(0, Math.min(count - 1, i)); onIndex(cur); }
+    target.addEventListener("keydown", function (e) {
+      var k = e.key, i = cur < 0 ? (opts.start || 0) : cur;
+      if (k === "ArrowRight" || k === "ArrowUp") i = cur < 0 ? i : i + 1;
+      else if (k === "ArrowLeft" || k === "ArrowDown") i = cur < 0 ? i : i - 1;
+      else if (k === "Home") i = 0; else if (k === "End") i = count - 1;
+      else if (k === "Escape") { set(-1); return; } else return;
+      e.preventDefault(); set(i);
+    });
+    target.addEventListener("focus", function () { if (cur < 0) set(opts.start || 0); });
+    target.addEventListener("blur", function () { set(-1); });
+    target.addEventListener("pointermove", function (e) { var b = target.getBoundingClientRect(); set(pxToIndex(e.clientX - b.left, e.clientY - b.top)); });
+    target.addEventListener("pointerleave", function () { if (document.activeElement !== target) set(-1); });
+    return { set: set, get: function () { return cur; } };
+  }
+  /** re-render on container resize (charts are drawn at 1 user unit = 1 CSS px) */
+  function fit(host, draw) {
+    var w = 0;
+    function go() { var nw = host.clientWidth; if (nw && Math.abs(nw - w) > 1) { w = nw; draw(nw); } }
+    if (window.ResizeObserver) new ResizeObserver(go).observe(host);
+    go();
+  }
+  /** "View as table" toggle: swaps plot and table, keeps focus on the button */
+  function tableToggle(btn, plot, table) {
+    var S = window.SongNodes;
+    function paint(on) { btn.innerHTML = S.icon(on ? "chart-line" : "table-2") + (on ? "View as chart" : "View as table"); }
+    paint(false);
+    btn.addEventListener("click", function () { var on = table.hidden; table.hidden = !on; plot.hidden = on; paint(on); });
+  }
+  return { el: el, text: text, h: h, uid: uid, linear: linear, band: band, barPath: barPath, hatch: hatch, rem: rem, tip: tip, nav: nav, fit: fit, tableToggle: tableToggle };
+})();
+
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var DUR = 269, BPM = 130, BEAT = 60 / BPM, BAR = BEAT * 4;
+  var regions = [{ a: 0, b: 29.5, t: "Intro", k: "region" }, { a: 88, b: 118, t: "Breakdown", k: "breakdown" }, { a: 180, b: 195, t: "Breakdown", k: "breakdown" }, { a: 238, b: 269, t: "Outro", k: "region" }];
+  var vocals = [[45, 80], [130, 170]];
+  var cues = [[0, "A", "Mix in"], [29.5, "B", "Drop"], [118, "C", "Second drop"], [238, "D", "Mix out"]];
+  var energy = [[0, 3], [16, 4], [29.5, 7], [60, 8], [88, 5], [104, 4], [118, 9], [150, 9], [180, 6], [195, 9], [220, 8], [238, 5], [260, 3], [269, 2]];
+  var seed = 3; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var amp = []; for (var s = 0; s < 1076; s++) { var t = s / 4, base = 0.85; regions.forEach(function (r) { if (t >= r.a && t < r.b) base = r.k === "breakdown" ? 0.35 : (r.t === "Intro" ? 0.5 + 0.3 * t / 29.5 : 0.55 - 0.35 * (t - 238) / 31); }); amp.push(Math.max(0.06, base * (0.55 + 0.45 * rnd()) * (Math.floor(t / BEAT) % 2 ? 0.85 : 1))); }
+  var zoom = 1, play = 102;
+  var host = document.getElementById("scroll"), read = document.getElementById("read");
+  function sectionAt(t) { var r = regions.filter(function (r) { return t >= r.a && t < r.b; })[0]; return r ? r.t : "Main"; }
+  function energyAt(t) { for (var i = 1; i < energy.length; i++) if (t <= energy[i][0]) { var a = energy[i - 1], b = energy[i]; return Math.round(a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0])); } return 2; }
+  function vocalAt(t) { return vocals.some(function (v) { return t >= v[0] && t < v[1]; }); }
+  function draw() {
+    var rem = K.rem(), Wv = host.clientWidth, W = Math.round(Wv * zoom), laneT = rem * 1.5, waveH = 110, laneV = 18, axisH = rem * 1.5;
+    var H = Math.round(laneT + waveH + laneV + 6 + axisH), top = laneT, mid = top + waveH / 2, vy = top + waveH + 4;
+    host.textContent = "";
+    var x = K.linear(0, DUR, 6, W - 6);
+    var svg = K.el("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, tabindex: 0, role: "slider", "aria-label": "Playhead position", "aria-valuemin": 0, "aria-valuemax": DUR, "aria-describedby": "wHelp" }, host);
+    K.el("desc", { id: "wHelp" }, svg).textContent = "Left and right arrows move one bar, Page up and Page down move eight bars, Home and End jump to the start and end.";
+    var defs = K.el("defs", null, svg), pid = K.uid("vox"), pat = K.el("pattern", { id: pid, patternUnits: "userSpaceOnUse", width: 5, height: 5 }, defs);
+    K.el("circle", { cx: 2.5, cy: 2.5, r: 1, "class": "sn-waveform-strip__vocal-dot" }, pat);
+    // regions behind the wave, labelled in the top lane
+    regions.forEach(function (r) {
+      K.el("rect", { x: x(r.a), y: top, width: x(r.b) - x(r.a), height: waveH, "class": r.k === "breakdown" ? "sn-waveform-strip__breakdown" : "sn-waveform-strip__region" }, svg);
+      if (x(r.b) - x(r.a) > r.t.length * 6.5 + 8) K.text(svg, x(r.a) + 4, top + 13, r.t, { "class": "sn-waveform-strip__region-label" });
+    });
+    // beat grid at zoom
+    var beatPx = x(BEAT) - x(0), barPx = beatPx * 4;
+    if (barPx >= 10) for (var b = 0, k = 0; b <= DUR; b += BEAT, k++) {
+      if (k % 4 && beatPx < 6) continue;
+      var bx = Math.round(x(b)) + 0.5; K.el("line", { x1: bx, x2: bx, y1: top, y2: top + waveH, "class": k % 4 ? "sn-waveform-strip__beat" : "sn-waveform-strip__bar-line" }, svg);
+    }
+    // waveform envelope (mirrored), played part one step stronger
+    var step = Math.max(1, Math.round(W / 540)), dP = "", dU = "";
+    for (var px = 6; px < W - 6; px += step + 1) {
+      var t = x.invert(px), a = amp[Math.min(amp.length - 1, Math.floor(t * 4))] * (waveH / 2 - 4), seg = "M" + px + "," + (mid - a) + "h" + step + "v" + 2 * a + "h" + -step + "z";
+      if (t < play) dP += seg; else dU += seg;
+    }
+    K.el("path", { d: dP, "class": "sn-waveform-strip__wave sn-waveform-strip__wave--played" }, svg);
+    K.el("path", { d: dU, "class": "sn-waveform-strip__wave" }, svg);
+    // energy curve overlay (0–10 over the wave height), direct label
+    var ey = K.linear(0, 10, top + waveH - 4, top + 18);
+    K.el("polyline", { points: energy.map(function (p) { return x(p[0]) + "," + ey(p[1]); }).join(" "), "class": "sn-waveform-strip__energy" }, svg);
+    // vocal lane: dotted pattern + label
+    vocals.forEach(function (v) {
+      K.el("rect", { x: x(v[0]), y: vy, width: x(v[1]) - x(v[0]), height: laneV, rx: 3, "class": "sn-waveform-strip__vocal" }, svg);
+      K.el("rect", { x: x(v[0]), y: vy, width: x(v[1]) - x(v[0]), height: laneV, rx: 3, style: "fill: url(#" + pid + ")" }, svg);
+      var lx = x(v[0]) + 5, bg = K.el("rect", { y: vy + 2, height: laneV - 4, rx: 2, "class": "sn-chart-frame__ref-label-bg" }, svg);
+      var lt = K.text(svg, lx, vy + laneV / 2 + 4, "Vocal", { "class": "sn-waveform-strip__region-label" });
+      var bb = lt.getBBox(); bg.setAttribute("x", bb.x - 3); bg.setAttribute("width", bb.width + 6);
+    });
+    // cue points: flag + dashed line
+    cues.forEach(function (c) {
+      var cx = x(c[0]);
+      K.el("line", { x1: cx, x2: cx, y1: top, y2: top + waveH, "class": "sn-waveform-strip__cue-line" }, svg);
+      K.el("path", { d: "M" + cx + "," + (top - 1) + "v-13h12l-3,6.5l3,6.5z", "class": "sn-waveform-strip__cue" }, svg);
+      K.text(svg, cx + 5, top - 4, c[1], { "class": "sn-waveform-strip__cue-text" });
+    });
+    // time axis m:ss
+    var every = zoom >= 4 ? 10 : zoom >= 2 ? 15 : 30;
+    for (var tt = 0; tt <= DUR; tt += every) K.text(svg, x(tt), H - 4, F.duration(tt), { "class": "sn-chart-frame__tick", "text-anchor": tt === 0 ? "start" : "middle" });
+    // playhead
+    var ph = x(play);
+    K.el("line", { x1: ph, x2: ph, y1: 2, y2: top + waveH + laneV + 4, "class": "sn-waveform-strip__playhead" }, svg);
+    var tw = rem * 2.8; K.el("rect", { x: ph - tw / 2, y: 2, width: tw, height: rem * 1.15, rx: 3, "class": "sn-chart-frame__now-tag" }, svg);
+    K.text(svg, ph, 2 + rem * 0.85, F.duration(play), { "class": "sn-chart-frame__now-text", "text-anchor": "middle" });
+    var txt = F.duration(play) + ", bar " + (Math.floor(play / BAR) + 1) + ", " + sectionAt(play) + (vocalAt(play) ? ", vocal" : "") + ", energy " + energyAt(play);
+    svg.setAttribute("aria-valuenow", Math.round(play)); svg.setAttribute("aria-valuetext", txt);
+    read.innerHTML = "<b>" + F.duration(play) + "</b> · bar " + (Math.floor(play / BAR) + 1) + " · " + sectionAt(play) + (vocalAt(play) ? " · vocal" : "") + " · energy <b>" + energyAt(play) + "</b>";
+    svg.addEventListener("keydown", function (e) {
+      var d = { ArrowRight: BAR, ArrowLeft: -BAR, PageDown: 8 * BAR, PageUp: -8 * BAR }[e.key];
+      if (e.key === "Home") play = 0; else if (e.key === "End") play = DUR; else if (d) play = Math.max(0, Math.min(DUR, play + d)); else return;
+      e.preventDefault(); draw(); host.querySelector("svg").focus(); keepInView();
+    });
+    svg.addEventListener("click", function (e) { var r = svg.getBoundingClientRect(); play = Math.max(0, Math.min(DUR, x.invert(e.clientX - r.left))); draw(); host.querySelector("svg").focus(); });
+    var cursorX = x;
+    keepInView = function () { var p = cursorX(play); if (p < host.scrollLeft + 40 || p > host.scrollLeft + host.clientWidth - 40) host.scrollLeft = p - host.clientWidth / 2; };
+  }
+  var keepInView = function () {};
+  function setZoom(z) { zoom = z; document.getElementById("zval").textContent = z + "×"; document.getElementById("zout").disabled = z <= 1; document.getElementById("zin").disabled = z >= 8; draw(); keepInView(); }
+  document.getElementById("zin").innerHTML = S.icon("zoom-in"); document.getElementById("zout").innerHTML = S.icon("zoom-out");
+  document.getElementById("zin").onclick = function () { setZoom(Math.min(8, zoom * 2)); };
+  document.getElementById("zout").onclick = function () { setZoom(Math.max(1, zoom / 2)); };
+  document.getElementById("legend").innerHTML =
+    '<li><span class="sn-chart-frame__key sn-chart-frame__key--rect" style="--c: var(--surface-3)"></span>Intro, outro</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="12" height="12" aria-hidden="true"><rect x="0.5" y="0.5" width="11" height="11" class="sn-waveform-strip__breakdown"/></svg>Breakdown</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="16" height="12" aria-hidden="true"><defs><pattern id="lgV" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" class="sn-waveform-strip__vocal-dot"/></pattern></defs><rect x="0.5" y="0.5" width="15" height="11" rx="2" class="sn-waveform-strip__vocal"/><rect x="0.5" y="0.5" width="15" height="11" rx="2" style="fill: url(#lgV)"/></svg>Vocal</li>' +
+    '<li><span class="sn-chart-frame__key" style="--c: var(--chart-2)"></span>Energy</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="12" height="14" aria-hidden="true"><path d="M1,14v-13h10l-3,6.5l3,6.5z" class="sn-waveform-strip__cue"/></svg>Cue</li>' +
+    '<li><span class="sn-chart-frame__key" style="--c: var(--now); width: 3px; height: 14px"></span>Playhead</li>';
+  K.fit(host, function () { draw(); });
+  setZoom(1);
+})();
+</script>
+</body>
+</html>

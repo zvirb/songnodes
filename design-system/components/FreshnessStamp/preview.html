@@ -1,0 +1,39 @@
+<!-- @dsCard group="Status" height=309 subtitle="Fresh (absolute and relative), stale weekly data after 8 days, refreshing with old data kept, never loaded" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>FreshnessStamp — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Fresh</div>
+  <div id="fresh"></div>
+  <div class="sn-preview__label">Stale (weekly data, warns after 8 days)</div>
+  <div id="stale"></div>
+  <div class="sn-preview__label">Refreshing (old stamp stays until the new data lands)</div>
+  <div class="sn-preview__row"><span id="busy"></span><button class="sn-btn sn-btn--sm" type="button" id="go">Refresh now</button></div>
+  <div class="sn-preview__label">Short form (header, card footer) · never loaded</div>
+  <div class="sn-preview__row" id="short" style="gap:24px"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var NOW = "2026-10-23T22:00:00Z"; /* fixed "now" for the preview: Sat 24 Oct 2026, 09:00 AEDT */
+  /* Preview helper mirroring <FreshnessStamp label at staleAfterDays refreshing />. */
+  function stamp(o) {
+    var age = (new Date(NOW) - new Date(o.at)) / 86400000, stale = age > (o.staleAfterDays || 8);
+    var t = '<time datetime="' + o.at + '" title="' + S.format.relative(o.at, NOW) + '">' + S.format.stamp(o.at) + "</time>";
+    var h = '<span class="sn-freshness-stamp"' + (o.refreshing ? " data-refreshing" : "") + ' role="status">' + S.icon("clock", { size: 16 }) + "<span>" + S.esc(o.label) + " " + t + "</span>";
+    h += o.refreshing ? '<span class="sn-freshness-stamp__busy"><span class="sn-spinner" aria-hidden="true"></span>Updating…</span>'
+      : stale ? '<span class="sn-freshness-stamp__stale">' + Math.floor(age) + " days old, refresh due</span>"
+      : '<span class="sn-freshness-stamp__rel">(' + S.format.relative(o.at, NOW) + ")</span>";
+    return h + "</span>";
+  }
+  document.getElementById("fresh").innerHTML = stamp({ label: "Library as of", at: "2026-10-23T19:00:00Z" });
+  document.getElementById("stale").innerHTML = stamp({ label: "ARIA Club Chart as of", at: "2026-10-12T22:00:00Z", staleAfterDays: 8 });
+  var busy = document.getElementById("busy");
+  busy.innerHTML = stamp({ label: "Radio plays as of", at: "2026-10-23T08:30:00Z", refreshing: true });
+  document.getElementById("go").addEventListener("click", function () { busy.innerHTML = stamp({ label: "Radio plays as of", at: "2026-10-23T08:30:00Z", refreshing: true }); });
+  document.getElementById("short").innerHTML =
+    '<span class="sn-freshness-stamp"><span>Updated <time datetime="2026-10-23T21:30:00Z" title="' + S.format.stamp("2026-10-23T21:30:00Z") + '">' + S.format.relative("2026-10-23T21:30:00Z", NOW) + "</time></span></span>" +
+    '<span class="sn-freshness-stamp">' + S.icon("clock", { size: 16 }) + '<span>Beatport data</span><span class="sn-none">–</span><span class="sn-freshness-stamp__rel">not loaded yet</span></span>';
+</script>
+</body>
+</html>

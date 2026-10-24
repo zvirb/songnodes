@@ -1,0 +1,164 @@
+<!-- @dsCard group="Navigation" height=1120 subtitle="Quick search before typing (recent tracks, artists, sets, pages, actions) and a no-match state; type a name, a key like 8A or a BPM like 124; arrows, Enter, Esc; Ctrl K or / reopens" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CommandPalette — preview</title>
+<style>
+  .stage { position: relative; border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; background: var(--bg); }
+  .stage--a { height: 720px; }
+  .stage--b { height: 290px; }
+  .faux { padding: 16px; display: flex; gap: 12px; align-items: center; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Before typing · try “8a”, “124”, “peak” or “tidal”</div>
+  <div class="stage stage--a" id="sa"><div class="faux"><button class="sn-btn sn-btn--sm" type="button" id="reopen" aria-keyshortcuts="Control+K Meta+K /"></button><span class="sn-dim" id="lastA" style="font-size:0.8125rem"></span></div></div>
+  <div class="sn-preview__label">No match</div>
+  <div class="stage stage--b" id="sb"><div class="faux"></div></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  /* preview helper: APG menu keyboard model (arrows wrap, Home/End, typeahead, Esc, Tab) */
+  function snVisible(list) { return Array.prototype.filter.call(list, function (el) { return el.offsetParent !== null || el.getClientRects().length > 0; }); }
+  function snMenuKeys(menu, close) {
+    var buf = "", timer = 0;
+    function items() { return snVisible(menu.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')); }
+    menu.addEventListener("keydown", function (e) {
+      var it = items(), i = it.indexOf(document.activeElement), n = it.length;
+      if (!n) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); it[(i + 1) % n].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); it[(i - 1 + n) % n].focus(); }
+      else if (e.key === "Home" || e.key === "PageUp") { e.preventDefault(); it[0].focus(); }
+      else if (e.key === "End" || e.key === "PageDown") { e.preventDefault(); it[n - 1].focus(); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
+      else if (e.key === "Tab") { close(false); }
+      else if (e.key.length === 1 && /\S/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        clearTimeout(timer); buf += e.key.toLowerCase(); timer = setTimeout(function () { buf = ""; }, 600);
+        for (var k = 1; k <= n; k++) { var c = it[(i + k) % n], t = (c.querySelector(".sn-overflow-menu__text") || c).textContent.trim().toLowerCase(); if (t.indexOf(buf) === 0) { c.focus(); break; } }
+      }
+    });
+    return items;
+  }
+  /** Wire a menu button: btn[aria-haspopup=menu][aria-expanded][aria-controls] + .sn-overflow-menu__menu[role=menu]. */
+  function snMenu(btn, menu, onSelect) {
+    function open(last) { menu.hidden = false; btn.setAttribute("aria-expanded", "true"); var it = items(); var t = last ? it[it.length - 1] : it[0]; if (t) t.focus(); }
+    function close(back) { if (menu.hidden) return; menu.hidden = true; btn.setAttribute("aria-expanded", "false"); if (back) btn.focus(); }
+    var items = snMenuKeys(menu, close);
+    btn.addEventListener("click", function () { if (menu.hidden) open(false); else close(true); });
+    btn.addEventListener("keydown", function (e) { if (e.key === "ArrowDown") { e.preventDefault(); open(false); } else if (e.key === "ArrowUp") { e.preventDefault(); open(true); } });
+    menu.addEventListener("click", function (e) {
+      var it = e.target.closest('[role^="menuitem"]'); if (!it) return;
+      if (it.getAttribute("aria-disabled") === "true") { return; }
+      if (it.hasAttribute("aria-checked")) it.setAttribute("aria-checked", it.getAttribute("aria-checked") === "true" ? "false" : "true");
+      close(true); if (onSelect) onSelect(it);
+    });
+    document.addEventListener("pointerdown", function (e) { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) close(false); });
+    return { open: open, close: close };
+  }
+  function snSay(msg) { var l = document.getElementById("sn-live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } }
+  /** Menu markup. items: {h:"Heading"} | {sep:1} | {id,icon,label,kbd,reason,danger,checked,cls}. Groups follow each heading. */
+  function snMenuHtml(id, labelledby, items, cls, title) {
+    var S = window.SongNodes, h = '<div class="sn-overflow-menu__menu' + (cls ? " " + cls : "") + '" role="menu" id="' + id + '" ' + (labelledby ? 'aria-labelledby="' + labelledby + '"' : 'aria-label="' + S.esc(title ? "Actions for " + title[0] : "Actions") + '"') + ' hidden>', open = false, n = 0;
+    if (title) h += '<div class="sn-overflow-menu__title" role="presentation">' + S.esc(title[0]) + (title[1] ? "<small>" + S.esc(title[1]) + "</small>" : "") + "</div>";
+    items.forEach(function (it) {
+      if (it.h) { if (open) h += "</div>"; n++; h += '<div role="group" aria-labelledby="' + id + "-h" + n + '"><div class="sn-overflow-menu__heading" id="' + id + "-h" + n + '" role="presentation">' + S.esc(it.h) + "</div>"; open = true; return; }
+      if (it.sep) { if (open) { h += "</div>"; open = false; } h += '<div class="sn-overflow-menu__sep" role="separator"></div>'; return; }
+      var rid = it.reason ? id + "-r" + (++n) : "";
+      h += '<button type="button" tabindex="-1" class="sn-overflow-menu__item' + (it.danger ? " sn-overflow-menu__item--danger" : "") + (it.cls ? " " + it.cls : "") + '" role="' + (it.checked != null ? "menuitemcheckbox" : "menuitem") + '"' +
+        (it.checked != null ? ' aria-checked="' + it.checked + '"' : "") + (it.id ? ' data-id="' + it.id + '"' : "") + (it.reason ? ' aria-disabled="true" aria-describedby="' + rid + '"' : "") + ">" +
+        S.icon(it.checked != null ? "check" : (it.icon || "circle-dot"), { size: 16 }) + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
+        (it.reason ? '<span class="sn-overflow-menu__reason" id="' + rid + '">' + S.esc(it.reason) + "</span>" : "") + "</span>" + (it.kbd ? "<kbd>" + S.esc(it.kbd) + "</kbd>" : "") + "</button>";
+    });
+    if (open) h += "</div>";
+    return h + "</div>";
+  }
+  function snMenuButton(id, label, items, opts) {
+    var S = window.SongNodes; opts = opts || {};
+    return '<div class="sn-overflow-menu"><button class="sn-btn sn-btn--icon' + (opts.quiet === false ? "" : " sn-btn--quiet") + (opts.sm ? " sn-btn--sm" : "") + '" type="button" id="' + id + '-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="' + id + '" aria-label="' + S.esc(label) + '">' + S.icon(opts.icon || "ellipsis") + "</button>" + snMenuHtml(id, id + "-btn", items, opts.cls) + "</div>";
+  }
+
+  var TRACKS = [["Bicep", "Glue", "8A", 130, 6], ["Overmono", "So U Kno", "9A", 131, 7], ["Fred again..", "Delilah (pull me out of this)", "10A", 136, 9], ["Ross From Friends", "Talk To Me You'll Drown", "8A", 128, 6], ["Interplanetary Criminal", "Slow Burner", "9A", 132, 7], ["Sammy Virji", "If U Need It", "10A", 134, 8], ["Peggy Gou", "(It Goes Like) Nanana", "11A", 130, 8], ["Josh Baker", "Lost In Muzik", "11A", 136, 9], ["Four Tet", "Baby", "4A", 124, 5]];
+  var ARTISTS = [["Bicep", 38], ["Overmono", 24], ["Fred again..", 19], ["Peggy Gou", 12], ["Interplanetary Criminal", 11], ["Sammy Virji", 9], ["Ross From Friends", 8], ["Josh Baker", 7], ["Four Tet", 21]];
+  var SETS = [["Peak time Friday", 18, 92 * 60], ["Warm-up Saturday", 14, 75 * 60], ["Sunday closing", 12, 60 * 60]];
+  var PAGES = [["home", "Home", "house"]].concat(S.modules.map(function (m) { return [m.key, m.label, m.icon]; })).concat([["services", "Preferences", "sliders-horizontal"]]);
+  var ACTIONS = [["Build set", "wand-sparkles", "sets"], ["Import tracklist", "file-input", "sources"], ["Connect TIDAL", "plug", "services"], ["Show keyboard shortcuts", "keyboard", null, "?"], ["Reload graph data", "refresh-cw", "graph"]];
+  function hl(text, q) { var i = q ? text.toLowerCase().indexOf(q) : -1; return i < 0 ? S.esc(text) : S.esc(text.slice(0, i)) + "<mark>" + S.esc(text.slice(i, i + q.length)) + "</mark>" + S.esc(text.slice(i + q.length)); }
+  function search(q) {
+    q = q.trim().toLowerCase(); var code = S.camelot(q), bpm = /^\d{2,3}$/.test(q) ? +q : null, g = [];
+    var tr = TRACKS.filter(function (t) { return !q || (t[0] + " " + t[1]).toLowerCase().indexOf(q) >= 0 || (code && t[2] === code) || (bpm && Math.abs(t[3] - bpm) <= 1); });
+    var ar = ARTISTS.filter(function (a) { return q && !code && !bpm ? a[0].toLowerCase().indexOf(q) >= 0 : !q; });
+    var se = SETS.filter(function (s) { return !q || s[0].toLowerCase().indexOf(q) >= 0; });
+    var pa = PAGES.filter(function (p) { return q ? p[1].toLowerCase().indexOf(q) >= 0 : true; });
+    var ac = ACTIONS.filter(function (a) { return q ? a[0].toLowerCase().indexOf(q) >= 0 : true; });
+    if (!q) { tr = tr.slice(0, 3); ar = ar.slice(0, 1); se = se.slice(0, 1); pa = pa.slice(1, 3); ac = ac.slice(0, 2); }
+    var lab = function (name) { return q ? name : "Recent " + name.toLowerCase(); };
+    if (tr.length) g.push([lab("Tracks"), tr.slice(0, 6).map(function (t) { return { name: t[0] + " – " + t[1], html: '<span class="sn-command-palette__main"><span class="sn-command-palette__name">' + hl(t[1], q) + '</span><span class="sn-command-palette__sub">' + hl(t[0], q) + '</span></span><span class="sn-command-palette__data">' + S.html.key(t[2]) + '<span class="sn-bpm"><b>' + t[3] + "</b> BPM</span>" + S.html.energy(t[4]) + "</span>", icon: "music", mod: "library" }; })]);
+    if (ar.length) g.push([lab("Artists"), ar.slice(0, 4).map(function (a) { return { name: a[0], html: '<span class="sn-command-palette__main"><span class="sn-command-palette__name">' + hl(a[0], q) + '</span></span><span class="sn-command-palette__sub">' + a[1] + " tracks</span>", icon: "user", mod: "library" }; })]);
+    if (se.length) g.push([lab("Sets"), se.map(function (s) { return { name: s[0], html: '<span class="sn-command-palette__main"><span class="sn-command-palette__name">' + hl(s[0], q) + '</span></span><span class="sn-command-palette__sub">' + s[1] + " tracks · " + S.format.span(s[2]) + "</span>", icon: "list-music", mod: "sets" }; })]);
+    if (pa.length) g.push(["Pages", pa.map(function (p) { return { name: p[1], html: '<span class="sn-command-palette__main"><span class="sn-command-palette__name">' + hl(p[1], q) + "</span></span>", icon: p[2], mod: p[0] === "home" ? null : p[0] }; })]);
+    if (ac.length) g.push(["Actions", ac.map(function (a) { return { name: a[0], html: '<span class="sn-command-palette__main"><span class="sn-command-palette__name">' + hl(a[0], q) + "</span></span>" + (a[3] ? "<kbd>" + a[3] + "</kbd>" : ""), icon: a[1], mod: a[2] }; })]);
+    return g;
+  }
+  function palette(host, id, q0, onPick) {
+    var scrim = document.createElement("div");
+    scrim.className = "sn-command-palette__scrim sn-command-palette__scrim--contained";
+    scrim.innerHTML = '<div class="sn-command-palette" role="dialog" aria-modal="true" aria-label="Quick search">' +
+      '<div class="sn-command-palette__field">' + S.icon("search") + '<input class="sn-command-palette__input" type="text" role="combobox" aria-expanded="true" aria-controls="' + id + '-list" aria-autocomplete="list" aria-describedby="' + id + '-help" autocomplete="off" spellcheck="false" placeholder="Search tracks, artists, sets, pages or actions" aria-label="Search" id="' + id + '-in">' +
+      '<kbd aria-hidden="true">Esc</kbd></div>' +
+      '<div class="sn-command-palette__list" role="listbox" id="' + id + '-list" aria-label="Results"></div>' +
+      '<div class="sn-command-palette__empty" id="' + id + '-empty" hidden></div>' +
+      '<div class="sn-command-palette__foot" id="' + id + '-help"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> clear, then close</span><span>Type a key (8A) or BPM (124) to filter</span></div></div>';
+    host.appendChild(scrim);
+    var input = scrim.querySelector("input"), list = scrim.querySelector('[role="listbox"]'), empty = scrim.querySelector(".sn-command-palette__empty"), opts = [], active = -1;
+    function setActive(i) {
+      opts.forEach(function (o, k) { o.setAttribute("aria-selected", k === i ? "true" : "false"); });
+      active = i; if (i >= 0) { input.setAttribute("aria-activedescendant", opts[i].id); opts[i].scrollIntoView({ block: "nearest" }); } else input.removeAttribute("aria-activedescendant");
+    }
+    function render() {
+      var q = input.value, g = search(q), h = "", n = 0;
+      g.forEach(function (grp, gi) {
+        h += '<div class="sn-command-palette__group" role="group" aria-labelledby="' + id + "-g" + gi + '"><div class="sn-command-palette__heading" id="' + id + "-g" + gi + '" role="presentation">' + grp[0] + "</div>";
+        grp[1].forEach(function (o) { h += '<div class="sn-command-palette__option' + (o.mod ? " sn-m-" + o.mod : "") + '" role="option" id="' + id + "-o" + (n++) + '" aria-selected="false" data-name="' + S.esc(o.name) + '">' + S.icon(o.icon) + o.html + "</div>"; });
+        h += "</div>";
+      });
+      list.innerHTML = h; opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+      var none = !opts.length; list.hidden = none; empty.hidden = !none; input.setAttribute("aria-expanded", none ? "false" : "true");
+      if (none) empty.innerHTML = S.icon("scan-search") + "<strong>No tracks, artists, sets or pages match “" + S.esc(q.trim()) + "”.</strong><span>Check the spelling, or search by key (8A) or BPM (124). Tracks not in the library yet can be added in Sources.</span>";
+      setActive(none ? -1 : 0);
+      snSay(none ? "No results" : opts.length + " results");
+    }
+    input.addEventListener("input", render);
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown" && opts.length) { e.preventDefault(); setActive((active + 1) % opts.length); }
+      else if (e.key === "ArrowUp" && opts.length) { e.preventDefault(); setActive((active - 1 + opts.length) % opts.length); }
+      else if (e.key === "Enter" && active >= 0) { e.preventDefault(); onPick(opts[active].getAttribute("data-name"), api); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (input.value) { input.value = ""; render(); } else api.close(); }
+      else if (e.key === "Tab") { e.preventDefault(); }
+    });
+    list.addEventListener("mousemove", function (e) { var o = e.target.closest('[role="option"]'); if (o) setActive(opts.indexOf(o)); });
+    list.addEventListener("click", function (e) { var o = e.target.closest('[role="option"]'); if (o) onPick(o.getAttribute("data-name"), api); });
+    scrim.addEventListener("mousedown", function (e) { if (e.target === scrim) api.close(); });
+    var api = {
+      open: function (focus) { scrim.hidden = false; if (focus) input.focus(); },
+      close: function () { scrim.hidden = true; var r = document.getElementById("reopen"); if (r && host.contains(r)) r.focus(); },
+      isOpen: function () { return !scrim.hidden; }
+    };
+    input.value = q0; render();
+    return api;
+  }
+  var kb = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K";
+  var reopen = document.getElementById("reopen");
+  reopen.innerHTML = S.icon("search", { size: 16 }) + "Search · " + kb;
+  var A = palette(document.getElementById("sa"), "pa", "", function (name, api) { document.getElementById("lastA").textContent = "Opened " + name; snSay("Opened " + name); api.close(); });
+  palette(document.getElementById("sb"), "pb", "Bicep Atlas remix", function () {});
+  reopen.addEventListener("click", function () { A.open(true); });
+  document.addEventListener("keydown", function (e) {
+    var typing = /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable;
+    if (((e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey)) || (e.key === "/" && !typing)) { e.preventDefault(); A.open(true); }
+  });
+})();
+</script>
+</body>
+</html>

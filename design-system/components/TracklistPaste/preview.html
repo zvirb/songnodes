@@ -1,0 +1,85 @@
+<!-- @dsCard group="Inputs" height=471 subtitle="Paste box with supported formats, live parse preview (in library / new / not read), Import disabled until something parses" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TracklistPaste — preview</title></head>
+<body>
+<div class="sn-preview sn-m-sources" id="root">
+  <div class="sn-tracklist-paste" id="tp">
+    <h2 class="sn-title title-s"><span class="sn-lead">Import tracklist:</span> 3RRR Superfreak, 18 Oct 2026</h2>
+    <div class="sn-tracklist-paste__cols">
+      <div class="sn-field">
+        <label for="tp-in">Tracklist</label>
+        <textarea class="sn-textarea sn-tracklist-paste__input" id="tp-in" spellcheck="false" aria-describedby="tp-fmt-sum"></textarea>
+        <details class="sn-tracklist-paste__formats">
+          <summary id="tp-fmt-sum">Supported formats</summary>
+          <ul>
+            <li><code>Artist – Title</code> (en dash or hyphen)</li>
+            <li><code>1. Artist – Title</code>, <code>[01:02:30] Artist – Title</code></li>
+            <li><code>Title by Artist</code></li>
+            <li><code>feat.</code>, <code>ft.</code> and <code>featuring</code> are read as one artist credit</li>
+            <li>A label in square brackets at the end is kept: <code>Artist – Title [XL]</code></li>
+          </ul>
+        </details>
+      </div>
+      <div class="sn-tracklist-paste__preview">
+        <div class="sn-tracklist-paste__summary" id="tp-sum"></div>
+        <div id="tp-out"></div>
+      </div>
+    </div>
+    <div class="sn-tracklist-paste__foot">
+      <span class="sn-tracklist-paste__why" id="tp-why"></span>
+      <button type="button" class="sn-btn sn-btn--quiet" id="tp-clear">Clear</button>
+      <button type="button" class="sn-btn sn-btn--primary" id="tp-go" aria-describedby="tp-why"></button>
+    </div>
+    <div class="sn-sr" aria-live="polite" id="tp-live"></div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var LIB = ["Bicep – Glue", "Overmono – So U Kno", "Fred again.. – Delilah (pull me out of this)", "Ross From Friends – Talk To Me You'll Drown", "Interplanetary Criminal – Slow Burner", "Sammy Virji – If U Need It", "Peggy Gou – (It Goes Like) Nanana", "Josh Baker – Lost In Muzik"];
+  var norm = function (s) { return s.toLowerCase().replace(/[–—-]/g, "-").replace(/\s+/g, " ").trim(); };
+  var LIBN = LIB.map(norm);
+  var SAMPLE = "[00:00] Josh Baker - Lost In Muzik\n2. Peggy Gou – (It Goes Like) Nanana\n3. Glue by Bicep\n4. Romy ft. Fred again.. – Strong\n05 Sammy Virji - If U Need It [Warner]\nID - ID\n7. Interplanetary Criminal – Slow Burner\nthen a long blend into the next one\n9. Kettama – It's Called: Fade 2 Black";
+  function parse(line) {
+    var raw = line, s = line.trim(), label = null, m;
+    if (!s || /^[-=_*#\s]+$/.test(s)) return null;
+    s = s.replace(/^\[?\d{1,2}:\d{2}(:\d{2})?\]?\s*/, "").replace(/^\d{1,3}[.)\]:]?\s+/, "");
+    if ((m = /\s*\[([^\]]+)\]\s*$/.exec(s))) { label = m[1]; s = s.slice(0, m.index); }
+    var artist, title;
+    if ((m = /^(.+?)\s+[–—-]\s+(.+)$/.exec(s))) { artist = m[1]; title = m[2]; }
+    else if ((m = /^(.+?)\s+by\s+(.+)$/i.exec(s))) { title = m[1]; artist = m[2]; }
+    else return { raw: raw, status: "unparsed", why: "No “ – ” or “by” between artist and title" };
+    artist = artist.replace(/\s+(ft\.?|feat\.?|featuring)\s+/i, " feat. ").trim(); title = title.trim();
+    if (/^id$/i.test(artist) && /^id$/i.test(title)) return { raw: raw, status: "unparsed", why: "Unreleased track (ID – ID)" };
+    var key = norm(artist.replace(/ feat\. .*$/, "") + " - " + title);
+    return { raw: raw, artist: artist, title: title, label: label, status: LIBN.indexOf(key) >= 0 ? "matched" : "new" };
+  }
+  var PILL = { matched: ["ok", "In library"], new: ["info", "New"], unparsed: ["warn", "Not read"] };
+  var inp = document.getElementById("tp-in"), timer;
+  function run(announce) {
+    var lines = inp.value.split(/\r?\n/), rows = [];
+    lines.forEach(function (l, i) { var r = parse(l); if (r) { r.n = i + 1; rows.push(r); } });
+    var c = { matched: 0, new: 0, unparsed: 0 }; rows.forEach(function (r) { c[r.status]++; });
+    var ok = c.matched + c.new;
+    document.getElementById("tp-sum").innerHTML = rows.length ?
+      '<span>' + rows.length + ' lines:</span>' + S.html.pill("ok", c.matched + " in library") + S.html.pill("info", c.new + " new") + (c.unparsed ? '<span class="sn-pill" data-status="warn">' + c.unparsed + ' not read</span>' : "") : "";
+    document.getElementById("tp-out").innerHTML = rows.length ?
+      '<div class="sn-tablebox sn-tracklist-paste__table"><table class="sn-table"><thead><tr><th class="num">Line</th><th>Track</th><th>Status</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr data-row="' + r.status + '"><td class="num sn-tracklist-paste__line">' + r.n + '</td><td>' +
+          (r.status === "unparsed" ? '<div class="sn-tracklist-paste__track"><span class="sn-tracklist-paste__raw">' + S.esc(r.raw.trim()) + '</span><span>' + S.esc(r.why) + '</span></div>'
+            : '<div class="sn-tracklist-paste__track"><b>' + S.esc(r.title) + '</b><span>' + S.esc(r.artist) + (r.label ? " · " + S.esc(r.label) : "") + '</span></div>') +
+          '</td><td><span class="sn-pill" data-status="' + PILL[r.status][0] + '">' + PILL[r.status][1] + '</span></td></tr>';
+      }).join("") + '</tbody></table></div>'
+      : '<div class="sn-tracklist-paste__empty">Paste a tracklist on the left. Each line you paste shows here with what it was read as.</div>';
+    var go = document.getElementById("tp-go"), why = document.getElementById("tp-why");
+    go.disabled = ok === 0; go.textContent = ok ? "Import " + ok + (ok === 1 ? " track" : " tracks") : "Import tracks";
+    why.textContent = ok ? (c.unparsed ? c.unparsed + " not-read " + (c.unparsed === 1 ? "line is" : "lines are") + " skipped. Edit them on the left to include them." : "") : "Paste at least one line in a supported format to import.";
+    if (announce) document.getElementById("tp-live").textContent = rows.length ? ok + " tracks read, " + c.unparsed + " lines not read" : "";
+  }
+  inp.value = SAMPLE; run(false);
+  inp.addEventListener("input", function () { clearTimeout(timer); run(false); timer = setTimeout(function () { run(true); }, 800); });
+  document.getElementById("tp-clear").addEventListener("click", function () { inp.value = ""; run(true); inp.focus(); });
+</script>
+</body>
+</html>

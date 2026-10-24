@@ -1,0 +1,62 @@
+<!-- @dsCard group="Data" height=509 subtitle="Track detail grid in two column pairs with copyable IDs and missing values; edge details; stacked summary form" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>KeyValueGrid — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Track detail · Bicep – Glue</div>
+  <dl class="sn-key-value-grid sn-key-value-grid--cols-2" id="track"></dl>
+  <div class="sn-preview__row" style="align-items:flex-start;gap:16px">
+    <div class="sn-card sn-card--compact" style="width:340px">
+      <div class="sn-preview__label">Edge details (graph)</div>
+      <dl class="sn-key-value-grid" id="edge"></dl>
+    </div>
+    <div class="sn-card sn-card--compact sn-card--tonal sn-m-sets" style="width:400px">
+      <div class="sn-preview__label">Stacked summary, in a tonal card</div>
+      <dl class="sn-key-value-grid sn-key-value-grid--stacked">
+        <div><dt>Length</dt><dd class="sn-mono">92 min</dd></div>
+        <div><dt>Tracks</dt><dd class="sn-mono">18</dd></div>
+        <div><dt>BPM</dt><dd class="sn-mono">122–134</dd></div>
+        <div><dt>Peaks</dt><dd class="sn-mono">2</dd></div>
+      </dl>
+    </div>
+  </div>
+  <div class="sn-sr" aria-live="polite" id="live"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  function none(what) { return '<span class="sn-none" title="' + what + ' not known yet">–</span><span class="sn-sr">' + what + ' not known</span>'; }
+  function id(label, v) {
+    if (!v) return none(label);
+    return '<span class="sn-key-value-grid__id" title="' + S.esc(v) + '">' + S.esc(v) + '</span><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon sn-key-value-grid__copy" type="button" data-copy="' + S.esc(v) + '" aria-label="Copy ' + label + '">' + S.icon("copy", { size: 15 }) + "</button>";
+  }
+  var rows = [
+    ["BPM", '<span class="sn-bpm"><b>' + S.format.bpm(128) + '</b><span class="sn-bpm-readout__unit">BPM</span></span>'],
+    ["Key", '<span class="sn-key" data-key="8A">8A <span class="sn-key__name">A minor</span></span>'],
+    ["Energy", S.html.energy(6) + ' <span class="sn-dim">Building</span>'],
+    ["Duration", '<span class="sn-mono">' + S.format.duration(269) + "</span>"],
+    ["Label", "Ninja Tune"],
+    ["Year", '<span class="sn-mono">2017</span>'],
+    ["ISRC", id("ISRC", "GBCFB1700384")],
+    ["Spotify ID", id("Spotify ID", "2aJDlirz6v2a4HREki98cP")],
+    ["Beatport ID", id("Beatport ID", null)],
+    ["TIDAL ID", id("TIDAL ID", "77640617")],
+    ["MusicBrainz ID", id("MusicBrainz ID", "1c4b9a5e-6b2f-4d3a-9a3c-1f6a0e2b7d11")],
+    ["Discogs", none("Discogs release")]
+  ];
+  document.getElementById("track").innerHTML = rows.map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("");
+  document.getElementById("edge").innerHTML = [
+    ["From", "Bicep – Glue"], ["To", "Overmono – So U Kno"], ["Type", '<span class="sn-tag sn-category-tag">' + S.icon("git-merge") + "Played next to</span>"],
+    ["Weight", '<span class="sn-mono">14</span> <span class="sn-dim">sets</span>'], ["Strength", '<span class="sn-mono">0.82</span>'], ["Key move", '<span class="sn-pill sn-pill--outline sn-compatibility-badge" data-compat="compatible">+1 key</span>']
+  ].map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("");
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-copy]"); if (!b) return;
+    try { navigator.clipboard && navigator.clipboard.writeText(b.getAttribute("data-copy")).catch(function () {}); } catch (e) {}
+    var old = b.parentNode.querySelector(".sn-key-value-grid__copied"); if (old) old.remove();
+    b.insertAdjacentHTML("afterend", '<span class="sn-key-value-grid__copied" aria-hidden="true">Copied</span>');
+    document.getElementById("live").textContent = b.getAttribute("aria-label").replace("Copy", "Copied");
+    setTimeout(function () { var c = b.parentNode.querySelector(".sn-key-value-grid__copied"); if (c) c.remove(); }, 1600);
+  });
+</script>
+</body>
+</html>

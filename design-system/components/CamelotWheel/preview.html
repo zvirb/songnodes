@@ -1,0 +1,231 @@
+<!-- @dsCard group="Music" height=468 subtitle="Outer ring B major, inner ring A minor; now key ring, compatible neighbours, selected keys, counts per key; arrow keys around the wheel" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CamelotWheel — preview</title>
+<style>
+  .pv-wrap { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+  @media (max-width: 720px) { .pv-wrap { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="sn-preview sn-m-harmony" id="root">
+  <div class="pv-wrap">
+    <div class="sn-camelot-wheel" id="wheel"></div>
+    <div class="sn-stack">
+      <h3 class="sn-title title-s"><span class="sn-lead">Key &amp; mood:</span> Filter by key</h3>
+      <p class="body-s sn-muted" style="margin:0">Now playing <b>Bicep – Glue</b> in <span id="nowKey"></span>. Pick keys to filter the library; dashed keys mix cleanly from the one playing.</p>
+      <div class="sn-row">
+        <button class="sn-chip" type="button" aria-pressed="true" id="counts">Show track counts</button>
+        <button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="clear">Clear selection</button>
+      </div>
+      <p class="body-s" style="margin:0" aria-live="polite" id="selText"></p>
+      <ul class="sn-camelot-wheel__legend" style="justify-content:flex-start">
+        <li><i class="is-now"></i>Now playing</li>
+        <li><i class="is-sel"></i>Selected (✓)</li>
+        <li><i class="is-compat"></i>Mixes cleanly from now</li>
+      </ul>
+      <p class="caption sn-dim" style="margin:0">Outer ring: major keys (B). Inner ring: minor keys (A). Arrow keys move around the wheel; up and down switch rings; Enter or Space selects.</p>
+    </div>
+  </div>
+</div>
+<script>
+/* chart kit (inlined into each chart preview by build.py; React apps use d3-scale/recharts instead) */
+var K = (function () {
+  var NS = "http://www.w3.org/2000/svg", n = 0;
+  function el(tag, a, parent) {
+    var e = document.createElementNS(NS, tag);
+    if (a) for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(parent, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), parent); t.textContent = s; return t; }
+  function h(tag, cls, s) { var e = document.createElement(tag); if (cls) e.className = cls; if (s != null) e.textContent = s; return e; }
+  function uid(p) { n += 1; return (p || "k") + n; }
+  /** one linear scale per axis: domain -> range, with nice ticks */
+  function linear(d0, d1, r0, r1) {
+    var f = function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); };
+    f.invert = function (px) { return d0 + (px - r0) / (r1 - r0) * (d1 - d0); };
+    f.ticks = function (step) { var o = []; for (var v = Math.ceil(d0 / step) * step; v <= d1 + 1e-9; v += step) o.push(+v.toFixed(6)); return o; };
+    f.domain = [d0, d1]; f.range = [r0, r1];
+    return f;
+  }
+  /** band scale for categories: index -> left edge of the mark, with a capped mark width */
+  function band(count, r0, r1, pad, cap) {
+    var step = (r1 - r0) / count, bw = Math.min(step * (1 - pad), cap || Infinity);
+    var f = function (i) { return r0 + i * step + (step - bw) / 2; };
+    f.mid = function (i) { return r0 + i * step + step / 2; };
+    f.index = function (px) { return Math.max(0, Math.min(count - 1, Math.floor((px - r0) / step))); };
+    f.bw = bw; f.step = step;
+    return f;
+  }
+  /** column with a 4px rounded data end and a square baseline */
+  function barPath(x, y, w, hgt, r) {
+    if (hgt <= 0) return "";
+    r = Math.min(r == null ? 4 : r, w / 2, hgt);
+    return "M" + x + "," + (y + hgt) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + hgt) + "Z";
+  }
+  /** diagonal hatch pattern for simulated / preview data (stroke = --sim via class) */
+  function hatch(svg) {
+    var id = uid("hatch"), defs = svg.querySelector("defs") || el("defs", null, svg);
+    var p = el("pattern", { id: id, patternUnits: "userSpaceOnUse", width: 6, height: 6, patternTransform: "rotate(45)" }, defs);
+    el("line", { x1: 0, y1: 0, x2: 0, y2: 6, "class": "sn-chart-frame__hatch" }, p);
+    return "url(#" + id + ")";
+  }
+  function rem() { return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; }
+  /** one tooltip per chart; rows = [{key:"line"|"rect"|"dot"|"", c:"var(--chart-1)", value, label, dash}] */
+  function tip(host) {
+    var d = h("div", "sn-chart-frame__tip"); d.setAttribute("role", "presentation"); d.hidden = true; host.appendChild(d);
+    return {
+      show: function (x, y, title, rows) {
+        d.textContent = "";
+        if (title) d.appendChild(h("div", "sn-chart-frame__tip-title", title));
+        (rows || []).forEach(function (r) {
+          var row = h("div", "sn-chart-frame__tip-row");
+          var k = h("span", "sn-chart-frame__tip-key" + (r.key ? " sn-chart-frame__tip-key--" + r.key : ""));
+          if (r.c) k.style.setProperty("--c", r.c);
+          if (r.dash) k.classList.add("sn-chart-frame__tip-key--dash");
+          row.appendChild(k);
+          row.appendChild(h("span", "sn-chart-frame__tip-value", r.value));
+          row.appendChild(h("span", "sn-chart-frame__tip-label", r.label));
+          d.appendChild(row);
+        });
+        d.hidden = false;
+        var hw = host.clientWidth, tw = d.offsetWidth, th = d.offsetHeight;
+        var left = x + 14; if (left + tw > hw - 4) left = Math.max(4, x - tw - 14);
+        var top = Math.max(4, y - th - 10);
+        d.style.left = left + "px"; d.style.top = top + "px";
+      },
+      hide: function () { d.hidden = true; }
+    };
+  }
+  /** one tab stop per plot: arrows / Home / End move the active index; pointer maps x -> index */
+  function nav(target, count, pxToIndex, onIndex, opts) {
+    opts = opts || {}; var cur = -1;
+    function set(i) { if (i == null || i < 0) { cur = -1; onIndex(-1); return; } cur = Math.max(0, Math.min(count - 1, i)); onIndex(cur); }
+    target.addEventListener("keydown", function (e) {
+      var k = e.key, i = cur < 0 ? (opts.start || 0) : cur;
+      if (k === "ArrowRight" || k === "ArrowUp") i = cur < 0 ? i : i + 1;
+      else if (k === "ArrowLeft" || k === "ArrowDown") i = cur < 0 ? i : i - 1;
+      else if (k === "Home") i = 0; else if (k === "End") i = count - 1;
+      else if (k === "Escape") { set(-1); return; } else return;
+      e.preventDefault(); set(i);
+    });
+    target.addEventListener("focus", function () { if (cur < 0) set(opts.start || 0); });
+    target.addEventListener("blur", function () { set(-1); });
+    target.addEventListener("pointermove", function (e) { var b = target.getBoundingClientRect(); set(pxToIndex(e.clientX - b.left, e.clientY - b.top)); });
+    target.addEventListener("pointerleave", function () { if (document.activeElement !== target) set(-1); });
+    return { set: set, get: function () { return cur; } };
+  }
+  /** re-render on container resize (charts are drawn at 1 user unit = 1 CSS px) */
+  function fit(host, draw) {
+    var w = 0;
+    function go() { var nw = host.clientWidth; if (nw && Math.abs(nw - w) > 1) { w = nw; draw(nw); } }
+    if (window.ResizeObserver) new ResizeObserver(go).observe(host);
+    go();
+  }
+  /** "View as table" toggle: swaps plot and table, keeps focus on the button */
+  function tableToggle(btn, plot, table) {
+    var S = window.SongNodes;
+    function paint(on) { btn.innerHTML = S.icon(on ? "chart-line" : "table-2") + (on ? "View as chart" : "View as table"); }
+    paint(false);
+    btn.addEventListener("click", function () { var on = table.hidden; table.hidden = !on; plot.hidden = on; paint(on); });
+  }
+  return { el: el, text: text, h: h, uid: uid, linear: linear, band: band, barPath: barPath, hatch: hatch, rem: rem, tip: tip, nav: nav, fit: fit, tableToggle: tableToggle };
+})();
+
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var NOW = "8A", sel = { "9A": 1, "10A": 1 }, showCounts = true;
+  var counts = {}; [1,2,3,4,5,6,7,8,9,10,11,12].forEach(function (n) {
+    counts[n + "A"] = [38, 22, 19, 51, 63, 71, 74, 96, 82, 77, 58, 41][n - 1];
+    counts[n + "B"] = [17, 9, 8, 21, 26, 30, 33, 45, 38, 31, 24, 19][n - 1];
+  });
+  var compatSet = {}; ["7A", "9A", "8B"].forEach(function (k) { compatSet[k] = 1; });
+  var host = document.getElementById("wheel"), C = 210, RING = { B: [154, 206], A: [100, 152] };
+  var segs = {}, focusKey = NOW;
+  function pol(r, deg) { var a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; }
+  function sector(r0, r1, a0, a1) {
+    var p0 = pol(r1, a0), p1 = pol(r1, a1), p2 = pol(r0, a1), p3 = pol(r0, a0);
+    return "M" + p0 + "A" + r1 + "," + r1 + " 0 0 1 " + p1 + "L" + p2 + "A" + r0 + "," + r0 + " 0 0 0 " + p3 + "Z";
+  }
+  function hexL(c) { // relative luminance of "rgb()" or "#hex"
+    var m = c.match(/\d+(\.\d+)?/g), v;
+    if (c.charAt(0) === "#") { var h = c.slice(1); v = [0, 2, 4].map(function (i) { return parseInt(h.substr(i, 2), 16); }); } else v = m.slice(0, 3).map(Number);
+    v = v.map(function (x) { x /= 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+  }
+  function cr(a, b) { return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); }
+
+  var svg = K.el("svg", { "class": "sn-camelot-wheel__svg", viewBox: "0 0 420 420", role: "group", "aria-label": "Camelot wheel. " + "Now playing " + NOW + ", " + S.keyName(NOW) }, host);
+  var gSeg = K.el("g", null, svg), gText = K.el("g", { "aria-hidden": "true" }, svg), gMark = K.el("g", { "aria-hidden": "true" }, svg);
+  var hub = K.el("g", { "aria-hidden": "true" }, svg);
+  K.el("circle", { cx: C, cy: C, r: 94, "class": "sn-camelot-wheel__hub" }, hub);
+  var hubCode = K.text(hub, C, C - 2, "", { "class": "sn-camelot-wheel__hub-code" }), hubName = K.text(hub, C, C + 18, "", { "class": "sn-camelot-wheel__hub-name" }), hubMeta = K.text(hub, C, C + 36, "", { "class": "sn-camelot-wheel__hub-meta" });
+  var rootStyle = getComputedStyle(document.documentElement), Lbg = hexL(rootStyle.getPropertyValue("--bg").trim()), Lfg = hexL(rootStyle.getPropertyValue("--fg").trim());
+
+  ["B", "A"].forEach(function (L) {
+    for (var n = 1; n <= 12; n++) {
+      var code = n + L, mid = (n % 12) * 30, r = RING[L];
+      var p = K.el("path", { d: sector(r[0], r[1], mid - 15, mid + 15), "class": "sn-camelot-wheel__seg", "data-key": code, role: "button", tabindex: code === focusKey ? 0 : -1 }, gSeg);
+      p._code = code; segs[code] = p;
+    }
+  });
+  function label(code) { return code + ", " + S.keyName(code) + (showCounts ? ", " + counts[code] + " tracks" : "") + (code === NOW ? ", now playing" : compatSet[code] ? ", mixes cleanly from " + NOW : ""); }
+  function paint() {
+    gText.textContent = ""; gMark.textContent = "";
+    Object.keys(segs).forEach(function (code) {
+      var p = segs[code], L = code.slice(-1), n = parseInt(code, 10), mid = (n % 12) * 30, r = RING[L], rm = (r[0] + r[1]) / 2;
+      p.setAttribute("aria-pressed", !!sel[code]); p.setAttribute("aria-label", label(code));
+      var Lf = hexL(getComputedStyle(p).fill), fgCls = cr(Lf, Lfg) > cr(Lf, Lbg) ? "--fg" : "";
+      var c = pol(rm, mid), dy = showCounts ? -6 : 0;
+      K.text(gText, c[0], c[1] + dy, code, { "class": "sn-camelot-wheel__code" + (fgCls ? " sn-camelot-wheel__code--fg" : "") });
+      if (showCounts) K.text(gText, c[0], c[1] + 9, F.count(counts[code]), { "class": "sn-camelot-wheel__count" + (fgCls ? " sn-camelot-wheel__count--fg" : "") });
+      var a0 = mid - 15, a1 = mid + 15;
+      if (sel[code]) {
+        K.el("path", { d: sector(r[0] + 3, r[1] - 3, a0 + 1.6, a1 - 1.6), "class": "sn-camelot-wheel__sel" + (fgCls ? " sn-camelot-wheel__sel--fg" : "") }, gMark);
+        var t = pol(r[1] - 10, mid + 10); K.text(gMark, t[0], t[1], "✓", { "class": "sn-camelot-wheel__check" + (fgCls ? " sn-camelot-wheel__check--fg" : "") });
+      }
+      if (compatSet[code]) K.el("path", { d: sector(r[0] + 3, r[1] - 3, a0 + 1.6, a1 - 1.6), "class": "sn-camelot-wheel__compat" + (fgCls ? " sn-camelot-wheel__compat--fg" : "") }, gMark);
+      if (code === NOW) K.el("path", { d: sector(r[0] - 1, r[1] + 1, a0 - 0.6, a1 + 0.6), "class": "sn-camelot-wheel__now" }, gMark);
+    });
+    if (document.activeElement && document.activeElement._code) ring(document.activeElement._code);
+    var list = Object.keys(sel).sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b); });
+    document.getElementById("selText").innerHTML = list.length ? "Filtering the library to " + list.map(function (k) { return S.html.key(k); }).join(", ") + " · " + F.count(list.reduce(function (a, k) { return a + counts[k]; }, 0)) + " tracks" : "No keys selected: showing all 1,284 tracks";
+    if (list.length) host.setAttribute("data-has-selection", ""); else host.removeAttribute("data-has-selection");
+    hubShow(focusKey);
+  }
+  var focusRing = null;
+  function ring(code) {
+    if (focusRing) focusRing.remove();
+    var L = code.slice(-1), n = parseInt(code, 10), mid = (n % 12) * 30, r = RING[L];
+    focusRing = K.el("path", { d: sector(r[0] - 3, r[1] + 3, mid - 16, mid + 16), "class": "sn-camelot-wheel__focus" }, gMark);
+  }
+  function hubShow(code) {
+    hubCode.textContent = code; hubName.textContent = S.keyName(code);
+    var c = S.compat(NOW, code);
+    hubMeta.textContent = code === NOW ? "Now playing" : (S.GLYPH[c.level] + " " + c.label + " from " + NOW);
+  }
+  gSeg.addEventListener("click", function (e) { var c = e.target._code; if (!c) return; if (sel[c]) delete sel[c]; else sel[c] = 1; paint(); });
+  gSeg.addEventListener("focusin", function (e) { if (e.target._code) { focusKey = e.target._code; ring(focusKey); hubShow(focusKey); } });
+  gSeg.addEventListener("focusout", function () { if (focusRing) { focusRing.remove(); focusRing = null; } });
+  gSeg.addEventListener("pointerover", function (e) { if (e.target._code) hubShow(e.target._code); });
+  gSeg.addEventListener("pointerleave", function () { hubShow(focusKey); });
+  gSeg.addEventListener("keydown", function (e) {
+    var c = e.target._code; if (!c) return;
+    var n = parseInt(c, 10), L = c.slice(-1);
+    if (e.key === "ArrowRight") n = n % 12 + 1; else if (e.key === "ArrowLeft") n = (n + 10) % 12 + 1;
+    else if (e.key === "ArrowUp") L = "B"; else if (e.key === "ArrowDown") L = "A";
+    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (sel[c]) delete sel[c]; else sel[c] = 1; paint(); return; }
+    else return;
+    e.preventDefault();
+    segs[c].setAttribute("tabindex", -1); var nx = segs[n + L]; nx.setAttribute("tabindex", 0); nx.focus();
+  });
+  var cb = document.getElementById("counts");
+  cb.addEventListener("click", function () { showCounts = !showCounts; cb.setAttribute("aria-pressed", showCounts); paint(); });
+  document.getElementById("clear").addEventListener("click", function () { sel = {}; paint(); });
+  document.getElementById("nowKey").innerHTML = S.html.key(NOW, true);
+  paint();
+})();
+</script>
+</body>
+</html>

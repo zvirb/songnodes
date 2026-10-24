@@ -1,0 +1,95 @@
+<!-- @dsCard group="Feedback" height=680 subtitle="First-load skeleton rows and tiles, 1 s message, refresh in place with top line and Updating… stamp, inline spinner" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>LoadingState — preview</title>
+<style>
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+  .hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="two">
+    <section class="sn-stack" aria-labelledby="l1">
+      <div class="sn-preview__label" id="l1">First load · crate table (skeleton rows)</div>
+      <div class="sn-loading-state" id="first" aria-busy="true">
+        <div class="sn-tablebox">
+          <table class="sn-table">
+            <thead><tr><th scope="col">Energy</th><th scope="col">Track</th><th scope="col" class="num">BPM</th><th scope="col">Key</th></tr></thead>
+            <tbody id="skelRows"></tbody>
+          </table>
+        </div>
+        <p class="sn-loading-state__msg" role="status" id="firstMsg"></p>
+      </div>
+    </section>
+    <section class="sn-stack" aria-labelledby="l2">
+      <div class="sn-preview__label" id="l2">First load · saved sets (skeleton tiles)</div>
+      <div class="sn-loading-state" data-slow aria-busy="true">
+        <div class="sn-loading-state__tiles" id="tiles"></div>
+        <p class="sn-loading-state__msg" role="status">Loading 6 saved sets…</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="sn-stack" aria-labelledby="l3">
+    <div class="hd">
+      <div class="sn-preview__label" id="l3">Refresh in place · data stays visible</div>
+      <div class="sn-row">
+        <span class="sn-loading-state__stamp" id="stamp" aria-live="polite">Updated <time datetime="2026-10-24T06:00+11:00">24 Oct 2026, 06:00 AEDT</time></span>
+        <button class="sn-btn sn-btn--sm" type="button" id="refresh">Refresh crate</button>
+      </div>
+    </div>
+    <div class="sn-loading-state" id="refreshBox">
+      <div class="sn-loading-state__frame">
+        <div class="sn-loading-state__bar" aria-hidden="true"></div>
+        <div class="sn-tablebox">
+          <table class="sn-table">
+            <thead><tr><th scope="col">Energy</th><th scope="col">Track</th><th scope="col" class="num">BPM</th><th scope="col">Key</th><th scope="col">Heard</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sn-stack" aria-labelledby="l4">
+    <div class="sn-preview__label" id="l4">Inline only · in a button, beside a value</div>
+    <div class="sn-preview__row">
+      <button class="sn-btn" type="button" aria-busy="true"><span class="sn-spinner" aria-hidden="true"></span>Saving set…</button>
+      <span class="sn-loading-state__inline" role="status"><span class="sn-spinner" aria-hidden="true"></span>Checking TIDAL link</span>
+    </div>
+  </section>
+</div>
+<script>
+  var S = window.SongNodes, H = S.html;
+  // skeleton rows shaped like the crate rows: energy bar, two-line track, BPM, key
+  var w = [["220px", "120px"], ["170px", "96px"], ["250px", "140px"], ["190px", "110px"], ["150px", "88px"]], sk = "";
+  w.forEach(function (x) {
+    sk += '<tr aria-hidden="true"><td><span class="sn-skel" style="--w:64px;--h:12px"></span></td>' +
+      '<td><span class="sn-loading-state__lines"><span class="sn-skel" style="--w:' + x[0] + '"></span><span class="sn-skel" style="--w:' + x[1] + ';--h:0.65em"></span></span></td>' +
+      '<td class="num"><span class="sn-skel" style="--w:28px;margin-left:auto"></span></td><td><span class="sn-skel" style="--w:36px"></span></td></tr>';
+  });
+  document.getElementById("skelRows").innerHTML = sk;
+  // after 1 s, say what is loading (space for the line is reserved, so nothing shifts)
+  setTimeout(function () { var f = document.getElementById("first"); f.setAttribute("data-slow", ""); document.getElementById("firstMsg").textContent = "Loading 1,284 tracks…"; }, 1000);
+  var t = "";
+  for (var i = 0; i < 3; i++) t += '<div class="sn-loading-state__tile" aria-hidden="true"><span class="sn-skel" style="--w:60%;--h:1.1em"></span><span class="sn-skel" style="--h:40px"></span><span class="sn-skel" style="--w:40%"></span></div>';
+  document.getElementById("tiles").innerHTML = t;
+  var tracks = [[6, "Bicep – Glue", 130, "5A", "PBS Soul Time"], [7, "Overmono – So U Kno", 132, "8A", "3RRR Superfreak"], [8, "Interplanetary Criminal – Slow Burner", 134, "11A", "triple j Mix Up"]];
+  document.getElementById("rows").innerHTML = tracks.map(function (r) {
+    return "<tr><td>" + H.energy(r[0]) + "</td><td>" + S.esc(r[1]) + '</td><td class="num">' + r[2] + "</td><td>" + H.key(r[3]) + '</td><td><span class="sn-tag">' + S.esc(r[4]) + "</span></td></tr>";
+  }).join("");
+  var box = document.getElementById("refreshBox"), stamp = document.getElementById("stamp"), btn = document.getElementById("refresh");
+  btn.addEventListener("click", function () {
+    box.setAttribute("aria-busy", "true"); btn.disabled = true; stamp.textContent = "Updating…";
+    setTimeout(function () {
+      box.removeAttribute("aria-busy"); btn.disabled = false;
+      var now = new Date(); stamp.innerHTML = 'Updated <time datetime="' + now.toISOString() + '">' + S.format.stamp(now) + "</time>";
+    }, 2200);
+  });
+  // show the refresh state in the static preview
+  box.setAttribute("aria-busy", "true"); stamp.textContent = "Updating…"; btn.disabled = true;
+  setTimeout(function () { box.removeAttribute("aria-busy"); btn.disabled = false; stamp.innerHTML = 'Updated <time datetime="2026-10-24T21:30+11:00">24 Oct 2026, 21:30 AEDT</time>'; }, 4000);
+</script>
+</body>
+</html>

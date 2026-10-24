@@ -1,0 +1,66 @@
+<!-- @dsCard group="Music" height=459 subtitle="Running-order rows: slot number, energy with target, track, BPM and key, lock/move/remove; transition strips; spare suggestions; locked, now and empty slots" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SetSlot — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <ol class="sn-set-slot-list" id="list" aria-label="Running order, Peak time Friday"></ol>
+  <div class="sn-sr" aria-live="polite" id="live"></div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  var slots = [
+    { tg: 6, a: "Josh Baker", t: "Lost In Muzik", mix: "Original mix", dur: 398, e: 6, k: "8A", b: 126, g: "House" },
+    { tg: 7, a: "Peggy Gou", t: "(It Goes Like) Nanana", mix: "Edit", dur: 238, e: 7, k: "8A", b: 124, g: "House", locked: true },
+    { tg: 7, a: "Interplanetary Criminal", t: "Slow Burner", mix: "Original mix", dur: 341, e: 7, k: "9A", b: 128, g: "House", now: true, check: true },
+    { tg: 8, a: "Sammy Virji", t: "If U Need It", mix: "Original mix", dur: 223, e: 8, k: "9A", b: 130, g: "UK garage", spares: [["Overmono – So U Kno", 7, "9A"], ["Fred again.. – Delilah (pull me out of this)", 8, "11B"], ["Bicep – Glue", 6, "8A"]] },
+    { tg: 9, empty: true }
+  ];
+  function energy(e, tg) {
+    var segs = ""; for (var i = 1; i <= 10; i++) segs += '<i class="' + (i <= e ? "on" : "") + (i === tg ? " target" : "") + '"></i>';
+    return '<span class="sn-energy sn-energy-bar"><span class="sn-energy__bar" aria-hidden="true">' + segs + '</span><span class="sn-energy__n">' + e + '</span><span class="sn-sr"> of 10, target ' + tg + "</span></span>" +
+      '<span class="sn-energy-bar__target" aria-hidden="true">target ' + tg + (e !== tg ? (e < tg ? " · " + (tg - e) + " under" : " · " + (e - tg) + " over") : "") + "</span>";
+  }
+  function note(p, n) {
+    var it = [S.energyStep(p.e, n.e), S.compat(p.k, n.k), S.bpmStep(p.b, n.b)];
+    if (p.g !== n.g) it.push({ level: "perfect", label: p.g + " → " + n.g });
+    return '<li aria-label="Transition"><div class="sn-transition-note">' + it.map(function (i) { return '<span class="sn-transition-note__item" data-level="' + i.level + '">' + S.esc(i.label) + '<span class="sn-sr"> (' + i.level + ")</span></span>"; }).join("") + "</div></li>";
+  }
+  function btn(icon, label, extra) { return '<button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="' + label + '"' + (extra || "") + ">" + S.icon(icon) + "</button>"; }
+  function slot(s, i) {
+    var n = i + 1, name = s.empty ? "" : s.a + " – " + s.t;
+    if (s.empty) return '<li class="sn-set-slot sn-set-slot--empty"><span class="sn-set-slot__n">' + n + '</span><span class="sn-set-slot__energy">' + '<span class="sn-energy-bar__target">target ' + s.tg + '</span></span><div class="sn-set-slot__empty">' + S.icon("search", { size: 16 }) + "No track in the pool fits energy " + s.tg + " after 9A. Widen the pool or pick from the crate.</div>" +
+      '<span class="sn-set-slot__act">' + btn("plus", "Pick a track for slot " + n) + btn("x", "Remove slot " + n, ' data-act="remove" data-i="' + i + '"') + "</span></li>";
+    var meta = '<span class="sn-track-cell__mix">' + S.esc(s.mix) + '</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">' + S.format.duration(s.dur) + "</span>" + (s.check ? '<span class="sn-track-cell__flag">Check energy</span>' : "");
+    var h = '<li class="sn-set-slot"' + (s.locked ? " data-locked" : "") + (s.now ? " data-now" : "") + ' aria-label="Slot ' + n + ": " + S.esc(name) + (s.now ? ", now playing" : "") + (s.locked ? ", locked" : "") + '">' +
+      '<span class="sn-set-slot__n">' + n + '</span><span class="sn-set-slot__energy">' + energy(s.e, s.tg) + "</span>" +
+      '<span class="sn-set-slot__track"><div class="sn-track-cell"><span class="sn-track-cell__title">' + (s.now ? '<span class="sn-track-cell__now">' + S.icon("audio-waveform", { size: 14 }) + "<span>Now</span></span>" : "") +
+      '<span class="sn-track-cell__name" title="' + S.esc(name) + '"><span class="sn-track-cell__artist">' + S.esc(s.a) + " –</span> " + S.esc(s.t) + '</span></span><span class="sn-track-cell__meta">' + meta + "</span></div></span>" +
+      '<span class="sn-set-slot__data"><span class="sn-bpm"><b>' + s.b + "</b></span>" + S.html.key(s.k) + "</span>" +
+      '<span class="sn-set-slot__act">' + btn(s.locked ? "lock" : "lock-open", "Lock slot " + n, ' aria-pressed="' + !!s.locked + '" data-act="lock" data-i="' + i + '"') +
+      btn("arrow-up", "Move slot " + n + " up", ' data-act="up" data-i="' + i + '"' + (i === 0 || s.locked ? " disabled" : "")) + btn("arrow-down", "Move slot " + n + " down", ' data-act="down" data-i="' + i + '"' + (i === slots.length - 1 || s.locked ? " disabled" : "")) +
+      btn("x", "Remove " + S.esc(name) + " from slot " + n, ' data-act="remove" data-i="' + i + '"' + (s.locked ? " disabled" : "")) + "</span></li>";
+    if (s.spares) h += '<li><div class="sn-set-slot__spares"><span class="sn-set-slot__spares-label">Spares for slot ' + n + ":</span>" + s.spares.map(function (sp) {
+      return '<button class="sn-set-slot__spare" type="button" aria-label="Swap in ' + S.esc(sp[0]) + '"><span>' + S.esc(sp[0]) + '</span><span class="sn-mono sn-dim">' + sp[1] + "</span>" + S.html.key(sp[2]) + "</button>"; }).join("") + "</div></li>";
+    return h;
+  }
+  function render() {
+    var h = "";
+    slots.forEach(function (s, i) { h += slot(s, i); var nx = slots[i + 1]; if (nx && !s.empty && !nx.empty) h += note(s, nx); });
+    document.getElementById("list").innerHTML = h;
+  }
+  render();
+  document.getElementById("list").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-act]"); if (!b || b.disabled) return;
+    var i = +b.getAttribute("data-i"), a = b.getAttribute("data-act"), s = slots[i], live = document.getElementById("live"), focusSel = null;
+    if (a === "lock") { s.locked = !s.locked; live.textContent = "Slot " + (i + 1) + (s.locked ? " locked" : " unlocked"); focusSel = '[data-act="lock"][data-i="' + i + '"]'; }
+    if (a === "up" || a === "down") { var j = a === "up" ? i - 1 : i + 1; if (slots[j].locked) { live.textContent = "Slot " + (j + 1) + " is locked"; return; } slots[i] = slots[j]; slots[j] = s; live.textContent = s.a + " – " + s.t + " moved to slot " + (j + 1); focusSel = '[data-act="' + a + '"][data-i="' + j + '"]'; }
+    if (a === "remove") { slots.splice(i, 1); live.textContent = "Slot " + (i + 1) + " removed"; }
+    render();
+    var f = focusSel && document.querySelector(focusSel); if (f && !f.disabled) f.focus();
+  });
+})();
+</script>
+</body>
+</html>

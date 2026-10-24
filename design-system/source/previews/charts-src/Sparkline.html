@@ -1,0 +1,61 @@
+<!-- @dsCard group="Charts" height=495 subtitle="Plays per week over 12 weeks in figure tiles and table rows; emphasised endpoint, min and max on hover and focus" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Sparkline — preview</title>
+<style>
+  .pv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Figure tiles · focusable, min and max on hover or focus</div>
+  <div class="pv-tiles" id="tiles"></div>
+  <div class="sn-preview__label">Table rows · plays per week, last 12 weeks</div>
+  <div class="sn-tablebox"><table class="sn-table" id="tbl"><thead><tr><th scope="col">Track</th><th scope="col">Plays, 12 weeks</th><th scope="col" class="num">Total</th><th scope="col">Last heard</th></tr></thead><tbody></tbody></table></div>
+</div>
+<script>
+/*KIT*/
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var weeks = []; for (var i = 0; i < 12; i++) { var d = new Date(2026, 7, 3 + i * 7); weeks.push(d.getDate() + " " + MON[d.getMonth()]); }
+  /** sparkline(values, opts) -> HTML. y is scaled to this series' own min..max: shape, not magnitude. */
+  function spark(v, o) {
+    var w = o.w, h = o.h, pad = 3, n = v.length;
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), iLo = v.indexOf(lo), iHi = v.indexOf(hi);
+    var x = K.linear(0, n - 1, pad, w - pad), y = K.linear(lo, hi === lo ? lo + 1 : hi, h - pad, pad);
+    var pts = v.map(function (val, i) { return x(i).toFixed(1) + "," + y(val).toFixed(1); }).join(" ");
+    var label = o.what + ", last 12 weeks: latest " + v[n - 1] + ", low " + lo + " in the week of " + weeks[iLo] + ", high " + hi + " in the week of " + weeks[iHi];
+    return '<span class="sn-sparkline"' + (o.focusable ? ' tabindex="0"' : "") + ' role="img" aria-label="' + S.esc(label) + '">' +
+      '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" aria-hidden="true">' +
+      '<polyline class="sn-sparkline__line" points="' + pts + '"/>' +
+      '<circle class="sn-sparkline__ext" cx="' + x(iLo) + '" cy="' + y(lo) + '" r="2.5"/>' +
+      '<circle class="sn-sparkline__ext" cx="' + x(iHi) + '" cy="' + y(hi) + '" r="2.5"/>' +
+      '<circle class="sn-sparkline__end" cx="' + x(n - 1) + '" cy="' + y(v[n - 1]) + '" r="3"/></svg>' +
+      (o.value !== false ? '<span class="sn-sparkline__val" aria-hidden="true">' + v[n - 1] + "</span>" : "") +
+      '<span class="sn-sparkline__tip" aria-hidden="true">low <b>' + lo + "</b> " + weeks[iLo] + " · high <b>" + hi + "</b> " + weeks[iHi] + "</span></span>";
+  }
+  var tiles = [
+    ["Plays this week", [82, 88, 85, 97, 101, 98, 110, 113, 115, 118, 122, 124], "library tracks on radio", "plays per week"],
+    ["New tracks added", [21, 34, 18, 27, 40, 22, 31, 29, 44, 25, 33, 37], "from the weekly run", "tracks added per week"],
+    ["Needs an energy check", [64, 61, 66, 58, 55, 52, 49, 47, 41, 39, 35, 31], "tracks without a checked energy", "tracks needing a check"]
+  ];
+  document.getElementById("tiles").innerHTML = tiles.map(function (t) {
+    return '<section class="sn-card sn-card--compact"><span class="body-s sn-muted">' + t[0] + '</span><span class="figure">' + F.count(t[1][11]) + "</span>" +
+      '<span class="sn-row" style="justify-content:space-between">' + spark(t[1], { w: 132, h: 32, focusable: true, what: t[3], value: false }) + "</span>" +
+      '<span class="caption sn-dim">' + t[2] + " · 12 weeks to 24 Oct</span></section>";
+  }).join("");
+  var rows = [
+    ["Overmono – So U Kno", [2, 3, 3, 4, 6, 5, 7, 8, 7, 9, 11, 12], "24 Oct 2026, 21:30"],
+    ["Sammy Virji – If U Need It", [0, 1, 1, 2, 2, 4, 3, 5, 6, 6, 8, 9], "24 Oct 2026, 14:05"],
+    ["Bicep – Glue", [9, 8, 9, 7, 8, 6, 7, 6, 5, 6, 4, 5], "22 Oct 2026, 23:40"],
+    ["Peggy Gou – (It Goes Like) Nanana", [12, 10, 9, 7, 6, 4, 3, 3, 2, 1, 1, 0], "9 Oct 2026, 20:15"]
+  ];
+  document.querySelector("#tbl tbody").innerHTML = rows.map(function (r) {
+    var tot = r[1].reduce(function (a, b) { return a + b; }, 0);
+    return "<tr><td>" + S.esc(r[0]) + "</td><td>" + spark(r[1], { w: 96, h: 22, what: "Plays per week" }) + '</td><td class="num">' + tot + '</td><td class="sn-mono body-s">' + r[2] + "</td></tr>";
+  }).join("");
+})();
+</script>
+</body>
+</html>

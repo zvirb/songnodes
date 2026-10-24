@@ -1,0 +1,131 @@
+/* SongNodes design system — Pages A: page layouts only (HomePage, LibraryPage, SetBuilderPage, GraphExplorerPage,
+   TrackDetailPage, SettingsPage, AuthCallbackPage). These classes place components; they never restyle them.
+   Breakpoints are literal because custom properties cannot be used in media queries:
+   bp-phone 480, bp-tablet 768, bp-desktop 1100, bp-wide 1440, bp-wall 1920. */
+
+/* -- Shell: shared by every page in the shell -------------------------------- */
+.sn-page { padding: 0; gap: 0; min-height: 100vh; }
+.sn-page__main { box-sizing: border-box; width: 100%; max-width: var(--content-max); margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-12); display: flex; flex-direction: column; gap: var(--space-8); min-width: 0; }
+.sn-page__main:focus { outline: none; }
+.sn-page__section { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; margin: 0; }
+.sn-page__cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.sn-page__plain { list-style: none; margin: 0; padding: 0; }
+@media (min-width: 768px) { .sn-page__main { padding-left: var(--space-6); padding-right: var(--space-6); } }
+@media (min-width: 1100px) { .sn-page__main { padding-left: var(--space-8); padding-right: var(--space-8); } }
+
+/* -- HomePage ------------------------------------------------------------------ */
+.sn-page-home .sn-launcher-card__grid { grid-template-columns: minmax(0, 1fr); }
+.sn-page-home__recent { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.sn-page__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.sn-page__item { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--line); font-size: 0.875rem; }
+.sn-page__item:last-child { border-bottom: 0; }
+.sn-page__item-meta { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--fg-3); font-family: var(--font-data); font-size: 0.75rem; }
+.sn-page-home__healthy { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: 0.875rem; color: var(--fg-2); }
+@media (min-width: 768px) {
+  .sn-page-home .sn-launcher-card__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sn-page-home__recent { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1100px) { .sn-page-home .sn-launcher-card__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* -- LibraryPage --------------------------------------------------------------- */
+.sn-page-library__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.sn-page-library__crate { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.sn-page-library__crate .sn-data-table__box { max-height: none; } /* the page scrolls, not the table box; the sticky header stays with the app header */
+@media (min-width: 1024px) { /* FilterRail stays a rail from 1024px (Markus's decision), not bp-desktop 1100 */
+  .sn-page-library__body { grid-template-columns: var(--rail-w) minmax(0, 1fr); gap: var(--space-6); }
+  .sn-page-library__body > .sn-filter-rail { position: sticky; top: calc(var(--header-h) + var(--space-4)); z-index: var(--z-sticky); }
+}
+
+/* -- SetBuilderPage ------------------------------------------------------------ */
+.sn-page-sets__layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+.sn-page-sets__side { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+.sn-page-sets__work { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+.sn-page-sets__controls { display: flex; flex-direction: column; gap: var(--space-4); }
+.sn-page-sets__mix { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); border: 0; margin: 0; padding: 0; min-width: 0; }
+.sn-page-sets__mix > legend { padding: 0; margin-bottom: var(--space-2); font-weight: 600; font-size: 0.875rem; }
+.sn-page-sets__summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: 0; font-size: 0.875rem; color: var(--fg-2); }
+.sn-page-sets__saved { display: flex; flex-direction: column; gap: var(--space-3); }
+.sn-page-sets__note { margin: 0; font-size: 0.8125rem; color: var(--fg-3); }
+@media (min-width: 768px) and (max-width: 1099.98px) { .sn-page-sets__saved { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) {
+  .sn-page-sets__layout { grid-template-columns: 320px minmax(0, 1fr); grid-template-areas: "side work" "aside work"; grid-template-rows: auto 1fr; }
+  .sn-page-sets__side { grid-area: side; }
+  .sn-page-sets__aside { grid-area: aside; }
+  .sn-page-sets__work { grid-area: work; }
+}
+@media (min-width: 1440px) { .sn-page-sets__layout { grid-template-columns: 360px minmax(0, 1fr); } }
+
+/* -- GraphExplorerPage ---------------------------------------------------------- */
+.sn-page-graph { --sheet-w: 340px; display: flex; flex-direction: column; min-height: 0; }
+.sn-page-graph__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); background: var(--bg); }
+.sn-page-graph__bar .sn-title { margin: 0; flex: 1 1 auto; min-width: 0; }
+.sn-page-graph__bar-meta { font-family: var(--font-data); font-size: 0.75rem; color: var(--fg-3); }
+.sn-page-graph__work { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+.sn-page-graph__recs { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); min-width: 0; background: var(--surface-1); border-right: 1px solid var(--line); }
+.sn-page-graph__now { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-control); background: var(--surface-2); box-shadow: inset 3px 0 0 var(--now); }
+.sn-page-graph__now-data { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.sn-page-graph__rec-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.sn-page-graph__rec { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-1) var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
+.sn-page-graph__rec:last-child { border-bottom: 0; }
+.sn-page-graph__rec-data { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.sn-page-graph__score { font-family: var(--font-data); font-size: 0.75rem; color: var(--fg-3); }
+.sn-page-graph__stage { position: relative; min-width: 0; min-height: 0; }
+.sn-page-graph__stage > .sn-side-sheet__layout { height: 100%; }
+.sn-page-graph__stage .sn-side-sheet__main { display: flex; flex-direction: column; }
+.sn-page-graph__stage .sn-graph-controls { flex: 1 1 auto; height: 100%; min-height: 560px; border-radius: 0; border-width: 0; }
+.sn-page-graph__legend { position: absolute; top: calc(var(--space-3) + 28px); left: var(--space-3); z-index: var(--z-sticky); }
+.sn-page-graph__legend .sn-graph-styles__legend { max-width: 248px; padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+.sn-page-graph__legend .sn-seg { display: flex; }
+.sn-page-graph__legend .sn-seg button { flex: 1 1 auto; padding: 0 var(--space-1); font-size: 0.75rem; }
+.sn-page-graph__show-graph { display: none; }
+@media (min-width: 768px) {
+  .sn-page-graph__work { grid-template-columns: 320px minmax(0, 1fr); min-height: 640px; }
+}
+@media (max-width: 767.98px) {
+  .sn-page-graph__stage[data-collapsed] .sn-graph-controls { display: none; }
+  .sn-page-graph__show-graph { display: inline-flex; margin: var(--space-3) var(--space-4); }
+  .sn-page-graph__recs { border-right: 0; }
+}
+@media (min-width: 1920px) { .sn-page-graph__work { grid-template-columns: 360px minmax(0, 1fr); } .sn-page-graph { --sheet-w: 420px; } }
+
+/* -- TrackDetailPage ------------------------------------------------------------ */
+.sn-page-track__identity { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-6); }
+.sn-page-track__fact { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.sn-page-track__fact > span:first-child { font-size: 0.75rem; color: var(--fg-3); }
+.sn-page-track__aside { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+.sn-page-track__mainc { display: flex; flex-direction: column; gap: var(--space-8); min-width: 0; }
+.sn-page-track__wheel { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-4); }
+.sn-page-track__wheel .sn-camelot-wheel { width: min(240px, 100%); }
+.sn-page-track__keys { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: 0.875rem; width: 100%; }
+.sn-page-track__keys li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.sn-page-track__links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+@media (min-width: 1100px) { .sn-page-track .sn-page__cols { grid-template-columns: minmax(0, 1fr) 360px; } }
+
+/* -- SettingsPage --------------------------------------------------------------- */
+.sn-page-settings__layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.sn-page-settings__toc { display: none; }
+.sn-page-settings__toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.sn-page-settings__toc a { display: flex; align-items: center; min-height: var(--control-md); padding: 0 var(--space-3); border-radius: var(--radius-control); }
+.sn-page-settings__sections { display: flex; flex-direction: column; gap: var(--space-10); min-width: 0; }
+.sn-page-settings__sections > section { scroll-margin-top: calc(var(--header-h) + var(--space-4)); }
+.sn-page-settings__keys { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.sn-page-settings__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.sn-page-settings__danger { display: flex; flex-direction: column; gap: var(--space-3); }
+.sn-page-settings__danger-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+.sn-page-settings__danger-row p { margin: 0; max-width: var(--prose-max); font-size: 0.875rem; color: var(--fg-2); }
+.sn-page-settings .sn-preferences-panel { width: 100%; max-width: 560px; box-shadow: var(--shadow-1); }
+@media (min-width: 768px) { .sn-page-settings__keys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) {
+  .sn-page-settings__layout { grid-template-columns: 220px minmax(0, 1fr); }
+  .sn-page-settings__toc { display: block; position: sticky; top: calc(var(--header-h) + var(--space-6)); }
+}
+
+/* -- AuthCallbackPage (no shell) ---------------------------------------------- */
+.sn-page-auth { box-sizing: border-box; min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: var(--space-6); padding: var(--space-10) var(--space-4); background: var(--bg); }
+.sn-page-auth__wordmark { font: 800 1.25rem/1 var(--font-display); color: var(--brand); letter-spacing: -0.01em; margin: 0; }
+.sn-page-auth__states { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); width: 100%; max-width: 1180px; align-items: start; }
+.sn-page-auth__card { box-sizing: border-box; width: 100%; max-width: 440px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-4); }
+.sn-page-auth__label { margin: 0; text-align: center; }
+.sn-page-auth__lead { display: flex; align-items: center; gap: var(--space-3); margin: 0; }
+.sn-page-auth__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); font-size: 0.8125rem; color: var(--fg-3); }
+@media (min-width: 1100px) { .sn-page-auth__states { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
