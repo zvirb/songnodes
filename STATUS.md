@@ -15,11 +15,32 @@ Docker Compose forbidden, but the documented and tested development stack is
 
 ### Close-out (step 5)
 
-Where `main` stands after #60, #61, #59 and step 3: every CLAUDE.md §4 gate has been
-run and passes (results under each step below). Branches: 26 stale branches archived
-as `archive/<name>` tags and deleted, plus the `archive/work` test branch; the graph-HUD
-minimap fix was ported (#59). Kept: `main`, `chore/upgrade-dependencies-on-work`, the
-three Dependabot branches, and `pr-review/55` (a ref on another remote, not on the list).
+Merged 25 Oct 2026, in order, each with green CI: #60 (step 1), #61 (step 2), #59
+(minimap port; E2E 307/307 against its build), #62 (step 3; E2E 307/307).
+
+Final verification of `main` at 4ccf400 (25 Oct 2026, clean detached worktree, dev
+stack up; frontend image rebuilt from 4ccf400; REST, graph and worker images unchanged
+since 2ddfa36 apart from `scrapers/`, which the suites below do not exercise):
+
+| Gate (CLAUDE.md §4) | Command | Result |
+|---|---|---|
+| Design-system sync | `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check` | in sync (1.1.0) |
+| Conformance scan | the `design-system.yml` scan step, run locally | passes |
+| Type-check | `cd frontend && npm run type-check` | 0 errors |
+| Frontend unit | `npm run test:unit` | 75 passed |
+| Build | `npm run build` | passed, no warnings |
+| Python collection | `python -m pytest --collect-only -q` | 78 collected, 0 errors |
+| Root pytest | `python -m pytest` | 73 passed, 5 skipped (1 would start a real scrape; 4 live provider tests, opt-in) |
+| Shared library | `cd services && python -m pytest common/tests` | 112 passed |
+| E2E | `scripts/e2e-docker.sh` (`npx playwright test --workers=1`, chromium/firefox/webkit) | 307 passed, 0 failed, 0 skipped, zero console errors (11.0 min) |
+| CI on `main` | design-system, trivy, Security Scan, CodeQL at 4ccf400; python-tests at afe7eca (last Python change) | all success |
+
+Branches: 26 stale branches archived as `archive/<name>` tags and deleted, plus the
+`archive/work` test branch; the graph-HUD minimap fix was ported (#59); this task's
+merged branches (#59–#62) deleted. Kept: `main`, `chore/upgrade-dependencies-on-work`,
+the three Dependabot branches, and `pr-review/55` (a ref on another remote, not on the
+list). Local worktrees `E:\songnodes-pr55-fix` and `E:\songnodes-pr58` predate this task
+and were left alone.
 
 Open, for a decision:
 - E2E in CI needs the Compose dev stack on the runner (Compose-vs-Kubernetes, above).
