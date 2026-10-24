@@ -1,18 +1,19 @@
 # Implementation status
 
-## Completed task: sync dependency upgrades
+## Completed task: verify dependency upgrades on main
 
 24 Oct 2026, branch `chore/upgrade-dependencies-on-work`.
-Published the dependency upgrades and compatibility fixes without changing the separate
-design-system branch.
+Verified the dependency upgrades are already merged to `origin/main`; no additional merge was
+needed or performed.
 
 The dependency upgrade commit is `b88f950`; integration and compatibility fixes are in
-`9486b72`. Status tracking was committed as `570ddcf`. The branch is pushed and tracks
-`origin/chore/upgrade-dependencies-on-work`; local and remote HEADs matched after push.
+`9486b72`. Both commits are ancestors of `origin/main`, whose current merge commit is `677180f`.
+Only the two subsequent status-documentation commits differ on this branch; they were not merged
+to main.
 
-Checks for this sync: `git diff --check` passed; push succeeded; final worktree was clean.
-No PR was created. Next task: open a PR for `chore/upgrade-dependencies-on-work` and review the
-dependency compatibility notes and validation limits already recorded below.
+Checks: `git merge-base --is-ancestor b88f950 origin/main` and the same check for `9486b72`
+passed. No PR or merge was needed. Next task: continue with the legacy catalog-write audit
+(unchanged from the previous checkpoint).
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
