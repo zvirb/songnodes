@@ -24,7 +24,7 @@ const SettingsPage: React.FC = () => {
           <section className="sn-page__section" id="services" aria-labelledby="set-svc">
             <SectionHeading id="set-svc" title="Services and API keys" caveat="Spotify and TIDAL connections, and keys for enrichment providers." />
             <div className="sn-card sn-card--flat">
-              <p className="body-s sn-muted" style={{ margin: 0 }}>Connections and keys open in their own panel until the Settings page is rebuilt from ServiceStatus and SecretField (migration phase 4).</p>
+              <p className="body-s sn-muted">Connections and keys open in their own panel until the Settings page is rebuilt from ServiceStatus and SecretField (migration phase 4).</p>
               <div className="sn-page-settings__actions">
                 <span className="sn-m-services"><button className="sn-btn sn-btn--mod" type="button" onClick={() => setServicesOpen(true)}><SnIcon name="plug" />Manage connections and keys…</button></span>
               </div>
