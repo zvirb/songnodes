@@ -275,28 +275,6 @@ export function truncate(str: string, maxLength: number): string {
 }
 
 /**
- * Get contrast color (black or white) for a given background color
- *
- * Ensures WCAG AA compliance for text contrast
- *
- * @param hexColor - Background color in hex format
- * @returns '#000000' or '#FFFFFF'
- */
-export function getContrastColor(hexColor: string): string {
-  // Convert hex to RGB
-  const hex = hexColor.replace('#', '');
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
-
-  // Calculate relative luminance (WCAG formula)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  // Return black for light backgrounds, white for dark backgrounds
-  return luminance > 0.5 ? '#000000' : '#FFFFFF';
-}
-
-/**
  * Calculate WCAG contrast ratio between two colors
  *
  * @param color1 - First color in hex
