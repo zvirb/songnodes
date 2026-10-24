@@ -1,6 +1,7 @@
 import { FullConfig, chromium } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import { CHROMIUM_GL_ARGS } from './webgl';
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting SongNodes WebGL E2E Test Setup...');
@@ -31,16 +32,7 @@ async function globalSetup(config: FullConfig) {
 
   // Verify WebGL support in test environment
   console.log('🔍 Verifying WebGL support for graph visualization...');
-  const browser = await chromium.launch({
-    args: [
-      '--enable-webgl',
-      '--enable-webgl2-compute-context',
-      '--enable-accelerated-2d-canvas',
-      '--enable-gpu-rasterization',
-      '--force-color-profile=srgb',
-      '--disable-software-rasterizer',
-    ],
-  });
+  const browser = await chromium.launch({ args: CHROMIUM_GL_ARGS });
 
   const page = await browser.newPage();
 
@@ -76,11 +68,12 @@ async function globalSetup(config: FullConfig) {
         JSON.stringify(webglInfo, null, 2)
       );
     } else {
-      console.warn('⚠️ WebGL not supported - some tests may fail');
+      throw new Error(
+        'WebGL is unavailable in Chromium with ' + CHROMIUM_GL_ARGS.join(' ') +
+        '. The graph cannot render, so the suite would fail for the wrong reason. ' +
+        'Check that the Playwright Chromium build includes SwiftShader.'
+      );
     }
-
-  } catch (error) {
-    console.warn('⚠️ WebGL verification failed:', error.message);
   } finally {
     await browser.close();
   }
