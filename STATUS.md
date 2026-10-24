@@ -1,12 +1,14 @@
 # Implementation status
 
-## Current task
+## Current task: sync dependency upgrades
 
-Completed: merged the dependency-upgrade branch (`chore/upgrade-dependencies`, all frontend,
-Node-service and Python pins moved to latest) onto `work` on the integration branch
-`chore/upgrade-dependencies-on-work`, and corrected the code the upgrades broke.
-`work` and `origin/work` are unchanged. Not pushed.
-Next implementation task: the legacy catalog-write audit (unchanged from the previous checkpoint).
+24 Oct 2026, branch `chore/upgrade-dependencies-on-work`.
+Scope: publish the already-committed dependency upgrades and compatibility fixes without changing
+the separate design-system branch.
+Next concrete step: push this integration branch to `origin` and verify the remote commit.
+
+The dependency upgrade commit is `b88f950`; integration and compatibility fixes are in
+`9486b72`. The dependency set covers frontend, Node services, Python services and workflow actions.
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
