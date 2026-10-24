@@ -193,7 +193,7 @@
   };
 
   window.SongNodes = {
-    version: "1.1.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.1.1", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon,

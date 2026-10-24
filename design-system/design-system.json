@@ -849,10 +849,10 @@
   "Favicon"
  ],
  "lastChange": {
-  "by": "Markus",
-  "at": "2026-10-24T01:29:49Z",
-  "via": "Claude (Cowork)",
-  "note": "1.1.0: answers applied (amber now, booth traffic light, Okabe-Ito charts, graph colour modes, calculated rotation, TIDAL, favicon)"
+   "by": "Markus",
+   "at": "2026-10-24T22:36:06Z",
+   "via": "Claude (Claude Code)",
+   "note": "1.1.1: exceptions register (EX-001 wordmark contrast, EX-002 LauncherCard name) in 17-governance"
  },
  "layout": "files",
  "libraries": [],
