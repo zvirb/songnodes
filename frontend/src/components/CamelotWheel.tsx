@@ -77,7 +77,7 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
   const selectNode = useStore(state => state.graph.selectNode);
   const applyFilters = useStore(state => state.search.applyFilters);
 
-  // Camelot wheel data - industry standard mapping
+  // Camelot wheel data - industry standard mapping with aligned spectrum color tokens
   const camelotKeys: CamelotKey[] = useMemo(() => [
     // Major keys (outer ring - 'B' suffix)
     { id: '8B', musical: 'C Major', openKey: '8d', position: 0, mode: 'major', energy: 6, mood: 'uplifting', color: '#3b82f6', energyColor: '#60a5fa', compatible: ['7B', '9B', '8A'] },
@@ -93,19 +93,19 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
     { id: '6B', musical: 'A# Major', openKey: '6d', position: 10, mode: 'major', energy: 9, mood: 'bold', color: '#0891b2', energyColor: '#0ea5e9', compatible: ['5B', '7B', '6A'] },
     { id: '7B', musical: 'F Major', openKey: '7d', position: 11, mode: 'major', energy: 5, mood: 'warm', color: '#059669', energyColor: '#10b981', compatible: ['6B', '8B', '7A'] },
 
-    // Minor keys (inner ring - 'A' suffix)
-    { id: '8A', musical: 'A Minor', openKey: '8m', position: 0, mode: 'minor', energy: 4, mood: 'melancholic', color: '#374151', energyColor: '#6b7280', compatible: ['7A', '9A', '8B'] },
-    { id: '9A', musical: 'E Minor', openKey: '9m', position: 1, mode: 'minor', energy: 6, mood: 'contemplative', color: '#475569', energyColor: '#64748b', compatible: ['8A', '10A', '9B'] },
-    { id: '10A', musical: 'B Minor', openKey: '10m', position: 2, mode: 'minor', energy: 7, mood: 'dramatic', color: '#581c87', energyColor: '#7c3aed', compatible: ['9A', '11A', '10B'] },
-    { id: '11A', musical: 'F# Minor', openKey: '11m', position: 3, mode: 'minor', energy: 6, mood: 'introspective', color: '#7c2d12', energyColor: '#dc2626', compatible: ['10A', '12A', '11B'] },
-    { id: '12A', musical: 'C# Minor', openKey: '12m', position: 4, mode: 'minor', energy: 7, mood: 'passionate', color: '#92400e', energyColor: '#ea580c', compatible: ['11A', '1A', '12B'] },
-    { id: '1A', musical: 'G# Minor', openKey: '1m', position: 5, mode: 'minor', energy: 5, mood: 'haunting', color: '#991b1b', energyColor: '#dc2626', compatible: ['12A', '2A', '1B'] },
-    { id: '2A', musical: 'D# Minor', openKey: '2m', position: 6, mode: 'minor', energy: 6, mood: 'dark', color: '#be185d', energyColor: '#ec4899', compatible: ['1A', '3A', '2B'] },
-    { id: '3A', musical: 'A# Minor', openKey: '3m', position: 7, mode: 'minor', energy: 4, mood: 'mysterious', color: '#7c3aed', energyColor: '#a855f7', compatible: ['2A', '4A', '3B'] },
+    // Minor keys (inner ring - 'A' suffix) - aligned with corresponding major key color hues
+    { id: '8A', musical: 'A Minor', openKey: '8m', position: 0, mode: 'minor', energy: 4, mood: 'melancholic', color: '#1d4ed8', energyColor: '#3b82f6', compatible: ['7A', '9A', '8B'] },
+    { id: '9A', musical: 'E Minor', openKey: '9m', position: 1, mode: 'minor', energy: 6, mood: 'contemplative', color: '#047857', energyColor: '#10b981', compatible: ['8A', '10A', '9B'] },
+    { id: '10A', musical: 'B Minor', openKey: '10m', position: 2, mode: 'minor', energy: 7, mood: 'dramatic', color: '#b45309', energyColor: '#f59e0b', compatible: ['9A', '11A', '10B'] },
+    { id: '11A', musical: 'F# Minor', openKey: '11m', position: 3, mode: 'minor', energy: 6, mood: 'introspective', color: '#c2410c', energyColor: '#f97316', compatible: ['10A', '12A', '11B'] },
+    { id: '12A', musical: 'C# Minor', openKey: '12m', position: 4, mode: 'minor', energy: 7, mood: 'passionate', color: '#b91c1c', energyColor: '#ef4444', compatible: ['11A', '1A', '12B'] },
+    { id: '1A', musical: 'G# Minor', openKey: '1m', position: 5, mode: 'minor', energy: 5, mood: 'haunting', color: '#be185d', energyColor: '#ec4899', compatible: ['12A', '2A', '1B'] },
+    { id: '2A', musical: 'D# Minor', openKey: '2m', position: 6, mode: 'minor', energy: 6, mood: 'dark', color: '#7e22ce', energyColor: '#a855f7', compatible: ['1A', '3A', '2B'] },
+    { id: '3A', musical: 'A# Minor', openKey: '3m', position: 7, mode: 'minor', energy: 4, mood: 'mysterious', color: '#6d28d9', energyColor: '#8b5cf6', compatible: ['2A', '4A', '3B'] },
     { id: '4A', musical: 'F Minor', openKey: '4m', position: 8, mode: 'minor', energy: 5, mood: 'ethereal', color: '#4338ca', energyColor: '#6366f1', compatible: ['3A', '5A', '4B'] },
     { id: '5A', musical: 'C Minor', openKey: '5m', position: 9, mode: 'minor', energy: 6, mood: 'sad', color: '#0e7490', energyColor: '#06b6d4', compatible: ['4A', '6A', '5B'] },
-    { id: '6A', musical: 'G Minor', openKey: '6m', position: 10, mode: 'minor', energy: 7, mood: 'somber', color: '#047857', energyColor: '#059669', compatible: ['5A', '7A', '6B'] },
-    { id: '7A', musical: 'D Minor', openKey: '7m', position: 11, mode: 'minor', energy: 3, mood: 'gentle', color: '#365314', energyColor: '#65a30d', compatible: ['6A', '8A', '7B'] }
+    { id: '6A', musical: 'G Minor', openKey: '6m', position: 10, mode: 'minor', energy: 7, mood: 'somber', color: '#0f766e', energyColor: '#0891b2', compatible: ['5A', '7A', '6B'] },
+    { id: '7A', musical: 'D Minor', openKey: '7m', position: 11, mode: 'minor', energy: 3, mood: 'gentle', color: '#047857', energyColor: '#059669', compatible: ['6A', '8A', '7B'] }
   ], []);
 
   /**
@@ -590,7 +590,7 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
   ]);
 
   return (
-    <div className={`camelot-wheel ${className}`}>
+    <div className={`camelot-wheel ${className}`} data-testid="camelot-wheel">
       {/* Header with controls */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white flex items-center gap-2">

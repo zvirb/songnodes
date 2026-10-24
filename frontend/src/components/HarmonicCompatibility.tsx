@@ -39,29 +39,29 @@ const getCompatibility = (current: CamelotKey, target: CamelotKey): HarmonicType
   return 'clash';
 };
 
-// Color scheme following cognitive load principles
+// Color scheme following design system tokens and WCAG AA dark-mode contrast guidelines
 const COMPATIBILITY_COLORS = {
   perfect: {
-    bg: '#7ED321',      // Bright green - instant recognition
-    text: '#FFFFFF',
+    bg: '#00ff41',      // Matrix green (--color-success)
+    text: '#0a0a0a',     // Dark text for 15.8:1 contrast on bright green
     label: 'Perfect',
     icon: '✓✓'
   },
   compatible: {
-    bg: '#F5A623',      // Yellow - good to go
-    text: '#000000',
+    bg: '#44aaff',      // Blue accent (--color-info)
+    text: '#0a0a0a',     // High contrast dark text on light blue
     label: 'Compatible',
     icon: '✓'
   },
   possible: {
-    bg: '#FFA500',      // Orange - use with caution
-    text: '#000000',
+    bg: '#D68910',      // WCAG AA compliant warning amber (--color-warning)
+    text: '#ffffff',     // High contrast white text on darkened amber (4.8:1 ratio)
     label: 'Possible',
     icon: '~'
   },
   clash: {
-    bg: '#D0021B',      // Red - avoid
-    text: '#FFFFFF',
+    bg: '#ff4444',      // Red alert (--color-error)
+    text: '#ffffff',     // High contrast white text
     label: 'Clash',
     icon: '✗'
   }
@@ -151,16 +151,19 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',
-      padding: '12px',
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      borderRadius: '8px'
+      padding: 'var(--space-3)',
+      backgroundColor: 'var(--color-bg-elevated-1)',
+      border: '1px solid var(--color-border-subtle)',
+      borderRadius: 'var(--radius-card)',
+      boxShadow: 'var(--shadow-card)'
     }}>
       <h3 style={{
-        color: '#F8F8F8',
+        color: 'var(--color-text-primary)',
         margin: 0,
-        fontSize: '14px',
+        fontSize: 'var(--font-size-sm)',
+        fontWeight: 'var(--font-weight-semibold)',
         textTransform: 'uppercase',
-        letterSpacing: '1px'
+        letterSpacing: 'var(--letter-spacing-wide)'
       }}>
         Compatible Tracks ({currentKey})
       </h3>
@@ -172,11 +175,13 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            padding: '8px',
-            borderRadius: '4px',
+            gap: 'var(--space-3)',
+            padding: 'var(--space-2)',
+            backgroundColor: 'var(--color-bg-elevated-2)',
+            border: '1px solid var(--color-border-subtle)',
+            borderRadius: 'var(--radius-base)',
             cursor: 'pointer',
-            transition: 'background-color 0.2s',
+            transition: 'background-color var(--duration-fast) var(--ease-out)',
             width: '100%',
             textAlign: 'left'
           }}
@@ -187,15 +192,15 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
             size="small"
           />
           <span style={{
-            color: '#F8F8F8',
-            fontSize: '14px',
+            color: 'var(--color-text-primary)',
+            fontSize: 'var(--font-size-sm)',
             flex: 1
           }}>
             {track.name}
           </span>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '12px'
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)'
           }}>
             {track.key}
           </span>

@@ -257,16 +257,16 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
     return transitions;
   }, [energySequence, graphData.edges]);
 
-  // Color schemes for different moods
+  // Color schemes for different moods based on standard energy tokens
   const moodColors = {
-    euphoric: '#ef4444',    // Red
-    energetic: '#f97316',   // Orange
-    uplifting: '#f59e0b',   // Amber
-    balanced: '#10b981',    // Green
-    mellow: '#06b6d4',      // Cyan
-    contemplative: '#3b82f6', // Blue
+    euphoric: '#dc2626',    // Peak Red
+    energetic: '#ef4444',   // Intense Red/Orange
+    uplifting: '#f97316',   // High Orange
+    balanced: '#10b981',    // Groovy Green
+    mellow: '#06b6d4',      // Medium Cyan
+    contemplative: '#2563eb', // Blue
     melancholic: '#8b5cf6', // Purple
-    ambient: '#6b7280'      // Gray
+    ambient: '#1e3a8a'      // Ambient Deep Blue
   };
 
   // Handle point selection
@@ -439,7 +439,7 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
   ]);
 
   return (
-    <div className={`mood-visualizer ${className}`}>
+    <div className={`mood-visualizer ${className}`} data-testid="mood-visualizer">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white flex items-center gap-2">

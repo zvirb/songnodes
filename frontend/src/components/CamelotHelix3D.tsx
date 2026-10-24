@@ -36,7 +36,7 @@ interface CamelotHelix3DProps {
   className?: string;
 }
 
-// Camelot key data
+// Camelot key data aligned with spectrum color tokens
 const CAMELOT_KEYS = [
   // Major keys (outer)
   { id: '8B', musical: 'C Major', position: 0, mode: 'major', color: 0x3b82f6 },
@@ -51,19 +51,19 @@ const CAMELOT_KEYS = [
   { id: '5B', musical: 'D# Major', position: 9, mode: 'major', color: 0x06b6d4 },
   { id: '6B', musical: 'A# Major', position: 10, mode: 'major', color: 0x0891b2 },
   { id: '7B', musical: 'F Major', position: 11, mode: 'major', color: 0x059669 },
-  // Minor keys (inner)
-  { id: '8A', musical: 'A Minor', position: 0, mode: 'minor', color: 0x374151 },
-  { id: '9A', musical: 'E Minor', position: 1, mode: 'minor', color: 0x475569 },
-  { id: '10A', musical: 'B Minor', position: 2, mode: 'minor', color: 0x581c87 },
-  { id: '11A', musical: 'F# Minor', position: 3, mode: 'minor', color: 0x7c2d12 },
-  { id: '12A', musical: 'C# Minor', position: 4, mode: 'minor', color: 0x92400e },
-  { id: '1A', musical: 'G# Minor', position: 5, mode: 'minor', color: 0x991b1b },
-  { id: '2A', musical: 'D# Minor', position: 6, mode: 'minor', color: 0xbe185d },
-  { id: '3A', musical: 'A# Minor', position: 7, mode: 'minor', color: 0x7c3aed },
+  // Minor keys (inner) - aligned with corresponding major key color hues
+  { id: '8A', musical: 'A Minor', position: 0, mode: 'minor', color: 0x1d4ed8 },
+  { id: '9A', musical: 'E Minor', position: 1, mode: 'minor', color: 0x047857 },
+  { id: '10A', musical: 'B Minor', position: 2, mode: 'minor', color: 0xb45309 },
+  { id: '11A', musical: 'F# Minor', position: 3, mode: 'minor', color: 0xc2410c },
+  { id: '12A', musical: 'C# Minor', position: 4, mode: 'minor', color: 0xb91c1c },
+  { id: '1A', musical: 'G# Minor', position: 5, mode: 'minor', color: 0xbe185d },
+  { id: '2A', musical: 'D# Minor', position: 6, mode: 'minor', color: 0x7e22ce },
+  { id: '3A', musical: 'A# Minor', position: 7, mode: 'minor', color: 0x6d28d9 },
   { id: '4A', musical: 'F Minor', position: 8, mode: 'minor', color: 0x4338ca },
   { id: '5A', musical: 'C Minor', position: 9, mode: 'minor', color: 0x0e7490 },
-  { id: '6A', musical: 'G Minor', position: 10, mode: 'minor', color: 0x047857 },
-  { id: '7A', musical: 'D Minor', position: 11, mode: 'minor', color: 0x365314 },
+  { id: '6A', musical: 'G Minor', position: 10, mode: 'minor', color: 0x0f766e },
+  { id: '7A', musical: 'D Minor', position: 11, mode: 'minor', color: 0x047857 },
 ] as const;
 
 export const CamelotHelix3D: React.FC<CamelotHelix3DProps> = ({
@@ -409,7 +409,7 @@ export const CamelotHelix3D: React.FC<CamelotHelix3DProps> = ({
   }, []);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} data-testid="camelot-wheel">
       {/* Three.js Canvas */}
       <div ref={mountRef} onClick={handleClick} style={{ width, height }} />
 

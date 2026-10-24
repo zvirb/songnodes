@@ -28,19 +28,19 @@ const ENERGY_DESCRIPTORS = {
   10: { label: 'Maximum', desc: 'Peak time anthem' }
 };
 
-// Color gradient for energy levels (cool to hot)
+// Standard energy gradient spectrum tokens (ambient blue -> medium green/cyan -> peak orange/red)
 const getEnergyColor = (level: number): string => {
   const colors = {
-    1: '#2E3A87',   // Deep blue
-    2: '#3A4A9C',
-    3: '#4A5FB1',
-    4: '#5A7AC6',
-    5: '#4A90E2',   // Medium blue
-    6: '#62B0FF',
-    7: '#FFA500',   // Orange transition
-    8: '#FF7F00',
-    9: '#FF5500',
-    10: '#FF0000'   // Red peak
+    1: '#1e3a8a',   // Deep Ambient Blue (WCAG AA pass background)
+    2: '#1d4ed8',   // Ambient Blue
+    3: '#2563eb',   // Low Moderate Blue
+    4: '#0284c7',   // Cyan Blue
+    5: '#06b6d4',   // Medium Cyan
+    6: '#10b981',   // Groovy Green
+    7: '#f59e0b',   // Building Amber
+    8: '#f97316',   // High Orange
+    9: '#ef4444',   // Intense Red
+    10: '#dc2626'   // Peak Red
   };
   return colors[level as keyof typeof colors] || colors[5];
 };
@@ -70,7 +70,10 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
 
   if (orientation === 'vertical') {
     return (
-      <div className="energy-meter-vertical" style={{
+      <div
+        className="energy-meter-vertical"
+        data-testid="energy-meter"
+        style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -117,6 +120,7 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
   return (
     <div
       className="energy-meter-horizontal"
+      data-testid="energy-meter"
       style={{
         display: 'flex',
         alignItems: 'center',
