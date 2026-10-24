@@ -51,6 +51,7 @@ test('sorting by a column marks the header', async ({ page }) => {
 
 test('Build set from crate opens the set builder with the crate as the pool', async ({ page }) => {
   await page.getByRole('button', { name: 'Build set from crate' }).click();
-  await expect(page).toHaveURL(/\/sets\?.*pool=crate/);
-  await expect(page.locator('main#main')).toBeVisible();
+  // The set builder reads ?pool=crate and then clears the query (replace), so assert the result
+  await expect(page).toHaveURL(/\/sets(\?|$)/);
+  await expect(page.getByRole('combobox', { name: 'Pool' })).toHaveValue('crate');
 });
