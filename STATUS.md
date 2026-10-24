@@ -79,6 +79,76 @@ Results (Windows, Python 3.13, dev stack up):
   57 tests (56 + 1 skipped); the earlier "57 passed, 1 skipped" was a miscount.
 - `python -m pytest tests/unit/scrapers`: 17 passed.
 
+### Step 2: Playwright E2E (`fix/e2e-environment`)
+
+Classification of the old suite before any change. The earlier stopped run (21 of
+2,103) failed 16: 15 missing screenshot baselines (all `-win32`, so made for the
+wrong OS) and 1 test defect (`nav.first().tagName` is not a Locator method). A
+classification run of the chromium-based projects was stopped at 101 of 981 (about
+25 s per test): 90 failed.
+
+| Cause | Count | Example |
+|---|---|---|
+| Expected element absent (pre-migration UI: graph at `/`, removed `data-testid`s, deleted ui-kit components) | 62 | `design-system/badge.spec.ts`, `components/intelligent-browser.spec.ts` |
+| Missing screenshot baseline | 23 | `accessibility-error-handling.desktop.spec.ts` |
+| Test defect: port typo `localhost:30006` | 3 | `debug-*.spec.ts` |
+| Test defect: `nav.first().tagName` | 1 | `accessibility-error-handling.desktop.spec.ts` |
+| Text mismatch | 1 | `backend-fix-verification.spec.ts` |
+| WebGL unavailable / backend graph fetch | 0 | after the SwiftShader flags and with the dev stack up |
+
+Only one `data-testid` (`dj-interface`) is left in `src/`. Decision (Markus,
+25 Oct 2026): retire the 70 pre-migration specs and their helpers and write a suite
+for the current app; no synthetic or mocked graph data (graph assertions wait for a
+real-world run).
+
+Changes:
+- `playwright.config.ts`: chromium, firefox, webkit only; one worker; no retries;
+  en-AU, Australia/Melbourne; `PLAYWRIGHT_BASE_URL` to test a running frontend.
+  Chromium runs WebGL on SwiftShader (`--use-angle=swiftshader
+  --enable-unsafe-swiftshader --ignore-gpu-blocklist`); `--disable-software-rasterizer`
+  was what made WebGL unavailable. Global setup now throws if WebGL is unavailable.
+- New specs in `frontend/tests/e2e/` (see `frontend/tests/README.md`): routes smoke,
+  shell/NavDrawer, library, set builder, settings, graph route structure, per-route
+  design rules, axe, visual. `fixtures.ts` fails every test on any console error or
+  uncaught page error; nothing is filtered.
+- `scripts/e2e-docker.sh` runs the suite in `mcr.microsoft.com/playwright:v1.64.1-noble`
+  on the dev stack network. Baselines are made only there.
+- 28 visual baselines (chromium-linux), reviewed by eye against the design system and
+  committed separately. The library crate is captured at viewport height: the page is
+  9,281 px, over SwiftShader's 8,192 px texture limit, and a full-page capture wrapped.
+- `@axe-core/playwright` 4.14.0 (dev dependency) for SDLC gate V2.
+- Approved design-system exceptions (Markus, 25 Oct 2026), recorded in
+  `docs/design-system/EXCEPTIONS.md`; the upstream register in the design-system artifact
+  still needs these rows: EX-001 AppHeader wordmark contrast (4.33:1 in dark; a logotype
+  under WCAG 1.4.3) and EX-002 LauncherCard accessible name (WCAG 2.5.3; the design
+  system's own markup). Each excludes one rule on one element only.
+
+Backend checked before running: REST `/health`, graph `/api/graph/data`, scraper
+`/health` and the frontend all returned 200 (dev stack via `scripts/start-dev.sh`,
+existing Postgres volume kept). The dev database has no graph data.
+
+Results (25 Oct 2026, dev stack up, frontend image built from `main` 2ddfa36; this
+branch changes no app code):
+- `scripts/e2e-docker.sh` (`npx playwright test --workers=1` in the Linux image, all
+  three browsers): **307 passed, 0 failed, 0 skipped, 0 flaky**, 11.8 min. Zero console
+  errors or page errors (enforced per test by `fixtures.ts`). Visual specs run in
+  chromium only by configuration (firefox/webkit `testIgnore`), not skipped.
+- Host chromium (Windows, `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3006`), per spec while
+  writing: all non-visual specs pass; visual baselines are Linux-only by design.
+- `npm run type-check` 0 errors; specs type-check under `tsc --strict`;
+  `npm run test:unit` 75 passed; `npm run build` passed (graph chunk over 1 MB warning);
+  `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check` in sync (1.1.0).
+- Defects found and handled: two design-system accessibility findings (EX-001, EX-002
+  above). No app defect was found by the new suite; graph data behaviour is untested
+  until a real scrape.
+
+Not covered: a CI job for E2E. It needs the dev Compose stack on the runner, which
+touches the Compose-vs-Kubernetes contradiction flagged above, so it is left for a
+decision. Hard-coded `http://localhost:8082` API bases remain in several components
+(`APIKeyManager`, `EditTrackModal`, `PathBuilder`, `PathfinderPanel`, settings and
+playlist managers, `useTokenRefresh`); none is hit by the current suite, but they will
+fail behind the nginx proxy in a deployed build.
+
 ## Previous run: full test suite — completed with blockers
 
 Run: 2026-10-24 (Australia/Sydney). No application code changed.
