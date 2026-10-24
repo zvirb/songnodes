@@ -1548,7 +1548,7 @@ export const useStore = create<StoreState>()(
                   (state.viewState.zoom || 1) > maxReasonableZoom;
 
                 if (badPan || badZoom) {
-                  console.warn('⚠️ Detected extreme viewport values, resetting to defaults:', {
+                  console.warn('Detected extreme viewport values, resetting to defaults:', {
                     pan: state.viewState.pan,
                     zoom: state.viewState.zoom,
                     reasons: { badPan, badZoom }
