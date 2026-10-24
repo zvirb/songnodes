@@ -1,0 +1,10 @@
+/* Import tracklist dialog. Tokens only. */
+.tli__text { width: 100%; min-height: 10rem; font-family: var(--font-data); font-size: 0.8125rem; resize: vertical; }
+.tli__row { display: flex; align-items: center; gap: var(--space-3); }
+.tli__count { font-size: 0.8125rem; color: var(--fg-2); }
+.tli__label { margin: 0 0 var(--space-2); font: 600 0.75rem/1.3 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+.tli__list { list-style: none; margin: 0; padding: 0; max-height: 18rem; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-control); }
+.tli__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); }
+.tli__item:last-child { border-bottom: 0; }
+.tli__num { flex: none; min-width: 2ch; font: 400 0.8125rem/1 var(--font-data); color: var(--fg-3); text-align: right; }
+.tli__orig { font-family: var(--font-data); font-size: 0.6875rem; color: var(--fg-3); }

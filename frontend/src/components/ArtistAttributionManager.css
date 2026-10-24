@@ -1,0 +1,29 @@
+/* Artist attribution dialog. Tokens only. */
+.aam__split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+@media (max-width: 760px) { .aam__split { grid-template-columns: minmax(0, 1fr); } }
+.aam__col { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.aam__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.aam__muted { font-size: 0.8125rem; color: var(--fg-2); }
+.aam__list { list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-control); }
+.aam__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); cursor: pointer; }
+.aam__item:last-child { border-bottom: 0; }
+.aam__item:hover { background: var(--hover-bg); }
+.aam__item[aria-selected="true"] { background: var(--brand-soft); }
+.aam__main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.aam__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.aam__name { font-weight: 600; }
+.aam__tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.aam__pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.aam__page { font: 400 0.8125rem/1 var(--font-data); color: var(--fg-2); }
+.aam__search { position: relative; flex: 1 1 160px; min-width: 0; }
+.aam__search .sn-input { width: 100%; padding-left: 34px; }
+.aam__search-icon { position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--fg-3); display: inline-flex; pointer-events: none; }
+.aam__create { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--surface-2); border-radius: var(--radius-control); }
+.aam__assign { align-self: stretch; }
+.aam__grid { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3); }
+.aam__card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-control); }
+.aam__names { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1) var(--space-3); margin: 0; }
+.aam__names dt { font: 600 0.75rem/1.6 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+.aam__names dd { margin: 0; overflow-wrap: anywhere; }
+.aam__old { color: var(--fg-2); text-decoration: line-through; }
+.aam__new { font-weight: 600; }

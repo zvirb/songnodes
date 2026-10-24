@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { tokenHex } from '../lib/graphColours';
 import * as PIXI from 'pixi.js';
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
@@ -98,7 +99,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
           typeof sourceNode.x === 'number' && typeof sourceNode.y === 'number' &&
           typeof targetNode.x === 'number' && typeof targetNode.y === 'number') {
         const line = new PIXI.Graphics();
-        line.setStrokeStyle({ width: EDGE_WIDTH, color: 0x5a5a5a, alpha: 0.5 });
+        line.setStrokeStyle({ width: EDGE_WIDTH, color: tokenHex('fg-3'), alpha: 0.5 });
         line.moveTo(sourceNode.x * scale + offsetX, sourceNode.y * scale + offsetY);
         line.lineTo(targetNode.x * scale + offsetX, targetNode.y * scale + offsetY);
         line.stroke();
@@ -112,7 +113,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
         const circle = new PIXI.Graphics();
         const radius = Math.max(NODE_MIN_RADIUS, Math.min(NODE_MAX_RADIUS, (node.degree || 1) * 0.2));
         circle.circle(0, 0, radius);
-        circle.fill(0x8e8e93);
+        circle.fill(tokenHex('fg-2'));
         circle.position.set(node.x * scale + offsetX, node.y * scale + offsetY);
         nodesContainer.addChild(circle);
       }
@@ -138,7 +139,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
     const miniMapViewportWidth = worldViewWidth * scale;
     const miniMapViewportHeight = worldViewHeight * scale;
 
-    viewportRect.setStrokeStyle({ width: 2, color: 0x00ff41, alpha: 0.9 });
+    viewportRect.setStrokeStyle({ width: 2, color: tokenHex('brand'), alpha: 0.9 });
     viewportRect.rect(miniMapViewportX, miniMapViewportY, miniMapViewportWidth, miniMapViewportHeight);
     viewportRect.stroke();
   }, [viewState, mainGraphWidth, mainGraphHeight, calculateBoundsAndScale]);
@@ -147,7 +148,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
   const captureSnapshot = useCallback(() => {
     if (!pixiAppRef.current || !nodesContainerRef.current || !edgesContainerRef.current) return;
 
-    console.log('📸 Minimap: Capturing static snapshot (simulation settled)');
+    console.log('Minimap: Capturing static snapshot (simulation settled)');
 
     // Render the current graph geometry
     renderGraphGeometry();
@@ -186,14 +187,14 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
     snapshotSpriteRef.current.visible = true;
     isUsingSnapshotRef.current = true;
 
-    console.log('✅ Minimap: Static snapshot active - continuous rendering stopped');
+    console.log('Minimap: Static snapshot active - continuous rendering stopped');
   }, [renderGraphGeometry]);
 
   // Switch back to dynamic rendering
   const useDynamicRendering = useCallback(() => {
     if (!nodesContainerRef.current || !edgesContainerRef.current) return;
 
-    console.log('🔄 Minimap: Switching to dynamic rendering (simulation active)');
+    console.log('Minimap: Switching to dynamic rendering (simulation active)');
 
     // Hide snapshot, show dynamic containers
     if (snapshotSpriteRef.current) {
@@ -236,7 +237,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
       canvas: canvasRef.current,
       width: MINI_MAP_SIZE,
       height: MINI_MAP_SIZE,
-      backgroundColor: 0x2a2a2a,
+      backgroundColor: tokenHex('sunk'),
       antialias: true,
       autoDensity: true,
       resolution: window.devicePixelRatio || 1,
@@ -263,7 +264,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
     edgesContainerRef.current = edgesContainer;
     viewportRectRef.current = viewportRect;
 
-    console.log('✅ Minimap: Initialized with snapshot optimization');
+    console.log('Minimap: Initialized with snapshot optimization');
   }, []);
 
   // Effect 1: Initialize PIXI
@@ -293,7 +294,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
     // SAFETY: Force snapshot after 10 seconds regardless of simulation state
     const forceSnapshotTimer = setTimeout(() => {
       if (!isUsingSnapshotRef.current && simulationState.alpha < 0.1) {
-        console.log('⚠️ Minimap: Forcing snapshot after 10s timeout');
+        console.log('Minimap: Forcing snapshot after 10s timeout');
         captureSnapshot();
       }
     }, 10000);
@@ -317,7 +318,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
     const currentHash = calculateDataHash();
 
     if (currentHash !== lastDataHashRef.current) {
-      console.log('🔄 Minimap: Data changed, invalidating snapshot');
+      console.log('Minimap: Data changed, invalidating snapshot');
       lastDataHashRef.current = currentHash;
 
       // Data changed - switch to dynamic rendering
@@ -367,7 +368,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
     // SAFETY: Skip minimap rendering entirely for huge graphs (performance protection)
     const totalElements = graphData.nodes.length + graphData.edges.length;
     if (totalElements > 5000) {
-      console.warn('⚠️ Minimap: Disabled for large graph (' + totalElements + ' elements) - would impact performance');
+      console.warn('Minimap: Disabled for large graph (' + totalElements + ' elements) - would impact performance');
       return;
     }
 
@@ -396,18 +397,18 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
         position: 'absolute',
         bottom: '20px',
         right: '20px',
-        backgroundColor: 'rgba(42, 42, 42, 0.95)',
+        backgroundColor: 'var(--surface-1)',
         padding: '12px',
         borderRadius: '8px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7)',
-        zIndex: 1000,
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: 'var(--shadow-2)',
+        zIndex: 'var(--z-drawer)',
+        border: '1px solid var(--line)',
         pointerEvents: 'auto'
       }}
     >
       <h4 style={{
-        color: '#FFFFFF',
-        fontSize: '12px',
+        color: 'var(--fg)',
+        fontSize: '0.75rem',
         marginBottom: '8px',
         fontWeight: 600,
         textTransform: 'uppercase',
@@ -417,8 +418,8 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
         {simulationState.isSettled && (
           <span style={{
             marginLeft: '6px',
-            fontSize: '10px',
-            color: '#00ff41',
+            fontSize: '0.6875rem',
+            color: 'var(--brand)',
             opacity: 0.7
           }}>
             [Cached]
@@ -430,15 +431,15 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
         width={MINI_MAP_SIZE}
         height={MINI_MAP_SIZE}
         style={{
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          border: '1px solid var(--line-strong)',
           borderRadius: '4px',
           display: 'block',
           cursor: 'default'
         }}
       />
       <p style={{
-        fontSize: '10px',
-        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: '0.6875rem',
+        color: 'var(--fg-2)',
         marginTop: '6px',
         textAlign: 'center'
       }}>

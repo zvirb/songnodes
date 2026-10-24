@@ -38,13 +38,13 @@ export const useDataLoader = () => {
       setError(null);
 
       try {
-        // ✅ FIX: Use API Gateway proxy for proper CORS handling and service discovery
+        // FIX: Use API Gateway proxy for proper CORS handling and service discovery
         // The API Gateway (port 3006) proxies requests to graph-visualization-api (port 8084)
         const response = await fetch('/api/graph/data?limit=10000&offset=0');
 
         // Check if request was successful
         if (!response.ok) {
-          throw new Error(`Graph data API returned ${response.status}`);
+          throw new Error(`The graph API answered ${response.status}`);
         }
 
         const data = await response.json();
@@ -52,7 +52,7 @@ export const useDataLoader = () => {
         const edgesData = { edges: data.edges || [] };
 
         // Transform nodes with safety check
-        // ✅ FILTER: Exclude tracks without valid artist attribution
+        // FILTER: Exclude tracks without valid artist attribution
         const allNodes = (nodesData.nodes || [])
           .filter((node: any) => hasValidArtist(node));
 
@@ -75,7 +75,7 @@ export const useDataLoader = () => {
             type: edge.type || edge.edge_type || 'adjacency',
           }));
 
-        // ✅ CRITICAL: Filter out isolated nodes (nodes with no edges)
+        // CRITICAL: Filter out isolated nodes (nodes with no edges)
         // A node should only be displayed if it has at least one connection
         const connectedNodeIds = new Set<string>();
         edges.forEach(edge => {
@@ -92,15 +92,15 @@ export const useDataLoader = () => {
 
         // DEBUG: Graph ready logging disabled (too noisy)
         // if (process.env.NODE_ENV === 'development') {
-        //   console.log(`✅ Graph ready: ${connectedNodes.length} nodes, ${edges.length} edges (filtered ${filteredOutCount} nodes)`);
+        //   console.log(`Graph ready: ${connectedNodes.length} nodes, ${edges.length} edges (filtered ${filteredOutCount} nodes)`);
         // }
 
         setGraphData({ nodes: connectedNodes, edges });
         applyFilters({});
         setLoading(false);
       } catch (error) {
-        console.error('❌ Failed to load graph data:', error);
-        setError('Failed to load graph data. Please try again.');
+        console.error('Failed to load graph data:', error);
+        setError(`${error instanceof Error ? error.message : 'The graph API did not answer'}.`);
 
         // Fallback: try loading from legacy endpoints
         try {
@@ -108,7 +108,7 @@ export const useDataLoader = () => {
           if (!response.ok) throw new Error(`Graph fallback failed: ${response.status}`);
           const data = await response.json();
 
-          // ✅ FILTER: Exclude tracks without valid artist attribution (fallback endpoint too)
+          // FILTER: Exclude tracks without valid artist attribution (fallback endpoint too)
           const validNodes = (data.nodes || []).filter((node: any) => hasValidArtist(node));
 
           const nodes: GraphNode[] = validNodes.map(graphNodeFromApi);
@@ -122,7 +122,7 @@ export const useDataLoader = () => {
             type: 'mix',
           }));
 
-          // ✅ CRITICAL: Filter out isolated nodes (fallback path too)
+          // CRITICAL: Filter out isolated nodes (fallback path too)
           const connectedNodeIds = new Set<string>();
           edges.forEach(edge => {
             connectedNodeIds.add(edge.source);
@@ -135,9 +135,9 @@ export const useDataLoader = () => {
           applyFilters({});
           setLoading(false);
           // DEBUG: Fallback loaded logging disabled (too noisy)
-          // console.log(`✅ Fallback loaded: ${connectedNodes.length} connected nodes, ${edges.length} edges (${nodes.length - connectedNodes.length} isolated filtered)`);
+          // console.log(`Fallback loaded: ${connectedNodes.length} connected nodes, ${edges.length} edges (${nodes.length - connectedNodes.length} isolated filtered)`);
         } catch (fallbackError) {
-          console.error('❌ Failed to load from fallback:', fallbackError);
+          console.error('Failed to load from fallback:', fallbackError);
           setLoading(false);
         }
       }

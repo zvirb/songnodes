@@ -1,13 +1,13 @@
 /**
  * TrackItem Component
- * Individual track recommendation with accessibility features
+ * One suggestion: design-system TrackCell, key verdict (CompatibilityBadge via
+ * SN.compat) and the score band.
  */
 
 import React, { useRef } from 'react';
-import { HarmonicCompatibility } from '../HarmonicCompatibility';
-import { EnergyMeter } from '../EnergyMeter';
 import type { TrackRecommendation, Track } from './types';
-import { getScoreColor } from './utils';
+import { scoreBand, formatDuration } from './utils';
+import { CompatibilityBadge, KeyCompat } from '../ds';
 import styles from './IntelligentBrowser.module.css';
 
 interface TrackItemProps {
@@ -28,11 +28,11 @@ export const TrackItem = React.memo<TrackItemProps>(({
   isFocused,
   showReasons,
   onSelect,
-  onPreview,
   style
 }) => {
-  const { track, score, reasons, compatibility } = recommendation;
+  const { track, score, reasons } = recommendation;
   const itemRef = useRef<HTMLDivElement>(null);
+  const band = scoreBand(score);
 
   // Auto-scroll to focused item
   React.useEffect(() => {
@@ -41,10 +41,6 @@ export const TrackItem = React.memo<TrackItemProps>(({
     }
   }, [isFocused]);
 
-  const handleClick = () => {
-    onSelect(track);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -52,35 +48,36 @@ export const TrackItem = React.memo<TrackItemProps>(({
     }
   };
 
+  const topReason = showReasons && reasons.length ? reasons[0].description : null;
+  const length = formatDuration(track.duration);
+
   return (
     <div
       ref={itemRef}
-      className={`${styles.trackItem} ${isSelected ? styles.selected : ''} ${isFocused ? styles.focused : ''}`}
-      onClick={handleClick}
+      className={`${styles.row} ${isFocused ? styles.focused : ''}`}
+      onClick={() => onSelect(track)}
       onKeyDown={handleKeyDown}
       role="option"
       aria-selected={isSelected}
-      aria-label={`${track.name} by ${track.artist}, score ${score}`}
+      aria-label={`${track.artist} – ${track.name}, score ${score} of 100`}
       tabIndex={isFocused ? 0 : -1}
       style={style}
     >
-      {/* Score Badge */}
-      <div
-        className={styles.scoreBadge}
-        style={{
-          backgroundColor: `${getScoreColor(score)}20`,
-          borderColor: getScoreColor(score),
-          color: getScoreColor(score)
-        }}
-        aria-label={`Compatibility score ${score} out of 100`}
-      >
-        {score}
+      <div className={`sn-track-cell ${styles.rowMain}`}>
+        <span className="sn-track-cell__title">
+          <span className="sn-track-cell__name" title={`${track.artist} – ${track.name}`}>
+            <span className="sn-track-cell__artist">{track.artist} –</span> {track.name}
+          </span>
+        </span>
+        <span className="sn-track-cell__meta">
+          {topReason ? <span className="sn-track-cell__mix">{topReason}</span> : null}
+          {topReason && length !== '–' ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}
+          {length !== '–' ? <span className="sn-track-cell__dur">{length}</span> : null}
+        </span>
       </div>
-
-      {/* Track Info - ONLY artist and title */}
-      <div className={styles.trackInfo}>
-        <h4 className={styles.trackName}>{track.name}</h4>
-        <p className={styles.trackArtist}>{track.artist}</p>
+      <div className={styles.rowBadges}>
+        <CompatibilityBadge level={band.level} label={band.label} />
+        <KeyCompat from={currentTrack?.key} to={track.key} outline />
       </div>
     </div>
   );
@@ -88,9 +85,12 @@ export const TrackItem = React.memo<TrackItemProps>(({
   // Optimize re-renders by comparing only relevant props
   return (
     prevProps.recommendation.track.id === nextProps.recommendation.track.id &&
+    prevProps.recommendation.score === nextProps.recommendation.score &&
+    prevProps.currentTrack?.id === nextProps.currentTrack?.id &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isFocused === nextProps.isFocused &&
-    prevProps.showReasons === nextProps.showReasons
+    prevProps.showReasons === nextProps.showReasons &&
+    prevProps.style?.transform === nextProps.style?.transform
   );
 });
 

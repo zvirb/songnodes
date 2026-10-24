@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Search, Plus, Check, AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { Search, Plus, Check, Trash2, CircleCheck, MousePointerClick, SearchX } from 'lucide-react';
+import { SN } from '../lib/songnodes';
+import { Dialog, ConfirmDialog, Tabs, TabPanel, SegmentedControl, OverflowMenu, EmptyPanel, LoadingPanel, showToast } from './ds';
+import './ArtistAttributionManager.css';
 
 // ============================================================================
 // TypeScript Interfaces
@@ -196,8 +199,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             }
 
             // Show success message
-            setSuccessMessage(`Successfully assigned ${artistName} to track`);
-            setTimeout(() => setSuccessMessage(null), 3000);
+            showToast(`Artist set: ${artistName}`);
 
             // Optimistic UI Update: Remove the assigned track from the list locally
             // This provides instant feedback without waiting for a full refresh.
@@ -250,8 +252,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
         }
 
         // Show results
-        setSuccessMessage(`Assigned ${selectedArtist.name} to ${successCount} tracks${failCount > 0 ? ` (${failCount} failed)` : ''}`);
-        setTimeout(() => setSuccessMessage(null), 5000);
+        showToast(`Artist set: ${selectedArtist.name} on ${successCount} tracks${failCount > 0 ? `, ${failCount} failed` : ''}`);
 
         // Refresh and clear selection
         await fetchTracks();
@@ -294,8 +295,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             const newArtist = await response.json();
 
             // Show success and switch to the new artist
-            setSuccessMessage(`Created new artist: ${newArtist.name}`);
-            setTimeout(() => setSuccessMessage(null), 3000);
+            showToast(`Artist added: ${newArtist.name}`);
 
             // Set the newly created artist as selected
             setSelectedArtist({
@@ -351,8 +351,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             }
 
             const successAction = dirtyArtist.has_conflict ? 'merged into' : 'renamed to';
-            setSuccessMessage(`Successfully ${successAction}: ${dirtyArtist.current_name} → ${dirtyArtist.suggested_clean_name}`);
-            setTimeout(() => setSuccessMessage(null), 3000);
+            showToast(`Renamed: ${dirtyArtist.current_name} to ${dirtyArtist.suggested_clean_name}`);
 
             // Refresh the dirty artists list
             await fetchDirtyArtists();
@@ -365,10 +364,10 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
         }
     };
 
+    const [pendingDelete, setPendingDelete] = useState<DirtyArtist | null>(null);
+
     const deleteArtist = async (dirtyArtist: DirtyArtist) => {
-        if (!confirm(`Are you sure you want to delete "${dirtyArtist.current_name}"? This will remove the artist and all its track associations.`)) {
-            return;
-        }
+        setPendingDelete(null);
 
         setAssigning(true);
         setError(null);
@@ -383,8 +382,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                 throw new Error(errorData.detail || 'Failed to delete artist');
             }
 
-            setSuccessMessage(`Successfully deleted: ${dirtyArtist.current_name}`);
-            setTimeout(() => setSuccessMessage(null), 3000);
+            showToast(`Artist deleted: ${dirtyArtist.current_name}`);
 
             // Refresh the dirty artists list
             await fetchDirtyArtists();
@@ -452,953 +450,209 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
     // Render
     // ============================================================================
 
+    const noTarget = !selectedTrack && selectedTracks.size === 0;
+    const pager = (count: number) => (
+        <div className="aam__pager">
+            <button type="button" className="sn-btn sn-btn--sm" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>Previous page</button>
+            <span className="aam__page">Page {page + 1}</span>
+            <button type="button" className="sn-btn sn-btn--sm" onClick={() => setPage(page + 1)} disabled={count < ITEMS_PER_PAGE}>Next page</button>
+        </div>
+    );
+
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.95)',
-            zIndex: 10000,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-        }}>
-            {/* Header */}
-            <div style={{
-                padding: '24px',
-                borderBottom: '1px solid rgba(126, 211, 33, 0.3)',
-                backgroundColor: 'rgba(0, 0, 0, 0.8)'
-            }}>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '16px'
-                }}>
-                    <div>
-                        <h2 style={{
-                            margin: 0,
-                            color: '#7ED321',
-                            fontSize: '24px',
-                            fontWeight: 700,
-                            marginBottom: '8px'
-                        }}>
-                            Artist Attribution Manager
-                        </h2>
-                    </div>
+        <>
+        <Dialog open title="Artist attribution" sub="Every transition needs a real artist at both ends. Fix tracks without one and tidy messy names." size="l" onClose={onClose}>
+            <Tabs<'missing' | 'dirty'>
+                label="Artist attribution"
+                idBase="aam"
+                tabs={[{ id: 'missing', label: 'Missing artist' }, { id: 'dirty', label: 'Messy names' }]}
+                value={activeTab}
+                onChange={(t) => { setActiveTab(t); setPage(0); }}
+            />
 
-                    <button
-                        onClick={onClose}
-                        style={{
-                            padding: '8px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '8px',
-                            color: '#FFFFFF',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
+            {error && <p className="sn-inline-message sn-inline-message--boxed" data-status="bad" role="alert">{error}</p>}
 
-                {/* Tab Navigation */}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={() => setActiveTab('missing')}
-                        style={{
-                            padding: '10px 20px',
-                            backgroundColor: activeTab === 'missing' ? 'rgba(126, 211, 33, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                            border: `1px solid ${activeTab === 'missing' ? 'rgba(126, 211, 33, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
-                            borderRadius: '8px',
-                            color: '#FFFFFF',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        Missing Artists
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('dirty')}
-                        style={{
-                            padding: '10px 20px',
-                            backgroundColor: activeTab === 'dirty' ? 'rgba(126, 211, 33, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                            border: `1px solid ${activeTab === 'dirty' ? 'rgba(126, 211, 33, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
-                            borderRadius: '8px',
-                            color: '#FFFFFF',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        Dirty Artist Names
-                    </button>
-                </div>
-            </div>
-
-            {/* Messages */}
-            {error && (
-                <div style={{
-                    padding: '12px 24px',
-                    backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                    borderBottom: '1px solid rgba(231, 76, 60, 0.4)',
-                    color: '#E74C3C',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                }}>
-                    <AlertCircle size={16} />
-                    <span>{error}</span>
-                </div>
-            )}
-
-            {successMessage && (
-                <div style={{
-                    padding: '12px 24px',
-                    backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                    borderBottom: '1px solid rgba(126, 211, 33, 0.4)',
-                    color: '#7ED321',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                }}>
-                    <Check size={16} />
-                    <span>{successMessage}</span>
-                </div>
-            )}
-
-            {/* Main Content */}
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                overflow: 'hidden'
-            }}>
+            <TabPanel idBase="aam" id={activeTab}>
                 {activeTab === 'missing' ? (
-                    <>
-                {/* Left Panel - Track List */}
-                <div style={{
-                    width: '50%',
-                    borderRight: '1px solid rgba(126, 211, 33, 0.3)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                }}>
-                    {/* Controls */}
-                    <div style={{
-                        padding: '16px',
-                        borderBottom: '1px solid rgba(126, 211, 33, 0.3)',
-                        backgroundColor: 'rgba(0, 0, 0, 0.4)'
-                    }}>
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                            <button
-                                onClick={() => setSortBy('importance')}
-                                style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: sortBy === 'importance' ? 'rgba(126, 211, 33, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                                    border: `1px solid ${sortBy === 'importance' ? 'rgba(126, 211, 33, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
-                                    borderRadius: '6px',
-                                    color: '#FFFFFF',
-                                    fontSize: '13px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                By Importance
-                            </button>
-                            <button
-                                onClick={() => setSortBy('alphabetical')}
-                                style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: sortBy === 'alphabetical' ? 'rgba(126, 211, 33, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                                    border: `1px solid ${sortBy === 'alphabetical' ? 'rgba(126, 211, 33, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
-                                    borderRadius: '6px',
-                                    color: '#FFFFFF',
-                                    fontSize: '13px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Alphabetical
-                            </button>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                                onClick={selectAllOnPage}
-                                disabled={tracks.length === 0}
-                                style={{
-                                    padding: '6px 12px',
-                                    backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                    border: '1px solid rgba(126, 211, 33, 0.4)',
-                                    borderRadius: '6px',
-                                    color: '#FFFFFF',
-                                    fontSize: '12px',
-                                    cursor: tracks.length === 0 ? 'not-allowed' : 'pointer',
-                                    opacity: tracks.length === 0 ? 0.5 : 1
-                                }}
-                            >
-                                Select All ({tracks.length})
-                            </button>
-                            {selectedTracks.size > 0 && (
-                                <>
-                                    <button
-                                        onClick={clearSelection}
-                                        style={{
-                                            padding: '6px 12px',
-                                            backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                                            border: '1px solid rgba(231, 76, 60, 0.4)',
-                                            borderRadius: '6px',
-                                            color: '#FFFFFF',
-                                            fontSize: '12px',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Clear Selection
-                                    </button>
-                                    <div style={{
-                                        padding: '6px 12px',
-                                        backgroundColor: 'rgba(126, 211, 33, 0.1)',
-                                        border: '1px solid rgba(126, 211, 33, 0.3)',
-                                        borderRadius: '6px',
-                                        color: '#7ED321',
-                                        fontSize: '12px',
-                                        fontWeight: 600
-                                    }}>
-                                        {selectedTracks.size} selected
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Track List */}
-                    <div style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        padding: '16px'
-                    }}>
-                        {loading ? (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                height: '200px',
-                                color: '#FFFFFF',
-                                gap: '8px'
-                            }}>
-                                <Loader2 size={20} className="animate-spin" />
-                                <span>Loading tracks...</span>
-                            </div>
-                        ) : tracks.length === 0 ? (
-                            <div style={{
-                                textAlign: 'center',
-                                padding: '40px',
-                                color: '#FFFFFF',
-                                opacity: 0.6
-                            }}>
-                                🎉 No tracks missing artist attribution!
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {tracks.map((track) => (
-                                    <div
-                                        key={track.track_id}
-                                        onClick={() => setSelectedTrack(track)}
-                                        style={{
-                                            padding: '12px',
-                                            backgroundColor: selectedTrack?.track_id === track.track_id
-                                                ? 'rgba(126, 211, 33, 0.2)'
-                                                : 'rgba(255, 255, 255, 0.05)',
-                                            border: `1px solid ${selectedTrack?.track_id === track.track_id
-                                                ? 'rgba(126, 211, 33, 0.5)'
-                                                : 'rgba(255, 255, 255, 0.1)'}`,
-                                            borderRadius: '8px',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: '12px'
-                                        }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedTracks.has(track.track_id)}
-                                            onChange={(e) => {
-                                                e.stopPropagation();
-                                                toggleTrackSelection(track.track_id);
-                                            }}
-                                            style={{
-                                                marginTop: '4px',
-                                                cursor: 'pointer',
-                                                width: '16px',
-                                                height: '16px'
-                                            }}
-                                        />
-
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{
-                                                color: '#FFFFFF',
-                                                fontSize: '14px',
-                                                fontWeight: 600,
-                                                marginBottom: '4px'
-                                            }}>
-                                                {track.title}
-                                            </div>
-                                            <div style={{
-                                                color: '#FFFFFF',
-                                                fontSize: '12px',
-                                                opacity: 0.6,
-                                                display: 'flex',
-                                                gap: '12px'
-                                            }}>
-                                                <span>📊 Importance: {getImportanceScore(track)}</span>
-                                                <span>📝 Playlists: {track.playlist_count}</span>
-                                                {track.source && <span>🔗 {track.source}</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Pagination */}
-                    <div style={{
-                        padding: '16px',
-                        borderTop: '1px solid rgba(126, 211, 33, 0.3)',
-                        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                        display: 'flex',
-                        gap: '8px',
-                        justifyContent: 'center'
-                    }}>
-                        <button
-                            onClick={() => setPage(Math.max(0, page - 1))}
-                            disabled={page === 0}
-                            style={{
-                                padding: '8px 16px',
-                                backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                border: '1px solid rgba(126, 211, 33, 0.4)',
-                                borderRadius: '6px',
-                                color: '#FFFFFF',
-                                fontSize: '13px',
-                                cursor: page === 0 ? 'not-allowed' : 'pointer',
-                                opacity: page === 0 ? 0.5 : 1
-                            }}
-                        >
-                            Previous
-                        </button>
-                        <div style={{
-                            padding: '8px 16px',
-                            color: '#FFFFFF',
-                            fontSize: '13px',
-                            display: 'flex',
-                            alignItems: 'center'
-                        }}>
-                            Page {page + 1}
-                        </div>
-                        <button
-                            onClick={() => setPage(page + 1)}
-                            disabled={tracks.length < ITEMS_PER_PAGE}
-                            style={{
-                                padding: '8px 16px',
-                                backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                border: '1px solid rgba(126, 211, 33, 0.4)',
-                                borderRadius: '6px',
-                                color: '#FFFFFF',
-                                fontSize: '13px',
-                                cursor: tracks.length < ITEMS_PER_PAGE ? 'not-allowed' : 'pointer',
-                                opacity: tracks.length < ITEMS_PER_PAGE ? 0.5 : 1
-                            }}
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
-
-                {/* Right Panel - Artist Search & Assignment */}
-                <div style={{
-                    width: '50%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                }}>
-                    {/* Search Bar */}
-                    <div style={{
-                        padding: '16px',
-                        borderBottom: '1px solid rgba(126, 211, 33, 0.3)',
-                        backgroundColor: 'rgba(0, 0, 0, 0.4)'
-                    }}>
-                        <div style={{
-                            position: 'relative',
-                            marginBottom: '12px'
-                        }}>
-                            <Search
-                                size={16}
-                                style={{
-                                    position: 'absolute',
-                                    left: '12px',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    color: '#7ED321',
-                                    pointerEvents: 'none'
-                                }}
-                            />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search for artists..."
-                                disabled={!selectedTrack && selectedTracks.size === 0}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px 10px 36px',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                    border: '1px solid rgba(126, 211, 33, 0.3)',
-                                    borderRadius: '8px',
-                                    color: '#FFFFFF',
-                                    fontSize: '14px',
-                                    outline: 'none'
-                                }}
-                            />
-                        </div>
-
-                        <button
-                            onClick={() => setShowCreateArtist(!showCreateArtist)}
-                            disabled={!selectedTrack && selectedTracks.size === 0}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                border: '1px solid rgba(126, 211, 33, 0.4)',
-                                borderRadius: '8px',
-                                color: '#FFFFFF',
-                                fontSize: '13px',
-                                cursor: (!selectedTrack && selectedTracks.size === 0) ? 'not-allowed' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '6px',
-                                opacity: (!selectedTrack && selectedTracks.size === 0) ? 0.5 : 1
-                            }}
-                        >
-                            <Plus size={16} />
-                            Create New Artist
-                        </button>
-                    </div>
-
-                    {/* Create Artist Form */}
-                    {showCreateArtist && (
-                        <div style={{
-                            padding: '16px',
-                            borderBottom: '1px solid rgba(126, 211, 33, 0.3)',
-                            backgroundColor: 'rgba(126, 211, 33, 0.1)'
-                        }}>
-                            <input
-                                type="text"
-                                value={newArtistName}
-                                onChange={(e) => setNewArtistName(e.target.value)}
-                                placeholder="Enter artist name..."
-                                autoFocus
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    marginBottom: '8px',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                    border: '1px solid rgba(126, 211, 33, 0.3)',
-                                    borderRadius: '8px',
-                                    color: '#FFFFFF',
-                                    fontSize: '14px',
-                                    outline: 'none'
-                                }}
-                            />
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button
-                                    onClick={createArtist}
-                                    disabled={assigning || newArtistName.trim().length < 2}
-                                    style={{
-                                        flex: 1,
-                                        padding: '8px',
-                                        backgroundColor: 'rgba(126, 211, 33, 0.3)',
-                                        border: '1px solid rgba(126, 211, 33, 0.5)',
-                                        borderRadius: '6px',
-                                        color: '#FFFFFF',
-                                        fontSize: '13px',
-                                        cursor: (assigning || newArtistName.trim().length < 2) ? 'not-allowed' : 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '6px',
-                                        opacity: (assigning || newArtistName.trim().length < 2) ? 0.5 : 1
-                                    }}
-                                >
-                                    {assigning ? (
-                                        <>
-                                            <Loader2 size={14} className="animate-spin" />
-                                            Creating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Plus size={14} />
-                                            Create
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setShowCreateArtist(false);
-                                        setNewArtistName('');
-                                    }}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '6px',
-                                        color: '#FFFFFF',
-                                        fontSize: '13px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Artist Results */}
-                    <div style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        padding: '16px'
-                    }}>
-                        {searching ? (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                height: '200px',
-                                color: '#FFFFFF',
-                                gap: '8px'
-                            }}>
-                                <Loader2 size={20} className="animate-spin" />
-                                <span>Searching artists...</span>
-                            </div>
-                        ) : !selectedTrack && selectedTracks.size === 0 ? (
-                            <div style={{
-                                textAlign: 'center',
-                                padding: '40px',
-                                color: '#FFFFFF',
-                                opacity: 0.6
-                            }}>
-                                ← Select a track or multiple tracks to begin
-                            </div>
-                        ) : artistResults.length === 0 && searchQuery.trim().length >= 2 ? (
-                            <div style={{
-                                textAlign: 'center',
-                                padding: '40px',
-                                color: '#FFFFFF',
-                                opacity: 0.6
-                            }}>
-                                No artists found. Try creating a new artist.
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {artistResults.map((artist) => (
-                                    <div
-                                        key={artist.artist_id}
-                                        style={{
-                                            padding: '12px',
-                                            backgroundColor: selectedArtist?.artist_id === artist.artist_id
-                                                ? 'rgba(126, 211, 33, 0.2)'
-                                                : 'rgba(255, 255, 255, 0.05)',
-                                            border: `1px solid ${selectedArtist?.artist_id === artist.artist_id
-                                                ? 'rgba(126, 211, 33, 0.5)'
-                                                : 'rgba(255, 255, 255, 0.1)'}`,
-                                            borderRadius: '8px',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
-                                        onClick={() => setSelectedArtist(artist)}
-                                    >
-                                        <div style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'flex-start',
-                                            marginBottom: '8px'
-                                        }}>
-                                            <div style={{
-                                                color: '#FFFFFF',
-                                                fontSize: '14px',
-                                                fontWeight: 600
-                                            }}>
-                                                {artist.name}
-                                            </div>
-                                            <div style={{
-                                                color: '#7ED321',
-                                                fontSize: '12px',
-                                                fontWeight: 600
-                                            }}>
-                                                {Math.round(artist.match_score * 100)}% match
-                                            </div>
-                                        </div>
-
-                                        <div style={{
-                                            color: '#FFFFFF',
-                                            fontSize: '12px',
-                                            opacity: 0.6,
-                                            display: 'flex',
-                                            gap: '12px',
-                                            flexWrap: 'wrap'
-                                        }}>
-                                            <span>🎵 {artist.track_count} tracks</span>
-                                            {artist.spotify_id && <span>✓ Spotify</span>}
-                                            {artist.musicbrainz_id && <span>✓ MusicBrainz</span>}
-                                        </div>
-
-                                        {artist.genres && artist.genres.length > 0 && (
-                                            <div style={{
-                                                marginTop: '8px',
-                                                display: 'flex',
-                                                gap: '4px',
-                                                flexWrap: 'wrap'
-                                            }}>
-                                                {artist.genres.slice(0, 3).map((genre, idx) => (
-                                                    <span
-                                                        key={idx}
-                                                        style={{
-                                                            padding: '2px 8px',
-                                                            backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                                            border: '1px solid rgba(126, 211, 33, 0.3)',
-                                                            borderRadius: '12px',
-                                                            color: '#7ED321',
-                                                            fontSize: '11px'
-                                                        }}
-                                                    >
-                                                        {genre}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Assignment Button */}
-                    {selectedArtist && (selectedTrack || selectedTracks.size > 0) && (
-                        <div style={{
-                            padding: '16px',
-                            borderTop: '1px solid rgba(126, 211, 33, 0.3)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.4)'
-                        }}>
-                            <button
-                                onClick={() => {
-                                    if (selectedTracks.size > 0) {
-                                        assignArtistToBulk();
-                                    } else if (selectedTrack) {
-                                        assignArtistToTrack(selectedTrack.track_id, selectedArtist.artist_id, selectedArtist.name);
-                                    }
-                                }}
-                                disabled={assigning}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    backgroundColor: 'rgba(126, 211, 33, 0.3)',
-                                    border: '1px solid rgba(126, 211, 33, 0.5)',
-                                    borderRadius: '8px',
-                                    color: '#FFFFFF',
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    cursor: assigning ? 'not-allowed' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    opacity: assigning ? 0.5 : 1
-                                }}
-                            >
-                                {assigning ? (
+                    <div className="aam__split">
+                        <section className="aam__col" aria-label="Tracks without an artist">
+                            <div className="aam__bar">
+                                <SegmentedControl<'importance' | 'alphabetical'>
+                                    label="Sort tracks"
+                                    size="sm"
+                                    value={sortBy}
+                                    onChange={setSortBy}
+                                    options={[{ value: 'importance', label: 'Most used' }, { value: 'alphabetical', label: 'A to Z' }]}
+                                />
+                                {selectedTracks.size > 0 ? (
                                     <>
-                                        <Loader2 size={16} className="animate-spin" />
-                                        Assigning...
+                                        <span className="aam__muted" role="status">{selectedTracks.size} selected</span>
+                                        <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={clearSelection}>Clear selection</button>
                                     </>
                                 ) : (
-                                    <>
-                                        <Check size={16} />
-                                        Assign {selectedArtist.name} to {selectedTracks.size > 0 ? `${selectedTracks.size} tracks` : 'track'}
-                                    </>
+                                    <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={selectAllOnPage} disabled={tracks.length === 0}>Select all {tracks.length}</button>
                                 )}
-                            </button>
-                        </div>
-                    )}
-                </div>
-                    </>
-                ) : (
-                    /* Dirty Artists Tab */
-                    <div style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                        padding: '24px'
-                    }}>
-                        {loading ? (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                height: '200px',
-                                color: '#FFFFFF',
-                                gap: '8px'
-                            }}>
-                                <Loader2 size={20} className="animate-spin" />
-                                <span>Loading dirty artists...</span>
                             </div>
-                        ) : dirtyArtists.length === 0 ? (
-                            <div style={{
-                                textAlign: 'center',
-                                padding: '40px',
-                                color: '#FFFFFF',
-                                opacity: 0.6
-                            }}>
-                                🎉 No dirty artist names found! All artists are clean.
-                            </div>
-                        ) : (
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-                                gap: '16px',
-                                overflowY: 'auto'
-                            }}>
-                                {dirtyArtists.map((artist) => (
-                                    <div
-                                        key={artist.artist_id}
-                                        style={{
-                                            padding: '16px',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                            border: `1px solid ${artist.has_conflict ? 'rgba(231, 76, 60, 0.5)' : 'rgba(126, 211, 33, 0.3)'}`,
-                                            borderRadius: '8px',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        {/* Current Name */}
-                                        <div style={{
-                                            marginBottom: '12px',
-                                            paddingBottom: '12px',
-                                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                                        }}>
-                                            <div style={{
-                                                fontSize: '11px',
-                                                color: '#E74C3C',
-                                                fontWeight: 600,
-                                                marginBottom: '4px',
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.5px'
-                                            }}>
-                                                Current (Dirty)
+
+                            {loading ? (
+                                <LoadingPanel message="Loading tracks without an artist…" rows={6} />
+                            ) : tracks.length === 0 ? (
+                                <EmptyPanel compact icon={CircleCheck} title="Every track has an artist">
+                                    New tracks without one appear here after the next scrape.
+                                </EmptyPanel>
+                            ) : (
+                                <ul className="aam__list">
+                                    {tracks.map((track) => (
+                                        <li key={track.track_id} className="aam__item" aria-selected={selectedTrack?.track_id === track.track_id || selectedTracks.has(track.track_id)} onClick={() => setSelectedTrack(track)}>
+                                            <label className="sn-checkbox sn-checkbox--bare" onClick={(e) => e.stopPropagation()}>
+                                                <input type="checkbox" checked={selectedTracks.has(track.track_id)} onChange={() => toggleTrackSelection(track.track_id)} aria-label={`Select ${track.title}`} />
+                                            </label>
+                                            <div className="sn-track-cell aam__main">
+                                                <span className="sn-track-cell__title"><span className="sn-track-cell__name">{track.title}</span></span>
+                                                <span className="sn-track-cell__meta">
+                                                    <span>{SN.format.count(track.playlist_count)} playlists</span>
+                                                    <span className="sn-track-cell__sep" aria-hidden="true">·</span>
+                                                    <span>{SN.format.count(getImportanceScore(track))} uses</span>
+                                                    {track.source ? <><span className="sn-track-cell__sep" aria-hidden="true">·</span><span>{track.source}</span></> : null}
+                                                </span>
                                             </div>
-                                            <div style={{
-                                                fontSize: '16px',
-                                                color: '#FFFFFF',
-                                                fontWeight: 600,
-                                                fontFamily: 'monospace'
-                                            }}>
-                                                {artist.current_name}
-                                            </div>
-                                        </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {pager(tracks.length)}
+                        </section>
 
-                                        {/* Suggested Clean Name */}
-                                        <div style={{
-                                            marginBottom: '12px',
-                                            paddingBottom: '12px',
-                                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                                        }}>
-                                            <div style={{
-                                                fontSize: '11px',
-                                                color: '#7ED321',
-                                                fontWeight: 600,
-                                                marginBottom: '4px',
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.5px'
-                                            }}>
-                                                Suggested Clean Name
-                                            </div>
-                                            <div style={{
-                                                fontSize: '16px',
-                                                color: '#FFFFFF',
-                                                fontWeight: 600
-                                            }}>
-                                                {artist.suggested_clean_name}
-                                            </div>
-                                        </div>
-
-                                        {/* Metadata */}
-                                        <div style={{
-                                            display: 'flex',
-                                            gap: '12px',
-                                            marginBottom: '12px',
-                                            fontSize: '12px',
-                                            color: '#FFFFFF',
-                                            opacity: 0.7
-                                        }}>
-                                            <span>🎵 {artist.track_count} tracks</span>
-                                            <span style={{
-                                                padding: '2px 8px',
-                                                backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                                borderRadius: '4px',
-                                                fontSize: '11px',
-                                                fontWeight: 600
-                                            }}>
-                                                {artist.pattern_type.replace('_', ' ')}
-                                            </span>
-                                        </div>
-
-                                        {/* Conflict Warning */}
-                                        {artist.has_conflict && (
-                                            <div style={{
-                                                padding: '8px',
-                                                backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                                                border: '1px solid rgba(231, 76, 60, 0.4)',
-                                                borderRadius: '6px',
-                                                color: '#E74C3C',
-                                                fontSize: '12px',
-                                                marginBottom: '12px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '6px'
-                                            }}>
-                                                <AlertCircle size={14} />
-                                                <span>Name conflict - will merge into existing artist</span>
-                                            </div>
-                                        )}
-
-                                        {/* Action Buttons */}
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button
-                                                onClick={() => applyCleanName(artist)}
-                                                disabled={assigning}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '10px',
-                                                    backgroundColor: artist.has_conflict
-                                                        ? 'rgba(255, 152, 0, 0.3)'
-                                                        : 'rgba(126, 211, 33, 0.3)',
-                                                    border: `1px solid ${artist.has_conflict
-                                                        ? 'rgba(255, 152, 0, 0.5)'
-                                                        : 'rgba(126, 211, 33, 0.5)'}`,
-                                                    borderRadius: '6px',
-                                                    color: '#FFFFFF',
-                                                    fontSize: '13px',
-                                                    fontWeight: 600,
-                                                    cursor: assigning ? 'not-allowed' : 'pointer',
-                                                    opacity: assigning ? 0.5 : 1,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '6px'
-                                                }}
-                                            >
-                                                {assigning ? (
-                                                    <>
-                                                        <Loader2 size={14} className="animate-spin" />
-                                                        {artist.has_conflict ? 'Merging...' : 'Applying...'}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Check size={14} />
-                                                        {artist.has_conflict ? 'Merge into Existing' : 'Apply Clean Name'}
-                                                    </>
-                                                )}
-                                            </button>
-
-                                            <button
-                                                onClick={() => deleteArtist(artist)}
-                                                disabled={assigning}
-                                                style={{
-                                                    padding: '10px',
-                                                    backgroundColor: 'rgba(231, 76, 60, 0.3)',
-                                                    border: '1px solid rgba(231, 76, 60, 0.5)',
-                                                    borderRadius: '6px',
-                                                    color: '#FFFFFF',
-                                                    fontSize: '13px',
-                                                    fontWeight: 600,
-                                                    cursor: assigning ? 'not-allowed' : 'pointer',
-                                                    opacity: assigning ? 0.5 : 1,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '6px'
-                                                }}
-                                                title="Delete this artist and remove all track associations"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Pagination for Dirty Artists */}
-                        {!loading && dirtyArtists.length > 0 && (
-                            <div style={{
-                                marginTop: '24px',
-                                display: 'flex',
-                                gap: '8px',
-                                justifyContent: 'center'
-                            }}>
-                                <button
-                                    onClick={() => setPage(Math.max(0, page - 1))}
-                                    disabled={page === 0}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                        border: '1px solid rgba(126, 211, 33, 0.4)',
-                                        borderRadius: '6px',
-                                        color: '#FFFFFF',
-                                        fontSize: '13px',
-                                        cursor: page === 0 ? 'not-allowed' : 'pointer',
-                                        opacity: page === 0 ? 0.5 : 1
-                                    }}
-                                >
-                                    Previous
-                                </button>
-                                <div style={{
-                                    padding: '8px 16px',
-                                    color: '#FFFFFF',
-                                    fontSize: '13px',
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                }}>
-                                    Page {page + 1}
+                        <section className="aam__col" aria-label="Choose an artist">
+                            <div className="aam__bar">
+                                <div className="aam__search">
+                                    <span className="aam__search-icon" aria-hidden="true"><Search size={16} strokeWidth={2} /></span>
+                                    <input type="search" className="sn-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search artists" aria-label="Search artists" disabled={noTarget} />
                                 </div>
-                                <button
-                                    onClick={() => setPage(page + 1)}
-                                    disabled={dirtyArtists.length < ITEMS_PER_PAGE}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: 'rgba(126, 211, 33, 0.2)',
-                                        border: '1px solid rgba(126, 211, 33, 0.4)',
-                                        borderRadius: '6px',
-                                        color: '#FFFFFF',
-                                        fontSize: '13px',
-                                        cursor: dirtyArtists.length < ITEMS_PER_PAGE ? 'not-allowed' : 'pointer',
-                                        opacity: dirtyArtists.length < ITEMS_PER_PAGE ? 0.5 : 1
-                                    }}
-                                >
-                                    Next
+                                <button type="button" className="sn-btn sn-btn--sm" onClick={() => setShowCreateArtist(!showCreateArtist)} disabled={noTarget} aria-expanded={showCreateArtist}>
+                                    <Plus size={16} strokeWidth={2} aria-hidden="true" />
+                                    New artist
                                 </button>
                             </div>
-                        )}
+
+                            {showCreateArtist && (
+                                <div className="aam__create">
+                                    <div className="sn-field">
+                                        <label htmlFor="aam-new">Artist name</label>
+                                        <input id="aam-new" className="sn-input" type="text" value={newArtistName} onChange={(e) => setNewArtistName(e.target.value)} autoFocus />
+                                    </div>
+                                    <div className="aam__row">
+                                        <button type="button" className="sn-btn sn-btn--sm" onClick={createArtist} disabled={assigning || newArtistName.trim().length < 2} aria-busy={assigning || undefined}>
+                                            {assigning ? 'Adding…' : 'Add artist'}
+                                        </button>
+                                        <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => { setShowCreateArtist(false); setNewArtistName(''); }}>Cancel</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {searching ? (
+                                <span className="sn-loading-state__inline" role="status"><span className="sn-spinner" aria-hidden="true" />Searching artists…</span>
+                            ) : noTarget ? (
+                                <EmptyPanel compact icon={MousePointerClick} title="Pick a track first">Select one track, or tick several, then search for its artist.</EmptyPanel>
+                            ) : artistResults.length === 0 && searchQuery.trim().length >= 2 ? (
+                                <EmptyPanel compact icon={SearchX} title="No artists match" actions={<button type="button" className="sn-btn" onClick={() => { setShowCreateArtist(true); setNewArtistName(searchQuery); }}>Add “{searchQuery}” as a new artist</button>}>
+                                    None of the artists in the library match “{searchQuery}”.
+                                </EmptyPanel>
+                            ) : (
+                                <ul className="aam__list">
+                                    {artistResults.map((artist) => (
+                                        <li key={artist.artist_id} className="aam__item" aria-selected={selectedArtist?.artist_id === artist.artist_id} onClick={() => setSelectedArtist(artist)}>
+                                            <div className="aam__main">
+                                                <div className="aam__row">
+                                                    <span className="aam__name">{artist.name}</span>
+                                                    <span className="aam__muted">{SN.format.percent(artist.match_score)} match</span>
+                                                </div>
+                                                <div className="aam__tags">
+                                                    <span className="aam__muted">{SN.format.count(artist.track_count)} tracks</span>
+                                                    {artist.spotify_id && <span className="sn-tag">Spotify</span>}
+                                                    {artist.musicbrainz_id && <span className="sn-tag">MusicBrainz</span>}
+                                                    {artist.genres?.slice(0, 3).map((genre, idx) => <span key={idx} className="sn-tag">{genre}</span>)}
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+
+                            {selectedArtist && !noTarget && (
+                                <button
+                                    type="button"
+                                    className="sn-btn sn-btn--primary aam__assign"
+                                    onClick={() => {
+                                        if (selectedTracks.size > 0) assignArtistToBulk();
+                                        else if (selectedTrack) assignArtistToTrack(selectedTrack.track_id, selectedArtist.artist_id, selectedArtist.name);
+                                    }}
+                                    disabled={assigning}
+                                    aria-busy={assigning || undefined}
+                                >
+                                    {assigning ? <span className="sn-spinner" aria-hidden="true" /> : <Check size={16} strokeWidth={2} aria-hidden="true" />}
+                                    {assigning ? 'Setting artist…' : `Set ${selectedArtist.name} as artist${selectedTracks.size > 0 ? ` of ${selectedTracks.size} tracks` : ''}`}
+                                </button>
+                            )}
+                        </section>
                     </div>
+                ) : (
+                    <section aria-label="Messy artist names">
+                        {loading ? (
+                            <LoadingPanel message="Loading artist names to tidy…" rows={6} />
+                        ) : dirtyArtists.length === 0 ? (
+                            <EmptyPanel compact icon={CircleCheck} title="Every artist name is tidy">
+                                Names with extra text such as “feat.” or a label appear here after the next scrape.
+                            </EmptyPanel>
+                        ) : (
+                            <ul className="aam__grid">
+                                {dirtyArtists.map((artist) => (
+                                    <li key={artist.artist_id} className="aam__card">
+                                        <dl className="aam__names">
+                                            <dt>Now</dt><dd className="aam__old">{artist.current_name}</dd>
+                                            <dt>Tidy</dt><dd className="aam__new">{artist.suggested_clean_name}</dd>
+                                        </dl>
+                                        <div className="aam__tags">
+                                            <span className="aam__muted">{SN.format.count(artist.track_count)} tracks</span>
+                                            <span className="sn-tag">{artist.pattern_type.replace(/_/g, ' ')}</span>
+                                        </div>
+                                        {artist.has_conflict && (
+                                            <p className="sn-inline-message" data-status="warn">An artist with the tidy name exists; applying merges the two.</p>
+                                        )}
+                                        <div className="aam__row">
+                                            <button type="button" className="sn-btn sn-btn--sm" onClick={() => applyCleanName(artist)} disabled={assigning}>
+                                                {artist.has_conflict ? 'Merge into existing artist' : 'Use tidy name'}
+                                            </button>
+                                            <OverflowMenu
+                                                small
+                                                quiet
+                                                label={`More actions for ${artist.current_name}`}
+                                                onSelect={() => setPendingDelete(artist)}
+                                                items={[{ id: 'delete', label: 'Delete artist…', icon: Trash2, destructive: true }]}
+                                            />
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {!loading && dirtyArtists.length > 0 && pager(dirtyArtists.length)}
+                    </section>
                 )}
-            </div>
-        </div>
+            </TabPanel>
+        </Dialog>
+
+        <ConfirmDialog
+            open={!!pendingDelete}
+            title={`Delete “${pendingDelete?.current_name ?? ''}”?`}
+            confirmLabel="Delete artist"
+            busy={assigning}
+            busyLabel="Deleting…"
+            onConfirm={() => pendingDelete && deleteArtist(pendingDelete)}
+            onCancel={() => setPendingDelete(null)}
+            facts={[`Its ${pendingDelete?.track_count ?? 0} tracks lose this artist and go back to “Missing artist”.`]}
+        >
+            This removes the artist and every link to its tracks. This can’t be undone.
+        </ConfirmDialog>
+        </>
     );
 };

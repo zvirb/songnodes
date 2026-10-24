@@ -87,7 +87,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
   const setError = useStore(state => state.general.setError);
   const setLoading = useStore(state => state.general.setLoading);
 
-  // ✅ NEW: Watch for authentication changes
+  // NEW: Watch for authentication changes
   const musicCredentials = useStore(state => state.musicCredentials);
 
   // Refs for cleanup
@@ -186,7 +186,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       };
 
       ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
+        console.error('WebSocket error:', error);
         const errorMessage = 'WebSocket connection failed';
         setStatus(prev => {
           const newStatus = {
@@ -268,7 +268,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       setLoading(true);
       const startTime = performance.now();
 
-      // ✅ NEW: Build authentication headers if credentials available
+      // NEW: Build authentication headers if credentials available
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
@@ -299,14 +299,14 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       ]);
 
       // Transform and validate data
-      // ✅ FILTER: Exclude tracks without valid artist attribution
+      // FILTER: Exclude tracks without valid artist attribution
       const allNodesCount = (nodesData.nodes || []).length;
       const validNodesData = (nodesData.nodes || []).filter((node: any) => hasValidArtist(node));
       const filteredCount = allNodesCount - validNodesData.length;
 
-      // ✅ NEW: Log warning if nodes were filtered out
+      // NEW: Log warning if nodes were filtered out
       if (filteredCount > 0) {
-        console.warn(`⚠️ Filtered out ${filteredCount} nodes due to missing/invalid artist attribution (${allNodesCount} total → ${validNodesData.length} valid)`);
+        console.warn(`Filtered out ${filteredCount} nodes due to missing/invalid artist attribution (${allNodesCount} total → ${validNodesData.length} valid)`);
       }
 
       const nodes: GraphNode[] = validNodesData.map((node: any) => ({
@@ -365,11 +365,11 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         onDataUpdate('graph', graphData);
       }
 
-      console.log(`✅ Graph data loaded successfully (${latency.toFixed(0)}ms)`);
+      console.log(`Graph data loaded successfully (${latency.toFixed(0)}ms)`);
 
     } catch (error) {
       const errorMessage = `Failed to load data: ${error}`;
-      console.error('❌', errorMessage);
+      console.error('', errorMessage);
 
       setStatus(prev => ({
         ...prev,
@@ -446,7 +446,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
     };
   }, [autoStart, fetchGraphData, connectWebSocket, startPerformanceTracking, updateInterval]);
 
-  // ✅ NEW: Watch for authentication changes and reload graph data
+  // NEW: Watch for authentication changes and reload graph data
   useEffect(() => {
     // Skip initial mount (already loaded by autoStart)
     if (!autoStart) return;
@@ -458,7 +458,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
 
     // Only reload if we have authentication
     if (hasAuth) {
-      console.log('🔄 Authentication status changed, reloading graph data with credentials...');
+      console.log('Authentication status changed, reloading graph data with credentials...');
       fetchGraphData();
     }
   }, [
@@ -479,15 +479,15 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         position: 'fixed',
         top: '20px',
         right: '20px',
-        zIndex: 1000,
-        backgroundColor: 'rgba(30, 30, 40, 0.95)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        zIndex: 'var(--z-drawer)',
+        backgroundColor: 'var(--surface-1)',
+        border: '1px solid var(--line)',
         borderRadius: '12px',
         padding: '16px',
         minWidth: '280px',
         backdropFilter: 'blur(20px)',
         color: 'white',
-        fontSize: '13px'
+        fontSize: '0.8125rem'
       }}
     >
       {/* Header */}
@@ -501,7 +501,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          fontSize: '14px',
+          fontSize: '0.875rem',
           fontWeight: '600'
         }}>
           <Database size={16} />
@@ -513,7 +513,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           disabled={isLoading}
           style={{
             background: 'transparent',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            border: '1px solid var(--line-strong)',
             borderRadius: '6px',
             color: 'white',
             cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -532,25 +532,25 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         gap: '8px',
         marginBottom: '12px',
         padding: '8px',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: 'var(--surface-2)',
         borderRadius: '6px'
       }}>
         {status.connected ? (
           <>
-            <Wifi size={16} color="#10b981" />
-            <span style={{ color: '#10b981' }}>Connected</span>
+            <Wifi size={16} color="var(--status-ok)" />
+            <span style={{ color: 'var(--status-ok)' }}>Connected</span>
             {status.latency > 0 && (
-              <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+              <span style={{ color: 'var(--fg-2)' }}>
                 ({status.latency}ms)
               </span>
             )}
           </>
         ) : (
           <>
-            <WifiOff size={16} color="#ef4444" />
-            <span style={{ color: '#ef4444' }}>Disconnected</span>
+            <WifiOff size={16} color="var(--status-bad)" />
+            <span style={{ color: 'var(--status-bad)' }}>Disconnected</span>
             {status.retryCount > 0 && (
-              <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+              <span style={{ color: 'var(--fg-2)' }}>
                 (Retry {status.retryCount}/{maxRetries})
               </span>
             )}
@@ -566,13 +566,13 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           gap: '8px',
           marginBottom: '12px',
           padding: '8px',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.2)',
+          backgroundColor: 'var(--status-bad-bg)',
+          border: '1px solid var(--status-bad)',
           borderRadius: '6px',
-          color: '#fecaca'
+          color: 'var(--status-bad)'
         }}>
           <AlertTriangle size={14} />
-          <span style={{ fontSize: '12px' }}>{status.error}</span>
+          <span style={{ fontSize: '0.75rem' }}>{status.error}</span>
         </div>
       )}
 
@@ -583,7 +583,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           alignItems: 'center',
           gap: '8px',
           marginBottom: '12px',
-          color: 'rgba(255, 255, 255, 0.7)'
+          color: 'var(--fg-2)'
         }}>
           <Clock size={14} />
           <span>
@@ -596,9 +596,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       {recentUpdates.length > 0 && (
         <div style={{ marginTop: '12px' }}>
           <div style={{
-            fontSize: '12px',
+            fontSize: '0.75rem',
             fontWeight: '600',
-            color: 'rgba(255, 255, 255, 0.8)',
+            color: 'var(--fg-2)',
             marginBottom: '8px'
           }}>
             Recent Updates
@@ -617,17 +617,17 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '6px 8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  backgroundColor: 'var(--surface-2)',
                   borderRadius: '4px',
-                  fontSize: '11px'
+                  fontSize: '0.6875rem'
                 }}
               >
                 <span style={{
-                  color: update.source === 'websocket' ? '#3b82f6' : '#8b5cf6'
+                  color: update.source === 'websocket' ? 'var(--fg-2)' : 'var(--fg-2)'
                 }}>
                   {update.type}
                 </span>
-                <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                <span style={{ color: 'var(--fg-2)' }}>
                   {new Date(update.timestamp).toLocaleTimeString()}
                 </span>
               </div>

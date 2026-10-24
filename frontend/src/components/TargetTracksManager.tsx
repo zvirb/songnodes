@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import clsx from 'clsx';
 import { api } from '../services/api';
 import MusicServiceSearch from './MusicServiceSearch';
+import { Plus, Upload, Download, Archive, ArchiveRestore, Search, Pencil, Trash2, Target, X, SearchX, ServerCrash } from 'lucide-react';
+import { SN } from '../lib/songnodes';
+import { SegmentedControl, OverflowMenu, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast } from './ds';
+import './TargetTracksManager.css';
 
 interface TargetTrack {
   track_id?: string;
@@ -31,6 +34,7 @@ const TargetTracksManager: React.FC = () => {
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const [importData, setImportData] = useState('');
   const [activeTab, setActiveTab] = useState<'manage' | 'search'>('manage');
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // Form state for add/edit
   const [formData, setFormData] = useState<Partial<TargetTrack>>({
@@ -57,21 +61,27 @@ const TargetTracksManager: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('/target-tracks');
-      // ✅ FIX: Ensure we always set an array, even if API returns undefined
+      // FIX: Ensure we always set an array, even if API returns undefined
       setTracks(Array.isArray(response.data) ? response.data : []);
+      setLoadFailed(false);
     } catch (error) {
-      showNotification('error', 'Failed to load target tracks');
+      setLoadFailed(true);
       console.error('Error loading tracks:', error);
-      // ✅ FIX: Set empty array on error to prevent undefined state
+      // FIX: Set empty array on error to prevent undefined state
       setTracks([]);
     } finally {
       setLoading(false);
     }
   };
 
+  /** Success → Toast (past tense); errors stay visible inline until the next action. */
   const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000);
+    if (type === 'success') {
+      setNotification(null);
+      showToast(message);
+    } else {
+      setNotification({ type, message });
+    }
   };
 
   const handleAddTrack = () => {
@@ -97,15 +107,17 @@ const TargetTracksManager: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleDeleteTrack = async (trackId: string) => {
-    if (!confirm('Are you sure you want to delete this target track?')) return;
+  // Pending destructive action, confirmed in a ConfirmDialog
+  const [pendingDelete, setPendingDelete] = useState<{ ids: string[]; label: string; bulk?: boolean } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
+  const handleDeleteTrack = async (trackId: string) => {
     try {
       await api.delete(`/target-tracks/${trackId}`);
-      showNotification('success', 'Track deleted successfully');
+      showNotification('success', 'Target track deleted');
       loadTracks();
     } catch (error) {
-      showNotification('error', 'Failed to delete track');
+      showNotification('error', 'Couldn’t delete the target track.');
       console.error('Error deleting track:', error);
     }
   };
@@ -116,15 +128,15 @@ const TargetTracksManager: React.FC = () => {
     try {
       if (editingTrack) {
         await api.put(`/target-tracks/${editingTrack.track_id}`, formData);
-        showNotification('success', 'Track updated successfully');
+        showNotification('success', 'Target track saved');
       } else {
         await api.post('/target-tracks', formData);
-        showNotification('success', 'Track added successfully');
+        showNotification('success', 'Target track added');
       }
       setIsAddModalOpen(false);
       loadTracks();
     } catch (error) {
-      showNotification('error', 'Failed to save track');
+      showNotification('error', 'Couldn’t save the target track.');
       console.error('Error saving track:', error);
     }
   };
@@ -132,10 +144,10 @@ const TargetTracksManager: React.FC = () => {
   const handleArchiveTrack = async (trackId: string, archived: boolean) => {
     try {
       await api.put(`/target-tracks/${trackId}`, { archived });
-      showNotification('success', `Track ${archived ? 'archived' : 'unarchived'} successfully`);
+      showNotification('success', `Target track ${archived ? 'archived' : 'restored'}`);
       loadTracks();
     } catch (error) {
-      showNotification('error', `Failed to ${archived ? 'archive' : 'unarchive'} track`);
+      showNotification('error', `Couldn’t ${archived ? 'archive' : 'restore'} the target track.`);
       console.error('Error archiving track:', error);
     }
   };
@@ -150,7 +162,7 @@ const TargetTracksManager: React.FC = () => {
       );
       await api.put(`/target-tracks/${trackId}`, { completion_percentage });
     } catch (error) {
-      showNotification('error', 'Failed to update completion');
+      showNotification('error', 'Couldn’t save progress.');
       console.error('Error updating completion:', error);
       loadTracks();
     }
@@ -159,10 +171,10 @@ const TargetTracksManager: React.FC = () => {
   const handleSearchNow = async (trackId: string) => {
     try {
       await api.post(`/target-tracks/${trackId}/search`);
-      showNotification('success', 'Search triggered for track');
+      showNotification('success', 'Search started');
       loadTracks();
     } catch (error) {
-      showNotification('error', 'Failed to trigger search');
+      showNotification('error', 'Couldn’t start the search.');
       console.error('Error triggering search:', error);
     }
   };
@@ -185,7 +197,7 @@ const TargetTracksManager: React.FC = () => {
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
-    showNotification('success', 'Tracks exported successfully');
+    showNotification('success', 'Target tracks exported');
   };
 
   const handleImportTracks = async () => {
@@ -213,14 +225,13 @@ const TargetTracksManager: React.FC = () => {
       loadTracks();
       showNotification('success', `Imported ${successCount} tracks${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
     } catch (error) {
-      showNotification('error', 'Failed to parse import data');
+      showNotification('error', 'That isn’t a JSON array of tracks.');
       console.error('Import error:', error);
     }
   };
 
   const handleBulkDelete = async () => {
     if (selectedTracks.size === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedTracks.size} tracks?`)) return;
 
     let successCount = 0;
     let errorCount = 0;
@@ -359,560 +370,326 @@ const TargetTracksManager: React.FC = () => {
     return matchesSearch && matchesPriority;
   }) || [];
 
-  // Priority badge component
-  const PriorityBadge: React.FC<{ priority: string }> = ({ priority }) => {
-    const colors = {
-      high: 'bg-dj-danger text-white',
-      medium: 'bg-dj-warning text-black',
-      low: 'bg-dj-light-gray text-gray-300'
-    };
-
-    return (
-      <span className={clsx(
-        'px-2 py-1 rounded text-xs font-semibold uppercase',
-        colors[priority as keyof typeof colors] || colors.low
-      )}>
-        {priority}
-      </span>
-    );
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    if (!pendingDelete.bulk) {
+      await handleDeleteTrack(pendingDelete.ids[0]);
+    } else {
+      await handleBulkDelete();
+    }
+    setDeleting(false);
+    setPendingDelete(null);
   };
 
-  // Close modal on escape or outside click
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isAddModalOpen) {
-        setIsAddModalOpen(false);
-      }
-    };
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-        setIsAddModalOpen(false);
-      }
-    };
-
-    if (isAddModalOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isAddModalOpen]);
+  const priorityPill = (priority: string) => {
+    const st = SN.status(priority, 'priority');
+    return <span className="sn-pill sn-pill--outline" data-status={st.status}>{st.label}</span>;
+  };
 
   return (
-    <div className="h-full flex flex-col bg-dj-dark text-gray-200">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-dj-gray p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <span className="text-2xl">🎯</span>
-            Target Tracks Manager
-            {(tracks?.length ?? 0) > 0 && (
-              <span className="text-sm text-gray-400 font-normal">({tracks.length} tracks)</span>
-            )}
-          </h2>
-          <div className="flex gap-2">
-            <button
-              onClick={handleExportTracks}
-              className="px-3 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all flex items-center gap-1 text-sm"
-              disabled={(tracks?.length ?? 0) === 0}
+    <div className="ttm">
+      <div className="ttm__head">
+        <p className="ttm__count"><span className="ttm__num">{SN.format.count(tracks.length)}</span> target {tracks.length === 1 ? 'track' : 'tracks'}</p>
+        <div className="ttm__actions">
+          <button type="button" className="sn-btn sn-btn--sm" onClick={handleAddTrack}>
+            <Plus size={16} strokeWidth={2} aria-hidden="true" />
+            Add target track
+          </button>
+          <OverflowMenu
+            small
+            label="More target track actions"
+            onSelect={(id) => {
+              if (id === 'import') setIsImportModalOpen(true);
+              else if (id === 'export') handleExportTracks();
+            }}
+            items={[
+              { id: 'import', label: 'Import from JSON', icon: Upload },
+              { id: 'export', label: 'Export as JSON', icon: Download, disabledReason: tracks.length ? undefined : 'Add a target track first' },
+            ]}
+          />
+        </div>
+      </div>
+
+      <SegmentedControl<'manage' | 'search'>
+        label="Target tracks view"
+        size="sm"
+        block
+        value={activeTab}
+        onChange={setActiveTab}
+        options={[
+          { value: 'manage', label: 'Your targets', icon: Target },
+          { value: 'search', label: 'Find in services', icon: Search },
+        ]}
+      />
+
+      {notification?.type === 'error' && (
+        <p className="sn-inline-message sn-inline-message--boxed" data-status="bad" role="alert">{notification.message}</p>
+      )}
+
+      {activeTab === 'manage' && (
+        <>
+          <div className="ttm__filters">
+            <input
+              type="search"
+              className="sn-input"
+              placeholder="Search target tracks"
+              aria-label="Search target tracks"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <select
+              className="sn-input"
+              aria-label="Priority"
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value as any)}
             >
-              📤 Export
-            </button>
-            <button
-              onClick={() => setIsImportModalOpen(true)}
-              className="px-3 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all flex items-center gap-1 text-sm"
-            >
-              📥 Import
-            </button>
-            <button
-              onClick={handleAddTrack}
-              className="px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all flex items-center gap-2"
-            >
-              <span className="text-lg">+</span>
-              Add Track
-            </button>
+              <option value="all">All priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <label className="sn-checkbox">
+              <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+              <span className="sn-checkbox__text"><span>Show archived</span></span>
+            </label>
           </div>
-        </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-dj-gray mb-4">
-          <button
-            onClick={() => setActiveTab('manage')}
-            className={clsx(
-              'px-4 py-2 font-semibold transition-all',
-              activeTab === 'manage'
-                ? 'text-dj-accent border-b-2 border-dj-accent'
-                : 'text-gray-400 hover:text-gray-300'
-            )}
-          >
-            📋 Manage Tracks
-          </button>
-          <button
-            onClick={() => setActiveTab('search')}
-            className={clsx(
-              'px-4 py-2 font-semibold transition-all',
-              activeTab === 'search'
-                ? 'text-dj-accent border-b-2 border-dj-accent'
-                : 'text-gray-400 hover:text-gray-300'
-            )}
-          >
-            🔍 Search Services
-          </button>
-        </div>
-
-        {/* Tab Content: Manage Tracks */}
-        {activeTab === 'manage' && (
-          <>
-            {/* Bulk Operations Bar */}
-            {selectedTracks.size > 0 && (
-              <div className="mb-4 p-3 bg-dj-black border border-dj-accent rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">
-                {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleBulkActivate(true)}
-                  className="px-3 py-1 bg-dj-accent text-black rounded text-sm hover:bg-opacity-90"
-                >
-                  ✅ Activate
-                </button>
-                <button
-                  onClick={() => handleBulkActivate(false)}
-                  className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                >
-                  ⏸️ Deactivate
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="px-3 py-1 bg-dj-danger text-white rounded text-sm hover:bg-opacity-90"
-                >
-                  🗑️ Delete
-                </button>
-                <button
-                  onClick={clearSelection}
-                  className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                >
-                  ✖️ Clear
-                </button>
-              </div>
+          {selectedTracks.size > 0 ? (
+            <div className="ttm__bulk" role="region" aria-label="Selected target tracks">
+              <span role="status">{selectedTracks.size} selected</span>
+              <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleBulkActivate(true)}>Turn on</button>
+              <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleBulkActivate(false)}>Turn off</button>
+              <button type="button" className="sn-btn sn-btn--sm sn-btn--danger-quiet" onClick={() => setPendingDelete({ ids: Array.from(selectedTracks), label: `${selectedTracks.size} target tracks`, bulk: true })}>
+                <Trash2 size={16} strokeWidth={2} aria-hidden="true" />
+                Delete…
+              </button>
+              <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={clearSelection}>Clear selection</button>
             </div>
-              </div>
-            )}
+          ) : filteredTracks.length > 1 ? (
+            <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet ttm__selectall" onClick={selectAllTracks}>
+              Select all {filteredTracks.length} tracks
+            </button>
+          ) : null}
 
-            {/* Filters */}
-            <div className="flex gap-4 items-center">
-              <input
-                type="text"
-                placeholder="Search tracks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-              />
-              <select
-                value={selectedPriority}
-                onChange={(e) => setSelectedPriority(e.target.value as any)}
-                className="px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+          {loading ? (
+            <LoadingPanel message="Loading target tracks…" rows={4} />
+          ) : loadFailed ? (
+            <ErrorPanel
+              icon={ServerCrash}
+              status="bad"
+              panel
+              title="SongNodes couldn’t load target tracks"
+              retry="Try again in a few minutes."
+              actions={<button type="button" className="sn-btn" onClick={loadTracks}>Try again</button>}
+            >
+              The target tracks API didn’t answer.
+            </ErrorPanel>
+          ) : filteredTracks.length === 0 ? (
+            tracks.length === 0 ? (
+              <EmptyPanel
+                compact
+                icon={Target}
+                title="No target tracks yet"
+                actions={<button type="button" className="sn-btn" onClick={handleAddTrack}>Add target track</button>}
               >
-                <option value="all">All Priorities</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showArchived}
-                  onChange={(e) => setShowArchived(e.target.checked)}
-                  className="rounded border-dj-gray"
-                />
-                <span className="text-sm">Show Archived</span>
-              </label>
-              {filteredTracks.length > 0 && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={selectAllTracks}
-                    className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                  >
-                    Select All
-                  </button>
-                  {selectedTracks.size > 0 && (
-                    <button
-                      onClick={clearSelection}
-                      className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Track List */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-              {loading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dj-accent"></div>
-                </div>
-              ) : filteredTracks.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
-                  No target tracks found. Add some tracks to get started!
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredTracks.map((track) => (
-                    <div
-                      key={track.track_id}
-                      className={clsx(
-                        "bg-dj-black border rounded-lg p-4 transition-all",
-                        selectedTracks.has(track.track_id!)
-                          ? "border-dj-accent bg-dj-accent bg-opacity-10"
-                          : "border-dj-gray hover:border-dj-accent"
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Selection Checkbox */}
-                        <div className="pt-1">
-                          <input
-                            type="checkbox"
-                            checked={selectedTracks.has(track.track_id!)}
-                            onChange={() => toggleTrackSelection(track.track_id!)}
-                            className="rounded border-dj-gray"
-                          />
-                        </div>
-
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{track.title}</h3>
-                            <PriorityBadge priority={track.priority} />
-                            {!track.is_active && (
-                              <span className="px-2 py-1 bg-dj-gray text-gray-500 rounded text-xs">
-                                Inactive
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-gray-400 mb-2">by {track.artist}</p>
-
-                          {/* Stats */}
-                          <div className="flex gap-4 text-sm text-gray-500">
-                            <span>📋 {track.playlists_found || 0} playlists</span>
-                            <span>🔗 {track.adjacencies_found || 0} adjacencies</span>
-                            {track.last_searched && (
-                              <span>🔍 Last searched: {new Date(track.last_searched).toLocaleDateString()}</span>
-                            )}
-                          </div>
-
-                          {/* Genres and Search Terms */}
-                          {track.genres && track.genres.length > 0 && (
-                            <div className="mt-2 flex gap-2">
-                              {track.genres.map((genre, idx) => (
-                                <span key={idx} className="px-2 py-1 bg-dj-gray rounded text-xs">
-                                  {genre}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => handleArchiveTrack(track.track_id!, !track.archived)}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-dj-gray rounded transition-all"
-                            title={track.archived ? 'Unarchive' : 'Archive'}
-                          >
-                            {track.archived ? '📂' : '🗄️'}
-                          </button>
-                          <button
-                            onClick={() => handleSearchNow(track.track_id!)}
-                            className="p-2 text-dj-accent hover:bg-dj-gray rounded transition-all"
-                            title="Search now"
-                          >
-                            🔍
-                          </button>
-                          <button
-                            onClick={() => handleEditTrack(track)}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-dj-gray rounded transition-all"
-                            title="Edit"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTrack(track.track_id!)}
-                            className="p-2 text-dj-danger hover:bg-dj-gray rounded transition-all"
-                            title="Delete"
-                          >
-                            🗑️
-                          </button>
-                        </div>
+                Target tracks are the songs the scrapers look for in DJ playlists.
+              </EmptyPanel>
+            ) : (
+              <EmptyPanel
+                compact
+                icon={SearchX}
+                title="No target tracks match these filters"
+                actions={<button type="button" className="sn-btn" onClick={() => { setSearchQuery(''); setSelectedPriority('all'); }}>Clear filters</button>}
+              >
+                None of the {tracks.length} target tracks match.
+              </EmptyPanel>
+            )
+          ) : (
+            <ul className="ttm__list">
+              {filteredTracks.map((track) => {
+                const id = track.track_id!;
+                const name = `${track.artist} – ${track.title}`;
+                return (
+                  <li key={id} className="ttm__item" aria-selected={selectedTracks.has(id)}>
+                    <label className="sn-checkbox sn-checkbox--bare">
+                      <input type="checkbox" checked={selectedTracks.has(id)} onChange={() => toggleTrackSelection(id)} aria-label={`Select ${name}`} />
+                    </label>
+                    <div className="ttm__main">
+                      <div className="sn-track-cell">
+                        <span className="sn-track-cell__title">
+                          <span className="sn-track-cell__name" title={name}>
+                            <span className="sn-track-cell__artist">{track.artist} –</span> {track.title}
+                          </span>
+                        </span>
+                        <span className="sn-track-cell__meta">
+                          <span>{SN.format.count(track.playlists_found || 0)} playlists</span>
+                          <span className="sn-track-cell__sep" aria-hidden="true">·</span>
+                          <span>{SN.format.count(track.adjacencies_found || 0)} transitions</span>
+                          {track.last_searched ? (
+                            <>
+                              <span className="sn-track-cell__sep" aria-hidden="true">·</span>
+                              <span>Searched {SN.format.date(track.last_searched)}</span>
+                            </>
+                          ) : null}
+                        </span>
                       </div>
-                      {/* Completion Slider */}
-                      <div className="mt-4">
-                        <label className="text-xs text-gray-400">
-                          Completion: {track.completion_percentage || 0}%
-                        </label>
+                      <div className="ttm__tags">
+                        {priorityPill(track.priority)}
+                        {!track.is_active && <span className="sn-pill sn-pill--outline" data-status="idle">Off</span>}
+                        {track.archived && <span className="sn-tag">Archived</span>}
+                        {track.genres?.map((genre, idx) => <span key={idx} className="sn-tag">{genre}</span>)}
+                      </div>
+                      <div className="ttm__progress">
+                        <label htmlFor={`ttm-done-${id}`}>Done: <span className="ttm__num">{track.completion_percentage || 0}%</span></label>
                         <input
+                          id={`ttm-done-${id}`}
                           type="range"
                           min="0"
                           max="100"
                           value={track.completion_percentage || 0}
-                          onChange={(e) =>
-                            handleUpdateCompletion(track.track_id!, parseInt(e.target.value))
-                          }
-                          className="w-full h-2 bg-dj-gray rounded-lg appearance-none cursor-pointer"
+                          onChange={(e) => handleUpdateCompletion(id, parseInt(e.target.value))}
                         />
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Tab Content: Search Services */}
-        {activeTab === 'search' && (
-          <div className="flex-1 overflow-hidden">
-            <MusicServiceSearch onAddToTargets={handleAddFromMusicService} />
-          </div>
-        )}
-      </div>
-
-      {/* Add/Edit Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div ref={modalRef} className="bg-dj-dark border border-dj-gray rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">
-              {editingTrack ? 'Edit Target Track' : 'Add Target Track'}
-            </h3>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Title</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Artist</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.artist}
-                  onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
-                  className="w-full px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Priority</label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                  className="w-full px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-                >
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-              </div>
-
-              {/* Genres */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Genres</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newGenre}
-                      onChange={(e) => setNewGenre(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
-                      placeholder="Add genre..."
-                      className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-                    />
-                    <button
-                      type="button"
-                      onClick={addGenre}
-                      className="px-3 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  {formData.genres && formData.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {formData.genres.map((genre, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-dj-gray rounded text-sm flex items-center gap-1"
-                        >
-                          {genre}
-                          <button
-                            type="button"
-                            onClick={() => removeGenre(genre)}
-                            className="text-dj-danger hover:text-red-400 ml-1"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                    <div className="ttm__row-actions">
+                      <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => handleSearchNow(id)}>
+                        <Search size={16} strokeWidth={2} aria-hidden="true" />
+                        Search now
+                      </button>
+                      <OverflowMenu
+                        small
+                        quiet
+                        label={`More actions for ${name}`}
+                        onSelect={(action) => {
+                          if (action === 'edit') handleEditTrack(track);
+                          else if (action === 'archive') handleArchiveTrack(id, !track.archived);
+                          else if (action === 'delete') setPendingDelete({ ids: [id], label: name });
+                        }}
+                        items={[
+                          { id: 'edit', label: 'Edit target track', icon: Pencil },
+                          { id: 'archive', label: track.archived ? 'Restore from archive' : 'Archive', icon: track.archived ? ArchiveRestore : Archive },
+                          { id: 'delete', label: 'Delete target track…', icon: Trash2, destructive: true },
+                        ]}
+                      />
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Search Terms */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Search Terms</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newSearchTerm}
-                      onChange={(e) => setNewSearchTerm(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSearchTerm())}
-                      placeholder="Add search term..."
-                      className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-                    />
-                    <button
-                      type="button"
-                      onClick={addSearchTerm}
-                      className="px-3 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  {formData.search_terms && formData.search_terms.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {formData.search_terms.map((term, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-dj-gray rounded text-sm flex items-center gap-1"
-                        >
-                          {term}
-                          <button
-                            type="button"
-                            onClick={() => removeSearchTerm(term)}
-                            className="text-dj-danger hover:text-red-400 ml-1"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="rounded border-dj-gray"
-                  />
-                  <span className="text-sm">Active</span>
-                </label>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
-                >
-                  {editingTrack ? 'Update' : 'Add'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 px-4 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Import Modal */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-dj-dark border border-dj-gray rounded-lg p-6 w-full max-w-lg">
-            <h3 className="text-lg font-bold mb-4">Import Target Tracks</h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  JSON Data
-                  <span className="text-gray-400 ml-2">(Paste JSON array of tracks)</span>
-                </label>
-                <textarea
-                  value={importData}
-                  onChange={(e) => setImportData(e.target.value)}
-                  placeholder={`[
-  {
-    "title": "Track Name",
-    "artist": "Artist Name",
-    "priority": "medium",
-    "genres": ["Electronic", "House"],
-    "search_terms": ["remix", "original mix"],
-    "is_active": true
-  }
-]`}
-                  className="w-full h-64 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent font-mono text-sm"
-                />
-              </div>
-
-              <div className="bg-dj-black p-3 rounded border border-dj-gray">
-                <p className="text-sm text-gray-400">
-                  <strong>Format:</strong> JSON array with fields: title, artist, priority, genres, search_terms, is_active
-                </p>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <button
-                  onClick={handleImportTracks}
-                  disabled={!importData.trim()}
-                  className="flex-1 px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all disabled:opacity-50"
-                >
-                  Import Tracks
-                </button>
-                <button
-                  onClick={() => {
-                    setIsImportModalOpen(false);
-                    setImportData('');
-                  }}
-                  className="flex-1 px-4 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Notification */}
-      {notification && (
-        <div
-          className={clsx(
-            'fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg transition-all z-50',
-            notification.type === 'success' ? 'bg-dj-accent text-black' : 'bg-dj-danger text-white'
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        >
-          {notification.message}
-        </div>
+        </>
       )}
+
+      {activeTab === 'search' && (
+        <MusicServiceSearch onAddToTargets={handleAddFromMusicService} />
+      )}
+
+      <Dialog
+        open={isAddModalOpen}
+        title={editingTrack ? 'Edit target track' : 'Add target track'}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleSubmit}
+        footer={
+          <>
+            <button type="button" className="sn-btn" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
+            <button type="submit" className="sn-btn sn-btn--primary">{editingTrack ? 'Save target track' : 'Add target track'}</button>
+          </>
+        }
+      >
+        <div className="sn-field">
+          <label htmlFor="ttm-title">Title</label>
+          <input id="ttm-title" className="sn-input" type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+        </div>
+        <div className="sn-field">
+          <label htmlFor="ttm-artist">Artist</label>
+          <input id="ttm-artist" className="sn-input" type="text" value={formData.artist} onChange={(e) => setFormData({ ...formData, artist: e.target.value })} required />
+        </div>
+        <div className="sn-field">
+          <label htmlFor="ttm-priority">Priority</label>
+          <select id="ttm-priority" className="sn-input" value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'high' | 'medium' | 'low' })}>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div className="sn-field">
+          <label htmlFor="ttm-genre">Genres</label>
+          <div className="ttm__add">
+            <input id="ttm-genre" className="sn-input" type="text" value={newGenre} onChange={(e) => setNewGenre(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGenre(); } }} placeholder="House" />
+            <button type="button" className="sn-btn sn-btn--sm" onClick={addGenre}>Add genre</button>
+          </div>
+          {formData.genres && formData.genres.length > 0 && (
+            <div className="ttm__chips">
+              {formData.genres.map((genre, idx) => (
+                <span key={idx} className="sn-tag">
+                  {genre}
+                  <button type="button" className="ttm__chip-x" onClick={() => removeGenre(genre)} aria-label={`Remove genre ${genre}`}><X size={12} strokeWidth={2} aria-hidden="true" /></button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="sn-field">
+          <label htmlFor="ttm-term">Search terms</label>
+          <div className="ttm__add">
+            <input id="ttm-term" className="sn-input" type="text" value={newSearchTerm} onChange={(e) => setNewSearchTerm(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSearchTerm(); } }} placeholder="Extended mix" />
+            <button type="button" className="sn-btn sn-btn--sm" onClick={addSearchTerm}>Add term</button>
+          </div>
+          {formData.search_terms && formData.search_terms.length > 0 && (
+            <div className="ttm__chips">
+              {formData.search_terms.map((term, idx) => (
+                <span key={idx} className="sn-tag">
+                  {term}
+                  <button type="button" className="ttm__chip-x" onClick={() => removeSearchTerm(term)} aria-label={`Remove search term ${term}`}><X size={12} strokeWidth={2} aria-hidden="true" /></button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <label className="sn-checkbox">
+          <input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
+          <span className="sn-checkbox__text"><span>Search for this track</span></span>
+        </label>
+      </Dialog>
+
+      <Dialog
+        open={isImportModalOpen}
+        title="Import target tracks"
+        sub="Paste a JSON array with title, artist, priority, genres, search_terms and is_active."
+        onClose={() => { setIsImportModalOpen(false); setImportData(''); }}
+        footer={
+          <>
+            <button type="button" className="sn-btn" onClick={() => { setIsImportModalOpen(false); setImportData(''); }}>Cancel</button>
+            <button type="button" className="sn-btn sn-btn--primary" onClick={handleImportTracks} disabled={!importData.trim()}>Import tracks</button>
+          </>
+        }
+      >
+        <div className="sn-field">
+          <label htmlFor="ttm-json">JSON</label>
+          <textarea
+            id="ttm-json"
+            className="sn-input ttm__json"
+            value={importData}
+            onChange={(e) => setImportData(e.target.value)}
+            placeholder={`[\n  { "title": "Glue", "artist": "Bicep", "priority": "medium" }\n]`}
+            rows={10}
+          />
+        </div>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={pendingDelete?.bulk ? `Delete ${pendingDelete.ids.length} target tracks?` : `Delete “${pendingDelete?.label ?? ''}”?`}
+        confirmLabel={pendingDelete?.bulk ? `Delete ${pendingDelete.ids.length} tracks` : 'Delete target track'}
+        busy={deleting}
+        busyLabel="Deleting…"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+        facts={['Playlists and transitions already scraped stay in the graph.']}
+      >
+        The scrapers stop looking for {pendingDelete?.bulk ? 'these tracks' : 'this track'}. This can’t be undone; archive instead to pause it.
+      </ConfirmDialog>
     </div>
   );
 };

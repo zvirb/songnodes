@@ -25,8 +25,10 @@ import {
   FlagTriangleRight,
   RefreshCw,
   MousePointer2,
-  FileEdit
+  FileEdit,
+  Check
 } from 'lucide-react';
+import { SN } from '../lib/songnodes';
 
 interface ContextMenuProps {
   x: number;
@@ -42,7 +44,13 @@ interface MenuItem {
   action: () => void;
   divider?: boolean;
   disabled?: boolean;
+  /** Shown under a disabled item: what to do to enable it. */
+  disabledReason?: string;
   shortcut?: string;
+  /** Group heading (design-system ContextMenu: "Route", "Track", "View"). */
+  group?: string;
+  /** menuitemcheckbox state. */
+  checked?: boolean;
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({
@@ -105,7 +113,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         // Helper function to calculate route
         const handleCalculateRoute = async () => {
           if (!pathfindingState.startTrackId || !pathfindingState.endTrackId) {
-            console.warn('⚠️ Cannot calculate route: missing start or end track');
+            console.warn('Cannot calculate route: missing start or end track');
             return;
           }
 
@@ -134,12 +142,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             pathfinding.setCurrentPath(result);
 
             if (result.success) {
-              console.log('✅ Route calculated successfully:', result.path.length, 'tracks');
+              console.log('Route calculated successfully:', result.path.length, 'tracks');
             } else {
-              console.warn('⚠️ Route calculation failed:', 'No route found for the selected tracks');
+              console.warn('Route calculation failed:', 'No route found for the selected tracks');
             }
           } catch (error) {
-            console.error('❌ Route calculation error:', error);
+            console.error('Route calculation error:', error);
             pathfinding.setCurrentPath(null);
           } finally {
             pathfinding.setPathCalculating(false);
@@ -148,52 +156,56 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
         items.push(
           {
-            label: 'Calculate Route',
-            icon: <Navigation size={16} />,
-            action: async () => {
-              await handleCalculateRoute();
-              onClose();
-            },
-            disabled: !pathfindingState.startTrackId || !pathfindingState.endTrackId
-          },
-          { divider: true } as MenuItem,
-          {
-            label: 'Set as Starting Track',
+            label: 'Set as starting track',
+            group: 'Route',
             icon: <Flag size={16} />,
             action: () => {
               pathfinding.setStartTrack(node.id);
               selectNode(node.id);
-              console.log('🏁 Start track set:', node.label);
+              console.log('Start track set:', node.label);
               onClose();
             }
           },
           {
-            label: 'Set as Waypoint',
+            label: pathfindingState.selectedWaypoints.has(node.id) ? 'Remove waypoint' : 'Set as waypoint',
+            group: 'Route',
             icon: <MapPin size={16} />,
             action: () => {
               if (pathfindingState.selectedWaypoints.has(node.id)) {
                 pathfinding.removeWaypoint(node.id);
-                console.log('📍 Waypoint removed:', node.label);
+                console.log('Waypoint removed:', node.label);
               } else {
                 pathfinding.addWaypoint(node.id);
-                console.log('📍 Waypoint added:', node.label);
+                console.log('Waypoint added:', node.label);
               }
               onClose();
             }
           },
           {
-            label: 'Set as Finish Point',
+            label: 'Set as finish',
+            group: 'Route',
             icon: <FlagTriangleRight size={16} />,
             action: () => {
               pathfinding.setEndTrack(node.id);
               selectNode(node.id);
-              console.log('🏁 Finish track set:', node.label);
+              console.log('Finish track set:', node.label);
               onClose();
             }
           },
-          { divider: true } as MenuItem,
           {
-            label: 'Select Track',
+            label: 'Calculate route',
+            group: 'Route',
+            icon: <Navigation size={16} />,
+            action: async () => {
+              await handleCalculateRoute();
+              onClose();
+            },
+            disabled: !pathfindingState.startTrackId || !pathfindingState.endTrackId,
+            disabledReason: 'Set a starting track and a finish first'
+          },
+          {
+            label: 'Select track',
+            group: 'Track',
             icon: <MousePointer2 size={16} />,
             action: () => {
               selectNode(node.id);
@@ -201,7 +213,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             }
           },
           {
-            label: 'View Track Info',
+            label: 'View track info',
+            group: 'Track',
             icon: <FileEdit size={16} />,
             action: () => {
               selectNode(node.id);
@@ -209,19 +222,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               window.dispatchEvent(new CustomEvent('openTrackDetails', {
                 detail: { nodeId: node.id, track: node }
               }));
-              console.log('📝 Opening track info for:', node.label);
+              console.log('Opening track info for:', node.label);
               onClose();
             }
           },
           {
-            label: 'Reset Route',
+            label: 'Clear route',
+            group: 'Route',
             icon: <RefreshCw size={16} />,
             action: () => {
               pathfinding.setStartTrack('');
               pathfinding.setEndTrack('');
               pathfinding.clearWaypoints();
               pathfinding.setCurrentPath(null);
-              console.log('🔄 Route reset - all pathfinding data cleared');
+              console.log('Route reset - all pathfinding data cleared');
               onClose();
             }
           }
@@ -236,7 +250,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           // Get graph data from store to find the node
           const graphData = useStore.getState().graphData;
           if (!graphData || !graphData.nodes) {
-            console.warn('⚠️ Cannot center on track: graph data not available');
+            console.warn('Cannot center on track: graph data not available');
             return;
           }
 
@@ -247,7 +261,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           if (trackNode && trackNode.id) {
             // Select the node and center view on it
             selectNode(trackNode.id);
-            console.log('🎯 Centering on track node:', trackNode.id, track.title);
+            console.log('Centering on track node:', trackNode.id, track.title);
 
             // Trigger graph center via custom event
             // The GraphVisualization component will handle this
@@ -255,20 +269,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               detail: { nodeId: trackNode.id, zoomLevel: 2.0 }
             }));
           } else {
-            console.warn('⚠️ Track not found in graph:', track.id, track.title);
+            console.warn('Track not found in graph:', track.id, track.title);
           }
         };
 
         items.push(
           {
-            label: 'Play Preview',
+            label: 'Play preview',
             icon: <Play size={16} />,
             action: () => {
               onClose();
             }
           },
           {
-            label: 'Add to Setlist',
+            label: 'Add to set',
             icon: <Plus size={16} />,
             action: () => {
               addToSetlist(track);
@@ -276,7 +290,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             }
           },
           {
-            label: 'View in Graph',
+            label: 'Show in graph',
             icon: <Layers size={16} />,
             action: () => {
               centerOnTrack();
@@ -291,7 +305,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
         items.push(
           {
-            label: graphSettings?.useSpriteMode ? '✓ Sprite Mode (Performance)' : 'Sprite Mode (Performance)',
+            label: 'Fast drawing (sprites)',
+            group: 'View',
+            checked: !!graphSettings?.useSpriteMode,
             action: () => {
               if (graphSettings?.setUseSpriteMode) {
                 graphSettings.setUseSpriteMode(!graphSettings.useSpriteMode);
@@ -299,17 +315,17 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               onClose();
             }
           },
-          { divider: true } as MenuItem,
           {
-            label: 'Reset View',
+            label: 'Reset view',
+            group: 'View',
             icon: <Layers size={16} />,
             action: () => {
-              // ✅ FIX: Use fitToContent to properly center and zoom to all nodes
+              // FIX: Use fitToContent to properly center and zoom to all nodes
               if (graphSettings?.fitToContent) {
                 graphSettings.fitToContent();
               } else {
                 // Fallback: Reset to identity transform if fitToContent not available
-                console.warn('⚠️ fitToContent not available, using fallback reset');
+                console.warn('fitToContent not available, using fallback reset');
                 if (graphSettings?.zoomBehaviorRef?.current && graphSettings?.containerRef?.current) {
                   const container = graphSettings.containerRef.current;
                   const zoomHandler = graphSettings.zoomBehaviorRef.current;
@@ -323,16 +339,17 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             }
           },
           {
-            label: 'Clear Selection',
+            label: 'Clear selection',
+            group: 'View',
             action: () => {
               useStore.getState().graph.clearSelection();
               onClose();
             },
             shortcut: 'Esc'
           },
-          { divider: true } as MenuItem,
           {
-            label: 'Show All Nodes',
+            label: 'Show all tracks',
+            group: 'View',
             action: () => {
               applyFilters({});
               onClose();
@@ -350,7 +367,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
         items.push(
           {
-            label: 'View Connection Details',
+            label: 'View connection details',
             icon: <Info size={16} />,
             action: () => {
               setViewingEdge(edge);
@@ -358,14 +375,15 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             }
           },
           {
-            label: edge?.type ? `Hide ${edge.type} edges` : 'Hide Similar Edges',
+            label: edge?.type ? `Hide ${edge.type} links` : 'Hide links of this type',
+            disabledReason: 'This link has no type',
             icon: <Filter size={16} />,
             action: () => {
               if (edge?.type) {
                 toggleEdgeType(edge.type);
-                console.log(`🔇 Hiding ${edge.type} edges`);
+                console.log(`Hiding ${edge.type} edges`);
               } else {
-                console.warn('⚠️ Cannot hide edges: edge type not available');
+                console.warn('Cannot hide edges: edge type not available');
               }
               onClose();
             },
@@ -402,104 +420,95 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   }, [onClose]);
 
   const position = calculatePosition();
-  const menuItems = getMenuItems();
+  const menuItems = getMenuItems().filter((item) => !item.divider);
 
+  // Title naming the target (design-system ContextMenu)
+  const titleText = (() => {
+    if (targetType === 'node' || targetType === 'track') {
+      const d = targetData as any;
+      const name = d?.title || d?.name || d?.label;
+      return d?.artist && name ? `${d.artist} – ${name}` : name || 'Track';
+    }
+    if (targetType === 'edge') return 'Connection';
+    return 'Graph';
+  })();
+  const titleMeta = (() => {
+    if (targetType !== 'node' && targetType !== 'track') return null;
+    const d = targetData as any;
+    const key = d?.key ? SN.camelot(d.key) : null;
+    const parts = [key, d?.bpm ? `${SN.format.bpm(d.bpm)} BPM` : null].filter(Boolean);
+    return parts.length ? parts.join(' · ') : null;
+  })();
+
+  // Focus the first item; arrow keys move, Home/End jump (WAI-ARIA menu)
+  useEffect(() => {
+    const first = menuRef.current?.querySelector<HTMLButtonElement>('[role^="menuitem"]:not([aria-disabled="true"])');
+    first?.focus();
+  }, []);
+  const onMenuKey = (e: React.KeyboardEvent) => {
+    const els = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]') ?? []);
+    const i = els.indexOf(document.activeElement as HTMLButtonElement);
+    const go = (n: number) => { e.preventDefault(); els[(n + els.length) % els.length]?.focus(); };
+    if (e.key === 'ArrowDown') go(i + 1);
+    else if (e.key === 'ArrowUp') go(i - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(els.length - 1);
+    else if (e.key === 'Tab') onClose();
+  };
+
+  const groups: { name?: string; items: MenuItem[] }[] = [];
+  menuItems.forEach((item) => {
+    const g = groups.find((x) => x.name === item.group);
+    if (g) g.items.push(item); else groups.push({ name: item.group, items: [item] });
+  });
+
+  const renderItem = (item: MenuItem, index: number) => {
+    const reasonId = item.disabled && item.disabledReason ? `cm-why-${index}` : undefined;
+    return (
+      <button
+        key={`${item.label}-${index}`}
+        type="button"
+        className="sn-overflow-menu__item context-menu-item"
+        role={item.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'}
+        aria-checked={item.checked}
+        tabIndex={-1}
+        aria-disabled={item.disabled || undefined}
+        aria-describedby={reasonId}
+        onClick={() => { if (!item.disabled) item.action(); }}
+      >
+        {item.icon}
+        <span className="sn-overflow-menu__label">
+          <span className="sn-overflow-menu__text">{item.label}</span>
+          {reasonId ? <span className="sn-overflow-menu__reason" id={reasonId}>{item.disabledReason}</span> : null}
+        </span>
+        {item.checked ? <Check size={16} strokeWidth={2} aria-hidden="true" /> : null}
+        {item.shortcut ? <kbd>{item.shortcut}</kbd> : null}
+      </button>
+    );
+  };
+
+  let n = 0;
   return (
     <>
       {createPortal(
-        <div
-          ref={menuRef}
-          className="context-menu"
-          style={{
-            position: 'fixed',
-            left: position.left,
-            top: position.top,
-            zIndex: 10000,
-            minWidth: '200px',
-            backgroundColor: 'rgba(30, 30, 40, 0.98)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(10px)',
-            padding: '4px',
-            animation: 'fadeIn 0.15s ease-out'
-          }}
-        >
-          {menuItems.map((item, index) => {
-            if (item.divider) {
-              return (
-                <div
-                  key={index}
-                  style={{
-                    height: '1px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    margin: '4px 0'
-                  }}
-                />
-              );
-            }
-
-            return (
-              <button
-                key={index}
-                className="context-menu-item"
-                onClick={item.action}
-                disabled={item.disabled}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  padding: '8px 12px',
-                  backgroundColor: 'transparent',
-                  color: item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: item.disabled ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.15s ease',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={(e) => {
-                  if (!item.disabled) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                    e.currentTarget.style.color = '#fff';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = item.disabled ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)';
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {item.icon}
-                  {item.label}
-                </span>
-                {item.shortcut && (
-                  <span style={{
-                    fontSize: '11px',
-                    opacity: 0.6,
-                    marginLeft: '20px'
-                  }}>
-                    {item.shortcut}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-
-          <style>{`
-            @keyframes fadeIn {
-              from {
-                opacity: 0;
-                transform: scale(0.95);
-              }
-              to {
-                opacity: 1;
-                transform: scale(1);
-              }
-            }
-          `}</style>
+        <div className="sn-context-menu context-menu" style={{ left: position.left, top: position.top }}>
+          <div ref={menuRef} className="sn-overflow-menu__menu" role="menu" aria-label={`Actions for ${titleText}`} onKeyDown={onMenuKey}>
+            <div className="sn-overflow-menu__title" role="presentation">
+              {titleText}
+              {titleMeta ? <small>{titleMeta}</small> : null}
+            </div>
+            {groups.map((g, gi) => (
+              <React.Fragment key={g.name ?? `g${gi}`}>
+                {gi > 0 ? <div className="sn-overflow-menu__sep" role="separator" /> : null}
+                {g.name ? (
+                  <div role="group" aria-labelledby={`cm-h-${gi}`}>
+                    <div className="sn-overflow-menu__heading" id={`cm-h-${gi}`} role="presentation">{g.name}</div>
+                    {g.items.map((item) => renderItem(item, n++))}
+                  </div>
+                ) : g.items.map((item) => renderItem(item, n++))}
+              </React.Fragment>
+            ))}
+          </div>
         </div>,
         document.body
       )}

@@ -1,0 +1,15 @@
+/* Key and mood panel. Tokens only. */
+.km { display: flex; flex-direction: column; gap: var(--space-4); }
+.km__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.km__body { display: flex; flex-direction: column; gap: var(--space-4); }
+.km__settings { margin: 0; }
+.km__card { padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-control); min-width: 0; overflow: hidden; }
+.km__label { margin: 0 0 var(--space-2); font: 600 0.75rem/1.3 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+.km__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0; }
+.km__stats div { min-width: 0; }
+.km__stats dt { font-size: 0.8125rem; color: var(--fg-2); }
+.km__stats dd { margin: 0; font: 600 0.8125rem/1.4 var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg); }
+.km__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+.km__help { font-size: 0.8125rem; color: var(--fg-2); }
+.km__help summary { cursor: pointer; font-weight: 600; }
+.km__help ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-1); }

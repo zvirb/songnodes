@@ -3,21 +3,10 @@ import { useStore } from '../store/useStore';
 import { CamelotWheel } from './CamelotWheel';
 import { MoodVisualizer } from './MoodVisualizer';
 import { GraphNode, Track } from '../types';
-// Temporarily removing lucide icons to fix build
-const Music = () => '🎵';
-const TrendingUp = () => '📈';
-const BarChart3 = () => '📊';
-const Settings = () => '⚙️';
-const Eye = () => '👁️';
-const EyeOff = () => '🙈';
-const Shuffle = () => '🔀';
-const Target = () => '🎯';
-const Filter = () => '🔧';
-const RotateCw = () => '🔄';
-const ChevronDown = () => '▼';
-const ChevronUp = () => '▲';
-const Zap = () => '⚡';
-const Heart = () => '❤️';
+import { Disc3, ChartLine, LayoutGrid, RotateCcw, Zap, Moon } from 'lucide-react';
+import { SegmentedControl } from './ds';
+import { SN } from '../lib/songnodes';
+import './KeyMoodPanel.css';
 
 interface KeyMoodPanelProps {
   className?: string;
@@ -103,235 +92,129 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
     }
   }, [selectNode]);
 
-  return (
-    <div className={`key-mood-panel ${className}`}>
-      {/* Panel Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Music />
-              <TrendingUp />
-            </div>
-            <span className="font-semibold">Key & Mood Analysis</span>
-            {isExpanded ? <ChevronUp /> : <ChevronDown />}
-          </button>
-        </div>
+  const keysFound = new Set(
+    graphData.nodes
+      .map(n => SN.camelot(n.key || n.metadata?.key))
+      .filter(Boolean)
+  ).size;
+  const playlistEdges = graphData.edges.filter(e => e.type === 'adjacency').length;
 
+  return (
+    <div className={`key-mood-panel km ${className}`}>
+      {/* Panel header: the tab names the panel; the view switch sits here */}
+      <div className="km__head">
+        {!showInSidePanel && (
+          <button
+            type="button"
+            className="sn-btn sn-btn--quiet sn-btn--sm"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? 'Hide key and mood' : 'Show key and mood'}
+          </button>
+        )}
         {isExpanded && (
-          <div className="flex items-center gap-2">
-            {/* Tab selector */}
-            <div className="flex bg-white/10 rounded-lg p-1">
-              <button
-                onClick={() => setActiveTab('wheel')}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                  activeTab === 'wheel'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                Wheel
-              </button>
-              <button
-                onClick={() => setActiveTab('flow')}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                  activeTab === 'flow'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                Flow
-              </button>
-              <button
-                onClick={() => setActiveTab('both')}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                  activeTab === 'both'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                Both
-              </button>
-            </div>
-          </div>
+          <SegmentedControl<'wheel' | 'flow' | 'both'>
+            label="View"
+            size="sm"
+            value={activeTab}
+            onChange={setActiveTab}
+            options={[
+              { value: 'wheel', label: 'Wheel', icon: Disc3 },
+              { value: 'flow', label: 'Flow', icon: ChartLine },
+              { value: 'both', label: 'Both', icon: LayoutGrid },
+            ]}
+          />
         )}
       </div>
 
-      {/* Panel Content */}
       {isExpanded && (
-        <div className="space-y-6">
-          {/* Settings Row */}
-          <div className="flex flex-wrap items-center gap-4 p-3 bg-white/5 rounded-lg border border-white/10">
-            <label className="flex items-center gap-2 text-sm text-white">
+        <div className="km__body">
+          <fieldset className="sn-checkbox-group km__settings">
+            <legend className="sn-checkbox-group__legend">Connections</legend>
+            <label className="sn-checkbox">
               <input
                 type="checkbox"
                 checked={usePlaylistData}
                 onChange={(e) => setUsePlaylistData(e.target.checked)}
-                className="rounded"
               />
-              <Target />
-              <span>Prioritize playlist connections</span>
+              <span className="sn-checkbox__text">
+                <span>Put playlist connections first</span>
+                <span className="sn-checkbox__hint">
+                  {usePlaylistData ? 'Using transitions DJs have played.' : 'Using all connections.'}
+                </span>
+              </span>
             </label>
-
-            <label className="flex items-center gap-2 text-sm text-white">
+            <label className="sn-checkbox">
               <input
                 type="checkbox"
                 checked={showHarmonicSuggestions}
                 onChange={(e) => setShowHarmonicSuggestions(e.target.checked)}
-                className="rounded"
               />
-              <Zap />
-              <span>Show harmonic suggestions</span>
+              <span className="sn-checkbox__text"><span>Show compatible keys</span></span>
             </label>
+          </fieldset>
 
-            <div className="text-xs text-white/60 ml-auto">
-              {usePlaylistData ? 'Using proven DJ transitions' : 'Using all connections'}
-            </div>
-          </div>
-
-          {/* Camelot Wheel */}
           {(activeTab === 'wheel' || activeTab === 'both') && (
-            <div className={activeTab === 'both' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}>
-              <div className="bg-white/5 rounded-lg border border-white/10 p-4">
-                <CamelotWheel
-                  size={showInSidePanel ? 250 : 300}
-                  showHarmonicSuggestions={showHarmonicSuggestions}
-                  onKeySelect={handleKeySelect}
-                  onTrackSelect={handleTrackSelect}
-                  onPlanTransition={handlePlanTransition}
-                />
-              </div>
-
-              {activeTab === 'both' && (
-                <div className="bg-white/5 rounded-lg border border-white/10 p-4">
-                  <MoodVisualizer
-                    width={showInSidePanel ? 300 : 400}
-                    height={200}
-                    usePlaylistData={usePlaylistData}
-                    showTransitions={true}
-                    onPointSelect={handleEnergyPointSelect}
-                  />
-                </div>
-              )}
+            <div className="km__card">
+              <CamelotWheel
+                size={showInSidePanel ? 280 : 320}
+                showHarmonicSuggestions={showHarmonicSuggestions}
+                onKeySelect={handleKeySelect}
+                onTrackSelect={handleTrackSelect}
+                onPlanTransition={handlePlanTransition}
+              />
             </div>
           )}
 
-          {/* Mood Visualizer (solo) */}
-          {activeTab === 'flow' && (
-            <div className="bg-white/5 rounded-lg border border-white/10 p-4">
+          {(activeTab === 'flow' || activeTab === 'both') && (
+            <div className="km__card">
               <MoodVisualizer
-                width={showInSidePanel ? 350 : 500}
-                height={250}
+                width={showInSidePanel ? 300 : 500}
+                height={activeTab === 'flow' ? 250 : 200}
                 usePlaylistData={usePlaylistData}
                 showTransitions={true}
-                showEnergyFlow={true}
-                showMoodLabels={true}
+                showEnergyFlow={activeTab === 'flow' ? true : undefined}
+                showMoodLabels={activeTab === 'flow' ? true : undefined}
                 onPointSelect={handleEnergyPointSelect}
               />
             </div>
           )}
 
-          {/* Analysis Summary */}
-          <div className="bg-white/5 rounded-lg border border-white/10 p-4">
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <BarChart3 />
-              Quick Stats
-            </h4>
+          <section className="km__card" aria-labelledby="km-stats">
+            <h4 className="km__label" id="km-stats">In the graph</h4>
+            <dl className="km__stats">
+              <div><dt>Tracks</dt><dd>{SN.format.count(graphData.nodes.length)}</dd></div>
+              <div><dt>Connections</dt><dd>{SN.format.count(graphData.edges.length)}</dd></div>
+              <div><dt>Keys found</dt><dd>{SN.format.count(keysFound)}</dd></div>
+              <div><dt>Playlist links</dt><dd>{SN.format.count(playlistEdges)}</dd></div>
+            </dl>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <div className="text-white/60">Total Tracks</div>
-                <div className="text-white font-semibold">{graphData.nodes.length}</div>
-              </div>
-
-              <div>
-                <div className="text-white/60">Connections</div>
-                <div className="text-white font-semibold">{graphData.edges.length}</div>
-              </div>
-
-              <div>
-                <div className="text-white/60">Keys Found</div>
-                <div className="text-white font-semibold">
-                  {new Set(
-                    graphData.nodes
-                      .map(n => n.key || n.metadata?.key)
-                      .filter(Boolean)
-                  ).size}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-white/60">Playlist Edges</div>
-                <div className="text-white font-semibold text-green-400">
-                  {graphData.edges.filter(e => e.type === 'adjacency').length}
-                </div>
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                onClick={() => {
-                  // Shuffle the visualization
-                }}
-                className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 text-sm font-medium hover:bg-blue-500/30 transition-colors flex items-center gap-1"
-              >
-                <Shuffle />
-                Shuffle View
+            <div className="km__actions">
+              <button type="button" className="sn-btn sn-btn--sm" onClick={() => applyFilters({ energyRange: [0.7, 1.0] })}>
+                <Zap size={16} strokeWidth={2} aria-hidden="true" />
+                Show high energy
               </button>
-
-              <button
-                onClick={() => {
-                  // Reset filters
-                  applyFilters({});
-                }}
-                className="px-3 py-1 bg-gray-500/20 border border-gray-500/30 rounded text-gray-400 text-sm font-medium hover:bg-gray-500/30 transition-colors flex items-center gap-1"
-              >
-                <RotateCw />
-                Reset Filters
+              <button type="button" className="sn-btn sn-btn--sm" onClick={() => applyFilters({ energyRange: [0.0, 0.4] })}>
+                <Moon size={16} strokeWidth={2} aria-hidden="true" />
+                Show low energy
               </button>
-
-              <button
-                onClick={() => {
-                  // Focus on high energy tracks
-                  applyFilters({
-                    energyRange: [0.7, 1.0]
-                  });
-                }}
-                className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center gap-1"
-              >
-                <Zap />
-                High Energy
-              </button>
-
-              <button
-                onClick={() => {
-                  // Focus on mellow tracks
-                  applyFilters({
-                    energyRange: [0.0, 0.4]
-                  });
-                }}
-                className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded text-purple-400 text-sm font-medium hover:bg-purple-500/30 transition-colors flex items-center gap-1"
-              >
-                <Heart />
-                Mellow
+              <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => applyFilters({})}>
+                <RotateCcw size={16} strokeWidth={2} aria-hidden="true" />
+                Clear filters
               </button>
             </div>
-          </div>
+          </section>
 
-          {/* Help Text */}
-          <div className="text-xs text-white/60 p-3 bg-white/5 rounded border border-white/10">
-            <div className="mb-2 font-semibold text-white/80">How to use:</div>
-            <ul className="space-y-1">
-              <li>• <strong>Camelot Wheel:</strong> Click key segments to filter tracks. Green lines show playlist connections.</li>
-              <li>• <strong>Energy Flow:</strong> Visualize energy progression. Solid lines are proven DJ transitions.</li>
-              <li>• <strong>Playlist Priority:</strong> When enabled, existing playlist edges take precedence over harmonic suggestions.</li>
-              <li>• <strong>Harmonic Suggestions:</strong> Toggle to see compatible keys for creative mixing (shown as dotted lines).</li>
+          <details className="km__help">
+            <summary>How to use Key and mood</summary>
+            <ul>
+              <li><strong>Camelot wheel:</strong> select key segments to pick the tracks in those keys.</li>
+              <li><strong>Energy flow:</strong> shows how energy moves from track to track. Solid lines are transitions DJs have played.</li>
+              <li><strong>Playlist connections first:</strong> played transitions win over key matches.</li>
+              <li><strong>Compatible keys:</strong> outlines the keys that mix cleanly with the selected one.</li>
             </ul>
-          </div>
+          </details>
         </div>
       )}
     </div>

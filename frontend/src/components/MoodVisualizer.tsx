@@ -5,29 +5,18 @@ import { line, curveCatmullRom } from 'd3-shape';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge, Setlist, SetlistTrack } from '../types';
-import {
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Zap,
-  Heart,
-  Volume2,
-  Play,
-  SkipForward,
-  Settings,
-  Eye,
-  EyeOff,
-  ArrowUp,
-  ArrowDown,
-  Minus
-} from 'lucide-react';
+import { displayEnergy } from '../utils/trackMetadata';
+import { SN } from '../lib/songnodes';
+import { EmptyPanel } from './ds';
+import { ChartLine } from 'lucide-react';
+import './MoodVisualizer.css';
 
 interface EnergyPoint {
   position: number;    // Position in setlist or sequence (0-1)
-  energy: number;      // Energy level (0-1)
+  energy: number;      // Energy 1–10 (design-system scale); tracks without energy are left out
   key: string | null;  // Musical key
   track: GraphNode;    // Track reference
-  mood: string;        // Mood classification
+  mood: string;        // Energy tier: Low 1–4, Building 5–7, High 8–10
   transition: 'boost' | 'maintain' | 'drop' | 'unknown';
 }
 
@@ -65,33 +54,23 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedPoints, setSelectedPoints] = useState<number[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'energy' | 'mood' | 'flow'>('energy');
 
   // Store data
   const graphData = useStore(state => state.graphData);
   const currentSetlist = useStore(state => state.currentSetlist);
   const selectedNodes = useStore(state => state.viewState.selectedNodes);
 
-  // Mood classification based on energy + key + genre
-  const classifyMood = useCallback((energy: number, key: string | null, genre?: string): string => {
-    const e = energy || 0.5;
-
-    if (e >= 0.8) return 'euphoric';
-    if (e >= 0.7) return 'energetic';
-    if (e >= 0.6) return 'uplifting';
-    if (e >= 0.5) return 'balanced';
-    if (e >= 0.4) return 'mellow';
-    if (e >= 0.3) return 'contemplative';
-    if (e >= 0.2) return 'melancholic';
-    return 'ambient';
+  // Energy tier word from the design system (never an invented mood)
+  const classifyMood = useCallback((energy: number, _key: string | null, _genre?: string): string => {
+    const tier = SN.tier(energy);
+    return tier === 'low' ? 'Low' : tier === 'building' ? 'Building' : tier === 'high' ? 'High' : '–';
   }, []);
 
-  // Get energy from track data
-  const getTrackEnergy = useCallback((node: GraphNode): number => {
-    return node.energy ||
-           node.metadata?.energy ||
-           node.track?.energy ||
-           (node.bpm ? Math.min(node.bpm / 140, 1) : 0.5); // BPM-based fallback
+  // Energy 1–10 from the stored value and its scale; null when not analysed (never a default)
+  const getTrackEnergy = useCallback((node: GraphNode): number | null => {
+    const raw = node.energy ?? node.metadata?.energy ?? node.track?.energy;
+    const scale = (node as { energy_scale?: string }).energy_scale ?? node.track?.energy_scale ?? node.metadata?.energy_scale;
+    return displayEnergy(raw, scale).value;
   }, []);
 
   // Get track key
@@ -160,20 +139,20 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
 
     if (usePlaylistData && currentSetlist?.tracks?.length) {
       // Use setlist order for sequence
-      sequence = currentSetlist.tracks.map((setlistTrack: SetlistTrack, index: number): EnergyPoint => {
-        const node = graphData.nodes.find(n => n.id === setlistTrack.track.id) ||
-                     { id: setlistTrack.track.id, label: setlistTrack.track.name } as GraphNode;
-
-        const energy = getTrackEnergy(node);
+      const withEnergy = currentSetlist.tracks
+        .map((setlistTrack: SetlistTrack) => graphData.nodes.find(n => n.id === setlistTrack.track.id) ||
+          ({ id: setlistTrack.track.id, label: setlistTrack.track.name, energy: setlistTrack.track.energy } as GraphNode))
+        .map((node) => ({ node, energy: getTrackEnergy(node) }))
+        .filter((x): x is { node: GraphNode; energy: number } => x.energy != null);
+      sequence = withEnergy.map(({ node, energy }, index): EnergyPoint => {
         const key = getTrackKey(node);
-
         return {
-          position: index / (currentSetlist.tracks.length - 1),
+          position: withEnergy.length > 1 ? index / (withEnergy.length - 1) : 0,
           energy,
           key,
           track: node,
           mood: classifyMood(energy, key),
-          transition: index === 0 ? 'unknown' : 'unknown' // Will be calculated
+          transition: 'unknown' // Calculated below
         };
       });
     } else {
@@ -185,17 +164,18 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
       // Try to order by existing edge connections
       const orderedNodes = orderNodesByEdges(nodes, graphData.edges);
 
-      sequence = orderedNodes.map((node, index): EnergyPoint => {
-        const energy = getTrackEnergy(node);
+      const withEnergy = orderedNodes
+        .map((node) => ({ node, energy: getTrackEnergy(node) }))
+        .filter((x): x is { node: GraphNode; energy: number } => x.energy != null);
+      sequence = withEnergy.map(({ node, energy }, index): EnergyPoint => {
         const key = getTrackKey(node);
-
         return {
-          position: index / (orderedNodes.length - 1),
+          position: withEnergy.length > 1 ? index / (withEnergy.length - 1) : 0,
           energy,
           key,
           track: node,
           mood: classifyMood(energy, key),
-          transition: index === 0 ? 'unknown' : 'unknown'
+          transition: 'unknown'
         };
       });
     }
@@ -206,8 +186,9 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
       const curr = sequence[i];
       const energyDiff = curr.energy - prev.energy;
 
-      if (energyDiff > 0.15) curr.transition = 'boost';
-      else if (energyDiff < -0.15) curr.transition = 'drop';
+      // 1–10 scale: a step of 2 or more is a boost or drop
+      if (energyDiff >= 2) curr.transition = 'boost';
+      else if (energyDiff <= -2) curr.transition = 'drop';
       else curr.transition = 'maintain';
     }
 
@@ -242,32 +223,20 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
       );
 
       let transitionType: MoodTransition['type'] = 'mood_shift';
-      if (energyDiff > 0.2) transitionType = to.energy > from.energy ? 'energy_boost' : 'energy_drop';
+      if (energyDiff >= 2) transitionType = to.energy > from.energy ? 'energy_boost' : 'energy_drop';
       else if (keyChange) transitionType = 'key_change';
 
       transitions.push({
         from,
         to,
         type: transitionType,
-        strength: Math.max(energyDiff, keyChange ? 0.3 : 0),
+        strength: Math.max(energyDiff / 10, keyChange ? 0.3 : 0),
         isPlaylistEdge: hasPlaylistEdge
       });
     }
 
     return transitions;
   }, [energySequence, graphData.edges]);
-
-  // Color schemes for different moods
-  const moodColors = {
-    euphoric: '#ef4444',    // Red
-    energetic: '#f97316',   // Orange
-    uplifting: '#f59e0b',   // Amber
-    balanced: '#10b981',    // Green
-    mellow: '#06b6d4',      // Cyan
-    contemplative: '#3b82f6', // Blue
-    melancholic: '#8b5cf6', // Purple
-    ambient: '#6b7280'      // Gray
-  };
 
   // Handle point selection
   const handlePointClick = useCallback((index: number) => {
@@ -295,13 +264,13 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-    // Scales
+    // Scales: position 0–1 across the sequence, energy 1–10
     const xScale = scaleLinear()
       .domain([0, 1])
       .range([0, chartWidth]);
 
     const yScale = scaleLinear()
-      .domain([0, 1])
+      .domain([1, 10])
       .range([chartHeight, 0]);
 
     // Energy flow line
@@ -314,33 +283,28 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
       g.append('path')
         .datum(energySequence)
         .attr('d', energyLine)
-        .attr('stroke', '#10b981')
-        .attr('stroke-width', 2)
-        .attr('fill', 'none')
-        .attr('opacity', 0.8);
+        .attr('class', 'mv__flow');
     }
 
-    // Transition lines (playlist edges vs suggestions)
+    // Transition lines: played transitions solid, others dashed (pattern carries type, not colour)
     if (showTransitions) {
       moodTransitions.forEach(transition => {
-        const line = g.append('line')
+        const seg = g.append('line')
           .attr('x1', xScale(transition.from.position))
           .attr('y1', yScale(transition.from.energy))
           .attr('x2', xScale(transition.to.position))
           .attr('y2', yScale(transition.to.energy))
-          .attr('stroke', transition.isPlaylistEdge ? '#10b981' : '#6b7280')
+          .attr('class', transition.isPlaylistEdge ? 'mv__link mv__link--played' : 'mv__link mv__link--other')
           .attr('stroke-width', transition.isPlaylistEdge ? Math.max(2, transition.strength * 4) : 1)
-          .attr('stroke-opacity', transition.isPlaylistEdge ? 0.8 : 0.4)
-          .attr('stroke-dasharray', transition.isPlaylistEdge ? '0' : '3,3')
           .style('cursor', 'pointer');
 
-        line.on('click', () => {
+        seg.on('click', () => {
           if (onTransitionSelect) onTransitionSelect(transition);
         });
       });
     }
 
-    // Energy points
+    // Energy points, filled with the energy token for their value
     const pointsGroup = g.append('g').attr('class', 'energy-points');
 
     pointsGroup.selectAll('.energy-point')
@@ -353,75 +317,56 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
         const isSelected = selectedPoints.includes(i);
         const isHovered = hoveredPoint === i;
 
-        // Point circle
         group.append('circle')
           .attr('r', isSelected ? 8 : isHovered ? 6 : 4)
-          .attr('fill', viewMode === 'mood' ? moodColors[d.mood as keyof typeof moodColors] : '#3b82f6')
-          .attr('stroke', '#fff')
-          .attr('stroke-width', isSelected ? 2 : 1)
-          .attr('opacity', 0.8)
+          .attr('class', isSelected ? 'mv__point mv__point--selected' : 'mv__point')
+          .style('fill', `var(--energy-${d.energy})`)
           .style('cursor', 'pointer');
 
-        // Transition indicator
-        if (i > 0 && d.transition !== 'maintain') {
-          const icon = d.transition === 'boost' ? '↑' : d.transition === 'drop' ? '↓' : '−';
+        if (i > 0 && (d.transition === 'boost' || d.transition === 'drop')) {
           group.append('text')
             .attr('x', 0)
             .attr('y', -12)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '10px')
-            .attr('fill', d.transition === 'boost' ? '#10b981' : d.transition === 'drop' ? '#ef4444' : '#6b7280')
-            .text(icon);
+            .attr('class', 'mv__mark')
+            .text(d.transition === 'boost' ? '↑' : '↓');
         }
 
-        // Mood label
         if (showMoodLabels) {
           group.append('text')
             .attr('x', 0)
             .attr('y', 20)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '8px')
-            .attr('fill', '#fff')
-            .attr('opacity', 0.7)
-            .text(d.mood.slice(0, 4));
+            .attr('class', 'mv__tier')
+            .text(String(d.energy));
         }
       })
       .on('click', (event, d) => handlePointClick(energySequence.indexOf(d)))
       .on('mouseover', (event, d) => setHoveredPoint(energySequence.indexOf(d)))
       .on('mouseout', () => setHoveredPoint(null));
 
-    // Axes
-    const xAxis = axisBottom(xScale)
-      .tickFormat((d) => `${Math.round((d as number) * 100)}%`);
-
-    const yAxis = axisLeft(yScale)
-      .tickFormat((d) => `${Math.round((d as number) * 100)}%`);
+    // Axes (energy as integers, never percentages)
+    const xAxis = axisBottom(xScale).ticks(0).tickSize(0);
+    const yAxis = axisLeft(yScale).tickValues([1, 4, 7, 10]).tickFormat((d) => String(d));
 
     g.append('g')
       .attr('transform', `translate(0, ${chartHeight})`)
-      .call(xAxis)
-      .attr('color', '#9ca3af');
+      .attr('class', 'mv__axis')
+      .call(xAxis);
 
     g.append('g')
-      .call(yAxis)
-      .attr('color', '#9ca3af');
+      .attr('class', 'mv__axis')
+      .call(yAxis);
 
-    // Axis labels
     g.append('text')
-      .attr('transform', `translate(${chartWidth / 2}, ${chartHeight + 35})`)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
-      .attr('fill', '#9ca3af')
-      .text('Track Progression');
+      .attr('transform', `translate(${chartWidth / 2}, ${chartHeight + 24})`)
+      .attr('class', 'mv__axis-label')
+      .text('Track order');
 
     g.append('text')
       .attr('transform', 'rotate(-90)')
-      .attr('y', -25)
+      .attr('y', -28)
       .attr('x', -chartHeight / 2)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
-      .attr('fill', '#9ca3af')
-      .text('Energy Level');
+      .attr('class', 'mv__axis-label')
+      .text('Energy');
 
   }, [
     width,
@@ -430,7 +375,6 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
     moodTransitions,
     selectedPoints,
     hoveredPoint,
-    viewMode,
     showEnergyFlow,
     showMoodLabels,
     showTransitions,
@@ -438,123 +382,58 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
     onTransitionSelect
   ]);
 
+  const energies = energySequence.map(p => p.energy);
+  const played = moodTransitions.filter(t => t.isPlaylistEdge).length;
+  const hp = hoveredPoint !== null ? energySequence[hoveredPoint] : undefined;
+
   return (
-    <div className={`mood-visualizer ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <TrendingUp size={20} />
-          Energy Flow
-        </h3>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={viewMode}
-            onChange={(e) => setViewMode(e.target.value as any)}
-            className="bg-white/10 text-white text-sm px-2 py-1 rounded border border-white/20"
-          >
-            <option value="energy">Energy</option>
-            <option value="mood">Mood</option>
-            <option value="flow">Flow</option>
-          </select>
-
-          <button
-            onClick={() => setSelectedPoints([])}
-            className="p-2 text-white/70 hover:text-white transition-colors"
-            title="Clear selection"
-          >
-            <Settings size={16} />
+    <div className={`mood-visualizer mv ${className}`}>
+      <div className="mv__head">
+        <h4 className="mv__title">Energy flow</h4>
+        {selectedPoints.length > 0 && (
+          <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => setSelectedPoints([])}>
+            Clear selection
           </button>
-        </div>
+        )}
       </div>
 
-      {/* Legend */}
-      <div className="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
-        <div className="grid grid-cols-2 gap-2 text-xs text-white/80">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-0.5 bg-green-500"></div>
-            <span>Playlist transitions</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-0.5 bg-gray-500 border-dashed border-t"></div>
-            <span>Energy connections</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <ArrowUp size={12} className="text-green-500" />
-            <span>Energy boost</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <ArrowDown size={12} className="text-red-500" />
-            <span>Energy drop</span>
-          </div>
-        </div>
-      </div>
+      {energySequence.length === 0 ? (
+        <EmptyPanel compact icon={ChartLine} title="No energy to plot">
+          None of these tracks has an energy value yet. Energy appears once tracks are analysed.
+        </EmptyPanel>
+      ) : (
+        <>
+          <ul className="mv__legend" aria-label="Legend">
+            <li><svg width="18" height="6" aria-hidden="true"><line x1="0" y1="3" x2="18" y2="3" className="mv__link mv__link--played" strokeWidth="2" /></svg>Played transition</li>
+            <li><svg width="18" height="6" aria-hidden="true"><line x1="0" y1="3" x2="18" y2="3" className="mv__link mv__link--other" strokeWidth="1" /></svg>Other neighbour</li>
+            <li><span aria-hidden="true">↑</span>Energy up 2 or more</li>
+            <li><span aria-hidden="true">↓</span>Energy down 2 or more</li>
+          </ul>
 
-      {/* Visualization */}
-      <div className="relative bg-black/20 rounded-lg p-4">
-        <svg
-          ref={svgRef}
-          width={width}
-          height={height}
-          className="overflow-visible"
-        />
-      </div>
-
-      {/* Stats */}
-      <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
-        <div className="grid grid-cols-3 gap-4 text-sm text-white">
-          <div>
-            <div className="text-white/60">Tracks</div>
-            <div className="font-semibold">{energySequence.length}</div>
+          <div className="mv__plot">
+            <svg
+              ref={svgRef}
+              width={width}
+              height={height}
+              role="img"
+              aria-label={`Energy of ${energySequence.length} tracks in order, from ${Math.min(...energies)} to ${Math.max(...energies)}`}
+            />
           </div>
-          <div>
-            <div className="text-white/60">Energy Range</div>
-            <div className="font-semibold">
-              {energySequence.length > 0 ?
-                `${Math.round(Math.min(...energySequence.map(p => p.energy)) * 100)}% - ${Math.round(Math.max(...energySequence.map(p => p.energy)) * 100)}%`
-                : 'N/A'
-              }
+
+          <dl className="mv__stats">
+            <div><dt>Tracks</dt><dd>{SN.format.count(energySequence.length)}</dd></div>
+            <div><dt>Energy range</dt><dd>{Math.min(...energies)}–{Math.max(...energies)}</dd></div>
+            <div><dt>Played links</dt><dd>{played} of {moodTransitions.length}</dd></div>
+          </dl>
+
+          {hp && (
+            <div className="mv__detail" role="status">
+              <strong>{hp.track.label}</strong>
+              <span>Energy {hp.energy} · {hp.mood}</span>
+              <span>Key {hp.key ? (SN.camelot(hp.key) ?? hp.key) : '–'}</span>
             </div>
-          </div>
-          <div>
-            <div className="text-white/60">Playlist Edges</div>
-            <div className="font-semibold">
-              {moodTransitions.filter(t => t.isPlaylistEdge).length}/{moodTransitions.length}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Hovered point info */}
-      {hoveredPoint !== null && energySequence[hoveredPoint] && (
-        <div className="mt-4 p-3 bg-white/10 rounded-lg border border-white/10">
-          {(() => {
-            const point = energySequence[hoveredPoint];
-            return (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-semibold text-white">{point.track.label}</span>
-                  <span
-                    className="px-2 py-1 rounded text-xs"
-                    style={{
-                      backgroundColor: moodColors[point.mood as keyof typeof moodColors] + '40',
-                      color: moodColors[point.mood as keyof typeof moodColors]
-                    }}
-                  >
-                    {point.mood}
-                  </span>
-                </div>
-
-                <div className="text-sm text-white/80 grid grid-cols-2 gap-2">
-                  <div>Energy: {Math.round(point.energy * 100)}%</div>
-                  <div>Key: {point.key || 'Unknown'}</div>
-                  <div>Position: {Math.round(point.position * 100)}%</div>
-                  <div>Transition: {point.transition}</div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

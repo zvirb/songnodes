@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Download, ScanText } from 'lucide-react';
+import { Dialog } from './ds';
+import './TracklistImporter.css';
 
 interface TracklistImporterProps {
   onClose: () => void;
@@ -130,7 +133,7 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
    */
   const handleImport = async () => {
     if (parsedTracks.length === 0) {
-      setErrorMessage('No tracks to import. Please paste a tracklist and click Parse first.');
+      setErrorMessage('Paste a tracklist and read it first.');
       return;
     }
 
@@ -178,261 +181,71 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10000,
-        padding: '20px'
-      }}
-      onClick={onClose}
+    <Dialog
+      open
+      title="Import tracklist"
+      sub="Paste one track per line: “Artist – Title”, “1. Artist – Title” or “Artist / Title”."
+      size="l"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="sn-btn" onClick={onClose}>Cancel</button>
+          <button type="button" className="sn-btn sn-btn--primary" onClick={handleImport} disabled={parsedTracks.length === 0 || isProcessing} aria-busy={isProcessing || undefined}>
+            {isProcessing ? <span className="sn-spinner" aria-hidden="true" /> : <Download size={16} strokeWidth={2} aria-hidden="true" />}
+            {isProcessing ? 'Importing…' : parsedTracks.length ? `Import ${parsedTracks.length} tracks` : 'Import tracks'}
+          </button>
+        </>
+      }
     >
-      <div
-        style={{
-          backgroundColor: '#1E1E1E',
-          borderRadius: '12px',
-          padding: '24px',
-          maxWidth: '900px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
-        }}>
-          <h2 style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
-            fontWeight: 600,
-            margin: 0
-          }}>
-            📝 Import Tracklist
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#8E8E93',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px 8px'
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Instructions */}
-        <div style={{
-          backgroundColor: 'rgba(74,144,226,0.1)',
-          border: '1px solid rgba(74,144,226,0.3)',
-          borderRadius: '8px',
-          padding: '12px',
-          marginBottom: '16px'
-        }}>
-          <p style={{ color: '#4A90E2', fontSize: '13px', margin: '0 0 8px 0', fontWeight: 600 }}>
-            ℹ️ How to use:
-          </p>
-          <ul style={{ color: '#8E8E93', fontSize: '12px', margin: 0, paddingLeft: '20px' }}>
-            <li>Paste your tracklist below (one track per line)</li>
-            <li>Supported formats: "Artist - Title", "1. Artist - Title", "Artist / Title"</li>
-            <li>Click "Parse" to preview how tracks will be imported</li>
-            <li>Click "Import to Database" to add tracks (creates new or updates existing)</li>
-          </ul>
-        </div>
-
-        {/* Textarea for tracklist input */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            color: '#FFFFFF',
-            fontSize: '14px',
-            fontWeight: 600,
-            marginBottom: '8px'
-          }}>
-            Tracklist (paste here):
-          </label>
-          <textarea
-            value={tracklistText}
-            onChange={(e) => setTracklistText(e.target.value)}
-            placeholder="Paste your tracklist here...&#10;Example:&#10;1. Axwell Λ Ingrosso - More Than You Know&#10;2. Vicetone - Walk Thru Fire (ft. Meron Ryan)&#10;3. Artist Name - Track Title"
-            style={{
-              width: '100%',
-              minHeight: '200px',
-              backgroundColor: '#2A2A2A',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#F8F8F8',
-              fontSize: '13px',
-              padding: '12px',
-              fontFamily: 'monospace',
-              resize: 'vertical'
-            }}
-          />
-        </div>
-
-        {/* Parse button */}
-        <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
-          <button
-            onClick={handleParse}
-            disabled={!tracklistText.trim()}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: tracklistText.trim() ? 'rgba(74,144,226,0.3)' : 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(74,144,226,0.5)',
-              borderRadius: '8px',
-              color: tracklistText.trim() ? '#FFFFFF' : '#8E8E93',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: tracklistText.trim() ? 'pointer' : 'not-allowed'
-            }}
-          >
-            🔍 Parse Tracklist
-          </button>
-          {parsedTracks.length > 0 && (
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              color: '#7ED321',
-              fontSize: '14px',
-              fontWeight: 600
-            }}>
-              ✓ {parsedTracks.length} tracks parsed
-            </span>
-          )}
-        </div>
-
-        {/* Preview parsed tracks */}
-        {parsedTracks.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
-            <h3 style={{
-              color: '#FFFFFF',
-              fontSize: '16px',
-              fontWeight: 600,
-              marginBottom: '12px'
-            }}>
-              Preview ({parsedTracks.length} tracks):
-            </h3>
-            <div style={{
-              maxHeight: '300px',
-              overflow: 'auto',
-              backgroundColor: '#2A2A2A',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '12px'
-            }}>
-              {parsedTracks.map((track, index) => (
-                <div
-                  key={index}
-                  style={{
-                    padding: '8px',
-                    marginBottom: '4px',
-                    backgroundColor: 'rgba(255,255,255,0.05)',
-                    borderRadius: '4px',
-                    fontSize: '13px'
-                  }}
-                >
-                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>
-                    {track.trackNumber && `${track.trackNumber}. `}
-                    <span style={{ color: '#4A90E2' }}>{track.artist}</span>
-                    {' - '}
-                    <span style={{ color: '#7ED321' }}>{track.title}</span>
-                  </div>
-                  <div style={{ color: '#8E8E93', fontSize: '11px', marginTop: '2px' }}>
-                    Original: {track.originalLine}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Error message */}
-        {errorMessage && (
-          <div style={{
-            backgroundColor: 'rgba(231,76,60,0.1)',
-            border: '1px solid rgba(231,76,60,0.3)',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '16px'
-          }}>
-            <p style={{ color: '#E74C3C', fontSize: '13px', margin: 0 }}>
-              ❌ {errorMessage}
-            </p>
-          </div>
-        )}
-
-        {/* Import status */}
-        {importStatus && (
-          <div style={{
-            backgroundColor: 'rgba(126,211,33,0.1)',
-            border: '1px solid rgba(126,211,33,0.3)',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '16px'
-          }}>
-            <p style={{ color: '#7ED321', fontSize: '14px', margin: 0, fontWeight: 600 }}>
-              ✓ Import Complete
-            </p>
-            <p style={{ color: '#8E8E93', fontSize: '12px', margin: '8px 0 0 0' }}>
-              {importStatus.success} tracks processed successfully
-              {importStatus.failed > 0 && `, ${importStatus.failed} failed`}
-            </p>
-          </div>
-        )}
-
-        {/* Import button */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleImport}
-            disabled={parsedTracks.length === 0 || isProcessing}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: parsedTracks.length > 0 && !isProcessing
-                ? 'rgba(126,211,33,0.3)'
-                : 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(126,211,33,0.5)',
-              borderRadius: '8px',
-              color: parsedTracks.length > 0 && !isProcessing ? '#FFFFFF' : '#8E8E93',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: parsedTracks.length > 0 && !isProcessing ? 'pointer' : 'not-allowed'
-            }}
-          >
-            {isProcessing ? '⏳ Importing...' : '📥 Import to Database'}
-          </button>
-        </div>
+      <div className="sn-field">
+        <label htmlFor="tli-text">Tracklist</label>
+        <textarea
+          id="tli-text"
+          className="sn-input tli__text"
+          value={tracklistText}
+          onChange={(e) => setTracklistText(e.target.value)}
+          placeholder={"1. Bicep – Glue\n2. Overmono – So U Kno\n3. Four Tet – Baby"}
+          rows={8}
+        />
+        <span className="sn-field__help">Read the tracklist to check it, then import. Existing tracks are updated, new ones are added.</span>
       </div>
-    </div>
+
+      <div className="tli__row">
+        <button type="button" className="sn-btn sn-btn--sm" onClick={handleParse} disabled={!tracklistText.trim()}>
+          <ScanText size={16} strokeWidth={2} aria-hidden="true" />
+          Read tracklist
+        </button>
+        {parsedTracks.length > 0 && <span className="tli__count" role="status">{parsedTracks.length} tracks read</span>}
+      </div>
+
+      {parsedTracks.length > 0 && (
+        <section aria-labelledby="tli-preview">
+          <h3 className="tli__label" id="tli-preview">Preview</h3>
+          <ol className="tli__list">
+            {parsedTracks.map((track, index) => (
+              <li key={index} className="tli__item">
+                <span className="tli__num">{track.trackNumber ?? index + 1}</span>
+                <div className="sn-track-cell">
+                  <span className="sn-track-cell__title">
+                    <span className="sn-track-cell__name"><span className="sn-track-cell__artist">{track.artist} –</span> {track.title}</span>
+                  </span>
+                  <span className="sn-track-cell__meta"><span className="tli__orig">{track.originalLine}</span></span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {errorMessage && (
+        <p className="sn-inline-message sn-inline-message--boxed" data-status="bad" role="alert">{errorMessage}</p>
+      )}
+
+      {importStatus && (
+        <p className="sn-inline-message sn-inline-message--boxed" data-status={importStatus.failed > 0 ? 'warn' : 'ok'} role="status">
+          Imported {importStatus.success} of {importStatus.total} tracks{importStatus.failed > 0 ? `; ${importStatus.failed} failed` : ''}.
+        </p>
+      )}
+    </Dialog>
   );
 };

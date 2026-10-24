@@ -4,6 +4,7 @@
  */
 
 import React, { useRef } from 'react';
+import { Search, X } from 'lucide-react';
 import styles from './IntelligentBrowser.module.css';
 
 interface SearchBarProps {
@@ -16,7 +17,7 @@ interface SearchBarProps {
 export const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChange,
-  placeholder = 'Search tracks, artists...',
+  placeholder = 'Search suggestions',
   resultCount
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,50 +28,41 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div className={styles.searchContainer} role="search">
-      <label htmlFor="track-search" className="sr-only">
-        Search tracks and artists
-      </label>
-
+    <div className={styles.search} role="search">
+      <span className={styles.searchIcon} aria-hidden="true"><Search size={16} strokeWidth={2} /></span>
       <input
         ref={inputRef}
         id="track-search"
         type="search"
+        className="sn-input"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={styles.searchInput}
-        aria-label="Search tracks and artists"
+        aria-label="Search suggestions by track, artist or genre"
         aria-describedby="search-hint"
         autoComplete="off"
       />
 
       {value && (
         <button
-          className={styles.clearButton}
+          className={`sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm ${styles.clear}`}
           onClick={handleClear}
           aria-label="Clear search"
+          title="Clear search"
           type="button"
         >
-          ×
+          <X size={16} strokeWidth={2} aria-hidden="true" />
         </button>
       )}
 
-      {/* Search icon */}
-      <div className={styles.searchIcon} aria-hidden="true">
-        🔍
-      </div>
-
-      {/* Search hint */}
-      <span id="search-hint" className="sr-only">
-        Type to filter tracks by name, artist, or genre. Press Escape to clear.
+      <span id="search-hint" className="sn-sr">
+        Type to filter by track, artist or genre. Press Escape to clear.
       </span>
 
-      {/* Result count */}
       {resultCount !== undefined && value && (
-        <div className={styles.resultCount} role="status" aria-live="polite">
+        <span className="sn-sr" role="status" aria-live="polite">
           {resultCount} {resultCount === 1 ? 'result' : 'results'}
-        </div>
+        </span>
       )}
     </div>
   );

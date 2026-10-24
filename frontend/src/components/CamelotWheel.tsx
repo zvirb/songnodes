@@ -1,52 +1,23 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { select } from 'd3-selection';
-import { arc } from 'd3-shape';
+/**
+ * CamelotWheel: the design-system CamelotWheel (design-system/components/CamelotWheel)
+ * as a React SVG. Standard Camelot mapping via SN.camelot/SN.keyName (8A = A minor,
+ * 8B = C major); number n sits at n o'clock with 12 at the top; outer ring B, inner
+ * ring A; fills from the `key-*` tokens. Selection filters the graph (multi-select).
+ */
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { GraphNode, GraphEdge, Track } from '../types';
-import {
-  Settings,
-  Play,
-  Shuffle,
-  Target,
-  Eye,
-  EyeOff,
-  Zap,
-  Music,
-  TrendingUp,
-  Filter,
-  RotateCcw
-} from 'lucide-react';
-
-interface CamelotKey {
-  id: string;           // '1A', '2B', etc.
-  musical: string;      // 'C Major', 'A Minor', etc.
-  openKey: string;      // '1d', '2m', etc. (alternative notation)
-  position: number;     // 0-11 around circle
-  mode: 'major' | 'minor';
-  energy: number;       // 1-10 energy level
-  mood: string;         // 'uplifting', 'melancholic', etc.
-  color: string;        // Base color
-  energyColor: string;  // Energy-based color
-  compatible: string[]; // Adjacent and opposite keys for harmonic mixing
-}
-
-interface TrackConnection {
-  sourceKey: string;
-  targetKey: string;
-  weight: number;
-  isPlaylistEdge: boolean; // True if from existing graph edges
-  isHarmonicSuggestion: boolean; // True if harmonic compatibility
-  trackPairs: Array<{
-    source: GraphNode;
-    target: GraphNode;
-    edge?: GraphEdge;
-  }>;
-}
+import { GraphNode, Track } from '../types';
+import { SN } from '../lib/songnodes';
+import { onThemeChange, tokenHex } from '../lib/graphColours';
 
 interface CamelotWheelProps {
   size?: number;
+  /** Kept for API compatibility; the design-system wheel has no mood labels. */
   showMoodLabels?: boolean;
+  /** Kept for API compatibility; key colours always come from the key tokens. */
   showEnergyGradient?: boolean;
+  /** Outline the keys that mix cleanly with the focused (or last selected) key. */
   showHarmonicSuggestions?: boolean;
   onKeySelect?: (keys: string[]) => void;
   onTrackSelect?: (track: Track) => void;
@@ -54,676 +25,232 @@ interface CamelotWheelProps {
   className?: string;
 }
 
+const C = 210;
+const RING: Record<'A' | 'B', [number, number]> = { B: [154, 206], A: [100, 152] };
+const CODES: string[] = (['B', 'A'] as const).flatMap((L) => Array.from({ length: 12 }, (_, i) => `${i + 1}${L}`));
+
+function pol(r: number, deg: number): [number, number] {
+  const a = ((deg - 90) * Math.PI) / 180;
+  return [C + r * Math.cos(a), C + r * Math.sin(a)];
+}
+function sector(r0: number, r1: number, a0: number, a1: number) {
+  const p0 = pol(r1, a0), p1 = pol(r1, a1), p2 = pol(r0, a1), p3 = pol(r0, a0);
+  return `M${p0}A${r1},${r1} 0 0 1 ${p1}L${p2}A${r0},${r0} 0 0 0 ${p3}Z`;
+}
+const geo = (code: string) => {
+  const L = code.slice(-1) as 'A' | 'B';
+  const n = parseInt(code, 10);
+  return { L, n, mid: (n % 12) * 30, r: RING[L] };
+};
+function lum(n: number) {
+  return [16, 8, 0]
+    .map((s) => ((n >> s) & 255) / 255)
+    .map((x) => (x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)))
+    .reduce((acc, v, i) => acc + v * [0.2126, 0.7152, 0.0722][i], 0);
+}
+const contrast = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+/** Which segments need `fg` ink rather than `bg` ink, for the current theme. */
+function computeInk(): Record<string, boolean> {
+  const Lbg = lum(tokenHex('bg'));
+  const Lfg = lum(tokenHex('fg'));
+  const out: Record<string, boolean> = {};
+  CODES.forEach((code) => {
+    const Lf = lum(tokenHex(`key-${code.toLowerCase()}`));
+    out[code] = contrast(Lf, Lfg) > contrast(Lf, Lbg);
+  });
+  return out;
+}
+
+/** Keys that mix cleanly from `code`: same key's neighbours ±1 and the relative key. */
+function cleanMixes(code: string): string[] {
+  return CODES.filter((k) => k !== code && SN.compat(code, k).level !== 'clash' && SN.compat(code, k).level !== 'possible');
+}
+
 export const CamelotWheel: React.FC<CamelotWheelProps> = ({
   size = 300,
-  showMoodLabels: showMoodLabelsProp = true,
-  showEnergyGradient: showEnergyGradientProp = false,
   showHarmonicSuggestions = false,
   onKeySelect,
-  onTrackSelect,
-  onPlanTransition,
-  className = ''
+  className = '',
 }) => {
-  const svgRef = useRef<SVGSVGElement>(null);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showMoodLabels, setShowMoodLabels] = useState(showMoodLabelsProp);
-  const [showEnergyGradient, setShowEnergyGradient] = useState(showEnergyGradientProp);
+  const [focusKey, setFocusKey] = useState<string>('8A');
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  const [hasFocus, setHasFocus] = useState(false);
+  const [showCounts, setShowCounts] = useState(true);
+  const [ink, setInk] = useState<Record<string, boolean>>(() => computeInk());
+  const segRefs = useRef<Record<string, SVGPathElement | null>>({});
 
-  // Store data
-  const graphData = useStore(state => state.graphData);
-  const selectedNodes = useStore(state => state.viewState.selectedNodes);
-  const selectNode = useStore(state => state.graph.selectNode);
-  const applyFilters = useStore(state => state.search.applyFilters);
+  useEffect(() => onThemeChange(() => setInk(computeInk())), []);
 
-  // Camelot wheel data - industry standard mapping
-  const camelotKeys: CamelotKey[] = useMemo(() => [
-    // Major keys (outer ring - 'B' suffix)
-    { id: '8B', musical: 'C Major', openKey: '8d', position: 0, mode: 'major', energy: 6, mood: 'uplifting', color: '#3b82f6', energyColor: '#60a5fa', compatible: ['7B', '9B', '8A'] },
-    { id: '9B', musical: 'G Major', openKey: '9d', position: 1, mode: 'major', energy: 8, mood: 'bright', color: '#10b981', energyColor: '#34d399', compatible: ['8B', '10B', '9A'] },
-    { id: '10B', musical: 'D Major', openKey: '10d', position: 2, mode: 'major', energy: 9, mood: 'energetic', color: '#f59e0b', energyColor: '#fbbf24', compatible: ['9B', '11B', '10A'] },
-    { id: '11B', musical: 'A Major', openKey: '11d', position: 3, mode: 'major', energy: 8, mood: 'triumphant', color: '#f97316', energyColor: '#fb923c', compatible: ['10B', '12B', '11A'] },
-    { id: '12B', musical: 'E Major', openKey: '12d', position: 4, mode: 'major', energy: 9, mood: 'powerful', color: '#ef4444', energyColor: '#f87171', compatible: ['11B', '1B', '12A'] },
-    { id: '1B', musical: 'B Major', openKey: '1d', position: 5, mode: 'major', energy: 7, mood: 'intense', color: '#ec4899', energyColor: '#f472b6', compatible: ['12B', '2B', '1A'] },
-    { id: '2B', musical: 'F# Major', openKey: '2d', position: 6, mode: 'major', energy: 8, mood: 'driving', color: '#a855f7', energyColor: '#c084fc', compatible: ['1B', '3B', '2A'] },
-    { id: '3B', musical: 'C# Major', openKey: '3d', position: 7, mode: 'major', energy: 6, mood: 'ethereal', color: '#8b5cf6', energyColor: '#a78bfa', compatible: ['2B', '4B', '3A'] },
-    { id: '4B', musical: 'G# Major', openKey: '4d', position: 8, mode: 'major', energy: 7, mood: 'mysterious', color: '#6366f1', energyColor: '#818cf8', compatible: ['3B', '5B', '4A'] },
-    { id: '5B', musical: 'D# Major', openKey: '5d', position: 9, mode: 'major', energy: 8, mood: 'exotic', color: '#06b6d4', energyColor: '#22d3ee', compatible: ['4B', '6B', '5A'] },
-    { id: '6B', musical: 'A# Major', openKey: '6d', position: 10, mode: 'major', energy: 9, mood: 'bold', color: '#0891b2', energyColor: '#0ea5e9', compatible: ['5B', '7B', '6A'] },
-    { id: '7B', musical: 'F Major', openKey: '7d', position: 11, mode: 'major', energy: 5, mood: 'warm', color: '#059669', energyColor: '#10b981', compatible: ['6B', '8B', '7A'] },
+  const graphData = useStore((state) => state.graphData);
+  const selectNode = useStore((state) => state.graph.selectNode);
 
-    // Minor keys (inner ring - 'A' suffix)
-    { id: '8A', musical: 'A Minor', openKey: '8m', position: 0, mode: 'minor', energy: 4, mood: 'melancholic', color: '#374151', energyColor: '#6b7280', compatible: ['7A', '9A', '8B'] },
-    { id: '9A', musical: 'E Minor', openKey: '9m', position: 1, mode: 'minor', energy: 6, mood: 'contemplative', color: '#475569', energyColor: '#64748b', compatible: ['8A', '10A', '9B'] },
-    { id: '10A', musical: 'B Minor', openKey: '10m', position: 2, mode: 'minor', energy: 7, mood: 'dramatic', color: '#581c87', energyColor: '#7c3aed', compatible: ['9A', '11A', '10B'] },
-    { id: '11A', musical: 'F# Minor', openKey: '11m', position: 3, mode: 'minor', energy: 6, mood: 'introspective', color: '#7c2d12', energyColor: '#dc2626', compatible: ['10A', '12A', '11B'] },
-    { id: '12A', musical: 'C# Minor', openKey: '12m', position: 4, mode: 'minor', energy: 7, mood: 'passionate', color: '#92400e', energyColor: '#ea580c', compatible: ['11A', '1A', '12B'] },
-    { id: '1A', musical: 'G# Minor', openKey: '1m', position: 5, mode: 'minor', energy: 5, mood: 'haunting', color: '#991b1b', energyColor: '#dc2626', compatible: ['12A', '2A', '1B'] },
-    { id: '2A', musical: 'D# Minor', openKey: '2m', position: 6, mode: 'minor', energy: 6, mood: 'dark', color: '#be185d', energyColor: '#ec4899', compatible: ['1A', '3A', '2B'] },
-    { id: '3A', musical: 'A# Minor', openKey: '3m', position: 7, mode: 'minor', energy: 4, mood: 'mysterious', color: '#7c3aed', energyColor: '#a855f7', compatible: ['2A', '4A', '3B'] },
-    { id: '4A', musical: 'F Minor', openKey: '4m', position: 8, mode: 'minor', energy: 5, mood: 'ethereal', color: '#4338ca', energyColor: '#6366f1', compatible: ['3A', '5A', '4B'] },
-    { id: '5A', musical: 'C Minor', openKey: '5m', position: 9, mode: 'minor', energy: 6, mood: 'sad', color: '#0e7490', energyColor: '#06b6d4', compatible: ['4A', '6A', '5B'] },
-    { id: '6A', musical: 'G Minor', openKey: '6m', position: 10, mode: 'minor', energy: 7, mood: 'somber', color: '#047857', energyColor: '#059669', compatible: ['5A', '7A', '6B'] },
-    { id: '7A', musical: 'D Minor', openKey: '7m', position: 11, mode: 'minor', energy: 3, mood: 'gentle', color: '#365314', energyColor: '#65a30d', compatible: ['6A', '8A', '7B'] }
-  ], []);
-
-  /**
-   * Converts musical key notation to Camelot notation
-   *
-   * @param key - Musical key string (e.g., "C Major", "A Minor", "C# Maj", "Db", etc.)
-   * @returns Camelot notation (e.g., "8B", "8A") or null if invalid
-   *
-   * Standard Camelot Wheel Mapping (Industry Standard):
-   * Major keys (B suffix): 8B=C, 3B=C#/Db, 10B=D, 5B=D#/Eb, 12B=E, 7B=F, 2B=F#/Gb, 9B=G, 4B=G#/Ab, 11B=A, 6B=A#/Bb, 1B=B
-   * Minor keys (A suffix): 8A=Am, 3A=A#m/Bbm, 10A=Bm, 5A=Cm, 12A=C#m, 7A=Dm, 2A=D#m/Ebm, 9A=Em, 4A=Fm, 11A=F#m, 6A=Gm, 1A=G#m
-   *
-   * Supports multiple input formats:
-   * - Full notation: "C Major", "A Minor", "Db major"
-   * - Abbreviated: "C Maj", "A min"
-   * - Short form: "Cm", "Am", "C#m" (note + 'm' for minor)
-   * - Note only: "C", "Db" (assumes major if mode not specified)
-   * - Case insensitive, handles extra whitespace
-   * - Normalizes enharmonic equivalents (Db = C#, Eb = D#, etc.)
-   */
-  const musicalKeyToCamelot = useCallback((key: string): string | null => {
-    if (!key || typeof key !== 'string') return null;
-
-    // Normalize: trim, lowercase for pattern matching
-    const normalized = key.trim().toLowerCase();
-
-    // Extract note and mode
-    let note = '';
-    let mode: 'major' | 'minor' | null = null;
-
-    // Match patterns like "C Major", "C# Minor", "Db Maj", "C", "Am", "C#m"
-    const patterns = [
-      // Full notation: "C Major", "C# Minor", "Db major"
-      /^([a-g][#b]?)\s*(major|minor|maj|min)/i,
-      // Short notation with mode suffix: "Cm", "C#m", "Dbm" (minor)
-      /^([a-g][#b]?)m$/i,
-      // Just note: "C", "C#", "Db" (assume major)
-      /^([a-g][#b]?)$/i
-    ];
-
-    let match = null;
-    for (const pattern of patterns) {
-      match = normalized.match(pattern);
-      if (match) break;
-    }
-
-    if (!match) return null;
-
-    // Extract note (first capture group)
-    note = match[1].toUpperCase();
-
-    // Determine mode
-    if (match[2]) {
-      // Full notation with explicit mode
-      mode = match[2].toLowerCase().startsWith('maj') ? 'major' : 'minor';
-    } else if (normalized.endsWith('m')) {
-      // Short notation with 'm' suffix (e.g., "Cm", "Am")
-      mode = 'minor';
-    } else {
-      // No mode specified, assume major
-      mode = 'major';
-    }
-
-    // Normalize sharp/flat equivalents to sharp for consistency
-    const noteMap: Record<string, string> = {
-      'C': 'C',
-      'C#': 'C#', 'DB': 'C#',
-      'D': 'D',
-      'D#': 'D#', 'EB': 'D#',
-      'E': 'E',
-      'F': 'F',
-      'F#': 'F#', 'GB': 'F#',
-      'G': 'G',
-      'G#': 'G#', 'AB': 'G#',
-      'A': 'A',
-      'A#': 'A#', 'BB': 'A#',
-      'B': 'B', 'CB': 'B'
-    };
-
-    const canonicalNote = noteMap[note];
-    if (!canonicalNote) return null;
-
-    // Camelot wheel mapping (industry standard)
-    // Major keys use 'B' suffix (8B = C Major)
-    // Minor keys use 'A' suffix (8A = A Minor)
-    const majorMap: Record<string, string> = {
-      'C': '8B',
-      'C#': '3B',
-      'D': '10B',
-      'D#': '5B',
-      'E': '12B',
-      'F': '7B',
-      'F#': '2B',
-      'G': '9B',
-      'G#': '4B',
-      'A': '11B',
-      'A#': '6B',
-      'B': '1B'
-    };
-
-    const minorMap: Record<string, string> = {
-      'A': '8A',
-      'A#': '3A',
-      'B': '10A',
-      'C': '5A',
-      'C#': '12A',
-      'D': '7A',
-      'D#': '2A',
-      'E': '9A',
-      'F': '4A',
-      'F#': '11A',
-      'G': '6A',
-      'G#': '1A'
-    };
-
-    if (mode === 'major') {
-      return majorMap[canonicalNote] || null;
-    } else {
-      return minorMap[canonicalNote] || null;
-    }
+  const getTrackKey = useCallback((node: GraphNode): string | null => {
+    const raw = node.key || node.metadata?.key || node.metadata?.camelot_key || node.metadata?.musical_key
+      || node.track?.camelotKey || node.track?.key;
+    return raw ? SN.camelot(String(raw)) : null;
   }, []);
 
-  // Get track key from various sources
-  const getTrackKey = useCallback((node: GraphNode): string | null => {
-    // Try multiple key sources
-    const key = node.key ||
-                node.metadata?.key ||
-                node.metadata?.camelot_key ||
-                node.metadata?.musical_key ||
-                node.track?.key ||
-                node.track?.camelotKey;
-
-    if (!key) return null;
-
-    // Convert various key formats to Camelot
-    if (key.match(/^\d+[AB]$/)) return key; // Already Camelot format
-    if (key.match(/^\d+[dm]$/)) {
-      // Convert Open Key to Camelot
-      const num = parseInt(key);
-      const mode = key.slice(-1);
-      return mode === 'd' ? `${((num + 7) % 12) + 1}A` : `${((num + 7) % 12) + 1}B`;
-    }
-
-    // Convert musical key to Camelot (C Major -> 8B, A Minor -> 8A, etc.)
-    return musicalKeyToCamelot(key);
-  }, [musicalKeyToCamelot]);
-
-  // Analyze tracks by key
   const tracksByKey = useMemo(() => {
     const result: Record<string, GraphNode[]> = {};
-
-    (graphData.nodes || []).forEach(node => {
+    (graphData.nodes || []).forEach((node) => {
       const key = getTrackKey(node);
-      if (key) {
-        if (!result[key]) result[key] = [];
-        result[key].push(node);
-      }
+      if (key) (result[key] ||= []).push(node);
     });
-
     return result;
   }, [graphData.nodes, getTrackKey]);
 
-  // Analyze track connections - prioritize playlist edges over harmonic suggestions
-  const trackConnections = useMemo(() => {
-    const connections: TrackConnection[] = [];
-    const connectionMap = new Map<string, TrackConnection>();
-
-    // PRIORITY 1: Existing playlist edges (proven DJ transitions)
-    (graphData.edges || []).forEach(edge => {
-      const sourceNode = (graphData.nodes || []).find(n => n.id === edge.source);
-      const targetNode = (graphData.nodes || []).find(n => n.id === edge.target);
-
-      if (sourceNode && targetNode) {
-        const sourceKey = getTrackKey(sourceNode);
-        const targetKey = getTrackKey(targetNode);
-
-        if (sourceKey && targetKey) {
-          const connectionId = `${sourceKey}-${targetKey}`;
-
-          if (!connectionMap.has(connectionId)) {
-            connectionMap.set(connectionId, {
-              sourceKey,
-              targetKey,
-              weight: 0,
-              isPlaylistEdge: true,
-              isHarmonicSuggestion: false,
-              trackPairs: []
-            });
-          }
-
-          const connection = connectionMap.get(connectionId)!;
-          connection.weight += edge.weight || 1;
-          connection.trackPairs.push({
-            source: sourceNode,
-            target: targetNode,
-            edge
-          });
-        }
+  const toggle = useCallback((key: string) => {
+    setSelectedKeys((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      onKeySelect?.(next);
+      if (next.length > 0) {
+        next.flatMap((k) => tracksByKey[k] || []).forEach((t) => selectNode(t.id));
       }
-    });
-
-    // PRIORITY 2: Harmonic suggestions (only if enabled and no playlist connection exists)
-    if (showHarmonicSuggestions) {
-      Object.entries(tracksByKey).forEach(([sourceKey, sourceTracks]) => {
-        const keyData = camelotKeys.find(k => k.id === sourceKey);
-        if (keyData) {
-          keyData.compatible.forEach(targetKey => {
-            const connectionId = `${sourceKey}-${targetKey}`;
-
-            // Only add harmonic suggestion if no playlist edge exists
-            if (!connectionMap.has(connectionId) && tracksByKey[targetKey]) {
-              connectionMap.set(connectionId, {
-                sourceKey,
-                targetKey,
-                weight: sourceTracks.length * tracksByKey[targetKey].length,
-                isPlaylistEdge: false,
-                isHarmonicSuggestion: true,
-                trackPairs: []
-              });
-            }
-          });
-        }
-      });
-    }
-
-    return Array.from(connectionMap.values());
-  }, [graphData.edges, graphData.nodes, tracksByKey, camelotKeys, getTrackKey, showHarmonicSuggestions]);
-
-  // Handle key selection
-  const handleKeyClick = useCallback((key: string) => {
-    setSelectedKeys(prev => {
-      const newSelection = prev.includes(key)
-        ? prev.filter(k => k !== key)
-        : [...prev, key];
-
-      if (onKeySelect) {
-        onKeySelect(newSelection);
-      }
-
-      // Filter graph nodes by selected keys
-      if (newSelection.length > 0) {
-        const selectedTracks = newSelection.flatMap(k => tracksByKey[k] || []);
-        const nodeIds = selectedTracks.map(t => t.id);
-
-        // Update graph selection
-        nodeIds.forEach(id => selectNode(id));
-      }
-
-      return newSelection;
+      return next;
     });
   }, [onKeySelect, tracksByKey, selectNode]);
 
-  // Handle key hover for compatibility highlighting
-  const handleKeyHover = useCallback((key: string | null) => {
-    setHoveredKey(key);
-  }, []);
+  const clear = () => {
+    setSelectedKeys([]);
+    onKeySelect?.([]);
+  };
 
-  // Get compatible keys for highlighting
-  const getCompatibleKeys = useCallback((key: string): string[] => {
-    const keyData = camelotKeys.find(k => k.id === key);
-    return keyData ? keyData.compatible : [];
-  }, [camelotKeys]);
+  const onKeyDown = (e: React.KeyboardEvent, code: string) => {
+    let { n, L } = geo(code);
+    if (e.key === 'ArrowRight') n = (n % 12) + 1;
+    else if (e.key === 'ArrowLeft') n = ((n + 10) % 12) + 1;
+    else if (e.key === 'ArrowUp') L = 'B';
+    else if (e.key === 'ArrowDown') L = 'A';
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(code); return; }
+    else return;
+    e.preventDefault();
+    const next = `${n}${L}`;
+    setFocusKey(next);
+    segRefs.current[next]?.focus();
+  };
 
-  // Render the wheel using D3
-  useEffect(() => {
-    if (!svgRef.current) return;
+  const hubKey = hoverKey ?? focusKey;
+  const reference = hoverKey ?? (hasFocus ? focusKey : selectedKeys[selectedKeys.length - 1]) ?? null;
+  const compatSet = new Set(showHarmonicSuggestions && reference ? cleanMixes(reference) : []);
+  const count = (code: string) => tracksByKey[code]?.length || 0;
+  const selectedTotal = selectedKeys.reduce((a, k) => a + count(k), 0);
 
-    const svg = select(svgRef.current);
-    svg.selectAll('*').remove();
+  const hubMeta = (() => {
+    const n = count(hubKey);
+    if (selectedKeys.length && hubKey !== selectedKeys[selectedKeys.length - 1]) {
+      const from = selectedKeys[selectedKeys.length - 1];
+      const c = SN.compat(from, hubKey);
+      return `${c.label} from ${from}`;
+    }
+    return `${SN.format.count(n)} ${n === 1 ? 'track' : 'tracks'}`;
+  })();
 
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const outerRadius = size * 0.4;
-    const innerRadius = size * 0.25;
-    const minorRadius = size * 0.15;
-
-    // Create main group
-    const g = svg.append('g')
-      .attr('transform', `translate(${centerX}, ${centerY})`);
-
-    // Create arcs for each key
-    const majorArc = arc<CamelotKey>()
-      .innerRadius(innerRadius)
-      .outerRadius(outerRadius)
-      .startAngle(d => (d.position * 30 - 15) * Math.PI / 180)
-      .endAngle(d => (d.position * 30 + 15) * Math.PI / 180);
-
-    const minorArc = arc<CamelotKey>()
-      .innerRadius(0)
-      .outerRadius(minorRadius)
-      .startAngle(d => (d.position * 30 - 15) * Math.PI / 180)
-      .endAngle(d => (d.position * 30 + 15) * Math.PI / 180);
-
-    // Draw connection lines (playlist edges vs harmonic suggestions)
-    const connectionsGroup = g.append('g').attr('class', 'connections');
-
-    trackConnections.forEach(connection => {
-      const sourceKey = camelotKeys.find(k => k.id === connection.sourceKey);
-      const targetKey = camelotKeys.find(k => k.id === connection.targetKey);
-
-      if (sourceKey && targetKey) {
-        const sourceAngle = sourceKey.position * 30 * Math.PI / 180;
-        const targetAngle = targetKey.position * 30 * Math.PI / 180;
-
-        const sourceRadius = sourceKey.mode === 'major' ? (outerRadius + innerRadius) / 2 : minorRadius / 2;
-        const targetRadius = targetKey.mode === 'major' ? (outerRadius + innerRadius) / 2 : minorRadius / 2;
-
-        const x1 = Math.sin(sourceAngle) * sourceRadius;
-        const y1 = -Math.cos(sourceAngle) * sourceRadius;
-        const x2 = Math.sin(targetAngle) * targetRadius;
-        const y2 = -Math.cos(targetAngle) * targetRadius;
-
-        connectionsGroup.append('line')
-          .attr('x1', x1)
-          .attr('y1', y1)
-          .attr('x2', x2)
-          .attr('y2', y2)
-          .attr('stroke', connection.isPlaylistEdge ? '#10b981' : '#6b7280')
-          .attr('stroke-width', connection.isPlaylistEdge ? Math.min(connection.weight / 2, 4) : 1)
-          .attr('stroke-opacity', connection.isPlaylistEdge ? 0.8 : 0.3)
-          .attr('stroke-dasharray', connection.isPlaylistEdge ? '0' : '3,3')
-          .style('pointer-events', 'none');
-      }
-    });
-
-    // Draw major keys (outer ring)
-    const majorKeys = camelotKeys.filter(k => k.mode === 'major');
-    const majorGroup = g.append('g').attr('class', 'major-keys');
-
-    majorGroup.selectAll('.major-segment')
-      .data(majorKeys)
-      .join('g')
-      .attr('class', 'major-segment')
-      .each(function(d) {
-        const group = select(this);
-        const isSelected = selectedKeys.includes(d.id);
-        const isCompatible = hoveredKey && getCompatibleKeys(hoveredKey).includes(d.id);
-        const trackCount = tracksByKey[d.id]?.length || 0;
-
-        // Arc background
-        group.append('path')
-          .attr('d', majorArc(d))
-          .attr('fill', showEnergyGradient ? d.energyColor : d.color)
-          .attr('stroke', '#1f2937')
-          .attr('stroke-width', 2)
-          .attr('opacity', isSelected ? 1 : isCompatible ? 0.8 : 0.6)
-          .style('cursor', 'pointer');
-
-        // Track count indicator
-        if (trackCount > 0) {
-          const angle = d.position * 30 * Math.PI / 180;
-          const radius = (outerRadius + innerRadius) / 2;
-          const x = Math.sin(angle) * radius;
-          const y = -Math.cos(angle) * radius;
-
-          group.append('circle')
-            .attr('cx', x)
-            .attr('cy', y)
-            .attr('r', Math.min(4 + Math.log(trackCount) * 2, 12))
-            .attr('fill', '#fff')
-            .attr('opacity', 0.9);
-
-          group.append('text')
-            .attr('x', x)
-            .attr('y', y)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'central')
-            .attr('font-size', '10px')
-            .attr('font-weight', 'bold')
-            .attr('fill', '#1f2937')
-            .text(trackCount);
-        }
-
-        // Key label
-        const labelAngle = d.position * 30 * Math.PI / 180;
-        const labelRadius = outerRadius + 20;
-        const labelX = Math.sin(labelAngle) * labelRadius;
-        const labelY = -Math.cos(labelAngle) * labelRadius;
-
-        group.append('text')
-          .attr('x', labelX)
-          .attr('y', labelY)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'central')
-          .attr('font-size', '12px')
-          .attr('font-weight', '600')
-          .attr('fill', '#fff')
-          .text(d.id);
-      })
-      .on('click', (event, d) => handleKeyClick(d.id))
-      .on('mouseover', (event, d) => handleKeyHover(d.id))
-      .on('mouseout', () => handleKeyHover(null));
-
-    // Draw minor keys (inner ring)
-    const minorKeys = camelotKeys.filter(k => k.mode === 'minor');
-    const minorGroup = g.append('g').attr('class', 'minor-keys');
-
-    minorGroup.selectAll('.minor-segment')
-      .data(minorKeys)
-      .join('g')
-      .attr('class', 'minor-segment')
-      .each(function(d) {
-        const group = select(this);
-        const isSelected = selectedKeys.includes(d.id);
-        const isCompatible = hoveredKey && getCompatibleKeys(hoveredKey).includes(d.id);
-        const trackCount = tracksByKey[d.id]?.length || 0;
-
-        // Arc background
-        group.append('path')
-          .attr('d', minorArc(d))
-          .attr('fill', showEnergyGradient ? d.energyColor : d.color)
-          .attr('stroke', '#1f2937')
-          .attr('stroke-width', 2)
-          .attr('opacity', isSelected ? 1 : isCompatible ? 0.8 : 0.6)
-          .style('cursor', 'pointer');
-
-        // Track count indicator
-        if (trackCount > 0) {
-          const angle = d.position * 30 * Math.PI / 180;
-          const radius = minorRadius / 2;
-          const x = Math.sin(angle) * radius;
-          const y = -Math.cos(angle) * radius;
-
-          group.append('circle')
-            .attr('cx', x)
-            .attr('cy', y)
-            .attr('r', Math.min(3 + Math.log(trackCount), 8))
-            .attr('fill', '#fff')
-            .attr('opacity', 0.9);
-
-          group.append('text')
-            .attr('x', x)
-            .attr('y', y)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'central')
-            .attr('font-size', '8px')
-            .attr('font-weight', 'bold')
-            .attr('fill', '#1f2937')
-            .text(trackCount);
-        }
-
-        // Key label
-        const labelAngle = d.position * 30 * Math.PI / 180;
-        const labelRadius = minorRadius + 15;
-        const labelX = Math.sin(labelAngle) * labelRadius;
-        const labelY = -Math.cos(labelAngle) * labelRadius;
-
-        group.append('text')
-          .attr('x', labelX)
-          .attr('y', labelY)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'central')
-          .attr('font-size', '10px')
-          .attr('font-weight', '600')
-          .attr('fill', '#fff')
-          .text(d.id);
-      })
-      .on('click', (event, d) => handleKeyClick(d.id))
-      .on('mouseover', (event, d) => handleKeyHover(d.id))
-      .on('mouseout', () => handleKeyHover(null));
-
-    // Center text
-    g.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
-      .attr('font-size', '14px')
-      .attr('font-weight', '600')
-      .attr('fill', '#fff')
-      .text('KEYS');
-
-  }, [
-    size,
-    camelotKeys,
-    tracksByKey,
-    trackConnections,
-    selectedKeys,
-    hoveredKey,
-    showEnergyGradient,
-    handleKeyClick,
-    handleKeyHover,
-    getCompatibleKeys
-  ]);
+  const label = (code: string) =>
+    `${code}, ${SN.keyName(code)}${showCounts ? `, ${count(code)} tracks` : ''}${compatSet.has(code) && reference ? `, mixes cleanly from ${reference}` : ''}`;
 
   return (
-    <div className={`camelot-wheel ${className}`}>
-      {/* Header with controls */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Music size={20} />
-          Camelot Wheel
-        </h3>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-2 text-white/70 hover:text-white transition-colors"
-            title="Wheel settings"
-          >
-            <Settings size={16} />
-          </button>
-
-          <button
-            onClick={() => setSelectedKeys([])}
-            className="p-2 text-white/70 hover:text-white transition-colors"
-            title="Clear selection"
-          >
-            <RotateCcw size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Settings panel */}
-      {showSettings && (
-        <div className="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-sm text-white">
-              <input
-                type="checkbox"
-                checked={showEnergyGradient}
-                onChange={(e) => setShowEnergyGradient(e.target.checked)}
-                className="rounded"
+    <div className={`camelot-wheel sn-camelot-wheel ${className}`} style={{ width: `min(${size}px, 100%)` }}>
+      <svg
+        className="sn-camelot-wheel__svg"
+        viewBox="0 0 420 420"
+        role="group"
+        aria-label={`Camelot wheel${selectedKeys.length ? `, ${selectedKeys.length} keys selected` : ''}`}
+      >
+        <g>
+          {CODES.map((code) => {
+            const { mid, r } = geo(code);
+            return (
+              <path
+                key={code}
+                ref={(el) => { segRefs.current[code] = el; }}
+                className="sn-camelot-wheel__seg"
+                data-key={code}
+                d={sector(r[0], r[1], mid - 15, mid + 15)}
+                role="button"
+                tabIndex={code === focusKey ? 0 : -1}
+                aria-pressed={selectedKeys.includes(code)}
+                aria-label={label(code)}
+                onClick={() => toggle(code)}
+                onKeyDown={(e) => onKeyDown(e, code)}
+                onFocus={() => { setFocusKey(code); setHasFocus(true); }}
+                onBlur={() => setHasFocus(false)}
+                onPointerEnter={() => setHoverKey(code)}
+                onPointerLeave={() => setHoverKey(null)}
               />
-              <Zap size={14} />
-              Energy colors
-            </label>
+            );
+          })}
+        </g>
+        <g aria-hidden="true">
+          {CODES.map((code) => {
+            const { mid, r } = geo(code);
+            const rm = (r[0] + r[1]) / 2;
+            const [x, y] = pol(rm, mid);
+            const fg = ink[code] ? '--fg' : '';
+            return (
+              <React.Fragment key={code}>
+                <text className={`sn-camelot-wheel__code${fg ? ' sn-camelot-wheel__code--fg' : ''}`} x={x} y={y + (showCounts ? -6 : 0)}>{code}</text>
+                {showCounts ? (
+                  <text className={`sn-camelot-wheel__count${fg ? ' sn-camelot-wheel__count--fg' : ''}`} x={x} y={y + 9}>{SN.format.count(count(code))}</text>
+                ) : null}
+              </React.Fragment>
+            );
+          })}
+        </g>
+        <g aria-hidden="true">
+          {CODES.map((code) => {
+            const { mid, r } = geo(code);
+            const a0 = mid - 15, a1 = mid + 15;
+            const fg = ink[code];
+            const sel = selectedKeys.includes(code);
+            const [tx, ty] = pol(r[1] - 10, mid + 10);
+            return (
+              <React.Fragment key={code}>
+                {sel ? (
+                  <>
+                    <path className={`sn-camelot-wheel__sel${fg ? ' sn-camelot-wheel__sel--fg' : ''}`} d={sector(r[0] + 3, r[1] - 3, a0 + 1.6, a1 - 1.6)} />
+                    <text className={`sn-camelot-wheel__check${fg ? ' sn-camelot-wheel__check--fg' : ''}`} x={tx} y={ty}>✓</text>
+                  </>
+                ) : null}
+                {compatSet.has(code) ? (
+                  <path className={`sn-camelot-wheel__compat${fg ? ' sn-camelot-wheel__compat--fg' : ''}`} d={sector(r[0] + 3, r[1] - 3, a0 + 1.6, a1 - 1.6)} />
+                ) : null}
+              </React.Fragment>
+            );
+          })}
+          {hasFocus ? (() => {
+            const { mid, r } = geo(focusKey);
+            return <path className="sn-camelot-wheel__focus" d={sector(r[0] - 3, r[1] + 3, mid - 16, mid + 16)} />;
+          })() : null}
+        </g>
+        <g aria-hidden="true">
+          <circle className="sn-camelot-wheel__hub" cx={C} cy={C} r={94} />
+          <text className="sn-camelot-wheel__hub-code" x={C} y={C - 2}>{hubKey}</text>
+          <text className="sn-camelot-wheel__hub-name" x={C} y={C + 18}>{SN.keyName(hubKey)}</text>
+          <text className="sn-camelot-wheel__hub-meta" x={C} y={C + 36}>{hubMeta}</text>
+        </g>
+      </svg>
 
-            <label className="flex items-center gap-2 text-sm text-white">
-              <input
-                type="checkbox"
-                checked={showMoodLabels}
-                onChange={(e) => setShowMoodLabels(e.target.checked)}
-                className="rounded"
-              />
-              <TrendingUp size={14} />
-              Mood labels
-            </label>
-          </div>
-        </div>
-      )}
+      <p className="sn-camelot-wheel__summary" role="status" style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--fg-2)', textAlign: 'center' }}>
+        {selectedKeys.length
+          ? <>Selected {selectedKeys.join(', ')} · {SN.format.count(selectedTotal)} tracks</>
+          : <>No keys selected</>}
+      </p>
 
-      {/* Legend */}
-      <div className="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
-        <div className="text-xs text-white/80 space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-0.5 bg-green-500"></div>
-            <span>Playlist connections (proven transitions)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-0.5 bg-gray-500 border-dashed border-t"></div>
-            <span>Harmonic suggestions</span>
-          </div>
-        </div>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => setShowCounts((v) => !v)}>
+          {showCounts ? 'Hide track counts' : 'Show track counts'}
+        </button>
+        {selectedKeys.length ? (
+          <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={clear}>
+            <RotateCcw size={16} strokeWidth={2} aria-hidden="true" />
+            Clear selection
+          </button>
+        ) : null}
       </div>
-
-      {/* Main wheel */}
-      <div className="relative">
-        <svg
-          ref={svgRef}
-          width={size}
-          height={size}
-          className="overflow-visible"
-        />
-      </div>
-
-      {/* Key info panel */}
-      {hoveredKey && (
-        <div className="mt-4 p-3 bg-white/10 rounded-lg border border-white/10">
-          {(() => {
-            const keyData = camelotKeys.find(k => k.id === hoveredKey);
-            const tracks = tracksByKey[hoveredKey] || [];
-
-            return keyData ? (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-semibold text-white">{keyData.id}</span>
-                  <span className="text-white/70">{keyData.musical}</span>
-                  <span
-                    className="px-2 py-1 rounded text-xs"
-                    style={{ backgroundColor: keyData.color + '40', color: keyData.color }}
-                  >
-                    {keyData.mood}
-                  </span>
-                </div>
-
-                <div className="text-sm text-white/80">
-                  <div>Energy: {keyData.energy}/10</div>
-                  <div>Tracks: {tracks.length}</div>
-                  <div>Compatible: {keyData.compatible.join(', ')}</div>
-                </div>
-              </div>
-            ) : null;
-          })()}
-        </div>
-      )}
-
-      {/* Selected keys summary */}
-      {selectedKeys.length > 0 && (
-        <div className="mt-4 p-3 bg-blue-500/20 rounded-lg border border-blue-500/30">
-          <div className="text-sm text-white">
-            <div className="font-semibold mb-1">Selected Keys</div>
-            <div className="flex flex-wrap gap-2">
-              {selectedKeys.map(key => {
-                const keyData = camelotKeys.find(k => k.id === key);
-                const trackCount = tracksByKey[key]?.length || 0;
-
-                return (
-                  <span
-                    key={key}
-                    className="px-2 py-1 bg-white/20 rounded text-xs flex items-center gap-1"
-                  >
-                    {key} ({trackCount})
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
+export default CamelotWheel;

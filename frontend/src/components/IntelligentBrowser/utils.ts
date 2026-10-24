@@ -3,30 +3,20 @@
  * Centralized logic for key compatibility, recommendations, and data processing
  */
 
+import { SN } from '../../lib/songnodes';
 import type { CamelotKey, CompatibilityLevel, Track, TrackRecommendation, GraphEdge } from './types';
 
 /**
- * Calculate harmonic compatibility between two Camelot keys
+ * Harmonic compatibility between two keys, via the design system's Camelot
+ * table (SN.camelot accepts "8A" or "A minor"; SN.compat gives the verdict).
+ * Unknown keys score as a clash, as before.
  */
-export const getKeyCompatibility = (key1: CamelotKey | undefined, key2: CamelotKey | undefined): CompatibilityLevel => {
-  if (!key1 || !key2) return 'clash';
-  if (key1 === key2) return 'perfect';
-
-  const num1 = parseInt(key1.slice(0, -1));
-  const letter1 = key1.slice(-1);
-  const num2 = parseInt(key2.slice(0, -1));
-  const letter2 = key2.slice(-1);
-
-  // Same number, different letter (relative major/minor)
-  if (num1 === num2) return 'perfect';
-
-  // Adjacent on the wheel (+1/-1)
-  const diff = Math.abs(num1 - num2);
-  const wrappedDiff = Math.min(diff, 12 - diff);
-
-  if (wrappedDiff === 1 && letter1 === letter2) return 'compatible';
-
-  return 'clash';
+export const getKeyCompatibility = (key1: CamelotKey | string | undefined, key2: CamelotKey | string | undefined): CompatibilityLevel => {
+  const a = key1 ? SN.camelot(key1) : null;
+  const b = key2 ? SN.camelot(key2) : null;
+  if (!a || !b) return 'clash';
+  const level = SN.compat(a, b).level;
+  return level === 'perfect' || level === 'compatible' || level === 'possible' ? level : 'clash';
 };
 
 /**
@@ -149,24 +139,23 @@ export const calculateRecommendations = (
 };
 
 /**
- * Get color for score visualization
+ * Score band for a recommendation (design-system/17-governance.md Q9: 80/60/40
+ * until enough accepted picks exist to fit bands from them). Rendered as a
+ * CompatibilityBadge, so the glyph and word carry the band, not colour.
  */
-export const getScoreColor = (score: number): string => {
-  if (score >= 80) return '#7ED321'; // Excellent
-  if (score >= 60) return '#F5A623'; // Good
-  if (score >= 40) return '#FFA500'; // Okay
-  return '#8E8E93'; // Poor
+export const scoreBand = (score: number): { level: 'perfect' | 'compatible' | 'possible' | 'clash'; label: string } => {
+  if (score >= 80) return { level: 'perfect', label: `${score} strong` };
+  if (score >= 60) return { level: 'compatible', label: `${score} good` };
+  if (score >= 40) return { level: 'possible', label: `${score} fair` };
+  return { level: 'clash', label: `${score} weak` };
 };
 
 /**
- * Format duration in milliseconds to MM:SS
+ * Track length as m:ss via the design system. Tracks from trackFromNode carry
+ * duration in seconds. Missing → en dash.
  */
-export const formatDuration = (durationMs: number | undefined): string => {
-  if (!durationMs) return '---';
-  const minutes = Math.floor(durationMs / 60000);
-  const seconds = Math.floor((durationMs % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-};
+export const formatDuration = (durationSeconds: number | undefined): string =>
+  durationSeconds && durationSeconds > 0 ? SN.format.duration(durationSeconds) : '–';
 
 /**
  * Debounce function for search/filtering

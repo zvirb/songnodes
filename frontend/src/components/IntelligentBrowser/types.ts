@@ -29,7 +29,7 @@ export type CamelotKey =
   | '7A' | '7B' | '8A' | '8B' | '9A' | '9B'
   | '10A' | '10B' | '11A' | '11B' | '12A' | '12B';
 
-export type CompatibilityLevel = 'perfect' | 'compatible' | 'clash';
+export type CompatibilityLevel = 'perfect' | 'compatible' | 'possible' | 'clash';
 export type EnergyLevel = 'perfect' | 'good' | 'risky';
 export type BPMLevel = 'perfect' | 'close' | 'needs_adjustment';
 
