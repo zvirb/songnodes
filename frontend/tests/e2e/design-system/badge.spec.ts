@@ -25,16 +25,20 @@ test.describe('Badge Component', () => {
 
           switch(variant) {
             case 'primary':
-              expect(bgColor).toMatch(/rgb\(59, 130, 246\)/); // Blue
+              // --color-brand-primary-muted: rgba(0, 255, 65, 0.2)
+              expect(bgColor).toMatch(/rgba?\(0,\s*255,\s*65/);
               break;
             case 'success':
-              expect(bgColor).toMatch(/rgb\([0-9]{1,2}, 1[5-9][0-9]|2[0-5][0-9], [0-9]{1,2}\)/); // Green
+              // --color-success-bg: rgba(0, 255, 65, 0.1)
+              expect(bgColor).toMatch(/rgba?\(0,\s*255,\s*65/);
               break;
             case 'warning':
-              expect(bgColor).toMatch(/rgb\(2[0-5][0-9], 1[5-9][0-9]|2[0-5][0-9], [0-9]{1,2}\)/); // Yellow/Orange
+              // --color-warning-bg: rgba(214, 137, 16, 0.1)
+              expect(bgColor).toMatch(/rgba?\(214,\s*137,\s*16/);
               break;
             case 'danger':
-              expect(bgColor).toMatch(/rgb\(2[0-5][0-9], [0-9]{1,2}, [0-9]{1,2}\)/); // Red
+              // --color-error-bg: rgba(255, 68, 68, 0.1)
+              expect(bgColor).toMatch(/rgba?\(255,\s*68,\s*68/);
               break;
           }
         }

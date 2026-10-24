@@ -12,17 +12,17 @@ test.describe('Button Component', () => {
 
   test.describe('Visual Variants', () => {
     test('should render all 5 button variants correctly', async ({ page }) => {
-      // Test primary variant
+      // Test primary variant (--color-brand-primary: #00ff41 => rgb(0, 255, 65))
       const primaryBtn = page.locator('[data-testid="button-primary"]').first();
       if (await primaryBtn.isVisible()) {
-        await expect(primaryBtn).toHaveCSS('background-color', /rgb\(59, 130, 246\)/);
-        await expect(primaryBtn).toHaveCSS('color', /rgb\(255, 255, 255\)/);
+        await expect(primaryBtn).toHaveCSS('background-color', /rgb\(0,\s*255,\s*65\)/);
+        await expect(primaryBtn).toHaveCSS('color', /rgb\((0|10),\s*(0|10),\s*(0|10)\)/);
       }
 
-      // Test secondary variant
+      // Test secondary variant (--color-bg-elevated-2: #2a2a2a => rgb(42, 42, 42) or #1a1a1a rgb(26,26,26))
       const secondaryBtn = page.locator('[data-testid="button-secondary"]').first();
       if (await secondaryBtn.isVisible()) {
-        await expect(secondaryBtn).toHaveCSS('background-color', /rgb\(100, 116, 139\)/);
+        await expect(secondaryBtn).toHaveCSS('background-color', /rgb\((26|42),\s*(26|42),\s*(26|42)\)/);
       }
 
       // Test ghost variant

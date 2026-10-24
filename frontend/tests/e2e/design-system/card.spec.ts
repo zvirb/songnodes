@@ -78,6 +78,15 @@ test.describe('Card Component', () => {
         expect(styles.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
       }
     });
+
+    test('should apply brand ring when selected', async ({ page }) => {
+      const selectedCard = page.locator('[data-selected="true"], .card[data-state="selected"]').first();
+
+      if (await selectedCard.count() > 0) {
+        const ringColor = await selectedCard.evaluate(el => window.getComputedStyle(el).outlineColor || window.getComputedStyle(el).borderColor);
+        expect(ringColor).toMatch(/rgb\(0,\s*255,\s*65\)/);
+      }
+    });
   });
 
   test.describe('Card Variants', () => {

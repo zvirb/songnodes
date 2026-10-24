@@ -751,10 +751,34 @@ test.describe('UX Compliance Audit - Universal Codex Standards', () => {
     });
   });
 
+  test.describe('7. Design Token Compliance & Raw Styling Audit', () => {
+    test('7.1 Interactive components must not use raw hex codes or inline styles', async ({ page }) => {
+      const interactiveElements = await page.locator('button, input, [role="button"], [class*="badge"], [class*="card"]').all();
+
+      const nonCompliantElements: string[] = [];
+
+      for (const element of interactiveElements.slice(0, 30)) {
+        if (!(await element.isVisible())) continue;
+
+        const styleAttr = await element.getAttribute('style');
+        if (styleAttr && (styleAttr.includes('#') || styleAttr.includes('rgb'))) {
+          // Check if inline style contains direct color overrides instead of css variables
+          if (!styleAttr.includes('var(')) {
+            const tagName = await element.evaluate(el => el.tagName.toLowerCase());
+            const text = (await element.textContent())?.trim().substring(0, 20);
+            nonCompliantElements.push(`<${tagName}> "${text}" with inline style: "${styleAttr}"`);
+          }
+        }
+      }
+
+      expect(nonCompliantElements).toEqual([]);
+    });
+  });
+
   /**
    * COMPREHENSIVE SUMMARY TEST
    */
-  test('7. UX Compliance Summary Report', async ({ page }) => {
+  test('8. UX Compliance Summary Report', async ({ page }) => {
     console.log('\n========================================');
     console.log('UX COMPLIANCE AUDIT SUMMARY');
     console.log('========================================\n');

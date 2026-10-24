@@ -305,6 +305,27 @@ test.describe('Visual UX Audit', () => {
     await expect(page).toHaveScreenshot('10-density-analysis.png', { fullPage: true });
   });
 
+  test('10b. Deprecated Styles and Inline Hex Code Audit', async ({ page }) => {
+    console.log('\n=== INLINE STYLES & RAW HEX AUDIT ===\n');
+
+    const keyComponents = await page.locator('button, input, [role="button"], [class*="card"], [class*="badge"]').all();
+    const violations: { selector: string; style: string }[] = [];
+
+    for (let i = 0; i < Math.min(keyComponents.length, 30); i++) {
+      const comp = keyComponents[i];
+      if (await comp.isVisible()) {
+        const style = await comp.getAttribute('style');
+        if (style && /#[0-9a-fA-F]{3,6}/.test(style) && !style.includes('var(')) {
+          const tag = await comp.evaluate(el => el.tagName.toLowerCase());
+          violations.push({ selector: tag, style });
+        }
+      }
+    }
+
+    console.log(`Inline Hex Color Violations Found: ${violations.length}`);
+    expect(violations).toEqual([]);
+  });
+
   test('11. Error State and Feedback', async ({ page }) => {
     console.log('\n=== ERROR & FEEDBACK AUDIT ===\n');
 

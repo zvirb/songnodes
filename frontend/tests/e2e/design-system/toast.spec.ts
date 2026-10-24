@@ -62,9 +62,9 @@ test.describe('Toast Component (Sonner Integration)', () => {
         if (await errorToast.count() > 0) {
           await expect(errorToast).toBeVisible();
 
-          // Check for error styling
+          // Check for error styling (--color-error: #ff4444 => rgb(255, 68, 68))
           const bgColor = await errorToast.evaluate(el => window.getComputedStyle(el).backgroundColor);
-          expect(bgColor).toMatch(/rgb\(2[0-5][0-9], [0-9]{1,2}, [0-9]{1,2}\)/); // Reddish
+          expect(bgColor).toMatch(/rgb\(255,\s*68,\s*68\)/);
         }
       }
     });

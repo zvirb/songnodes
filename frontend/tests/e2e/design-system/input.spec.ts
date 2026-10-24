@@ -77,9 +77,9 @@ test.describe('Input Component', () => {
       const inputWithError = page.locator('input[aria-invalid="true"], input.error, input[data-error="true"]').first();
 
       if (await inputWithError.count() > 0) {
-        // Check error styling
+        // Check error styling (--color-error: #ff4444 => rgb(255, 68, 68))
         const borderColor = await inputWithError.evaluate(el => window.getComputedStyle(el).borderColor);
-        expect(borderColor).toMatch(/rgb\(2[0-5][0-9], [0-9]{1,2}, [0-9]{1,2}\)/); // Reddish color
+        expect(borderColor).toMatch(/rgb\(255,\s*68,\s*68\)/);
 
         // Check for error message
         const errorId = await inputWithError.getAttribute('aria-describedby');
@@ -97,9 +97,9 @@ test.describe('Input Component', () => {
       const inputWithSuccess = page.locator('input[data-valid="true"], input.success, input[aria-valid="true"]').first();
 
       if (await inputWithSuccess.count() > 0) {
-        // Check success styling
+        // Check success styling (--color-success: #00ff41 => rgb(0, 255, 65))
         const borderColor = await inputWithSuccess.evaluate(el => window.getComputedStyle(el).borderColor);
-        expect(borderColor).toMatch(/rgb\([0-9]{1,2}, 1[5-9][0-9]|2[0-5][0-9], [0-9]{1,2}\)/); // Greenish color
+        expect(borderColor).toMatch(/rgb\(0,\s*255,\s*65\)/);
       }
     });
 
@@ -107,9 +107,9 @@ test.describe('Input Component', () => {
       const inputWithWarning = page.locator('input[data-warning="true"], input.warning').first();
 
       if (await inputWithWarning.count() > 0) {
-        // Check warning styling
+        // Check warning styling (--color-warning: #D68910 => rgb(214, 137, 16))
         const borderColor = await inputWithWarning.evaluate(el => window.getComputedStyle(el).borderColor);
-        expect(borderColor).toMatch(/rgb\(2[0-5][0-9], 1[5-9][0-9]|2[0-5][0-9], [0-9]{1,2}\)/); // Yellowish/orange color
+        expect(borderColor).toMatch(/rgb\(214,\s*137,\s*16\)/);
       }
     });
 
