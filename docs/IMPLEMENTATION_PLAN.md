@@ -33,6 +33,16 @@ comparisons for replacements. Retire services only after callers have migrated
 and queued work has drained. Do not present synthetic test data as real music
 evidence, or passing builds as passing runtime or type checks.
 
+### Design system
+
+All frontend and music-library presentation (colour, type, spacing, icons, copy,
+formatting, component markup and page patterns) comes from the SongNodes design
+system in [design-system/](../design-system/README.md), the single source of truth for
+formatting and design. Frontend work in every milestone passes the design-system
+gates in [docs/sdlc/SDLC.md](sdlc/SDLC.md). The frontend migration onto the system
+runs as work packages WP0–WP7 (design-system section 19, phases 0–6) in parallel with
+the backend milestones below, without changing their order.
+
 ## Milestone 1 — Reproducible development baseline
 
 1. Establish supported startup for database/cache/queue prerequisites, APIs, and
@@ -211,6 +221,12 @@ the **wave chart on a built route**. Include a legend and text labels so colour
 is not the only indicator. Keep chart time/order consistent with route data and
 show missing-energy gaps. Display scores without recomputing routing policy in
 the renderer.
+
+Any renderer follows `design-system/components/GraphStyles` and `GraphControls`:
+- Node and edge colours are read from tokens at runtime through `graphColours()`.
+- Neutral nodes by default, with "Colour by" set to energy, key or genre.
+- Lavender marks the selection, amber marks now playing.
+- The wave chart is the design-system `EnergyWave`.
 
 **Exit:** interaction parity, accurate edge labels/chart, bounded memory, and
 responsive rendering on documented datasets/hardware. Treat 60 FPS as a measured

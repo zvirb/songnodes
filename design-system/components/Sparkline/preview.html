@@ -1,0 +1,164 @@
+<!-- @dsCard group="Charts" height=495 subtitle="Plays per week over 12 weeks in figure tiles and table rows; emphasised endpoint, min and max on hover and focus" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Sparkline — preview</title>
+<style>
+  .pv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Figure tiles · focusable, min and max on hover or focus</div>
+  <div class="pv-tiles" id="tiles"></div>
+  <div class="sn-preview__label">Table rows · plays per week, last 12 weeks</div>
+  <div class="sn-tablebox"><table class="sn-table" id="tbl"><thead><tr><th scope="col">Track</th><th scope="col">Plays, 12 weeks</th><th scope="col" class="num">Total</th><th scope="col">Last heard</th></tr></thead><tbody></tbody></table></div>
+</div>
+<script>
+/* chart kit (inlined into each chart preview by build.py; React apps use d3-scale/recharts instead) */
+var K = (function () {
+  var NS = "http://www.w3.org/2000/svg", n = 0;
+  function el(tag, a, parent) {
+    var e = document.createElementNS(NS, tag);
+    if (a) for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(parent, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), parent); t.textContent = s; return t; }
+  function h(tag, cls, s) { var e = document.createElement(tag); if (cls) e.className = cls; if (s != null) e.textContent = s; return e; }
+  function uid(p) { n += 1; return (p || "k") + n; }
+  /** one linear scale per axis: domain -> range, with nice ticks */
+  function linear(d0, d1, r0, r1) {
+    var f = function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); };
+    f.invert = function (px) { return d0 + (px - r0) / (r1 - r0) * (d1 - d0); };
+    f.ticks = function (step) { var o = []; for (var v = Math.ceil(d0 / step) * step; v <= d1 + 1e-9; v += step) o.push(+v.toFixed(6)); return o; };
+    f.domain = [d0, d1]; f.range = [r0, r1];
+    return f;
+  }
+  /** band scale for categories: index -> left edge of the mark, with a capped mark width */
+  function band(count, r0, r1, pad, cap) {
+    var step = (r1 - r0) / count, bw = Math.min(step * (1 - pad), cap || Infinity);
+    var f = function (i) { return r0 + i * step + (step - bw) / 2; };
+    f.mid = function (i) { return r0 + i * step + step / 2; };
+    f.index = function (px) { return Math.max(0, Math.min(count - 1, Math.floor((px - r0) / step))); };
+    f.bw = bw; f.step = step;
+    return f;
+  }
+  /** column with a 4px rounded data end and a square baseline */
+  function barPath(x, y, w, hgt, r) {
+    if (hgt <= 0) return "";
+    r = Math.min(r == null ? 4 : r, w / 2, hgt);
+    return "M" + x + "," + (y + hgt) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + hgt) + "Z";
+  }
+  /** diagonal hatch pattern for simulated / preview data (stroke = --sim via class) */
+  function hatch(svg) {
+    var id = uid("hatch"), defs = svg.querySelector("defs") || el("defs", null, svg);
+    var p = el("pattern", { id: id, patternUnits: "userSpaceOnUse", width: 6, height: 6, patternTransform: "rotate(45)" }, defs);
+    el("line", { x1: 0, y1: 0, x2: 0, y2: 6, "class": "sn-chart-frame__hatch" }, p);
+    return "url(#" + id + ")";
+  }
+  function rem() { return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; }
+  /** one tooltip per chart; rows = [{key:"line"|"rect"|"dot"|"", c:"var(--chart-1)", value, label, dash}] */
+  function tip(host) {
+    var d = h("div", "sn-chart-frame__tip"); d.setAttribute("role", "presentation"); d.hidden = true; host.appendChild(d);
+    return {
+      show: function (x, y, title, rows) {
+        d.textContent = "";
+        if (title) d.appendChild(h("div", "sn-chart-frame__tip-title", title));
+        (rows || []).forEach(function (r) {
+          var row = h("div", "sn-chart-frame__tip-row");
+          var k = h("span", "sn-chart-frame__tip-key" + (r.key ? " sn-chart-frame__tip-key--" + r.key : ""));
+          if (r.c) k.style.setProperty("--c", r.c);
+          if (r.dash) k.classList.add("sn-chart-frame__tip-key--dash");
+          row.appendChild(k);
+          row.appendChild(h("span", "sn-chart-frame__tip-value", r.value));
+          row.appendChild(h("span", "sn-chart-frame__tip-label", r.label));
+          d.appendChild(row);
+        });
+        d.hidden = false;
+        var hw = host.clientWidth, tw = d.offsetWidth, th = d.offsetHeight;
+        var left = x + 14; if (left + tw > hw - 4) left = Math.max(4, x - tw - 14);
+        var top = Math.max(4, y - th - 10);
+        d.style.left = left + "px"; d.style.top = top + "px";
+      },
+      hide: function () { d.hidden = true; }
+    };
+  }
+  /** one tab stop per plot: arrows / Home / End move the active index; pointer maps x -> index */
+  function nav(target, count, pxToIndex, onIndex, opts) {
+    opts = opts || {}; var cur = -1;
+    function set(i) { if (i == null || i < 0) { cur = -1; onIndex(-1); return; } cur = Math.max(0, Math.min(count - 1, i)); onIndex(cur); }
+    target.addEventListener("keydown", function (e) {
+      var k = e.key, i = cur < 0 ? (opts.start || 0) : cur;
+      if (k === "ArrowRight" || k === "ArrowUp") i = cur < 0 ? i : i + 1;
+      else if (k === "ArrowLeft" || k === "ArrowDown") i = cur < 0 ? i : i - 1;
+      else if (k === "Home") i = 0; else if (k === "End") i = count - 1;
+      else if (k === "Escape") { set(-1); return; } else return;
+      e.preventDefault(); set(i);
+    });
+    target.addEventListener("focus", function () { if (cur < 0) set(opts.start || 0); });
+    target.addEventListener("blur", function () { set(-1); });
+    target.addEventListener("pointermove", function (e) { var b = target.getBoundingClientRect(); set(pxToIndex(e.clientX - b.left, e.clientY - b.top)); });
+    target.addEventListener("pointerleave", function () { if (document.activeElement !== target) set(-1); });
+    return { set: set, get: function () { return cur; } };
+  }
+  /** re-render on container resize (charts are drawn at 1 user unit = 1 CSS px) */
+  function fit(host, draw) {
+    var w = 0;
+    function go() { var nw = host.clientWidth; if (nw && Math.abs(nw - w) > 1) { w = nw; draw(nw); } }
+    if (window.ResizeObserver) new ResizeObserver(go).observe(host);
+    go();
+  }
+  /** "View as table" toggle: swaps plot and table, keeps focus on the button */
+  function tableToggle(btn, plot, table) {
+    var S = window.SongNodes;
+    function paint(on) { btn.innerHTML = S.icon(on ? "chart-line" : "table-2") + (on ? "View as chart" : "View as table"); }
+    paint(false);
+    btn.addEventListener("click", function () { var on = table.hidden; table.hidden = !on; plot.hidden = on; paint(on); });
+  }
+  return { el: el, text: text, h: h, uid: uid, linear: linear, band: band, barPath: barPath, hatch: hatch, rem: rem, tip: tip, nav: nav, fit: fit, tableToggle: tableToggle };
+})();
+
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var weeks = []; for (var i = 0; i < 12; i++) { var d = new Date(2026, 7, 3 + i * 7); weeks.push(d.getDate() + " " + MON[d.getMonth()]); }
+  /** sparkline(values, opts) -> HTML. y is scaled to this series' own min..max: shape, not magnitude. */
+  function spark(v, o) {
+    var w = o.w, h = o.h, pad = 3, n = v.length;
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), iLo = v.indexOf(lo), iHi = v.indexOf(hi);
+    var x = K.linear(0, n - 1, pad, w - pad), y = K.linear(lo, hi === lo ? lo + 1 : hi, h - pad, pad);
+    var pts = v.map(function (val, i) { return x(i).toFixed(1) + "," + y(val).toFixed(1); }).join(" ");
+    var label = o.what + ", last 12 weeks: latest " + v[n - 1] + ", low " + lo + " in the week of " + weeks[iLo] + ", high " + hi + " in the week of " + weeks[iHi];
+    return '<span class="sn-sparkline"' + (o.focusable ? ' tabindex="0"' : "") + ' role="img" aria-label="' + S.esc(label) + '">' +
+      '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" aria-hidden="true">' +
+      '<polyline class="sn-sparkline__line" points="' + pts + '"/>' +
+      '<circle class="sn-sparkline__ext" cx="' + x(iLo) + '" cy="' + y(lo) + '" r="2.5"/>' +
+      '<circle class="sn-sparkline__ext" cx="' + x(iHi) + '" cy="' + y(hi) + '" r="2.5"/>' +
+      '<circle class="sn-sparkline__end" cx="' + x(n - 1) + '" cy="' + y(v[n - 1]) + '" r="3"/></svg>' +
+      (o.value !== false ? '<span class="sn-sparkline__val" aria-hidden="true">' + v[n - 1] + "</span>" : "") +
+      '<span class="sn-sparkline__tip" aria-hidden="true">low <b>' + lo + "</b> " + weeks[iLo] + " · high <b>" + hi + "</b> " + weeks[iHi] + "</span></span>";
+  }
+  var tiles = [
+    ["Plays this week", [82, 88, 85, 97, 101, 98, 110, 113, 115, 118, 122, 124], "library tracks on radio", "plays per week"],
+    ["New tracks added", [21, 34, 18, 27, 40, 22, 31, 29, 44, 25, 33, 37], "from the weekly run", "tracks added per week"],
+    ["Needs an energy check", [64, 61, 66, 58, 55, 52, 49, 47, 41, 39, 35, 31], "tracks without a checked energy", "tracks needing a check"]
+  ];
+  document.getElementById("tiles").innerHTML = tiles.map(function (t) {
+    return '<section class="sn-card sn-card--compact"><span class="body-s sn-muted">' + t[0] + '</span><span class="figure">' + F.count(t[1][11]) + "</span>" +
+      '<span class="sn-row" style="justify-content:space-between">' + spark(t[1], { w: 132, h: 32, focusable: true, what: t[3], value: false }) + "</span>" +
+      '<span class="caption sn-dim">' + t[2] + " · 12 weeks to 24 Oct</span></section>";
+  }).join("");
+  var rows = [
+    ["Overmono – So U Kno", [2, 3, 3, 4, 6, 5, 7, 8, 7, 9, 11, 12], "24 Oct 2026, 21:30"],
+    ["Sammy Virji – If U Need It", [0, 1, 1, 2, 2, 4, 3, 5, 6, 6, 8, 9], "24 Oct 2026, 14:05"],
+    ["Bicep – Glue", [9, 8, 9, 7, 8, 6, 7, 6, 5, 6, 4, 5], "22 Oct 2026, 23:40"],
+    ["Peggy Gou – (It Goes Like) Nanana", [12, 10, 9, 7, 6, 4, 3, 3, 2, 1, 1, 0], "9 Oct 2026, 20:15"]
+  ];
+  document.querySelector("#tbl tbody").innerHTML = rows.map(function (r) {
+    var tot = r[1].reduce(function (a, b) { return a + b; }, 0);
+    return "<tr><td>" + S.esc(r[0]) + "</td><td>" + spark(r[1], { w: 96, h: 22, what: "Plays per week" }) + '</td><td class="num">' + tot + '</td><td class="sn-mono body-s">' + r[2] + "</td></tr>";
+  }).join("");
+})();
+</script>
+</body>
+</html>

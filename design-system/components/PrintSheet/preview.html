@@ -1,0 +1,77 @@
+<!-- @dsCard group="Pages" width=1280 height=1300 subtitle="A4 portrait set printout on screen: title, set meta, running order with slot, time in, BPM, key code and name, energy number plus greyscale pattern bar, transition notes with glyph and words, locked slots, traceability footer" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Peak time Friday · Set builder · SongNodes</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <div class="sn-page-print">
+    <div class="sn-page-print__desk">
+      <div class="sn-page-print__bar" data-print="hide">
+        <span>Print preview · A4 portrait · 1 page</span>
+        <label class="sn-checkbox"><input type="checkbox" id="notes"><span class="sn-checkbox__text"><span>Add a notes column</span></span></label>
+        <button class="sn-btn sn-btn--primary" type="button" id="print"></button>
+      </div>
+      <article class="sn-page-print__paper" data-theme="light" aria-labelledby="ps-title">
+        <header class="sn-page-print__head">
+          <div>
+            <h1 class="sn-title title-l" id="ps-title"><span class="sn-lead">Set:</span> Peak time Friday</h1>
+            <p class="sn-page-print__meta" id="meta"></p>
+          </div>
+          <p class="sn-page-print__key" aria-label="Energy bar patterns">
+            <span>Low 1–4 <span class="sn-page-print__ebar" aria-hidden="true"><i data-t="low"></i><i data-t="low"></i></span> solid segments</span>
+            <span>Building 5–7 <span class="sn-page-print__ebar" aria-hidden="true"><i data-t="building"></i><i data-t="building"></i></span> hatched segments</span>
+            <span>High 8–10 <span class="sn-page-print__ebar" aria-hidden="true"><i data-t="high"></i><i data-t="high"></i></span> cross-hatched segments</span>
+          </p>
+        </header>
+        <table class="sn-page-print__table">
+          <caption class="sn-sr">Running order, 18 slots</caption>
+          <thead><tr id="head"></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <footer class="sn-page-print__foot">
+          <span>Peak time Friday · Set builder · SongNodes</span><code>songnodes.local/sets/peak-time-friday</code>
+          <span>Printed 24 Oct 2026, 21:30 AEDT · Library as of 24 Oct 2026, 06:00 AEDT</span><span>Page 1 of 1</span>
+        </footer>
+      </article>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes, F = S.format, I = S.icon;
+  /* [artist, title, bpm, key, energy, seconds played, locked] */
+  var SET = [
+    ["Josh Baker", "Lost In Muzik", 124, "8A", 6, 372, true], ["Peggy Gou", "(It Goes Like) Nanana", 124, "8A", 7, 238], ["Bicep", "Glue", 125, "9A", 7, 269],
+    ["Ross From Friends", "Talk To Me You'll Drown", 126, "9A", 8, 330], ["Overmono", "So U Kno", 126, "10A", 9, 340, true], ["Bicep", "Atlas", 127, "10A", 6, 262],
+    ["Barry Can't Swim", "Sunsleeper", 128, "10B", 7, 300], ["Four Tet", "Baby", 128, "11B", 8, 287], ["Joy Orbison", "Flight FM", 129, "11A", 8, 296],
+    ["Interplanetary Criminal", "Slow Burner", 130, "12A", 9, 320], ["Bicep", "Apricots", 130, "12A", 7, 300], ["Overmono", "Is U", 131, "1A", 8, 300],
+    ["Sammy Virji", "If U Need It", 132, "1A", 9, 223], ["Sammy Virji", "Find My Way Home", 132, "2A", 9, 214], ["Fred again..", "Delilah (pull me out of this)", 133, "2A", 10, 260],
+    ["Interplanetary Criminal", "Wiley Flow", 134, "3A", 8, 318], ["Overmono", "Good Lies", 135, "3A", 9, 255], ["Skrillex, Fred again.. & Flowdan", "Rumble", 136, "4A", 10, 281, true]
+  ];
+  var GLYPH = { perfect: "●", compatible: "◐", possible: "○", clash: "✕" }, WORD = { perfect: "Perfect", compatible: "Compatible", possible: "Possible", clash: "Clash" }, RANK = { perfect: 0, compatible: 1, possible: 2, clash: 3 };
+  var total = SET.reduce(function (a, s) { return a + s[5]; }, 0);
+  var $ = function (id) { return document.getElementById(id); };
+  $("meta").innerHTML = "<span>Shape <b>Peak time (three waves)</b></span><span>Length <b>" + F.span(total) + "</b></span><span><b>" + SET.length + "</b> tracks</span><span><b>124–136</b> BPM</span><span>House 50 · Techno 30 · UK garage 20</span>";
+  function ebar(e) { var t = S.tier(e), h = ""; for (var i = 1; i <= 10; i++) h += "<i" + (i <= e ? ' data-t="' + S.tier(i) + '"' : "") + "></i>"; return '<span class="sn-page-print__energy"><b>' + e + '</b><span class="sn-page-print__ebar" aria-hidden="true">' + h + '</span><span class="sn-sr"> of 10, ' + S.TIER_LABEL[t] + "</span></span>"; }
+  function render(notes) {
+    $("head").innerHTML = '<th scope="col">Slot</th><th scope="col" class="num">Time in</th><th scope="col">Track</th><th scope="col" class="num">BPM</th><th scope="col">Key</th><th scope="col">Energy</th><th scope="col">Transition in</th>' + (notes ? '<th scope="col" class="sn-page-print__notes">Notes</th>' : "");
+    var t = 0;
+    $("rows").innerHTML = SET.map(function (s, i) {
+      var tin = F.duration(t); t += s[5];
+      var tr = '<span class="sn-page-print__trans">Opener</span>';
+      if (i) {
+        var p = SET[i - 1], e = S.energyStep(p[4], s[4], i > 1 ? SET[i - 2][4] : undefined), k = S.compat(p[3], s[3]), b = S.bpmStep(p[2], s[2]);
+        var worst = [e, k, b].sort(function (x, y) { return RANK[y.level] - RANK[x.level]; })[0].level;
+        tr = '<span class="sn-page-print__trans"><b>' + GLYPH[worst] + " " + WORD[worst] + "</b> · " + [e.label, k.label, b.label].map(function (x) { return S.esc(x.replace(/-(\d)/, "−$1").replace("+0 BPM", "same BPM")); }).join(" · ") + "</span>";
+      }
+      return "<tr><td class=\"sn-page-print__slot\">" + String(i + 1).padStart(2, "0") + (s[6] ? I("lock", { label: "Locked" }) : "") + '</td><td class="num">' + tin + '</td><td class="sn-page-print__track"><span>' + S.esc(s[0]) + " –</span> " + S.esc(s[1]) + '</td><td class="num">' + s[2] + '</td><td class="sn-page-print__mono">' + s[3] + " " + S.esc(S.keyName(s[3])) + "</td><td>" + ebar(s[4]) + "</td><td>" + tr + "</td>" + (notes ? "<td></td>" : "") + "</tr>";
+    }).join("");
+  }
+  render(false);
+  $("notes").addEventListener("change", function () { render(this.checked); });
+  $("print").innerHTML = I("printer") + "Print";
+  $("print").addEventListener("click", function () { window.print(); });
+})();
+</script>
+</body>
+</html>

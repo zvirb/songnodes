@@ -1,0 +1,162 @@
+<!-- @dsCard group="Pages" width=1280 height=2080 subtitle="Pipeline health (monitoring page): one bad banner, live connection, figure tiles, scraper table with status, last success and success-rate sparkline, enrichment run steps, proxy health, review-queue checklist, recent errors with guidance" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>MonitoringPage — preview</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <a class="sn-skip" href="#main">Skip to content</a>
+  <div id="sh-head" data-drawer-inert></div>
+  <main class="sn-page-monitor" id="main" tabindex="-1" data-drawer-inert>
+    <div class="sn-page-monitor__section">
+      <div id="ph"></div>
+      <div id="banner"></div>
+    </div>
+    <div class="sn-figure-tile-row" role="list" aria-label="Pipeline at a glance" id="tiles"></div>
+
+    <section class="sn-page-monitor__section" aria-labelledby="scr-h">
+      <div class="sn-section-heading">
+        <h2 class="sn-title title-m" id="scr-h"><span class="sn-lead">Pipeline:</span> Scrapers</h2>
+        <span class="sn-section-heading__count">6 scrapers</span>
+        <p class="sn-section-heading__caveat">Last success turns ▲ after 1 h and ✕ after 6 h. Success rate is per hour over the last 24 h.</p>
+      </div>
+      <div class="sn-data-table sn-data-table--stack">
+        <div class="sn-tablebox sn-data-table__box" style="--sn-data-table-max:none">
+          <table class="sn-table">
+            <caption class="sn-sr">Scraper health</caption>
+            <thead><tr><th scope="col">Scraper</th><th scope="col">Status</th><th scope="col">Last success</th><th scope="col">Success rate, 24 h</th><th scope="col" class="num">Jobs today</th><th scope="col" class="num">Next run</th><th scope="col" class="sn-data-table__actions"><span class="sn-sr">Actions</span></th></tr></thead>
+            <tbody id="scrapers"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="sn-page-monitor__grid">
+      <section class="sn-card sn-m-pipeline" aria-labelledby="enr-h" id="enrich"></section>
+      <section class="sn-card sn-card--list" aria-labelledby="px-h">
+        <div class="sn-card__head"><h2 class="sn-title title-s" id="px-h"><span class="sn-lead">Proxies:</span> 12 in the pool</h2></div>
+        <ul class="sn-card__list" id="proxies"></ul>
+      </section>
+    </div>
+
+    <div class="sn-page-monitor__grid">
+      <section class="sn-card" aria-labelledby="dq-h">
+        <div class="sn-section-heading">
+          <h2 class="sn-title title-s" id="dq-h"><span class="sn-lead">Data quality:</span> Review queue</h2>
+          <div class="sn-section-heading__end"><a class="sn-link sn-m-pipeline" href="#/pipeline/review">Open review queue</a></div>
+        </div>
+        <div class="sn-checklist-summary" id="dq-sum"></div>
+        <ul class="sn-checklist" id="dq"></ul>
+      </section>
+      <section class="sn-page-monitor__section" aria-labelledby="err-h" id="errors">
+        <div class="sn-section-heading">
+          <h2 class="sn-title title-s" id="err-h"><span class="sn-lead">Errors:</span> last 24 h</h2>
+          <div class="sn-section-heading__end"><a class="sn-link sn-m-pipeline" href="#/pipeline/jobs?status=failed">All failed jobs</a></div>
+        </div>
+        <div id="err-state"></div>
+        <div class="sn-tablebox"><table class="sn-table sn-table--compact"><caption class="sn-sr">Recent errors, newest first</caption>
+          <thead><tr><th scope="col">Time</th><th scope="col">Source</th><th scope="col">What happened</th></tr></thead><tbody id="err-rows"></tbody></table></div>
+      </section>
+    </div>
+    <p class="sn-page-monitor__foot">Deep metrics live in Grafana: <a class="sn-link sn-link--ext" href="/monitoring/" target="_blank" rel="noopener">Open Grafana<span class="sn-sr">, opens in a new tab</span></a><a class="sn-link sn-link--ext" href="/docs" target="_blank" rel="noopener">API reference<span class="sn-sr">, opens in a new tab</span></a></p>
+  </main>
+  <div id="sh-drawer"></div>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="sn-toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+/*@COMMON@*/
+/*@KIT@*/
+(function () {
+  snShell({ mod: "pipeline", title: "Health", stampVerb: "Checked", stamp: "2026-10-24T21:30:00+11:00", counts: { pipeline: ["1", "scraper paused after errors", "bad"] } });
+  $("ph").innerHTML = snPageHeader("ph", {
+    mod: "pipeline", title: "Health",
+    desc: "Is anything broken right now? Scrapers, proxies and enrichment that feed the graph and the library.",
+    stampVerb: "Checked", stamp: "2026-10-24T21:30:00+11:00",
+    meta: '<span class="sn-connection-status" data-state="live" role="status" title="Live updates connected since 21:02">Live</span>',
+    secondary: [["proxies", "server", "Test proxies"]],
+    menu: [{ h: "Pipeline" }, { id: "pause", icon: "pause", label: "Pause all scrapers" }, { id: "csv", icon: "download", label: "Export health as CSV" }],
+    primary: ["run", "play", "Run scrapers now"]
+  });
+  $("banner").innerHTML = '<div class="sn-banner" data-status="bad" role="alert"><span class="sn-banner__icon">' + I("circle-x") + '</span><div class="sn-banner__body"><p class="sn-banner__content"><span class="sn-banner__title">1001tracklists paused after errors.</span> 5 requests in a row failed with 429 (rate limited). Retries at 21:45 AEDT; other scrapers carry on.</p>' +
+    '<div class="sn-banner__actions"><a class="sn-btn sn-btn--sm" href="#errors">See the errors</a></div></div><span></span></div>';
+  $("tiles").innerHTML = [
+    ["184", "Jobs today", "+12 in the last hour", ""],
+    ["7", "Failed today", "4% of jobs", snPill("bad", "7 failed") + '<a class="sn-link sn-m-pipeline" href="#/pipeline/jobs?status=failed">Show these</a>'],
+    ["42", "Queue length", "oldest waiting 6 min", ""],
+    ['9<span class="sn-figure-tile__unit"> of 12</span>', "Proxies healthy", "2 degraded, 1 failed", snPill("warn", "3 need a look") + '<a class="sn-link sn-m-pipeline" href="#proxies">Show proxies</a>']
+  ].map(function (t) { return '<div class="sn-figure-tile" role="listitem"><span class="sn-figure-tile__figure">' + t[0] + '</span><span class="sn-figure-tile__label">' + t[1] + '</span><span class="sn-figure-tile__delta">' + t[2] + "</span>" + (t[3] ? '<div class="sn-figure-tile__foot">' + t[3] + "</div>" : "") + "</div>"; }).join("");
+
+  /* sparkline (from Sparkline): own min..max, latest emphasised */
+  function spark(v, what) {
+    var w = 96, h = 22, pad = 3, n = v.length, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), iLo = v.indexOf(lo), iHi = v.indexOf(hi);
+    var x = function (i) { return pad + i * (w - 2 * pad) / (n - 1); }, y = function (val) { return hi === lo ? h / 2 : h - pad - (val - lo) * (h - 2 * pad) / (hi - lo); };
+    var hr = function (i) { return String((21 - (n - 1 - i) + 24) % 24).padStart(2, "0") + ":00"; };
+    return '<span class="sn-sparkline" tabindex="0" role="img" aria-label="' + S.esc(what + " success rate per hour, last 24 h: latest " + v[n - 1] + "%, low " + lo + "% at " + hr(iLo) + ", high " + hi + "% at " + hr(iHi)) + '"><svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" aria-hidden="true">' +
+      '<polyline class="sn-sparkline__line" points="' + v.map(function (val, i) { return x(i).toFixed(1) + "," + y(val).toFixed(1); }).join(" ") + '"/>' +
+      '<circle class="sn-sparkline__ext" cx="' + x(iLo) + '" cy="' + y(lo) + '" r="2.5"/><circle class="sn-sparkline__ext" cx="' + x(iHi) + '" cy="' + y(hi) + '" r="2.5"/><circle class="sn-sparkline__end" cx="' + x(n - 1) + '" cy="' + y(v[n - 1]) + '" r="3"/></svg>' +
+      '<span class="sn-sparkline__val" aria-hidden="true">' + v[n - 1] + '%</span><span class="sn-sparkline__tip" aria-hidden="true">low <b>' + lo + "%</b> " + hr(iLo) + " · high <b>" + hi + "%</b> " + hr(iHi) + "</span></span>";
+  }
+  function series(base, dip) { var o = []; for (var i = 0; i < 24; i++) o.push(Math.max(0, Math.min(100, Math.round(base + ((i * 7) % 5) - 2 - (dip && i >= dip ? (i - dip + 1) * 18 : 0))))); return o; }
+  var SCR = [
+    ["1001tracklists", "Tracklists", "circuit_open", "2026-10-24T21:02:00+11:00", series(96, 20), 61, "21:45"],
+    ["MixesDB", "Tracklists", "running", "2026-10-24T21:28:00+11:00", series(98), 38, "now"],
+    ["Setlist.fm", "Tracklists", "idle", "2026-10-24T21:15:00+11:00", series(99), 24, "22:15"],
+    ["Reddit", "Tracklists", "error", "2026-10-24T13:40:00+11:00", series(90, 9).map(function (x, i) { return i >= 9 ? 0 : x; }), 18, "22:00"],
+    ["YouTube", "Video", "disabled", "2026-10-17T06:00:00+11:00", null, 0, null],
+    ["SoundCloud", "Audio", "running", "2026-10-24T21:29:00+11:00", series(94), 43, "now"]
+  ];
+  function last(at, off) {
+    if (off) return '<span class="sn-freshness-stamp"><span><time datetime="' + new Date(at).toISOString() + '" title="' + F.stamp(at) + '">' + F.date(at) + '</time></span><span class="sn-freshness-stamp__rel">turned off</span></span>';
+    var h = (NOW - new Date(at)) / 36e5, t = '<time datetime="' + new Date(at).toISOString() + '" title="' + F.stamp(at) + '">' + F.time(at) + "</time>";
+    return '<span class="sn-freshness-stamp"><span>' + t + "</span>" + (h > 1 ? '<span class="sn-freshness-stamp__stale">' + Math.floor(h) + " h ago</span>" : '<span class="sn-freshness-stamp__rel">(' + F.relative(at, NOW) + ")</span>") + "</span>";
+  }
+  $("scrapers").innerHTML = SCR.map(function (s, i) {
+    var off = s[2] === "disabled";
+    return '<tr' + (s[2] === "circuit_open" || s[2] === "error" ? " data-flag" : "") + '><td class="sn-data-table__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name">' + s[0] + '</span></span><span class="sn-track-cell__meta"><span>' + s[1] + "</span></span></div></td>" +
+      '<td data-label="Status">' + snRaw(s[2]) + "</td>" +
+      '<td data-label="Last success">' + last(s[3], off) + "</td>" +
+      '<td data-label="Success rate, 24 h">' + (s[4] ? spark(s[4], s[0]) : '<span class="sn-none">–</span>') + "</td>" +
+      '<td class="num" data-label="Jobs today">' + s[5] + "</td>" +
+      '<td class="num" data-label="Next run">' + (s[6] ? s[6] === "now" ? '<span class="sn-dim">running</span>' : s[6] : '<span class="sn-none">–</span>') + "</td>" +
+      '<td class="sn-data-table__actions">' + snMenuButton("sm" + i, "More actions for " + s[0], [{ id: "run", icon: "play", label: "Run now", reason: s[2] === "circuit_open" ? "Paused until 21:45 after errors" : off ? "Turn it on first" : "" }, off ? { id: "on", icon: "play", label: "Turn on" } : { id: "pause", icon: "pause", label: "Pause scraper" }, { id: "log", icon: "file-text", label: "View job log" }].map(function (x) { if (!x.reason) delete x.reason; return x; }), { sm: true, icon: "ellipsis-vertical" }) + "</td></tr>";
+  }).join("");
+
+  /* enrichment run (StagedProgress) */
+  $("enrich").innerHTML = '<div class="sn-staged-progress"><div class="sn-staged-progress__head"><h2 class="sn-title title-s" id="enr-h"><span class="sn-lead">Enrichment:</span> 21:00 run</h2><div class="sn-staged-progress__time"><span>Elapsed <b id="el">29:40</b></span><span>About 6 min left</span></div></div><ol class="sn-staged-progress__steps" id="steps"></ol>' +
+    '<p class="sn-staged-progress__notice">' + I("info") + "<span>Runs in the background. Tracks update in the library as each one is enriched.</span></p></div>";
+  var steps = [["Collect new tracks", "done", "6:02", "480 tracks from today’s scrapes"], ["Look up Spotify", "done", "9:51", "462 matched, 18 not on Spotify"], ["Look up Beatport", "running", 312, 480], ["Analyse audio", "waiting"], ["Validate and save", "waiting"]];
+  $("steps").innerHTML = steps.map(function (s) {
+    var h = '<li class="sn-staged-progress__step" data-state="' + s[1] + '"' + (s[1] === "running" ? ' aria-current="step"' : "") + '><span class="sn-staged-progress__glyph" aria-hidden="true"></span><span class="sn-staged-progress__name">' + s[0] + '</span><span class="sn-staged-progress__state">' + (s[1] === "done" ? "● Done · " + s[2] : s[1] === "running" ? "Running" : "Waiting") + "</span>";
+    if (s[1] === "done") h += '<p class="sn-staged-progress__detail">' + s[3] + "</p>";
+    if (s[1] === "running") h += '<p class="sn-staged-progress__detail">Matching ' + s[2] + " of " + s[3] + ' tracks</p><div class="sn-staged-progress__meter" role="progressbar" aria-label="' + s[0] + '" aria-valuemin="0" aria-valuemax="' + s[3] + '" aria-valuenow="' + s[2] + '" aria-valuetext="' + s[2] + " of " + s[3] + ' tracks"><i style="--p:' + (100 * s[2] / s[3]).toFixed(1) + '%"></i></div>';
+    return h + "</li>";
+  }).join("");
+
+  /* proxies */
+  var PX = [["mel-01", "Melbourne · residential", "healthy", "84 ms"], ["mel-02", "Melbourne · residential", "healthy", "91 ms"], ["syd-03", "Sydney · datacentre", "degraded", "1.8 s"], ["sgp-01", "Singapore · datacentre", "failed", null], ["fra-02", "Frankfurt · datacentre", "degraded", "2.4 s"], ["lax-04", "Los Angeles · datacentre", "untested", null], ["syd-01 … syd-06", "Sydney · 6 more", "healthy", "70–120 ms"]];
+  $("proxies").innerHTML = PX.map(function (p) { return '<li><span class="sn-page-monitor__proxy-name">' + S.esc(p[0]) + "<small>" + S.esc(p[1]) + "</small></span>" + snRaw(p[2], null, true) + '<span class="sn-page-monitor__latency">' + (p[3] || '<span class="sn-none">–</span>') + "</span></li>"; }).join("");
+
+  /* review queue (Checklist) */
+  var ICON = { pass: "check", fail: "x", warn: "triangle-alert", pending: "circle-dot" }, WORD = { pass: "Passed", fail: "Failed", warn: "Warning", pending: "Not checked yet" };
+  var DQ = [["pass", "Matches above 0.80 approved automatically", "", "412"], ["warn", "Low-confidence matches waiting for review", "Below 0.50 confidence; approve, reject or skip each one.", "23"], ["fail", "BPM disagrees between Beatport and audio analysis", "Gap of more than 2 BPM. Pick the right value in review.", "4"], ["pending", "New imports not checked yet", "Checked when the enrichment run finishes.", "11"]];
+  $("dq").innerHTML = DQ.map(function (i) { return '<li class="sn-checklist__item" data-state="' + i[0] + '"><span class="sn-checklist__glyph">' + I(ICON[i[0]]) + '</span><span class="sn-checklist__text"><span class="sn-checklist__label"><span class="sn-sr">' + WORD[i[0]] + ": </span>" + i[1] + "</span>" + (i[2] ? '<span class="sn-checklist__note">' + i[2] + "</span>" : "") + '</span><span class="sn-checklist__aside">' + i[3] + "</span></li>"; }).join("");
+  $("dq-sum").innerHTML = [["pass", 1, "passed"], ["fail", 1, "failed"], ["warn", 1, "to look at"], ["pending", 1, "not checked"]].map(function (k) { return '<span data-state="' + k[0] + '"><span class="sn-checklist-summary__n">' + k[1] + "</span> " + k[2] + "</span>"; }).join("");
+
+  /* recent errors: guidance for the newest error that needs the person (ErrorState), then the list */
+  $("err-state").innerHTML = '<section class="sn-error-state" data-status="warn" aria-labelledby="e1"><div class="sn-error-state__icon">' + I("plug") + '</div><h3 class="sn-error-state__title" id="e1">Reddit is rejecting the API key</h3>' +
+    '<div class="sn-error-state__text">Every Reddit job since 13:40 failed with 401. The key expired on 24 Oct 2026; no tracklists from r/House or r/ukgarage are coming in.</div>' +
+    '<p class="sn-error-state__retry" data-helps="no">Retrying won’t help until the key is renewed.</p>' +
+    '<div class="sn-error-state__actions"><span class="sn-m-services"><button class="sn-btn sn-btn--mod" type="button">Renew Reddit key in Services</button></span><span class="sn-error-state__ref">Reference <code>job 8c41-77ad</code></span></div></section>';
+  var ERR = [["21:02", "1001tracklists", "429 rate limited, 5th in a row; paused until 21:45"], ["20:58", "1001tracklists", "429 rate limited"], ["20:31", "sgp-01 proxy", "Connection refused; removed from rotation"], ["19:12", "Beatport", "Timed out after 30 s on 2 lookups; retried and matched"], ["13:40", "Reddit", "401 API key expired"]];
+  $("err-rows").innerHTML = ERR.map(function (e) { return '<tr><td class="sn-mono">' + e[0] + "</td><td>" + e[1] + "</td><td>" + e[2] + "</td></tr>"; }).join("");
+
+  snMenusIn($("main"));
+  $("ph").addEventListener("click", function (e) {
+    var b = e.target.closest('[data-act="run"]');
+    if (b && !b.hasAttribute("aria-busy")) { var w = b.offsetWidth; b.style.minWidth = w + "px"; b.setAttribute("aria-busy", "true"); b.innerHTML = '<span class="sn-spinner"></span>Starting…'; setTimeout(function () { b.removeAttribute("aria-busy"); b.innerHTML = I("play") + "Run scrapers now"; snToast("Queued 5 scrapers. 1001tracklists stays paused until 21:45.", null); }, 1200); }
+    if (e.target.closest('[data-act="proxies"]')) snToast("Testing 12 proxies. Results update in the list.", null);
+  });
+})();
+</script>
+</body>
+</html>

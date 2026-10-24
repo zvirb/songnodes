@@ -1,0 +1,53 @@
+<!-- @dsCard group="Data" height=430 subtitle="Genre, pillar, rotation (High emphasised, Vault muted), remix type, edge type; module shades inside tonal cards" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CategoryTag — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Pillar and genre</div>
+  <div class="sn-preview__row">
+    <span class="sn-tag sn-category-tag">House</span>
+    <span class="sn-tag sn-category-tag">Techno</span>
+    <span class="sn-tag sn-category-tag">UK garage</span>
+    <span class="sn-tag sn-category-tag">Breaks</span>
+    <span class="sn-tag sn-category-tag">Deep house</span>
+    <span class="sn-tag sn-category-tag">Speed garage</span>
+  </div>
+  <div class="sn-preview__label">Rotation</div>
+  <div class="sn-preview__row">
+    <span class="sn-tag sn-category-tag sn-category-tag--high">High rotation</span>
+    <span class="sn-tag sn-category-tag">Standard</span>
+    <span class="sn-tag sn-category-tag sn-category-tag--vault">Vault</span>
+  </div>
+  <div class="sn-preview__label">Remix type</div>
+  <div class="sn-preview__row">
+    <span class="sn-tag sn-category-tag">Original</span>
+    <span class="sn-tag sn-category-tag">Extended</span>
+    <span class="sn-tag sn-category-tag">Edit</span>
+    <span class="sn-tag sn-category-tag">VIP</span>
+    <span class="sn-tag sn-category-tag">Remix</span>
+    <span class="sn-tag sn-category-tag">Dub</span>
+    <span class="sn-tag sn-category-tag">Radio edit</span>
+  </div>
+  <div class="sn-preview__label">Edge type (graph)</div>
+  <div class="sn-preview__row" id="edges"></div>
+  <div class="sn-preview__label">Inside tonal cards</div>
+  <div class="sn-preview__row" style="align-items:stretch">
+    <div class="sn-card sn-card--tonal sn-card--compact sn-m-library" style="width:300px">
+      <strong>Overmono – So U Kno</strong>
+      <div class="sn-row"><span class="sn-tag sn-category-tag">UK garage</span><span class="sn-tag sn-category-tag sn-category-tag--high">High rotation</span><span class="sn-tag sn-category-tag">Original</span></div>
+    </div>
+    <div class="sn-card sn-card--tonal sn-card--compact sn-m-graph" style="width:300px">
+      <strong>Bicep – Glue</strong>
+      <div class="sn-row"><span class="sn-tag sn-category-tag">Breaks</span><span class="sn-tag sn-category-tag sn-category-tag--vault">Vault</span><span class="sn-tag sn-category-tag" id="edge-in"></span></div>
+    </div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var edges = [["git-merge", "Played next to"], ["layers", "Similar"], ["user", "Collaboration"], ["tag", "Same genre"], ["piano", "Key compatible"]];
+  document.getElementById("edges").innerHTML = edges.map(function (e) { return '<span class="sn-tag sn-category-tag">' + S.icon(e[0]) + e[1] + '</span>'; }).join("");
+  document.getElementById("edge-in").innerHTML = S.icon("git-merge") + "Played next to";
+</script>
+</body>
+</html>

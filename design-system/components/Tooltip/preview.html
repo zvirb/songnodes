@@ -1,0 +1,59 @@
+<!-- @dsCard group="Surfaces" height=240 subtitle="Icon button names with shortcut, key name behind 8A, absolute time behind 3 h ago; live on hover (500 ms) and at once on keyboard focus, hides at once, Esc dismisses" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Tooltip — preview</title>
+<style>
+  .demo { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  .demo > div { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .slot { display: flex; align-items: center; gap: 12px; padding: 4px 8px; border-radius: 8px; background: var(--surface-1); border: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Shown (static)</div>
+  <div class="demo" inert id="static"></div>
+  <div class="sn-preview__label">Try it: hover or Tab to a control</div>
+  <div class="slot" id="live"></div>
+</div>
+<script>
+  var S = window.SongNodes, I = S.icon, H = S.html;
+  var heard = new Date("2026-10-24T18:30:00+11:00"), now = new Date("2026-10-24T21:30:00+11:00");
+  document.getElementById("static").innerHTML =
+    '<div><button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" tabindex="-1">' + I("lock") + '</button><span class="sn-tooltip sn-tooltip--static">Lock slot 3<span class="sn-tooltip__kbd">L</span></span></div>' +
+    '<div>' + H.key("8A") + '<span class="sn-tooltip sn-tooltip--static">A minor · Camelot 8A</span></div>' +
+    '<div><span class="sn-dim">Heard ' + S.format.relative(heard, now) + '</span><span class="sn-tooltip sn-tooltip--static"><span class="sn-tooltip__data">' + S.format.stamp(heard) + '</span> on 3RRR Superfreak</span></div>';
+
+  var live = document.getElementById("live");
+  live.innerHTML = '<span class="sn-mono sn-dim">3</span>' + H.energy(7) + '<span>Sammy Virji – If U Need It</span>' +
+    '<span class="sn-key" data-key="3B" tabindex="0" data-tip="F♯ major · Camelot 3B" data-tip-describe>3B</span>' +
+    '<span class="sn-dim" tabindex="0" data-tip="' + S.esc(S.format.stamp(heard)) + ' on 3RRR Superfreak" data-tip-describe>' + S.format.relative(heard, now) + '</span>' +
+    '<button class="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm" type="button" aria-label="Lock slot 3" data-tip="Lock slot 3" data-kbd="L">' + I("lock") + '</button>' +
+    '<button class="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm" type="button" aria-label="Move slot 3 up" data-tip="Move up" data-kbd="↑">' + I("arrow-up") + '</button>' +
+    '<button class="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm" type="button" aria-label="Remove slot 3" data-tip="Remove from set">' + I("x") + '</button>';
+
+  // ---- tooltip helper: hover 500 ms in, keyboard focus immediate, 0 out; Esc; hoverable (WCAG 1.4.13)
+  var tip = document.createElement("div"); tip.className = "sn-tooltip"; tip.id = "tip"; tip.setAttribute("role", "tooltip"); tip.hidden = true; document.body.appendChild(tip);
+  var timer = null, owner = null;
+  function place(el) {
+    var r = el.getBoundingClientRect(), t = tip.getBoundingClientRect(), gap = 6;
+    var top = r.top - t.height - gap; if (top < 4) top = r.bottom + gap;
+    var left = Math.min(Math.max(4, r.left + r.width / 2 - t.width / 2), document.documentElement.clientWidth - t.width - 4);
+    tip.style.top = (top + window.scrollY) + "px"; tip.style.left = (left + window.scrollX) + "px";
+  }
+  function showFor(el) {
+    owner = el;
+    tip.innerHTML = S.esc(el.getAttribute("data-tip")) + (el.getAttribute("data-kbd") ? '<span class="sn-tooltip__kbd">' + S.esc(el.getAttribute("data-kbd")) + "</span>" : "");
+    tip.hidden = false; place(el);
+    if (el.hasAttribute("data-tip-describe")) el.setAttribute("aria-describedby", "tip");  // supplementary text, read after the name
+  }
+  function hide() { clearTimeout(timer); timer = null; tip.hidden = true; if (owner) owner.removeAttribute("aria-describedby"); owner = null; }
+  function later(el) { clearTimeout(timer); timer = setTimeout(function () { showFor(el); }, 500); }
+  live.addEventListener("pointerover", function (e) { var el = e.target.closest("[data-tip]"); if (el && el !== owner) later(el); });
+  live.addEventListener("pointerout", function (e) { var el = e.target.closest("[data-tip]"); if (el && !el.contains(e.relatedTarget) && !tip.contains(e.relatedTarget)) hide(); });
+  tip.addEventListener("pointerleave", function (e) { if (!owner || !owner.contains(e.relatedTarget)) hide(); });
+  live.addEventListener("focusin", function (e) { var el = e.target.closest("[data-tip]"); if (el && el.matches(":focus-visible")) { clearTimeout(timer); showFor(el); } });
+  live.addEventListener("focusout", hide);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && (owner || timer)) hide(); });
+</script>
+</body>
+</html>

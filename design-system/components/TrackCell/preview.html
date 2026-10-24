@@ -1,0 +1,49 @@
+<!-- @dsCard group="Music" height=490 subtitle="Artist – title with mix, label and duration; now playing; check-energy and Beatport flags; service links; long names truncate; compact" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TrackCell — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Two-line cell (56px), as used in the crate table and running order</div>
+  <div class="sn-tablebox" style="max-width:560px">
+    <table class="sn-table">
+      <caption class="sn-sr">Track cell examples</caption>
+      <thead><tr><th scope="col">Track</th></tr></thead>
+      <tbody id="cells"></tbody>
+    </table>
+  </div>
+  <div class="sn-preview__label">Compact (one line of meta, no links) · narrow column</div>
+  <div class="sn-preview__row" id="compact" style="align-items:flex-start"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  /* Preview helper mirroring <TrackCell>. */
+  function cell(t, o) {
+    o = o || {};
+    var meta = [];
+    if (t.mix) meta.push('<span class="sn-track-cell__mix">' + S.esc(t.mix) + "</span>");
+    if (t.label && !o.compact) meta.push("<span>" + S.esc(t.label) + "</span>");
+    if (t.dur) meta.push('<span class="sn-track-cell__dur">' + S.format.duration(t.dur) + "</span>");
+    var m = meta.join('<span class="sn-track-cell__sep" aria-hidden="true">·</span>');
+    if (t.check) m += '<span class="sn-track-cell__flag">Check energy</span>';
+    if (t.beatport) m += '<span class="sn-track-cell__flag sn-track-cell__flag--info">Check Beatport match</span>';
+    if (t.links && !o.compact) m += '<span class="sn-track-cell__links">' + t.links.map(function (l) { return '<a class="sn-link sn-link--ext" href="#" target="_blank" rel="noopener" aria-label="' + S.esc(t.a + " – " + t.t) + " on " + l + ' (opens in a new tab)">' + l + "</a>"; }).join("") + "</span>";
+    return '<div class="sn-track-cell' + (o.compact ? " sn-track-cell--compact" : "") + '"><span class="sn-track-cell__title">' +
+      (t.now ? '<span class="sn-track-cell__now">' + S.icon("audio-waveform", { size: 14 }) + '<span>Now</span></span>' : "") +
+      '<span class="sn-track-cell__name" title="' + S.esc(t.a + " – " + t.t) + '"><span class="sn-track-cell__artist">' + S.esc(t.a) + " –</span> " + S.esc(t.t) + "</span></span>" +
+      '<span class="sn-track-cell__meta">' + m + "</span></div>";
+  }
+  var rows = [
+    { a: "Bicep", t: "Glue", mix: "Original mix", label: "Ninja Tune", dur: 269, links: ["TIDAL", "Deezer", "Beatport"] },
+    { a: "Overmono", t: "So U Kno", mix: "Extended mix", label: "XL Recordings", dur: 372, now: true, links: ["TIDAL", "Beatport"] },
+    { a: "Interplanetary Criminal", t: "Slow Burner", mix: "Original mix", label: "Shall Not Fade", dur: 341, check: true, links: ["TIDAL"] },
+    { a: "Fred again..", t: "Delilah (pull me out of this)", mix: "Original mix", label: "Atlantic", dur: 260, beatport: true },
+    { a: "Ross From Friends", t: "Talk To Me You'll Drown", mix: "Original mix", label: "Flying Buddha", dur: 402, links: ["TIDAL", "Deezer"] }
+  ];
+  document.getElementById("cells").innerHTML = rows.map(function (t) { return "<tr" + (t.now ? " data-now" : "") + "><td>" + cell(t) + "</td></tr>"; }).join("");
+  document.getElementById("compact").innerHTML =
+    '<div style="width:260px">' + cell({ a: "Sammy Virji", t: "If U Need It", mix: "Original mix", dur: 223 }, { compact: true }) + "</div>" +
+    '<div style="width:220px">' + cell({ a: "Peggy Gou", t: "(It Goes Like) Nanana", mix: "Edit", dur: 238, check: true }, { compact: true }) + "</div>";
+</script>
+</body>
+</html>

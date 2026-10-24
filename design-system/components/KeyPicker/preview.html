@@ -1,0 +1,58 @@
+<!-- @dsCard group="Inputs" height=225 subtitle="12 x 2 Camelot grid with key dots, multi-select (aria-pressed), current key marked, compatible-with-current quick select, names on hover and focus" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>KeyPicker — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Arrow keys move, Space toggles, Home/End jump to the row ends</div>
+  <div class="sn-key-picker" id="kp" style="max-width: 860px">
+    <div class="sn-key-picker__head">
+      <span class="sn-key-picker__label" id="kp-l">Keys</span>
+      <div class="sn-row">
+        <button type="button" class="sn-btn sn-btn--sm" id="kp-compat"></button>
+        <button type="button" class="sn-btn sn-btn--sm sn-btn--quiet" id="kp-clear">Clear keys</button>
+      </div>
+    </div>
+    <div class="sn-key-picker__grid" role="group" aria-labelledby="kp-l" id="kp-grid"></div>
+    <div class="sn-key-picker__foot"><span><span class="sn-key-picker__legend-now" aria-hidden="true"></span>Current key (now playing)</span><span aria-hidden="true">·</span><span id="kp-sum" role="status"></span></div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes, CURRENT = "8A", selected = ["8A", "9A"];
+  var grid = document.getElementById("kp-grid"), h = "";
+  ["A", "B"].forEach(function (L) {
+    h += '<span class="sn-key-picker__rowhead" data-span aria-hidden="true">' + (L === "A" ? "Minor" : "Major") + '</span>';
+    for (var i = 1; i <= 12; i++) {
+      var k = i + L, nm = S.keyName(k);
+      h += '<button type="button" class="sn-key-picker__key" data-key="' + k + '" aria-pressed="false" tabindex="-1"' + (k === CURRENT ? " data-current" : "") + '>' + k +
+        '<span class="sn-sr">, ' + nm + (k === CURRENT ? ", current key" : "") + '</span><span class="sn-key-picker__tip" aria-hidden="true">' + nm + '</span></button>';
+    }
+  });
+  grid.innerHTML = h;
+  var keys = Array.prototype.slice.call(grid.querySelectorAll(".sn-key-picker__key"));
+  keys[7].tabIndex = 0; // 8A starts as the roving tab stop
+  document.getElementById("kp-compat").innerHTML = S.icon("piano") + "Select keys that mix with " + CURRENT;
+  function sync() {
+    keys.forEach(function (b) { b.setAttribute("aria-pressed", selected.indexOf(b.dataset.key) >= 0); });
+    var order = keys.map(function (b) { return b.dataset.key; }).filter(function (k) { return selected.indexOf(k) >= 0; });
+    document.getElementById("kp-sum").textContent = order.length ? order.length + (order.length === 1 ? " key: " : " keys: ") + order.join(", ") : "Any key";
+  }
+  function compatible(k) { return keys.map(function (b) { return b.dataset.key; }).filter(function (x) { var c = S.compat(k, x).level; return c === "perfect" || c === "compatible"; }); }
+  sync();
+  grid.addEventListener("click", function (e) {
+    var b = e.target.closest(".sn-key-picker__key"); if (!b) return;
+    var k = b.dataset.key, i = selected.indexOf(k); if (i >= 0) selected.splice(i, 1); else selected.push(k); sync();
+    keys.forEach(function (x) { x.tabIndex = -1; }); b.tabIndex = 0;
+  });
+  grid.addEventListener("keydown", function (e) {
+    var i = keys.indexOf(document.activeElement); if (i < 0) return;
+    var row = i < 12 ? 0 : 1, col = i % 12, j = null;
+    if (e.key === "ArrowRight") j = row * 12 + (col + 1) % 12; else if (e.key === "ArrowLeft") j = row * 12 + (col + 11) % 12;
+    else if (e.key === "ArrowDown" || e.key === "ArrowUp") j = (1 - row) * 12 + col; else if (e.key === "Home") j = row * 12; else if (e.key === "End") j = row * 12 + 11;
+    if (j !== null) { e.preventDefault(); keys[i].tabIndex = -1; keys[j].tabIndex = 0; keys[j].focus(); }
+  });
+  document.getElementById("kp-compat").addEventListener("click", function () { selected = compatible(CURRENT); sync(); });
+  document.getElementById("kp-clear").addEventListener("click", function () { selected = []; sync(); });
+</script>
+</body>
+</html>

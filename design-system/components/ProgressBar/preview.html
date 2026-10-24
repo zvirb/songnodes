@@ -1,0 +1,95 @@
+<!-- @dsCard group="Charts" height=460 subtitle="Determinate with count and percent, indeterminate, sizes, segmented stages; health shown by a separate pill" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ProgressBar — preview</title>
+<style>
+  .pv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  @media (max-width: 720px) { .pv-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="sn-preview sn-m-pipeline" id="root">
+  <div class="pv-grid">
+    <div class="sn-stack">
+      <div class="sn-preview__label">Determinate · count and percent</div>
+      <section class="sn-card sn-card--compact" style="gap: var(--space-4)">
+        <div class="sn-progress-bar" id="imp">
+          <div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="impL">Import tracklists from 1001tracklists</span><span class="sn-progress-bar__value" id="impV"></span></div>
+          <div class="sn-progress-bar__track" role="progressbar" aria-labelledby="impL" aria-valuemin="0" aria-valuemax="500" id="impBar"><div class="sn-progress-bar__fill"></div></div>
+          <div class="sn-progress-bar__foot"><span id="impFoot">Started 21:04 · about 6 min left</span><span class="sn-row"><span class="sn-pill" data-status="ok">Healthy</span><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="impStep">Run next batch</button></span></div>
+        </div>
+        <div class="sn-progress-bar">
+          <div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="scrL">Scrape job: MixesDB, October archive</span><span class="sn-progress-bar__value">64%</span></div>
+          <div class="sn-progress-bar__track" role="progressbar" aria-labelledby="scrL" aria-valuemin="0" aria-valuemax="100" aria-valuenow="64" aria-valuetext="64%, proxy pool degraded" style="--p: 64%"><div class="sn-progress-bar__fill"></div></div>
+          <div class="sn-progress-bar__foot"><span>1,152 of 1,800 pages · slowed by retries</span><span class="sn-pill" data-status="warn">Proxies degraded</span></div>
+        </div>
+      </section>
+      <div class="sn-preview__label">Indeterminate · sizes</div>
+      <section class="sn-card sn-card--compact" style="gap: var(--space-4)">
+        <div class="sn-progress-bar sn-progress-bar--indeterminate">
+          <div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="indL">Waiting for Spotify to lift the rate limit</span><span class="sn-progress-bar__value">–</span></div>
+          <div class="sn-progress-bar__track" role="progressbar" aria-labelledby="indL" aria-valuetext="Waiting, no estimate yet"><div class="sn-progress-bar__fill"></div></div>
+        </div>
+        <div class="sn-progress-bar sn-progress-bar--sm">
+          <div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="smL">Small · 4px · in table rows</span><span class="sn-progress-bar__value">28%</span></div>
+          <div class="sn-progress-bar__track" role="progressbar" aria-labelledby="smL" aria-valuemin="0" aria-valuemax="100" aria-valuenow="28" style="--p: 28%"><div class="sn-progress-bar__fill"></div></div>
+        </div>
+        <div class="sn-progress-bar sn-progress-bar--lg">
+          <div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="lgL">Large · 12px · booth and hero</span><span class="sn-progress-bar__value">91%</span></div>
+          <div class="sn-progress-bar__track" role="progressbar" aria-labelledby="lgL" aria-valuemin="0" aria-valuemax="100" aria-valuenow="91" style="--p: 91%"><div class="sn-progress-bar__fill"></div></div>
+        </div>
+      </section>
+    </div>
+    <div class="sn-stack">
+      <div class="sn-preview__label">Segmented · staged job</div>
+      <section class="sn-card sn-card--compact" id="segs"></section>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes, F = S.format;
+  // determinate, operable
+  var done = 312, total = 500, bar = document.getElementById("impBar");
+  function paint() {
+    var p = done / total;
+    bar.style.setProperty("--p", (p * 100).toFixed(1) + "%");
+    bar.setAttribute("aria-valuenow", done);
+    bar.setAttribute("aria-valuetext", F.count(done) + " of " + F.count(total) + " tracklists, " + F.percent(p));
+    document.getElementById("impV").textContent = F.count(done) + " of " + F.count(total) + " · " + F.percent(p);
+    if (done >= total) { document.getElementById("impFoot").textContent = "Finished 21:15"; document.getElementById("impStep").disabled = true; }
+  }
+  paint();
+  document.getElementById("impStep").addEventListener("click", function () { done = Math.min(total, done + 47); paint(); });
+
+  // segmented stages
+  function staged(title, stages, pill) {
+    var tot = stages.length, doneN = stages.filter(function (s) { return s.state === "done"; }).length;
+    var cur = stages.filter(function (s) { return s.state === "current" || s.state === "failed"; })[0];
+    var overall = (doneN + (cur ? cur.p / 100 : 0)) / tot;
+    var id = "seg" + Math.random().toString(36).slice(2, 7);
+    var txt = cur ? "Stage " + (stages.indexOf(cur) + 1) + " of " + tot + ", " + cur.name + ", " + cur.p + "%" : "All " + tot + " stages done";
+    return '<div class="sn-progress-bar">' +
+      '<div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="' + id + '">' + S.esc(title) + '</span><span class="sn-progress-bar__value">' + F.percent(overall) + "</span></div>" +
+      '<div class="sn-progress-bar__segs" role="progressbar" aria-labelledby="' + id + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(overall * 100) + '" aria-valuetext="' + txt + '">' +
+      stages.map(function (s) { return '<span class="sn-progress-bar__seg" data-state="' + s.state + '" style="--p:' + (s.state === "done" ? 100 : s.p || 0) + '%"><i></i></span>'; }).join("") + "</div>" +
+      '<ol class="sn-progress-bar__stages" aria-hidden="true">' + stages.map(function (s) {
+        return '<li data-state="' + s.state + '"><span>' + S.esc(s.name) + "</span><b>" + (s.state === "done" ? "done" : s.state === "failed" ? "stopped at " + s.p + "%" : s.state === "current" ? s.p + "%" : "queued") + "</b></li>";
+      }).join("") + "</ol>" +
+      '<div class="sn-progress-bar__foot"><span>' + txt + "</span>" + pill + "</div></div>";
+  }
+  document.getElementById("segs").innerHTML =
+    staged("Weekly library run · Sat 24 Oct", [
+      { name: "Fetch plays", state: "done" }, { name: "Match tracks", state: "done" }, { name: "Enrich", state: "current", p: 40 },
+      { name: "Validate", state: "queued" }, { name: "Publish", state: "queued" }], S.html.pill("running")) +
+    '<hr style="border:0;border-top:1px solid var(--line);margin:var(--space-2) 0">' +
+    staged("Audio analysis · 48 new tracks", [
+      { name: "Download", state: "done" }, { name: "Beat grid", state: "done" }, { name: "Sections", state: "failed", p: 70 }, { name: "Energy", state: "queued" }],
+      S.html.pill("failed", "Failed: analyser timed out")) +
+    '<hr style="border:0;border-top:1px solid var(--line);margin:var(--space-2) 0">' +
+    staged("TIDAL sync · Peak time Friday", [
+      { name: "Find tracks", state: "done" }, { name: "Create playlist", state: "done" }, { name: "Add tracks", state: "done" }], S.html.pill("completed"));
+})();
+</script>
+</body>
+</html>

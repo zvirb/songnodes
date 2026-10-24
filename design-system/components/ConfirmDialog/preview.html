@@ -1,0 +1,81 @@
+<!-- @dsCard group="Surfaces" height=594 subtitle="Delete set (alertdialog, Cancel focused), high-stakes typed confirmation, and the non-modal armed button for low-stakes resets" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ConfirmDialog — preview</title>
+<style>
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; align-items: stretch; }
+  .two .sn-dialog__stage { padding: 24px 16px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="two">
+    <div class="sn-stack"><div class="sn-preview__label">Standard · delete a saved set</div><div class="sn-dialog__stage" id="st1"></div></div>
+    <div class="sn-stack"><div class="sn-preview__label">High stakes · type the set name to confirm</div><div class="sn-dialog__stage" id="st2"></div></div>
+  </div>
+  <div class="sn-preview__label">Try it</div>
+  <div class="sn-preview__row">
+    <button class="sn-btn sn-btn--danger-quiet" type="button" data-open="std">Delete set…</button>
+    <button class="sn-btn sn-btn--danger-quiet" type="button" data-open="typed">Delete shared set…</button>
+    <button class="sn-btn sn-confirm-dialog__armed" type="button" id="armed" aria-describedby="armedHint">Clear draft</button>
+    <span class="sn-field__help" id="armedHint">Low stakes: press twice within 3 s</span>
+    <span class="sn-sr" aria-live="polite" id="armedLive"></span>
+  </div>
+  <p class="sn-inline-message" data-status="info" id="log">Nothing deleted in this preview.</p>
+</div>
+<dialog class="sn-dialog sn-dialog--s sn-confirm-dialog" id="dlg" role="alertdialog" aria-modal="true"></dialog>
+<script>
+  var S = window.SongNodes, I = S.icon;
+  function std(p) {
+    return '<div class="sn-dialog__head"><span class="sn-confirm-dialog__icon">' + I("trash-2") + '</span>' +
+      '<h2 class="sn-title title-s sn-dialog__title" id="' + p + '-t">Delete “Peak time Friday”?</h2></div>' +
+      '<div class="sn-dialog__body" id="' + p + '-d">' +
+        '<p class="sn-confirm-dialog__text">This removes the set and its 18-slot running order <strong>for everyone it’s shared with</strong>, and cancels its TIDAL send on Saturday’s run.</p>' +
+        '<ul class="sn-confirm-dialog__facts"><li>The 18 tracks stay in the library.</li><li>Shared with 2 people.</li></ul>' +
+      '</div>' +
+      '<div class="sn-dialog__foot"><button class="sn-btn" type="button" data-cancel ' + (p === "dlg" ? "autofocus" : "") + '>Cancel</button><button class="sn-btn sn-btn--danger" type="button" data-confirm>Delete set</button></div>';
+  }
+  function typed(p) {
+    return '<div class="sn-dialog__head"><span class="sn-confirm-dialog__icon">' + I("trash-2") + '</span>' +
+      '<h2 class="sn-title title-s sn-dialog__title" id="' + p + '-t">Delete “Warm-up at Revolver” and its history?</h2></div>' +
+      '<div class="sn-dialog__body" id="' + p + '-d">' +
+        '<p class="sn-confirm-dialog__text">The set, its 9 saved versions and its notes are removed for the 4 people it’s shared with, and it leaves the weekly TIDAL run. <strong>This can’t be undone.</strong> Tracks stay in the library.</p>' +
+        '<div class="sn-field sn-confirm-dialog__typed"><label for="' + p + '-in">Type the set name, <span class="sn-mono">Warm-up at Revolver</span>, to confirm</label><input class="sn-input" id="' + p + '-in" autocomplete="off" spellcheck="false" data-typed></div>' +
+      '</div>' +
+      '<div class="sn-dialog__foot"><button class="sn-btn" type="button" data-cancel>Cancel</button><button class="sn-btn sn-btn--danger" type="button" data-confirm disabled>Delete set and history</button></div>';
+  }
+  function wireTyped(root) {
+    var inp = root.querySelector("[data-typed]"); if (!inp) return;
+    inp.addEventListener("input", function () { root.querySelector("[data-confirm]").disabled = inp.value.trim() !== "Warm-up at Revolver"; });
+  }
+  var st1 = document.getElementById("st1"), st2 = document.getElementById("st2");
+  st1.innerHTML = '<div class="sn-dialog sn-dialog--s sn-confirm-dialog" role="alertdialog" aria-labelledby="a-t" aria-describedby="a-d" inert>' + std("a") + "</div>";
+  st2.innerHTML = '<div class="sn-dialog sn-dialog--s sn-confirm-dialog" role="alertdialog" aria-labelledby="b-t" aria-describedby="b-d" inert>' + typed("b") + "</div>";
+
+  var dlg = document.getElementById("dlg"), opener = null, kind = "std";
+  document.addEventListener("click", function (e) {
+    var o = e.target.closest("[data-open]");
+    if (o) {
+      opener = o; kind = o.getAttribute("data-open");
+      dlg.innerHTML = kind === "std" ? std("dlg") : typed("dlg");
+      dlg.setAttribute("aria-labelledby", "dlg-t"); dlg.setAttribute("aria-describedby", "dlg-d");
+      wireTyped(dlg); dlg.showModal();
+      (dlg.querySelector(kind === "std" ? "[data-cancel]" : "[data-typed]")).focus();
+    }
+    if (e.target.closest("#dlg [data-cancel]")) dlg.close();
+    if (e.target.closest("#dlg [data-confirm]")) { document.getElementById("log").textContent = kind === "std" ? "Deleted “Peak time Friday” (preview only)." : "Deleted “Warm-up at Revolver” (preview only)."; dlg.close(); }
+  });
+  dlg.addEventListener("close", function () { if (opener) opener.focus(); });
+
+  // armed button: first press arms for 3 s, second press within 3 s acts
+  var armed = document.getElementById("armed"), live = document.getElementById("armedLive"), t = null;
+  function disarm() { armed.removeAttribute("data-armed"); armed.textContent = "Clear draft"; t = null; }
+  armed.addEventListener("click", function () {
+    if (armed.hasAttribute("data-armed")) { clearTimeout(t); disarm(); live.textContent = "Draft cleared."; document.getElementById("log").textContent = "Draft cleared: 12 unsaved slots removed (preview only)."; return; }
+    armed.setAttribute("data-armed", ""); armed.textContent = "Clear the current draft?"; live.textContent = "Press again within 3 seconds to clear the draft.";
+    t = setTimeout(function () { disarm(); live.textContent = "Clear draft cancelled."; }, 3000);
+  });
+  armed.addEventListener("blur", function () { if (t) { clearTimeout(t); disarm(); } });
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!-- @dsCard group="Feedback" height=528 subtitle="Under a transition list, under a field, in a table row, in a card section; warn, bad, ok, info; plain and boxed" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>InlineMessage — preview</title>
+<style>
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+  .order { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .order li { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 8px; border-radius: 8px; background: var(--surface-2); }
+  .order .tr { background: transparent; min-height: 24px; padding-left: 40px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="two">
+    <section class="sn-card" aria-labelledby="c1">
+      <h3 class="sn-title title-s" id="c1"><span class="sn-lead">Running order:</span> slots 4–6</h3>
+      <ol class="order" id="order"></ol>
+      <p class="sn-inline-message" data-status="warn">2 transitions to look at: a key clash into slot 6 and a +3 energy jump. <a class="sn-link sn-inline-message__action" href="#t">Show them</a></p>
+    </section>
+    <section class="sn-card" aria-labelledby="c2">
+      <h3 class="sn-title title-s" id="c2">Set controls</h3>
+      <div class="sn-field">
+        <label for="len">Length</label>
+        <input class="sn-input sn-input--data" id="len" value="420" aria-invalid="true" aria-describedby="len-msg">
+        <p class="sn-inline-message" data-status="bad" id="len-msg">Enter 30 to 360 minutes. 420 min is longer than the pool can fill.</p>
+      </div>
+      <div class="sn-field">
+        <label for="pool">Pool</label>
+        <select class="sn-select" id="pool" aria-describedby="pool-msg"><option>High rotation and vault</option></select>
+        <p class="sn-inline-message" data-status="info" id="pool-msg">673 tracks without a key are placed by energy alone.</p>
+      </div>
+      <p class="sn-inline-message sn-inline-message--boxed" data-status="ok"><span>All 14 transitions are <strong>perfect or compatible</strong>.</span></p>
+    </section>
+  </div>
+  <section class="sn-stack" aria-labelledby="c3">
+    <div class="sn-preview__label" id="c3">In a table row</div>
+    <div class="sn-tablebox"><table class="sn-table"><thead><tr><th scope="col">Track</th><th scope="col" class="num">BPM</th><th scope="col">Key</th><th scope="col">Match</th></tr></thead>
+      <tbody id="rows"></tbody></table></div>
+  </section>
+</div>
+<script>
+  var S = window.SongNodes, H = S.html;
+  var o = [[4, "Ross From Friends – Talk To Me You’ll Drown", "9A", 126], [5, "Fred again.. – Delilah (pull me out of this)", "10A", 128], [6, "Sammy Virji – If U Need It", "3B", 131]];
+  var h = "";
+  o.forEach(function (r, i) {
+    if (i) { var c = S.compat(o[i - 1][2], r[2]); h += '<li class="tr">' + H.compat(c.level, c.label) + (i === 2 ? ' <span class="sn-pill" data-compat="clash">energy +3</span>' : "") + "</li>"; }
+    h += '<li><span class="sn-mono sn-dim">' + r[0] + "</span>" + H.energy(r[0] + (i === 2 ? 3 : 1)) + "<span>" + S.esc(r[1]) + "</span></li>";
+  });
+  document.getElementById("order").innerHTML = h;
+  document.getElementById("rows").innerHTML =
+    "<tr><td>Peggy Gou – (It Goes Like) Nanana</td><td class=\"num\">125</td><td>" + H.key("8A") + '</td><td><span class="sn-inline-message" data-status="info">Matched by ISRC; Spotify ID missing</span></td></tr>' +
+    "<tr><td>Josh Baker – Lost In Muzik</td><td class=\"num\">127</td><td>" + H.key("") + '</td><td><span class="sn-inline-message" data-status="warn">Two Beatport IDs; check the right mix</span></td></tr>';
+</script>
+</body>
+</html>

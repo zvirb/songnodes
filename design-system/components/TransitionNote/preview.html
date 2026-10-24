@@ -1,0 +1,48 @@
+<!-- @dsCard group="Music" height=540 subtitle="Compact strip between set rows (energy, key, BPM, genre with verdict glyphs); a clash strip; expanded form with reasons" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TransitionNote — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Compact, between running-order rows</div>
+  <div class="sn-set-slot-list" id="strip"></div>
+  <div class="sn-preview__label">Expanded (slot detail, hover card)</div>
+  <div id="expanded" style="max-width:640px"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var tracks = [
+    { a: "Josh Baker", t: "Lost In Muzik", e: 6, k: "8A", b: 126, g: "House" },
+    { a: "Interplanetary Criminal", t: "Slow Burner", e: 7, k: "9A", b: 128, g: "House" },
+    { a: "Overmono", t: "So U Kno", e: 7, k: "9A", b: 130, g: "UK garage" },
+    { a: "Bicep", t: "Glue", e: 9, k: "3B", b: 138, g: "Techno" }
+  ];
+  /* Preview helper: judge a move between two set tracks with the bundle rules. */
+  function judge(p, n, genreRun) {
+    var en = S.energyStep(p.e, n.e), key = S.compat(p.k, n.k), bpm = S.bpmStep(p.b, n.b);
+    var items = [
+      { what: "Energy", level: en.level, label: en.label, why: n.e === p.e ? "Holds the level; fine for two or three tracks." : en.level === "perfect" ? "Climbs one step, as the wave expects." : "Energy should climb one step at a time." },
+      { what: "Key", level: key.level, label: key.label === "same key" ? "same key" : key.label + " " + p.k + "→" + n.k, why: { perfect: "Same notes, blends cleanly.", compatible: "Neighbour on the Camelot wheel.", possible: "Works as a deliberate lift.", clash: "Keys fight; cut on a break or pick a spare." }[key.level] },
+      { what: "BPM", level: bpm.level, label: bpm.label, why: bpm.level === "perfect" ? "Within 2 BPM, no audible pitch shift." : bpm.level === "clash" ? "More than 8 BPM: needs a cut or a breakdown." : "Nudge across a long blend." }
+    ];
+    if (p.g !== n.g) items.push({ what: "Genre", level: genreRun >= 3 && n.e >= 5 && n.e <= 7 ? "perfect" : "possible", label: p.g + " → " + n.g, why: genreRun >= 3 ? "Switch after a run of " + genreRun + " in the Building tier." : "Switch comes early: keep 3 in a row first." });
+    return items;
+  }
+  function compact(items) {
+    return '<div class="sn-transition-note" role="note" aria-label="Transition">' + items.map(function (i) {
+      return '<span class="sn-transition-note__item" data-level="' + i.level + '" title="' + S.esc(i.what + ": " + i.why) + '">' + S.esc(i.label) + '<span class="sn-sr"> (' + i.level + ')</span></span>';
+    }).join("") + "</div>";
+  }
+  function row(n, t) {
+    return '<li class="sn-set-slot"><span class="sn-set-slot__n">' + n + '</span><span class="sn-set-slot__energy">' + S.html.energy(t.e) + '</span><span class="sn-set-slot__track"><span class="sn-track-cell sn-track-cell--compact"><span class="sn-track-cell__title"><span class="sn-track-cell__name"><span class="sn-track-cell__artist">' + S.esc(t.a) + ' –</span> ' + S.esc(t.t) + '</span></span><span class="sn-track-cell__meta">' + S.esc(t.g) + '</span></span></span><span class="sn-set-slot__data"><span class="sn-bpm"><b>' + t.b + '</b></span>' + S.html.key(t.k) + '</span><span class="sn-set-slot__act"></span></li>';
+  }
+  var h = "", run = [3, 4, 3];
+  tracks.forEach(function (t, i) { h += row(i + 4, t); if (i < tracks.length - 1) h += "<li>" + compact(judge(t, tracks[i + 1], run[i])) + "</li>"; });
+  document.getElementById("strip").innerHTML = h;
+  var ex = judge(tracks[1], tracks[2], 4);
+  document.getElementById("expanded").innerHTML = '<div class="sn-transition-note sn-transition-note--expanded" role="note" aria-label="Transition from slot 5 to slot 6">' + ex.map(function (i) {
+    return '<span class="sn-transition-note__item" data-level="' + i.level + '"><span class="sn-transition-note__what">' + S.esc(i.label) + '</span><span class="sn-transition-note__why">' + S.esc(i.why) + '<span class="sn-sr"> Verdict: ' + i.level + '.</span></span></span>';
+  }).join("") + "</div>";
+</script>
+</body>
+</html>

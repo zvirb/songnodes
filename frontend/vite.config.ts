@@ -2,25 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
-// ✅ NUCLEAR CACHE-BUST: Add build timestamp to ALL script/CSS/preload URLs
-const timestampPlugin = () => {
-  return {
-    name: 'timestamp-inject',
-    // Vite's development client must retain its exact URL for token injection.
-    apply: 'build' as const,
-    transformIndexHtml(html: string) {
-      const timestamp = Date.now();
-      // Add ?v=timestamp to ALL script tags, CSS links, and module preloads
-      return html
-        .replace(/(<script[^>]+src="[^"]+)(")/g, `$1?v=${timestamp}$2`)
-        .replace(/(<link[^>]+href="[^"]+\.css)(")/g, `$1?v=${timestamp}$2`)
-        .replace(/(<link[^>]+href="[^"]+\.js)(")/g, `$1?v=${timestamp}$2`);
-    },
-  };
-};
+// Cache busting comes from the content hashes in asset file names (build.rollupOptions.output).
+// Do not append ?v= query strings to the entry script: lazy chunks import the entry by its
+// plain URL, so a query string makes the browser load and run the app a second time.
 
 export default defineConfig({
-  plugins: [react(), timestampPlugin()],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': resolve(import.meta.dirname, 'src'),

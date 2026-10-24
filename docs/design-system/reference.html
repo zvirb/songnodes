@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design system reference · SongNodes</title>
+<meta name="description" content="Rendered reference of the SongNodes design system: colour, type, scales, icons, components, writing and formatting helpers.">
+<link rel="stylesheet" href="../../design-system/tokens.css">
+<link rel="stylesheet" href="../../design-system/components/bundle.css">
+<script src="../../design-system/components/bundle.js"></script>
+<script>SongNodes.prefs.init();</script>
+<style>
+  /* Page layout only. Every value is a design-system token; no colour, font-size, radius or shadow literals. */
+  .ref-main { gap: var(--space-12); }
+  .ref-section { scroll-margin-top: calc(var(--header-h) + var(--space-4)); }
+  .ref-sub { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .ref-prose { margin: 0; max-width: var(--prose-max); color: var(--fg-2); }
+  .ref-display { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6); align-items: flex-end; }
+  .ref-toc { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; }
+  .ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: var(--space-3); }
+  .ref-grid--wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+  .ref-grid--keys { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-2); }
+  .ref-helpers td:first-child { white-space: nowrap; width: 1%; }
+  .ref-helpers td:first-child code { overflow-wrap: normal; }
+  .ref-cardhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); }
+  .ref-grid--icons { grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr)); gap: var(--space-2); }
+  .ref-sw { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .ref-sw__chip { height: var(--control-lg); border-radius: var(--radius-control); border: 1px solid var(--line); }
+  .ref-sw__chip--sm { height: var(--control-sm); }
+  .ref-sw__name { color: var(--fg); overflow-wrap: anywhere; }
+  .ref-sw__val { color: var(--fg-3); overflow-wrap: anywhere; }
+  .ref-ramp { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: var(--space-1); }
+  .ref-tonal { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--space-4); }
+  .ref-tonal__sw { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-1); }
+  .ref-tonal__sw span { height: var(--space-6); border-radius: var(--radius-chip); border: 1px solid var(--m-line); }
+  .ref-specs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: var(--space-4); align-items: start; }
+  .ref-spec { gap: var(--space-3); }
+  .ref-spec--full { grid-column: 1 / -1; }
+  .ref-spec__desc { margin: 0; color: var(--fg-2); }
+  .ref-demo { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-4); background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-control); overflow-x: auto; }
+  .ref-spec .sn-disclosure:first-of-type { border-top: 1px solid var(--line); }
+  .ref-spec .sn-disclosure__body { max-width: none; padding-left: var(--space-1); }
+  .ref-code { margin: 0; padding: var(--space-3); max-height: 26rem; overflow: auto; background: var(--sunk); color: var(--fg-2); border: 1px solid var(--line); border-radius: var(--radius-control); white-space: pre; tab-size: 2; }
+  .ref-code code { font: inherit; }
+  .ref-scale { display: grid; grid-template-columns: max-content max-content minmax(0, 1fr); gap: var(--space-2) var(--space-3); align-items: center; }
+  .ref-scale__bar { height: var(--space-3); background: var(--fg-3); border-radius: var(--radius-chip); }
+  .ref-boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: var(--space-4); }
+  .ref-box { display: flex; flex-direction: column; justify-content: flex-end; gap: var(--space-1); min-height: 96px; padding: var(--space-3); background: var(--surface-1); border: 1px solid var(--line-strong); }
+  .ref-icon { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-2); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--fg); text-align: center; min-width: 0; }
+  .ref-icon .sn-icon { width: 1.5rem; height: 1.5rem; }
+  .ref-icon span { color: var(--fg-3); overflow-wrap: anywhere; }
+  .ref-families { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: var(--space-3); }
+  .ref-family-sample { margin: 0; overflow-wrap: anywhere; }
+  .ref-tool { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: var(--space-3); align-items: end; }
+  .ref-result { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; min-height: var(--control-md); }
+  .ref-tablebox td { vertical-align: top; padding-top: var(--space-2); padding-bottom: var(--space-2); height: auto; }
+  .ref-tablebox td code, .ref-tablebox td .sn-mono { overflow-wrap: anywhere; }
+  .ref-tablebox td:first-child code { white-space: nowrap; overflow-wrap: normal; }
+  .ref-tablebox > .sn-table { min-width: 36rem; }
+  .ref-tablebox--narrow > .sn-table { min-width: 0; }
+  .ref-foot { color: var(--fg-3); border-top: 1px solid var(--line); padding-top: var(--space-4); }
+  @media (max-width: 600px) {
+    .ref-stack > .sn-table { min-width: 0; }
+    .ref-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .ref-stack tr { display: block; padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
+    .ref-stack td { display: block; border: 0; padding-top: var(--space-1); padding-bottom: var(--space-1); }
+    .ref-stack.ref-helpers td:first-child { white-space: normal; width: auto; }
+    .ref-stack.ref-helpers td:first-child code { white-space: normal; overflow-wrap: anywhere; }
+  }
+  @media (max-width: 900px) { .ref-grid--keys { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  @media (max-width: 480px) { .ref-grid--keys { grid-template-columns: repeat(4, minmax(0, 1fr)); } .ref-ramp { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="sn-page">
+<a class="sn-skip" href="#main">Skip to content</a>
+
+<header class="sn-app-header" data-drawer-inert>
+  <div class="sn-app-header__bar">
+    <div class="sn-app-header__start">
+      <button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" id="nav-open" aria-expanded="false" aria-controls="ref-nav" aria-label="Open navigation"><svg data-i="menu"></svg></button>
+      <span class="sn-app-header__wordmark">SongNodes</span>
+    </div>
+    <span class="sn-app-header__divider" aria-hidden="true"></span>
+    <p class="sn-app-header__title"><span class="sn-lead">Design system:</span> Reference</p>
+    <div class="sn-app-header__end">
+      <span class="sn-app-header__stamp"><svg data-i="tag" data-s="14"></svg><span class="sn-app-header__stamp-text">Version </span><span class="sn-mono" id="ver"></span></span>
+    </div>
+  </div>
+</header>
+
+<div class="sn-nav-drawer" id="ref-nav">
+  <div class="sn-nav-drawer__scrim" data-close-nav></div>
+  <div class="sn-nav-drawer__panel" role="dialog" aria-modal="true" aria-label="Reference sections">
+    <div class="sn-nav-drawer__head"><span class="sn-nav-drawer__wordmark">SongNodes</span><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" aria-label="Close navigation" data-close-nav><svg data-i="x"></svg></button></div>
+    <nav class="sn-nav-drawer__nav" aria-label="Reference">
+      <ul class="sn-nav-drawer__list"><li><a class="sn-nav-drawer__item" href="#top"><svg data-i="house" data-s="20"></svg><span class="sn-nav-drawer__label">Overview</span></a></li></ul>
+      <div class="sn-nav-drawer__group"><h2 class="sn-nav-drawer__heading" id="g-found">Foundations</h2>
+        <ul class="sn-nav-drawer__list" aria-labelledby="g-found">
+          <li><a class="sn-nav-drawer__item" href="#colour"><svg data-i="layers" data-s="20"></svg><span class="sn-nav-drawer__label">Colour</span></a></li>
+          <li><a class="sn-nav-drawer__item" href="#typography"><svg data-i="file-text" data-s="20"></svg><span class="sn-nav-drawer__label">Typography</span></a></li>
+          <li><a class="sn-nav-drawer__item" href="#scales"><svg data-i="sliders-horizontal" data-s="20"></svg><span class="sn-nav-drawer__label">Spacing, radius, depth</span></a></li>
+          <li><a class="sn-nav-drawer__item" href="#icons"><svg data-i="layout-grid" data-s="20"></svg><span class="sn-nav-drawer__label">Iconography</span></a></li>
+        </ul></div>
+      <div class="sn-nav-drawer__group"><h2 class="sn-nav-drawer__heading" id="g-comp">Build</h2>
+        <ul class="sn-nav-drawer__list" aria-labelledby="g-comp">
+          <li><a class="sn-nav-drawer__item" href="#components"><svg data-i="table-2" data-s="20"></svg><span class="sn-nav-drawer__label">Components</span></a></li>
+          <li><a class="sn-nav-drawer__item" href="#writing"><svg data-i="pencil" data-s="20"></svg><span class="sn-nav-drawer__label">Writing</span></a></li>
+          <li><a class="sn-nav-drawer__item" href="#helpers"><svg data-i="wand-sparkles" data-s="20"></svg><span class="sn-nav-drawer__label">Formatting helpers</span></a></li>
+        </ul></div>
+    </nav>
+  </div>
+</div>
+
+<main class="sn-page__main ref-main" id="main" tabindex="-1" data-drawer-inert>
+
+  <section class="sn-page__section ref-section" id="top" aria-labelledby="page-title">
+    <header class="sn-page-header">
+      <div class="sn-page-header__main">
+        <div class="sn-page-header__text">
+          <h1 class="sn-title title-l" id="page-title"><span class="sn-lead">Design system:</span> Reference</h1>
+          <p class="sn-page-header__desc">What SongNodes and the music library should look like: every token, text style and icon, and the core components rendered live from <span class="sn-mono">design-system/</span>, with the exact HTML under each one.</p>
+          <p class="sn-page-header__meta"><span class="sn-page-header__stamp"><svg data-i="clock" data-s="14"></svg>Rendered <time id="rendered"></time></span><span class="sn-tag" id="themetag"></span></p>
+        </div>
+      </div>
+    </header>
+
+    <div class="sn-card sn-card--flat">
+      <div class="ref-display">
+        <span class="sn-segmented-control__group">
+          <span class="sn-segmented-control__label" id="lbl-theme">Theme</span>
+          <div class="sn-seg sn-segmented-control" role="radiogroup" aria-labelledby="lbl-theme" id="theme-seg">
+            <button type="button" role="radio" aria-checked="false" data-value="dark"><svg data-i="moon" data-s="16"></svg>Dark</button>
+            <button type="button" role="radio" aria-checked="false" data-value="light"><svg data-i="sun" data-s="16"></svg>Light</button>
+            <button type="button" role="radio" aria-checked="false" data-value="booth"><svg data-i="headphones" data-s="16"></svg>Booth</button>
+          </div>
+        </span>
+        <span class="sn-segmented-control__group">
+          <span class="sn-segmented-control__label" id="lbl-size">Text size</span>
+          <div class="sn-seg sn-segmented-control" role="radiogroup" aria-labelledby="lbl-size" id="size-seg">
+            <button type="button" role="radio" aria-checked="false" data-value="s">S</button>
+            <button type="button" role="radio" aria-checked="false" data-value="m">M</button>
+            <button type="button" role="radio" aria-checked="false" data-value="l">L</button>
+            <button type="button" role="radio" aria-checked="false" data-value="xl">XL</button>
+          </div>
+        </span>
+        <p class="body-s sn-dim" style="margin:0">Saved on this device through <span class="sn-mono">SongNodes.prefs</span>.</p>
+      </div>
+      <nav aria-label="On this page">
+        <ul class="ref-toc">
+          <li><a class="sn-link" href="#colour">Colour</a></li>
+          <li><a class="sn-link" href="#typography">Typography</a></li>
+          <li><a class="sn-link" href="#scales">Spacing, radius, depth</a></li>
+          <li><a class="sn-link" href="#icons">Iconography</a></li>
+          <li><a class="sn-link" href="#components">Components</a></li>
+          <li><a class="sn-link" href="#writing">Writing</a></li>
+          <li><a class="sn-link" href="#helpers">Formatting helpers</a></li>
+        </ul>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ============================================================ colour -->
+  <section class="sn-page__section ref-section" id="colour" aria-labelledby="colour-t">
+    <div class="sn-section-heading sn-section-heading--rule">
+      <h2 class="sn-title title-m" id="colour-t">Colour</h2>
+      <span class="sn-section-heading__count" id="colour-count"></span>
+      <p class="sn-section-heading__caveat"><span>Swatches paint <span class="sn-mono">var(--name)</span>; values are read from the live theme, so they change with the theme switch.</span></p>
+    </div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Surfaces and lines</h3><div class="ref-grid" data-swatches="surfaces"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Text</h3><div class="ref-grid" data-swatches="text"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Brand, link and focus</h3><p class="ref-prose body-s">Lavender marks SongNodes itself: the wordmark, the one primary button, focus and selection. It never means a status. "Now" is amber.</p><div class="ref-grid" data-swatches="brand"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Modules</h3><p class="ref-prose body-s">Eight modules, one identity hue each. A tonal card is all shades of its hue; only status breaks out.</p><div class="ref-tonal" id="tonal"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Status</h3><div class="sn-row" id="status-pills"></div><div class="ref-grid" data-swatches="status"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Compatibility</h3><div class="sn-row" id="compat-pills"></div><div class="ref-grid" data-swatches="compat"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Energy 1–10</h3><p class="ref-prose body-s">Low 1–4, Building 5–7, High 8–10. Always drawn with the number.</p><div class="ref-ramp" data-swatches="energy" data-compact></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Camelot keys</h3><p class="ref-prose body-s">Minor (A) darker, major (B) lighter. 8A = A minor, 8B = C major.</p><div class="ref-grid ref-grid--keys" data-swatches="keys" data-compact></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Charts</h3><div class="ref-grid" data-swatches="chart"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Now, progress and services</h3><div class="ref-grid" data-swatches="other"></div></div>
+  </section>
+
+  <!-- ============================================================ typography -->
+  <section class="sn-page__section ref-section" id="typography" aria-labelledby="type-t">
+    <div class="sn-section-heading sn-section-heading--rule">
+      <h2 class="sn-title title-m" id="type-t">Typography</h2>
+      <p class="sn-section-heading__caveat"><span>Three typefaces, one job each. Every size is rem, so the text-size switch scales all of it.</span></p>
+    </div>
+    <div class="ref-families">
+      <div class="sn-card sn-card--compact"><span class="ref-cardhead"><span class="body-strong">Sora</span><code class="data-s sn-dim">--font-display</code></span><p class="ref-family-sample title-m">Set builder: Peak time Friday</p><p class="body-s sn-muted" style="margin:0">Page, section and card titles; headline figures. Never body text, table cells or buttons.</p></div>
+      <div class="sn-card sn-card--compact"><span class="ref-cardhead"><span class="body-strong">Inter</span><code class="data-s sn-dim">--font-body</code></span><p class="ref-family-sample body-l">Energy climbs one point at a time, then drops two or three after a peak.</p><p class="body-s sn-muted" style="margin:0">All UI text: body, labels, buttons, table text, messages.</p></div>
+      <div class="sn-card sn-card--compact"><span class="ref-cardhead"><span class="body-strong">JetBrains Mono</span><code class="data-s sn-dim">--font-data</code></span><p class="ref-family-sample data-strong">124 BPM · 8A · 6:12 · GBCFB1700384</p><p class="body-s sn-muted" style="margin:0">BPM, Camelot keys, durations, times in rows, counts in data cells, IDs, paths.</p></div>
+    </div>
+    <div class="ref-sub">
+      <h3 class="sn-title title-s">Thin–bold titles</h3>
+      <div class="ref-demo">
+        <h1 class="sn-title title-l"><span class="sn-lead">Set builder:</span> Peak time Friday</h1>
+        <h2 class="sn-title title-m">Running order</h2>
+        <h3 class="sn-title title-s"><span class="sn-lead">Track:</span> Overmono – So U Kno</h3>
+      </div>
+      <p class="ref-prose body-s">Lead-in: weight 400, <span class="sn-mono">fg-3</span>, ends with a colon. Section headings at <span class="sn-mono">title-m</span> stay plain bold. One <span class="sn-mono">h1</span> per page.</p>
+    </div>
+    <div class="ref-sub">
+      <h3 class="sn-title title-s">Named text styles</h3>
+      <div class="sn-tablebox ref-tablebox">
+        <table class="sn-table">
+          <caption class="sn-sr">Text styles from tokens.json, with computed size at the current text size</caption>
+          <thead><tr><th scope="col">Class</th><th scope="col">Sample</th><th scope="col">Computed</th><th scope="col">Use</th></tr></thead>
+          <tbody id="type-rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ref-sub">
+      <h3 class="sn-title title-s">Numerals</h3>
+      <div class="ref-grid ref-grid--wide">
+        <div class="sn-card sn-card--compact"><span class="ref-cardhead"><span class="body-strong">Tabular, mono</span><code class="data-s sn-dim">.data / .sn-mono</code></span><div class="data">124<br>128<br>111</div></div>
+        <div class="sn-card sn-card--compact"><span class="ref-cardhead"><span class="body-strong">Tabular, Sora</span><code class="data-s sn-dim">.figure .sn-num</code></span><div class="figure sn-num">1,284</div></div>
+        <div class="sn-card sn-card--compact"><span class="ref-cardhead"><span class="body-strong">Signs and missing</span><code class="data-s sn-dim">.sn-none</code></span><div class="data">+2 BPM · −1 · 65% · <span class="sn-none">–</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ scales -->
+  <section class="sn-page__section ref-section" id="scales" aria-labelledby="scales-t">
+    <div class="sn-section-heading sn-section-heading--rule">
+      <h2 class="sn-title title-m" id="scales-t">Spacing, radius and depth</h2>
+      <p class="sn-section-heading__caveat"><span>Spacing stays in px on a 4px scale; containers grow with text.</span></p>
+    </div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Spacing</h3><div class="ref-scale" id="space-rows"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Radius</h3><div class="ref-boxes" id="radius-boxes"></div></div>
+    <div class="ref-sub"><h3 class="sn-title title-s">Shadow</h3><div class="ref-boxes" id="shadow-boxes"></div></div>
+    <div class="ref-sub">
+      <h3 class="sn-title title-s">Z-index, motion, size, breakpoints and opacity</h3>
+      <div class="sn-tablebox ref-tablebox ref-tablebox--narrow">
+        <table class="sn-table sn-table--compact">
+          <caption class="sn-sr">Other scales with their current values</caption>
+          <thead><tr><th scope="col">Token</th><th scope="col" class="num">Value</th><th scope="col">Group</th></tr></thead>
+          <tbody id="misc-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ icons -->
+  <section class="sn-page__section ref-section" id="icons" aria-labelledby="icons-t">
+    <div class="sn-section-heading sn-section-heading--rule">
+      <h2 class="sn-title title-m" id="icons-t">Iconography</h2>
+      <span class="sn-section-heading__count" id="icon-count"></span>
+      <p class="sn-section-heading__caveat"><span>Lucide, 2px stroke, <span class="sn-mono">currentColor</span>. Rendered with <span class="sn-mono">SongNodes.icon(name)</span>. One meaning per icon; no emoji.</span></p>
+    </div>
+    <div class="ref-sub">
+      <h3 class="sn-title title-s">Module icons</h3>
+      <div class="sn-tablebox ref-tablebox">
+        <table class="sn-table">
+          <caption class="sn-sr">Module keys, labels, icons and scope classes</caption>
+          <thead><tr><th scope="col">Module</th><th scope="col">Icon</th><th scope="col">Scope</th><th scope="col">Summary</th></tr></thead>
+          <tbody id="module-rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ref-sub"><h3 class="sn-title title-s">All icons</h3><div class="ref-grid ref-grid--icons" id="icon-grid" role="list" aria-label="Icons"></div></div>
+  </section>
+
+  <!-- ============================================================ components -->
+  <section class="sn-page__section ref-section" id="components" aria-labelledby="comp-t">
+    <div class="sn-section-heading sn-section-heading--rule">
+      <h2 class="sn-title title-m" id="comp-t">Components</h2>
+      <span class="sn-section-heading__count" id="comp-count"></span>
+      <p class="sn-section-heading__caveat"><span>Markup from each component's README and preview. Icon paths are shortened to the icon name in the HTML; produce them with <span class="sn-mono">SongNodes.icon(name)</span>.</span></p>
+    </div>
+
+    <h3 class="sn-title title-s"><span class="sn-lead">Group:</span> Actions and links</h3>
+    <div class="ref-specs">
+      <article class="sn-card ref-spec" data-spec="Button" data-desc="Buttons start an action on this page. One primary per view, placed last; verb plus object.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row">
+            <button class="sn-btn sn-btn--primary" type="button">Build set</button>
+            <button class="sn-btn" type="button">Try another take</button>
+            <button class="sn-btn sn-btn--quiet" type="button">Clear filters</button>
+            <span class="sn-m-sets"><button class="sn-btn sn-btn--mod" type="button">Open in Set builder</button></span>
+            <button class="sn-btn sn-btn--danger" type="button">Delete set</button>
+          </div>
+          <div class="sn-row">
+            <button class="sn-btn sn-btn--sm" type="button"><svg data-i="plus"></svg>Add track</button>
+            <button class="sn-btn" type="button"><svg data-i="copy"></svg>Copy tracklist</button>
+            <button class="sn-btn sn-btn--icon" type="button" aria-label="Lock slot 3"><svg data-i="lock"></svg></button>
+            <button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="More actions"><svg data-i="ellipsis"></svg></button>
+            <button class="sn-btn" type="button" aria-busy="true"><span class="sn-spinner"></span>Saving…</button>
+            <button class="sn-btn" type="button" disabled>Save set</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="TextLink" data-desc="Links take the colour of the module they open, always underlined, weight 600.">
+        <div class="ref-demo" data-demo>
+          <p class="body" style="margin:0" id="link-mods"></p>
+          <p class="body" style="margin:0">Read the <a class="sn-link" href="#writing">set-building rules</a> · <a class="sn-link sn-link--ext" href="https://www.1001tracklists.com/" target="_blank" rel="noopener">Open on 1001tracklists<span class="sn-sr">, opens in a new tab</span></a></p>
+        </div>
+      </article>
+    </div>
+
+    <h3 class="sn-title title-s"><span class="sn-lead">Group:</span> Status and music data</h3>
+    <div class="ref-specs">
+      <article class="sn-card ref-spec" data-spec="StatusPill" data-desc="Seven statuses, each a glyph and a word, mapped from backend enums through SongNodes.status().">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row">
+            <span class="sn-pill sn-status-pill" data-status="ok">Healthy</span>
+            <span class="sn-pill sn-status-pill" data-status="fair">Medium confidence</span>
+            <span class="sn-pill sn-status-pill" data-status="warn">Degraded</span>
+            <span class="sn-pill sn-status-pill" data-status="bad">Paused after errors</span>
+            <span class="sn-pill sn-status-pill" data-status="info">Note</span>
+            <span class="sn-pill sn-status-pill" data-status="running">Running</span>
+            <span class="sn-pill sn-status-pill" data-status="idle">Queued</span>
+          </div>
+          <div class="sn-row">
+            <span class="sn-pill sn-pill--outline sn-status-pill" data-status="ok">Saved</span>
+            <span class="sn-pill sn-pill--outline sn-status-pill" data-status="bad">Failed</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="CompatibilityBadge" data-desc="A traffic-light verdict on a move between two tracks, with a mandatory glyph and words.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row">
+            <span class="sn-pill sn-compatibility-badge" data-compat="perfect">same key</span>
+            <span class="sn-pill sn-compatibility-badge" data-compat="compatible">+1 key</span>
+            <span class="sn-pill sn-compatibility-badge" data-compat="possible">+2 energy boost</span>
+            <span class="sn-pill sn-compatibility-badge" data-compat="clash">key clash</span>
+          </div>
+          <div class="sn-row">
+            <span class="sn-pill sn-pill--outline sn-compatibility-badge" data-compat="compatible">+1 key</span>
+            <span class="sn-pill sn-pill--outline sn-compatibility-badge" data-compat="clash">key clash</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="EnergyBar" data-desc="Ten segments, indigo to amber, gaps after 4 and 7; always with the number. Missing energy is an en dash.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row" id="energy-row"></div>
+          <div class="sn-row">
+            <span class="sn-energy sn-energy-bar" title="Energy 7 · Building 5–7">
+              <span class="sn-energy__bar" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="target"></i><i></i><i></i></span>
+              <span class="sn-energy__n">7</span><span class="sn-sr"> of 10, building tier, target 8</span>
+              <span class="sn-energy-bar__target" aria-hidden="true">target 8</span>
+            </span>
+            <span class="sn-none" title="Energy not set">–</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="KeyBadge" data-desc="Camelot code in mono with a wheel-colour dot; detail views add the key name.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row">
+            <span class="sn-key" data-key="8A" title="A minor">8A</span>
+            <span class="sn-key" data-key="9A" title="E minor">9A</span>
+            <span class="sn-key" data-key="11B" title="A major">11B</span>
+            <span class="sn-key" data-unknown>–<span class="sn-sr">Key not set</span></span>
+          </div>
+          <div class="sn-row">
+            <span class="sn-key sn-key-badge--lg" data-key="8A">8A <span class="sn-key__name">A minor</span></span>
+            <span class="sn-key sn-key-badge--lg" data-key="5B">5B <span class="sn-key__name">E♭ major</span></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="BpmReadout" data-desc="BPM in mono with tabular figures; half- or double-time reading in brackets; deltas signed with a true minus.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row">
+            <span class="sn-bpm"><b>124</b></span>
+            <span class="sn-bpm"><b>123.5</b></span>
+            <span class="sn-bpm"><b>87</b> <span class="sn-bpm-readout__alt">(174)</span><span class="sn-sr"> BPM, double time 174</span></span>
+            <span class="sn-bpm"><b>122–128</b><span class="sn-bpm-readout__unit">BPM</span></span>
+            <span class="sn-bpm"><span class="sn-none" title="BPM not detected yet">–</span><span class="sn-sr">BPM not set</span></span>
+          </div>
+          <div class="sn-row">
+            <span class="sn-transition-note__item sn-bpm-readout__delta" data-level="perfect">+2 BPM</span>
+            <span class="sn-transition-note__item sn-bpm-readout__delta" data-level="possible">+6 BPM</span>
+            <span class="sn-transition-note__item sn-bpm-readout__delta" data-level="clash">+16 BPM</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="TrackCell" data-desc="Artist – Title on line one; mix · label · duration on line two, with now marker, flags and service links.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-track-cell">
+            <span class="sn-track-cell__title"><span class="sn-track-cell__name" title="Bicep – Glue"><span class="sn-track-cell__artist">Bicep –</span> Glue</span></span>
+            <span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Original mix</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span>Ninja Tune</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">4:29</span><span class="sn-track-cell__links"><a class="sn-link sn-link--ext" href="#components" aria-label="Bicep – Glue on TIDAL (opens in a new tab)">TIDAL</a></span></span>
+          </div>
+          <div class="sn-track-cell">
+            <span class="sn-track-cell__title"><span class="sn-track-cell__now"><svg data-i="audio-waveform" data-s="14"></svg><span>Now</span></span><span class="sn-track-cell__name" title="Overmono – So U Kno"><span class="sn-track-cell__artist">Overmono –</span> So U Kno</span></span>
+            <span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Extended mix</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">6:12</span><span class="sn-track-cell__flag">Check energy</span></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="CategoryTag" data-desc="A small neutral tag for what kind of thing something is. Never status colours.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row">
+            <span class="sn-tag sn-category-tag">House</span>
+            <span class="sn-tag sn-category-tag">UK garage</span>
+            <span class="sn-tag sn-category-tag sn-category-tag--high">High rotation</span>
+            <span class="sn-tag sn-category-tag sn-category-tag--vault">Vault</span>
+            <span class="sn-tag sn-category-tag"><svg data-i="git-merge"></svg>Played next to</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="SourceBadge" data-desc="A neutral badge naming where a track was heard or found; +N opens the full list.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-row">
+            <span class="sn-source-badge"><span class="sn-source-badge__name" title="PBS Soul Time"><svg data-i="radio-tower" data-s="14"></svg>PBS Soul Time</span></span>
+            <span class="sn-source-badge"><span class="sn-source-badge__name" title="triple j Mix Up"><svg data-i="radio-tower" data-s="14"></svg>triple j Mix Up</span><button class="sn-source-badge__more" type="button" aria-expanded="false" aria-controls="src-1" aria-label="2 more sources">+2</button><ul class="sn-source-badge__pop" id="src-1" hidden><li><span>triple j Mix Up</span><span>Fri 23 Oct</span></li><li><span>ARIA Club Chart</span><span>#12 · 4w</span></li><li><span>1001tracklists</span><span>14 sets</span></li></ul></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="TransitionNote" data-desc="The strip between running-order rows: energy step, key move, BPM delta and genre switch, each with a verdict glyph.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-transition-note" role="note" aria-label="Transition">
+            <span class="sn-transition-note__item" data-level="perfect">energy +1<span class="sn-sr"> (perfect)</span></span>
+            <span class="sn-transition-note__item" data-level="compatible">+1 key 8A→9A<span class="sn-sr"> (compatible)</span></span>
+            <span class="sn-transition-note__item" data-level="perfect">+2 BPM<span class="sn-sr"> (perfect)</span></span>
+            <span class="sn-transition-note__item" data-level="possible">House → UK garage<span class="sn-sr"> (possible)</span></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec ref-spec--full" data-spec="SetSlot" data-desc="A running-order row: slot number, energy against target, TrackCell, BPM and key, and lock / move / remove.">
+        <div class="ref-demo" data-demo>
+          <ol class="sn-set-slot-list" aria-label="Running order, Peak time Friday">
+            <li class="sn-set-slot" data-locked aria-label="Slot 2: Peggy Gou – (It Goes Like) Nanana, locked">
+              <span class="sn-set-slot__n">2</span>
+              <span class="sn-set-slot__energy"><span class="sn-energy sn-energy-bar"><span class="sn-energy__bar" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on target"></i><i></i><i></i><i></i></span><span class="sn-energy__n">7</span><span class="sn-sr"> of 10, target 7</span></span><span class="sn-energy-bar__target" aria-hidden="true">target 7</span></span>
+              <span class="sn-set-slot__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name" title="Peggy Gou – (It Goes Like) Nanana"><span class="sn-track-cell__artist">Peggy Gou –</span> (It Goes Like) Nanana</span></span><span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Edit</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">3:58</span></span></div></span>
+              <span class="sn-set-slot__data"><span class="sn-bpm"><b>124</b></span><span class="sn-key" data-key="8A" title="A minor">8A</span></span>
+              <span class="sn-set-slot__act"><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Lock slot 2" aria-pressed="true"><svg data-i="lock"></svg></button><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Move slot 2 up" disabled><svg data-i="arrow-up"></svg></button><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Move slot 2 down" disabled><svg data-i="arrow-down"></svg></button><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Remove Peggy Gou – (It Goes Like) Nanana from slot 2" disabled><svg data-i="x"></svg></button></span>
+            </li>
+            <li aria-label="Transition"><div class="sn-transition-note"><span class="sn-transition-note__item" data-level="perfect">energy hold<span class="sn-sr"> (perfect)</span></span><span class="sn-transition-note__item" data-level="compatible">+1 key<span class="sn-sr"> (compatible)</span></span><span class="sn-transition-note__item" data-level="compatible">+4 BPM<span class="sn-sr"> (compatible)</span></span></div></li>
+            <li class="sn-set-slot" data-now aria-label="Slot 3: Interplanetary Criminal – Slow Burner, now playing">
+              <span class="sn-set-slot__n">3</span>
+              <span class="sn-set-slot__energy"><span class="sn-energy sn-energy-bar"><span class="sn-energy__bar" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on target"></i><i></i><i></i><i></i></span><span class="sn-energy__n">7</span><span class="sn-sr"> of 10, target 7</span></span><span class="sn-energy-bar__target" aria-hidden="true">target 7</span></span>
+              <span class="sn-set-slot__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__now"><svg data-i="audio-waveform" data-s="14"></svg><span>Now</span></span><span class="sn-track-cell__name" title="Interplanetary Criminal – Slow Burner"><span class="sn-track-cell__artist">Interplanetary Criminal –</span> Slow Burner</span></span><span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Original mix</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">5:41</span><span class="sn-track-cell__flag">Check energy</span></span></div></span>
+              <span class="sn-set-slot__data"><span class="sn-bpm"><b>128</b></span><span class="sn-key" data-key="9A" title="E minor">9A</span></span>
+              <span class="sn-set-slot__act"><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Lock slot 3" aria-pressed="false"><svg data-i="lock-open"></svg></button><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Move slot 3 up"><svg data-i="arrow-up"></svg></button><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Move slot 3 down"><svg data-i="arrow-down"></svg></button><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Remove Interplanetary Criminal – Slow Burner from slot 3"><svg data-i="x"></svg></button></span>
+            </li>
+          </ol>
+        </div>
+      </article>
+    </div>
+
+    <h3 class="sn-title title-s"><span class="sn-lead">Group:</span> Cards and structure</h3>
+    <div class="ref-specs">
+      <article class="sn-card ref-spec" data-spec="FigureTile" data-desc="A headline number with its label: Sora, tabular figures, neutral by default.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-figure-tile-row" role="list" aria-label="Library at a glance">
+            <div class="sn-figure-tile" role="listitem">
+              <span class="sn-figure-tile__figure">1,284</span>
+              <span class="sn-figure-tile__label">Tracks in the library</span>
+              <span class="sn-figure-tile__delta">+38 added last run</span>
+            </div>
+            <div class="sn-figure-tile" role="listitem">
+              <span class="sn-figure-tile__figure">47</span>
+              <span class="sn-figure-tile__label">Need an energy check</span>
+              <div class="sn-figure-tile__foot"><span class="sn-pill sn-status-pill" data-status="warn">To check</span><a class="sn-link sn-m-library" href="#components">Review</a></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="Card" data-desc="Neutral by default; tonal in its module's shades on hub pages. Never nested, never a coloured left border.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-card-grid">
+            <section class="sn-card" aria-labelledby="card-n1">
+              <div class="sn-card__eyebrow">This week</div>
+              <h3 class="sn-title title-s" id="card-n1">38 new tracks</h3>
+              <p class="sn-card__text">Mostly UK garage from triple j Mix Up and PBS Soul Time. 9 need an energy check.</p>
+              <div class="sn-card__foot"><button class="sn-btn sn-btn--sm" type="button">Review new tracks</button><button class="sn-btn sn-btn--quiet sn-btn--sm" type="button">Dismiss</button></div>
+            </section>
+            <section class="sn-card sn-card--tonal sn-m-sets" aria-labelledby="card-t1">
+              <div class="sn-card__eyebrow">Saved set · updated 22 Oct</div>
+              <h3 class="sn-title title-s" id="card-t1"><span class="sn-lead">Saved set:</span> Peak time Friday</h3>
+              <p class="sn-card__text">92 min · 18 tracks · three waves.</p>
+              <div class="sn-row"><span class="sn-tag">House</span><span class="sn-pill" data-status="ok">Sent to TIDAL</span></div>
+              <div class="sn-card__foot"><button class="sn-btn sn-btn--sm" type="button">Duplicate</button><a class="sn-link sn-m-sets" href="#components">Open set</a></div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="LauncherCard" data-desc="A hub tile into one module: tonal card, module icon, thin–bold title, summary and key figures.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-launcher-card__grid">
+            <a class="sn-card sn-card--tonal sn-launcher-card sn-m-pipeline" href="#components" aria-labelledby="lc-t" aria-describedby="lc-s lc-f lc-p">
+              <div class="sn-card__head"><span class="sn-launcher-card__icon"><svg data-i="activity"></svg></span><span class="sn-pill" data-status="bad" id="lc-p">2 paused after errors</span></div>
+              <h3 class="sn-title title-s" id="lc-t"><span class="sn-lead">Pipeline:</span> 9 scrapers</h3>
+              <p class="sn-launcher-card__summary" id="lc-s">MixesDB and Setlist.fm paused after repeated errors.</p>
+              <dl class="sn-launcher-card__figures" id="lc-f">
+                <div class="sn-launcher-card__figure"><dt>running</dt><dd>7</dd></div>
+                <div class="sn-launcher-card__figure"><dt>paused</dt><dd>2</dd></div>
+              </dl>
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="SectionHeading" data-desc="A heading inside a page with optional count, right-side action and one-line caveat.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-section-heading sn-section-heading--rule">
+            <h2 class="sn-title title-m">Needs an energy check</h2>
+            <span class="sn-section-heading__count">47 tracks</span>
+            <div class="sn-section-heading__end"><button class="sn-btn sn-btn--sm" type="button"><svg data-i="download"></svg>Export CSV</button></div>
+            <p class="sn-section-heading__caveat"><span>Energy is estimated from BPM and source; 47 tracks need a check.</span></p>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec ref-spec--full" data-spec="PageHeader" data-desc="Module band, thin–bold title, one-line description, freshness stamp and actions, primary last.">
+        <div class="ref-demo" data-demo>
+          <header class="sn-page-header sn-m-sets">
+            <div class="sn-page-header__band"><svg data-i="list-music" data-s="16"></svg><a class="sn-link" href="#components">Set builder</a><span class="sn-page-header__band-sep" aria-hidden="true">›</span><span class="sn-page-header__band-here">Saved sets</span></div>
+            <div class="sn-page-header__main">
+              <div class="sn-page-header__text">
+                <h1 class="sn-title title-m"><span class="sn-lead">Set builder:</span> Peak time Friday</h1>
+                <p class="sn-page-header__desc">Three waves over 92 min: 18 tracks, House 50 · Techno 30 · UK garage 20.</p>
+                <p class="sn-page-header__meta"><span class="sn-page-header__stamp"><svg data-i="clock" data-s="14"></svg>Saved <time datetime="2026-10-24T10:30:00Z" data-stamp="2026-10-24T10:30:00Z"></time></span></p>
+              </div>
+              <div class="sn-page-header__actions">
+                <button class="sn-btn sn-page-header__secondary" type="button">Copy tracklist</button>
+                <button class="sn-btn sn-btn--primary" type="button">Save set</button>
+              </div>
+            </div>
+          </header>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="SegmentedControl" data-desc="Pick one of 2–4 mutually exclusive modes; applies immediately.">
+        <div class="ref-demo" data-demo>
+          <span class="sn-segmented-control__group">
+            <span class="sn-segmented-control__label" id="lbl-scale">Time scale</span>
+            <div class="sn-seg sn-segmented-control" role="radiogroup" aria-labelledby="lbl-scale">
+              <button type="button" role="radio" aria-checked="false" tabindex="-1" data-value="day">Day</button>
+              <button type="button" role="radio" aria-checked="true" tabindex="0" data-value="week">Week</button>
+              <button type="button" role="radio" aria-checked="false" tabindex="-1" data-value="month">Month</button>
+            </div>
+          </span>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="Tabs" data-desc="Swap views of the same thing inside a page; active line in the module colour.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-m-library">
+            <div class="sn-tabs__wrap">
+              <div class="sn-tabs" role="tablist" aria-label="Track detail">
+                <button class="sn-tab" role="tab" id="t-0" aria-controls="p-0" aria-selected="true" tabindex="0">Overview</button>
+                <button class="sn-tab" role="tab" id="t-1" aria-controls="p-0" aria-selected="false" tabindex="-1">Plays<span class="sn-tab__badge">23</span><span class="sn-sr"> plays</span></button>
+                <button class="sn-tab" role="tab" id="t-2" aria-controls="p-0" aria-selected="false" tabindex="-1">Transitions<span class="sn-tab__badge">14</span><span class="sn-sr"> transitions</span><span class="sn-tab__dot" aria-hidden="true"></span><span class="sn-sr">, changed since you last looked</span></button>
+              </div>
+            </div>
+            <div class="sn-tabs__panel" role="tabpanel" id="p-0" aria-labelledby="t-0" tabindex="0"><p class="body-s sn-muted" style="margin:0">Key, tempo, energy and sections of Bicep – Glue.</p></div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <h3 class="sn-title title-s"><span class="sn-lead">Group:</span> Inputs</h3>
+    <div class="ref-specs">
+      <article class="sn-card ref-spec" data-spec="SearchField" data-desc="Search icon, clear button, live result count, typo-tolerant suggestion and the / shortcut.">
+        <div class="ref-demo" data-demo>
+          <form class="sn-search-field" role="search" onsubmit="return false">
+            <label class="sn-sr" for="q">Search tracks</label>
+            <div class="sn-search-field__box">
+              <span class="sn-search-field__icon"><svg data-i="search"></svg></span>
+              <input class="sn-input sn-search-field__input" type="search" id="q" placeholder="Search artist, title or label" autocomplete="off" aria-describedby="q-meta" value="overmno">
+              <span class="sn-search-field__end"><button class="sn-search-field__clear" type="button" aria-label="Clear search"><svg data-i="x"></svg></button></span>
+            </div>
+            <div class="sn-search-field__meta" id="q-meta">
+              <span class="sn-search-field__count" role="status"><b>0</b> of 1,284 tracks</span>
+              <span class="sn-search-field__suggest">Did you mean <button type="button">Overmono</button>?</span>
+            </div>
+          </form>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="TextField" data-desc="Visible label, help text, inline error tied to the input, optional character count.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-field sn-text-field">
+            <label class="sn-text-field__label" for="tf-name"><span>Set name</span><span class="sn-text-field__count" aria-hidden="true">18 / 40</span></label>
+            <span class="sn-field__help" id="tf-name-help">Shown on the saved sets list.</span>
+            <input class="sn-input" id="tf-name" value="Peak time Friday 3" aria-describedby="tf-name-help">
+          </div>
+          <div class="sn-field sn-text-field">
+            <label class="sn-text-field__label" for="tf-isrc"><span>ISRC</span></label>
+            <span class="sn-field__help" id="tf-isrc-help">12 characters, for example GBCEN2300412.</span>
+            <input class="sn-input sn-input--data" id="tf-isrc" value="GBCEN23004" aria-invalid="true" aria-describedby="tf-isrc-help tf-isrc-err" spellcheck="false">
+            <span class="sn-field__error" id="tf-isrc-err">ISRC must be 12 characters. This one has 10.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="Switch" data-desc="An on/off setting that takes effect immediately; state shown by thumb position and the words On and Off.">
+        <div class="ref-demo" data-demo>
+          <ul class="sn-switch-list">
+            <li class="sn-switch">
+              <div class="sn-switch__text">
+                <span class="sn-switch__label" id="tidal-l">Send to TIDAL on the weekly run</span>
+                <span class="sn-switch__desc" id="tidal-d">Each Monday at 06:00 the newest saved set becomes a TIDAL playlist.</span>
+              </div>
+              <button type="button" role="switch" class="sn-switch__control" aria-checked="true" aria-labelledby="tidal-l" aria-describedby="tidal-d">
+                <span class="sn-switch__state" aria-hidden="true">On</span>
+                <span class="sn-switch__track" aria-hidden="true"><span class="sn-switch__thumb"></span></span>
+              </button>
+            </li>
+            <li class="sn-switch">
+              <div class="sn-switch__text"><span class="sn-switch__label" id="sprite-l">Sprite mode (performance)</span></div>
+              <button type="button" role="switch" class="sn-switch__control" aria-checked="false" aria-labelledby="sprite-l">
+                <span class="sn-switch__state" aria-hidden="true">Off</span>
+                <span class="sn-switch__track" aria-hidden="true"><span class="sn-switch__thumb"></span></span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="Checkbox" data-desc="Native checkboxes and radios with large hit areas, grouped in a fieldset with a legend.">
+        <div class="ref-demo" data-demo>
+          <fieldset class="sn-checkbox-group">
+            <legend class="sn-checkbox-group__legend">Track checks</legend>
+            <label class="sn-checkbox"><input type="checkbox" checked><span class="sn-checkbox__text"><span>Has key and BPM<span class="sn-checkbox__count">1,102</span></span></span></label>
+            <label class="sn-checkbox"><input type="checkbox"><span class="sn-checkbox__text"><span>Needs an energy check<span class="sn-checkbox__count">37</span></span><span class="sn-checkbox__hint">Energy came from one source only.</span></span></label>
+          </fieldset>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="FilterChip" data-desc="Toggle chips that narrow a list, with counts and a per-group clear.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-filter-chip-group" role="group" aria-labelledby="lg-pillar">
+            <div class="sn-filter-chip-group__head">
+              <span class="sn-filter-chip-group__legend" id="lg-pillar">Pillar</span>
+              <button class="sn-filter-chip-group__clear" type="button">Clear (1)</button>
+            </div>
+            <ul class="sn-filter-chip-group__list">
+              <li><button class="sn-chip sn-filter-chip" type="button" aria-pressed="true"><span>House</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>612<span class="sn-sr"> tracks</span></span></button></li>
+              <li><button class="sn-chip sn-filter-chip" type="button" aria-pressed="false"><span>Techno</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>418<span class="sn-sr"> tracks</span></span></button></li>
+              <li><button class="sn-chip sn-filter-chip" type="button" aria-pressed="false"><span>UK garage</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>254<span class="sn-sr"> tracks</span></span></button></li>
+            </ul>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <h3 class="sn-title title-s"><span class="sn-lead">Group:</span> Data</h3>
+    <div class="ref-specs">
+      <article class="sn-card ref-spec ref-spec--full" data-spec="DataTable" data-desc="Sortable headers, right-aligned mono numbers, selection, flagged and now rows; stacked cards on phones.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-data-table sn-data-table--stack">
+            <div class="sn-tablebox sn-data-table__box">
+              <table class="sn-table">
+                <caption>Crate · 3 of 1,284 tracks</caption>
+                <thead><tr>
+                  <th scope="col" class="sn-data-table__sel"><input type="checkbox" aria-label="Select all 3 tracks"></th>
+                  <th scope="col" data-sortable><button type="button">Energy</button></th>
+                  <th scope="col">Track</th>
+                  <th scope="col" class="num" aria-sort="ascending" data-sortable><button type="button">BPM</button></th>
+                  <th scope="col">Key</th>
+                  <th scope="col" class="sn-data-table__actions"><span class="sn-sr">Actions</span></th>
+                </tr></thead>
+                <tbody>
+                  <tr data-selected>
+                    <td class="sn-data-table__sel"><input type="checkbox" checked aria-label="Select Peggy Gou – (It Goes Like) Nanana"></td>
+                    <td data-label="Energy"><span class="sn-energy" title="Energy 7 · Building 5–7"><span class="sn-energy__bar" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span><span class="sn-energy__n">7</span><span class="sn-sr"> of 10, building tier</span></span></td>
+                    <td class="sn-data-table__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name"><span class="sn-track-cell__artist">Peggy Gou –</span> (It Goes Like) Nanana</span></span><span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Edit</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">3:58</span></span></div></td>
+                    <td class="num" data-label="BPM">124</td>
+                    <td data-label="Key"><span class="sn-key" data-key="8A" title="A minor">8A</span></td>
+                    <td class="sn-data-table__actions"><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Add Peggy Gou – (It Goes Like) Nanana to set"><svg data-i="plus"></svg></button></td>
+                  </tr>
+                  <tr data-now>
+                    <td class="sn-data-table__sel"><input type="checkbox" aria-label="Select Interplanetary Criminal – Slow Burner"></td>
+                    <td data-label="Energy"><span class="sn-energy" title="Energy 7 · Building 5–7"><span class="sn-energy__bar" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span><span class="sn-energy__n">7</span><span class="sn-sr"> of 10, building tier</span></span></td>
+                    <td class="sn-data-table__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__now"><svg data-i="audio-waveform" data-s="14"></svg><span>Now</span></span><span class="sn-track-cell__name"><span class="sn-track-cell__artist">Interplanetary Criminal –</span> Slow Burner</span></span><span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Original mix</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">5:41</span></span></div></td>
+                    <td class="num" data-label="BPM">128</td>
+                    <td data-label="Key"><span class="sn-key" data-key="9A" title="E minor">9A</span></td>
+                    <td class="sn-data-table__actions"><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Add Interplanetary Criminal – Slow Burner to set"><svg data-i="plus"></svg></button></td>
+                  </tr>
+                  <tr data-flag>
+                    <td class="sn-data-table__sel"><input type="checkbox" aria-label="Select Sammy Virji – If U Need It"></td>
+                    <td data-label="Energy"><span class="sn-none" title="Energy not set">–</span></td>
+                    <td class="sn-data-table__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name"><span class="sn-track-cell__artist">Sammy Virji –</span> If U Need It</span></span><span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Original mix</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">3:43</span><span class="sn-track-cell__flag">Check energy</span></span></div></td>
+                    <td class="num" data-label="BPM">130</td>
+                    <td data-label="Key"><span class="sn-key" data-unknown>–<span class="sn-sr">Key not set</span></span></td>
+                    <td class="sn-data-table__actions"><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Add Sammy Virji – If U Need It to set"><svg data-i="plus"></svg></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="KeyValueGrid" data-desc="Labels and values for detail views: mono values for data, copyable IDs, en dash for anything missing.">
+        <div class="ref-demo" data-demo>
+          <dl class="sn-key-value-grid sn-key-value-grid--cols-2">
+            <dt>BPM</dt><dd><span class="sn-bpm"><b>128</b></span></dd>
+            <dt>Key</dt><dd><span class="sn-key" data-key="8A">8A <span class="sn-key__name">A minor</span></span></dd>
+            <dt>ISRC</dt><dd><span class="sn-key-value-grid__id">GBCFB1700384</span><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon sn-key-value-grid__copy" type="button" aria-label="Copy ISRC"><svg data-i="copy" data-s="15"></svg></button></dd>
+            <dt>Beatport ID</dt><dd><span class="sn-none">–</span><span class="sn-sr">Beatport ID not known</span></dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="Disclosure" data-desc="A show/hide section on native details and summary, with a rotating chevron and an optional hint. The HTML panels on this page use it.">
+        <div class="ref-demo" data-demo>
+          <div>
+            <details class="sn-disclosure" open>
+              <summary><span class="sn-disclosure__chev"><svg data-i="chevron-right"></svg></span>How energy is scored<span class="sn-disclosure__hint">1 to 10</span></summary>
+              <div class="sn-disclosure__body"><p>Low is 1–4, Building 5–7, High 8–10. Sets climb one step at a time and drop 2–3 after a peak.</p></div>
+            </details>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <h3 class="sn-title title-s"><span class="sn-lead">Group:</span> Feedback</h3>
+    <div class="ref-specs">
+      <article class="sn-card ref-spec" data-spec="EmptyState" data-desc="What this area holds, why it is empty, and the one action that fills it.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-empty-state">
+            <div class="sn-empty-state__icon"><svg data-i="list-music"></svg></div>
+            <h3 class="sn-empty-state__title">No sets yet</h3>
+            <p class="sn-empty-state__text">Sets you build from the crate land here with their energy wave and running order.</p>
+            <div class="sn-empty-state__actions"><button class="sn-btn sn-btn--primary sn-btn--lg" type="button"><svg data-i="wand-sparkles"></svg>Build set</button></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="Banner" data-desc="A persistent page-level message under the page header, at most one action.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-banner" data-status="warn" role="status">
+            <span class="sn-banner__icon"><svg data-i="triangle-alert"></svg></span>
+            <div class="sn-banner__body">
+              <p class="sn-banner__content"><span class="sn-banner__title">Sets are shaped on energy alone.</span> Only 611 of 1,284 tracks have a key and BPM so far.</p>
+              <div class="sn-banner__actions"><button class="sn-btn sn-btn--sm" type="button">Show tracks without a key</button></div>
+            </div>
+            <button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-banner__dismiss" type="button" aria-label="Dismiss: key and BPM notice"><svg data-i="x"></svg></button>
+          </div>
+          <div class="sn-banner" data-status="info" role="status">
+            <span class="sn-banner__icon"><svg data-i="info"></svg></span>
+            <div class="sn-banner__body"><p class="sn-banner__content"><span class="sn-banner__title">Next weekly build: Sat 31 Oct, 06:00.</span> Radio plays until Friday night are included.</p></div>
+            <span></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="InlineMessage" data-desc="A short status message attached to a field, row or card section; glyph and text, no dismiss.">
+        <div class="ref-demo" data-demo>
+          <p class="sn-inline-message" data-status="warn">2 transitions to look at: a key clash into slot 6 and a +3 energy jump. <a class="sn-link sn-inline-message__action" href="#components">Show them</a></p>
+          <p class="sn-inline-message" data-status="bad">Enter 30 to 360 minutes. 420 min is longer than the pool can fill.</p>
+          <p class="sn-inline-message" data-status="info">673 tracks without a key are placed by energy alone.</p>
+          <p class="sn-inline-message sn-inline-message--boxed" data-status="ok"><span>All 14 transitions are <strong>perfect or compatible</strong>.</span></p>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="Toast" data-desc="A brief confirmation that an action finished, with at most one action. Shown here in place; live toasts sit in sn-toast__region.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-toast">
+            <span class="sn-toast__icon"><svg data-i="circle-check"></svg></span>
+            <span class="sn-toast__text">Added to <q>Peak time Friday</q></span>
+            <button class="sn-btn sn-btn--sm sn-toast__action" type="button">Undo</button>
+            <button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-toast__close" type="button" aria-label="Dismiss notification"><svg data-i="x"></svg></button>
+          </div>
+          <div class="sn-toast">
+            <span class="sn-toast__icon"><svg data-i="circle-check"></svg></span>
+            <span class="sn-toast__text">Tracklist copied: 18 tracks</span>
+            <span class="sn-toast__queue">+2 more</span>
+            <button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-toast__close" type="button" aria-label="Dismiss notification"><svg data-i="x"></svg></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="sn-card ref-spec" data-spec="ProgressBar" data-desc="How much of a job is done: neutral bar, label and count or percent; indeterminate when there is no estimate.">
+        <div class="ref-demo" data-demo>
+          <div class="sn-progress-bar">
+            <div class="sn-progress-bar__head">
+              <span class="sn-progress-bar__label" id="pb-l">Import tracklists from 1001tracklists</span>
+              <span class="sn-progress-bar__value">312 of 500 · 62%</span>
+            </div>
+            <div class="sn-progress-bar__track" role="progressbar" aria-labelledby="pb-l" aria-valuemin="0" aria-valuemax="500" aria-valuenow="312" aria-valuetext="312 of 500 tracklists, 62%" style="--p: 62.4%"><div class="sn-progress-bar__fill"></div></div>
+            <div class="sn-progress-bar__foot"><span>Started 21:04 · about 6 min left</span><span class="sn-pill" data-status="ok">Healthy</span></div>
+          </div>
+          <div class="sn-progress-bar sn-progress-bar--indeterminate">
+            <div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="pb-i">Waiting for Spotify to lift the rate limit</span><span class="sn-progress-bar__value">–</span></div>
+            <div class="sn-progress-bar__track" role="progressbar" aria-labelledby="pb-i" aria-valuetext="Waiting, no estimate yet"><div class="sn-progress-bar__fill"></div></div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================ writing -->
+  <section class="sn-page__section ref-section" id="writing" aria-labelledby="writing-t">
+    <div class="sn-section-heading sn-section-heading--rule">
+      <h2 class="sn-title title-m" id="writing-t">Writing</h2>
+      <p class="sn-section-heading__caveat"><span>A knowledgeable booth-mate: plain, direct, specific. en-AU, sentence case, no exclamation marks, no emoji. From <span class="sn-mono">01-writing.md</span>.</span></p>
+    </div>
+    <div class="sn-tablebox ref-tablebox ref-stack">
+      <table class="sn-table">
+        <caption class="sn-sr">Write this, not that</caption>
+        <thead><tr><th scope="col">Situation</th><th scope="col">Write</th><th scope="col">Not</th></tr></thead>
+        <tbody id="write-rows"></tbody>
+      </table>
+    </div>
+    <div class="ref-grid ref-grid--wide">
+      <div class="sn-card sn-card--compact">
+        <h3 class="sn-title title-s">Numbers and units</h3>
+        <ul class="sn-page__list body-s" id="write-numbers"></ul>
+      </div>
+      <div class="sn-card sn-card--compact">
+        <h3 class="sn-title title-s">Glyphs</h3>
+        <ul class="sn-page__list body-s" id="write-glyphs"></ul>
+      </div>
+      <div class="sn-card sn-card--compact">
+        <h3 class="sn-title title-s">Labels and messages</h3>
+        <ul class="sn-page__list body-s" id="write-labels"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ helpers -->
+  <section class="sn-page__section ref-section" id="helpers" aria-labelledby="helpers-t">
+    <div class="sn-section-heading sn-section-heading--rule">
+      <h2 class="sn-title title-m" id="helpers-t">Formatting helpers</h2>
+      <p class="sn-section-heading__caveat"><span>Live calls to <span class="sn-mono">window.SongNodes</span>. Every date, duration, count, BPM, key, status and transition verdict comes from here.</span></p>
+    </div>
+    <div class="sn-card sn-card--flat">
+      <h3 class="sn-title title-s"><span class="sn-lead">Try it:</span> one transition</h3>
+      <div class="ref-tool">
+        <div class="sn-field"><label for="h-k1">Key from</label><input class="sn-input sn-input--data" id="h-k1" value="Am" spellcheck="false"></div>
+        <div class="sn-field"><label for="h-k2">Key to</label><input class="sn-input sn-input--data" id="h-k2" value="9A" spellcheck="false"></div>
+        <div class="sn-field"><label for="h-b1">BPM from</label><input class="sn-input sn-input--data" id="h-b1" value="124" inputmode="decimal"></div>
+        <div class="sn-field"><label for="h-b2">BPM to</label><input class="sn-input sn-input--data" id="h-b2" value="126" inputmode="decimal"></div>
+        <div class="sn-field"><label for="h-e1">Energy from</label><input class="sn-input sn-input--data" id="h-e1" value="6" inputmode="numeric"></div>
+        <div class="sn-field"><label for="h-e2">Energy to</label><input class="sn-input sn-input--data" id="h-e2" value="7" inputmode="numeric"></div>
+      </div>
+      <div class="ref-result" id="h-out" aria-live="polite"></div>
+    </div>
+    <div class="sn-tablebox ref-tablebox ref-helpers ref-stack">
+      <table class="sn-table">
+        <caption class="sn-sr">Helper calls and their results</caption>
+        <thead><tr><th scope="col">Call</th><th scope="col">Result</th></tr></thead>
+        <tbody id="helper-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="caption ref-foot">Source: <span class="sn-mono">design-system/</span> (read-only). How it reaches the app: <span class="sn-mono">docs/design-system/README.md</span>. Code-only reference: <span class="sn-mono">docs/design-system/CODE_REFERENCE.md</span>.</p>
+</main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var S = window.SongNodes;
+  var root = document.documentElement;
+  function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function $$(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+  function cssVar(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function esc(s) { return S.esc(s); }
+  var MODS = S.modules.map(function (m) { return m.key; });
+
+  /* ---------- token name lists (values are always read live) ---------- */
+  var range = function (a, b, f) { var o = []; for (var i = a; i <= b; i++) o.push(f(i)); return o; };
+  var COLOUR = {
+    surfaces: ["bg", "surface-1", "surface-2", "surface-3", "sunk", "line", "line-strong", "overlay", "hover-bg", "flag-bg"],
+    text: ["fg", "fg-2", "fg-3", "fg-disabled"],
+    brand: ["brand", "brand-strong", "brand-soft", "on-brand", "link", "focus"],
+    modules: [].concat.apply([], MODS.map(function (k) { return ["mod-" + k, "mod-" + k + "-bg", "mod-" + k + "-raised", "mod-" + k + "-line", "mod-" + k + "-ink", "mod-" + k + "-muted", "on-mod-" + k]; })),
+    status: [].concat.apply([], ["ok", "fair", "warn", "bad", "info"].map(function (s) { return ["status-" + s, "status-" + s + "-bg"]; })).concat(["on-status-bad"]),
+    compat: ["compat-perfect", "compat-compatible", "compat-possible", "compat-clash"],
+    energy: range(1, 10, function (i) { return "energy-" + i; }),
+    keys: [].concat(range(1, 12, function (i) { return "key-" + i + "a"; }), range(1, 12, function (i) { return "key-" + i + "b"; })),
+    chart: range(1, 8, function (i) { return "chart-" + i; }).concat(["chart-grid", "chart-axis", "chart-ref"]),
+    other: ["now", "on-now", "sim", "progress-fill", "progress-track", "svc-spotify", "on-svc-spotify", "svc-tidal", "on-svc-tidal"]
+  };
+  var SPACE = ["space-0", "space-0.5", "space-1", "space-2", "space-3", "space-4", "space-5", "space-6", "space-8", "space-10", "space-12", "space-16"];
+  var RADIUS = ["radius-chip", "radius-control", "radius-card", "radius-sheet", "radius-pill"];
+  var SHADOW = ["shadow-1", "shadow-2", "shadow-3"];
+  var MISC = [
+    ["Z-index", ["z-base", "z-sticky", "z-header", "z-drawer", "z-overlay", "z-dialog", "z-popover", "z-toast", "z-tooltip"]],
+    ["Duration", ["duration-instant", "duration-fast", "duration-base", "duration-slow"]],
+    ["Easing", ["ease-standard", "ease-exit"]],
+    ["Size", ["control-sm", "control-md", "control-lg", "touch-min", "row-compact", "row-comfortable", "row-two-line", "header-h", "drawer-w", "rail-w", "content-max", "prose-max"]],
+    ["Breakpoint", ["bp-phone", "bp-tablet", "bp-desktop", "bp-wide", "bp-wall"]],
+    ["Opacity", ["opacity-disabled", "opacity-faded", "opacity-edge"]],
+    ["Font family", ["font-display", "font-body", "font-data"]]
+  ];
+  var TYPE = [
+    ["display-xl", "Peak time Friday", "HomePage title only"],
+    ["title-l", "Set builder: Peak time Friday", "Page title; one per page", "Set builder"],
+    ["title-m", "Running order", "SectionHeading, Dialog titles"],
+    ["title-s", "Bicep – Glue", "Card titles, drawer group titles", "Track"],
+    ["title-lead", "Set builder:", "Lead-in half of a thin–bold title"],
+    ["figure", "1,284", "FigureTile values"],
+    ["body-l", "Energy climbs one point at a time, then drops two or three after a peak.", "Help, EmptyState text, onboarding"],
+    ["body", "Ross From Friends – Talk To Me You'll Drown", "Default UI and table text"],
+    ["body-strong", "Bicep – Glue", "Track titles in rows, button labels, link text"],
+    ["body-s", "Mix name · label · 6:12", "Meta lines, field help, Toast text"],
+    ["label", "Energy tier", "Column headers, eyebrows (uppercased by CSS)"],
+    ["caption", "Updated 24 Oct 2026, 06:00 AEDT", "FreshnessStamp, chart notes"],
+    ["data", "124 BPM · 8A · 6:12", "BPM, keys, durations, counts in rows"],
+    ["data-strong", "+1 key · +2 BPM", "Transition verdict, the current value"],
+    ["data-s", "GBCFB1700384", "External IDs, chart tick labels"]
+  ];
+
+  /* ---------- render generated sections ---------- */
+  function swatch(name, compact) {
+    return '<div class="ref-sw"><span class="ref-sw__chip' + (compact ? " ref-sw__chip--sm" : "") + '" style="background:var(--' + name + ')"></span>' +
+      '<span class="ref-sw__name data-s">--' + name + '</span><span class="ref-sw__val data-s" data-var="--' + name + '"></span></div>';
+  }
+  $$("[data-swatches]").forEach(function (el) {
+    var list = COLOUR[el.getAttribute("data-swatches")], compact = el.hasAttribute("data-compact");
+    el.innerHTML = list.map(function (n) { return swatch(n, compact); }).join("");
+  });
+  var colourTotal = Object.keys(COLOUR).reduce(function (a, k) { return a + COLOUR[k].length; }, 0);
+  $("#colour-count").textContent = colourTotal + " tokens";
+
+  $("#tonal").innerHTML = S.modules.map(function (m) {
+    var k = m.key, sw = ["mod-" + k, "mod-" + k + "-bg", "mod-" + k + "-raised", "mod-" + k + "-line", "mod-" + k + "-ink", "mod-" + k + "-muted", "on-mod-" + k];
+    return '<section class="sn-card sn-card--tonal sn-m-' + k + '" aria-labelledby="tn-' + k + '">' +
+      '<div class="sn-card__head">' + S.icon(m.icon, { cls: "sn-m-icon" }) + '<span class="sn-mono body-s">sn-m-' + k + "</span></div>" +
+      '<h4 class="sn-title title-s" id="tn-' + k + '"><span class="sn-lead">' + esc(m.label) + ":</span> " + esc(m.summary) + "</h4>" +
+      '<div class="sn-row"><span class="sn-tag">Tag</span><button class="sn-btn sn-btn--sm" type="button">Secondary</button><a class="sn-link sn-m-' + k + '" href="#colour">Link to ' + esc(m.label) + '</a><span class="sn-pill" data-status="ok">OK</span></div>' +
+      '<div class="ref-tonal__sw" aria-hidden="true">' + sw.map(function (n) { return '<span style="background:var(--' + n + ')" title="--' + n + '"></span>'; }).join("") + "</div>" +
+      '<p class="data-s sn-muted" style="margin:0">' + sw.map(function (n) { return "--" + n; }).join(" · ") + "</p></section>";
+  }).join("");
+
+  $("#status-pills").innerHTML = [["ok", "Healthy"], ["fair", "Medium confidence"], ["warn", "Degraded"], ["bad", "Failed"], ["info", "Note"], ["running", "Running"], ["idle", "Queued"]]
+    .map(function (s) { return '<span class="sn-pill" data-status="' + s[0] + '">' + s[1] + "</span>"; }).join("");
+  $("#compat-pills").innerHTML = ["perfect", "compatible", "possible", "clash"].map(function (c) { return S.html.compat(c, c.charAt(0).toUpperCase() + c.slice(1)); }).join("");
+
+  $("#type-rows").innerHTML = TYPE.map(function (t) {
+    var cls = t[0], sample;
+    if (cls === "title-l" || cls === "title-s") sample = '<span class="sn-title ' + cls + '"><span class="sn-lead">' + esc(t[3]) + ":</span> " + esc(t[1].replace(t[3] + ": ", "")) + "</span>";
+    else if (cls === "title-lead") sample = '<span class="sn-title title-m"><span class="sn-lead">Set builder:</span> Peak time Friday</span>';
+    else if (cls === "title-m") sample = '<span class="sn-title title-m">' + esc(t[1]) + "</span>";
+    else sample = '<span class="' + cls + (cls === "figure" ? " sn-num" : "") + '">' + esc(t[1]) + "</span>";
+    return '<tr><td><code class="data">.' + cls + '</code></td><td data-sample="' + cls + '">' + sample + '</td><td class="data-s sn-muted" data-computed="' + cls + '"></td><td class="body-s sn-muted">' + esc(t[2]) + "</td></tr>";
+  }).join("");
+
+  $("#space-rows").innerHTML = SPACE.map(function (n) {
+    return '<code class="data">--' + n + '</code><span class="data-s sn-muted" data-var="--' + n + '"></span><span><span class="ref-scale__bar" style="display:block;width:var(' + CSS.escape("--" + n) + ')"></span></span>';
+  }).join("");
+  $("#radius-boxes").innerHTML = RADIUS.map(function (n) {
+    return '<div class="ref-box" style="border-radius:var(--' + n + ')"><code class="data">--' + n + '</code><span class="data-s sn-muted" data-var="--' + n + '"></span></div>';
+  }).join("");
+  $("#shadow-boxes").innerHTML = SHADOW.map(function (n) {
+    return '<div class="ref-box" style="border-radius:var(--radius-card);box-shadow:var(--' + n + ');border-color:var(--line)"><code class="data">--' + n + '</code><span class="data-s sn-muted" data-var="--' + n + '"></span></div>';
+  }).join("");
+  $("#misc-rows").innerHTML = MISC.map(function (g) {
+    return g[1].map(function (n) { return '<tr><td><code class="data">--' + n + '</code></td><td class="num" data-var="--' + n + '"></td><td class="body-s sn-muted">' + g[0] + "</td></tr>"; }).join("");
+  }).join("");
+
+  var iconNames = Object.keys(S.icons).sort();
+  $("#icon-count").textContent = iconNames.length + " icons";
+  $("#icon-grid").innerHTML = iconNames.map(function (n) { return '<div class="ref-icon" role="listitem">' + S.icon(n, { size: 24 }) + '<span class="data-s">' + n + "</span></div>"; }).join("");
+  $("#module-rows").innerHTML = S.modules.map(function (m) {
+    return '<tr><td><span class="sn-row sn-m-' + m.key + '">' + S.icon(m.icon, { cls: "sn-m-icon" }) + '<span class="body-strong">' + esc(m.label) + '</span></span></td><td><code class="data">' + m.icon + '</code></td><td><code class="data">sn-m-' + m.key + '</code></td><td class="body-s sn-muted">' + esc(m.summary) + "</td></tr>";
+  }).join("");
+
+  $("#link-mods").innerHTML = S.modules.map(function (m) { return S.html.link(m.key, "#colour", m.label); }).join(" · ");
+  var er = ""; for (var e = 1; e <= 10; e++) er += S.html.energy(e); $("#energy-row").innerHTML = er;
+  $$("[data-stamp]").forEach(function (t) { t.textContent = S.format.stamp(t.getAttribute("data-stamp")); });
+
+  /* ---------- writing panel (01-writing.md) ---------- */
+  var WRITE = [
+    ["Set built", "Built “Peak time Friday”: 24 tracks, 1 h 52 min.", "Awesome! Your set is ready to rock!"],
+    ["Missing data", "12 tracks have no key. Add keys in Track detail or run key analysis.", "Oops, looks like some data is missing."],
+    ["Transition hint", "Energy +1, same key, +2 BPM", "Smooth transition detected!"],
+    ["Scraper failed", "1001tracklists stopped after 5 failed requests. It retries at 21:45 AEDT.", "Error: circuit_open"],
+    ["Onboarding", "Pick two tracks to find a route between them.", "Welcome to the future of DJing!"],
+    ["Button", "Delete set", "OK"],
+    ["Heading", "Fix artist attribution", "Fix Artist Attribution"],
+    ["Missing value", "–", "N/A"],
+    ["Confirmation", "Clear 37 queued jobs? Jobs in all queues stop and are removed. Completed results stay in the database.", "Are you sure?"]
+  ];
+  $("#write-rows").innerHTML = WRITE.map(function (w) {
+    return '<tr><td class="body-strong">' + esc(w[0]) + '</td><td><span class="sn-pill" data-status="ok">Write</span> ' + esc(w[1]) + '</td><td class="sn-muted"><span class="sn-pill" data-status="bad">Not</span> ' + esc(w[2]) + "</td></tr>";
+  }).join("");
+  function li(a, b) { return '<li class="sn-page__item"><span>' + a + '</span><span class="sn-page__item-meta">' + b + "</span></li>"; }
+  $("#write-numbers").innerHTML = [
+    ["Count", S.format.count(1284) + " tracks"], ["BPM", S.format.bpm(128.5) + " BPM"], ["BPM change", S.bpmStep(124, 121).label],
+    ["Duration", S.format.duration(372)], ["Set length", S.format.span(6720)], ["Percent", S.format.percent(0.65)],
+    ["Date", S.format.date("2026-10-24")], ["Stamp", S.format.stamp("2026-10-23T19:00:00Z")], ["Range", "122–128 BPM"]
+  ].map(function (r) { return li(esc(r[0]), esc(r[1])); }).join("");
+  var G = S.GLYPH;
+  $("#write-glyphs").innerHTML = [
+    [G.ok, "ok / perfect"], [G.fair, "fair / compatible"], [G.possible, "possible (compat)"], [G.bad, "bad / clash / field error"],
+    [G.warn, "warn"], [G.running, "running"], [G.idle, "idle, missing value, ranges"], ["↗", "opens outside the app"], ["→", "from–to"], ["·", "meta separator"]
+  ].map(function (r) { return li(esc(r[1]), '<span class="data-strong">' + esc(r[0]) + "</span>"); }).join("");
+  $("#write-labels").innerHTML = [
+    ["Buttons", "Verb + object: Build set"], ["Case", "Sentence case everywhere"], ["Spelling", "en-AU: colour, analyse"],
+    ["Artist – title", "En dash, never a hyphen"], ["Negative", "True minus: −3"], ["Errors", "What happened, why, what next"],
+    ["Empty", "What it holds, why empty, one action"], ["Busy", "Saving…"], ["Never", "Emoji, exclamation marks, “Sorry”"]
+  ].map(function (r) { return li(esc(r[0]), esc(r[1])); }).join("");
+
+  /* ---------- formatting helpers (live) ---------- */
+  var AT = "2026-10-24T10:30:00Z", NOW = new Date("2026-10-24T13:30:00Z");
+  var CALLS = [
+    ['format.date("' + AT + '")', function () { return S.format.date(AT); }],
+    ['format.day("' + AT + '")', function () { return S.format.day(AT); }],
+    ['format.month("' + AT + '")', function () { return S.format.month(AT); }],
+    ['format.time("' + AT + '")', function () { return S.format.time(AT); }],
+    ['format.dateTime("' + AT + '")', function () { return S.format.dateTime(AT); }],
+    ['format.zone("2026-06-24T10:30:00Z")', function () { return S.format.zone("2026-06-24T10:30:00Z"); }],
+    ['format.stamp("' + AT + '")', function () { return S.format.stamp(AT); }],
+    ['format.relative("' + AT + '", now + 3 h)', function () { return S.format.relative(AT, NOW); }],
+    ['format.dateOnly("2026-10-24")', function () { return S.format.dateOnly("2026-10-24"); }],
+    ["format.duration(372)", function () { return S.format.duration(372); }],
+    ["format.duration(3760)", function () { return S.format.duration(3760); }],
+    ["format.span(6720)", function () { return S.format.span(6720); }],
+    ["format.count(1284)", function () { return S.format.count(1284); }],
+    ["format.count(null)", function () { return S.format.count(null); }],
+    ["format.bpm(128.04)", function () { return S.format.bpm(128.04); }],
+    ["format.bpm(123.5)", function () { return S.format.bpm(123.5); }],
+    ["format.percent(0.654)", function () { return S.format.percent(0.654); }],
+    ["format.percent(0.994, 1)", function () { return S.format.percent(0.994, 1); }],
+    ['camelot("Am")', function () { return S.camelot("Am"); }],
+    ['camelot("F# minor")', function () { return S.camelot("F# minor"); }],
+    ['camelot("Eb")', function () { return S.camelot("Eb"); }],
+    ['keyName("8B")', function () { return S.keyName("8B"); }],
+    ['compat("8A", "9A")', function () { return S.compat("8A", "9A"); }],
+    ['compat("8A", "8B")', function () { return S.compat("8A", "8B"); }],
+    ['compat("8A", "2B")', function () { return S.compat("8A", "2B"); }],
+    ["tier(6)", function () { return S.tier(6); }],
+    ["energyStep(6, 7)", function () { return S.energyStep(6, 7); }],
+    ["energyStep(5, 8)", function () { return S.energyStep(5, 8); }],
+    ["energyStep(9, 6)", function () { return S.energyStep(9, 6); }],
+    ["energyStep(7, 6, 8)", function () { return S.energyStep(7, 6, 8); }],
+    ["bpmStep(124, 126)", function () { return S.bpmStep(124, 126); }],
+    ["bpmStep(124, 130)", function () { return S.bpmStep(124, 130); }],
+    ["bpmStep(128, 116)", function () { return S.bpmStep(128, 116); }],
+    ['status("circuit_open")', function () { return S.status("circuit_open"); }],
+    ['status("completed")', function () { return S.status("completed"); }],
+    ['status("low", "confidence")', function () { return S.status("low", "confidence"); }],
+    ['html.key("Am", true)', function () { return { html: S.html.key("Am", true) }; }],
+    ["html.energy(8)", function () { return { html: S.html.energy(8) }; }],
+    ['html.pill("degraded")', function () { return { html: S.html.pill("degraded") }; }],
+    ['html.compat("possible", "+7 lift")', function () { return { html: S.html.compat("possible", "+7 lift") }; }],
+    ['html.title("Set builder", "Peak time Friday", "title-s")', function () { return { html: S.html.title("Set builder", "Peak time Friday", "title-s") }; }]
+  ];
+  function show(v) {
+    if (v && v.html) return v.html + '<div class="data-s sn-dim">' + esc(v.html) + "</div>";
+    if (v && typeof v === "object") {
+      var badge = v.level ? S.html.compat(v.level, v.label) : v.status ? '<span class="sn-pill" data-status="' + v.status + '">' + esc(v.label) + "</span>" : "";
+      return '<span class="sn-row">' + badge + '<code class="data-s sn-muted">' + esc(JSON.stringify(v)) + "</code></span>";
+    }
+    return '<code class="data">' + esc(v == null ? "null" : JSON.stringify(v)) + "</code>";
+  }
+  $("#helper-rows").innerHTML = CALLS.map(function (c) { return '<tr><td><code class="data">SongNodes.' + esc(c[0]) + "</code></td><td>" + show(c[1]()) + "</td></tr>"; }).join("");
+
+  function tool() {
+    var k1 = $("#h-k1").value, k2 = $("#h-k2").value, b1 = parseFloat($("#h-b1").value), b2 = parseFloat($("#h-b2").value), e1 = parseInt($("#h-e1").value, 10), e2 = parseInt($("#h-e2").value, 10);
+    var c = S.compat(k1, k2), b = S.bpmStep(b1, b2), en = S.energyStep(e1, e2);
+    $("#h-out").innerHTML = S.html.key(k1) + '<span class="sn-dim">→</span>' + S.html.key(k2) + S.html.compat(c.level, c.label) + S.html.compat(b.level, b.label) + S.html.compat(en.level, en.label);
+  }
+  $$("#helpers .ref-tool input").forEach(function (i) { i.addEventListener("input", tool); });
+  tool();
+
+  /* ---------- icons: placeholders -> SongNodes.icon() ---------- */
+  $$("svg[data-i]").forEach(function (el) {
+    var s = el.getAttribute("data-s"), tmp = document.createElement("span");
+    tmp.innerHTML = S.icon(el.getAttribute("data-i"), s ? { size: +s } : undefined);
+    el.replaceWith(tmp.firstChild);
+  });
+
+  /* ---------- spec cards: heading, description, HTML disclosure ---------- */
+  var GROUP_OF = {};
+  var REV = {};
+  iconNames.forEach(function (n) { var t = document.createElement("span"); t.innerHTML = S.icon(n); REV[t.firstChild.innerHTML] = n; });
+  function shortenSvg(html) {
+    return html.replace(/(<svg class="sn-icon[^"]*"[^>]*>)([\s\S]*?)(<\/svg>)/g, function (m, a, inner, z) { return a + "…" + (REV[inner] || "icon") + "…" + z; });
+  }
+  function dedent(s) {
+    var lines = s.replace(/^\s*\n/, "").replace(/\s+$/, "").split("\n");
+    var pad = Infinity;
+    lines.forEach(function (l, i) { if (l.trim() && (i > 0 || /^\s/.test(l))) pad = Math.min(pad, l.match(/^\s*/)[0].length); });
+    if (!isFinite(pad)) pad = 0;
+    return lines.map(function (l) { return l.slice(Math.min(pad, l.match(/^\s*/)[0].length)); }).join("\n");
+  }
+  var specs = $$("[data-spec]");
+  $("#comp-count").textContent = specs.length + " components";
+  specs.forEach(function (card) {
+    var name = card.getAttribute("data-spec"), demo = $("[data-demo]", card), id = "c-" + name.toLowerCase();
+    card.id = id; card.setAttribute("aria-labelledby", id + "-t");
+    var code = dedent(shortenSvg(demo.innerHTML)).replace(/ (disabled|hidden|checked|open|inert|data-locked|data-now|data-flag|data-selected|data-sortable|data-unknown)=""/g, " $1");
+    var head = document.createElement("div");
+    head.className = "sn-section-heading";
+    head.innerHTML = '<h4 class="sn-title title-s" id="' + id + '-t">' + esc(name) + '</h4><div class="sn-section-heading__end"><code class="data-s sn-dim">components/' + esc(name) + "</code></div>";
+    var desc = document.createElement("p");
+    desc.className = "ref-spec__desc body-s"; desc.textContent = card.getAttribute("data-desc");
+    var det = document.createElement("details");
+    det.className = "sn-disclosure";
+    det.innerHTML = '<summary><span class="sn-disclosure__chev">' + S.icon("chevron-right") + '</span>HTML<span class="sn-disclosure__hint">' + code.split("\n").length + ' lines</span></summary><div class="sn-disclosure__body"><pre class="ref-code data-s"><code></code></pre></div>';
+    $("code", det).textContent = code;
+    card.insertBefore(desc, demo); card.insertBefore(head, desc); card.appendChild(det);
+  });
+
+  /* ---------- live values (re-read on theme and text-size change) ---------- */
+  function refresh() {
+    $$("[data-var]").forEach(function (el) { el.textContent = cssVar(el.getAttribute("data-var")) || "–"; });
+    $$("[data-computed]").forEach(function (el) {
+      var t = $('[data-sample="' + el.getAttribute("data-computed") + '"] > *'), cs = getComputedStyle(t.classList.contains("sn-title") && el.getAttribute("data-computed") === "title-lead" ? t.firstChild : t);
+      var lh = parseFloat(cs.lineHeight), fs = parseFloat(cs.fontSize);
+      el.textContent = Math.round(fs * 100) / 100 + "px / " + (isNaN(lh) ? cs.lineHeight : Math.round(lh / fs * 100) / 100) + " · " + cs.fontWeight + " · " + cs.fontFamily.split(",")[0].replace(/"/g, "");
+    });
+    var p = S.prefs.get(), theme = root.getAttribute("data-theme");
+    $$("#theme-seg button").forEach(function (b) { var on = b.getAttribute("data-value") === theme; b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1; });
+    $$("#size-seg button").forEach(function (b) { var on = b.getAttribute("data-value") === p.textSize; b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1; });
+    $("#themetag").textContent = "Theme: " + theme.charAt(0).toUpperCase() + theme.slice(1) + " · text " + p.textSize.toUpperCase();
+  }
+  $("#ver").textContent = S.version;
+  $("#rendered").textContent = S.format.stamp(new Date());
+
+  /* ---------- interaction ---------- */
+  function radio(group, onPick) {
+    group.addEventListener("click", function (e) { var b = e.target.closest("button[role=radio]"); if (b) onPick(b.getAttribute("data-value"), b); });
+    group.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0; if (!d) return;
+      e.preventDefault();
+      var bs = $$("button[role=radio]", group), i = bs.indexOf(document.activeElement), n = bs[(i + d + bs.length) % bs.length];
+      onPick(n.getAttribute("data-value"), n); n.focus();
+    });
+  }
+  radio($("#theme-seg"), function (v) { S.prefs.setTheme(v); refresh(); });
+  radio($("#size-seg"), function (v) { S.prefs.setTextSize(v); refresh(); });
+  $$("[data-demo] .sn-segmented-control").forEach(function (g) {
+    radio(g, function (v) { $$("button[role=radio]", g).forEach(function (b) { var on = b.getAttribute("data-value") === v; b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1; }); });
+  });
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    var sw = t.closest(".sn-switch__control");
+    if (sw) { var on = sw.getAttribute("aria-checked") !== "true"; sw.setAttribute("aria-checked", on); $(".sn-switch__state", sw).textContent = on ? "On" : "Off"; }
+    var chip = t.closest(".sn-filter-chip");
+    if (chip) chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") !== "true");
+    var tab = t.closest("[data-demo] .sn-tab");
+    if (tab) $$(".sn-tab", tab.parentNode).forEach(function (x) { x.setAttribute("aria-selected", x === tab); x.tabIndex = x === tab ? 0 : -1; });
+    var more = t.closest(".sn-source-badge__more");
+    if (more) { var open = more.getAttribute("aria-expanded") !== "true"; more.setAttribute("aria-expanded", open); document.getElementById(more.getAttribute("aria-controls")).hidden = !open; }
+    var a = t.closest('[data-demo] a[href^="#"]');
+    if (a) e.preventDefault();
+  });
+
+  /* ---------- navigation drawer ---------- */
+  var drawer = $("#ref-nav"), opener = $("#nav-open");
+  function setInert(on) { $$("[data-drawer-inert]").forEach(function (el) { if (on) el.setAttribute("inert", ""); else el.removeAttribute("inert"); }); }
+  function openNav() { drawer.setAttribute("data-open", ""); opener.setAttribute("aria-expanded", "true"); setInert(true); setTimeout(function () { $(".sn-nav-drawer__nav a", drawer).focus(); }, 0); }
+  function closeNav(back) { drawer.removeAttribute("data-open"); opener.setAttribute("aria-expanded", "false"); setInert(false); if (back) opener.focus(); }
+  opener.addEventListener("click", openNav);
+  $$("[data-close-nav]", drawer).forEach(function (b) { b.addEventListener("click", function () { closeNav(true); }); });
+  $$(".sn-nav-drawer__nav a", drawer).forEach(function (a) { a.addEventListener("click", function () { closeNav(false); }); });
+  drawer.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.preventDefault(); closeNav(true); } });
+
+  refresh();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refresh);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+/*
+ * Legacy variable aliases → SongNodes design system tokens.
+ *
+ * The design system (design-system/, synced to ./design-system/) is the single
+ * source of truth for every colour, type, spacing, radius, shadow, z-index and
+ * motion value. The older stylesheets (tokens.css, globals.css, global.css)
+ * still name their own variables; this file re-points every one of those names
+ * at a design-system token so components that have not been migrated yet
+ * already render in the system's palette and type.
+ *
+ * Load order (main.tsx): legacy CSS → design-system tokens.css → bundle.css →
+ * this file. Names shared with the design system (--space-*, --radius-card,
+ * --z-header, --duration-*) are not redefined here, so the system's values win.
+ *
+ * Deprecated: migration phase 6 (design-system/19-songnodes-migration.md)
+ * deletes this file together with the legacy stylesheets. Do not add to it;
+ * new code uses design-system tokens directly.
+ */
+:root,
+[data-theme] {
+  /* Ground and surfaces */
+  --color-black: var(--bg);
+  --color-white: var(--fg);
+  --color-true-black: var(--bg);
+  --color-true-white: var(--fg);
+  --color-bg-base: var(--bg);
+  --color-bg-primary: var(--bg);
+  --color-bg-secondary: var(--surface-1);
+  --color-bg-tertiary: var(--surface-2);
+  --color-bg-elevated: var(--surface-1);
+  --color-bg-elevated-1: var(--surface-1);
+  --color-bg-elevated-2: var(--surface-2);
+  --color-bg-elevated-3: var(--surface-3);
+  --color-bg-elevated-4: var(--surface-3);
+  --color-bg-elevated-5: var(--surface-3);
+  --color-panel-bg: var(--surface-1);
+  --color-panel-border: var(--line);
+  --color-card-bg: var(--surface-1);
+  --color-card-border: var(--line);
+  --color-card-hover: var(--hover-bg);
+  --color-modal-bg: var(--surface-1);
+  --color-modal-overlay: var(--overlay);
+  --color-tooltip-bg: var(--surface-3);
+  --color-tooltip-text: var(--fg);
+  --color-input-bg: var(--sunk);
+  --color-input-border: var(--line-strong);
+  --color-input-focus: var(--focus);
+
+  /* Brand: lavender marks SongNodes itself (wordmark, primary, focus, selection) */
+  --color-brand-primary: var(--brand);
+  --color-brand-primary-hover: var(--brand-strong);
+  --color-brand-primary-active: var(--brand-strong);
+  --color-brand-primary-muted: var(--brand-soft);
+  --color-accent-primary: var(--brand);
+  --color-interactive-default: var(--brand);
+  --color-interactive-hover: var(--brand-strong);
+  --color-interactive-active: var(--brand-strong);
+  --color-interactive-focus: var(--focus);
+  --color-interactive-disabled: var(--fg-disabled);
+
+  /* Former "secondary" blue and "tertiary" red were status in disguise */
+  --color-brand-secondary: var(--status-info);
+  --color-brand-secondary-hover: var(--status-info);
+  --color-brand-secondary-active: var(--status-info);
+  --color-brand-secondary-muted: var(--status-info-bg);
+  --color-accent-secondary: var(--status-info);
+  --color-brand-tertiary: var(--status-bad);
+  --color-brand-tertiary-hover: var(--status-bad);
+  --color-brand-tertiary-active: var(--status-bad);
+  --color-brand-tertiary-muted: var(--status-bad-bg);
+  --color-accent-tertiary: var(--status-bad);
+  --color-accent-warning: var(--status-warn);
+
+  /* Status: only ever state, always with a glyph and a word */
+  --color-success: var(--status-ok);
+  --color-success-bg: var(--status-ok-bg);
+  --color-success-border: var(--status-ok);
+  --color-warning: var(--status-warn);
+  --color-warning-bg: var(--status-warn-bg);
+  --color-warning-border: var(--status-warn);
+  --color-error: var(--status-bad);
+  --color-error-bg: var(--status-bad-bg);
+  --color-error-border: var(--status-bad);
+  --color-info: var(--status-info);
+  --color-info-bg: var(--status-info-bg);
+  --color-info-border: var(--status-info);
+
+  /* Text */
+  --color-text-primary: var(--fg);
+  --color-text-secondary: var(--fg-2);
+  --color-text-tertiary: var(--fg-3);
+  --color-text-disabled: var(--fg-disabled);
+  --color-text-placeholder: var(--fg-3);
+  --color-text-inverse: var(--on-brand);
+  --color-text-link: var(--link);
+  --color-text-link-hover: var(--link);
+  --color-text-link-active: var(--link);
+
+  /* Borders */
+  --color-border-default: var(--line);
+  --color-border-primary: var(--line);
+  --color-border-secondary: var(--line);
+  --color-border-subtle: var(--line);
+  --color-border-strong: var(--line-strong);
+  --color-border-focus: var(--focus);
+  --color-border-error: var(--status-bad);
+  --color-border-success: var(--status-ok);
+  --color-border-warning: var(--status-warn);
+
+  /* Buttons */
+  --color-button-bg: var(--surface-2);
+  --color-button-hover: var(--hover-bg);
+  --color-button-active: var(--surface-3);
+  --color-button-disabled: var(--fg-disabled);
+
+  /* Graph (GraphStyles: neutral nodes, lavender selection, amber now, pink paths) */
+  --color-node-default: var(--fg-2);
+  --color-node-hover: var(--fg);
+  --color-node-selected: var(--brand);
+  --color-node-muted: var(--fg-3);
+  --color-node-disabled: var(--fg-disabled);
+  --color-edge-default: var(--fg-3);
+  --color-edge-hover: var(--fg-2);
+  --color-edge-active: var(--brand);
+  --color-edge-path: var(--mod-paths);
+
+  /* Type: Sora titles, Inter body, JetBrains Mono data */
+  --font-family-base: var(--font-body);
+  --font-family-display: var(--font-display);
+  --font-family-mono: var(--font-data);
+
+  /* Shape and depth */
+  --radius-none: 0;
+  --radius-sm: var(--radius-chip);
+  --radius-base: var(--radius-control);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-sheet);
+  --radius-2xl: var(--radius-sheet);
+  --radius-3xl: var(--radius-sheet);
+  --radius-full: var(--radius-pill);
+  --radius-button: var(--radius-control);
+  --radius-input: var(--radius-control);
+  --radius-badge: var(--radius-chip);
+  --radius-panel: var(--radius-card);
+  --radius-modal: var(--radius-sheet);
+  --radius-tooltip: var(--radius-control);
+  --fluid-radius-sm: var(--radius-chip);
+  --fluid-radius-md: var(--radius-control);
+  --fluid-radius-lg: var(--radius-card);
+  --shadow-none: none;
+  --shadow-xs: var(--shadow-1);
+  --shadow-sm: var(--shadow-1);
+  --shadow-small: var(--shadow-1);
+  --shadow-base: var(--shadow-1);
+  --shadow-card: var(--shadow-1);
+  --shadow-button: none;
+  --shadow-button-hover: none;
+  --shadow-card-hover: var(--shadow-1);
+  --shadow-md: var(--shadow-2);
+  --shadow-medium: var(--shadow-2);
+  --shadow-dropdown: var(--shadow-2);
+  --shadow-tooltip: var(--shadow-2);
+  --shadow-lg: var(--shadow-3);
+  --shadow-large: var(--shadow-3);
+  --shadow-xl: var(--shadow-3);
+  --shadow-2xl: var(--shadow-3);
+  --shadow-panel: var(--shadow-3);
+  --shadow-modal: var(--shadow-3);
+  /* No glows anywhere */
+  --glow-accent-sm: none;
+  --glow-accent-md: none;
+  --glow-accent-lg: none;
+  --glow-focus: 0 0 0 2px var(--focus);
+
+  /* Layers */
+  --z-background: var(--z-base);
+  --z-graph: var(--z-base);
+  --z-panels: var(--z-sticky);
+  --z-toolbar: var(--z-sticky);
+  --z-dropdown: var(--z-popover);
+  --z-modal: var(--z-dialog);
+  --z-notification: var(--z-toast);
+  --z-loading: var(--z-overlay);
+  --z-max: var(--z-tooltip);
+
+  /* Sizes */
+  --header-height: var(--header-h);
+  --layout-header-height: var(--header-h);
+  --touch-target-min: var(--touch-min);
+  --button-height-sm: var(--control-sm);
+  --button-height-base: var(--control-md);
+  --button-height-lg: var(--control-lg);
+  --input-height-sm: var(--control-sm);
+  --input-height-base: var(--control-md);
+  --input-height-lg: var(--control-lg);
+  --layout-content-max-width: var(--content-max);
+
+  /* Motion */
+  --ease-out: var(--ease-standard);
+  --ease-in-out: var(--ease-standard);
+  --ease-in: var(--ease-exit);
+  --ease-smooth: var(--ease-standard);
+  --ease-spring: var(--ease-standard);
+  --transition-fast: var(--duration-fast) var(--ease-standard);
+  --transition-medium: var(--duration-base) var(--ease-standard);
+  --transition-slow: var(--duration-slow) var(--ease-standard);
+}

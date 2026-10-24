@@ -1,0 +1,54 @@
+<!-- @dsCard group="Inputs" height=557 subtitle="Checkbox group with legend and hints, radio group, select-all with indeterminate in a table, disabled with reason" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Checkbox — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5) var(--space-6); align-items: start; }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-grid">
+    <fieldset class="sn-checkbox-group">
+      <legend class="sn-checkbox-group__legend">Track checks</legend>
+      <label class="sn-checkbox"><input type="checkbox" checked><span class="sn-checkbox__text"><span>Has key and BPM<span class="sn-checkbox__count">1,102</span></span></span></label>
+      <label class="sn-checkbox"><input type="checkbox"><span class="sn-checkbox__text"><span>Needs an energy check<span class="sn-checkbox__count">37</span></span><span class="sn-checkbox__hint">Energy came from one source only.</span></span></label>
+      <label class="sn-checkbox"><input type="checkbox"><span class="sn-checkbox__text"><span>Played on 2+ shows<span class="sn-checkbox__count">412</span></span></span></label>
+      <label class="sn-checkbox" data-disabled><input type="checkbox" disabled aria-describedby="cb-why"><span class="sn-checkbox__text"><span>Has stems</span><span class="sn-checkbox__hint" id="cb-why">Needs audio analysis, which is off in Pipeline.</span></span></label>
+    </fieldset>
+
+    <fieldset class="sn-checkbox-group">
+      <legend class="sn-checkbox-group__legend">When a track is missing a key</legend>
+      <p class="sn-checkbox-group__help" id="rg-help">Applies to Build set and Try another take.</p>
+      <label class="sn-checkbox"><input type="radio" name="miss" aria-describedby="rg-help" checked><span class="sn-checkbox__text"><span>Leave it out of the set</span></span></label>
+      <label class="sn-checkbox"><input type="radio" name="miss" aria-describedby="rg-help"><span class="sn-checkbox__text"><span>Use it, mark the transition “key ?”</span></span></label>
+      <label class="sn-checkbox"><input type="radio" name="miss" aria-describedby="rg-help"><span class="sn-checkbox__text"><span>Ask me each time</span></span></label>
+    </fieldset>
+  </div>
+
+  <div class="sn-preview__label">Select all with indeterminate (table)</div>
+  <div class="sn-tablebox">
+    <table class="sn-table" id="tbl">
+      <thead><tr><th style="width:44px"><label class="sn-checkbox sn-checkbox--bare"><input type="checkbox" id="all" aria-label="Select all 4 tracks"></label></th><th>Track</th><th class="num">BPM</th><th>Key</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <p class="body-s sn-dim" style="margin:0" id="selcount" role="status"></p>
+</div>
+<script>
+  var S = window.SongNodes;
+  var T = [["Bicep – Glue", 130, "6A", true], ["Overmono – So U Kno", 132, "10A", true], ["Sammy Virji – If U Need It", 136, "4A", false], ["Interplanetary Criminal – Slow Burner", 134, "11A", false]];
+  document.getElementById("rows").innerHTML = T.map(function (t, i) {
+    return '<tr' + (t[3] ? ' aria-selected="true"' : "") + '><td><label class="sn-checkbox sn-checkbox--bare"><input type="checkbox" data-row' + (t[3] ? " checked" : "") + ' aria-label="Select ' + S.esc(t[0]) + '"></label></td><td>' + S.esc(t[0]) + '</td><td class="num">' + t[1] + '</td><td>' + S.html.key(t[2]) + '</td></tr>';
+  }).join("");
+  var all = document.getElementById("all"), rows = Array.prototype.slice.call(document.querySelectorAll("[data-row]"));
+  function sync() {
+    var n = rows.filter(function (r) { return r.checked; }).length;
+    all.checked = n === rows.length; all.indeterminate = n > 0 && n < rows.length;
+    rows.forEach(function (r) { r.closest("tr").toggleAttribute("aria-selected", r.checked); if (r.checked) r.closest("tr").setAttribute("aria-selected", "true"); });
+    document.getElementById("selcount").textContent = n ? n + " of " + rows.length + " tracks selected" : "No tracks selected";
+  }
+  all.addEventListener("change", function () { rows.forEach(function (r) { r.checked = all.checked; }); sync(); });
+  rows.forEach(function (r) { r.addEventListener("change", sync); });
+  sync();
+</script>
+</body>
+</html>

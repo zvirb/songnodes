@@ -1,0 +1,147 @@
+<!-- @dsCard group="Music" height=812 subtitle="Bars per slot coloured by energy, dashed target wave, Building band, now slot, problem transitions, rebuild proposal as hatched preview" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>EnergyWave — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Current running order · now playing slot 7</div>
+  <section class="sn-card sn-m-sets">
+    <figure class="sn-chart-frame sn-energy-wave" aria-labelledby="w1Title">
+      <div class="sn-chart-frame__head">
+        <div class="sn-chart-frame__titles">
+          <h3 class="sn-title title-s" id="w1Title"><span class="sn-lead">Set builder:</span> Peak time Friday</h3>
+          <p class="sn-chart-frame__sub">Energy per slot, 1–10 · 14 tracks · 92 min · shape: Peak time, three waves</p>
+        </div>
+        <div class="sn-chart-frame__actions"><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="w1Toggle" aria-controls="w1Table w1Plot"></button></div>
+      </div>
+      <ul class="sn-chart-frame__legend" aria-label="Legend" id="w1Legend"></ul>
+      <div class="sn-chart-frame__plot" id="w1Plot"></div>
+      <div class="sn-chart-frame__table" id="w1Table" hidden></div>
+      <p class="sn-sr" aria-live="polite" id="w1Live"></p>
+      <div class="sn-energy-wave__summary" id="w1Sum"></div>
+    </figure>
+  </section>
+  <div class="sn-preview__label">Rebuild proposal · preview of slots 8–14, not saved</div>
+  <section class="sn-card sn-m-sets">
+    <figure class="sn-chart-frame sn-energy-wave" aria-labelledby="w2Title">
+      <div class="sn-chart-frame__head">
+        <div class="sn-chart-frame__titles">
+          <h3 class="sn-title title-s" id="w2Title"><span class="sn-lead">Rebuild proposal:</span> Peak time Friday</h3>
+          <p class="sn-chart-frame__sub">Slots 8–14 re-planned after the now slot · drop after the peak is now 2 at once</p>
+        </div>
+        <div class="sn-chart-frame__actions">
+          <button class="sn-btn sn-btn--sm sn-btn--quiet" type="button">Discard</button>
+          <button class="sn-btn sn-btn--sm sn-btn--primary" type="button">Use this order</button>
+        </div>
+      </div>
+      <div class="sn-chart-frame__plot" id="w2Plot"></div>
+      <p class="sn-sr" aria-live="polite" id="w2Live"></p>
+    </figure>
+  </section>
+</div>
+<script>
+/*KIT*/
+(function () {
+  var S = window.SongNodes;
+  var tracks = [
+    ["Peggy Gou – (It Goes Like) Nanana", 4, 122, "6A"], ["Josh Baker – Lost In Muzik", 5, 124, "6A"], ["Ross From Friends – Talk To Me You'll Drown", 5, 124, "7A"],
+    ["Fred again.. – Delilah (pull me out of this)", 6, 126, "7A"], ["Overmono – So U Kno", 8, 130, "8A"], ["Bicep – Glue", 8, 130, "8A"],
+    ["Interplanetary Criminal – Slow Burner", 9, 132, "9A"], ["Sammy Virji – If U Need It", 9, 133, "9A"], ["Mall Grab – Spirit Wave", 8, 132, "10A"],
+    ["Skream – Dutch Flowerz", 7, 132, "10A"], ["Overmono – Good Lies", 8, 134, "10A"], ["Bicep – Apricots", 9, 134, "11A"],
+    ["Interplanetary Criminal – Bike Lock", 10, 135, "11A"], ["Sammy Virji – Find My Way", 10, 136, "12A"]
+  ];
+  var target = [4, 5, 6, 7, 7, 8, 9, 9, 7, 7, 8, 9, 10, 10];
+  var current = tracks.map(function (t) { return t[1]; });
+  var proposal = current.slice(0, 7).concat([9, 7, 7, 8, 9, 10, 10]);
+  var NOW = 7;
+
+  function steps(e) { return e.map(function (v, i) { return i === 0 ? null : S.energyStep(e[i - 1], v, i > 1 ? e[i - 2] : null); }); }
+
+  function draw(host, live, opts) {
+    var tip = K.tip(host);
+    K.fit(host, function (w) {
+      var rem = K.rem(), e = opts.e, st = steps(e), n = e.length;
+      var H = Math.round(opts.h * rem + 40), ml = rem * 2, mr = rem * 4.6, mt = rem * 2.6, mb = rem * 1.9;
+      host.querySelectorAll("svg").forEach(function (s) { s.remove(); });
+      var svg = K.el("svg", { width: w, height: H, viewBox: "0 0 " + w + " " + H, tabindex: 0, role: "group", "aria-roledescription": "energy wave chart", "aria-labelledby": opts.titleId, "aria-describedby": opts.titleId + "d" });
+      host.insertBefore(svg, host.firstChild);
+      K.el("desc", { id: opts.titleId + "d" }, svg).textContent = opts.desc;
+      var y = K.linear(0, 10, H - mb, mt), x = K.band(n, ml, w - mr, 0.22, 28), fill = K.hatch(svg);
+      // Building tier band (5–7), tier labels in the right margin
+      K.el("rect", { x: ml, y: y(7.5), width: w - mr - ml, height: y(4.5) - y(7.5), "class": "sn-energy-wave__band" }, svg);
+      [["High", 9], ["Building", 6], ["Low", 2.5]].forEach(function (t) { K.text(svg, w - mr + 8, y(t[1]) + 4, t[0], { "class": "sn-energy-wave__band-label" }); });
+      [0, 2, 4, 6, 8, 10].forEach(function (v) {
+        if (v === 0) K.el("line", { x1: ml, x2: w - mr, y1: Math.round(y(0)) + 0.5, y2: Math.round(y(0)) + 0.5, "class": "sn-chart-frame__base" }, svg);
+        K.text(svg, ml - 8, y(v) + 4, String(v), { "class": "sn-chart-frame__tick", "text-anchor": "end" });
+      });
+      // preview region (hatched)
+      if (opts.previewFrom) {
+        var rx = x.mid(opts.previewFrom - 1) - x.step / 2;
+        K.el("rect", { x: rx, y: mt - rem * 0.4, width: w - mr - rx, height: H - mb - mt + rem * 0.4, fill: fill, opacity: 0.4 }, svg);
+        K.el("line", { x1: rx, x2: rx, y1: mt - rem * 0.4, y2: H - mb, "class": "sn-chart-frame__sim" }, svg);
+        K.text(svg, w - mr - 4, mt - rem * 0.9, "Preview", { "class": "sn-chart-frame__sim-label", "text-anchor": "end" });
+      }
+      // bars
+      var bars = e.map(function (v, i) {
+        var sim = opts.previewFrom && i + 1 >= opts.previewFrom;
+        var p = K.el("path", { d: K.barPath(x(i), y(v), x.bw, y(0) - y(v), 4), "class": "sn-energy-wave__bar" + (sim ? " sn-energy-wave__bar--sim" : ""), style: "--c: var(--energy-" + v + ")" }, svg);
+        if (sim) K.el("path", { d: K.barPath(x(i), y(v), x.bw, y(0) - y(v), 4), fill: fill, "pointer-events": "none" }, svg);
+        var lab = K.text(svg, x.mid(i), H - mb + rem * 1.1, String(i + 1), { "class": "sn-energy-wave__slot" + (i + 1 === NOW ? " sn-energy-wave__slot--now" : "") });
+        if (i + 1 === NOW) K.el("rect", { x: x.mid(i) - rem * 0.6, y: H - mb + rem * 1.35, width: rem * 1.2, height: 3, rx: 1.5, "class": "sn-energy-wave__now-bar" }, svg);
+        // problem transitions: glyph above the bar that arrives badly
+        var s = st[i];
+        if (s && (s.level === "clash" || s.level === "possible")) K.text(svg, x.mid(i), y(v) - 6, S.GLYPH[s.level], { "class": "sn-energy-wave__flag sn-energy-wave__flag--" + s.level });
+        return p;
+      });
+      // target wave
+      K.el("polyline", { points: target.map(function (v, i) { return x.mid(i) + "," + y(v); }).join(" "), "class": "sn-energy-wave__target" }, svg);
+      // now slot
+      var nx = x.mid(NOW - 1), tagW = rem * 2.4;
+      K.el("line", { x1: nx, x2: nx, y1: mt - rem * 0.4, y2: y(e[NOW - 1]) - (st[NOW - 1] && st[NOW - 1].level !== "perfect" ? rem * 1.3 : 3), "class": "sn-chart-frame__now" }, svg);
+      K.el("rect", { x: nx - tagW / 2, y: mt - rem * 1.6, width: tagW, height: rem * 1.2, rx: 3, "class": "sn-chart-frame__now-tag" }, svg);
+      K.text(svg, nx, mt - rem * 0.68, "Now", { "class": "sn-chart-frame__now-text", "text-anchor": "middle" });
+      K.text(svg, ml - 8, H - mb + rem * 1.1, "Slot", { "class": "sn-chart-frame__axis-title", "text-anchor": "end" });
+      // interaction
+      K.nav(svg, n, function (px) { return x.index(px); }, function (i) {
+        bars.forEach(function (b, j) { if (j === i) b.setAttribute("data-active", ""); else b.removeAttribute("data-active"); });
+        if (i < 0) { tip.hide(); return; }
+        var t = tracks[i], v = e[i], s = st[i], sim = opts.previewFrom && i + 1 >= opts.previewFrom;
+        var rows = [
+          { key: "rect", c: "var(--energy-" + v + ")", value: String(v), label: "energy · " + S.TIER_LABEL[S.tier(v)].split(" ")[0] },
+          { key: "line", c: "var(--chart-ref)", dash: true, value: String(target[i]), label: "target" }
+        ];
+        if (s) rows.push({ key: "", value: S.GLYPH[s.level], label: s.label });
+        var title = "Slot " + (i + 1) + (i + 1 === NOW ? " · now" : "") + (sim ? " · preview" : "") + " · " + (sim && v !== current[i] ? "proposed track" : t[0]);
+        tip.show(x.mid(i), y(Math.max(v, target[i])), title, rows);
+        live.textContent = title + ". Energy " + v + ", target " + target[i] + (s ? ". " + s.label : "") + ".";
+      }, { start: NOW - 1 });
+    });
+  }
+
+  draw(document.getElementById("w1Plot"), document.getElementById("w1Live"), { e: current, h: 13, titleId: "w1Title",
+    desc: "Energy climbs from 4 to a first peak of 9 at slots 7 and 8, dips to 7 at slot 10 and rises to 10 for the close. Two transitions break the rules: slot 5 jumps +2 and slot 10 is a second −1 in a row. Use the left and right arrow keys to read each slot." });
+  draw(document.getElementById("w2Plot"), document.getElementById("w2Live"), { e: proposal, h: 9, titleId: "w2Title", previewFrom: 8,
+    desc: "Proposal for slots 8 to 14: after the peak at slot 8 energy drops 2 at once to 7, holds, then climbs one step at a time to 10. Use the left and right arrow keys to read each slot." });
+
+  // legend row (more than 3 encodings)
+  document.getElementById("w1Legend").innerHTML =
+    '<li><svg class="sn-chart-frame__keysvg" width="30" height="12" aria-hidden="true"><rect x="0" y="4" width="8" height="8" rx="1" style="fill:var(--energy-3)"/><rect x="10" y="2" width="8" height="10" rx="1" style="fill:var(--energy-6)"/><rect x="20" y="0" width="8" height="12" rx="1" style="fill:var(--energy-9)"/></svg>Energy per slot</li>' +
+    '<li><span class="sn-chart-frame__key sn-chart-frame__key--ref"></span>Target wave</li>' +
+    '<li><span class="sn-energy-wave__band-key"></span>Building 5–7</li>' +
+    '<li><span class="sn-energy-wave__glyph sn-energy-wave__glyph--clash" aria-hidden="true">✕</span>Too steep</li>' +
+    '<li><span class="sn-energy-wave__glyph sn-energy-wave__glyph--possible" aria-hidden="true">○</span>Drop 2–3 at once instead</li>';
+  var st = steps(current), probs = st.filter(function (s) { return s && (s.level === "clash" || s.level === "possible"); }).length;
+  document.getElementById("w1Sum").innerHTML = S.html.compat("clash", "Slot 5: energy +2") + S.html.compat("possible", "Slot 10: second −1 in a row") + '<span class="sn-tag">' + probs + " transitions to fix</span>";
+
+  // table alternative
+  var t = '<div class="sn-tablebox"><table class="sn-table sn-table--compact"><caption>Energy per slot, Peak time Friday</caption><thead><tr><th scope="col" class="num">Slot</th><th scope="col">Track</th><th scope="col">Energy</th><th scope="col" class="num">Target</th><th scope="col">Transition</th></tr></thead><tbody>';
+  tracks.forEach(function (tr, i) {
+    var s = st[i];
+    t += "<tr" + (i + 1 === NOW ? " data-now" : "") + '><td class="num">' + (i + 1) + "</td><td>" + S.esc(tr[0]) + "</td><td>" + S.html.energy(tr[1]) + '</td><td class="num">' + target[i] + "</td><td>" + (s ? S.html.compat(s.level === "unknown" ? "possible" : s.level, s.label) : '<span class="sn-none">–</span>') + "</td></tr>";
+  });
+  document.getElementById("w1Table").innerHTML = t + "</tbody></table></div>";
+  K.tableToggle(document.getElementById("w1Toggle"), document.getElementById("w1Plot"), document.getElementById("w1Table"));
+})();
+</script>
+</body>
+</html>

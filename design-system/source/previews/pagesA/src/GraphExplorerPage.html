@@ -1,0 +1,156 @@
+<!-- @dsCard group="Pages" width=1280 height=1240 subtitle="SongNodes Play/Plan workspace: Play/Plan switch and live connection in the app header, up-next recommendations first, graph canvas with controls and legend, track details side sheet; phones get the list with a Show graph button" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>GraphExplorerPage — preview</title></head>
+<body>
+<div class="sn-preview sn-page" id="root">
+  <a class="sn-skip" href="#main">Skip to main content</a>
+  <div id="hdr" data-drawer-inert></div>
+  <main class="sn-page-graph sn-m-graph" id="main" tabindex="-1" data-drawer-inert>
+    <div class="sn-page-graph__bar">
+      <h1 class="sn-title title-s"><span class="sn-lead">Graph:</span> Neighbourhood of Bicep – Glue</h1>
+      <span class="sn-page-graph__bar-meta">48 tracks · 112 links · 2 steps out</span>
+      <button class="sn-btn sn-btn--sm" type="button" id="filters"></button>
+      <span id="gmenu"></span>
+    </div>
+    <div class="sn-page-graph__work">
+      <section class="sn-page-graph__recs" aria-labelledby="up-t">
+        <div class="sn-page-graph__now" aria-label="Now playing">
+          <span class="sn-eyebrow">Now playing · since 21:24</span>
+          <div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__now" id="nowi"></span><span class="sn-track-cell__name" title="Bicep – Glue"><span class="sn-track-cell__artist">Bicep –</span> Glue</span></span>
+            <span class="sn-track-cell__meta"><span class="sn-track-cell__mix">Original mix</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">4:29</span></span></div>
+          <div class="sn-page-graph__now-data" id="nowdata"></div>
+        </div>
+        <div class="sn-section-heading"><h2 class="sn-title title-s" id="up-t"><span class="sn-lead">Up next:</span> 6 suggestions</h2>
+          <p class="sn-section-heading__caveat">Ranked by how often DJs played them next to Glue, then key and energy.</p></div>
+        <ul class="sn-page-graph__rec-list" id="recs"></ul>
+        <button class="sn-btn sn-page-graph__show-graph" type="button" id="showg" aria-controls="stage" aria-expanded="false"></button>
+      </section>
+      <div class="sn-page-graph__stage" id="stage" data-collapsed>
+        <div class="sn-side-sheet__layout">
+          <div class="sn-side-sheet__main sn-graph-styles">
+            <div class="sn-graph-controls" id="gc">
+              <svg class="sn-graph-controls__canvas sn-graph-styles__canvas" id="canvas" viewBox="0 0 640 560" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="cdesc"><desc id="cdesc">Graph of 12 tracks around Bicep – Glue, playing now. Overmono – So U Kno is selected; two tracks are faded by the energy filter.</desc></svg>
+              <div class="sn-graph-controls__count">48 nodes · 112 links</div>
+              <div class="sn-page-graph__legend"><aside class="sn-graph-styles__legend" aria-label="Graph legend" id="legend"></aside></div>
+              <div class="sn-graph-controls__dock" role="group" aria-label="Graph controls" id="dock"></div>
+              <p class="sn-sr" aria-live="polite" id="glive"></p>
+            </div>
+          </div>
+          <div class="sn-side-sheet__scrim" hidden></div>
+          <aside class="sn-side-sheet" id="sheet" aria-labelledby="sheet-t">
+            <span class="sn-side-sheet__handle" aria-hidden="true"></span>
+            <div class="sn-side-sheet__head"><h2 class="sn-title title-s sn-side-sheet__title" id="sheet-t" tabindex="-1"><span class="sn-lead">Track:</span> Overmono – So U Kno</h2>
+              <button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="Close track details" id="closeSheet"></button></div>
+            <div class="sn-side-sheet__body" id="sheetBody"></div>
+            <div class="sn-side-sheet__foot" id="sheetFoot"></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="drw"></div>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+/*KIT*/
+  snShell({ lead: "Graph", title: "Neighbourhood of Bicep – Glue", stamp: "2026-10-24T21:25:00+11:00", mode: "play", conn: ["live", "Live", "Live updates connected since 21:02"], current: "graph" });
+  document.getElementById("filters").innerHTML = S.icon("list-filter") + "Filters (1)";
+  document.getElementById("gmenu").innerHTML = snMenuButton("gm", "More graph actions", [{ h: "Graph" }, { id: "reload", icon: "refresh-cw", label: "Reload graph data" }, { id: "path", icon: "route", label: "Find a path from Glue…" }, { id: "csv", icon: "download", label: "Export graph as CSV" }], { quiet: false, sm: true });
+  document.getElementById("nowi").innerHTML = S.icon("audio-waveform", { size: 14 }) + "<span>Now</span>";
+  document.getElementById("nowdata").innerHTML = S.html.energy(6) + S.html.key("8A", true) + '<span class="sn-bpm"><b>130</b><span class="sn-bpm-readout__unit">BPM</span></span>';
+
+  var RECS = [
+    ["Overmono", "So U Kno", "9A", 130, 7, 14, "Played next to Glue in 14 sets"],
+    ["Josh Baker", "Lost In Muzik", "8A", 126, 6, 9, "9 sets"],
+    ["Interplanetary Criminal", "Slow Burner", "9A", 133, 7, 7, "7 sets"],
+    ["Bicep", "Atlas", "8A", 125, 5, 6, "Same artist · 6 sets"],
+    ["Peggy Gou", "(It Goes Like) Nanana", "10A", 124, 7, 4, "4 sets"],
+    ["Sammy Virji", "If U Need It", "4A", 136, 8, 3, "3 sets"]
+  ];
+  document.getElementById("recs").innerHTML = RECS.map(function (r, i) {
+    var c = S.compat("8A", r[2]), b = S.bpmStep(130, r[3]), e = S.energyStep(6, r[4]);
+    return '<li class="sn-page-graph__rec"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name" title="' + S.esc(r[0] + " – " + r[1]) + '"><span class="sn-track-cell__artist">' + S.esc(r[0]) + " –</span> " + S.esc(r[1]) + '</span></span><span class="sn-track-cell__meta"><span>' + r[6] + "</span></span></div>" +
+      '<button class="sn-btn sn-btn--sm' + (i === 0 ? "" : " sn-btn--quiet") + '" type="button" aria-label="Set ' + S.esc(r[0] + " – " + r[1]) + ' as now playing">' + S.icon("play") + (i === 0 ? "Play next" : "") + "</button>" +
+      '<div class="sn-page-graph__rec-data">' + S.html.key(r[2]) + '<span class="sn-bpm"><b>' + r[3] + '</b></span>' + S.html.energy(r[4]) + '</div><div class="sn-page-graph__rec-data"><div class="sn-transition-note" role="note" aria-label="Transition from Glue">' + [e, c, b].map(function (x) { return '<span class="sn-transition-note__item" data-level="' + x.level + '">' + S.esc(x.label) + '<span class="sn-sr"> (' + x.level + ')</span></span>'; }).join("") + "</div></div></li>";
+  }).join("");
+
+  /* ---- canvas specimen (GraphStyles classes) ---- */
+  var NS = "http://www.w3.org/2000/svg", cv = document.getElementById("canvas");
+  function el(t, a, p) { var e = document.createElementNS(NS, t); for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]); p.appendChild(e); return e; }
+  var N = [
+    [320, 280, 22, "Bicep", "Glue", "8A", "now"], [200, 190, 16, "Overmono", "So U Kno", "9A", "sel"], [460, 175, 13, "Interplanetary Criminal", "Slow Burner", "9A"],
+    [470, 380, 11, "Sammy Virji", "If U Need It", "4A"], [175, 380, 10, "Josh Baker", "Lost In Muzik", "8A"], [320, 450, 9, "Bicep", "Atlas", "8A"],
+    [80, 270, 7, "Peggy Gou", "(It Goes Like) Nanana", "10A", "faded"], [575, 280, 8, "Overmono", "Good Lies", "10A"], [320, 95, 7, "Fred again..", "Delilah (pull me out of this)", "11B"],
+    [90, 470, 5, "Mall Grab", "Spirit Wave", "10A", "faded"], [580, 470, 6, "Skream", "Dutch Flowerz", "10A"], [110, 110, 6, "Ross From Friends", "Talk To Me You'll Drown", "7A"]
+  ];
+  var EDGES = [[0, 1, "adjacency", 0.95], [0, 2, "adjacency", 0.7], [0, 3, "similarity", 0.5], [0, 4, "adjacency", 0.6], [0, 5, "collab", 0.6], [1, 4, "adjacency", 0.45], [1, 11, "key", 0.4],
+    [2, 3, "collab", 0.5], [2, 7, "similarity", 0.35], [3, 10, "genre", 0.2], [7, 10, "genre", 0.2], [4, 6, "adjacency", 0.3], [5, 9, "similarity", 0.25], [1, 6, "genre", 0.2], [0, 8, "similarity", 0.85], [8, 2, "key", 0.4]];
+  var ge = el("g", {}, cv), gn = el("g", {}, cv), gl = el("g", {}, cv);
+  EDGES.forEach(function (e) {
+    var a = N[e[0]], b = N[e[1]], cls = "sn-graph-styles__edge sn-graph-styles__edge--" + e[2] + (e[3] >= 0.8 ? " sn-graph-styles__edge--strong" : "") + (e[0] === 0 && e[1] === 1 ? " sn-graph-styles__edge--sel" : "");
+    var faded = a[6] === "faded" || b[6] === "faded", st = (e[2] === "adjacency" || e[2] === "similarity" ? "stroke-width:" + (0.5 + 7.5 * e[3]).toFixed(1) + ";" : "") + (faded ? "opacity:var(--opacity-faded)" : "");
+    if (e[2] === "collab") { var dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy), nx = -dy / L * 2, ny = dx / L * 2; [1, -1].forEach(function (s) { el("line", { x1: a[0] + s * nx, y1: a[1] + s * ny, x2: b[0] + s * nx, y2: b[1] + s * ny, "class": cls, style: st }, ge); }); }
+    else el("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], "class": cls, style: st }, ge);
+  });
+  /* Colour by (default Neutral): energy and genre per node, in N order */
+  var NE = [6, 7, 7, 8, 6, 5, 7, 7, 8, 3, 9, 4], NG = [1, 3, 3, 3, 1, 1, 1, 2, 1, 1, 2, 1], cmode = "neutral", nodeEls = [];
+  function nodeFill(i) { var n = N[i]; return cmode === "energy" ? "var(--energy-" + NE[i] + ")" : cmode === "key" ? "var(--key-" + n[5].toLowerCase() + ")" : cmode === "genre" ? "var(--chart-" + NG[i] + ")" : null; }
+  N.forEach(function (n, i) {
+    nodeEls.push(el("circle", { cx: n[0], cy: n[1], r: n[2], "class": "sn-graph-styles__node" + (n[6] === "faded" ? " sn-graph-styles__node--faded" : "") }, gn));
+    if (n[6] === "sel") el("circle", { cx: n[0], cy: n[1], r: n[2] + 4, "class": "sn-graph-styles__ring-selected" }, gn);
+    if (n[6] === "now") { el("circle", { cx: n[0], cy: n[1], r: n[2] + 4, "class": "sn-graph-styles__ring-now" }, gn);
+      el("rect", { x: n[0] - 15, y: n[1] - n[2] - 22, width: 30, height: 14, rx: 3, "class": "sn-graph-styles__now-tag" }, gn);
+      var nt = el("text", { x: n[0], y: n[1] - n[2] - 15, "class": "sn-graph-styles__now-text" }, gn); nt.textContent = "Now"; }
+    if (n[6] === "now" || n[6] === "sel" || n[2] >= 11) {
+      var t = el("text", { x: n[0] + n[2] + 10, y: n[1] + 4, "class": "sn-graph-styles__label" }, gl);
+      var a = el("tspan", { "class": "sn-graph-styles__label-artist" }, t); a.textContent = n[3];
+      var b = el("tspan", { "class": "sn-graph-styles__label-title", dx: 5 }, t); b.textContent = n[4];
+    }
+  });
+  function lk(type) { var s = '<svg width="28" height="10" aria-hidden="true">'; if (type === "collab") s += '<line x1="1" y1="3" x2="27" y2="3" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/><line x1="1" y1="7" x2="27" y2="7" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/>'; else s += '<line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--' + type + ' sn-graph-styles__edge--strong"/>'; return s + "</svg>"; }
+  var CB = { neutral: "All tracks alike", energy: "Energy 1–10 (Low · Building · High)", key: "Camelot key colours", genre: "House · Techno · UK garage" };
+  document.getElementById("legend").innerHTML = '<h4 id="cbl">Colour by</h4><div class="sn-seg" role="group" aria-labelledby="cbl" id="cbseg">' +
+    [["neutral", "Neutral"], ["energy", "Energy"], ["key", "Key"], ["genre", "Genre"]].map(function (m) { return '<button type="button" data-cb="' + m[0] + '" aria-pressed="' + (m[0] === cmode) + '">' + m[1] + "</button>"; }).join("") + '</div><span class="caption sn-dim" id="cbnote">' + CB[cmode] + "</span>" +
+    '<h4>Rings</h4><ul><li><svg width="24" height="20" aria-hidden="true"><circle cx="12" cy="10" r="5" class="sn-graph-styles__node"/><circle cx="12" cy="10" r="8" class="sn-graph-styles__ring-now"/></svg>Now playing (amber, “Now”)</li>' +
+    '<li><svg width="24" height="20" aria-hidden="true"><circle cx="12" cy="10" r="5" class="sn-graph-styles__node"/><circle cx="12" cy="10" r="8" class="sn-graph-styles__ring-selected"/></svg>Selected</li></ul>' +
+    "<h4>Links</h4><ul><li>" + lk("adjacency") + "Played back to back</li><li>" + lk("similarity") + "Similar sound</li><li>" + lk("key") + "Compatible key</li><li>" + lk("collab") + "Same artists</li><li>" + lk("genre") + "Same genre</li></ul>";
+  document.getElementById("cbseg").addEventListener("click", function (e) { var b = e.target.closest("[data-cb]"); if (!b) return; cmode = b.dataset.cb;
+    this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+    nodeEls.forEach(function (c, i) { var f = nodeFill(i); if (f) c.style.setProperty("--c", f); else c.style.removeProperty("--c"); });
+    document.getElementById("cbnote").textContent = CB[cmode]; document.getElementById("glive").textContent = "Colour by " + b.textContent.toLowerCase(); });
+  var zoom = 100;
+  document.getElementById("dock").innerHTML = '<div class="sn-graph-controls__group"><button class="sn-btn sn-btn--icon" type="button" data-z="1" aria-label="Zoom in" title="Zoom in">' + S.icon("zoom-in") + '</button><div class="sn-graph-controls__zoom" id="zval" aria-hidden="true">100%</div>' +
+    '<button class="sn-btn sn-btn--icon" type="button" data-z="-1" aria-label="Zoom out" title="Zoom out">' + S.icon("zoom-out") + '</button><button class="sn-btn sn-btn--icon" type="button" data-z="0" aria-label="Reset view" title="Reset view">' + S.icon("crosshair") + '</button>' +
+    '<button class="sn-btn sn-btn--icon" type="button" aria-label="Centre on now playing" title="Centre on now playing">' + S.icon("locate-fixed") + "</button></div>";
+  document.getElementById("dock").addEventListener("click", function (e) { var b = e.target.closest("[data-z]"); if (!b) return; var d = +b.dataset.z; zoom = d ? Math.max(25, Math.min(400, Math.round(zoom * (d > 0 ? 1.25 : 0.8)))) : 100;
+    document.getElementById("zval").textContent = zoom + "%"; cv.setAttribute("viewBox", (320 - 320 * 100 / zoom) + " " + (280 - 280 * 100 / zoom) + " " + 640 * 100 / zoom + " " + 560 * 100 / zoom); document.getElementById("glive").textContent = "Zoom " + zoom + "%"; });
+
+  /* ---- side sheet: selected track ---- */
+  document.getElementById("closeSheet").innerHTML = S.icon("x");
+  function idv(label, v) { return '<span class="sn-key-value-grid__id" title="' + v + '">' + v + '</span><button class="sn-btn sn-copy-button sn-btn--icon sn-btn--quiet sn-btn--sm" type="button" aria-label="Copy ' + label + '"><span class="sn-copy-button__idle">' + S.icon("copy") + '</span><span class="sn-copy-button__done">' + S.icon("check") + "</span></button>"; }
+  document.getElementById("sheetBody").innerHTML =
+    '<div class="sn-side-sheet__section"><dl class="sn-key-value-grid">' + [
+      ["Energy", S.html.energy(7) + ' <span class="sn-dim">Building</span>'], ["BPM", '<span class="sn-bpm"><b>130</b><span class="sn-bpm-readout__unit">BPM</span></span>'], ["Key", S.html.key("9A", true)],
+      ["Length", '<span class="sn-mono">6:12</span>'], ["Label", "XL Recordings"], ["Heard on", '<span class="sn-tag sn-category-tag">triple j Mix Up</span> <span class="sn-tag sn-category-tag">PBS Soul Time</span>'], ["ISRC", idv("ISRC", "GBBKS2300187")]
+    ].map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("") + "</dl></div>" +
+    '<div class="sn-side-sheet__section"><h3 class="sn-eyebrow sn-side-sheet__label">Connected tracks</h3><ul class="sn-side-sheet__list">' +
+    [["8A", "Bicep – Glue", "14 sets"], ["8A", "Josh Baker – Lost In Muzik", "5 sets"], ["7A", "Ross From Friends – Talk To Me You'll Drown", "key"], ["10A", "Peggy Gou – (It Goes Like) Nanana", "genre"], ["4A", "Sammy Virji – If U Need It", "2 sets"]].map(function (r) {
+      var c = S.compat("9A", r[0]); return '<li class="sn-side-sheet__item">' + S.html.key(r[0]) + '<span title="' + S.esc(r[1]) + " · " + r[2] + '">' + S.esc(r[1]) + "</span>" + S.html.compat(c.level, c.label) + "</li>"; }).join("") + "</ul></div>" +
+    '<div class="sn-side-sheet__section"><h3 class="sn-eyebrow sn-side-sheet__label">Links</h3><div class="sn-row"><a class="sn-link sn-link--ext" href="#" target="_blank" rel="noopener">TIDAL<span class="sn-sr">, opens in a new tab</span></a><a class="sn-link sn-link--ext" href="#" target="_blank" rel="noopener">Beatport<span class="sn-sr">, opens in a new tab</span></a><a class="sn-link sn-m-library" href="#track">Track detail</a></div></div>';
+  document.getElementById("sheetFoot").innerHTML = '<span class="sn-m-paths"><button class="sn-btn sn-btn--mod" type="button">' + S.icon("route") + 'Path from here</button></span><button class="sn-btn sn-btn--primary" type="button" id="setNow">' + S.icon("play") + "Set as now playing</button>";
+  var sheet = document.getElementById("sheet"), phone = window.matchMedia("(max-width: 767.98px)");
+  if (phone.matches) sheet.hidden = true;
+  document.getElementById("closeSheet").onclick = function () { sheet.hidden = true; document.getElementById("canvas").focus && snSay("Track details closed"); };
+  var stage = document.getElementById("stage"), sg = document.getElementById("showg");
+  sg.innerHTML = S.icon("share-2") + "Show graph";
+  sg.onclick = function () { var c = stage.toggleAttribute("data-collapsed"); sg.setAttribute("aria-expanded", String(!c)); sg.lastChild.textContent = c ? "Show graph" : "Hide graph"; };
+  if (!phone.matches) stage.removeAttribute("data-collapsed");
+  document.getElementById("setNow").onclick = function () { snToast("Now playing: <q>Overmono – So U Kno</q>. Suggestions updated.", "audio-waveform"); };
+  snWire();
+})();
+</script>
+</body>
+</html>

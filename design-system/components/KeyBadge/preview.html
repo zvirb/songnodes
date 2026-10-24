@@ -1,0 +1,26 @@
+<!-- @dsCard group="Music" height=297 subtitle="Camelot dot and code in rows; with key name in detail; unknown key; all 24 keys as a reference" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>KeyBadge — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">In table rows (code only, name in tooltip) · unknown</div>
+  <div class="sn-preview__row" id="row" style="gap:20px"></div>
+  <div class="sn-preview__label">In detail views (with name)</div>
+  <div class="sn-preview__row" id="detail" style="gap:28px"></div>
+  <div class="sn-preview__label">All 24 keys (A = minor, B = major)</div>
+  <div class="sn-key-badge-grid" id="grid" role="list" aria-label="Camelot keys"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  document.getElementById("row").innerHTML = ["8A", "9A", "Fm", "F# minor", "11B", "12A"].map(function (k) { return S.html.key(k); }).join("") +
+    '<span class="sn-key" data-unknown title="Key not detected yet">–<span class="sn-sr">Key not set</span></span>';
+  document.getElementById("detail").innerHTML = ["8A", "5B", "2A"].map(function (k) {
+    var c = S.camelot(k); return '<span class="sn-key sn-key-badge--lg" data-key="' + c + '">' + c + ' <span class="sn-key__name">' + S.esc(S.keyName(c)) + '</span></span>';
+  }).join("") + '<span class="sn-key sn-key-badge--lg" data-unknown>– <span class="sn-key__name">Key not detected</span></span>';
+  var g = "";
+  ["A", "B"].forEach(function (l) { for (var n = 1; n <= 12; n++) { var c = n + l; g += '<div class="sn-key-badge-grid__cell" role="listitem">' + '<span class="sn-key" data-key="' + c + '">' + c + '</span><span class="sn-key__name">' + S.esc(S.KEY_NAMES[c]) + '</span></div>'; } });
+  document.getElementById("grid").innerHTML = g;
+</script>
+</body>
+</html>

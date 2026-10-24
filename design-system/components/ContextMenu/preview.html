@@ -1,0 +1,161 @@
+<!-- @dsCard group="Navigation" height=540 subtitle="Right-click, long-press or Shift+F10 on a graph node, an edge, the empty canvas or a table row; Calculate route stays disabled until a start and finish are set" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ContextMenu — preview</title>
+<style>
+  .stage { position: relative; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+  .canvas { position: relative; height: 360px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--sunk); overflow: hidden; }
+  .canvas svg { width: 100%; height: 100%; display: block; }
+  .canvas .edge line.vis { stroke: var(--line-strong); stroke-width: 2; }
+  .canvas .edge line.hit { stroke: transparent; stroke-width: 14; }
+  .canvas .edge:focus-visible line.vis, .canvas .edge[data-on] line.vis { stroke: var(--brand); stroke-width: 3; }
+  .canvas .node circle { fill: var(--surface-3); stroke: var(--mod-graph); stroke-width: 2; }
+  .canvas .node text { fill: var(--fg-2); font: 500 11px var(--font-body); }
+  .canvas .node[data-role] circle { stroke: var(--brand); stroke-width: 3; }
+  .canvas .node[data-on] circle { fill: var(--brand-soft); }
+  .canvas g:focus { outline: none; }
+  .canvas g:focus-visible circle { stroke: var(--focus); stroke-width: 4; }
+  .hint { font-size: 0.8125rem; color: var(--fg-3); margin: 0; }
+  @media (max-width: 700px) { .stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Graph canvas and library rows · right-click, long-press, or focus and press Shift+F10</div>
+  <div class="stage" id="stage">
+    <div class="canvas" id="canvas"></div>
+    <div class="sn-tablebox" style="align-self:start"><table class="sn-table sn-table--compact" aria-label="Crate"><thead><tr><th>Track</th><th>Key</th><th class="num">BPM</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="sn-context-menu sn-context-menu--contained" id="cm" hidden></div>
+  </div>
+  <p class="hint">Route: <span id="route">no start, no finish</span></p>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  /* preview helper: APG menu keyboard model (arrows wrap, Home/End, typeahead, Esc, Tab) */
+  function snVisible(list) { return Array.prototype.filter.call(list, function (el) { return el.offsetParent !== null || el.getClientRects().length > 0; }); }
+  function snMenuKeys(menu, close) {
+    var buf = "", timer = 0;
+    function items() { return snVisible(menu.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')); }
+    menu.addEventListener("keydown", function (e) {
+      var it = items(), i = it.indexOf(document.activeElement), n = it.length;
+      if (!n) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); it[(i + 1) % n].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); it[(i - 1 + n) % n].focus(); }
+      else if (e.key === "Home" || e.key === "PageUp") { e.preventDefault(); it[0].focus(); }
+      else if (e.key === "End" || e.key === "PageDown") { e.preventDefault(); it[n - 1].focus(); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
+      else if (e.key === "Tab") { close(false); }
+      else if (e.key.length === 1 && /\S/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        clearTimeout(timer); buf += e.key.toLowerCase(); timer = setTimeout(function () { buf = ""; }, 600);
+        for (var k = 1; k <= n; k++) { var c = it[(i + k) % n], t = (c.querySelector(".sn-overflow-menu__text") || c).textContent.trim().toLowerCase(); if (t.indexOf(buf) === 0) { c.focus(); break; } }
+      }
+    });
+    return items;
+  }
+  /** Wire a menu button: btn[aria-haspopup=menu][aria-expanded][aria-controls] + .sn-overflow-menu__menu[role=menu]. */
+  function snMenu(btn, menu, onSelect) {
+    function open(last) { menu.hidden = false; btn.setAttribute("aria-expanded", "true"); var it = items(); var t = last ? it[it.length - 1] : it[0]; if (t) t.focus(); }
+    function close(back) { if (menu.hidden) return; menu.hidden = true; btn.setAttribute("aria-expanded", "false"); if (back) btn.focus(); }
+    var items = snMenuKeys(menu, close);
+    btn.addEventListener("click", function () { if (menu.hidden) open(false); else close(true); });
+    btn.addEventListener("keydown", function (e) { if (e.key === "ArrowDown") { e.preventDefault(); open(false); } else if (e.key === "ArrowUp") { e.preventDefault(); open(true); } });
+    menu.addEventListener("click", function (e) {
+      var it = e.target.closest('[role^="menuitem"]'); if (!it) return;
+      if (it.getAttribute("aria-disabled") === "true") { return; }
+      if (it.hasAttribute("aria-checked")) it.setAttribute("aria-checked", it.getAttribute("aria-checked") === "true" ? "false" : "true");
+      close(true); if (onSelect) onSelect(it);
+    });
+    document.addEventListener("pointerdown", function (e) { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) close(false); });
+    return { open: open, close: close };
+  }
+  function snSay(msg) { var l = document.getElementById("sn-live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } }
+  /** Menu markup. items: {h:"Heading"} | {sep:1} | {id,icon,label,kbd,reason,danger,checked,cls}. Groups follow each heading. */
+  function snMenuHtml(id, labelledby, items, cls, title) {
+    var S = window.SongNodes, h = '<div class="sn-overflow-menu__menu' + (cls ? " " + cls : "") + '" role="menu" id="' + id + '" ' + (labelledby ? 'aria-labelledby="' + labelledby + '"' : 'aria-label="' + S.esc(title ? "Actions for " + title[0] : "Actions") + '"') + ' hidden>', open = false, n = 0;
+    if (title) h += '<div class="sn-overflow-menu__title" role="presentation">' + S.esc(title[0]) + (title[1] ? "<small>" + S.esc(title[1]) + "</small>" : "") + "</div>";
+    items.forEach(function (it) {
+      if (it.h) { if (open) h += "</div>"; n++; h += '<div role="group" aria-labelledby="' + id + "-h" + n + '"><div class="sn-overflow-menu__heading" id="' + id + "-h" + n + '" role="presentation">' + S.esc(it.h) + "</div>"; open = true; return; }
+      if (it.sep) { if (open) { h += "</div>"; open = false; } h += '<div class="sn-overflow-menu__sep" role="separator"></div>'; return; }
+      var rid = it.reason ? id + "-r" + (++n) : "";
+      h += '<button type="button" tabindex="-1" class="sn-overflow-menu__item' + (it.danger ? " sn-overflow-menu__item--danger" : "") + (it.cls ? " " + it.cls : "") + '" role="' + (it.checked != null ? "menuitemcheckbox" : "menuitem") + '"' +
+        (it.checked != null ? ' aria-checked="' + it.checked + '"' : "") + (it.id ? ' data-id="' + it.id + '"' : "") + (it.reason ? ' aria-disabled="true" aria-describedby="' + rid + '"' : "") + ">" +
+        S.icon(it.checked != null ? "check" : (it.icon || "circle-dot"), { size: 16 }) + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
+        (it.reason ? '<span class="sn-overflow-menu__reason" id="' + rid + '">' + S.esc(it.reason) + "</span>" : "") + "</span>" + (it.kbd ? "<kbd>" + S.esc(it.kbd) + "</kbd>" : "") + "</button>";
+    });
+    if (open) h += "</div>";
+    return h + "</div>";
+  }
+  function snMenuButton(id, label, items, opts) {
+    var S = window.SongNodes; opts = opts || {};
+    return '<div class="sn-overflow-menu"><button class="sn-btn sn-btn--icon' + (opts.quiet === false ? "" : " sn-btn--quiet") + (opts.sm ? " sn-btn--sm" : "") + '" type="button" id="' + id + '-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="' + id + '" aria-label="' + S.esc(label) + '">' + S.icon(opts.icon || "ellipsis") + "</button>" + snMenuHtml(id, id + "-btn", items, opts.cls) + "</div>";
+  }
+
+  var T = { glue: ["Bicep – Glue", "8A", 130, 90, 90], sok: ["Overmono – So U Kno", "9A", 131, 260, 70], slow: ["Interplanetary Criminal – Slow Burner", "9A", 132, 190, 200], ifu: ["Sammy Virji – If U Need It", "10A", 134, 350, 250], lim: ["Josh Baker – Lost In Muzik", "11A", 136, 120, 290], ross: ["Ross From Friends – Talk To Me You'll Drown", "8A", 128, 400, 140] };
+  var E = [["glue", "sok", 14], ["glue", "slow", 9], ["sok", "slow", 11], ["slow", "ifu", 6], ["slow", "lim", 4], ["sok", "ross", 5], ["ifu", "ross", 3]];
+  var st = { start: null, finish: null, way: [] }, cm = document.getElementById("cm"), stage = document.getElementById("stage"), lastTarget = null;
+  function short(id) { return T[id][0].split(" – ")[1]; }
+  var svg = '<svg viewBox="0 0 480 340" role="group" aria-label="Graph canvas" tabindex="0" id="svg" class="sn-context-menu__target">';
+  E.forEach(function (e, i) { var a = T[e[0]], b = T[e[1]]; svg += '<g class="edge sn-context-menu__target" tabindex="0" role="button" data-edge="' + i + '" aria-label="Edge ' + short(e[0]) + " to " + short(e[1]) + ", adjacency, played together in " + e[2] + ' sets"><line class="hit" x1="' + a[3] + '" y1="' + a[4] + '" x2="' + b[3] + '" y2="' + b[4] + '"/><line class="vis" x1="' + a[3] + '" y1="' + a[4] + '" x2="' + b[3] + '" y2="' + b[4] + '"/></g>'; });
+  Object.keys(T).forEach(function (k) { var t = T[k]; svg += '<g class="node sn-context-menu__target" tabindex="0" role="button" data-node="' + k + '" aria-label="' + S.esc(t[0]) + ", " + t[1] + ", " + t[2] + ' BPM"><circle cx="' + t[3] + '" cy="' + t[4] + '" r="13"/><text x="' + t[3] + '" y="' + (t[4] + 28) + '" text-anchor="middle">' + S.esc(short(k)) + "</text></g>"; });
+  document.getElementById("canvas").innerHTML = svg + "</svg>";
+  document.getElementById("rows").innerHTML = ["sok", "ifu", "ross"].map(function (k) { var t = T[k]; return '<tr class="sn-context-menu__target" tabindex="0" data-row="' + k + '" aria-label="' + S.esc(t[0]) + '"><td>' + S.esc(t[0]) + "</td><td>" + S.html.key(t[1]) + '</td><td class="num">' + t[2] + "</td></tr>"; }).join("");
+
+  function items(kind, id) {
+    var both = st.start && st.finish;
+    if (kind === "node") return [
+      { h: "Route" }, { id: "start", icon: "map-pin", label: "Set as starting track" }, { id: "way", icon: "circle-dot", label: "Set as waypoint" }, { id: "finish", icon: "flag", label: "Set as finish" },
+      both ? { id: "calc", icon: "route", label: "Calculate route", kbd: "Enter" } : { id: "calc", icon: "route", label: "Calculate route", reason: "Set a starting track and a finish first" },
+      { h: "Track" }, { id: "info", icon: "info", label: "View track info" }, { id: "add", icon: "plus", label: "Add to set…" }, { id: "hideadj", icon: "eye-off", label: "Hide adjacency edges" }];
+    if (kind === "edge") return [{ id: "edge", icon: "info", label: "View connection details" }, { id: "both", icon: "list-music", label: "Add both tracks to set…" }, { sep: 1 }, { id: "hideadj", icon: "eye-off", label: "Hide adjacency edges" }, { id: "hideone", icon: "eye-off", label: "Hide this connection" }];
+    if (kind === "row") return [{ id: "info", icon: "info", label: "View track info" }, { id: "add", icon: "plus", label: "Add to set…" }, { id: "start", icon: "map-pin", label: "Set as starting track" }, { id: "graph", icon: "locate-fixed", label: "Show in graph" }, { sep: 1 }, { id: "rm", icon: "trash-2", label: "Remove from crate", danger: true }];
+    return [{ id: "fit", icon: "maximize-2", label: "Fit graph to screen", kbd: "F" }, { id: "reset", icon: "rotate-ccw", label: "Reset view" }, { id: "pause", icon: "pause", label: "Pause layout", kbd: "Space" }, { sep: 1 }, { id: "showall", icon: "eye", label: "Show hidden edges" }, { id: "clear", icon: "x", label: "Clear route", reason: st.start || st.finish ? "" : "No route set yet" }].map(function (x) { if (x.reason === "") delete x.reason; return x; });
+  }
+  function describe(el) {
+    if (el.dataset.node) return ["node", el.dataset.node, [T[el.dataset.node][0], T[el.dataset.node][1] + " · " + T[el.dataset.node][2] + " BPM"]];
+    if (el.dataset.row) return ["row", el.dataset.row, [T[el.dataset.row][0], "Crate row"]];
+    if (el.dataset.edge) { var e = E[+el.dataset.edge]; return ["edge", el.dataset.edge, [short(e[0]) + " → " + short(e[1]), "Adjacency · together in " + e[2] + " sets"]]; }
+    return ["canvas", null, ["Graph canvas", "6 tracks · 7 connections shown"]];
+  }
+  var close = function (back) { if (cm.hidden) return; cm.hidden = true; document.querySelectorAll("[data-on]").forEach(function (x) { x.removeAttribute("data-on"); }); if (back && lastTarget) lastTarget.focus(); };
+  function open(el, x, y, focus) {
+    var d = describe(el); lastTarget = el;
+    cm.innerHTML = snMenuHtml("cmm", null, items(d[0], d[1]), "", d[2]);
+    cm.dataset.kind = d[0]; cm.dataset.id = d[1] || "";
+    var menu = cm.firstChild; menu.hidden = false; cm.hidden = false;
+    if (el !== document.getElementById("svg")) el.setAttribute("data-on", "");
+    var sr = stage.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight;
+    cm.style.left = Math.max(0, Math.min(x - sr.left, sr.width - w)) + "px";
+    cm.style.top = Math.max(0, Math.min(y - sr.top, Math.max(sr.height, window.innerHeight - sr.top) - h - 4)) + "px";
+    snMenuKeys(menu, close);
+    if (focus) { var f = snVisible(menu.querySelectorAll('[role^="menuitem"]'))[0]; if (f) f.focus(); }
+  }
+  function target(e) { return e.target.closest(".node, .edge, tr.sn-context-menu__target") || (e.target.closest("#svg") ? document.getElementById("svg") : null); }
+  stage.addEventListener("contextmenu", function (e) { var t = target(e); if (!t) return; e.preventDefault(); close(false); open(t, e.clientX, e.clientY, true); });
+  stage.addEventListener("keydown", function (e) {
+    if (!((e.shiftKey && e.key === "F10") || e.key === "ContextMenu")) return;
+    var t = document.activeElement.closest(".sn-context-menu__target"); if (!t || cm.contains(t)) return;
+    e.preventDefault(); var r = t.getBoundingClientRect(); open(t, r.left + Math.min(r.width / 2, 40), r.top + Math.min(r.height, 24), true);
+  });
+  var press = 0;
+  stage.addEventListener("pointerdown", function (e) { if (e.pointerType !== "touch") return; var t = target(e); if (!t) return; var x = e.clientX, y = e.clientY; press = setTimeout(function () { open(t, x, y, true); }, 500); });
+  ["pointerup", "pointermove", "pointercancel"].forEach(function (n) { stage.addEventListener(n, function () { clearTimeout(press); }); });
+  document.addEventListener("pointerdown", function (e) { if (!cm.hidden && !cm.contains(e.target) && e.button !== 2) close(false); });
+  cm.addEventListener("click", function (e) {
+    var it = e.target.closest('[role^="menuitem"]'); if (!it || it.getAttribute("aria-disabled") === "true") return;
+    var id = it.dataset.id, k = cm.dataset.id, msg = it.querySelector(".sn-overflow-menu__text").textContent;
+    if (id === "start" || id === "finish") { if (st[id]) document.querySelector('[data-node="' + st[id] + '"]').removeAttribute("data-role"); st[id] = k; var n = document.querySelector('[data-node="' + k + '"]'); if (n) n.setAttribute("data-role", id); msg = (id === "start" ? "Start" : "Finish") + ": " + T[k][0]; }
+    if (id === "way" && st.way.indexOf(k) < 0) { st.way.push(k); msg = "Waypoint added: " + T[k][0]; }
+    if (id === "clear") { st = { start: null, finish: null, way: [] }; document.querySelectorAll("[data-role]").forEach(function (x) { x.removeAttribute("data-role"); }); msg = "Route cleared"; }
+    if (id === "calc") msg = "Route from " + short(st.start) + " to " + short(st.finish) + ": 4 steps, no key clashes";
+    document.getElementById("route").textContent = (st.start ? "start " + short(st.start) : "no start") + (st.way.length ? ", via " + st.way.map(short).join(", ") : "") + ", " + (st.finish ? "finish " + short(st.finish) : "no finish") + (id === "calc" ? " · " + msg : "");
+    snSay(msg); close(true);
+  });
+  /* shown open on the Glue node at load, without taking focus */
+  var g = document.querySelector('[data-node="glue"]'), r = g.getBoundingClientRect();
+  open(g, r.right + 6, r.top, false);
+})();
+</script>
+</body>
+</html>

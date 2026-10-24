@@ -1,0 +1,47 @@
+<!-- @dsCard group="Pages" width=1280 height=640 subtitle="nginx 404.html and 50x.html (503 shown): static HTML and CSS, no JavaScript; wordmark, plain explanation, what to do next, request ID on server errors" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ErrorPage — preview</title>
+<style>
+  /* preview scaffolding only: two browser-sized frames side by side */
+  .pv-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 16px; }
+  .pv-frame { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-height: 540px; display: flex; background: var(--bg); }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-two">
+    <div class="sn-stack"><span class="sn-preview__label">404.html · page not found</span>
+      <div class="pv-frame">
+        <main class="sn-page-error">
+          <span class="sn-page-error__wordmark">SongNodes</span>
+          <p class="sn-page-error__code">404 · Not found</p>
+          <h1 class="sn-page-error__title">Page not found</h1>
+          <p class="sn-page-error__text">There is nothing at this address. It may have been typed wrong, or the page was retired.</p>
+          <ul class="sn-page-error__next">
+            <li>Check the address, or <a href="/">go to Home</a>.</li>
+            <li>Looking for a track or set? Search from Home with Ctrl K.</li>
+          </ul>
+        </main>
+      </div>
+    </div>
+    <div class="sn-stack"><span class="sn-preview__label">50x.html · 503 service unavailable · sample request ID (a preview can’t run nginx SSI)</span>
+      <div class="pv-frame">
+        <main class="sn-page-error">
+          <span class="sn-page-error__wordmark">SongNodes</span>
+          <p class="sn-page-error__code">503 · Service unavailable</p>
+          <h1 class="sn-page-error__title">SongNodes is not responding</h1>
+          <p class="sn-page-error__text">The web server is up, but the SongNodes service behind it did not answer. Your sets and library are stored safely.</p>
+          <ul class="sn-page-error__next">
+            <li>Try again in a minute: <a href="">reload this page</a>.</li>
+            <li>If it keeps happening, check the <a href="/monitoring/">status page in Grafana</a>.</li>
+            <li>Or <a href="/">go to Home</a>.</li>
+          </ul>
+          <p class="sn-page-error__ref">Request ID, if you report this<code><!-- 50x.html: nginx SSI echoes request_id here; a sample is shown -->7f3a92c1e4b05d68a1c3f2e9b7d40a15</code></p>
+        </main>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

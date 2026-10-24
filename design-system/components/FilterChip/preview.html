@@ -1,0 +1,48 @@
+<!-- @dsCard group="Inputs" height=367 subtitle="Pillar, energy tier (mini 3-segment bar), rotation and tag chips with counts; multi-select with Clear; empty count" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>FilterChip — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div id="groups" class="sn-stack" style="gap:var(--space-5); max-width: 640px"></div>
+  <div class="sn-sr" aria-live="polite" id="live"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var GROUPS = [
+    { id: "pillar", label: "Pillar", chips: [["House", 612, true], ["Techno", 418], ["UK garage", 254]] },
+    { id: "tier", label: "Energy tier", tier: true, chips: [["low", 301], ["building", 587, true], ["high", 396, true]] },
+    { id: "rot", label: "Rotation", chips: [["High", 88, false, true], ["Standard", 1196], ["Vault", 0]] },
+    { id: "tags", label: "Tags", chips: [["Vocal", 214], ["Breakbeat", 131], ["Acid", 76], ["Piano", 58], ["Dub", 0]] }
+  ];
+  function chip(g, c) {
+    var label = g.tier ? S.TIER_LABEL[c[0]] : c[0];
+    return '<li><button type="button" class="sn-chip sn-filter-chip' + (c[3] ? " sn-filter-chip--emph" : "") + '"' +
+      ' aria-pressed="' + (c[2] ? "true" : "false") + '"' + (g.tier ? ' data-tier="' + c[0] + '"' : "") + (c[1] === 0 ? " data-empty" : "") +
+      ' data-label="' + S.esc(label) + '">' +
+      (g.tier ? '<span class="sn-filter-chip__tier" aria-hidden="true"><i></i><i></i><i></i></span>' : "") +
+      '<span>' + S.esc(label) + '</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>' + S.format.count(c[1]) + '<span class="sn-sr"> tracks</span></span></button></li>';
+  }
+  document.getElementById("groups").innerHTML = GROUPS.map(function (g) {
+    return '<div class="sn-filter-chip-group" role="group" aria-labelledby="lg-' + g.id + '" data-group="' + g.label + '">' +
+      '<div class="sn-filter-chip-group__head"><span class="sn-filter-chip-group__legend" id="lg-' + g.id + '">' + g.label + '</span>' +
+      '<button type="button" class="sn-filter-chip-group__clear" hidden>Clear</button></div>' +
+      '<ul class="sn-filter-chip-group__list">' + g.chips.map(function (c) { return chip(g, c); }).join("") + '</ul></div>';
+  }).join("");
+
+  var live = document.getElementById("live");
+  function sync(grp) {
+    var on = grp.querySelectorAll('.sn-filter-chip[aria-pressed="true"]').length, clr = grp.querySelector(".sn-filter-chip-group__clear");
+    clr.hidden = on === 0; clr.textContent = "Clear (" + on + ")";
+    clr.setAttribute("aria-label", "Clear " + on + " " + grp.dataset.group.toLowerCase() + " filter" + (on === 1 ? "" : "s"));
+  }
+  document.querySelectorAll(".sn-filter-chip-group").forEach(sync);
+  document.addEventListener("click", function (e) {
+    var c = e.target.closest(".sn-filter-chip"), grp;
+    if (c) { var on = c.getAttribute("aria-pressed") !== "true"; c.setAttribute("aria-pressed", on); grp = c.closest(".sn-filter-chip-group"); sync(grp); live.textContent = c.dataset.label + (on ? " on" : " off"); return; }
+    var clr = e.target.closest(".sn-filter-chip-group__clear");
+    if (clr) { grp = clr.closest(".sn-filter-chip-group"); grp.querySelectorAll(".sn-filter-chip").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); sync(grp); live.textContent = grp.dataset.group + " filters cleared"; grp.querySelector(".sn-filter-chip").focus(); }
+  });
+</script>
+</body>
+</html>

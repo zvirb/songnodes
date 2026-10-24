@@ -1,0 +1,80 @@
+<!-- @dsCard group="Inputs" height=569 subtitle="Last heard between: day-month-year fields with presets and readable date; error for an impossible date; native date input with en-AU display" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DateField — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <fieldset class="sn-date-field" id="range" style="max-width: 640px">
+    <legend class="sn-date-field__legend">Last heard between</legend>
+    <div class="sn-date-field__presets" role="group" aria-label="Date presets">
+      <button type="button" class="sn-chip" aria-pressed="false" data-preset="7">Last 7 days</button>
+      <button type="button" class="sn-chip" aria-pressed="true" data-preset="30">Last 30 days</button>
+      <button type="button" class="sn-chip" aria-pressed="false" data-preset="year">This year</button>
+    </div>
+    <div class="sn-date-field__range" id="range-fields"></div>
+    <span class="sn-field__error" id="range-err" hidden></span>
+  </fieldset>
+
+  <div class="sn-preview__label">Error: impossible date</div>
+  <div id="bad"></div>
+
+  <div class="sn-preview__label">Native date input (desktop forms), shown back as “24 Oct 2026”</div>
+  <div class="sn-field" style="max-width: 320px">
+    <label for="nat">Released on</label>
+    <input type="date" class="sn-input sn-date-field__native" id="nat" value="2026-10-24" aria-describedby="nat-shown">
+    <span class="sn-date-field__shown" id="nat-shown" aria-live="polite"></span>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var TODAY = new Date(2026, 9, 24);
+  // Date-only values have no time zone: format them from their own parts, not through S.format (which converts to Melbourne time).
+  var WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function dateOnly(dt) { return WD[dt.getDay()] + " " + dt.getDate() + " " + MO[dt.getMonth()] + " " + dt.getFullYear(); }
+  var n = 0;
+  function group(label, d, opts) {
+    opts = opts || {}; var id = "df" + (++n);
+    var part = function (k, l, v, w) { return '<div class="sn-date-field__part' + (k === "y" ? " sn-date-field__part--year" : "") + '"><label for="' + id + k + '">' + l + '</label>' +
+      '<input class="sn-input" id="' + id + k + '" data-k="' + k + '" inputmode="numeric" autocomplete="off" maxlength="' + w + '" value="' + (v == null ? "" : v) + '"' + (opts.bad && opts.bad.indexOf(k) >= 0 ? ' aria-invalid="true"' : "") + ' aria-describedby="' + id + '-shown' + (opts.err ? " " + id + "-err" : "") + '"></div>'; };
+    return '<fieldset class="sn-date-field" data-date id="' + id + '"><legend class="sn-date-field__legend">' + label + '</legend>' +
+      (opts.help ? '<p class="sn-date-field__help">' + opts.help + '</p>' : "") +
+      (opts.err ? '<span class="sn-field__error" id="' + id + '-err">' + opts.err + '</span>' : "") +
+      '<div class="sn-date-field__parts">' + part("d", "Day", d && d[0], 2) + part("m", "Month", d && d[1], 2) + part("y", "Year", d && d[2], 4) + '</div>' +
+      '<span class="sn-date-field__shown" id="' + id + '-shown"></span></fieldset>';
+  }
+  function setGroup(g, dt) { var q = function (k) { return g.querySelector('[data-k="' + k + '"]'); }; q("d").value = dt.getDate(); q("m").value = dt.getMonth() + 1; q("y").value = dt.getFullYear(); show(g); }
+  function read(g) {
+    var q = function (k) { return parseInt(g.querySelector('[data-k="' + k + '"]').value, 10); }, d = q("d"), m = q("m"), y = q("y");
+    if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+    var dt = new Date(y, m - 1, d); return dt.getDate() === d && dt.getMonth() === m - 1 && y > 1900 ? dt : false;
+  }
+  function show(g) { var dt = read(g), out = g.querySelector(".sn-date-field__shown"); out.textContent = dt ? dateOnly(dt) : ""; return dt; }
+
+  document.getElementById("range-fields").innerHTML = group("From", null) + '<span class="sn-date-field__to" aria-hidden="true">to</span>' + group("To", null);
+  document.getElementById("bad").innerHTML = group("Released on", [31, 9, 2026], { err: "Released on must be a real date. September has 30 days.", bad: ["d"], help: "For example, 24 10 2026" });
+  var groups = document.querySelectorAll("#range-fields [data-date]");
+  function preset(p) {
+    var from = new Date(TODAY); if (p === "7") from.setDate(from.getDate() - 6); else if (p === "30") from.setDate(from.getDate() - 29); else from = new Date(TODAY.getFullYear(), 0, 1);
+    setGroup(groups[0], from); setGroup(groups[1], TODAY);
+    document.querySelectorAll("[data-preset]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.preset === p); });
+    check();
+  }
+  function check() {
+    var a = read(groups[0]), b = read(groups[1]), err = document.getElementById("range-err");
+    var msg = a === false || b === false ? "Enter a real date, for example 24 10 2026." : (a && b && a > b ? "The From date must be on or before the To date." : "");
+    err.hidden = !msg; err.textContent = msg;
+    groups.forEach(function (g) { g.querySelectorAll("input").forEach(function (i) { i.setAttribute("aria-invalid", msg ? "true" : "false"); i.setAttribute("aria-describedby", g.id + "-shown" + (msg ? " range-err" : "")); }); });
+  }
+  preset("30");
+  document.addEventListener("click", function (e) { var b = e.target.closest("[data-preset]"); if (b) preset(b.dataset.preset); });
+  document.addEventListener("input", function (e) {
+    var g = e.target.closest("[data-date]"); if (!g) return; show(g);
+    if (g.closest("#range-fields")) { document.querySelectorAll("[data-preset]").forEach(function (b) { b.setAttribute("aria-pressed", "false"); }); check(); }
+  });
+  document.querySelectorAll("#bad [data-date]").forEach(show);
+  var nat = document.getElementById("nat");
+  function natShow() { var v = nat.value.split("-"); document.getElementById("nat-shown").textContent = nat.value ? dateOnly(new Date(+v[0], v[1] - 1, +v[2])) : ""; }
+  nat.addEventListener("input", natShow); natShow();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!-- @dsCard group="Actions" height=543 subtitle="Destination-coloured links per module, generic link, external, inside tonal cards, long paths and URLs" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TextLink — preview</title>
+<style>.pv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-3); } .pv-narrow { max-width: 340px; }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Destination colour: the link takes the colour of the module it opens</div>
+  <p class="body" id="mods" style="margin:0"></p>
+
+  <div class="sn-preview__label">Generic, external, current page</div>
+  <p class="body" style="margin:0">
+    Read the <a class="sn-link" href="#help">set-building rules</a> ·
+    <a class="sn-link sn-link--ext" href="https://www.1001tracklists.com/" target="_blank" rel="noopener">Open on 1001tracklists<span class="sn-sr">, opens in a new tab</span></a> ·
+    <a class="sn-link sn-m-services sn-link--ext" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Get a Spotify client ID<span class="sn-sr">, opens in a new tab</span></a> ·
+    <a class="sn-link sn-m-library" href="#library" aria-current="page">Library (this page)</a>
+  </p>
+
+  <div class="sn-preview__label">Inside tonal cards (text takes the destination ink, underline keeps its hue)</div>
+  <div class="pv-cards">
+    <div class="sn-card sn-card--tonal sn-card--compact sn-m-sets">
+      <h3 class="sn-title title-s"><span class="sn-lead">Saved set:</span> Peak time Friday</h3>
+      <p class="body-s" style="margin:0">14 tracks · 92 min. Two tracks come from
+        <a class="sn-link sn-m-sources sn-text-link--on-tonal" href="#src">PBS Soul Time</a> and open in
+        <a class="sn-link sn-m-graph sn-text-link--on-tonal" href="#graph">Graph</a>.</p>
+      <p class="body-s" style="margin:0"><a class="sn-link sn-m-sets sn-text-link--on-tonal" href="#set">Open running order</a></p>
+    </div>
+    <div class="sn-card sn-card--tonal sn-card--compact sn-m-pipeline">
+      <h3 class="sn-title title-s"><span class="sn-lead">Scraper:</span> MixesDB</h3>
+      <p class="body-s" style="margin:0">Last run 24 Oct 2026, 06:00 AEDT. 3 tracks need an
+        <a class="sn-link sn-m-harmony sn-text-link--on-tonal" href="#keys">energy check in Key &amp; mood</a>.</p>
+      <p class="body-s" style="margin:0"><a class="sn-link sn-m-pipeline sn-text-link--on-tonal" href="#jobs">View job log</a></p>
+    </div>
+  </div>
+
+  <div class="sn-preview__label">Long paths and URLs break anywhere, never overflow</div>
+  <div class="pv-narrow sn-stack" style="gap:var(--space-2)">
+    <a class="sn-link sn-text-link--path" href="#file">/Volumes/Crates/2026/10-Oct/Interplanetary_Criminal-Slow_Burner-(Extended_Mix).aiff</a>
+    <a class="sn-link sn-link--ext sn-text-link--break" href="https://www.mixesdb.com/w/2026-10-18_-_Overmono_@_Boiler_Room_London" target="_blank" rel="noopener">mixesdb.com/w/2026-10-18_-_Overmono_@_Boiler_Room_London<span class="sn-sr">, opens in a new tab</span></a>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  document.getElementById("mods").innerHTML = S.modules.map(function (m) {
+    return '<a class="sn-link sn-m-' + m.key + '" href="#' + m.key + '">' + S.esc(m.label) + '</a>';
+  }).join(' · ');
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); }); });
+</script>
+</body>
+</html>

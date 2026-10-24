@@ -1,0 +1,70 @@
+<!-- @dsCard group="Actions" height=485 subtitle="Copy tracklist, copy an ID or path, copied state with announcement, fallback when the clipboard is refused" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CopyButton — preview</title>
+<style>.pv-col { max-width: 520px; }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Button with label (click to copy; icon turns to a check for 2 s)</div>
+  <div class="sn-preview__row" id="row1"></div>
+
+  <div class="sn-preview__label">Value with icon-only copy</div>
+  <div class="sn-preview__row" id="row2"></div>
+
+  <div class="sn-preview__label">Fallback when the browser refuses clipboard access</div>
+  <div class="pv-col" id="fb"></div>
+  <div class="sn-sr" aria-live="polite" id="live"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var TRACKLIST = "1. Josh Baker – Lost In Muzik\n2. Peggy Gou – (It Goes Like) Nanana\n3. Bicep – Glue\n4. Overmono – So U Kno";
+  function btn(label, text, opts) {
+    opts = opts || {};
+    var cls = "sn-btn sn-copy-button" + (opts.icon ? " sn-btn--icon sn-btn--quiet sn-btn--sm" : "") + (opts.sm ? " sn-btn--sm" : "");
+    return '<button class="' + cls + '" type="button" data-copy="' + S.esc(text) + '" data-what="' + S.esc(opts.what || label) + '"' +
+      (opts.icon ? ' aria-label="' + S.esc(label) + '"' : "") + (opts.fail ? ' data-fail' : "") + '>' +
+      '<span class="sn-copy-button__idle">' + S.icon("copy") + '</span><span class="sn-copy-button__done">' + S.icon("check") + '</span>' +
+      (opts.icon ? "" : '<span class="sn-copy-button__text">' + S.esc(label) + '</span>') + '</button>';
+  }
+  function value(name, v, what) {
+    return '<span class="sn-copy-button__value"><span class="sn-copy-button__name">' + name + '</span><code>' + S.esc(v) + '</code>' + btn("Copy " + what, v, { icon: true, what: what }) + '</span>';
+  }
+  document.getElementById("row1").innerHTML = btn("Copy tracklist", TRACKLIST, { what: "Tracklist" }) + btn("Copy Spotify link", "https://open.spotify.com/track/2b8fOow8UzyDFAE27YhOZM", { sm: true, what: "Spotify link" });
+  document.getElementById("row2").innerHTML =
+    value("Spotify ID", "2b8fOow8UzyDFAE27YhOZM", "Spotify ID") +
+    value("ISRC", "GBCEN2300412", "ISRC") +
+    value("File", "/Volumes/Crates/2026/10-Oct/Overmono-So_U_Kno.aiff", "file path");
+  document.getElementById("fb").innerHTML =
+    '<div class="sn-copy-button__fallback" role="group" aria-labelledby="fb-msg">' +
+    '<p id="fb-msg"><b>Copy isn’t allowed in this browser.</b> The tracklist is selected below: press <kbd>Ctrl</kbd> + <kbd>C</kbd> (<kbd>⌘</kbd> + <kbd>C</kbd> on Mac) to copy it.</p>' +
+    '<textarea readonly aria-label="Tracklist to copy" id="fb-text">' + S.esc(TRACKLIST) + '</textarea>' +
+    '<div class="sn-row">' + btn("Try copy again", TRACKLIST, { sm: true, what: "Tracklist", fail: true }) + '</div></div>';
+
+  var live = document.getElementById("live");
+  function announce(t) { live.textContent = ""; setTimeout(function () { live.textContent = t; }, 30); }
+  function done(b) {
+    b.style.minWidth = b.offsetWidth + "px"; // keep the width stable while the label reads "Copied"
+    b.setAttribute("data-state", "copied");
+    var t = b.querySelector(".sn-copy-button__text"); if (t) { t.dataset.label = t.dataset.label || t.textContent; t.textContent = "Copied"; }
+    announce(b.dataset.what + " copied");
+    clearTimeout(b._t); b._t = setTimeout(function () { b.removeAttribute("data-state"); if (t) t.textContent = t.dataset.label; }, 2000);
+  }
+  function fallback(b) {
+    var ta = document.getElementById("fb-text"); ta.value = b.dataset.copy; ta.focus(); ta.select();
+    announce("Copy isn’t allowed. The text is selected: press Control C to copy it.");
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".sn-copy-button"); if (!b) return;
+    if (b.hasAttribute("data-fail")) { fallback(b); return; }
+    // 1. async Clipboard API, 2. legacy execCommand on a hidden textarea, 3. select-the-text fallback
+    function legacy() {
+      var ta = document.createElement("textarea"); ta.value = b.dataset.copy; ta.setAttribute("readonly", ""); ta.className = "sn-sr";
+      document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand("copy"); } catch (x) {} ta.remove(); b.focus();
+      if (ok) done(b); else fallback(b);
+    }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(b.dataset.copy).then(function () { done(b); }, legacy); else legacy();
+  });
+</script>
+</body>
+</html>

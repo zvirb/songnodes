@@ -1,0 +1,109 @@
+<!-- @dsCard group="Pages" width=1280 height=1660 subtitle="Launcher: app header, SongNodes: Home title with data stamp, changes since the last visit, eight module cards in their tonal colours, recently opened sets and tracks, health strip with only problems expanded" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>HomePage — preview</title></head>
+<body>
+<div class="sn-preview sn-page" id="root">
+  <a class="sn-skip" href="#main">Skip to main content</a>
+  <div id="hdr" data-drawer-inert></div>
+  <main class="sn-page__main sn-page-home" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+    <section class="sn-page__section" aria-labelledby="chg-t">
+      <div class="sn-section-heading">
+        <h2 class="sn-title title-m" id="chg-t"><span class="sn-lead">Since your last visit:</span> Thu 22 Oct, 23:40</h2>
+        <p class="sn-section-heading__caveat">What changed in the library, sets and pipeline since you were last here.</p>
+      </div>
+      <div class="sn-figure-tile-row" role="list" aria-label="Changes since your last visit" id="changes"></div>
+    </section>
+    <section class="sn-page__section" aria-labelledby="mod-t">
+      <div class="sn-section-heading"><h2 class="sn-title title-m" id="mod-t">Modules</h2><span class="sn-section-heading__count">8</span></div>
+      <div class="sn-launcher-card__grid" id="grid"></div>
+    </section>
+    <div class="sn-page-home__recent">
+      <section class="sn-card sn-page__section" aria-labelledby="rs-t">
+        <div class="sn-section-heading"><h2 class="sn-title title-s" id="rs-t"><span class="sn-lead">Recently opened:</span> Sets</h2>
+          <div class="sn-section-heading__end"><a class="sn-link sn-m-sets" href="#sets">All 12 saved sets</a></div></div>
+        <ul class="sn-page__list" id="rsets"></ul>
+      </section>
+      <section class="sn-card sn-page__section" aria-labelledby="rt-t">
+        <div class="sn-section-heading"><h2 class="sn-title title-s" id="rt-t"><span class="sn-lead">Recently opened:</span> Tracks</h2>
+          <div class="sn-section-heading__end"><a class="sn-link sn-m-library" href="#library">Open the library</a></div></div>
+        <ul class="sn-page__list" id="rtracks"></ul>
+      </section>
+    </div>
+    <section class="sn-page__section" aria-labelledby="hl-t">
+      <div class="sn-section-heading"><h2 class="sn-title title-m" id="hl-t">Health</h2>
+        <div class="sn-section-heading__end"><a class="sn-link sn-m-pipeline" href="#pipeline">Open Pipeline health</a></div></div>
+      <div class="sn-service-status-list" id="health"></div>
+      <p class="sn-page-home__healthy" id="healthy"></p>
+    </section>
+  </main>
+  <div id="drw"></div>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+/*KIT*/
+  snShell({ lead: "SongNodes", title: "Home", stamp: "2026-10-24T06:00:00+11:00", current: "home" });
+  document.getElementById("ph").innerHTML = snPageHeader({ lead: "SongNodes", title: "Home", size: "title-l",
+    desc: "Eight modules over one Melbourne club library: 1,284 tracks, 8,903 connections, 12 saved sets.",
+    meta: '<span class="sn-freshness-stamp" role="status">' + S.icon("clock", { size: 16 }) + '<span>Data from <time datetime="2026-10-23T19:00:00Z" title="' + S.format.relative("2026-10-23T19:00:00Z", NOW) + '">' + S.format.stamp("2026-10-23T19:00:00Z") + '</time></span><span class="sn-freshness-stamp__rel">(' + S.format.relative("2026-10-23T19:00:00Z", NOW) + ')</span></span>' });
+
+  var changes = [
+    ["36", "tracks added to the library", "+36 since Thu", "library", "Review new tracks"],
+    ["147", "radio plays imported", "PBS, 3RRR, triple j", "sources", "See plays by show"],
+    ["1", "set sent to TIDAL", "Peak time Friday, 20 Oct", "sets", "Open the set"],
+    ["2", "scrapers paused after errors", "MixesDB, Setlist.fm", "pipeline", "Check scrapers", "bad", "Paused"]
+  ];
+  document.getElementById("changes").innerHTML = changes.map(function (c) {
+    return '<div class="sn-figure-tile" role="listitem"><span class="sn-figure-tile__figure">' + c[0] + '</span><span class="sn-figure-tile__label">' + c[1] + '</span><span class="sn-figure-tile__delta">' + c[2] + '</span>' +
+      '<div class="sn-figure-tile__foot">' + (c[5] ? '<span class="sn-pill sn-status-pill" data-status="' + c[5] + '">' + c[6] + "</span>" : "") + '<a class="sn-link sn-m-' + c[3] + '" href="#' + c[3] + '">' + c[4] + "</a></div></div>";
+  }).join("");
+
+  var cards = [
+    { mod: "graph", title: "8,903 connections", summary: "Adjacency edges from 2,140 real sets, plus similarity and key links.", figs: [["8,903", "edges"], ["2,140", "sets read"]] },
+    { mod: "library", title: "1,284 tracks", summary: "36 added this week from radio plays and the ARIA Club Chart.", figs: [["36", "new this week"], ["212", "high rotation"]], pill: ["warn", "38 need an energy check"] },
+    { mod: "sets", title: "12 saved sets", summary: "Peak time Friday was saved 24 Oct 2026, 21:30.", figs: [["92 min", "longest set"], ["14", "tracks in the latest"]] },
+    { mod: "paths", title: "3 saved routes", summary: "Glue to Lost In Muzik, 7 steps, energy 6 → 9.", figs: [["7", "steps, longest"], ["0", "key clashes"]] },
+    { mod: "harmony", title: "24 keys in use", summary: "8A and 9A carry a third of the crate; 2B and 3B are thin.", figs: [["96", "tracks in 8A"], ["8", "tracks in 2B"]] },
+    { mod: "sources", title: "PBS, 3RRR, triple j", summary: "Radio plays and tracklists imported every Monday at 06:00.", figs: [["147", "plays this week"], ["4", "imports to review"]], pill: ["info", "4 to review"] },
+    { mod: "pipeline", title: "9 scrapers", summary: "MixesDB and Setlist.fm paused after repeated errors.", figs: [["7", "running"], ["2", "paused"]], pill: ["bad", "2 paused after errors"] },
+    { mod: "services", title: "2 of 3 connected", summary: "Spotify connected. TIDAL sign-in expired on 21 Oct.", figs: [["2", "connected"], ["1", "needs sign-in"]], pill: ["warn", "TIDAL expired"] }
+  ];
+  document.getElementById("grid").innerHTML = cards.map(function (c, i) {
+    var m = S.module(c.mod), id = "lc" + i;
+    return '<a class="sn-card sn-card--tonal sn-launcher-card sn-m-' + c.mod + '" href="#' + c.mod + '" aria-labelledby="' + id + '-t" aria-describedby="' + id + "-s " + id + "-f" + (c.pill ? " " + id + "-p" : "") + '">' +
+      '<div class="sn-card__head"><span class="sn-launcher-card__icon">' + S.icon(m.icon) + "</span>" + (c.pill ? '<span class="sn-pill" data-status="' + c.pill[0] + '" id="' + id + '-p">' + S.esc(c.pill[1]) + "</span>" : "") + "</div>" +
+      '<h3 class="sn-title title-s" id="' + id + '-t"><span class="sn-lead">' + S.esc(m.label) + ":</span> " + S.esc(c.title) + "</h3>" +
+      '<p class="sn-launcher-card__summary" id="' + id + '-s">' + S.esc(c.summary) + "</p>" +
+      '<dl class="sn-launcher-card__figures" id="' + id + '-f">' + c.figs.map(function (f) { return '<div class="sn-launcher-card__figure"><dt>' + S.esc(f[1]) + "</dt><dd>" + S.esc(f[0]) + "</dd></div>"; }).join("") + "</dl></a>";
+  }).join("");
+
+  function when(iso) { return '<time datetime="' + iso + '" title="' + S.format.stamp(iso) + '">' + S.format.relative(iso, NOW) + "</time>"; }
+  document.getElementById("rsets").innerHTML = [
+    ["Peak time Friday", "92 min · 14 tracks", "2026-10-24T21:30:00+11:00"],
+    ["Sunday warm-up at Section 8", "60 min · 12 tracks", "2026-10-24T07:40:00+11:00"],
+    ["Garage journey", "120 min · 24 tracks", "2026-10-18T16:00:00+11:00"],
+    ["Closing at Revolver", "75 min · 15 tracks", "2026-10-11T02:10:00+11:00"],
+    ["Thursday at Miscellania", "90 min · 18 tracks", "2026-10-08T19:20:00+11:00"]
+  ].map(function (r) { return '<li class="sn-page__item"><a class="sn-link sn-m-sets" href="#sets">' + S.esc(r[0]) + '</a><span class="sn-page__item-meta">' + r[1] + " · " + when(r[2]) + "</span></li>"; }).join("");
+  document.getElementById("rtracks").innerHTML = [
+    ["Bicep – Glue", "8A", 130, 6], ["Overmono – So U Kno", "9A", 130, 7], ["Sammy Virji – If U Need It", "4A", 136, 8],
+    ["Interplanetary Criminal – Slow Burner", "9A", 133, 7], ["Josh Baker – Lost In Muzik", "8A", 126, 6]
+  ].map(function (r) { return '<li class="sn-page__item"><a class="sn-link sn-m-library" href="#library">' + S.esc(r[0]) + '</a><span class="sn-page__item-meta">' + S.html.energy(r[3]) + S.html.key(r[1]) + '<span class="sn-bpm"><b>' + r[2] + "</b></span></span></li>"; }).join("");
+
+  document.getElementById("health").innerHTML = [
+    { svc: "Scrapers", mark: S.icon("activity", { size: 16 }), status: "bad", word: "2 paused after errors", detail: "MixesDB and Setlist.fm stopped after 5 failed requests in a row at 20:55. Retries at 21:45 AEDT; the other 7 keep running.", act: '<span class="sn-m-pipeline"><button class="sn-btn sn-btn--sm sn-btn--mod" type="button">Open scrapers</button></span>' },
+    { svc: "TIDAL", mark: "Ti", status: "warn", word: "Expired", detail: "Sign-in expired 21 Oct 2026, 06:00 AEDT. Monday’s “Send to TIDAL” run will skip until you reconnect.", act: '<button class="sn-btn sn-btn--sm sn-service-status__btn--tidal" type="button">Reconnect TIDAL</button>' }
+  ].map(function (r) {
+    return '<section class="sn-service-status" aria-label="' + r.svc + '"><span class="sn-service-status__mark" aria-hidden="true">' + r.mark + '</span>' +
+      '<div class="sn-service-status__main"><div class="sn-service-status__name">' + r.svc + ' <span class="sn-pill sn-status-pill" data-status="' + r.status + '">' + r.word + '</span></div><div class="sn-service-status__detail">' + r.detail + "</div></div>" +
+      '<div class="sn-service-status__act">' + r.act + "</div></section>";
+  }).join("");
+  document.getElementById("healthy").innerHTML = "Working normally: " + S.html.pill("healthy", "API") + S.html.pill("ok", "Database") + S.html.pill("ok", "Spotify") + S.html.pill("ok", "Live updates");
+  snWire();
+})();
+</script>
+</body>
+</html>

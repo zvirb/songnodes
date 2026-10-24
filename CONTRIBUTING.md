@@ -90,6 +90,20 @@ performance/optimize-database-queries
 
 ## Coding Standards
 
+### Design system (frontend, copy and anything visual)
+
+The SongNodes design system in [`design-system/`](design-system/README.md) is the
+single source of truth for formatting and design. A UI change is complete only when:
+
+- It uses design-system tokens and `sn-*` classes. There are no hex values, `rgb()`, px font sizes, raw z-index numbers, gradients, glows or emoji.
+- Its markup matches the component's `design-system/components/<Comp>/README.md` and `preview.html`.
+- Copy follows `design-system/01-writing.md`: en-AU spelling, sentence case, verb plus object on buttons, and an en dash for missing values.
+- Dates, durations, counts, BPM, keys, energy and statuses go through the helpers in `frontend/src/lib/songnodes.tsx`.
+- `scripts/sync-design-system.sh --check` passes and `frontend/src/styles/design-system/` is untouched.
+- It was checked in the dark, light and booth themes, at 390px wide and at text size XL.
+
+To change the system itself, follow [`docs/design-system/README.md`](docs/design-system/README.md#changing-the-system).
+
 ### JavaScript/Node.js
 ```javascript
 // Use ESLint and Prettier configuration

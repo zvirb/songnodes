@@ -1,0 +1,66 @@
+<!-- @dsCard group="Inputs" height=578 subtitle="Empty: take photo (camera) or choose file; filled: thumbnail with retake, remove and alt text" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>PhotoCapture — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: var(--space-4); align-items: start; }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="pv-grid">
+    <div class="sn-card sn-card--flat" id="a"></div>
+    <div class="sn-card sn-card--flat" id="b"></div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes, n = 0;
+  // Placeholder artwork: a record sleeve drawn in tokens (no network, no photo).
+  var SLEEVE = '<svg class="sn-photo-capture__img" viewBox="0 0 160 160" role="img" aria-label="Photo preview"><rect width="160" height="160" fill="var(--mod-sources-raised)"/>' +
+    '<circle cx="96" cy="80" r="58" fill="var(--sunk)"/><circle cx="96" cy="80" r="44" fill="none" stroke="var(--surface-3)" stroke-width="1"/><circle cx="96" cy="80" r="32" fill="none" stroke="var(--surface-3)" stroke-width="1"/>' +
+    '<circle cx="96" cy="80" r="16" fill="var(--mod-sets)"/><circle cx="96" cy="80" r="2.5" fill="var(--sunk)"/><rect x="0" y="0" width="64" height="160" fill="var(--mod-sources-bg)"/>' +
+    '<text x="10" y="138" font-family="var(--font-display)" font-weight="700" font-size="13" fill="var(--mod-sources-ink)">OVERMONO</text></svg>';
+  function capture(o) {
+    var id = "pc" + (++n);
+    return '<div class="sn-photo-capture" id="' + id + '">' +
+      '<h3 class="sn-title title-s"><span class="sn-lead">' + o.lead + ':</span> ' + o.title + '</h3>' +
+      '<div class="sn-photo-capture__body">' +
+        '<div class="sn-photo-capture__frame"' + (o.filled ? " data-filled" : "") + '>' + (o.filled ? SLEEVE : S.icon("image")) + '</div>' +
+        '<div class="sn-photo-capture__side">' +
+          '<div class="sn-photo-capture__actions" data-empty-actions' + (o.filled ? " hidden" : "") + '>' +
+            '<input type="file" accept="image/*" capture="environment" class="sn-sr sn-photo-capture__input" id="' + id + '-cam" tabindex="-1" aria-hidden="true">' +
+            '<button type="button" class="sn-btn" data-pick="cam">' + S.icon("camera") + 'Take photo</button>' +
+            '<input type="file" accept="image/jpeg,image/png,image/webp" class="sn-sr sn-photo-capture__input" id="' + id + '-file" tabindex="-1" aria-hidden="true">' +
+            '<button type="button" class="sn-btn" data-pick="file">' + S.icon("upload") + 'Choose image</button></div>' +
+          '<p class="sn-photo-capture__meta" data-empty-actions' + (o.filled ? " hidden" : "") + '>JPEG, PNG or WebP, up to 10 MB. On a phone, Take photo opens the camera.</p>' +
+          '<div class="sn-photo-capture__actions" data-filled-actions' + (o.filled ? "" : " hidden") + '>' +
+            '<button type="button" class="sn-btn sn-btn--sm" data-pick="cam">' + S.icon("camera") + 'Retake</button>' +
+            '<button type="button" class="sn-btn sn-btn--sm sn-btn--quiet" data-remove>' + S.icon("trash-2") + 'Remove photo</button></div>' +
+          '<p class="sn-photo-capture__meta" data-filename' + (o.filled ? "" : " hidden") + '>' + (o.filled || "") + '</p>' +
+          '<div class="sn-field sn-text-field" data-alt' + (o.filled ? "" : " hidden") + '>' +
+            '<label class="sn-text-field__label" for="' + id + '-alt"><span>Describe the photo</span></label>' +
+            '<span class="sn-field__help" id="' + id + '-alt-h">What someone needs to know if they can’t see it: artist, title, label, any writing.</span>' +
+            '<textarea class="sn-textarea" id="' + id + '-alt" rows="2" aria-describedby="' + id + '-alt-h">' + (o.alt || "") + '</textarea></div>' +
+        '</div></div><div class="sn-sr" aria-live="polite" data-live></div></div>';
+  }
+  document.getElementById("a").innerHTML = capture({ lead: "Crate photo", title: "Add a sleeve" });
+  document.getElementById("b").innerHTML = capture({ lead: "Crate photo", title: "Overmono – So U Kno", filled: "IMG_2041.jpg · 2.4 MB · 24 Oct 2026, 21:30", alt: "Front sleeve of Overmono, So U Kno, on XL Recordings. Plain white label with a blue stamp." });
+
+  function setFilled(pc, on, file) {
+    pc.querySelectorAll("[data-empty-actions]").forEach(function (x) { x.hidden = on; });
+    pc.querySelectorAll("[data-filled-actions], [data-alt], [data-filename]").forEach(function (x) { x.hidden = !on; });
+    var fr = pc.querySelector(".sn-photo-capture__frame"); fr.toggleAttribute("data-filled", on);
+    if (on && file) {
+      fr.innerHTML = '<img alt="" src="' + URL.createObjectURL(file) + '">';
+      pc.querySelector("[data-filename]").textContent = file.name + " · " + (file.size / 1048576).toFixed(1) + " MB";
+      pc.querySelector("[data-live]").textContent = "Photo added. Describe it below."; pc.querySelector("textarea").focus();
+    }
+    if (!on) { fr.innerHTML = S.icon("image"); pc.querySelector("textarea").value = ""; pc.querySelector("[data-live]").textContent = "Photo removed"; pc.querySelector('[data-pick="cam"]').focus(); }
+  }
+  document.addEventListener("click", function (e) {
+    var pc = e.target.closest(".sn-photo-capture"); if (!pc) return;
+    var p = e.target.closest("[data-pick]"); if (p) { pc.querySelector(p.dataset.pick === "cam" ? 'input[capture]' : 'input[type=file]:not([capture])').click(); return; }
+    if (e.target.closest("[data-remove]")) setFilled(pc, false);
+  });
+  document.addEventListener("change", function (e) { if (e.target.matches(".sn-photo-capture__input") && e.target.files[0]) setFilled(e.target.closest(".sn-photo-capture"), true, e.target.files[0]); });
+</script>
+</body>
+</html>

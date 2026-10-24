@@ -1,0 +1,55 @@
+<!-- @dsCard group="Feedback" height=800 subtitle="First use, filtered to nothing, not connected, all done; full and compact" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>EmptyState — preview</title>
+<style>
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+  var S = window.SongNodes, I = S.icon;
+  function panel(label, inner) {
+    return '<section class="sn-card sn-card--flat" aria-label="' + label + '"><div class="sn-preview__label">' + label + '</div>' + inner + '</section>';
+  }
+  var g = document.getElementById("grid");
+  g.innerHTML =
+    panel("First use · Saved sets",
+      '<div class="sn-empty-state">' +
+        '<div class="sn-empty-state__icon">' + I("list-music") + '</div>' +
+        '<h3 class="sn-empty-state__title">No sets yet</h3>' +
+        '<p class="sn-empty-state__text">Sets you build from the crate land here with their energy wave and running order, ready to copy or send to TIDAL.</p>' +
+        '<div class="sn-empty-state__actions"><button class="sn-btn sn-btn--primary sn-btn--lg" type="button">' + I("wand-sparkles") + 'Build set</button></div>' +
+      '</div>') +
+    panel("Filtered to nothing · Crate",
+      '<div class="sn-empty-state" id="filtered">' +
+        '<div class="sn-empty-state__icon">' + I("list-filter") + '</div>' +
+        '<h3 class="sn-empty-state__title">No tracks match these filters</h3>' +
+        '<p class="sn-empty-state__text">None of the 1,284 tracks are Techno, High energy and heard on PBS Soul Time at once.</p>' +
+        '<div class="sn-empty-state__meta" id="active"><span class="sn-tag">Pillar: Techno</span><span class="sn-tag">Energy: High</span><span class="sn-tag">Heard on: PBS Soul Time</span></div>' +
+        '<div class="sn-empty-state__actions"><button class="sn-btn" type="button" id="clear">' + I("x") + 'Clear filters</button></div>' +
+      '</div>') +
+    panel("Not connected · TIDAL tab",
+      '<div class="sn-empty-state sn-m-services">' +
+        '<div class="sn-empty-state__icon">' + I("plug") + '</div>' +
+        '<h3 class="sn-empty-state__title">Connect TIDAL to see your playlists</h3>' +
+        '<p class="sn-empty-state__text">SongNodes reads your TIDAL playlists to mark the tracks you already own. Nothing is posted to TIDAL until you send a set.</p>' +
+        '<div class="sn-empty-state__actions"><button class="sn-btn sn-btn--mod" type="button">Connect TIDAL</button></div>' +
+      '</div>') +
+    panel("All done · Data-quality review (compact)",
+      '<div class="sn-empty-state sn-empty-state--compact">' +
+        '<div class="sn-empty-state__icon">' + I("circle-check") + '</div>' +
+        '<h3 class="sn-empty-state__title">Review queue is clear</h3>' +
+        '<p class="sn-empty-state__text">All 86 suggested matches from this week’s build are reviewed. New ones arrive after the next build on <span class="sn-mono">Sat 31 Oct, 06:00</span>.</p>' +
+        '<div class="sn-empty-state__actions"><a class="sn-link sn-m-pipeline" href="#approved">See what was approved</a></div>' +
+      '</div>');
+  document.getElementById("clear").addEventListener("click", function () {
+    var a = document.getElementById("active"); a.innerHTML = '<span class="sn-inline-message" data-status="ok" role="status">Filters cleared. Showing all 1,284 tracks.</span>';
+    this.disabled = true;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!-- @dsCard group="Data" height=616 subtitle="The crate table: sort with tiebreak, sticky header, numeric alignment, select-all, row actions, grouping, flagged and now rows, density, column chooser, loading/empty/error; stacked cards on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DataTable — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-data-table sn-data-table--stack" id="dt">
+    <div class="sn-data-table__bar">
+      <span class="sn-data-table__count" id="count" aria-live="polite"></span>
+      <button class="sn-btn sn-btn--sm" type="button" id="bulk" hidden></button>
+      <div class="sn-data-table__bar-end">
+        <span class="sn-preview__label" id="grp-l">Group</span>
+        <div class="sn-seg" role="group" aria-labelledby="grp-l" id="group">
+          <button type="button" aria-pressed="true" data-v="">None</button><button type="button" aria-pressed="false" data-v="tier">Energy tier</button><button type="button" aria-pressed="false" data-v="pillar">Pillar</button>
+        </div>
+        <div class="sn-seg" role="group" aria-label="Row density" id="density">
+          <button type="button" aria-pressed="true" data-v="comfortable">Comfortable</button><button type="button" aria-pressed="false" data-v="compact">Compact</button>
+        </div>
+        <div class="sn-data-table__chooser">
+          <button class="sn-btn sn-btn--sm" type="button" id="cols-btn" aria-expanded="false" aria-controls="cols-pop"></button>
+          <div class="sn-data-table__chooser-pop" id="cols-pop" hidden></div>
+        </div>
+      </div>
+    </div>
+    <div class="sn-tablebox sn-data-table__box" id="box">
+      <table class="sn-table">
+        <caption>Crate · 12 of 1,284 tracks · <span class="sn-sr">Column headers with buttons are sortable.</span><span aria-hidden="true">Sort by any column header</span></caption>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <div class="sn-row">
+      <span class="sn-preview__label" id="st-l">Preview state</span>
+      <div class="sn-seg" role="group" aria-labelledby="st-l" id="state">
+        <button type="button" aria-pressed="true" data-v="data">Data</button><button type="button" aria-pressed="false" data-v="loading">Loading</button><button type="button" aria-pressed="false" data-v="empty">Empty</button><button type="button" aria-pressed="false" data-v="error">Error</button>
+      </div>
+    </div>
+    <div class="sn-sr" aria-live="polite" id="announce"></div>
+  </div>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  var T = [
+    { id: 1, a: "Overmono", t: "So U Kno", mix: "Extended mix", label: "XL Recordings", dur: 372, e: 7, k: "9A", b: 130, p: "UK garage", r: "High", h: 6, last: "2026-10-23T11:00:00Z", y: 2023, src: ["triple j Mix Up", "PBS Soul Time", "1001tracklists"], links: ["TIDAL", "Beatport"], now: true },
+    { id: 2, a: "Bicep", t: "Glue", mix: "Original mix", label: "Ninja Tune", dur: 269, e: 6, k: "8A", b: 128, p: "House", r: "High", h: 9, last: "2026-10-22T10:30:00Z", y: 2017, src: ["3RRR Superfreak", "MixesDB", "1001tracklists", "Spotify"], links: ["TIDAL", "Deezer", "Beatport"] },
+    { id: 3, a: "Interplanetary Criminal", t: "Slow Burner", mix: "Original mix", label: "Shall Not Fade", dur: 341, e: 7, k: "9A", b: 133, p: "UK garage", r: "Standard", h: 4, last: "2026-10-17T12:00:00Z", y: 2022, src: ["triple j Mix Up", "ARIA Club Chart #12 · 4w"], links: ["TIDAL"], check: true },
+    { id: 4, a: "Josh Baker", t: "Lost In Muzik", mix: "Original mix", label: "Solid Grooves", dur: 398, e: 6, k: "8A", b: 126, p: "House", r: "High", h: 5, last: "2026-10-21T09:00:00Z", y: 2023, src: ["PBS Soul Time", "Beatport"], links: ["Beatport"] },
+    { id: 5, a: "Fred again..", t: "Delilah (pull me out of this)", mix: "Original mix", label: "Atlantic", dur: 260, e: 8, k: "11B", b: 140, p: "House", r: "Standard", h: 3, last: "2026-10-10T08:00:00Z", y: 2022, src: ["triple j Mix Up"], links: ["TIDAL", "Deezer"] },
+    { id: 6, a: "Ross From Friends", t: "Talk To Me You'll Drown", mix: "Original mix", label: "Flying Buddha", dur: 402, e: 4, k: "5A", b: 122, p: "House", r: "Vault", h: 2, last: "2026-08-30T10:00:00Z", y: 2016, src: ["3RRR Superfreak", "MixesDB"], links: ["TIDAL"] },
+    { id: 7, a: "Sammy Virji", t: "If U Need It", mix: "Original mix", label: "Warner", dur: 223, e: 8, k: "4A", b: 136, p: "UK garage", r: "High", h: 7, last: "2026-10-23T11:00:00Z", y: 2023, src: ["triple j Mix Up", "1001tracklists", "ARIA Club Chart #12 · 4w"], links: ["TIDAL", "Beatport"] },
+    { id: 8, a: "Peggy Gou", t: "(It Goes Like) Nanana", mix: "Edit", label: "XL Recordings", dur: 238, e: 7, k: "10A", b: 124, p: "House", r: "Standard", h: 5, last: "2026-10-19T09:00:00Z", y: 2023, src: ["PBS Soul Time", "Spotify"], links: ["TIDAL", "Deezer", "Beatport"], check: true },
+    { id: 9, a: "Bicep", t: "Atlas", mix: "Original mix", label: "Ninja Tune", dur: 262, e: 5, k: "8A", b: 125, p: "Techno", r: "Standard", h: 3, last: "2026-10-12T10:00:00Z", y: 2020, src: ["3RRR Superfreak"], links: ["TIDAL"] },
+    { id: 10, a: "Overmono", t: "Good Lies", mix: "Original mix", label: "XL Recordings", dur: 255, e: 9, k: "3B", b: 138, p: "Techno", r: "Standard", h: 2, last: "2026-10-03T10:00:00Z", y: 2023, src: ["MixesDB"], links: [] },
+    { id: 11, a: "Interplanetary Criminal", t: "Wiley Flow", mix: "VIP", label: "Shall Not Fade", dur: 318, e: null, k: null, b: 132, p: "UK garage", r: "Vault", h: 1, last: "2026-07-11T10:00:00Z", y: 2021, src: ["1001tracklists"], links: [], check: true },
+    { id: 12, a: "Josh Baker", t: "Nobody Else", mix: "Extended mix", label: "Solid Grooves", dur: 411, e: 5, k: "7A", b: 127, p: "House", r: "Standard", h: 2, last: "2026-09-26T10:00:00Z", y: 2024, src: ["PBS Soul Time"], links: ["Beatport"] }
+  ];
+  var ROT = { High: 0, Standard: 1, Vault: 2 };
+  function keyOrder(k) { var c = S.camelot(k); return c ? parseInt(c, 10) * 2 + (c.slice(-1) === "B" ? 1 : 0) : 999; }
+  var COLS = [
+    { id: "e", label: "Energy", sort: function (x) { return x.e == null ? -1 : x.e; }, def: true, cell: function (x) { return x.e ? S.html.energy(x.e) : '<span class="sn-none">–</span><span class="sn-sr">Energy not set</span>'; } },
+    { id: "track", label: "Track", sort: function (x) { return (x.a + " " + x.t).toLowerCase(); }, def: true, fixed: true },
+    { id: "b", label: "BPM", num: true, sort: function (x) { return x.b; }, def: true, cell: function (x) { return x.b ? S.format.bpm(x.b) : '<span class="sn-none">–</span>'; } },
+    { id: "k", label: "Key", sort: function (x) { return keyOrder(x.k); }, def: true, cell: function (x) { return x.k ? S.html.key(x.k) : '<span class="sn-key" data-unknown>–<span class="sn-sr">Key not set</span></span>'; } },
+    { id: "p", label: "Pillar", sort: function (x) { return x.p; }, def: true, cell: function (x) { return '<span class="sn-tag sn-category-tag">' + x.p + "</span>"; } },
+    { id: "r", label: "Rotation", sort: function (x) { return ROT[x.r]; }, def: true, cell: function (x) { return '<span class="sn-tag sn-category-tag' + (x.r === "High" ? " sn-category-tag--high" : x.r === "Vault" ? " sn-category-tag--vault" : "") + '">' + (x.r === "High" ? "High rotation" : x.r) + "</span>"; } },
+    { id: "h", label: "Heard", num: true, sort: function (x) { return x.h; }, def: true, title: "Number of shows it was heard on", cell: function (x) { return String(x.h); } },
+    { id: "last", label: "Last heard", num: true, sort: function (x) { return x.last; }, def: true, cell: function (x) { return '<span title="' + S.format.stamp(x.last) + '">' + S.format.date(x.last) + "</span>"; } },
+    { id: "label", label: "Label", sort: function (x) { return x.label; }, cell: function (x) { return S.esc(x.label); } },
+    { id: "dur", label: "Duration", num: true, sort: function (x) { return x.dur; }, cell: function (x) { return S.format.duration(x.dur); } },
+    { id: "y", label: "Year", num: true, sort: function (x) { return x.y; }, cell: function (x) { return String(x.y); } },
+    { id: "src", label: "Sources", sort: function (x) { return x.src.length; }, cell: function (x) { return '<span class="sn-source-badge"><span class="sn-source-badge__name">' + S.esc(x.src[0]) + "</span>" + (x.src.length > 1 ? '<span class="sn-source-badge__detail" title="' + S.esc(x.src.slice(1).join(", ")) + '">+' + (x.src.length - 1) + "</span>" : "") + "</span>"; } },
+    { id: "links", label: "Links", cell: function (x) { return x.links.length ? '<span class="sn-track-cell__links">' + x.links.map(function (l) { return '<a class="sn-link sn-link--ext" href="#" target="_blank" rel="noopener" aria-label="' + S.esc(x.a + " – " + x.t) + " on " + l + '">' + l + "</a>"; }).join("") + "</span>" : '<span class="sn-none">–</span>'; } }
+  ];
+  var st = { sort: "e", dir: "descending", sel: {}, group: "", density: "comfortable", state: "data", vis: {} };
+  COLS.forEach(function (c) { st.vis[c.id] = !!c.def; });
+  var $ = function (id) { return document.getElementById(id); };
+
+  function trackCell(x) {
+    var meta = '<span class="sn-track-cell__mix">' + S.esc(x.mix) + '</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">' + S.format.duration(x.dur) + "</span>";
+    if (x.check) meta += '<span class="sn-track-cell__flag">Check energy</span>';
+    return '<div class="sn-track-cell"><span class="sn-track-cell__title">' + (x.now ? '<span class="sn-track-cell__now">' + S.icon("audio-waveform", { size: 14 }) + "<span>Now</span></span>" : "") +
+      '<span class="sn-track-cell__name" title="' + S.esc(x.a + " – " + x.t) + '"><span class="sn-track-cell__artist">' + S.esc(x.a) + " –</span> " + S.esc(x.t) + '</span></span><span class="sn-track-cell__meta">' + meta + "</span></div>";
+  }
+  function visCols() { return COLS.filter(function (c) { return st.vis[c.id]; }); }
+  function sorted() {
+    var c = COLS.filter(function (x) { return x.id === st.sort; })[0], m = st.dir === "ascending" ? 1 : -1;
+    var tb = function (x) { return (x.a + " " + x.t).toLowerCase(); };
+    return T.slice().sort(function (p, q) { var a = c.sort(p), b = c.sort(q); if (a < b) return -m; if (a > b) return m; return tb(p) < tb(q) ? -1 : tb(p) > tb(q) ? 1 : 0; });
+  }
+  function head() {
+    var allIds = T.map(function (x) { return x.id; }), n = allIds.filter(function (i) { return st.sel[i]; }).length;
+    var h = '<th scope="col" class="sn-data-table__sel"><input type="checkbox" id="all" aria-label="Select all 12 tracks"' + (n === T.length ? " checked" : "") + (st.state !== "data" ? " disabled" : "") + "></th>";
+    visCols().forEach(function (c) {
+      var sorted = st.sort === c.id;
+      h += '<th scope="col"' + (c.num ? ' class="num"' : "") + (c.sort ? " data-sortable" : "") + (sorted ? ' aria-sort="' + st.dir + '"' : "") + (c.title ? ' title="' + c.title + '"' : "") + ">" +
+        (c.sort ? '<button type="button" data-sort="' + c.id + '">' + c.label + "</button>" : c.label) + "</th>";
+    });
+    h += '<th scope="col" class="sn-data-table__actions"><span class="sn-sr">Actions</span></th>';
+    $("head").innerHTML = h;
+    var all = $("all"); all.indeterminate = n > 0 && n < T.length;
+    $("count").textContent = "12 tracks" + (n ? " · " + n + " selected" : "");
+    var bulk = $("bulk"); bulk.hidden = !n; bulk.innerHTML = S.icon("plus") + "Add " + n + " to set";
+  }
+  function row(x) {
+    var cells = '<td class="sn-data-table__sel"><input type="checkbox" data-id="' + x.id + '" aria-label="Select ' + S.esc(x.a + " – " + x.t) + '"' + (st.sel[x.id] ? " checked" : "") + "></td>";
+    visCols().forEach(function (c) {
+      if (c.id === "track") cells += '<td class="sn-data-table__track">' + trackCell(x) + "</td>";
+      else cells += "<td" + (c.num ? ' class="num"' : "") + ' data-label="' + c.label + '">' + c.cell(x) + "</td>";
+    });
+    cells += '<td class="sn-data-table__actions"><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="Add ' + S.esc(x.a + " – " + x.t) + ' to set">' + S.icon("plus") + '</button><button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More actions for ' + S.esc(x.a + " – " + x.t) + '">' + S.icon("ellipsis-vertical") + "</button></td>";
+    return "<tr" + (st.sel[x.id] ? " data-selected" : "") + (x.check ? " data-flag" : "") + (x.now ? " data-now" : "") + ">" + cells + "</tr>";
+  }
+  function stateRow(kind) {
+    var span = visCols().length + 2;
+    if (kind === "loading") { var r = ""; for (var i = 0; i < 5; i++) { r += '<tr class="sn-data-table__skel" aria-hidden="true"><td class="sn-data-table__sel"></td>' + visCols().map(function (c) { return '<td class="' + (c.id === "track" ? "sn-data-table__track" : "") + '"><span class="sn-skel" style="width:' + (c.id === "track" ? 70 : 60) + '%"></span></td>'; }).join("") + "<td></td></tr>"; } return r + '<tr class="sn-sr"><td colspan="' + span + '">Loading tracks</td></tr>'; }
+    var m = kind === "empty"
+      ? ["No tracks match these filters", "Nothing is tagged Techno, High rotation and energy 9–10. Clear a filter to widen the crate.", '<button class="sn-btn sn-btn--sm" type="button">Clear filters</button>']
+      : ["Tracks didn't load", "The library service didn't answer within 10 seconds. Your filters are kept. Try again, or check Pipeline for the API status.", '<button class="sn-btn sn-btn--sm" type="button">' + S.icon("refresh-cw") + "Try again</button>"];
+    return '<tr class="sn-data-table__state" data-state="' + kind + '"><td colspan="' + span + '"><div class="sn-data-table__state-inner"' + (kind === "error" ? ' role="alert"' : "") + '><span class="sn-data-table__state-title">' + m[0] + "</span><span>" + m[1] + "</span>" + m[2] + "</div></td></tr>";
+  }
+  function body() {
+    var box = $("box"); box.setAttribute("aria-busy", st.state === "loading" ? "true" : "false");
+    if (st.state !== "data") { $("body").innerHTML = stateRow(st.state); return; }
+    var rows = sorted(), h = "";
+    if (st.group) {
+      var keyOf = st.group === "tier" ? function (x) { return x.e ? S.tier(x.e) : "none"; } : function (x) { return x.p; };
+      var order = st.group === "tier" ? ["high", "building", "low", "none"] : ["House", "Techno", "UK garage"];
+      var names = { high: S.TIER_LABEL.high, building: S.TIER_LABEL.building, low: S.TIER_LABEL.low, none: "Energy not set" };
+      order.forEach(function (g) {
+        var grp = rows.filter(function (x) { return keyOf(x) === g; }); if (!grp.length) return;
+        h += '<tr class="sn-group"><td colspan="' + (visCols().length + 2) + '">' + S.esc(names[g] || g) + "<span>" + grp.length + (grp.length === 1 ? " track" : " tracks") + "</span></td></tr>";
+        h += grp.map(row).join("");
+      });
+    } else h = rows.map(row).join("");
+    $("body").innerHTML = h;
+  }
+  function chooser() {
+    var f = function (title, def) { return "<fieldset><legend>" + title + "</legend>" + COLS.filter(function (c) { return !!c.def === def; }).map(function (c) {
+      return '<label class="sn-check"><input type="checkbox" data-col="' + c.id + '"' + (st.vis[c.id] ? " checked" : "") + (c.fixed ? " disabled" : "") + "> " + c.label + (c.fixed ? ' <span class="sn-dim">(always shown)</span>' : "") + "</label>"; }).join("") + "</fieldset>"; };
+    $("cols-pop").innerHTML = f("Shown by default", true) + f("Optional", false) + '<button class="sn-btn sn-btn--quiet sn-btn--sm" type="button" id="cols-reset">Reset to default</button>';
+    var n = visCols().length; $("cols-btn").innerHTML = S.icon("sliders-horizontal") + "Columns <span class=\"sn-dim sn-mono\">" + n + "/" + COLS.length + "</span>";
+  }
+  function render() { head(); body(); chooser(); }
+  render();
+
+  $("head").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-sort]");
+    if (b) {
+      var id = b.getAttribute("data-sort");
+      if (st.sort === id) st.dir = st.dir === "ascending" ? "descending" : "ascending"; else { st.sort = id; st.dir = "ascending"; }
+      render(); $("head").querySelector('[data-sort="' + id + '"]').focus();
+      $("announce").textContent = "Sorted by " + b.textContent + ", " + st.dir + ", then by artist";
+    }
+  });
+  $("dt").addEventListener("change", function (ev) {
+    var t = ev.target;
+    if (t.id === "all") { T.forEach(function (x) { st.sel[x.id] = t.checked; }); render(); $("all").focus(); }
+    else if (t.hasAttribute("data-id")) { var id = t.getAttribute("data-id"); st.sel[id] = t.checked; head(); t.closest("tr").toggleAttribute("data-selected", t.checked); }
+    else if (t.hasAttribute("data-col")) { st.vis[t.getAttribute("data-col")] = t.checked; var col = t.getAttribute("data-col"); head(); body(); var n = visCols().length; $("cols-btn").innerHTML = S.icon("sliders-horizontal") + "Columns <span class=\"sn-dim sn-mono\">" + n + "/" + COLS.length + "</span>"; }
+  });
+  function seg(id, fn) { $(id).addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (!b) return; $(id).querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); fn(b.getAttribute("data-v")); }); }
+  seg("group", function (v) { st.group = v; body(); });
+  seg("density", function (v) { st.density = v; $("dt").setAttribute("data-density", v); });
+  seg("state", function (v) { st.state = v; head(); body(); });
+  var pop = $("cols-pop"), btn = $("cols-btn");
+  function closePop(focus) { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); if (focus) btn.focus(); }
+  btn.addEventListener("click", function () { var open = pop.hidden; pop.hidden = !open; btn.setAttribute("aria-expanded", String(open)); if (open) pop.querySelector("input:not([disabled])").focus(); });
+  pop.addEventListener("keydown", function (ev) { if (ev.key === "Escape") closePop(true); });
+  pop.addEventListener("click", function (ev) { if (ev.target.id === "cols-reset") { COLS.forEach(function (c) { st.vis[c.id] = !!c.def; }); render(); pop.hidden = false; } });
+  document.addEventListener("click", function (ev) { if (!pop.hidden && !ev.target.closest(".sn-data-table__chooser")) closePop(false); });
+})();
+</script>
+</body>
+</html>

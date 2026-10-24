@@ -1,0 +1,81 @@
+<!-- @dsCard group="Feedback" height=368 subtitle="Plain confirmation, with Undo, with queue count; live demo: one visible, up to 3 queued, 4 s or 8 s with an action, pauses on hover and focus" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Toast — preview</title>
+<style>
+  .col { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Examples (static)</div>
+  <div class="col" inert id="examples"></div>
+  <div class="sn-preview__label">Try it: toasts appear at the bottom (bottom-right from 1,100 px)</div>
+  <div class="sn-preview__row">
+    <button class="sn-btn" type="button" data-toast="save">Save set</button>
+    <button class="sn-btn" type="button" data-toast="copy">Copy tracklist</button>
+    <button class="sn-btn" type="button" data-toast="add">Add Bicep – Glue to set</button>
+    <button class="sn-btn sn-btn--quiet" type="button" id="burst">Do all three at once</button>
+  </div>
+  <p class="sn-inline-message" data-status="info" id="log">Undo puts the track back where it was.</p>
+</div>
+<div class="sn-toast__region" role="status" aria-live="polite" aria-atomic="false" aria-label="Notifications" id="region"></div>
+<script>
+  var S = window.SongNodes, I = S.icon;
+  function toastHTML(t, idx) {
+    return '<div class="sn-toast"' + (idx != null ? ' id="toast-' + idx + '"' : "") + '>' +
+      '<span class="sn-toast__icon">' + I("circle-check") + '</span>' +
+      '<span class="sn-toast__text">' + t.html + '</span>' +
+      (t.queued ? '<span class="sn-toast__queue">+' + t.queued + ' more</span>' : "") +
+      (t.action ? '<button class="sn-btn sn-btn--sm sn-toast__action" type="button" data-act="1">' + t.action + '</button>' : "") +
+      '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-toast__close" type="button" aria-label="Dismiss notification" data-close="1">' + I("x") + '</button></div>';
+  }
+  var KINDS = {
+    save: { html: "Set saved" },
+    copy: { html: "Tracklist copied: 18 tracks" },
+    add: { html: 'Added to <q>Peak time Friday</q>', action: "Undo" }
+  };
+  document.getElementById("examples").innerHTML =
+    toastHTML({ html: "Set saved" }) + toastHTML({ html: 'Added to <q>Peak time Friday</q>', action: "Undo" }) + toastHTML({ html: "Tracklist copied: 18 tracks", queued: 2 });
+
+  // ---- queue: max 1 visible, at most 3 waiting; 4 s, 8 s with an action; pause on hover/focus
+  var region = document.getElementById("region"), queue = [], current = null, timer = null, remaining = 0, started = 0;
+  function show() {
+    if (current || !queue.length) return;
+    current = queue.shift(); remaining = current.action ? 8000 : 4000;
+    region.innerHTML = toastHTML({ html: current.html, action: current.action, queued: queue.length }, 1);
+    var el = region.firstChild;
+    el.addEventListener("mouseenter", pause); el.addEventListener("mouseleave", resume);
+    el.addEventListener("focusin", pause); el.addEventListener("focusout", function (e) { if (!el.contains(e.relatedTarget)) resume(); });
+    resume();
+  }
+  function pause() { if (timer) { clearTimeout(timer); timer = null; remaining -= Date.now() - started; } }
+  function resume() { if (!current || timer) return; started = Date.now(); timer = setTimeout(hide, Math.max(remaining, 1000)); }
+  function hide() {
+    clearTimeout(timer); timer = null;
+    var el = region.firstChild; if (!el) { current = null; return show(); }
+    var hadFocus = el.contains(document.activeElement);
+    el.setAttribute("data-leaving", "");
+    setTimeout(function () { region.innerHTML = ""; current = null; if (hadFocus) document.querySelector("[data-toast]").focus(); show(); }, 130);
+  }
+  function push(kind) {
+    if (queue.length >= 3) queue.shift();           // never more than 3 waiting: drop the oldest
+    queue.push(KINDS[kind]);
+    var el = current && region.querySelector(".sn-toast");
+    if (el) {   // update the waiting count on the visible toast instead of stacking
+      var q = el.querySelector(".sn-toast__queue");
+      if (!q) { q = document.createElement("span"); q.className = "sn-toast__queue"; el.querySelector(".sn-toast__text").after(q); }
+      q.textContent = "+" + queue.length + " more";
+    }
+    show();
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-toast]"); if (b) push(b.getAttribute("data-toast"));
+    if (e.target.closest("[data-close]")) hide();
+    if (e.target.closest("[data-act]")) { document.getElementById("log").textContent = "Undone: Bicep – Glue removed from “Peak time Friday”."; hide(); }
+  });
+  document.getElementById("burst").addEventListener("click", function () { push("save"); push("copy"); push("add"); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && current && region.contains(document.activeElement)) hide(); });
+</script>
+</body>
+</html>

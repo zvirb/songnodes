@@ -1,0 +1,211 @@
+<!-- @dsCard group="Pages" width=1280 height=1010 subtitle="Who played what (matrix page): tracks × sources with ● marks and counts, sticky first column and header, sort by total, source and 2+ filters; Keys × energy heatmap tab with a cell that filters a list and a table view; per-track list on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>MatrixPage — preview</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <a class="sn-skip" href="#main">Skip to content</a>
+  <div id="sh-head" data-drawer-inert></div>
+  <main class="sn-page-matrix" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+    <section class="sn-page-matrix__section sn-m-sources" aria-label="Matrix views">
+      <div class="sn-tabs__wrap">
+        <div class="sn-tabs" role="tablist" aria-label="Matrix">
+          <button class="sn-tab" role="tab" id="t-src" aria-controls="p-src" aria-selected="true" tabindex="0">Tracks × sources<span class="sn-tab__badge">12</span><span class="sn-sr"> tracks</span></button>
+          <button class="sn-tab" role="tab" id="t-key" aria-controls="p-key" aria-selected="false" tabindex="-1">Keys × energy<span class="sn-tab__badge">1,284</span><span class="sn-sr"> tracks</span></button>
+        </div>
+      </div>
+
+      <div class="sn-tabs__panel sn-page-matrix__section" role="tabpanel" id="p-src" aria-labelledby="t-src" tabindex="0">
+        <div class="sn-page-matrix__toolbar">
+          <div class="sn-filter-chip-group" role="group" aria-labelledby="lg-grp">
+            <div class="sn-filter-chip-group__head"><span class="sn-filter-chip-group__legend" id="lg-grp">Sources</span></div>
+            <ul class="sn-filter-chip-group__list" id="grp"></ul>
+          </div>
+          <label class="sn-checkbox"><input type="checkbox" id="multi"><span class="sn-checkbox__text"><span>Played on 2+ sources<span class="sn-checkbox__count" id="multi-n"></span></span></span></label>
+          <div class="sn-page-matrix__toolbar-end"><span class="sn-data-table__count" id="count" aria-live="polite"></span></div>
+        </div>
+        <div class="sn-tablebox sn-page-matrix__box" tabindex="0" role="region" aria-labelledby="cap">
+          <table class="sn-table sn-page-matrix__grid">
+            <caption class="sn-sr" id="cap">Tracks by source: ● and plays per source, scroll sideways for more sources</caption>
+            <thead><tr id="head"></tr></thead>
+            <tbody id="body"></tbody>
+          </table>
+        </div>
+        <ol class="sn-page-matrix__list" id="list" aria-label="Tracks and the sources that played them"></ol>
+        <p class="sn-sr" aria-live="polite" id="announce"></p>
+      </div>
+
+      <div class="sn-tabs__panel sn-page-matrix__section" role="tabpanel" id="p-key" aria-labelledby="t-key" tabindex="0" hidden>
+        <section class="sn-card sn-m-harmony">
+          <figure class="sn-chart-frame sn-heatmap" aria-labelledby="kTitle" style="margin:0">
+            <div class="sn-chart-frame__head">
+              <div class="sn-chart-frame__titles">
+                <h2 class="sn-title title-s" id="kTitle"><span class="sn-lead">Key &amp; mood:</span> Library coverage</h2>
+                <p class="sn-chart-frame__sub">Tracks per Camelot key and energy · 1,284 tracks · select a cell to list its tracks</p>
+              </div>
+              <div class="sn-chart-frame__actions"><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button" id="kToggle" aria-controls="kTable kPlot"></button></div>
+            </div>
+            <span class="sn-heatmap__ramp" id="kRamp"></span>
+            <div class="sn-chart-frame__plot" id="kPlot"></div>
+            <div class="sn-chart-frame__table" id="kTable" hidden></div>
+            <p class="sn-heatmap__readout" id="kRead" aria-live="polite"></p>
+          </figure>
+        </section>
+        <div class="sn-page-matrix__picked" id="picked"></div>
+      </div>
+    </section>
+  </main>
+  <div id="sh-drawer"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+/*@COMMON@*/
+/*@KIT@*/
+(function () {
+  snShell({ mod: "sources", title: "Who played what", stampVerb: "Updated", stamp: "2026-10-24T21:24:00+11:00" });
+  $("ph").innerHTML = snPageHeader("ph", {
+    mod: "sources", here: "Who played what", lead: "Sources", title: "Who played what",
+    desc: "Which radio shows, charts and tracklist sites played each track in the last 4 weeks, 27 Sep – 24 Oct 2026.",
+    stampVerb: "Data from", stamp: "2026-10-24T21:24:00+11:00",
+    menu: [{ h: "Matrix" }, { id: "csv", icon: "download", label: "Export as CSV" }]
+  });
+  var SRC = [
+    { id: "pbs", name: "PBS Soul Time", g: "radio", short: "PBS" }, { id: "rrr", name: "3RRR Superfreak", g: "radio", short: "3RRR" }, { id: "jjj", name: "triple j Mix Up", g: "radio", short: "triple j" },
+    { id: "aria", name: "ARIA Club Chart", g: "chart", short: "ARIA", unit: "weeks" },
+    { id: "1001", name: "1001tracklists", g: "lists", short: "1001TL" }, { id: "mdb", name: "MixesDB", g: "lists", short: "MixesDB" }, { id: "sfm", name: "Setlist.fm", g: "lists", short: "Setlist.fm" }
+  ];
+  var GROUPS = [["radio", "Radio"], ["chart", "Charts"], ["lists", "Tracklists"]];
+  var T = [
+    ["Overmono", "So U Kno", "Extended mix", { pbs: 2, rrr: 3, jjj: 4, aria: 4, "1001": 11, mdb: 2 }],
+    ["Bicep", "Glue", "Original mix", { pbs: 3, rrr: 2, "1001": 14, mdb: 5, sfm: 3 }],
+    ["Sammy Virji", "If U Need It", "Original mix", { jjj: 5, aria: 4, "1001": 9 }],
+    ["Interplanetary Criminal", "Slow Burner", "Original mix", { rrr: 2, jjj: 3, aria: 2, "1001": 6 }],
+    ["Josh Baker", "Lost In Muzik", "Original mix", { pbs: 4, rrr: 1, "1001": 7 }],
+    ["Peggy Gou", "(It Goes Like) Nanana", "Edit", { pbs: 2, jjj: 2, "1001": 3, sfm: 6 }],
+    ["Fred again..", "Delilah (pull me out of this)", "Original mix", { jjj: 3, sfm: 9 }],
+    ["Ross From Friends", "Talk To Me You'll Drown", "Original mix", { pbs: 1, mdb: 1 }],
+    ["Joy Orbison", "Flight FM", "Original mix", { rrr: 1, jjj: 1, "1001": 4 }],
+    ["Bicep", "Atlas", "Original mix", { rrr: 1, "1001": 2, mdb: 3 }],
+    ["Overmono", "Good Lies", "Original mix", { rrr: 1, mdb: 1 }],
+    ["Kerri Chandler", "Rain", "Original mix", { pbs: 1 }]
+  ].map(function (r) { return { a: r[0], t: r[1], mix: r[2], p: r[3] }; });
+  var st = { sort: "total", dir: "descending", groups: { radio: true, chart: true, lists: true }, multi: false };
+  function cols() { return SRC.filter(function (s) { return st.groups[s.g]; }); }
+  function total(x) { return cols().reduce(function (a, s) { return a + (x.p[s.id] || 0); }, 0); }
+  function nsrc(x) { return cols().filter(function (s) { return x.p[s.id]; }).length; }
+  function rows() {
+    var m = st.dir === "ascending" ? 1 : -1;
+    return T.filter(function (x) { return !st.multi || nsrc(x) >= 2; }).filter(function (x) { return nsrc(x) > 0; }).sort(function (p, q) {
+      var a = st.sort === "track" ? (p.a + p.t).toLowerCase() : st.sort === "total" ? total(p) : (p.p[st.sort] || 0), b = st.sort === "track" ? (q.a + q.t).toLowerCase() : st.sort === "total" ? total(q) : (q.p[st.sort] || 0);
+      return a < b ? -m : a > b ? m : (p.a + p.t < q.a + q.t ? -1 : 1);
+    });
+  }
+  function th(id, label, sub) { var on = st.sort === id; return '<th scope="col" data-sortable' + (on ? ' aria-sort="' + st.dir + '"' : "") + '><button type="button" data-sort="' + id + '">' + S.esc(label) + "</button>" + (sub ? "<small>" + sub + "</small>" : "") + "</th>"; }
+  function render() {
+    var c = cols(), r = rows();
+    $("head").innerHTML = th("track", "Track") + c.map(function (s) { return th(s.id, s.name, s.unit ? "weeks on chart" : "plays"); }).join("") + th("total", "Total", "sources");
+    $("body").innerHTML = r.map(function (x) {
+      var name = x.a + " – " + x.t;
+      return '<tr><th scope="row">' + snTrack({ a: x.a, t: x.t, mix: x.mix }) + "</th>" + c.map(function (s) {
+        var v = x.p[s.id];
+        return "<td>" + (v ? '<span class="sn-page-matrix__mark" title="' + S.esc(name + " on " + s.name + ": " + v + (s.unit ? " weeks on chart" : v === 1 ? " play" : " plays")) + '">● ' + v + "</span>" : '<span class="sn-none" aria-hidden="true">–</span><span class="sn-sr">not played</span>') + "</td>";
+      }).join("") + '<td class="sn-page-matrix__total">' + total(x) + ' <span class="sn-dim">· ' + nsrc(x) + "</span></td></tr>";
+    }).join("");
+    $("list").innerHTML = r.map(function (x) {
+      return '<li class="sn-page-matrix__list-row">' + snTrack({ a: x.a, t: x.t, mix: x.mix }) + '<span class="sn-page-matrix__list-srcs">' + c.filter(function (s) { return x.p[s.id]; }).map(function (s) { return "<span>" + S.esc(s.name) + ' <b class="sn-page-matrix__mark">● ' + x.p[s.id] + "</b></span>"; }).join("") + '</span><span class="body-s sn-muted">Total ' + total(x) + " across " + nsrc(x) + " sources</span></li>";
+    }).join("");
+    $("count").textContent = r.length + " of " + T.length + " tracks · " + c.length + " sources";
+    $("multi-n").textContent = T.filter(function (x) { return nsrc(x) >= 2; }).length;
+  }
+  $("grp").innerHTML = GROUPS.map(function (g) { var n = SRC.filter(function (s) { return s.g === g[0]; }).length; return '<li><button type="button" class="sn-chip sn-filter-chip" aria-pressed="true" data-g="' + g[0] + '"><span>' + g[1] + '</span><span class="sn-filter-chip__count"><span class="sn-sr">, </span>' + n + '<span class="sn-sr"> sources</span></span></button></li>'; }).join("");
+  $("grp").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var on = b.getAttribute("aria-pressed") !== "true"; if (!on && Object.keys(st.groups).filter(function (k) { return st.groups[k]; }).length === 1) { snSay("Keep at least one source group"); return; } b.setAttribute("aria-pressed", on); st.groups[b.dataset.g] = on; if (!on && SRC.some(function (s) { return s.id === st.sort && s.g === b.dataset.g; })) st.sort = "total"; render(); });
+  $("multi").addEventListener("change", function () { st.multi = this.checked; render(); });
+  $("head").addEventListener("click", function (e) { var b = e.target.closest("button[data-sort]"); if (!b) return; var id = b.dataset.sort; if (st.sort === id) st.dir = st.dir === "ascending" ? "descending" : "ascending"; else { st.sort = id; st.dir = id === "track" ? "ascending" : "descending"; } render(); $("head").querySelector('[data-sort="' + id + '"]').focus(); $("announce").textContent = "Sorted by " + b.textContent + ", " + st.dir; });
+  render();
+
+  /* tabs (APG: arrows move and select, Home/End) */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function pick(t, focus) { tabs.forEach(function (x) { var on = x === t; x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1; $(x.getAttribute("aria-controls")).hidden = !on; }); if (focus) t.focus(); if (t.id === "t-key") drawHeat(); }
+  tabs.forEach(function (t, i) { t.addEventListener("click", function () { pick(t, true); }); t.addEventListener("keydown", function (e) { var j = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : null; if (j == null) return; e.preventDefault(); pick(tabs[(j + tabs.length) % tabs.length], true); }); });
+
+  /* heatmap (from Heatmap) with select-to-filter */
+  var BINS = [0, 1, 4, 8, 13, 19, 26];
+  function step(n) { var s = 0; for (var i = 0; i < BINS.length; i++) if (n >= BINS[i]) s = i; return s; }
+  var keys = []; for (var k = 1; k <= 12; k++) { keys.push(k + "A"); keys.push(k + "B"); }
+  var keyW = { 1: 0.7, 2: 0.6, 3: 0.55, 4: 0.9, 5: 1.0, 6: 1.1, 7: 1.15, 8: 1.3, 9: 1.1, 10: 1.0, 11: 0.85, 12: 0.75 };
+  var eW = [0.15, 0.3, 0.55, 0.8, 1.0, 1.0, 0.95, 0.85, 0.55, 0.25];
+  var kv = keys.map(function (key, i) { var num = parseInt(key, 10), minor = key.slice(-1) === "A"; return eW.map(function (w, j) { return Math.max(0, Math.round(26 * keyW[num] * w * (minor ? 1.25 : 0.45) + ((i * 7 + j * 3) % 5) - 2)); }); });
+  var kmax = Math.max.apply(null, kv.map(function (r) { return Math.max.apply(null, r); }));
+  var KNOWN = [["Bicep", "Glue", "8A", 6], ["Josh Baker", "Lost In Muzik", "8A", 6], ["Bicep", "Atlas", "8A", 5], ["Overmono", "So U Kno", "9A", 7], ["Interplanetary Criminal", "Slow Burner", "9A", 7], ["Sammy Virji", "If U Need It", "4A", 8], ["Peggy Gou", "(It Goes Like) Nanana", "10A", 7], ["Fred again..", "Delilah (pull me out of this)", "11B", 8], ["Ross From Friends", "Talk To Me You'll Drown", "5A", 4], ["Overmono", "Good Lies", "3B", 9]];
+  var drawn = false, sel = null;
+  function picked(i, j) {
+    var key = keys[i], e = j + 1, n = kv[i][j], list = KNOWN.filter(function (x) { return x[2] === key && x[3] === e; });
+    sel = [i, j];
+    $("picked").innerHTML = '<div class="sn-section-heading"><h3 class="sn-title title-s"><span class="sn-lead">Library:</span> ' + F.count(n) + (n === 1 ? " track" : " tracks") + " in " + key + " at energy " + e + '</h3><div class="sn-section-heading__end"><a class="sn-link sn-m-library" href="#/library?key=' + key + "&energy=" + e + '">Show ' + (n ? "all " + F.count(n) : "them") + " in Library</a></div></div>" +
+      (n === 0 ? '<p class="sn-inline-message" data-status="info">No tracks in ' + key + " " + S.keyName(key) + " at energy " + e + " yet. A gap worth filling.</p>" :
+      '<div class="sn-tablebox"><table class="sn-table sn-table--compact"><caption class="sn-sr">Tracks in this cell</caption><thead><tr><th scope="col">Track</th><th scope="col">Key</th><th scope="col">Energy</th></tr></thead><tbody>' +
+      (list.length ? list : [["–", "", key, e]]).slice(0, 5).map(function (x) { return x[0] === "–" ? '<tr><td colspan="3"><span class="sn-dim">The ' + F.count(n) + " tracks here are listed in Library.</span></td></tr>" : "<tr><td>" + S.esc(x[0] + " – " + x[1]) + "</td><td>" + H.key(x[2], true) + "</td><td>" + H.energy(x[3]) + "</td></tr>"; }).join("") +
+      "</tbody></table></div>" + (list.length && n > list.length ? '<p class="body-s sn-muted">Showing ' + list.length + " of " + F.count(n) + ".</p>" : ""));
+    snSay(F.count(n) + " tracks in " + key + " at energy " + e);
+  }
+  function drawHeat() {
+    if (drawn) return; drawn = true;
+    var host = $("kPlot"), read = $("kRead"), rem = K.rem(), cw = 30, ch = 17, lw = 46, top = 40;
+    var gapX = function (c) { return (c > 3 ? 4 : 0) + (c > 6 ? 4 : 0); };
+    var W = lw + 10 * cw + gapX(10) + 2, Hh = top + keys.length * ch + 2;
+    $("kRamp").innerHTML = '<span>0</span><span class="sn-heatmap__ramp-steps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>' + kmax + "</span>";
+    $("kRamp").setAttribute("aria-label", "Colour scale from 0 to " + kmax + " tracks");
+    var svg = K.el("svg", { width: W, height: Hh, viewBox: "0 0 " + W + " " + Hh, role: "grid", "aria-labelledby": "kTitle", "aria-describedby": "kHelp", style: "max-width:100%;width:" + W + "px;height:auto" }, host);
+    K.el("desc", { id: "kHelp" }, svg).textContent = "Arrow keys move between cells; Enter lists the tracks in a cell.";
+    var head = K.el("g", { role: "row" }, svg);
+    K.text(head, 0, top - 6, "Key", { role: "columnheader", "class": "sn-chart-frame__axis-title" });
+    for (var j = 0; j < 10; j++) K.text(head, lw + j * cw + gapX(j) + cw / 2, top - 6, String(j + 1), { "class": "sn-chart-frame__tick", "text-anchor": "middle", role: "columnheader", "aria-label": "Energy " + (j + 1) });
+    [[0, "Low"], [4, "Building"], [7, "High"]].forEach(function (g) { K.text(svg, lw + g[0] * cw + gapX(g[0]), top - rem * 1.35, g[1], { "class": "sn-chart-frame__axis-title", "aria-hidden": "true" }); });
+    var cells = [], ring = K.el("rect", { "class": "sn-heatmap__ring", visibility: "hidden", rx: 3 }), count = K.el("text", { "class": "sn-heatmap__count", visibility: "hidden" });
+    keys.forEach(function (key, i) {
+      var g = K.el("g", { role: "row" }, svg), y = top + i * ch, rh = K.el("g", { role: "rowheader", "aria-label": key + " " + S.keyName(key) }, g);
+      K.el("circle", { cx: 5, cy: y + ch / 2, r: 4, "class": "sn-heatmap__key-dot", "data-key": key }, rh);
+      K.text(rh, 14, y + ch / 2 + 4, key, { "class": "sn-heatmap__row-label", "aria-hidden": "true" });
+      cells.push(kv[i].map(function (v, j) {
+        var rect = K.el("rect", { x: lw + j * cw + gapX(j) + 1, y: y + 1, width: cw - 2, height: ch - 2, rx: 2, "class": "sn-heatmap__cell", role: "gridcell", tabindex: -1, "data-step": step(v), "aria-label": key + " " + S.keyName(key) + ", energy " + (j + 1) + ": " + v + (v === 1 ? " track" : " tracks") }, g);
+        rect._rc = [i, j]; rect._v = v; return rect;
+      }));
+    });
+    svg.appendChild(ring); svg.appendChild(count);
+    var cur = [14, 6]; cells[14][6].setAttribute("tabindex", 0);
+    var idle = "Hover or focus a cell for its count; Enter or click lists its tracks below.";
+    function show(rect, focus) {
+      if (!rect) { ring.setAttribute("visibility", "hidden"); count.setAttribute("visibility", "hidden"); read.innerHTML = idle; return; }
+      var x = +rect.getAttribute("x"), y = +rect.getAttribute("y"), w = +rect.getAttribute("width"), h = +rect.getAttribute("height");
+      ring.setAttribute("x", x - 1); ring.setAttribute("y", y - 1); ring.setAttribute("width", w + 2); ring.setAttribute("height", h + 2);
+      ring.setAttribute("class", "sn-heatmap__ring" + (focus ? " sn-heatmap__ring--focus" : "")); ring.setAttribute("visibility", "visible");
+      count.textContent = rect._v; count.setAttribute("x", x + w / 2); count.setAttribute("y", y + h / 2 + 3.5); count.style.fill = step(rect._v) >= 5 ? "var(--on-brand)" : "var(--fg)"; count.setAttribute("visibility", "visible");
+      var i = rect._rc[0], j = rect._rc[1];
+      read.innerHTML = H.key(keys[i], true) + " · energy <b>" + (j + 1) + "</b>: <b>" + rect._v + "</b> " + (rect._v === 1 ? "track" : "tracks");
+    }
+    svg.addEventListener("focusin", function (e) { if (e.target._rc) { cur = e.target._rc; show(e.target, true); } });
+    svg.addEventListener("focusout", function () { show(null); });
+    svg.addEventListener("pointerover", function (e) { if (e.target._rc) show(e.target, false); });
+    svg.addEventListener("click", function (e) { if (e.target._rc) { cells[cur[0]][cur[1]].setAttribute("tabindex", -1); cur = e.target._rc; e.target.setAttribute("tabindex", 0); e.target.focus(); picked(cur[0], cur[1]); } });
+    svg.addEventListener("keydown", function (e) {
+      var r = cur[0], c = cur[1];
+      if (e.key === "ArrowRight") c = Math.min(9, c + 1); else if (e.key === "ArrowLeft") c = Math.max(0, c - 1); else if (e.key === "ArrowDown") r = Math.min(23, r + 1); else if (e.key === "ArrowUp") r = Math.max(0, r - 1);
+      else if (e.key === "Home") c = 0; else if (e.key === "End") c = 9; else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); picked(r, c); return; } else return;
+      e.preventDefault(); cells[cur[0]][cur[1]].setAttribute("tabindex", -1); cur = [r, c]; var n = cells[r][c]; n.setAttribute("tabindex", 0); n.focus();
+    });
+    read.innerHTML = idle;
+    /* table view */
+    $("kTable").innerHTML = '<div class="sn-tablebox" style="max-height:420px;overflow:auto"><table class="sn-table sn-table--compact"><caption class="sn-sr">Tracks per key and energy</caption><thead><tr><th scope="col">Key</th>' + eW.map(function (_, j) { return '<th scope="col" class="num">' + (j + 1) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      keys.map(function (key, i) { return '<tr><th scope="row" class="sn-page-matrix__rowhead">' + H.key(key) + "</th>" + kv[i].map(function (v) { return '<td class="num">' + v + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
+    var btn = $("kToggle");
+    function paint(on) { btn.innerHTML = I(on ? "layout-grid" : "table-2") + (on ? "View as heatmap" : "View as table"); }
+    paint(false);
+    btn.addEventListener("click", function () { var on = $("kTable").hidden; $("kTable").hidden = !on; host.hidden = on; paint(on); });
+    picked(14, 6);
+  }
+  snMenusIn($("ph"));
+})();
+</script>
+</body>
+</html>

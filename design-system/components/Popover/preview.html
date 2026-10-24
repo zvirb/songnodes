@@ -1,0 +1,67 @@
+<!-- @dsCard group="Surfaces" height=400 subtitle="Key detail with compatible keys (open), spare-track suggestions, column chooser; click to open, Esc or outside click closes, focus moves in and back" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Popover — preview</title>
+<style>
+  .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="bar">
+    <div class="sn-row" id="left"></div>
+    <div class="sn-row" id="right"></div>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes, I = S.icon, H = S.html;
+  function pop(id, trigger, title, inner, end) {
+    return '<span class="sn-popover__anchor">' + trigger.replace("<button", '<button aria-haspopup="dialog" aria-expanded="false" aria-controls="' + id + '"') +
+      '<div class="sn-popover' + (end ? " sn-popover--end" : "") + '" id="' + id + '" role="dialog" aria-labelledby="' + id + '-t" hidden>' +
+        '<div class="sn-popover__head"><h3 class="sn-popover__title" id="' + id + '-t" tabindex="-1">' + title + '</h3>' +
+        '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" aria-label="Close" data-close>' + I("x") + '</button></div>' + inner + '</div></span>';
+  }
+  function row(k, label) { var c = S.compat("8A", k); return '<li class="sn-popover__item">' + H.key(k, true) + '<span class="sn-popover__grow"></span>' + H.compat(c.level, label || c.label) + "</li>"; }
+  var keyInner = '<p class="sn-popover__text">Mixes from 8A without a clash:</p><ul class="sn-popover__list">' +
+    row("8A") + row("9A") + row("7A") + row("8B") + "</ul>" +
+    '<div class="sn-popover__foot"><a class="sn-link sn-m-harmony" href="#wheel">Open Camelot wheel</a></div>';
+  var spares = [["Josh Baker – Lost In Muzik", 6, "8A", 127], ["Peggy Gou – (It Goes Like) Nanana", 6, "9A", 125], ["Ross From Friends – Talk To Me You’ll Drown", 5, "7A", 126]];
+  var spareInner = '<p class="sn-popover__text">Fit between slot 4 (energy 5, 8A) and slot 6:</p><ul class="sn-popover__list">' +
+    spares.map(function (s, i) { return '<li class="sn-popover__item">' + H.energy(s[1]) + '<span class="sn-popover__grow">' + S.esc(s[0]) + '<br><span class="data-s sn-dim">' + s[2] + " · " + s[3] + ' BPM</span></span><button class="sn-btn sn-btn--sm" type="button" data-swap="' + i + '">Swap in</button></li>'; }).join("") + "</ul>";
+  var cols = ["Energy", "Track", "BPM", "Key", "Pillar", "Rotation", "Heard", "Last heard", "Links"], on = [1, 1, 1, 1, 1, 0, 1, 1, 0];
+  var colInner = '<div class="sn-stack" style="gap:2px">' + cols.map(function (c, i) { return '<label class="sn-check"><input type="checkbox"' + (on[i] ? " checked" : "") + (i === 1 ? " disabled" : "") + "> " + c + (i === 1 ? ' <span class="sn-dim">(always shown)</span>' : "") + "</label>"; }).join("") + "</div>" +
+    '<div class="sn-popover__foot"><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button">Reset to default</button></div>';
+
+  document.getElementById("left").innerHTML =
+    '<span class="sn-dim">Slot 5</span>' +
+    pop("p-key", '<button class="sn-btn sn-btn--sm" type="button"><span class="sn-key" data-key="8A">8A</span><span class="sn-sr">key detail</span></button>', H.key("8A") + " A minor", keyInner) +
+    pop("p-spare", '<button class="sn-btn sn-btn--sm" type="button">' + I("shuffle") + 'Spares for slot 5</button>', "3 spare tracks", spareInner);
+  document.getElementById("right").innerHTML =
+    pop("p-cols", '<button class="sn-btn sn-btn--sm" type="button">' + I("table-2") + 'Columns</button>', "Crate columns", colInner, true);
+
+  // ---- open/close: one at a time, Esc and outside click close, focus moves to the title and back
+  var openId = null;
+  function trig(id) { return document.querySelector('[aria-controls="' + id + '"]'); }
+  function open(id, focus) {
+    if (openId) close(false);
+    var p = document.getElementById(id); p.hidden = false; trig(id).setAttribute("aria-expanded", "true"); openId = id;
+    if (focus) document.getElementById(id + "-t").focus();
+  }
+  function close(returnFocus) {
+    if (!openId) return; var id = openId; openId = null;
+    document.getElementById(id).hidden = true; trig(id).setAttribute("aria-expanded", "false");
+    if (returnFocus) trig(id).focus();
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[aria-controls]");
+    if (t) { var id = t.getAttribute("aria-controls"); if (openId === id) close(true); else open(id, true); return; }
+    if (e.target.closest("[data-close]")) { close(true); return; }
+    if (e.target.closest("[data-swap]")) { var b = e.target.closest("[data-swap]"); b.textContent = "Swapped"; b.disabled = true; return; }
+    if (openId && !e.target.closest(".sn-popover")) close(false);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && openId) { e.preventDefault(); close(true); } });
+  document.addEventListener("focusin", function (e) { if (openId && !e.target.closest(".sn-popover__anchor")) close(false); });
+  open("p-key", false);
+</script>
+</body>
+</html>

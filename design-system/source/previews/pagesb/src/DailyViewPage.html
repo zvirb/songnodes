@@ -1,0 +1,126 @@
+<!-- @dsCard group="Pages" width=1280 height=2000 subtitle="Radio plays for Sat 24 Oct (read-only daily view): day navigation, totals, plays grouped by show with 24-hour times, new-to-library vs in crate, a now line in the show still on air" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DailyViewPage — preview</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <a class="sn-skip" href="#main">Skip to content</a>
+  <div id="sh-head" data-drawer-inert></div>
+  <main class="sn-page-daily" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+    <section class="sn-page-daily__section" aria-label="Day">
+      <div id="daynav"></div>
+      <div class="sn-figure-tile-row" role="list" aria-label="Day at a glance" id="tiles"></div>
+    </section>
+    <section class="sn-page-daily__section" aria-labelledby="plays-h">
+      <div class="sn-section-heading">
+        <h2 class="sn-title title-s" id="plays-h"><span class="sn-lead">Plays:</span> by show</h2>
+        <span class="sn-section-heading__count" id="plays-count"></span>
+        <div class="sn-section-heading__end"><a class="sn-link sn-m-sources" href="#/plays/week/2026-10-19">Week of 19 Oct</a></div>
+      </div>
+      <div class="sn-data-table sn-data-table--stack">
+        <div class="sn-tablebox sn-data-table__box" style="--sn-data-table-max:none" id="box">
+          <table class="sn-table">
+            <caption>Library-relevant plays on PBS, 3RRR and triple j, Melbourne time</caption>
+            <thead><tr><th scope="col">Time</th><th scope="col">Track</th><th scope="col">Library</th><th scope="col">Also heard on</th></tr></thead>
+            <tbody id="body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="sh-drawer"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+/*@COMMON@*/
+(function () {
+  snShell({ mod: "sources", title: "Radio plays", stampVerb: "Updated", stamp: "2026-10-24T21:24:00+11:00" });
+  $("ph").innerHTML = snPageHeader("ph", {
+    mod: "sources", here: "Radio plays", lead: "Radio plays", title: "Sat 24 Oct",
+    desc: "What PBS, 3RRR and triple j played today that matters to the crate. Show air times come from each source’s schedule in the library data (times here are examples). Melbourne time.",
+    stampVerb: "Radio plays as of", stamp: "2026-10-24T21:24:00+11:00",
+    meta: snPill("info", "View only")
+  });
+  /* plays: [time, artist, title, mix, label, sec, inCrate, alsoOn[]] */
+  var SHOWS = [
+    { name: "PBS Electric Sunset", slot: "13:00–15:00", plays: [
+      ["13:06", "Josh Baker", "Lost In Muzik", "Original mix", "Solid Grooves", 398, true, ["3RRR Feel The Floor", "1001tracklists"]],
+      ["13:14", "Peggy Gou", "(It Goes Like) Nanana", "Edit", "XL Recordings", 238, true, ["triple j Doof"]],
+      ["13:31", "Kerri Chandler", "Rain", "Original mix", "Madhouse", 452, false, []],
+      ["13:52", "Ross From Friends", "Talk To Me You'll Drown", "Original mix", "Flying Buddha", 402, true, []],
+      ["14:09", "Barry Can't Swim", "Sunsleeper", "Original mix", "Ninja Tune", 331, false, ["1001tracklists"]],
+      ["14:27", "Bicep", "Glue", "Original mix", "Ninja Tune", 269, true, ["3RRR Feel The Floor", "MixesDB", "1001tracklists"]],
+      ["14:40", "Four Tet", "Baby", "Original mix", "Text", 287, false, []],
+      ["14:51", "Josh Baker", "Nobody Else", "Extended mix", "Solid Grooves", 411, true, []]] },
+    { name: "3RRR Feel The Floor", slot: "18:00–20:00", plays: [
+      ["18:04", "Bicep", "Atlas", "Original mix", "Ninja Tune", 262, true, []],
+      ["18:22", "Overmono", "Good Lies", "Original mix", "XL Recordings", 255, true, ["MixesDB"]],
+      ["18:41", "Joy Orbison", "Flight FM", "Original mix", "XL Recordings", 296, false, ["triple j Doof"]],
+      ["19:02", "Interplanetary Criminal", "Slow Burner", "Original mix", "Shall Not Fade", 341, true, ["triple j Doof"]],
+      ["19:18", "Bicep", "Apricots", "Original mix", "Ninja Tune", 312, false, []],
+      ["19:37", "Overmono", "So U Kno", "Extended mix", "XL Recordings", 372, true, ["triple j Doof", "PBS Electric Sunset"]],
+      ["19:51", "Josh Baker", "Lost In Muzik", "Original mix", "Solid Grooves", 398, true, ["PBS Electric Sunset"]]] },
+    { name: "triple j Doof", slot: "19:00–22:00", onAir: true, plays: [
+      ["19:08", "Sammy Virji", "If U Need It", "Original mix", "Warner", 223, true, ["1001tracklists"]],
+      ["19:33", "Fred again..", "Delilah (pull me out of this)", "Original mix", "Atlantic", 260, true, []],
+      ["20:05", "Interplanetary Criminal", "Slow Burner", "Original mix", "Shall Not Fade", 341, true, ["3RRR Feel The Floor"]],
+      ["20:26", "Joy Orbison", "Flight FM", "Original mix", "XL Recordings", 296, false, ["3RRR Feel The Floor"]],
+      ["20:58", "Overmono", "So U Kno", "Extended mix", "XL Recordings", 372, true, ["3RRR Feel The Floor", "PBS Electric Sunset"]],
+      ["21:24", "Sammy Virji", "Find My Way Home", "Original mix", "Warner", 214, false, []]] }
+  ];
+  var all = [].concat.apply([], SHOWS.map(function (s) { return s.plays; })), fresh = all.filter(function (p) { return !p[6]; });
+  var freshNames = {}; fresh.forEach(function (p) { freshNames[p[1] + p[2]] = 1; });
+  $("plays-count").textContent = all.length + " plays";
+  $("tiles").innerHTML = [[all.length, "Plays", "on 3 shows"], [Object.keys(freshNames).length, "New to library", fresh.length + " plays of tracks not in the crate"], [all.length - fresh.length, "Already in crate", "plays of crate tracks"], ["1", "Show on air", "triple j Doof until 22:00"]].map(function (t) {
+    return '<div class="sn-figure-tile" role="listitem"><span class="sn-figure-tile__figure">' + t[0] + '</span><span class="sn-figure-tile__label">' + t[1] + '</span><span class="sn-figure-tile__delta">' + t[2] + "</span></div>";
+  }).join("");
+  function badge(list) {
+    if (!list.length) return '<span class="sn-none">–</span>';
+    return '<span class="sn-source-badge"><span class="sn-source-badge__name">' + I(/tracklists|MixesDB/.test(list[0]) ? "list-music" : "radio-tower", { size: 14 }) + S.esc(list[0]) + "</span>" + (list.length > 1 ? '<span class="sn-source-badge__detail" title="' + S.esc(list.slice(1).join(", ")) + '">+' + (list.length - 1) + "</span>" : "") + "</span>";
+  }
+  function row(p) {
+    var name = p[1] + " – " + p[2];
+    return "<tr>" +
+      '<td class="sn-page-daily__time" data-label="Time"><time datetime="2026-10-24T' + p[0] + ':00+11:00">' + p[0] + "</time></td>" +
+      '<td class="sn-data-table__track">' + snTrack({ a: p[1], t: p[2], mix: p[3], label: p[4], dur: p[5] }) + "</td>" +
+      '<td class="sn-page-daily__lib" data-label="Library">' + (p[6] ? '<a class="sn-link sn-m-library" href="#/library?track=' + encodeURIComponent(name) + '">In crate<span class="sn-sr">: ' + S.esc(name) + "</span></a>" : '<span class="sn-tag sn-category-tag">' + I("plus", { size: 14 }) + "New to library</span>") + "</td>" +
+      '<td data-label="Also heard on">' + badge(p[7]) + "</td></tr>";
+  }
+  function render() {
+    $("body").innerHTML = SHOWS.map(function (s) {
+      var n = s.plays.filter(function (p) { return !p[6]; }).length;
+      var h = '<tr class="sn-group"><td colspan="4"><span class="sn-page-daily__show"><b>' + S.esc(s.name) + "</b>" + s.slot + "<span>" + s.plays.length + " plays · " + n + " new</span>" + (s.onAir ? snPill("running", "On air") : "") + "</span></td></tr>";
+      h += s.plays.map(row).join("");
+      if (s.onAir) h += '<tr class="sn-page-daily__now"><td colspan="4"><span class="sn-page-daily__now-line">Now 21:30</span></td></tr>' +
+        '<tr class="sn-page-daily__upcoming"><td colspan="4">Plays after 21:30 appear here as triple j publishes them, usually within 10 min.</td></tr>';
+      return h;
+    }).join("");
+  }
+  /* PeriodNav (day) */
+  var TODAY = new Date("2026-10-24T12:00:00+11:00"), cur = new Date(TODAY.getTime());
+  $("daynav").innerHTML = '<div class="sn-period-nav" role="group" aria-label="Day"><div class="sn-period-nav__bar"><div class="sn-period-nav__steps">' +
+    '<button class="sn-btn sn-btn--icon sn-btn--sm" type="button" data-step="-1" aria-keyshortcuts="[" aria-label="Previous day" title="Previous day ( [ )">' + I("chevron-left") + "</button>" +
+    '<button class="sn-btn sn-btn--icon sn-btn--sm" type="button" data-step="1" aria-keyshortcuts="]" aria-label="Next day" title="Next day ( ] )">' + I("chevron-right") + "</button></div>" +
+    '<button class="sn-btn sn-btn--sm" type="button" data-today>Today</button><h2 class="sn-period-nav__label" aria-live="polite" id="day-label"></h2>' +
+    '<span class="sn-period-nav__hint"><kbd>[</kbd><kbd>]</kbd> previous / next</span></div></div>';
+  function paint() {
+    var isToday = cur.getTime() === TODAY.getTime(), next = $("daynav").querySelector('[data-step="1"]'), today = $("daynav").querySelector("[data-today]");
+    $("day-label").innerHTML = '<span class="sn-lead">' + new Intl.DateTimeFormat("en-AU", { weekday: "long", timeZone: S.timeZone }).format(cur) + "</span> " + F.date(cur);
+    if (isToday) { today.setAttribute("aria-disabled", "true"); today.title = "Already showing today"; next.setAttribute("aria-disabled", "true"); next.title = "No plays after today"; }
+    else { today.removeAttribute("aria-disabled"); today.title = "Jump to today"; next.removeAttribute("aria-disabled"); next.title = "Next day ( ] )"; }
+    if (isToday) { $("box").removeAttribute("aria-busy"); render(); }
+    else { /* other days: first-load skeleton in the shape of the rows (LoadingState) */
+      $("box").setAttribute("aria-busy", "true");
+      var r = ""; for (var i = 0; i < 5; i++) r += '<tr class="sn-data-table__skel" aria-hidden="true"><td><span class="sn-skel" style="width:40px"></span></td><td class="sn-data-table__track"><span class="sn-skel" style="width:60%"></span></td><td><span class="sn-skel" style="width:70px"></span></td><td><span class="sn-skel" style="width:110px"></span></td></tr>';
+      $("body").innerHTML = r + '<tr class="sn-sr"><td colspan="4">Loading plays for ' + F.day(cur) + "</td></tr>";
+    }
+  }
+  function go(n) { var d = new Date(cur.getTime() + n * 864e5); if (d > TODAY) return; cur = d; paint(); }
+  $("daynav").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b || b.getAttribute("aria-disabled") === "true") return; if (b.hasAttribute("data-today")) { cur = new Date(TODAY.getTime()); paint(); } else go(+b.getAttribute("data-step")); });
+  document.addEventListener("keydown", function (e) { if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return; if (e.key === "[") { e.preventDefault(); go(-1); } else if (e.key === "]") { e.preventDefault(); go(1); } });
+  paint();
+})();
+</script>
+</body>
+</html>

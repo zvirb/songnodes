@@ -1,0 +1,125 @@
+<!-- @dsCard group="Music" height=392 subtitle="Waveform envelope, intro and outro, breakdowns, vocal segments, cue points, energy curve, playhead; beat grid when zoomed; arrow keys move the playhead" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>WaveformStrip — preview</title></head>
+<body>
+<div class="sn-preview sn-m-pipeline" id="root">
+  <section class="sn-card">
+    <figure class="sn-chart-frame sn-waveform-strip" aria-labelledby="wTitle">
+      <div class="sn-chart-frame__head">
+        <div class="sn-chart-frame__titles">
+          <h3 class="sn-title title-s" id="wTitle"><span class="sn-lead">Audio analysis:</span> Bicep – Glue</h3>
+          <p class="sn-chart-frame__sub"><span class="sn-mono">4:29 · 130 BPM · </span><span class="sn-key" data-key="8A">8A</span> <span class="sn-key__name">A minor</span> · analysed 24 Oct 2026, 06:00 AEDT</p>
+        </div>
+        <div class="sn-chart-frame__actions">
+          <button class="sn-btn sn-btn--sm sn-btn--icon" type="button" id="zout" aria-label="Zoom out of the waveform"></button>
+          <span class="sn-mono body-s sn-muted" id="zval" aria-live="polite">1×</span>
+          <button class="sn-btn sn-btn--sm sn-btn--icon" type="button" id="zin" aria-label="Zoom in on the waveform"></button>
+        </div>
+      </div>
+      <ul class="sn-chart-frame__legend" aria-label="Legend" id="legend"></ul>
+      <div class="sn-waveform-strip__scroll" id="scroll"></div>
+      <p class="sn-waveform-strip__readout" id="read" aria-hidden="true"></p>
+    </figure>
+  </section>
+</div>
+<script>
+/*KIT*/
+(function () {
+  var S = window.SongNodes, F = S.format;
+  var DUR = 269, BPM = 130, BEAT = 60 / BPM, BAR = BEAT * 4;
+  var regions = [{ a: 0, b: 29.5, t: "Intro", k: "region" }, { a: 88, b: 118, t: "Breakdown", k: "breakdown" }, { a: 180, b: 195, t: "Breakdown", k: "breakdown" }, { a: 238, b: 269, t: "Outro", k: "region" }];
+  var vocals = [[45, 80], [130, 170]];
+  var cues = [[0, "A", "Mix in"], [29.5, "B", "Drop"], [118, "C", "Second drop"], [238, "D", "Mix out"]];
+  var energy = [[0, 3], [16, 4], [29.5, 7], [60, 8], [88, 5], [104, 4], [118, 9], [150, 9], [180, 6], [195, 9], [220, 8], [238, 5], [260, 3], [269, 2]];
+  var seed = 3; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var amp = []; for (var s = 0; s < 1076; s++) { var t = s / 4, base = 0.85; regions.forEach(function (r) { if (t >= r.a && t < r.b) base = r.k === "breakdown" ? 0.35 : (r.t === "Intro" ? 0.5 + 0.3 * t / 29.5 : 0.55 - 0.35 * (t - 238) / 31); }); amp.push(Math.max(0.06, base * (0.55 + 0.45 * rnd()) * (Math.floor(t / BEAT) % 2 ? 0.85 : 1))); }
+  var zoom = 1, play = 102;
+  var host = document.getElementById("scroll"), read = document.getElementById("read");
+  function sectionAt(t) { var r = regions.filter(function (r) { return t >= r.a && t < r.b; })[0]; return r ? r.t : "Main"; }
+  function energyAt(t) { for (var i = 1; i < energy.length; i++) if (t <= energy[i][0]) { var a = energy[i - 1], b = energy[i]; return Math.round(a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0])); } return 2; }
+  function vocalAt(t) { return vocals.some(function (v) { return t >= v[0] && t < v[1]; }); }
+  function draw() {
+    var rem = K.rem(), Wv = host.clientWidth, W = Math.round(Wv * zoom), laneT = rem * 1.5, waveH = 110, laneV = 18, axisH = rem * 1.5;
+    var H = Math.round(laneT + waveH + laneV + 6 + axisH), top = laneT, mid = top + waveH / 2, vy = top + waveH + 4;
+    host.textContent = "";
+    var x = K.linear(0, DUR, 6, W - 6);
+    var svg = K.el("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, tabindex: 0, role: "slider", "aria-label": "Playhead position", "aria-valuemin": 0, "aria-valuemax": DUR, "aria-describedby": "wHelp" }, host);
+    K.el("desc", { id: "wHelp" }, svg).textContent = "Left and right arrows move one bar, Page up and Page down move eight bars, Home and End jump to the start and end.";
+    var defs = K.el("defs", null, svg), pid = K.uid("vox"), pat = K.el("pattern", { id: pid, patternUnits: "userSpaceOnUse", width: 5, height: 5 }, defs);
+    K.el("circle", { cx: 2.5, cy: 2.5, r: 1, "class": "sn-waveform-strip__vocal-dot" }, pat);
+    // regions behind the wave, labelled in the top lane
+    regions.forEach(function (r) {
+      K.el("rect", { x: x(r.a), y: top, width: x(r.b) - x(r.a), height: waveH, "class": r.k === "breakdown" ? "sn-waveform-strip__breakdown" : "sn-waveform-strip__region" }, svg);
+      if (x(r.b) - x(r.a) > r.t.length * 6.5 + 8) K.text(svg, x(r.a) + 4, top + 13, r.t, { "class": "sn-waveform-strip__region-label" });
+    });
+    // beat grid at zoom
+    var beatPx = x(BEAT) - x(0), barPx = beatPx * 4;
+    if (barPx >= 10) for (var b = 0, k = 0; b <= DUR; b += BEAT, k++) {
+      if (k % 4 && beatPx < 6) continue;
+      var bx = Math.round(x(b)) + 0.5; K.el("line", { x1: bx, x2: bx, y1: top, y2: top + waveH, "class": k % 4 ? "sn-waveform-strip__beat" : "sn-waveform-strip__bar-line" }, svg);
+    }
+    // waveform envelope (mirrored), played part one step stronger
+    var step = Math.max(1, Math.round(W / 540)), dP = "", dU = "";
+    for (var px = 6; px < W - 6; px += step + 1) {
+      var t = x.invert(px), a = amp[Math.min(amp.length - 1, Math.floor(t * 4))] * (waveH / 2 - 4), seg = "M" + px + "," + (mid - a) + "h" + step + "v" + 2 * a + "h" + -step + "z";
+      if (t < play) dP += seg; else dU += seg;
+    }
+    K.el("path", { d: dP, "class": "sn-waveform-strip__wave sn-waveform-strip__wave--played" }, svg);
+    K.el("path", { d: dU, "class": "sn-waveform-strip__wave" }, svg);
+    // energy curve overlay (0–10 over the wave height), direct label
+    var ey = K.linear(0, 10, top + waveH - 4, top + 18);
+    K.el("polyline", { points: energy.map(function (p) { return x(p[0]) + "," + ey(p[1]); }).join(" "), "class": "sn-waveform-strip__energy" }, svg);
+    // vocal lane: dotted pattern + label
+    vocals.forEach(function (v) {
+      K.el("rect", { x: x(v[0]), y: vy, width: x(v[1]) - x(v[0]), height: laneV, rx: 3, "class": "sn-waveform-strip__vocal" }, svg);
+      K.el("rect", { x: x(v[0]), y: vy, width: x(v[1]) - x(v[0]), height: laneV, rx: 3, style: "fill: url(#" + pid + ")" }, svg);
+      var lx = x(v[0]) + 5, bg = K.el("rect", { y: vy + 2, height: laneV - 4, rx: 2, "class": "sn-chart-frame__ref-label-bg" }, svg);
+      var lt = K.text(svg, lx, vy + laneV / 2 + 4, "Vocal", { "class": "sn-waveform-strip__region-label" });
+      var bb = lt.getBBox(); bg.setAttribute("x", bb.x - 3); bg.setAttribute("width", bb.width + 6);
+    });
+    // cue points: flag + dashed line
+    cues.forEach(function (c) {
+      var cx = x(c[0]);
+      K.el("line", { x1: cx, x2: cx, y1: top, y2: top + waveH, "class": "sn-waveform-strip__cue-line" }, svg);
+      K.el("path", { d: "M" + cx + "," + (top - 1) + "v-13h12l-3,6.5l3,6.5z", "class": "sn-waveform-strip__cue" }, svg);
+      K.text(svg, cx + 5, top - 4, c[1], { "class": "sn-waveform-strip__cue-text" });
+    });
+    // time axis m:ss
+    var every = zoom >= 4 ? 10 : zoom >= 2 ? 15 : 30;
+    for (var tt = 0; tt <= DUR; tt += every) K.text(svg, x(tt), H - 4, F.duration(tt), { "class": "sn-chart-frame__tick", "text-anchor": tt === 0 ? "start" : "middle" });
+    // playhead
+    var ph = x(play);
+    K.el("line", { x1: ph, x2: ph, y1: 2, y2: top + waveH + laneV + 4, "class": "sn-waveform-strip__playhead" }, svg);
+    var tw = rem * 2.8; K.el("rect", { x: ph - tw / 2, y: 2, width: tw, height: rem * 1.15, rx: 3, "class": "sn-chart-frame__now-tag" }, svg);
+    K.text(svg, ph, 2 + rem * 0.85, F.duration(play), { "class": "sn-chart-frame__now-text", "text-anchor": "middle" });
+    var txt = F.duration(play) + ", bar " + (Math.floor(play / BAR) + 1) + ", " + sectionAt(play) + (vocalAt(play) ? ", vocal" : "") + ", energy " + energyAt(play);
+    svg.setAttribute("aria-valuenow", Math.round(play)); svg.setAttribute("aria-valuetext", txt);
+    read.innerHTML = "<b>" + F.duration(play) + "</b> · bar " + (Math.floor(play / BAR) + 1) + " · " + sectionAt(play) + (vocalAt(play) ? " · vocal" : "") + " · energy <b>" + energyAt(play) + "</b>";
+    svg.addEventListener("keydown", function (e) {
+      var d = { ArrowRight: BAR, ArrowLeft: -BAR, PageDown: 8 * BAR, PageUp: -8 * BAR }[e.key];
+      if (e.key === "Home") play = 0; else if (e.key === "End") play = DUR; else if (d) play = Math.max(0, Math.min(DUR, play + d)); else return;
+      e.preventDefault(); draw(); host.querySelector("svg").focus(); keepInView();
+    });
+    svg.addEventListener("click", function (e) { var r = svg.getBoundingClientRect(); play = Math.max(0, Math.min(DUR, x.invert(e.clientX - r.left))); draw(); host.querySelector("svg").focus(); });
+    var cursorX = x;
+    keepInView = function () { var p = cursorX(play); if (p < host.scrollLeft + 40 || p > host.scrollLeft + host.clientWidth - 40) host.scrollLeft = p - host.clientWidth / 2; };
+  }
+  var keepInView = function () {};
+  function setZoom(z) { zoom = z; document.getElementById("zval").textContent = z + "×"; document.getElementById("zout").disabled = z <= 1; document.getElementById("zin").disabled = z >= 8; draw(); keepInView(); }
+  document.getElementById("zin").innerHTML = S.icon("zoom-in"); document.getElementById("zout").innerHTML = S.icon("zoom-out");
+  document.getElementById("zin").onclick = function () { setZoom(Math.min(8, zoom * 2)); };
+  document.getElementById("zout").onclick = function () { setZoom(Math.max(1, zoom / 2)); };
+  document.getElementById("legend").innerHTML =
+    '<li><span class="sn-chart-frame__key sn-chart-frame__key--rect" style="--c: var(--surface-3)"></span>Intro, outro</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="12" height="12" aria-hidden="true"><rect x="0.5" y="0.5" width="11" height="11" class="sn-waveform-strip__breakdown"/></svg>Breakdown</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="16" height="12" aria-hidden="true"><defs><pattern id="lgV" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" class="sn-waveform-strip__vocal-dot"/></pattern></defs><rect x="0.5" y="0.5" width="15" height="11" rx="2" class="sn-waveform-strip__vocal"/><rect x="0.5" y="0.5" width="15" height="11" rx="2" style="fill: url(#lgV)"/></svg>Vocal</li>' +
+    '<li><span class="sn-chart-frame__key" style="--c: var(--chart-2)"></span>Energy</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="12" height="14" aria-hidden="true"><path d="M1,14v-13h10l-3,6.5l3,6.5z" class="sn-waveform-strip__cue"/></svg>Cue</li>' +
+    '<li><span class="sn-chart-frame__key" style="--c: var(--now); width: 3px; height: 14px"></span>Playhead</li>';
+  K.fit(host, function () { draw(); });
+  setZoom(1);
+})();
+</script>
+</body>
+</html>

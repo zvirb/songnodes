@@ -1,0 +1,38 @@
+<!-- @dsCard group="Music" height=276 subtitle="Whole and fractional BPM, half/double-time hint, range, transition delta with verdict, unknown, detail size" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>BpmReadout — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">In rows</div>
+  <div class="sn-preview__row" style="gap:28px">
+    <span class="sn-bpm"><b>124</b></span>
+    <span class="sn-bpm"><b>123.5</b></span>
+    <span class="sn-bpm" title="Read as 87 BPM; plays as double time, 174 BPM"><b>87</b> <span class="sn-bpm-readout__alt">(174)</span><span class="sn-sr"> BPM, double time 174</span></span>
+    <span class="sn-bpm" title="Read as 140 BPM; half time 70 BPM"><b>140</b> <span class="sn-bpm-readout__alt">(70)</span><span class="sn-sr"> BPM, half time 70</span></span>
+    <span class="sn-bpm"><span class="sn-none" title="BPM not detected yet">–</span><span class="sn-sr">BPM not set</span></span>
+  </div>
+  <div class="sn-preview__label">Range (filters, set summaries) · with unit</div>
+  <div class="sn-preview__row" style="gap:28px">
+    <span class="sn-bpm"><b>122–128</b><span class="sn-bpm-readout__unit">BPM</span></span>
+    <span class="sn-bpm"><b>130–140</b><span class="sn-bpm-readout__unit">BPM</span></span>
+    <span class="sn-bpm"><b>124</b><span class="sn-bpm-readout__unit">BPM</span></span>
+  </div>
+  <div class="sn-preview__label">Delta in transitions (SongNodes.bpmStep)</div>
+  <div class="sn-preview__row" id="deltas" style="gap:24px"></div>
+  <div class="sn-preview__label">Detail size</div>
+  <div class="sn-preview__row" style="gap:40px">
+    <span class="sn-bpm sn-bpm-readout--lg"><b>124</b><span class="sn-bpm-readout__unit">BPM</span></span>
+    <span class="sn-bpm sn-bpm-readout--lg"><b>87</b> <span class="sn-bpm-readout__alt">(174)</span><span class="sn-bpm-readout__unit">BPM</span></span>
+  </div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var pairs = [[124, 126], [126, 124], [124, 128], [128, 134], [124, 140], [124, null]];
+  document.getElementById("deltas").innerHTML = pairs.map(function (p) {
+    var v = S.bpmStep(p[0], p[1]);
+    return '<span class="sn-transition-note__item sn-bpm-readout__delta" data-level="' + v.level + '" title="' + p[0] + " → " + (p[1] || "?") + ' BPM: ' + v.level + '">' + S.esc(v.label) + '</span>';
+  }).join("");
+</script>
+</body>
+</html>

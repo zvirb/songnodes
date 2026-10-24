@@ -1,0 +1,34 @@
+<!-- @dsCard height=300 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Cover</title>
+<style>
+  html,body{margin:0;height:100%;background:var(--bg)}
+  .cover{position:relative;width:960px;height:300px;background:var(--bg);overflow:hidden}
+  svg{position:absolute;inset:0}
+  .brand{fill:var(--brand)} .sets{fill:var(--mod-sets)} .graph{fill:var(--mod-graph)} .lib{fill:var(--mod-library)} .relief{fill:var(--surface-2)}
+  .cut{fill:var(--bg)}
+  .card{rx:var(--radius-card)} .chip{rx:var(--radius-chip)} .sheet{rx:var(--radius-sheet)}
+  .name{position:absolute;left:40px;bottom:64px;max-width:440px;margin:0;font-family:var(--font-display);font-weight:800;font-size:68px;line-height:.92;letter-spacing:-0.015em;color:var(--fg)}
+  .tag{position:absolute;left:40px;bottom:36px;max-width:440px;margin:0;font-family:var(--font-body);font-size:14px;color:var(--fg-3)}
+</style></head>
+<body>
+<div class="cover">
+<svg viewBox="0 0 960 300" width="960" height="300" aria-hidden="true">
+  <!-- blocks: brand 280x300 slab (sheet radius), mod-sets 152x152, mod-graph 152x132, mod-library 64x64, surface-2 relief 152x116 — all tokens
+       arrangement: one tall lavender slab bleeding off the bottom, satellites stacked to its right on a 16px (space-4) gap
+       pattern: literal motif, the energy wave: 14 bars climbing +1 and dropping 3 after the peak, cut from the slab in bg,
+                because the set's energy wave is the most SongNodes-specific shape there is
+       scales: bar 14 wide with a 4px gap (space-1), level step 14px; gaps space-4 (16); corners radius-sheet, radius-card, radius-chip -->
+  <rect class="brand sheet" x="484" y="-18" width="272" height="340"/>
+  <rect class="cut" x="500" y="242" width="14" height="42"/><rect class="cut" x="518" y="228" width="14" height="56"/><rect class="cut" x="536" y="228" width="14" height="56"/><rect class="cut" x="554" y="214" width="14" height="70"/><rect class="cut" x="572" y="200" width="14" height="84"/><rect class="cut" x="590" y="200" width="14" height="84"/><rect class="cut" x="608" y="186" width="14" height="98"/><rect class="cut" x="626" y="172" width="14" height="112"/><rect class="cut" x="644" y="172" width="14" height="112"/><rect class="cut" x="662" y="158" width="14" height="126"/><rect class="cut" x="680" y="200" width="14" height="84"/><rect class="cut" x="698" y="186" width="14" height="98"/><rect class="cut" x="716" y="172" width="14" height="112"/><rect class="cut" x="734" y="158" width="14" height="126"/>
+  <rect class="sets card" x="772" y="16" width="172" height="144"/>
+  <rect class="graph card" x="772" y="176" width="108" height="140"/>
+  <rect class="lib chip" x="896" y="176" width="48" height="48"/>
+  <rect class="relief card" x="896" y="240" width="80" height="76"/>
+</svg>
+<h1 class="name">SongNodes</h1>
+<p class="tag">One system for the track graph and the club library.</p>
+</div>
+</body>
+</html>

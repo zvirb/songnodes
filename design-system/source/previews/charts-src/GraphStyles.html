@@ -1,0 +1,188 @@
+<!-- @dsCard group="Graph" height=1340 subtitle="Force-graph encoding: node states, size by connections, fill modes, labels, edge types and weights, and the corrected legend" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>GraphStyles — preview</title>
+<style>
+  .pv-top { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--space-4); align-items: start; }
+  @media (max-width: 720px) { .pv-top { grid-template-columns: minmax(0, 1fr); } }
+  .pv-sheet svg { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<div class="sn-preview sn-graph-styles sn-m-graph" id="root">
+  <div class="sn-row" style="justify-content: space-between">
+    <div class="sn-preview__label">Live cluster · selected, now playing, hovered, faded by filter</div>
+    <div class="sn-row"><span class="body-s sn-muted" id="modeLabel">Colour by</span>
+      <div class="sn-seg" role="group" aria-labelledby="modeLabel" id="mode"></div></div>
+  </div>
+  <div class="pv-top">
+    <svg class="sn-graph-styles__canvas" id="cluster" viewBox="0 0 560 300" role="img" aria-labelledby="clusterDesc" style="width:100%;height:auto;display:block"><desc id="clusterDesc">Twelve tracks around Bicep – Glue, which is playing now. Overmono – So U Kno is selected. Two tracks are faded by the energy filter.</desc></svg>
+    <aside class="sn-graph-styles__legend" aria-label="Graph legend" id="legend"></aside>
+  </div>
+  <div class="sn-preview__label">Specimen sheet · values for PIXI</div>
+  <div class="pv-sheet"><svg class="sn-graph-styles__canvas" id="sheet" viewBox="0 0 880 650" role="img" aria-label="Specimen of node states, node sizes, fills, labels and edge types"></svg></div>
+</div>
+<script>
+/*KIT*/
+(function () {
+  var S = window.SongNodes;
+  var GENRES = [["House", 1], ["Techno", 2], ["UK garage", 3], ["Electro", 4], ["Breaks", 5], ["Drum and bass", 6], ["Ambient", 7], ["Other", 8]];
+  function radius(deg, max) { return Math.max(4, Math.min(24, 4 + 20 * Math.sqrt(deg / max))); }
+  function fillFor(mode, n) {
+    if (mode === "energy") return "var(--energy-" + n.e + ")";
+    if (mode === "key") return "var(--key-" + n.k.toLowerCase() + ")";
+    if (mode === "genre") return "var(--chart-" + n.g + ")";
+    return "";
+  }
+  /* --- node mark: fill + state rings (same recipe the PIXI renderer follows) --- */
+  function node(g, x, y, r, opt) {
+    opt = opt || {};
+    var a = { cx: x, cy: y, r: r, "class": "sn-graph-styles__node" + (opt.faded ? " sn-graph-styles__node--faded" : "") };
+    if (opt.fill) a.style = "--c:" + opt.fill;
+    K.el("circle", a, g);
+    if (opt.hover) K.el("circle", { cx: x, cy: y, r: r + 3, "class": "sn-graph-styles__ring-hover" }, g);
+    if (opt.selected) K.el("circle", { cx: x, cy: y, r: r + 4, "class": "sn-graph-styles__ring-selected" }, g);
+    if (opt.now) {
+      /* now = amber `--now` ring + "Now" tag (selected is the lavender `brand` ring; they differ by hue and word) */
+      K.el("circle", { cx: x, cy: y, r: r + 4, "class": "sn-graph-styles__ring-now" }, g);
+      K.el("circle", { cx: x, cy: y, r: r + 4, "class": "sn-graph-styles__pulse" }, g);
+      K.el("rect", { x: x - 15, y: y - r - 22, width: 30, height: 14, rx: 3, "class": "sn-graph-styles__now-tag" }, g);
+      K.text(g, x, y - r - 15, "Now", { "class": "sn-graph-styles__now-text" });
+    }
+    if (opt.path) {
+      K.el("circle", { cx: x, cy: y, r: r + 4, "class": "sn-graph-styles__ring-path" + (opt.path === "via" ? " sn-graph-styles__ring-path--via" : "") }, g);
+      if (opt.path === "finish") K.el("circle", { cx: x, cy: y, r: r + 8, "class": "sn-graph-styles__ring-path sn-graph-styles__ring-path--outer" }, g);
+      var bx = x + r + 4, by = y - r - 4;
+      K.el("circle", { cx: bx, cy: by, r: 7, "class": "sn-graph-styles__badge" }, g);
+      K.text(g, bx, by + 0.5, opt.badge, { "class": "sn-graph-styles__badge-text" });
+    }
+  }
+  function edge(g, x1, y1, x2, y2, type, w, opt) {
+    opt = opt || {};
+    var cls = "sn-graph-styles__edge sn-graph-styles__edge--" + type + (w >= 0.8 ? " sn-graph-styles__edge--strong" : "") + (opt.extra ? " " + opt.extra : "");
+    var width = opt.width != null ? opt.width : (0.5 + 7.5 * w);
+    if (type === "collab") { // double line: two strokes offset along the normal
+      var dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L * 2, ny = dx / L * 2;
+      K.el("line", { x1: x1 + nx, y1: y1 + ny, x2: x2 + nx, y2: y2 + ny, "class": cls }, g);
+      K.el("line", { x1: x1 - nx, y1: y1 - ny, x2: x2 - nx, y2: y2 - ny, "class": cls }, g);
+      return;
+    }
+    var st = (type === "adjacency" || type === "similarity") ? "stroke-width:" + width.toFixed(2) : "";
+    K.el("line", { x1: x1, y1: y1, x2: x2, y2: y2, "class": cls, style: st }, g);
+  }
+  function label(g, x, y, artist, title) {
+    var t = K.el("text", { x: x, y: y, "class": "sn-graph-styles__label" }, g);
+    var a = K.el("tspan", { "class": "sn-graph-styles__label-artist" }, t); a.textContent = artist;
+    var b = K.el("tspan", { "class": "sn-graph-styles__label-title", dx: 5 }, t); b.textContent = title;
+  }
+
+  /* ---------- live cluster ---------- */
+  var N = [
+    { id: 0, x: 280, y: 150, d: 120, e: 8, k: "8A", g: 1, a: "Bicep", t: "Glue", now: true },
+    { id: 1, x: 170, y: 95, d: 64, e: 8, k: "8A", g: 3, a: "Overmono", t: "So U Kno", sel: true },
+    { id: 2, x: 395, y: 90, d: 40, e: 9, k: "9A", g: 3, a: "Interplanetary Criminal", t: "Slow Burner" },
+    { id: 3, x: 410, y: 215, d: 30, e: 9, k: "9A", g: 3, a: "Sammy Virji", t: "If U Need It" },
+    { id: 4, x: 150, y: 215, d: 22, e: 6, k: "7A", g: 1, a: "Fred again..", t: "Delilah (pull me out of this)" },
+    { id: 5, x: 285, y: 255, d: 18, e: 5, k: "7A", g: 1, a: "Ross From Friends", t: "Talk To Me You'll Drown" },
+    { id: 6, x: 70, y: 140, d: 9, e: 4, k: "6A", g: 1, a: "Peggy Gou", t: "(It Goes Like) Nanana", faded: true },
+    { id: 7, x: 500, y: 150, d: 12, e: 7, k: "10A", g: 2, a: "Overmono", t: "Good Lies" },
+    { id: 8, x: 270, y: 45, d: 8, e: 5, k: "8B", g: 4, a: "Josh Baker", t: "Lost In Muzik" },
+    { id: 9, x: 60, y: 255, d: 5, e: 3, k: "5A", g: 1, a: "Mall Grab", t: "Spirit Wave", faded: true },
+    { id: 10, x: 505, y: 255, d: 6, e: 10, k: "11A", g: 2, a: "Skee Mask", t: "Rev8617" }
+  ];
+  var E = [[0, 1, "adjacency", 0.95], [0, 2, "adjacency", 0.7], [0, 3, "similarity", 0.5], [0, 4, "key", 0.4], [0, 5, "key", 0.3], [1, 4, "adjacency", 0.45],
+    [1, 8, "collab", 0.5], [2, 3, "collab", 0.6], [2, 7, "similarity", 0.35], [3, 10, "genre", 0.2], [7, 10, "genre", 0.2], [4, 6, "adjacency", 0.3], [5, 9, "similarity", 0.25], [1, 6, "genre", 0.2], [0, 8, "similarity", 0.85]];
+  var mode = "neutral", hover = null, cl = document.getElementById("cluster");
+  function drawCluster() {
+    Array.prototype.slice.call(cl.childNodes).forEach(function (c) { if (c.tagName !== "desc") c.remove(); });
+    var ge = K.el("g", null, cl), gn = K.el("g", null, cl), gl = K.el("g", null, cl);
+    E.forEach(function (e) {
+      var a = N[e[0]], b = N[e[1]], faded = a.faded || b.faded;
+      edge(ge, a.x, a.y, b.x, b.y, e[2], e[3], { extra: (e[0] === 0 && e[1] === 1) ? "sn-graph-styles__edge--sel" : "" });
+      if (faded) ge.lastChild.style.opacity = "var(--opacity-faded)";
+    });
+    N.forEach(function (n) {
+      var r = radius(n.d, 120) * 0.8;
+      var g = K.el("g", { "data-id": n.id, style: "cursor:pointer" }, gn);
+      node(g, n.x, n.y, r, { fill: fillFor(mode, n), selected: n.sel, now: n.now, hover: hover === n.id && !n.sel && !n.now, faded: n.faded });
+      K.el("circle", { cx: n.x, cy: n.y, r: Math.max(12, r + 4), fill: "transparent" }, g);
+      if (n.sel || n.now || hover === n.id) label(gl, n.x + r + 10, n.y + 4, n.a, n.t);
+    });
+  }
+  cl.addEventListener("pointerover", function (e) { var g = e.target.closest("[data-id]"); var id = g ? +g.getAttribute("data-id") : null; if (id !== hover) { hover = id; drawCluster(); } });
+  cl.addEventListener("pointerleave", function () { hover = null; drawCluster(); });
+
+  /* ---------- legend (replaces "Perfect Match / Compatible / Default") ---------- */
+  function lineKey(type) {
+    var s = '<svg width="28" height="10" aria-hidden="true">';
+    if (type === "collab") s += '<line x1="1" y1="3" x2="27" y2="3" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/><line x1="1" y1="7" x2="27" y2="7" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/>';
+    else s += '<line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--' + type + ' sn-graph-styles__edge--strong"/>';
+    return s + "</svg>";
+  }
+  function drawLegend() {
+    var h = "";
+    if (mode === "genre") h += "<h4>Colour by: genre</h4><ul class=\"sn-graph-styles__legend-grid\">" + GENRES.map(function (g) { return '<li><span class="sn-graph-styles__swatch" style="--c: var(--chart-' + g[1] + ')"></span>' + g[0] + "</li>"; }).join("") + "</ul>";
+    else if (mode === "energy") { h += '<h4>Colour by: energy</h4><div><div class="sn-graph-styles__ramp" aria-hidden="true">'; for (var i = 1; i <= 10; i++) h += '<i style="--c: var(--energy-' + i + ')"></i>'; h += '</div><div class="sn-graph-styles__ramp-ends" style="width:152px"><span>1 low</span><span>10 high</span></div><span class="caption sn-dim">Low 1–4 · Building 5–7 · High 8–10</span></div>'; }
+    else if (mode === "key") { h += '<h4>Colour by: Camelot key</h4><ul class="sn-graph-styles__legend-grid">' + ["8A", "9A", "7A", "8B"].map(function (k) { return "<li>" + S.html.key(k, true) + "</li>"; }).join("") + '</ul><span class="caption sn-dim">Same colours as the Camelot wheel</span>'; }
+    else h += '<h4>Colour by: neutral</h4><ul><li><span class="sn-graph-styles__swatch"></span>All tracks alike; only the rings below carry colour</li></ul>';
+    h += '<h4>Size</h4><ul><li><svg width="64" height="26" aria-hidden="true"><circle cx="6" cy="13" r="4" class="sn-graph-styles__node"/><circle cx="22" cy="13" r="7" class="sn-graph-styles__node"/><circle cx="46" cy="13" r="12" class="sn-graph-styles__node"/></svg>More connections, bigger node</li></ul>';
+    h += '<h4>Rings</h4><ul>' +
+      '<li><svg width="28" height="20" aria-hidden="true"><circle cx="14" cy="10" r="5" class="sn-graph-styles__node"/><circle cx="14" cy="10" r="8" class="sn-graph-styles__ring-selected"/></svg>Selected</li>' +
+      '<li><svg width="28" height="20" aria-hidden="true"><circle cx="14" cy="10" r="5" class="sn-graph-styles__node"/><circle cx="14" cy="10" r="8" class="sn-graph-styles__ring-now"/></svg>Now playing (amber, tagged “Now”)</li>' +
+      '<li><svg width="28" height="20" aria-hidden="true"><circle cx="14" cy="10" r="5" class="sn-graph-styles__node"/><circle cx="14" cy="10" r="8" class="sn-graph-styles__ring-path"/></svg>On your path</li>' +
+      '<li><svg width="28" height="20" aria-hidden="true"><circle cx="14" cy="10" r="6" class="sn-graph-styles__node sn-graph-styles__node--faded"/></svg>Hidden by a filter</li></ul>';
+    h += "<h4>Links</h4><ul>" +
+      "<li>" + lineKey("adjacency") + "Played back to back in a set</li>" +
+      "<li>" + lineKey("similarity") + "Similar sound</li>" +
+      "<li>" + lineKey("key") + "Compatible key</li>" +
+      "<li>" + lineKey("collab") + "Same artists</li>" +
+      "<li>" + lineKey("genre") + "Same genre</li>" +
+      '<li><svg width="28" height="10" aria-hidden="true"><line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--adjacency sn-graph-styles__edge--strong" style="stroke-width:6"/></svg>Thicker means stronger</li></ul>';
+    document.getElementById("legend").innerHTML = h;
+  }
+  var seg = document.getElementById("mode");
+  [["neutral", "Neutral"], ["energy", "Energy"], ["key", "Key"], ["genre", "Genre"]].forEach(function (m) {
+    var b = document.createElement("button"); b.type = "button"; b.textContent = m[1]; b.setAttribute("aria-pressed", m[0] === mode);
+    b.addEventListener("click", function () { mode = m[0]; seg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); drawCluster(); drawLegend(); sheetFill(); });
+    seg.appendChild(b);
+  });
+
+  /* ---------- specimen sheet ---------- */
+  var sh = document.getElementById("sheet"), fillG;
+  function sec(y, t) { K.text(sh, 24, y, t.toUpperCase(), { "class": "sn-graph-styles__section" }); }
+  function cap(x, y, t, data) { K.text(sh, x, y, t, { "text-anchor": "middle", "class": "sn-graph-styles__cap" + (data ? " sn-graph-styles__cap--data" : "") }); }
+  sec(30, "Node states");
+  var states = [["Default", {}], ["Hovered", { hover: true }], ["Selected", { selected: true }], ["Now playing", { now: true }], ["Path start", { path: "start", badge: "S" }], ["Waypoint", { path: "via", badge: "1" }], ["Path finish", { path: "finish", badge: "F" }], ["Hidden by filter", { faded: true }]];
+  states.forEach(function (s, i) { var x = 70 + i * 104; node(sh, x, 76, 10, s[1]); cap(x, 116, s[0]); });
+  sec(160, "Size by connections · radius 4–24 px, square-root scale");
+  [1, 4, 16, 64, 250].forEach(function (d, i) { var x = 70 + i * 90, r = radius(d, 250); node(sh, x, 210, r); cap(x, 252, d + (d === 1 ? " link" : " links"), true); });
+  K.text(sh, 520, 206, "r = 4 + 20 × √(links ÷ most links)", { "class": "sn-graph-styles__cap sn-graph-styles__cap--data", "text-anchor": "start" });
+  sec(290, "Fill");
+  fillG = K.el("g", null, sh);
+  function sheetFill() {
+    fillG.textContent = "";
+    var groups = [["Neutral · fg-2", ["", "", "", ""]], ["Energy · energy-N", ["var(--energy-2)", "var(--energy-5)", "var(--energy-8)", "var(--energy-10)"]], ["Key · key-*", ["var(--key-8a)", "var(--key-9a)", "var(--key-5a)", "var(--key-11b)"]], ["Genre · chart-1…8", ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"]]];
+    groups.forEach(function (gp, i) {
+      var x0 = 50 + i * 210, on = ["neutral", "energy", "key", "genre"][i] === mode;
+      gp[1].forEach(function (f, j) { node(fillG, x0 + j * 30, 330, 9, { fill: f }); });
+      K.text(fillG, x0 + 45, 362, gp[0] + (on ? " · in use" : ""), { "class": "sn-graph-styles__cap" + (on ? " sn-graph-styles__cap--on" : ""), "text-anchor": "middle" });
+    });
+  }
+  sheetFill();
+  sec(400, "Links by type · width 0.5–8 px by weight");
+  var types = [["adjacency", "Adjacency · solid"], ["similarity", "Similarity · dash 6 4"], ["key", "Key compatibility · dots"], ["collab", "Collaboration · double"], ["genre", "Genre · 0.75 px"]];
+  types.forEach(function (t, i) { var x = 40 + i * 166; edge(sh, x, 440, x + 130, 440, t[0], 0.85, { width: 2 }); cap(x + 65, 464, t[1]); });
+  [0, 0.25, 0.5, 0.8, 1].forEach(function (w, i) { var x = 40 + i * 168; edge(sh, x, 505, x + 120, 505, "adjacency", w); cap(x + 60, 532, "weight " + w + " · " + (0.5 + 7.5 * w).toFixed(1) + " px", true); });
+  sec(580, "Labels and opacity");
+  node(sh, 60, 616, 8, { selected: true });
+  label(sh, 78, 620, "Overmono", "So U Kno");
+  K.text(sh, 250, 612, "Artist 600 + title 400, 12 px body font, 3 px canvas halo", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  K.text(sh, 250, 630, "Shown on hover, selection, now playing, and for all nodes at zoom > 1.5", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  K.text(sh, 660, 612, "Links at opacity 0.6", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  K.text(sh, 660, 630, "Strong links (weight ≥ 0.8) at 0.9", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+
+  drawCluster(); drawLegend();
+})();
+</script>
+</body>
+</html>

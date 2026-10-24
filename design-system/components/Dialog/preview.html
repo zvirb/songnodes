@@ -1,0 +1,72 @@
+<!-- @dsCard group="Surfaces" height=590 subtitle="Medium dialog on a scrim: edit cues and transitions; open S, M or L as a real modal (focus trap, Esc, focus returns); full screen on phones" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Dialog — preview</title>
+<style>
+  .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__row">
+    <span class="sn-preview__label">Open as a real modal</span>
+    <button class="sn-btn sn-btn--sm" type="button" data-open="s">Small · 400</button>
+    <button class="sn-btn sn-btn--sm" type="button" data-open="m">Medium · 600</button>
+    <button class="sn-btn sn-btn--sm" type="button" data-open="l">Large · 800</button>
+  </div>
+  <div class="sn-dialog__stage" id="stage"></div>
+</div>
+<dialog class="sn-dialog sn-dialog--m" id="dlg" aria-labelledby="dlg-title"></dialog>
+<script>
+  var S = window.SongNodes, I = S.icon, H = S.html;
+  var TRACK = { name: "Bicep – Glue", key: "5A", bpm: 130 }, NEXT = { name: "Overmono – So U Kno", key: "8A", bpm: 132 };
+  function shifted(semi) { var n = parseInt(TRACK.key, 10); var k = ((n - 1 + 7 * semi) % 12 + 12) % 12 + 1; return k + "A"; }
+  function body(p) {
+    return '<div class="sn-dialog__head">' +
+        '<div class="sn-dialog__title"><h2 class="sn-title title-s" id="' + p + '-title"><span class="sn-lead">Edit cues:</span> ' + S.esc(TRACK.name) + '</h2>' +
+        '<p class="sn-dialog__sub">Slot 7 of 18 in “Peak time Friday”</p></div>' +
+        '<button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="Close" data-close>' + I("x") + '</button>' +
+      '</div>' +
+      '<form class="sn-dialog__body" method="dialog" id="' + p + '-form">' +
+        '<div class="form">' +
+          '<div class="sn-field"><label for="' + p + '-in">Mix cue in</label><input class="sn-input sn-input--data" id="' + p + '-in" value="0:32" inputmode="numeric" autofocus aria-describedby="' + p + '-in-h"><span class="sn-field__help" id="' + p + '-in-h">Minutes:seconds from the start</span></div>' +
+          '<div class="sn-field"><label for="' + p + '-out">Mix cue out</label><input class="sn-input sn-input--data" id="' + p + '-out" value="5:48" inputmode="numeric"></div>' +
+          '<div class="sn-field"><label for="' + p + '-key">Key shift</label><select class="sn-select" id="' + p + '-key" data-key>' +
+            '<option value="-1">−1 semitone (5A → ' + shifted(-1) + ')</option><option value="0" selected>None (5A)</option><option value="1">+1 semitone (5A → ' + shifted(1) + ')</option></select></div>' +
+          '<div class="sn-field"><label for="' + p + '-bpm">Tempo change</label><input class="sn-input sn-input--data" id="' + p + '-bpm" value="+2" data-bpm aria-describedby="' + p + '-bpm-h"><span class="sn-field__help" id="' + p + '-bpm-h" data-bpm-help>130 → 132 BPM (+1.5%)</span></div>' +
+        '</div>' +
+        '<div class="sn-stack" style="gap:8px"><span class="sn-field__label">Transition into ' + S.esc(NEXT.name) + '</span><div class="sn-row" data-trans></div></div>' +
+      '</form>' +
+      '<div class="sn-dialog__foot">' +
+        '<button class="sn-btn sn-btn--quiet sn-dialog__foot-start" type="button" data-reset>Reset cues</button>' +
+        '<button class="sn-btn" type="button" data-close>Cancel</button>' +
+        '<button class="sn-btn sn-btn--primary" type="submit" form="' + p + '-form" value="save">Save changes</button>' +
+      '</div>';
+  }
+  function wire(root) {
+    function upd() {
+      var semi = Number(root.querySelector("[data-key]").value), k = shifted(semi);
+      var d = parseFloat(String(root.querySelector("[data-bpm]").value).replace("−", "-")) || 0, bpm = TRACK.bpm + d;
+      root.querySelector("[data-bpm-help]").textContent = TRACK.bpm + " → " + S.format.bpm(bpm) + " BPM (" + (d >= 0 ? "+" : "−") + Math.abs(100 * d / TRACK.bpm).toFixed(1) + "%)";
+      var c = S.compat(k, NEXT.key), b = S.bpmStep(bpm, NEXT.bpm);
+      root.querySelector("[data-trans]").innerHTML = H.key(k) + " → " + H.key(NEXT.key) + " " + H.compat(c.level, c.label) + " " + H.compat(b.level, b.label);
+    }
+    root.addEventListener("input", upd); root.addEventListener("change", upd); upd();
+    root.querySelector("[data-reset]").addEventListener("click", function () { root.querySelector('[id$="-in"]').value = "0:32"; root.querySelector('[id$="-out"]').value = "5:48"; });
+  }
+  // static copy on the stage (inert: it is a picture of the open state)
+  var stage = document.getElementById("stage");
+  stage.innerHTML = '<div class="sn-dialog sn-dialog--m" role="dialog" aria-labelledby="st-title" inert>' + body("st") + "</div>";
+  wire(stage.firstChild);
+  // the real modal
+  var dlg = document.getElementById("dlg"), opener = null;
+  dlg.innerHTML = body("dlg"); wire(dlg);
+  document.addEventListener("click", function (e) {
+    var o = e.target.closest("[data-open]");
+    if (o) { opener = o; dlg.className = "sn-dialog sn-dialog--" + o.getAttribute("data-open"); dlg.showModal(); }
+    if (e.target.closest("#dlg [data-close]")) dlg.close("cancel");
+  });
+  dlg.addEventListener("close", function () { if (opener) opener.focus(); });
+</script>
+</body>
+</html>

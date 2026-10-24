@@ -1,0 +1,45 @@
+<!-- @dsCard group="Navigation" height=350 subtitle="Play/Plan mode, Wheel/Flow/Both with icons, Day/Week/Month, small, full-width and a disabled option with its reason; arrow keys move and select" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SegmentedControl — preview</title>
+<style> .narrow { width: 360px; max-width: 100%; } </style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Mode switch (header) · view · time scale</div>
+  <div class="sn-preview__row" id="r1"></div>
+  <div class="sn-preview__label">With a visible label · small · disabled option</div>
+  <div class="sn-preview__row" id="r2"></div>
+  <div class="sn-preview__label">Full width in a 360px panel</div>
+  <div class="narrow" id="r3"></div>
+  <p class="sn-dim" style="margin:0;font-size:0.8125rem">Last change: <span id="out">none yet</span></p>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+/*@@menu@@*/
+/*@@seg@@*/
+  document.getElementById("r1").innerHTML =
+    snSegHtml("Mode", [{ value: "play", label: "Play" }, { value: "plan", label: "Plan" }], "plan") +
+    snSegHtml("Key & mood view", [{ value: "wheel", label: "Wheel", icon: "disc-3" }, { value: "flow", label: "Flow", icon: "chart-line" }, { value: "both", label: "Both", icon: "layout-grid" }], "wheel") +
+    snSegHtml("Time scale", [{ value: "day", label: "Day" }, { value: "week", label: "Week" }, { value: "month", label: "Month" }], "week");
+  document.getElementById("r2").innerHTML =
+    '<div class="sn-segmented-control__group"><span class="sn-segmented-control__label" id="lblEdges">Edges shown</span>' +
+    snSegHtml("Edges shown", [{ value: "adj", label: "Adjacency" }, { value: "sim", label: "Similarity" }, { value: "all", label: "All" }], "adj").replace('aria-label="Edges shown"', 'aria-labelledby="lblEdges"') + "</div>" +
+    '<div class="sn-segmented-control__group"><span class="sn-segmented-control__label" id="lblDen">Row density</span>' +
+    snSegHtml("Row density", [{ value: "comfortable", label: "Comfortable" }, { value: "compact", label: "Compact" }], "comfortable", "sn-segmented-control--sm").replace('aria-label="Row density"', 'aria-labelledby="lblDen"') + "</div>" +
+    '<div class="sn-segmented-control__group"><span class="sn-segmented-control__label" id="lblLayout">Colour by</span>' +
+    snSegHtml("Colour by", [{ value: "neutral", label: "Neutral" }, { value: "energy", label: "Energy" }, { value: "key", label: "Key" }, { value: "genre", label: "Genre", disabled: true, reason: "No genre tags in this graph yet" }], "neutral").replace('aria-label="Colour by"', 'aria-labelledby="lblLayout" aria-describedby="whyLayout"') +
+    '<span class="sn-dim" style="font-size:0.75rem" id="whyLayout">Genre: no genre tags in this graph yet</span></div>';
+  document.getElementById("r3").innerHTML = snSegHtml("Set shape", [{ value: "journey", label: "Journey" }, { value: "peak", label: "Peak time" }, { value: "warm", label: "Warm-up" }, { value: "close", label: "Closing" }], "peak", "sn-segmented-control--block");
+  document.querySelectorAll(".sn-segmented-control").forEach(function (g) {
+    snSeg(g, function (v, r) {
+      var name = g.getAttribute("aria-label") || document.getElementById(g.getAttribute("aria-labelledby")).textContent;
+      document.getElementById("out").textContent = name + ": " + r.textContent.trim();
+    });
+  });
+})();
+</script>
+</body>
+</html>

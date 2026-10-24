@@ -1,0 +1,64 @@
+<!-- @dsCard group="Inputs" height=347 subtitle="BPM, minutes and percent with unit suffix and steppers, min/max, at-limit stepper disabled, invalid entry, disabled" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>NumberField — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-5) var(--space-6); }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Arrow keys step, Page Up/Down step by 10, Home/End jump to the limits</div>
+  <div class="pv-grid" id="grid"></div>
+</div>
+<script>
+  function sep(u) { return u === "%" ? "" : " "; } /* "65%" with no space; "128 BPM" with one */
+  var S = window.SongNodes, n = 0;
+  function nf(o) {
+    var id = "nf" + (++n);
+    return '<div class="sn-field sn-number-field" data-min="' + o.min + '" data-max="' + o.max + '" data-step="' + (o.step || 1) + '" data-unit="' + o.unit + '">' +
+      '<label for="' + id + '" id="' + id + '-l">' + o.label + '</label>' +
+      (o.help ? '<span class="sn-field__help" id="' + id + '-h">' + o.help + '</span>' : "") +
+      '<div class="sn-number-field__box"' + (o.err ? " data-invalid" : "") + (o.disabled ? " data-disabled" : "") + '>' +
+        '<button type="button" class="sn-number-field__step" tabindex="-1" aria-label="Decrease ' + o.label.toLowerCase() + '" data-d="-1"' + (o.disabled ? " disabled" : "") + '>' + S.icon("minus") + '</button>' +
+        '<input class="sn-number-field__input" id="' + id + '" role="spinbutton" inputmode="' + (o.step < 1 ? "decimal" : "numeric") + '" autocomplete="off" style="--nf-ch:' + String(o.max).length + '"' +
+          ' value="' + o.value + '" aria-valuemin="' + o.min + '" aria-valuemax="' + o.max + '" aria-labelledby="' + id + '-l ' + id + '-u"' +
+          ' aria-describedby="' + [o.help ? id + "-h" : "", id + "-r", o.err ? id + "-e" : ""].join(" ").trim() + '"' + (o.err ? ' aria-invalid="true"' : "") + (o.disabled ? " disabled" : "") + '>' +
+        '<span class="sn-number-field__unit" id="' + id + '-u">' + o.unit + '</span>' +
+        '<button type="button" class="sn-number-field__step" tabindex="-1" aria-label="Increase ' + o.label.toLowerCase() + '" data-d="1"' + (o.disabled ? " disabled" : "") + '>' + S.icon("plus") + '</button>' +
+      '</div>' +
+      '<span class="sn-number-field__range" id="' + id + '-r">' + o.min + '–' + o.max + sep(o.unit) + o.unit + '</span>' +
+      '<span class="sn-field__error" id="' + id + '-e"' + (o.err ? "" : " hidden") + '>' + (o.err || "") + '</span></div>';
+  }
+  document.getElementById("grid").innerHTML =
+    nf({ label: "Target BPM", value: 128, min: 60, max: 200, unit: "BPM" }) +
+    nf({ label: "Set length", value: 90, min: 15, max: 360, step: 5, unit: "min", help: "Steps of 5 minutes." }) +
+    nf({ label: "House share", value: 100, min: 0, max: 100, step: 5, unit: "%" }) +
+    nf({ label: "BPM tolerance", value: 14, min: 0, max: 8, unit: "BPM", err: "Enter a tolerance from 0 to 8 BPM." }) +
+    nf({ label: "Crossfade", value: 16, min: 4, max: 64, unit: "bars", disabled: true, help: "Set by the transition style." });
+
+  function parse(v) { return parseFloat(String(v).replace(/[^\d.\-−]/g, "").replace("−", "-")); }
+  function set(f, v, commit) {
+    var inp = f.querySelector("input"), min = +f.dataset.min, max = +f.dataset.max, step = +f.dataset.step, box = f.querySelector(".sn-number-field__box"), err = f.querySelector(".sn-field__error");
+    var bad = isNaN(v) || v < min || v > max;
+    if (commit && !isNaN(v)) { v = Math.min(max, Math.max(min, Math.round(v / step) * step)); bad = false; }
+    if (!isNaN(v) && !bad) { inp.value = v; inp.setAttribute("aria-valuenow", v); inp.setAttribute("aria-valuetext", v + sep(f.dataset.unit) + f.dataset.unit); }
+    box.toggleAttribute("data-invalid", bad); inp.setAttribute("aria-invalid", bad ? "true" : "false");
+    err.hidden = !bad; if (bad) err.textContent = isNaN(v) ? "Enter a number, for example " + min + "." : "Enter a " + f.querySelector("label").textContent.toLowerCase() + " from " + min + " to " + max + sep(f.dataset.unit) + f.dataset.unit + ".";
+    var cur = parse(inp.value);
+    f.querySelector('[data-d="-1"]').disabled = inp.disabled || cur <= min; f.querySelector('[data-d="1"]').disabled = inp.disabled || cur >= max;
+  }
+  document.querySelectorAll(".sn-number-field").forEach(function (f) { var inp = f.querySelector("input"); if (!inp.disabled && inp.getAttribute("aria-invalid") !== "true") set(f, parse(inp.value)); else { inp.setAttribute("aria-valuenow", parse(inp.value)); } });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".sn-number-field__step"); if (!b) return;
+    var f = b.closest(".sn-number-field"), inp = f.querySelector("input"); set(f, (parse(inp.value) || 0) + (+b.dataset.d) * (+f.dataset.step), true); inp.focus();
+  });
+  document.addEventListener("keydown", function (e) {
+    var inp = e.target; if (!inp.matches || !inp.matches(".sn-number-field__input")) return;
+    var f = inp.closest(".sn-number-field"), step = +f.dataset.step, v = parse(inp.value) || 0, k = e.key, d = null;
+    if (k === "ArrowUp") d = v + step; else if (k === "ArrowDown") d = v - step; else if (k === "PageUp") d = v + step * 10; else if (k === "PageDown") d = v - step * 10; else if (k === "Home") d = +f.dataset.min; else if (k === "End") d = +f.dataset.max;
+    else if (k === "Enter") { set(f, parse(inp.value), false); return; }
+    if (d !== null) { e.preventDefault(); set(f, d, true); }
+  });
+  document.addEventListener("change", function (e) { var f = e.target.closest(".sn-number-field"); if (f) set(f, parse(e.target.value), false); });
+</script>
+</body>
+</html>

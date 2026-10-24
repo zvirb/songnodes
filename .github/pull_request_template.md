@@ -47,6 +47,13 @@
 - [ ] Graph tests pass (if PIXI.js changes: `npm run test:graph`)
 - [ ] Performance tests pass (if optimization: `npm run test:performance`)
 
+### Design System (any UI, copy or style change)
+- [ ] Built only from design-system tokens, `sn-*` classes and components (no hex, px font sizes, raw z-index, emoji)
+- [ ] Markup matches `design-system/components/<Comp>/` and copy follows `design-system/01-writing.md`
+- [ ] Dates, numbers, keys, energy and statuses formatted through `frontend/src/lib/songnodes.tsx`
+- [ ] `scripts/sync-design-system.sh --check` passes; `frontend/src/styles/design-system/` not edited
+- [ ] Checked in dark, light and booth themes, at 390px, and at text size XL
+
 ### Manual Testing
 - [ ] Tested locally with `docker compose up -d`
 - [ ] Verified all affected services restart successfully

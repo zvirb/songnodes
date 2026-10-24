@@ -1,0 +1,173 @@
+<!-- @dsCard group="Pages" width=1280 height=1700 subtitle="One track: breadcrumbs, Track: Bicep – Glue header, key, BPM, energy and length, waveform with sections, heard-on sources with 12-week plays, connected tracks table, Camelot wheel with compatible keys, IDs with copy buttons, sets containing it, service links" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TrackDetailPage — preview</title></head>
+<body>
+<div class="sn-preview sn-page" id="root">
+  <a class="sn-skip" href="#main">Skip to main content</a>
+  <div id="hdr" data-drawer-inert></div>
+  <main class="sn-page__main sn-page-track" id="main" tabindex="-1" data-drawer-inert>
+    <div class="sn-page__section">
+      <nav class="sn-breadcrumbs" aria-label="Breadcrumb"><ol class="sn-breadcrumbs__list" id="crumbs"></ol></nav>
+      <div id="ph"></div>
+      <div class="sn-card sn-page-track__identity" role="group" aria-label="Key, tempo, energy and length" id="ident"></div>
+    </div>
+    <div class="sn-page__cols">
+      <div class="sn-page-track__mainc">
+        <section class="sn-card">
+          <figure class="sn-chart-frame sn-waveform-strip" aria-labelledby="wf-t">
+            <div class="sn-chart-frame__head"><div class="sn-chart-frame__titles"><h2 class="sn-title title-s" id="wf-t"><span class="sn-lead">Audio analysis:</span> Sections and energy</h2>
+              <p class="sn-chart-frame__sub">Analysed 24 Oct 2026, 06:00 AEDT · beat grid at 130 BPM</p></div></div>
+            <ul class="sn-chart-frame__legend" aria-label="Legend" id="wf-legend"></ul>
+            <div class="sn-waveform-strip__scroll" id="wf"></div>
+          </figure>
+        </section>
+        <section class="sn-card">
+          <figure class="sn-chart-frame" aria-labelledby="h-t">
+            <div class="sn-chart-frame__head"><div class="sn-chart-frame__titles"><h2 class="sn-title title-s" id="h-t"><span class="sn-lead">Heard on:</span> 4 sources</h2>
+              <p class="sn-chart-frame__sub">Plays per week, 12 weeks to Sat 24 Oct · 31 plays in total</p></div></div>
+            <div class="sn-tablebox"><table class="sn-table"><caption class="sn-sr">Plays per source, last 12 weeks</caption><thead><tr><th scope="col">Source</th><th scope="col">Plays, 12 weeks</th><th scope="col" class="num">Total</th><th scope="col" class="num">Last heard</th></tr></thead><tbody id="heard"></tbody></table></div>
+          </figure>
+        </section>
+        <section class="sn-page__section" aria-labelledby="ct-t">
+          <div class="sn-section-heading sn-section-heading--rule"><h2 class="sn-title title-m" id="ct-t"><span class="sn-lead">Plays well with:</span> Connected tracks</h2><span class="sn-section-heading__count">6 of 41</span>
+            <div class="sn-section-heading__end"><a class="sn-link sn-m-graph" href="#graph">Open in the graph</a></div></div>
+          <div class="sn-data-table sn-data-table--stack"><div class="sn-tablebox sn-data-table__box"><table class="sn-table">
+            <caption class="sn-sr">Tracks connected to Bicep – Glue, strongest first</caption>
+            <thead><tr><th scope="col">Track</th><th scope="col">Link</th><th scope="col" class="num" aria-sort="descending">Weight</th><th scope="col">Key</th><th scope="col" class="num">BPM</th><th scope="col">Energy</th></tr></thead>
+            <tbody id="conn"></tbody></table></div></div>
+        </section>
+        <details class="sn-disclosure"><summary><span class="sn-disclosure__chev" id="chev"></span>Raw data<span class="sn-disclosure__hint">as stored, 3 sources</span></summary>
+          <div class="sn-disclosure__body"><dl class="sn-key-value-grid" id="raw"></dl></div></details>
+      </div>
+      <aside class="sn-page-track__aside" aria-label="Key, identifiers and links">
+        <section class="sn-card sn-page__section sn-m-harmony" aria-labelledby="k-t">
+          <h2 class="sn-title title-s" id="k-t"><span class="sn-lead">Key:</span> 8A, A minor</h2>
+          <div class="sn-page-track__wheel"><div class="sn-camelot-wheel" id="wheel"></div><ul class="sn-page-track__keys" id="keys"></ul></div>
+        </section>
+        <section class="sn-card sn-page__section" aria-labelledby="id-t">
+          <h2 class="sn-title title-s" id="id-t">Identifiers</h2>
+          <dl class="sn-key-value-grid" id="ids"></dl>
+        </section>
+        <section class="sn-card sn-page__section" aria-labelledby="s-t">
+          <h2 class="sn-title title-s" id="s-t"><span class="sn-lead">In sets:</span> 3</h2>
+          <ul class="sn-page__list" id="sets"></ul>
+        </section>
+        <section class="sn-card sn-page__section" aria-labelledby="l-t">
+          <h2 class="sn-title title-s" id="l-t">Listen and buy</h2>
+          <div class="sn-page-track__links" id="links"></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <div id="drw"></div>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+/*KIT*/
+  snShell({ lead: "Track", title: "Bicep – Glue", stamp: "2026-10-24T06:00:00+11:00", current: "library" });
+  document.getElementById("crumbs").innerHTML = '<li class="sn-breadcrumbs__item"><a class="sn-link sn-m-library" href="#library">' + S.icon("library-big", { size: 14 }) + 'Library</a></li><li class="sn-breadcrumbs__item"><a class="sn-link sn-m-library" href="#artist">Bicep</a></li><li class="sn-breadcrumbs__item"><span class="sn-breadcrumbs__current" aria-current="page">Glue</span></li>';
+  document.getElementById("ph").innerHTML = snPageHeader({ mod: "library", here: "Track detail", lead: "Track", title: "Bicep – Glue",
+    desc: "Original mix · Ninja Tune · 2017 · House · High rotation. Heard on 4 sources in the last 12 weeks.", stampVerb: "Updated", stamp: "2026-10-24T06:00:00+11:00",
+    secondary: [["graph", "share-2", "Open in graph"]],
+    menu: [{ h: "Track" }, { id: "edit", icon: "pencil", label: "Edit track…" }, { id: "path", icon: "route", label: "Find a path from here" }, { id: "spotify", icon: "copy", label: "Copy Spotify link" }, { id: "check", icon: "flag", label: "Flag for an energy check" }],
+    primary: ["plus", "Add to set"] });
+  document.getElementById("ident").innerHTML =
+    '<div class="sn-page-track__fact"><span>Key</span><span class="sn-key sn-key-badge--lg" data-key="8A">8A <span class="sn-key__name">A minor</span></span></div>' +
+    '<div class="sn-page-track__fact"><span>Tempo</span><span class="sn-bpm sn-bpm-readout--lg"><b>130</b><span class="sn-bpm-readout__unit">BPM</span></span></div>' +
+    '<div class="sn-page-track__fact"><span>Energy · Building 5–7</span><span class="sn-energy sn-energy-bar sn-energy-bar--lg"><span class="sn-energy__bar" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (i) { return '<i class="' + (i <= 6 ? "on" : "") + '"></i>'; }).join("") + '</span><span class="sn-energy__n">6</span><span class="sn-sr"> of 10, building tier</span></span></div>' +
+    '<div class="sn-page-track__fact"><span>Length</span><span class="sn-mono body-l">4:29</span></div>' +
+    '<div class="sn-page-track__fact"><span>Values from</span><span>' + '<span class="sn-source-badge"><span class="sn-source-badge__name">' + S.icon("audio-waveform", { size: 14 }) + 'SongNodes audio analysis</span></span></span></div>';
+
+  /* ---- minimal chart helpers (as in the chart kit) ---- */
+  var NS = "http://www.w3.org/2000/svg";
+  function el(t, a, p) { var e = document.createElementNS(NS, t); for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+  function tx(p, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), p); t.textContent = s; return t; }
+  function lin(d0, d1, r0, r1) { var f = function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); }; return f; }
+
+  /* ---- waveform ---- */
+  var DUR = 269, regions = [[0, 29.5, "Intro", "region"], [88, 118, "Breakdown", "breakdown"], [180, 195, "Breakdown", "breakdown"], [238, 269, "Outro", "region"]], vocals = [[45, 80], [130, 170]];
+  var cues = [[0, "A"], [29.5, "B"], [118, "C"], [238, "D"]], energy = [[0, 3], [16, 4], [29.5, 7], [60, 8], [88, 5], [104, 4], [118, 9], [150, 9], [180, 6], [195, 9], [220, 8], [238, 5], [260, 3], [269, 2]];
+  var seed = 3; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var amp = []; for (var s0 = 0; s0 < 1076; s0++) { var t0 = s0 / 4, base = 0.85; regions.forEach(function (r) { if (t0 >= r[0] && t0 < r[1]) base = r[3] === "breakdown" ? 0.35 : (r[2] === "Intro" ? 0.5 + 0.3 * t0 / 29.5 : 0.55 - 0.35 * (t0 - 238) / 31); }); amp.push(Math.max(0.06, base * (0.55 + 0.45 * rnd()))); }
+  function drawWave() {
+    var host = document.getElementById("wf"), W = host.clientWidth || 700, rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    var top = rem * 1.5, waveH = 110, laneV = 18, H = Math.round(top + waveH + laneV + 6 + rem * 1.5), mid = top + waveH / 2, vy = top + waveH + 4, x = lin(0, DUR, 6, W - 6);
+    host.textContent = "";
+    var svg = el("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Waveform of Glue: intro to 0:29, breakdowns at 1:28 and 3:00, vocals 0:45–1:20 and 2:10–2:50, outro from 3:58. Energy peaks at 9 after the first breakdown." }, host);
+    var pat = el("pattern", { id: "vox", patternUnits: "userSpaceOnUse", width: 5, height: 5 }, el("defs", {}, svg)); el("circle", { cx: 2.5, cy: 2.5, r: 1, "class": "sn-waveform-strip__vocal-dot" }, pat);
+    regions.forEach(function (r) { el("rect", { x: x(r[0]), y: top, width: x(r[1]) - x(r[0]), height: waveH, "class": r[3] === "breakdown" ? "sn-waveform-strip__breakdown" : "sn-waveform-strip__region" }, svg); if (x(r[1]) - x(r[0]) > r[2].length * 6.5 + 8) tx(svg, x(r[0]) + 4, top + 13, r[2], { "class": "sn-waveform-strip__region-label" }); });
+    var d = "", step = Math.max(1, Math.round(W / 540));
+    for (var px = 6; px < W - 6; px += step + 1) { var t = (px - 6) / (W - 12) * DUR, a = amp[Math.min(amp.length - 1, Math.floor(t * 4))] * (waveH / 2 - 4); d += "M" + px + "," + (mid - a) + "h" + step + "v" + 2 * a + "h" + -step + "z"; }
+    el("path", { d: d, "class": "sn-waveform-strip__wave" }, svg);
+    var ey = lin(0, 10, top + waveH - 4, top + 18);
+    el("polyline", { points: energy.map(function (p) { return x(p[0]) + "," + ey(p[1]); }).join(" "), "class": "sn-waveform-strip__energy" }, svg);
+    vocals.forEach(function (v) { el("rect", { x: x(v[0]), y: vy, width: x(v[1]) - x(v[0]), height: laneV, rx: 3, "class": "sn-waveform-strip__vocal" }, svg); el("rect", { x: x(v[0]), y: vy, width: x(v[1]) - x(v[0]), height: laneV, rx: 3, style: "fill:url(#vox)" }, svg); tx(svg, x(v[0]) + 5, vy + laneV / 2 + 4, "Vocal", { "class": "sn-waveform-strip__region-label" }); });
+    cues.forEach(function (c) { var cx = x(c[0]); el("line", { x1: cx, x2: cx, y1: top, y2: top + waveH, "class": "sn-waveform-strip__cue-line" }, svg); el("path", { d: "M" + cx + "," + (top - 1) + "v-13h12l-3,6.5l3,6.5z", "class": "sn-waveform-strip__cue" }, svg); tx(svg, cx + 5, top - 4, c[1], { "class": "sn-waveform-strip__cue-text" }); });
+    for (var tt = 0; tt <= DUR; tt += 30) tx(svg, x(tt), H - 4, S.format.duration(tt), { "class": "sn-chart-frame__tick", "text-anchor": tt === 0 ? "start" : "middle" });
+  }
+  drawWave(); if (window.ResizeObserver) new ResizeObserver(drawWave).observe(document.getElementById("wf"));
+  document.getElementById("wf-legend").innerHTML = '<li><span class="sn-chart-frame__key sn-chart-frame__key--rect" style="--c: var(--surface-3)"></span>Intro, outro</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="12" height="12" aria-hidden="true"><rect x="0.5" y="0.5" width="11" height="11" class="sn-waveform-strip__breakdown"/></svg>Breakdown</li>' +
+    '<li><svg class="sn-chart-frame__keysvg" width="16" height="12" aria-hidden="true"><rect x="0.5" y="0.5" width="15" height="11" rx="2" class="sn-waveform-strip__vocal"/></svg>Vocal</li>' +
+    '<li><span class="sn-chart-frame__key" style="--c: var(--chart-2)"></span>Energy</li><li><svg class="sn-chart-frame__keysvg" width="12" height="14" aria-hidden="true"><path d="M1,14v-13h10l-3,6.5l3,6.5z" class="sn-waveform-strip__cue"/></svg>Cue</li>';
+
+  /* ---- heard on: SourceBadge + Sparkline ---- */
+  function spark(v, what) {
+    var w = 120, h = 24, pad = 3, n = v.length, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), x = lin(0, n - 1, pad, w - pad), y = lin(lo, hi === lo ? lo + 1 : hi, h - pad, pad);
+    return '<span class="sn-sparkline" role="img" aria-label="' + what + ", last 12 weeks: latest " + v[n - 1] + ", low " + lo + ", high " + hi + '"><svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" aria-hidden="true"><polyline class="sn-sparkline__line" points="' + v.map(function (a, i) { return x(i).toFixed(1) + "," + y(a).toFixed(1); }).join(" ") + '"/><circle class="sn-sparkline__end" cx="' + x(n - 1) + '" cy="' + y(v[n - 1]) + '" r="3"/></svg><span class="sn-sparkline__val" aria-hidden="true">' + v[n - 1] + "</span></span>";
+  }
+  document.getElementById("heard").innerHTML = [
+    ["radio-tower", "3RRR Superfreak", [1, 0, 1, 1, 0, 1, 2, 1, 1, 2, 1, 2], "2026-10-22"], ["radio-tower", "PBS Soul Time", [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0], "2026-10-15"],
+    ["list-music", "1001tracklists", [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1], "2026-10-19"], ["list-music", "MixesDB", [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0], "2026-09-07"]
+  ].map(function (r) { var tot = r[2].reduce(function (a, b) { return a + b; }, 0);
+    return '<tr><td><span class="sn-source-badge"><span class="sn-source-badge__name">' + S.icon(r[0], { size: 14 }) + r[1] + "</span></span></td><td>" + spark(r[2], "Plays per week on " + r[1]) + '</td><td class="num">' + tot + '</td><td class="num"><span class="sn-mono">' + S.format.dateOnly(r[3]) + "</span></td></tr>"; }).join("");
+
+  /* ---- connected tracks ---- */
+  var TYPE = { adjacency: ["git-merge", "Played next to"], similarity: ["audio-waveform", "Similar sound"], key: ["piano", "Compatible key"], collab: ["user", "Same artists"] };
+  document.getElementById("conn").innerHTML = [
+    ["Overmono", "So U Kno", "Extended mix", "adjacency", "14 sets", "9A", 130, 7], ["Josh Baker", "Lost In Muzik", "Original mix", "adjacency", "9 sets", "8A", 126, 6],
+    ["Interplanetary Criminal", "Slow Burner", "Original mix", "adjacency", "7 sets", "9A", 133, 7], ["Bicep", "Atlas", "Original mix", "collab", "6 sets", "8A", 125, 5],
+    ["Fred again..", "Delilah (pull me out of this)", "Original mix", "similarity", "0.85", "11B", 140, 8], ["Ross From Friends", "Talk To Me You'll Drown", "Original mix", "key", "0.40", "7A", 122, 4]
+  ].map(function (r) { var c = S.compat("8A", r[5]);
+    return '<tr><td class="sn-data-table__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name" title="' + S.esc(r[0] + " – " + r[1]) + '"><a class="sn-link sn-m-library" href="#track"><span class="sn-track-cell__artist">' + S.esc(r[0]) + " –</span> " + S.esc(r[1]) + '</a></span></span><span class="sn-track-cell__meta"><span class="sn-track-cell__mix">' + r[2] + "</span></span></div></td>" +
+      '<td data-label="Link"><span class="sn-tag sn-category-tag">' + S.icon(TYPE[r[3]][0]) + TYPE[r[3]][1] + '</span></td><td class="num" data-label="Weight"><span class="sn-mono">' + r[4] + "</span></td>" +
+      '<td data-label="Key">' + S.html.key(r[5]) + " " + S.html.compat(c.level, c.label) + '</td><td class="num" data-label="BPM"><span class="sn-bpm"><b>' + r[6] + '</b></span></td><td data-label="Energy">' + S.html.energy(r[7]) + "</td></tr>"; }).join("");
+
+  /* ---- Camelot wheel (small) ---- */
+  (function () {
+    var C = 210, RING = { B: [154, 206], A: [100, 152] }, NOWK = "8A", compat = { "7A": 1, "9A": 1, "8B": 1 };
+    function pol(r, deg) { var a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; }
+    function sector(r0, r1, a0, a1) { var p0 = pol(r1, a0), p1 = pol(r1, a1), p2 = pol(r0, a1), p3 = pol(r0, a0); return "M" + p0 + "A" + r1 + "," + r1 + " 0 0 1 " + p1 + "L" + p2 + "A" + r0 + "," + r0 + " 0 0 0 " + p3 + "Z"; }
+    var svg = el("svg", { "class": "sn-camelot-wheel__svg", viewBox: "0 0 420 420", role: "img", "aria-label": "Camelot wheel: Glue is in 8A, A minor. 7A, 9A and 8B mix cleanly from it." }, document.getElementById("wheel"));
+    var gm = el("g", {}, null);
+    ["B", "A"].forEach(function (L) { for (var n = 1; n <= 12; n++) { var code = n + L, m = (n % 12) * 30, r = RING[L], cm = pol((r[0] + r[1]) / 2, m);
+      el("path", { d: sector(r[0], r[1], m - 15, m + 15), "class": "sn-camelot-wheel__seg", "data-key": code }, svg);
+      if (compat[code]) el("path", { d: sector(r[0] + 3, r[1] - 3, m - 13.4, m + 13.4), "class": "sn-camelot-wheel__compat sn-camelot-wheel__compat--fg" }, gm);
+      if (code === NOWK) el("path", { d: sector(r[0] - 1, r[1] + 1, m - 15.6, m + 15.6), "class": "sn-camelot-wheel__now" }, gm);
+      if (L === "A" || n % 2 === 0) tx(svg, cm[0], cm[1], code, { "class": "sn-camelot-wheel__code" }); } });
+    svg.appendChild(gm);
+    el("circle", { cx: C, cy: C, r: 94, "class": "sn-camelot-wheel__hub" }, svg);
+    tx(svg, C, C - 2, "8A", { "class": "sn-camelot-wheel__hub-code" }); tx(svg, C, C + 18, "A minor", { "class": "sn-camelot-wheel__hub-name" });
+  })();
+  document.getElementById("keys").innerHTML = '<li>' + S.html.key("8A") + S.html.compat("perfect", "Same key") + "</li>" + [["9A", "+1 key"], ["7A", "−1 key"], ["8B", "Relative major"], ["10A", "+2 energy boost"]].map(function (k) { var c = S.compat("8A", k[0]); return "<li>" + S.html.key(k[0]) + S.html.compat(c.level, c.label) + "</li>"; }).join("") +
+    '<li><a class="sn-link sn-m-harmony" href="#harmony">Filter the library by these keys</a></li>';
+
+  /* ---- identifiers with CopyButton ---- */
+  function idv(label, v) { if (!v) return '<span class="sn-none" title="' + label + ' not known yet">–</span><span class="sn-sr">' + label + " not known</span>";
+    return '<span class="sn-key-value-grid__id" title="' + v + '">' + v + '</span><button class="sn-btn sn-copy-button sn-btn--icon sn-btn--quiet sn-btn--sm" type="button" data-copy="' + v + '" data-what="' + label + '" aria-label="Copy ' + label + '"><span class="sn-copy-button__idle">' + S.icon("copy") + '</span><span class="sn-copy-button__done">' + S.icon("check") + "</span></button>"; }
+  document.getElementById("ids").innerHTML = [["Label", "Ninja Tune"], ["Year", '<span class="sn-mono">2017</span>'], ["ISRC", idv("ISRC", "GBCFB1700384")], ["Spotify ID", idv("Spotify ID", "2aJDlirz6v2a4HREki98cP")], ["TIDAL ID", idv("TIDAL ID", "77640617")], ["Beatport ID", idv("Beatport ID", "9472311")], ["Discogs", idv("Discogs release", null)], ["SongNodes ID", idv("SongNodes ID", "trk_8f2a")]]
+    .map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("");
+  document.addEventListener("click", function (e) { var b = e.target.closest(".sn-copy-button"); if (!b) return; try { navigator.clipboard && navigator.clipboard.writeText(b.dataset.copy).catch(function () {}); } catch (x) {} b.setAttribute("data-state", "copied"); snSay(b.dataset.what + " copied"); setTimeout(function () { b.removeAttribute("data-state"); }, 2000); });
+  document.getElementById("raw").innerHTML = [["Energy", "6 (audio analysis) · 7 (Mixed In Key import)"], ["BPM", "130.02 (audio analysis) · 130 (Beatport)"], ["Key", "8A (audio analysis) · A minor (Beatport)"], ["Genre", "House (ledger) · Electronica (Spotify)"]].map(function (r) { return "<dt>" + r[0] + '</dt><dd class="sn-mono">' + r[1] + "</dd>"; }).join("");
+  document.getElementById("chev").innerHTML = S.icon("chevron-right", { size: 16 });
+
+  document.getElementById("sets").innerHTML = [["Peak time Friday", "slot 6 of 14"], ["Garage journey", "slot 11 of 24"], ["Closing at Revolver", "slot 3 of 15"]].map(function (r) { return '<li class="sn-page__item"><a class="sn-link sn-m-sets" href="#sets">' + r[0] + '</a><span class="sn-page__item-meta">' + r[1] + "</span></li>"; }).join("");
+  document.getElementById("links").innerHTML = ["TIDAL", "Spotify", "Beatport", "Deezer", "1001tracklists", "MixesDB"].map(function (l) { return '<a class="sn-link sn-link--ext" href="#" target="_blank" rel="noopener">' + l + '<span class="sn-sr">, opens in a new tab</span></a>'; }).join("");
+  snWire();
+})();
+</script>
+</body>
+</html>

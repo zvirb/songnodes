@@ -1,0 +1,61 @@
+<!-- @dsCard group="Inputs" height=308 subtitle="Empty with / shortcut hint, typed with clear button and result count, typo with Did you mean suggestion, no results" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SearchField — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5) var(--space-6); }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Live: type an artist or title (try “overmno”), press / to focus, Escape to clear</div>
+  <div style="max-width: 440px" id="live-slot"></div>
+  <div class="sn-preview__label">States</div>
+  <div class="pv-grid" id="states"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var LIB = ["Bicep – Glue", "Overmono – So U Kno", "Fred again.. – Delilah (pull me out of this)", "Ross From Friends – Talk To Me You'll Drown", "Interplanetary Criminal – Slow Burner", "Sammy Virji – If U Need It", "Peggy Gou – (It Goes Like) Nanana", "Josh Baker – Lost In Muzik"];
+  var ARTISTS = ["Bicep", "Overmono", "Fred again..", "Ross From Friends", "Interplanetary Criminal", "Sammy Virji", "Peggy Gou", "Josh Baker"];
+  var TOTAL = 1284;
+  var n = 0;
+  function field(o) {
+    var id = "sf" + (++n);
+    return '<form class="sn-search-field" role="search" onsubmit="return false"' + (o.value ? "" : " data-empty") + '>' +
+      '<label class="sn-sr" for="' + id + '">Search tracks</label>' +
+      '<div class="sn-search-field__box"><span class="sn-search-field__icon">' + S.icon("search") + '</span>' +
+      '<input class="sn-input sn-search-field__input" type="search" id="' + id + '" placeholder="Search artist, title or label" autocomplete="off" spellcheck="false" aria-describedby="' + id + '-meta"' + (o.kbd ? ' aria-keyshortcuts="/"' : "") + ' value="' + S.esc(o.value || "") + '">' +
+      '<span class="sn-search-field__end">' + (o.kbd ? '<kbd class="sn-search-field__kbd" aria-hidden="true">/</kbd>' : "") +
+      '<button type="button" class="sn-search-field__clear" aria-label="Clear search">' + S.icon("x") + '</button></span></div>' +
+      '<div class="sn-search-field__meta" id="' + id + '-meta">' + (o.meta || "") + '</div></form>';
+  }
+  function count(k) { return '<span class="sn-search-field__count" role="status"><b>' + S.format.count(k) + '</b> of ' + S.format.count(TOTAL) + ' tracks</span>'; }
+  function lev(a, b) { var m = [], i, j; for (i = 0; i <= b.length; i++) m[i] = [i]; for (j = 0; j <= a.length; j++) m[0][j] = j;
+    for (i = 1; i <= b.length; i++) for (j = 1; j <= a.length; j++) m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (b[i - 1] === a[j - 1] ? 0 : 1)); return m[b.length][a.length]; }
+  function suggest(q) { var best = null, d = 99; ARTISTS.forEach(function (a) { var x = lev(q.toLowerCase(), a.toLowerCase()); if (x < d) { d = x; best = a; } }); return d > 0 && d <= Math.max(2, Math.floor(q.length / 4)) ? best : null; }
+  function meta(q) {
+    if (!q) return count(TOTAL);
+    var hits = LIB.filter(function (t) { return t.toLowerCase().indexOf(q.toLowerCase()) >= 0; }).length;
+    var k = hits ? hits * 7 + 3 : 0, s = hits ? null : suggest(q);
+    return count(k) + (s ? '<span class="sn-search-field__suggest">Did you mean <button type="button" data-s="' + S.esc(s) + '">' + S.esc(s) + '</button>?</span>' : (k ? "" : '<span>No tracks match “' + S.esc(q) + '”. Check the spelling or clear filters.</span>'));
+  }
+  document.getElementById("live-slot").innerHTML = field({ kbd: true, meta: count(TOTAL) });
+  document.getElementById("states").innerHTML =
+    field({ value: "bicep", meta: count(24) }) +
+    field({ value: "overmno", meta: count(0) + '<span class="sn-search-field__suggest">Did you mean <button type="button" data-s="Overmono">Overmono</button>?</span>' }) +
+    field({ value: "lost in muzk dub", meta: count(0) + '<span>No tracks match “lost in muzk dub”. Check the spelling or clear filters.</span>' });
+
+  function update(f) { var inp = f.querySelector("input"); f.toggleAttribute("data-empty", !inp.value); f.querySelector(".sn-search-field__meta").innerHTML = meta(inp.value.trim()); }
+  document.addEventListener("input", function (e) { var f = e.target.closest(".sn-search-field"); if (f) update(f); });
+  document.addEventListener("click", function (e) {
+    var f = e.target.closest(".sn-search-field"); if (!f) return;
+    var inp = f.querySelector("input");
+    if (e.target.closest(".sn-search-field__clear")) { inp.value = ""; update(f); inp.focus(); }
+    var s = e.target.closest(".sn-search-field__suggest button"); if (s) { inp.value = s.dataset.s; update(f); inp.focus(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(t.tagName) && !t.isContentEditable) { e.preventDefault(); document.querySelector("#live-slot input").focus(); }
+    if (e.key === "Escape" && t.matches(".sn-search-field__input") && t.value) { e.preventDefault(); t.value = ""; update(t.closest(".sn-search-field")); }
+  });
+</script>
+</body>
+</html>

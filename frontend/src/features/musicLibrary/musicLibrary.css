@@ -1,0 +1,17 @@
+/*
+ * Music library pages (Library, Set builder). Layout glue only: tokens and DS classes do the rest.
+ * No colour, font-size, radius, shadow or z-index literals here (design-system README, "Use it").
+ */
+
+/* Running-order heading: Try another take and Copy tracklist sit together at the end. */
+.sn-ml-sets .sn-ml-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+/* Export note under the saved sets. */
+.sn-ml-sets .sn-ml-export { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4); }
+
+/* The genre-mix warning carries its fix inline. */
+.sn-ml-sets .sn-inline-message .sn-btn { margin-left: var(--space-1); vertical-align: baseline; }
+
+/* SetSlot data cell: BPM and key share a line, the Spares toggle sits under them. */
+.sn-ml-sets .sn-ml-slot-bk { display: inline-flex; align-items: center; gap: var(--space-2); }
+.sn-ml-sets .sn-set-slot__data .sn-btn { margin-left: calc(-1 * var(--space-2)); }

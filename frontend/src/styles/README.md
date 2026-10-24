@@ -1,3 +1,9 @@
+> **Superseded.** The SongNodes design system in [`design-system/`](../../../design-system/README.md) is now the
+> single source of truth for formatting and design. Its runtime files are synced into `./design-system/`.
+> `tokens.css`, `globals.css` and `global.css` here are legacy. They are bridged to design-system tokens by
+> `legacy-aliases.css` and are deleted in migration phase 6 (`design-system/19-songnodes-migration.md`).
+> Do not add to them. The notes below are historical.
+
 # SongNodes Design System
 
 **Version:** 1.0.0

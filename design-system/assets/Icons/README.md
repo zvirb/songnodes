@@ -1,0 +1,1 @@
+Lucide icons (ISC licence, lucide-static 1.53.0) used by SongNodes, one meaning each (see the Identity and iconography section). The files are drawn with a neutral grey stroke `#8a8a8a` (an `<img>` can't inherit colour); in code use `SongNodes.icon(name)` or `lucide-react`, which inherit `currentColor`. 2px stroke, 24px grid, shown at 16, 18, 20 or 24px.

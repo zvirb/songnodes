@@ -1,0 +1,213 @@
+<!-- @dsCard group="Pages" width=1280 height=2340 subtitle="The Naarm set builder rebuilt: Build set primary, controls card (name, shape, length, genre mix, pool, Send to TIDAL switch), energy wave with target, summary, running order with transition notes and spares, saved sets aside, toast after save, New empty set confirmation" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SetBuilderPage — preview</title></head>
+<body>
+<div class="sn-preview sn-page" id="root">
+  <a class="sn-skip" href="#main">Skip to main content</a>
+  <div id="hdr" data-drawer-inert></div>
+  <main class="sn-page__main sn-page-sets" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+    <div class="sn-page-sets__layout">
+      <div class="sn-page-sets__side">
+        <section class="sn-card sn-m-sets sn-page-sets__controls" aria-labelledby="ctl-t">
+          <details class="sn-disclosure" open id="ctl-d"><summary><span class="sn-disclosure__chev" id="ctl-chev"></span><h2 class="sn-title title-s" id="ctl-t">Set controls</h2></summary>
+          <div class="sn-disclosure__body sn-page-sets__controls">
+          <div class="sn-field sn-text-field">
+            <label class="sn-text-field__label" for="name"><span>Set name</span><span class="sn-text-field__count" aria-hidden="true">16 / 40</span></label>
+            <input class="sn-input" id="name" value="Peak time Friday" maxlength="40">
+          </div>
+          <div class="sn-field sn-select-field">
+            <label for="shape">Shape</label>
+            <select class="sn-select" id="shape"><option>Journey, two peaks</option><option selected>Peak time, three waves</option><option>Warm-up opener</option><option>Closing</option><option>Steady groove</option></select>
+          </div>
+          <div id="len"></div>
+          <fieldset class="sn-page-sets__mix" aria-describedby="mix-help"><legend>Genre mix</legend><div id="mix-h"></div><div id="mix-t"></div><div id="mix-u"></div></fieldset>
+          <span class="sn-field__help" id="mix-help">Adds up to 100%. Genre switches happen in the Building tier after a run of 3 or more.</span>
+          <div class="sn-field sn-select-field">
+            <label for="pool">Pool</label>
+            <select class="sn-select" id="pool"><option>Whole library (1,284)</option><option>High rotation (212)</option><option>Heard this month (318)</option><option selected>Filtered crate (846)</option></select>
+          </div>
+          <ul class="sn-switch-list">
+            <li class="sn-switch">
+              <div class="sn-switch__text"><span class="sn-switch__label" id="tidal-l">Send to TIDAL on the weekly run</span>
+                <span class="sn-switch__desc" id="tidal-d">Each Monday at 06:00 this set becomes a TIDAL playlist.</span></div>
+              <button type="button" role="switch" class="sn-switch__control" aria-checked="true" aria-labelledby="tidal-l" aria-describedby="tidal-d" id="sw"><span class="sn-switch__state" aria-hidden="true">On</span><span class="sn-switch__track" aria-hidden="true"><span class="sn-switch__thumb"></span></span></button>
+            </li>
+          </ul>
+          <div class="sn-card__foot"><button class="sn-btn sn-btn--quiet" type="button" id="newset">New empty set…</button></div>
+          <p class="sn-page-sets__note">New empty set asks first (ConfirmDialog): it clears the running order, not the saved copy.</p>
+          </div></details>
+        </section>
+      </div>
+      <div class="sn-page-sets__work">
+        <section class="sn-card sn-m-sets" aria-labelledby="w-t">
+          <figure class="sn-chart-frame sn-energy-wave" aria-labelledby="w-t">
+            <div class="sn-chart-frame__head"><div class="sn-chart-frame__titles">
+              <h2 class="sn-title title-s" id="w-t"><span class="sn-lead">Energy wave:</span> Peak time Friday</h2>
+              <p class="sn-chart-frame__sub">Energy per slot, 1–10 · 14 tracks · 92 min · three waves</p></div></div>
+            <ul class="sn-chart-frame__legend" aria-label="Legend" id="legend"></ul>
+            <div class="sn-chart-frame__plot" id="plot"></div>
+            <div class="sn-energy-wave__summary" id="wsum"></div>
+          </figure>
+        </section>
+        <p class="sn-page-sets__summary" id="summary"></p>
+        <section class="sn-page__section" aria-labelledby="ro-t" id="running-order">
+          <div class="sn-section-heading sn-section-heading--rule"><h2 class="sn-title title-m" id="ro-t"><span class="sn-lead">Running order:</span> 14 slots</h2>
+            <div class="sn-section-heading__end"><button class="sn-btn sn-btn--sm" type="button">Try another take</button></div></div>
+          <ol class="sn-set-slot-list" id="list" aria-label="Running order, Peak time Friday"></ol>
+          <div class="sn-show-more"><span class="sn-show-more__count" role="status">Showing slots <b>1–9</b> of <b>14</b></span><div class="sn-show-more__actions"><button class="sn-btn sn-btn--sm" type="button">Show 5 more slots</button></div></div>
+        </section>
+      </div>
+      <aside class="sn-page__section sn-page-sets__aside" aria-labelledby="saved-t">
+        <div class="sn-section-heading"><h2 class="sn-title title-s" id="saved-t">Saved sets</h2><span class="sn-section-heading__count">12</span>
+          <div class="sn-section-heading__end"><a class="sn-link sn-m-sets" href="#sets">All saved sets</a></div></div>
+        <div class="sn-page-sets__saved sn-m-sets" id="saved"></div>
+      </aside>
+    </div>
+  </main>
+  <div id="drw"></div>
+  <dialog class="sn-dialog sn-dialog--s sn-confirm-dialog" id="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t" aria-describedby="dlg-d">
+    <div class="sn-dialog__head"><span class="sn-confirm-dialog__icon" id="dlg-i"></span><h2 class="sn-title title-s sn-dialog__title" id="dlg-t">Start a new empty set?</h2></div>
+    <div class="sn-dialog__body" id="dlg-d"><p class="sn-confirm-dialog__text">This clears the 14-slot running order on screen. The saved copy of “Peak time Friday” stays in Saved sets.</p>
+      <ul class="sn-confirm-dialog__facts"><li>Unsaved changes since 21:30 are lost: 2 slots moved.</li><li>Shape, length, genre mix and pool are kept.</li></ul></div>
+    <div class="sn-dialog__foot"><button class="sn-btn" type="button" data-cancel>Cancel</button><button class="sn-btn sn-btn--danger" type="button" data-confirm>Clear running order</button></div>
+  </dialog>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+/*KIT*/
+  snShell({ lead: "Set builder", title: "Peak time Friday", stamp: "2026-10-24T06:00:00+11:00", current: "sets" });
+  document.getElementById("ph").innerHTML = snPageHeader({ mod: "sets", here: "Saved sets", title: "Peak time Friday",
+    desc: "Peak time, three waves over 92 min: 14 tracks, House 50 · UK garage 30 · Techno 20.", stampVerb: "Saved", stamp: "2026-10-24T21:30:00+11:00",
+    pill: '<span class="sn-pill sn-status-pill" data-status="ok">Sent to TIDAL 20 Oct</span>',
+    secondary: [["save", "save", "Save set"]],
+    menu: [{ h: "Set" }, { id: "copy", icon: "copy", label: "Copy tracklist" }, { id: "csv", icon: "download", label: "Export as CSV" }, { id: "print", icon: "printer", label: "Print set" }, { id: "tidal", icon: "upload", label: "Send to TIDAL on the weekly run", checked: true }, { id: "new", icon: "plus", label: "New empty set…" }, { sep: 1 }, { id: "del", icon: "trash-2", label: "Delete set…", danger: true }],
+    primary: ["wand-sparkles", "Build set"] });
+
+  function nf(id, label, v, unit, min, max, help) {
+    return '<div class="sn-field sn-number-field"><label for="' + id + '" id="' + id + '-l">' + label + '</label><div class="sn-number-field__box">' +
+      '<button class="sn-number-field__step" type="button" tabindex="-1" aria-label="Decrease ' + label.toLowerCase() + '">−</button>' +
+      '<input class="sn-number-field__input" id="' + id + '" role="spinbutton" inputmode="numeric" value="' + v + '" style="--nf-ch:3" aria-valuenow="' + v + '" aria-valuemin="' + min + '" aria-valuemax="' + max + '" aria-valuetext="' + v + " " + unit + '" aria-labelledby="' + id + "-l " + id + '-u">' +
+      '<span class="sn-number-field__unit" id="' + id + '-u">' + unit + '</span><button class="sn-number-field__step" type="button" tabindex="-1" aria-label="Increase ' + label.toLowerCase() + '">+</button></div>' +
+      (help ? '<span class="sn-number-field__range">' + help + "</span>" : "") + "</div>";
+  }
+  document.getElementById("len").innerHTML = nf("length", "Length", 92, "min", 30, 360, "30–360 min");
+  document.getElementById("mix-h").innerHTML = nf("mh", "House", 50, "%", 0, 100);
+  document.getElementById("mix-t").innerHTML = nf("mt", "Techno", 20, "%", 0, 100);
+  document.getElementById("mix-u").innerHTML = nf("mu", "UK garage", 30, "%", 0, 100);
+  document.querySelectorAll(".sn-number-field__box").forEach(function (box) {
+    var inp = box.querySelector("input"), b = box.querySelectorAll("button");
+    function set(v) { v = Math.max(+inp.getAttribute("aria-valuemin"), Math.min(+inp.getAttribute("aria-valuemax"), v)); inp.value = v; inp.setAttribute("aria-valuenow", v); }
+    b[0].onclick = function () { set(+inp.value - (inp.id === "length" ? 5 : 5)); }; b[1].onclick = function () { set(+inp.value + 5); };
+    inp.addEventListener("keydown", function (e) { if (e.key === "ArrowUp") { e.preventDefault(); set(+inp.value + 1); } if (e.key === "ArrowDown") { e.preventDefault(); set(+inp.value - 1); } });
+  });
+  document.getElementById("ctl-chev").innerHTML = S.icon("chevron-right", { size: 16 });
+  if (window.matchMedia("(max-width: 1099.98px)").matches) document.getElementById("ctl-d").open = false; /* a set exists: controls fold away on tablet and phone */
+  var sw = document.getElementById("sw");
+  sw.onclick = function () { var on = sw.getAttribute("aria-checked") !== "true"; sw.setAttribute("aria-checked", on); sw.querySelector(".sn-switch__state").textContent = on ? "On" : "Off"; snSay(on ? "Sends to TIDAL on the weekly run" : "Won’t send to TIDAL"); };
+
+  /* ---- running order data (14 slots) ---- */
+  var slots = [
+    ["Peggy Gou", "(It Goes Like) Nanana", "Edit", 238, 4, 4, "6A", 122, "House"],
+    ["Josh Baker", "Lost In Muzik", "Original mix", 398, 5, 5, "6A", 124, "House"],
+    ["Ross From Friends", "Talk To Me You'll Drown", "Original mix", 402, 5, 6, "7A", 124, "House"],
+    ["Fred again..", "Delilah (pull me out of this)", "Original mix", 260, 6, 7, "7A", 126, "House"],
+    ["Overmono", "So U Kno", "Extended mix", 372, 8, 7, "8A", 130, "UK garage"],
+    ["Bicep", "Glue", "Original mix", 269, 8, 8, "8A", 130, "UK garage"],
+    ["Interplanetary Criminal", "Slow Burner", "Original mix", 341, 9, 9, "9A", 132, "UK garage"],
+    ["Sammy Virji", "If U Need It", "Original mix", 223, 9, 9, "9A", 133, "UK garage"],
+    ["Mall Grab", "Spirit Wave", "Original mix", 312, 7, 7, "10A", 132, "Techno"],
+    ["Skream", "Dutch Flowerz", "Original mix", 355, 7, 7, "10A", 132, "Techno"],
+    ["Overmono", "Good Lies", "Original mix", 255, 8, 8, "10A", 134, "Techno"],
+    ["Bicep", "Apricots", "Original mix", 288, 9, 9, "11A", 134, "Techno"],
+    ["Interplanetary Criminal", "Bike Lock", "Original mix", 301, 10, 10, "11A", 135, "UK garage"],
+    ["Sammy Virji", "Find My Way", "Original mix", 214, 10, 10, "12A", 136, "UK garage"]
+  ];
+  var E = slots.map(function (s) { return s[4]; }), TG = slots.map(function (s) { return s[5]; });
+  var steps = E.map(function (v, i) { return i ? S.energyStep(E[i - 1], v, i > 1 ? E[i - 2] : null) : null; });
+
+  /* ---- energy wave (static SVG; same classes as EnergyWave) ---- */
+  var NS = "http://www.w3.org/2000/svg";
+  function el(t, a, p) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+  function tx(p, x, y, s, a) { var t = el("text", Object.assign({ x: x, y: y }, a || {}), p); t.textContent = s; return t; }
+  function drawWave() {
+    var host = document.getElementById("plot"), w = host.clientWidth || 800, rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    host.textContent = "";
+    var H = Math.round(rem * 13), ml = rem * 2, mr = rem * 4.6, mt = rem * 1.6, mb = rem * 1.9, n = E.length;
+    var y = function (v) { return H - mb + (mt - (H - mb)) * v / 10; }, step = (w - mr - ml) / n, bw = Math.min(step * 0.78, 28);
+    var x = function (i) { return ml + i * step + (step - bw) / 2; }, mid = function (i) { return ml + i * step + step / 2; };
+    var svg = el("svg", { width: w, height: H, viewBox: "0 0 " + w + " " + H, role: "img", "aria-label": "Energy climbs from 4 to 9 at slots 7–8, drops 2 to 7, climbs to 9 at slot 12 and closes at 10. Slot 5 jumps +2 against the target." }, host);
+    el("rect", { x: ml, y: y(7.5), width: w - mr - ml, height: y(4.5) - y(7.5), "class": "sn-energy-wave__band" }, svg);
+    [["High", 9], ["Building", 6], ["Low", 2.5]].forEach(function (t) { tx(svg, w - mr + 8, y(t[1]) + 4, t[0], { "class": "sn-energy-wave__band-label" }); });
+    [0, 2, 4, 6, 8, 10].forEach(function (v) { tx(svg, ml - 8, y(v) + 4, String(v), { "class": "sn-chart-frame__tick", "text-anchor": "end" }); });
+    el("line", { x1: ml, x2: w - mr, y1: Math.round(y(0)) + 0.5, y2: Math.round(y(0)) + 0.5, "class": "sn-chart-frame__base" }, svg);
+    E.forEach(function (v, i) {
+      var top = y(v), r = 4, X = x(i), hgt = y(0) - top;
+      el("path", { d: "M" + X + "," + (top + hgt) + "V" + (top + r) + "Q" + X + "," + top + " " + (X + r) + "," + top + "H" + (X + bw - r) + "Q" + (X + bw) + "," + top + " " + (X + bw) + "," + (top + r) + "V" + (top + hgt) + "Z", "class": "sn-energy-wave__bar", style: "--c: var(--energy-" + v + ")" }, svg);
+      tx(svg, mid(i), H - mb + rem * 1.1, String(i + 1), { "class": "sn-energy-wave__slot" });
+      var s = steps[i]; if (s && (s.level === "clash" || s.level === "possible")) tx(svg, mid(i), top - 6, S.GLYPH[s.level], { "class": "sn-energy-wave__flag sn-energy-wave__flag--" + s.level });
+    });
+    el("polyline", { points: TG.map(function (v, i) { return mid(i) + "," + y(v); }).join(" "), "class": "sn-energy-wave__target" }, svg);
+    tx(svg, ml - 8, H - mb + rem * 1.1, "Slot", { "class": "sn-chart-frame__axis-title", "text-anchor": "end" });
+  }
+  document.getElementById("legend").innerHTML =
+    '<li><svg class="sn-chart-frame__keysvg" width="30" height="12" aria-hidden="true"><rect x="0" y="4" width="8" height="8" rx="1" style="fill:var(--energy-3)"/><rect x="10" y="2" width="8" height="10" rx="1" style="fill:var(--energy-6)"/><rect x="20" y="0" width="8" height="12" rx="1" style="fill:var(--energy-9)"/></svg>Energy per slot</li>' +
+    '<li><span class="sn-chart-frame__key sn-chart-frame__key--ref"></span>Target wave</li><li><span class="sn-energy-wave__band-key"></span>Building 5–7</li>' +
+    '<li><span class="sn-energy-wave__glyph sn-energy-wave__glyph--clash" aria-hidden="true">✕</span>Too steep</li>';
+  drawWave(); if (window.ResizeObserver) new ResizeObserver(function () { drawWave(); }).observe(document.getElementById("plot"));
+  var probs = steps.filter(function (s) { return s && (s.level === "clash" || s.level === "possible"); }).length;
+  document.getElementById("wsum").innerHTML = S.html.compat("clash", "Slot 5: energy +2") + '<span class="sn-tag">' + probs + (probs === 1 ? " transition" : " transitions") + " to fix</span>";
+  document.getElementById("summary").innerHTML = '<span class="sn-mono">14 tracks · 92 min · 122–136 BPM · 6A → 12A</span>' + S.html.compat("perfect", "11 smooth") + S.html.compat("compatible", "2 compatible") + S.html.compat("clash", "1 clash");
+
+  /* ---- running order (SetSlot + TransitionNote) ---- */
+  function energy(e, tg) { var g = ""; for (var i = 1; i <= 10; i++) g += '<i class="' + (i <= e ? "on" : "") + (i === tg ? " target" : "") + '"></i>';
+    return '<span class="sn-energy sn-energy-bar"><span class="sn-energy__bar" aria-hidden="true">' + g + '</span><span class="sn-energy__n">' + e + '</span><span class="sn-sr"> of 10, target ' + tg + "</span></span>" +
+      '<span class="sn-energy-bar__target" aria-hidden="true">target ' + tg + (e !== tg ? (e < tg ? " · " + (tg - e) + " under" : " · " + (e - tg) + " over") : "") + "</span>"; }
+  function btn(icon, label, extra) { return '<button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="' + label + '"' + (extra || "") + ">" + S.icon(icon) + "</button>"; }
+  function note(p, n) { var it = [S.energyStep(p[4], n[4]), S.compat(p[6], n[6]), S.bpmStep(p[7], n[7])]; if (p[8] !== n[8]) it.push({ level: "perfect", label: p[8] + " → " + n[8] });
+    return '<li aria-label="Transition"><div class="sn-transition-note" role="note">' + it.map(function (i) { return '<span class="sn-transition-note__item" data-level="' + i.level + '">' + S.esc(i.label) + '<span class="sn-sr"> (' + i.level + ")</span></span>"; }).join("") + "</div></li>"; }
+  var SHOWN = 9, h = "";
+  slots.slice(0, SHOWN).forEach(function (s, i) {
+    var n = i + 1, name = s[0] + " – " + s[1], locked = i === 1, last = i === SHOWN - 1;
+    h += '<li class="sn-set-slot"' + (locked ? " data-locked" : "") + ' aria-label="Slot ' + n + ": " + S.esc(name) + (locked ? ", locked" : "") + '"><span class="sn-set-slot__n">' + n + '</span><span class="sn-set-slot__energy">' + energy(s[4], s[5]) + "</span>" +
+      '<span class="sn-set-slot__track"><div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name" title="' + S.esc(name) + '"><span class="sn-track-cell__artist">' + S.esc(s[0]) + " –</span> " + S.esc(s[1]) + '</span></span><span class="sn-track-cell__meta"><span class="sn-track-cell__mix">' + s[2] + '</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span>' + s[8] + '</span><span class="sn-track-cell__sep" aria-hidden="true">·</span><span class="sn-track-cell__dur">' + S.format.duration(s[3]) + "</span></span></div></span>" +
+      '<span class="sn-set-slot__data"><span class="sn-bpm"><b>' + s[7] + "</b></span>" + S.html.key(s[6]) + "</span>" +
+      '<span class="sn-set-slot__act">' + btn(locked ? "lock" : "lock-open", "Lock slot " + n, ' aria-pressed="' + locked + '"') + btn("arrow-up", "Move slot " + n + " up", i === 0 || locked ? " disabled" : "") + btn("arrow-down", "Move slot " + n + " down", locked ? " disabled" : "") + btn("x", "Remove " + S.esc(name) + " from slot " + n, locked ? " disabled" : "") + "</span></li>";
+    if (i === 4) h += '<li><div class="sn-set-slot__spares"><span class="sn-set-slot__spares-label">Spares for slot 5:</span>' + [["Josh Baker – Nobody Else", 7, "7A"], ["Peggy Gou – Starry Night", 6, "8A"], ["Bicep – Atlas", 7, "8A"]].map(function (sp) {
+      return '<button class="sn-set-slot__spare" type="button" aria-label="Swap in ' + S.esc(sp[0]) + '"><span>' + S.esc(sp[0]) + '</span><span class="sn-mono sn-dim">' + sp[1] + "</span>" + S.html.key(sp[2]) + "</button>"; }).join("") + "</div></li>";
+    if (!last) h += note(s, slots[i + 1]);
+  });
+  document.getElementById("list").innerHTML = h;
+  document.getElementById("list").addEventListener("click", function (e) { var b = e.target.closest('[aria-pressed]'); if (!b || b.disabled) return; var on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); b.innerHTML = S.icon(on ? "lock" : "lock-open"); b.closest(".sn-set-slot").toggleAttribute("data-locked", on); snSay(b.getAttribute("aria-label") + (on ? ": locked" : ": unlocked")); });
+
+  /* ---- saved sets ---- */
+  document.getElementById("saved").innerHTML = [
+    { name: "Peak time Friday", shape: "Peak time three waves", min: 92, n: 14, peaks: 3, wave: E, tidal: ["ok", "Sent to TIDAL 20 Oct"], at: "2026-10-24T21:30:00+11:00" },
+    { name: "Sunday warm-up at Section 8", shape: "Warm-up opener", min: 60, n: 12, peaks: 0, wave: [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7], tidal: ["idle", "Queued for Monday’s run"], at: "2026-10-24T07:40:00+11:00" },
+    { name: "Garage journey", shape: "Journey two peaks", min: 120, n: 24, peaks: 2, wave: [4, 5, 6, 7, 7, 8, 9, 6, 5, 6, 7, 8, 8, 9, 10, 10, 7, 6, 5, 6, 6, 5, 4, 4], tidal: ["bad", "TIDAL send failed: sign-in expired"], at: "2026-10-18T16:00:00+11:00" }
+  ].map(function (s, i) {
+    return '<article class="sn-card sn-card--tonal sn-set-card" aria-labelledby="set' + i + '"><div class="sn-card__head"><span class="sn-tag sn-category-tag">' + S.esc(s.shape) + "</span></div>" +
+      '<h3 class="sn-set-card__name" id="set' + i + '">' + S.esc(s.name) + '</h3><div class="sn-set-card__stats"><span>' + s.min + " min</span><span>" + s.n + " tracks</span><span>" + (s.peaks ? s.peaks + " peaks" : "no peak") + "</span></div>" +
+      '<div class="sn-set-card__wave" role="img" aria-label="Energy wave: ' + s.wave.join(", ") + '">' + s.wave.map(function (e) { return '<i data-e="' + e + '" style="height:' + e * 10 + '%"></i>'; }).join("") + "</div>" +
+      '<div class="sn-set-card__meta"><span class="sn-pill sn-status-pill" data-status="' + s.tidal[0] + '">' + S.esc(s.tidal[1]) + "</span></div>" +
+      '<div class="sn-set-card__meta"><time datetime="' + s.at + '" title="' + S.format.stamp(s.at) + '">Updated ' + S.format.relative(s.at, NOW) + "</time></div>" +
+      '<div class="sn-card__foot"><a class="sn-link" href="#set-' + i + '"' + (i === 0 ? ' aria-current="page"' : "") + ">" + (i === 0 ? "Open now" : "Open set") + '</a><button class="sn-btn sn-btn--sm" type="button" aria-label="Duplicate ' + S.esc(s.name) + '">' + S.icon("copy") + "Duplicate</button></div></article>";
+  }).join("");
+
+  /* ---- confirm + toast ---- */
+  var dlg = document.getElementById("dlg"), opener = null;
+  document.getElementById("dlg-i").innerHTML = S.icon("rotate-ccw");
+  function openNew(from) { opener = from; dlg.showModal(); dlg.querySelector("[data-cancel]").focus(); }
+  document.getElementById("newset").onclick = function () { openNew(this); };
+  dlg.addEventListener("click", function (e) { if (e.target.closest("[data-cancel]")) dlg.close(); if (e.target.closest("[data-confirm]")) { dlg.close(); snToast("Running order cleared. <q>Peak time Friday</q> is still saved.", "rotate-ccw", "Undo"); } });
+  dlg.addEventListener("close", function () { if (opener) opener.focus(); });
+  document.addEventListener("click", function (e) { var b = e.target.closest('[data-act="save"],[data-id="save"]'); if (b) snToast("Saved <q>Peak time Friday</q> · 14 tracks, 92 min", "circle-check", "Undo"); });
+  snWire(function (id, it) { if (id === "new") openNew(document.getElementById("pmore-btn")); else if (id === "save") snToast("Saved <q>Peak time Friday</q> · 14 tracks, 92 min", "circle-check", "Undo"); else snSay(it.textContent.trim() + " chosen"); });
+  snToast("Saved <q>Peak time Friday</q> · 14 tracks, 92 min", "circle-check", "Undo");
+})();
+</script>
+</body>
+</html>

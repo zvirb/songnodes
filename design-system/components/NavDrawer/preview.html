@@ -1,0 +1,168 @@
+<!-- @dsCard group="Navigation" height=740 subtitle="Open over a faux Set builder page: groups, module icons, current page, count and attention badges; Esc, scrim, close button and focus trap work" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>NavDrawer — preview</title>
+<style>
+  .stage { position: relative; height: 690px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--bg); }
+  .faux-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .faux-row { height: 40px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; color: var(--fg-2); font-size: 0.875rem; }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="stage" id="stage">
+    <div data-drawer-inert>
+      <header class="sn-app-header"><div class="sn-app-header__bar">
+        <div class="sn-app-header__start"><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" id="opener" aria-expanded="false" aria-controls="nav" aria-label="Open navigation"></button><span class="sn-app-header__wordmark">SongNodes</span></div>
+        <span class="sn-app-header__divider" aria-hidden="true"></span>
+        <p class="sn-app-header__title" id="pageTitle"><span class="sn-lead">Set builder:</span> Peak time Friday</p>
+      </div></header>
+      <div class="faux-body" id="faux"></div>
+    </div>
+    <div id="drawerHost"></div>
+  </div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  /* preview helper: APG menu keyboard model (arrows wrap, Home/End, typeahead, Esc, Tab) */
+  function snVisible(list) { return Array.prototype.filter.call(list, function (el) { return el.offsetParent !== null || el.getClientRects().length > 0; }); }
+  function snMenuKeys(menu, close) {
+    var buf = "", timer = 0;
+    function items() { return snVisible(menu.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]')); }
+    menu.addEventListener("keydown", function (e) {
+      var it = items(), i = it.indexOf(document.activeElement), n = it.length;
+      if (!n) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); it[(i + 1) % n].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); it[(i - 1 + n) % n].focus(); }
+      else if (e.key === "Home" || e.key === "PageUp") { e.preventDefault(); it[0].focus(); }
+      else if (e.key === "End" || e.key === "PageDown") { e.preventDefault(); it[n - 1].focus(); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
+      else if (e.key === "Tab") { close(false); }
+      else if (e.key.length === 1 && /\S/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        clearTimeout(timer); buf += e.key.toLowerCase(); timer = setTimeout(function () { buf = ""; }, 600);
+        for (var k = 1; k <= n; k++) { var c = it[(i + k) % n], t = (c.querySelector(".sn-overflow-menu__text") || c).textContent.trim().toLowerCase(); if (t.indexOf(buf) === 0) { c.focus(); break; } }
+      }
+    });
+    return items;
+  }
+  /** Wire a menu button: btn[aria-haspopup=menu][aria-expanded][aria-controls] + .sn-overflow-menu__menu[role=menu]. */
+  function snMenu(btn, menu, onSelect) {
+    function open(last) { menu.hidden = false; btn.setAttribute("aria-expanded", "true"); var it = items(); var t = last ? it[it.length - 1] : it[0]; if (t) t.focus(); }
+    function close(back) { if (menu.hidden) return; menu.hidden = true; btn.setAttribute("aria-expanded", "false"); if (back) btn.focus(); }
+    var items = snMenuKeys(menu, close);
+    btn.addEventListener("click", function () { if (menu.hidden) open(false); else close(true); });
+    btn.addEventListener("keydown", function (e) { if (e.key === "ArrowDown") { e.preventDefault(); open(false); } else if (e.key === "ArrowUp") { e.preventDefault(); open(true); } });
+    menu.addEventListener("click", function (e) {
+      var it = e.target.closest('[role^="menuitem"]'); if (!it) return;
+      if (it.getAttribute("aria-disabled") === "true") { return; }
+      if (it.hasAttribute("aria-checked")) it.setAttribute("aria-checked", it.getAttribute("aria-checked") === "true" ? "false" : "true");
+      close(true); if (onSelect) onSelect(it);
+    });
+    document.addEventListener("pointerdown", function (e) { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) close(false); });
+    return { open: open, close: close };
+  }
+  function snSay(msg) { var l = document.getElementById("sn-live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } }
+  /** Menu markup. items: {h:"Heading"} | {sep:1} | {id,icon,label,kbd,reason,danger,checked,cls}. Groups follow each heading. */
+  function snMenuHtml(id, labelledby, items, cls, title) {
+    var S = window.SongNodes, h = '<div class="sn-overflow-menu__menu' + (cls ? " " + cls : "") + '" role="menu" id="' + id + '" ' + (labelledby ? 'aria-labelledby="' + labelledby + '"' : 'aria-label="' + S.esc(title ? "Actions for " + title[0] : "Actions") + '"') + ' hidden>', open = false, n = 0;
+    if (title) h += '<div class="sn-overflow-menu__title" role="presentation">' + S.esc(title[0]) + (title[1] ? "<small>" + S.esc(title[1]) + "</small>" : "") + "</div>";
+    items.forEach(function (it) {
+      if (it.h) { if (open) h += "</div>"; n++; h += '<div role="group" aria-labelledby="' + id + "-h" + n + '"><div class="sn-overflow-menu__heading" id="' + id + "-h" + n + '" role="presentation">' + S.esc(it.h) + "</div>"; open = true; return; }
+      if (it.sep) { if (open) { h += "</div>"; open = false; } h += '<div class="sn-overflow-menu__sep" role="separator"></div>'; return; }
+      var rid = it.reason ? id + "-r" + (++n) : "";
+      h += '<button type="button" tabindex="-1" class="sn-overflow-menu__item' + (it.danger ? " sn-overflow-menu__item--danger" : "") + (it.cls ? " " + it.cls : "") + '" role="' + (it.checked != null ? "menuitemcheckbox" : "menuitem") + '"' +
+        (it.checked != null ? ' aria-checked="' + it.checked + '"' : "") + (it.id ? ' data-id="' + it.id + '"' : "") + (it.reason ? ' aria-disabled="true" aria-describedby="' + rid + '"' : "") + ">" +
+        S.icon(it.checked != null ? "check" : (it.icon || "circle-dot"), { size: 16 }) + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
+        (it.reason ? '<span class="sn-overflow-menu__reason" id="' + rid + '">' + S.esc(it.reason) + "</span>" : "") + "</span>" + (it.kbd ? "<kbd>" + S.esc(it.kbd) + "</kbd>" : "") + "</button>";
+    });
+    if (open) h += "</div>";
+    return h + "</div>";
+  }
+  function snMenuButton(id, label, items, opts) {
+    var S = window.SongNodes; opts = opts || {};
+    return '<div class="sn-overflow-menu"><button class="sn-btn sn-btn--icon' + (opts.quiet === false ? "" : " sn-btn--quiet") + (opts.sm ? " sn-btn--sm" : "") + '" type="button" id="' + id + '-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="' + id + '" aria-label="' + S.esc(label) + '">' + S.icon(opts.icon || "ellipsis") + "</button>" + snMenuHtml(id, id + "-btn", items, opts.cls) + "</div>";
+  }
+
+  /* preview helper: modal drawer (APG dialog: focus moves in, Tab trapped, Esc and scrim close, focus returns to the opener) */
+  function snDrawer(drawer, openers, onNavigate) {
+    var panel = drawer.querySelector(".sn-nav-drawer__panel"), scrim = drawer.querySelector(".sn-nav-drawer__scrim"), last = null;
+    var outside = Array.prototype.slice.call(document.querySelectorAll("[data-drawer-inert]"));
+    function focusables() { return snVisible(panel.querySelectorAll('a[href],button:not([disabled]),[tabindex="0"]')); }
+    function open(from) {
+      last = from || openers[0];
+      drawer.setAttribute("data-open", "");
+      openers.forEach(function (o) { o.setAttribute("aria-expanded", "true"); });
+      outside.forEach(function (el) { el.inert = true; });
+      var cur = panel.querySelector('[aria-current="page"]'); (cur || focusables()[0]).focus();
+    }
+    function close() {
+      drawer.removeAttribute("data-open");
+      openers.forEach(function (o) { o.setAttribute("aria-expanded", "false"); });
+      outside.forEach(function (el) { el.inert = false; });
+      (last || openers[0]).focus();
+    }
+    openers.forEach(function (o) { o.addEventListener("click", function () { open(o); }); });
+    scrim.addEventListener("click", close);
+    drawer.querySelectorAll("[data-drawer-close]").forEach(function (b) { b.addEventListener("click", close); });
+    panel.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { e.preventDefault(); close(); return; }
+      if (e.key !== "Tab") return;
+      var f = focusables(), first = f[0], end = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); end.focus(); }
+      else if (!e.shiftKey && document.activeElement === end) { e.preventDefault(); first.focus(); }
+    });
+    panel.addEventListener("click", function (e) {
+      var a = e.target.closest("a.sn-nav-drawer__item"); if (!a) return;
+      e.preventDefault();
+      panel.querySelectorAll('[aria-current="page"]').forEach(function (x) { x.removeAttribute("aria-current"); });
+      a.setAttribute("aria-current", "page");
+      if (onNavigate) onNavigate(a);
+      close();
+    });
+    return { open: open, close: close };
+  }
+  /** Drawer markup. current = module key or "home". counts = {key: [n, label, attention]} */
+  function snDrawerHtml(id, current, counts, contained) {
+    var S = window.SongNodes; counts = counts || {};
+    var groups = [["Make", ["sets", "paths"]], ["Explore", ["graph", "library", "harmony"]], ["Collect", ["sources"]], ["System", ["pipeline", "services"]]];
+    function row(key, label, icon, mod) {
+      var c = counts[key];
+      return '<li><a class="sn-nav-drawer__item' + (mod ? " sn-m-" + key : "") + '" href="#' + key + '" data-key="' + key + '"' + (current === key ? ' aria-current="page"' : "") + ">" + S.icon(icon, { size: 20 }) +
+        '<span class="sn-nav-drawer__label">' + S.esc(label) + "</span>" +
+        (c ? '<span class="' + (c[2] ? 'sn-pill" data-status="' + c[2] : "sn-nav-drawer__count") + '">' + c[0] + '<span class="sn-sr"> ' + S.esc(c[1]) + "</span></span>" : "") + "</a></li>";
+    }
+    var h = '<div class="sn-nav-drawer' + (contained ? " sn-nav-drawer--contained" : "") + '" id="' + id + '"><div class="sn-nav-drawer__scrim"></div>' +
+      '<div class="sn-nav-drawer__panel" role="dialog" aria-modal="true" aria-label="Site navigation">' +
+      '<div class="sn-nav-drawer__head"><span class="sn-nav-drawer__wordmark">SongNodes</span><button class="sn-btn sn-btn--quiet sn-btn--icon" type="button" data-drawer-close aria-label="Close navigation">' + S.icon("x") + "</button></div>" +
+      '<nav class="sn-nav-drawer__nav" aria-label="Main"><ul class="sn-nav-drawer__list">' + row("home", "Home", "house", false) + "</ul>";
+    groups.forEach(function (g, gi) {
+      h += '<div class="sn-nav-drawer__group"><h2 class="sn-nav-drawer__heading" id="' + id + "-g" + gi + '">' + g[0] + '</h2><ul class="sn-nav-drawer__list" aria-labelledby="' + id + "-g" + gi + '">';
+      g[1].forEach(function (k) { var m = S.module(k); h += row(k, m.label, m.icon, true); });
+      h += "</ul></div>";
+    });
+    h += '</nav><div class="sn-nav-drawer__foot">' +
+      '<a class="sn-nav-drawer__item" href="#preferences" data-key="preferences">' + S.icon("sliders-horizontal", { size: 20 }) + '<span class="sn-nav-drawer__label">Preferences</span></a>' +
+      '<button class="sn-nav-drawer__item" type="button" data-drawer-close>' + S.icon("keyboard", { size: 20 }) + '<span class="sn-nav-drawer__label">Keyboard shortcuts</span><kbd>?</kbd></button>' +
+      "</div></div></div>";
+    return h;
+  }
+
+  document.getElementById("opener").innerHTML = S.icon("menu");
+  var rows = [["Bicep – Glue", 6, "8A", 130], ["Overmono – So U Kno", 7, "9A", 131], ["Interplanetary Criminal – Slow Burner", 7, "9A", 132], ["Sammy Virji – If U Need It", 8, "10A", 134], ["Fred again.. – Delilah (pull me out of this)", 9, "10A", 136], ["Josh Baker – Lost In Muzik", 9, "11A", 136], ["Peggy Gou – (It Goes Like) Nanana", 8, "11A", 130]];
+  document.getElementById("faux").innerHTML = rows.map(function (r, i) { return '<div class="faux-row"><span class="sn-mono">' + (i + 1) + "</span>" + S.html.energy(r[1]) + "<span>" + S.esc(r[0]) + "</span>" + S.html.key(r[2]) + '<span class="sn-bpm"><b>' + r[3] + "</b> BPM</span></div>"; }).join("");
+  document.getElementById("drawerHost").innerHTML = snDrawerHtml("nav", "sets", { sets: ["12", "saved sets"], sources: ["4", "imports to review"], pipeline: ["2", "scrapers paused after errors", "warn"] }, true);
+  var drawer = document.getElementById("nav"), opener = document.getElementById("opener");
+  snDrawer(drawer, [opener], function (a) {
+    var k = a.getAttribute("data-key"), m = S.module(k);
+    document.getElementById("pageTitle").innerHTML = m ? '<span class="sn-lead">' + S.esc(m.label) + ":</span> " + S.esc(m.summary) : '<span class="sn-lead">SongNodes:</span> ' + (k === "home" ? "Home" : "Preferences");
+    snSay("Opened " + a.querySelector(".sn-nav-drawer__label").textContent);
+  });
+  /* shown open on load without moving focus; a click on the hamburger opens it the normal way */
+  drawer.setAttribute("data-open", ""); opener.setAttribute("aria-expanded", "true");
+  document.querySelectorAll("[data-drawer-inert]").forEach(function (el) { el.inert = true; });
+})();
+</script>
+</body>
+</html>

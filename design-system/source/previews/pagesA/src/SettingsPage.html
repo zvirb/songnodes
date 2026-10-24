@@ -1,0 +1,159 @@
+<!-- @dsCard group="Pages" width=1280 height=2580 subtitle="Services module: section list, Spotify, TIDAL and Beatport connections with connect buttons, API keys with Test, embedded appearance preferences, export and import, danger zone with a typed confirmation, about" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SettingsPage — preview</title></head>
+<body>
+<div class="sn-preview sn-page" id="root">
+  <a class="sn-skip" href="#main">Skip to main content</a>
+  <div id="hdr" data-drawer-inert></div>
+  <main class="sn-page__main sn-page-settings" id="main" tabindex="-1" data-drawer-inert>
+    <div id="ph"></div>
+    <div class="sn-page-settings__layout">
+      <nav class="sn-page-settings__toc sn-m-services" aria-label="Settings sections"><ol>
+        <li><a class="sn-link" href="#services" aria-current="true">Services</a></li><li><a class="sn-link" href="#keys">API keys</a></li><li><a class="sn-link" href="#preferences">Preferences</a></li>
+        <li><a class="sn-link" href="#data">Data</a></li></ol></nav>
+      <div class="sn-page-settings__sections">
+        <section class="sn-page__section" id="services" aria-labelledby="c-t">
+          <div class="sn-section-heading sn-section-heading--rule"><h2 class="sn-title title-m" id="c-t">Services</h2>
+            <p class="sn-section-heading__caveat">Streaming services SongNodes reads links from and sends sets to. Each connection saves as soon as the service confirms it.</p></div>
+          <div class="sn-service-status-list" id="svc"></div>
+        </section>
+        <section class="sn-page__section sn-m-services" id="keys" aria-labelledby="k-t">
+          <div class="sn-section-heading sn-section-heading--rule"><h2 class="sn-title title-m" id="k-t">API keys</h2>
+            <p class="sn-section-heading__caveat">Keys are stored encrypted on the SongNodes server and never shown again in full. Test a key before you save it.</p></div>
+          <div class="sn-page-settings__keys" id="keyGrid"></div>
+          <div class="sn-page-settings__actions"><button class="sn-btn" type="button" id="saveKeys">Save API keys</button></div>
+        </section>
+        <section class="sn-page__section" id="preferences" aria-labelledby="pp-title">
+          <section class="sn-preferences-panel" aria-labelledby="pp-title">
+            <div class="sn-preferences-panel__head"><h2 class="sn-title title-m" id="pp-title">Preferences</h2></div>
+            <div class="sn-preferences-panel__body">
+              <div class="sn-preferences-panel__set"><span class="sn-field__label" id="lbl-theme">Theme</span>
+                <div class="sn-preferences-panel__themes" role="radiogroup" aria-labelledby="lbl-theme" aria-describedby="theme-help" id="theme"></div>
+                <p class="sn-preferences-panel__help" id="theme-help">Booth is pure black with larger type and the highest contrast, for dark DJ booths.</p></div>
+              <div class="sn-preferences-panel__set"><span class="sn-field__label" id="lbl-size">Text size</span><div id="size"></div></div>
+              <div class="sn-preferences-panel__set"><span class="sn-field__label" id="lbl-density">Row density</span><div id="density"></div>
+                <p class="sn-preferences-panel__help">Compact fits more tracks on screen: 32px rows instead of 40px.</p></div>
+              <fieldset class="sn-preferences-panel__set"><legend>Reduce motion</legend><div class="sn-preferences-panel__radios">
+                <label class="sn-check"><input type="radio" name="motion" value="system" checked> <span>Follow this device’s setting</span></label>
+                <label class="sn-check"><input type="radio" name="motion" value="reduce"> <span>Always reduce motion</span></label></div></fieldset>
+            </div>
+            <div class="sn-preferences-panel__foot"><span>Applies straight away · saved on this device only</span><button class="sn-btn sn-btn--quiet sn-btn--sm" type="button" id="reset">Reset to defaults</button></div>
+          </section>
+        </section>
+        <section class="sn-page__section" id="data" aria-labelledby="d-t">
+          <div class="sn-section-heading sn-section-heading--rule"><h2 class="sn-title title-m" id="d-t">Data</h2>
+            <p class="sn-section-heading__caveat">Exports are files for your own backups; imports are checked before anything changes.</p></div>
+          <div class="sn-page-settings__actions">
+            <button class="sn-btn" type="button">${download}Export library as CSV</button>
+            <button class="sn-btn" type="button">${download}Export saved sets as JSON</button>
+            <button class="sn-btn" type="button">${download}Export target tracks as JSON</button>
+          </div>
+          <div id="drop"></div>
+        </section>
+        <section class="sn-page__section" aria-labelledby="x-t"><!-- part of #data: no anchor of its own -->
+          <div class="sn-section-heading sn-section-heading--rule"><h2 class="sn-title title-m" id="x-t">Danger zone</h2>
+            <p class="sn-section-heading__caveat">These can’t be undone. Each one asks you to confirm and names what goes.</p></div>
+          <div class="sn-page-settings__danger">
+            <div class="sn-page-settings__danger-row"><p><b>Disconnect every service.</b> Spotify and TIDAL sign-ins are removed; Monday’s TIDAL run stops until you reconnect.</p><button class="sn-btn" type="button" data-open="svc">Disconnect all…</button></div>
+            <div class="sn-page-settings__danger-row"><p><b>Delete all 12 saved sets.</b> Running orders and TIDAL playlists made by SongNodes go; tracks stay in the library.</p><button class="sn-btn" type="button" data-open="sets">Delete all saved sets…</button></div>
+          </div>
+        </section>
+        <section class="sn-page__section" aria-labelledby="a-t"><!-- page foot: no anchor -->
+          <div class="sn-section-heading sn-section-heading--rule"><h2 class="sn-title title-m" id="a-t">About</h2></div>
+          <dl class="sn-key-value-grid" id="aboutKv"></dl>
+        </section>
+      </div>
+    </div>
+  </main>
+  <div id="drw"></div>
+  <dialog class="sn-dialog sn-dialog--s sn-confirm-dialog" id="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t" aria-describedby="dlg-d"></dialog>
+  <div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="toasts"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+/*KIT*/
+  document.querySelectorAll("button").forEach(function (b) { if (b.innerHTML.indexOf("${download}") >= 0) b.innerHTML = b.innerHTML.replace("${download}", S.icon("download")); });
+  snShell({ lead: "Services", title: "Settings", current: "services" });
+  document.getElementById("ph").innerHTML = snPageHeader({ mod: "services", lead: "Services", title: "Settings",
+    desc: "Services, API keys, preferences and your data, on one page. Sections save on their own; preferences apply straight away.",
+    pill: '<span class="sn-pill sn-status-pill" data-status="warn">TIDAL needs a sign-in</span>',
+    menu: [{ h: "Settings" }, { id: "exp", icon: "download", label: "Export settings as JSON" }, { id: "keys", icon: "keyboard", label: "Show keyboard shortcuts", kbd: "?" }] });
+
+  var SVC = [
+    { svc: "Spotify", mark: "Sp", status: "ok", word: "Connected", detail: 'Signed in as <span class="sn-mono">markusz</span> · renews itself, next 25 Oct 2026, 21:30 AEDT', act: '<button class="sn-btn sn-btn--quiet sn-btn--sm" type="button">Disconnect</button>' },
+    { svc: "TIDAL", mark: "Ti", status: "warn", word: "Expired", detail: "Sign-in expired 21 Oct 2026, 06:00 AEDT. Monday’s “Send to TIDAL” run will skip until you reconnect.", act: '<button class="sn-btn sn-btn--sm sn-service-status__btn--tidal" type="button">Reconnect TIDAL</button>' },
+    { svc: "Beatport", mark: "Bp", status: "idle", word: "Not connected", detail: "Connect to check matches and pull genre, label and key data.", act: '<button class="sn-btn sn-btn--sm" type="button">Connect Beatport</button>' }
+  ];
+  document.getElementById("svc").innerHTML = SVC.map(function (r) {
+    return '<section class="sn-service-status" aria-label="' + r.svc + ' connection"><span class="sn-service-status__mark" aria-hidden="true">' + r.mark + '</span><div class="sn-service-status__main"><div class="sn-service-status__name">' + r.svc + ' <span class="sn-pill sn-status-pill" data-status="' + r.status + '">' + r.word + '</span></div><div class="sn-service-status__detail">' + r.detail + '</div></div><div class="sn-service-status__act">' + r.act + "</div></section>";
+  }).join("");
+
+  function ext(href, text) { return '<a class="sn-link sn-link--ext body-s" href="' + href + '" target="_blank" rel="noopener">' + text + '<span class="sn-sr">, opens in a new tab</span></a>'; }
+  function secret(o) {
+    var saved = !!o.masked;
+    return '<div class="sn-card sn-card--flat"><div class="sn-secret-field" id="' + o.id + '"><div class="sn-secret-field__head"><span class="sn-secret-field__label" id="' + o.id + '-l">' + o.label + "</span>" + o.link + "</div>" +
+      '<div class="sn-secret-field__row" data-view="saved"' + (saved ? "" : " hidden") + '><div class="sn-secret-field__saved" role="group" aria-labelledby="' + o.id + '-l">' + S.icon("lock") + '<span><span class="sn-sr">Saved key ending </span><span aria-hidden="true">' + (o.masked || "") + '</span></span></div><button type="button" class="sn-btn" data-test>Test key</button><button type="button" class="sn-btn sn-btn--quiet" data-replace>Replace key</button></div>' +
+      '<div class="sn-secret-field__row" data-view="edit"' + (saved ? " hidden" : "") + '><div class="sn-secret-field__box"><input class="sn-input" type="password" id="' + o.id + '-in" aria-labelledby="' + o.id + '-l" aria-describedby="' + o.id + '-st" autocomplete="off" spellcheck="false" placeholder="Paste the key"><button type="button" class="sn-secret-field__reveal" aria-pressed="false" aria-label="Show key">' + S.icon("eye") + '</button></div><button type="button" class="sn-btn" data-test>Test key</button></div>' +
+      '<div class="sn-secret-field__status" id="' + o.id + '-st" aria-live="polite">' + o.status + "</div></div></div>";
+  }
+  document.getElementById("keyGrid").innerHTML =
+    secret({ id: "k1", label: "Setlist.fm API key", masked: "sk-…3f9a", link: ext("#", "Get an API key"), status: S.html.pill("healthy", "Key works") + '<span class="sn-secret-field__stamp">Last tested 24 Oct 2026, 06:00 AEDT</span>' }) +
+    secret({ id: "k2", label: "Discogs token", masked: "…a71e", link: ext("#", "Open Discogs settings"), status: S.html.pill("failed", "Key refused") + "<span>Discogs returned 401. Create a new token and paste it here.</span>" }) +
+    secret({ id: "k3", label: "YouTube Data API key", link: ext("#", "Open Google Cloud console"), status: '<span class="sn-secret-field__stamp">No key yet. YouTube tracklists are skipped until you add one.</span>' });
+  document.getElementById("keyGrid").addEventListener("click", function (e) {
+    var f = e.target.closest(".sn-secret-field"); if (!f) return; var inp = f.querySelector("input"), st = f.querySelector(".sn-secret-field__status");
+    var rv = e.target.closest(".sn-secret-field__reveal"); if (rv) { var on = rv.getAttribute("aria-pressed") !== "true"; rv.setAttribute("aria-pressed", on); rv.setAttribute("aria-label", on ? "Hide key" : "Show key"); rv.innerHTML = S.icon(on ? "eye-off" : "eye"); inp.type = on ? "text" : "password"; return; }
+    if (e.target.closest("[data-replace]")) { f.querySelector('[data-view="saved"]').hidden = true; f.querySelector('[data-view="edit"]').hidden = false; inp.focus(); return; }
+    var t = e.target.closest("[data-test]"); if (!t) return;
+    var editing = !f.querySelector('[data-view="edit"]').hidden;
+    if (editing && !inp.value.trim()) { st.innerHTML = S.html.pill("failed", "No key") + "<span>Paste a key, then test it.</span>"; inp.setAttribute("aria-invalid", "true"); inp.focus(); return; }
+    t.setAttribute("aria-busy", "true"); t.innerHTML = '<span class="sn-spinner"></span>Testing…'; st.innerHTML = S.html.pill("running", "Testing");
+    setTimeout(function () { t.removeAttribute("aria-busy"); t.textContent = "Test key"; st.innerHTML = S.html.pill("healthy", "Key works") + '<span class="sn-secret-field__stamp">Last tested ' + S.format.stamp(NOW) + "</span>"; }, 900);
+  });
+  document.getElementById("saveKeys").onclick = function () { snToast("API keys saved. Setlist.fm and YouTube keys are in use from the next run.", "circle-check"); };
+
+  /* ---- embedded PreferencesPanel ---- */
+  var P = S.prefs, root = document.documentElement, cur = P.get(), themeNow = root.getAttribute("data-theme") || "dark";
+  var tv = cur.theme !== "system" && cur.theme === themeNow ? cur.theme : themeNow;
+  document.getElementById("theme").innerHTML = [["system", "System", "monitor"], ["dark", "Dark", "moon"], ["light", "Light", "sun"], ["booth", "Booth", "headphones"]].map(function (t) { return '<button type="button" class="sn-preferences-panel__theme" role="radio" data-value="' + t[0] + '" aria-checked="' + (t[0] === tv) + '">' + S.icon(t[2]) + "<span>" + t[1] + '</span><span class="sn-preferences-panel__check" aria-hidden="true">✓</span></button>'; }).join("");
+  document.getElementById("size").innerHTML = snSegHtml("Text size", [{ value: "s", label: "S", aria: "Small" }, { value: "m", label: "M", aria: "Medium (default)" }, { value: "l", label: "L", aria: "Large" }, { value: "xl", label: "XL", aria: "Extra large" }], cur.textSize || "m", "sn-segmented-control--block").replace('aria-label="Text size"', 'aria-labelledby="lbl-size"');
+  document.getElementById("density").innerHTML = snSegHtml("Row density", [{ value: "comfortable", label: "Comfortable" }, { value: "compact", label: "Compact" }], cur.density || "comfortable", "sn-segmented-control--block").replace('aria-label="Row density"', 'aria-labelledby="lbl-density"');
+  var th = snSeg(document.getElementById("theme"), function (v) { P.setTheme(v); snSay("Theme set to " + v); }); document.getElementById("theme")._wired = 1;
+  var sz = snSeg(document.querySelector("#size .sn-segmented-control"), function (v) { P.setTextSize(v); snSay("Text size " + v.toUpperCase()); }); document.querySelector("#size .sn-segmented-control")._wired = 1;
+  var dn = snSeg(document.querySelector("#density .sn-segmented-control"), function (v) { P.setDensity(v); snSay(v === "compact" ? "Compact rows" : "Comfortable rows"); }); document.querySelector("#density .sn-segmented-control")._wired = 1;
+  document.querySelectorAll('input[name="motion"]').forEach(function (r) { r.addEventListener("change", function () { P.setMotion(r.value); snSay(r.value === "reduce" ? "Motion always reduced" : "Motion follows this device"); }); });
+  document.getElementById("reset").onclick = function () { th.set("system"); sz.set("m"); dn.set("comfortable"); document.querySelector('input[name="motion"][value="system"]').checked = true; P.setMotion("system"); snSay("Appearance reset to defaults"); };
+
+  /* ---- FileDrop ---- */
+  document.getElementById("drop").innerHTML = '<div class="sn-file-drop" id="fd"><span class="sn-file-drop__label" id="fd-l">Import sets or target tracks</span><div class="sn-file-drop__zone">' + S.icon("upload") +
+    '<div class="sn-file-drop__zone-text"><strong><span class="sn-file-drop__drag">Drag a file here, or choose one</span></strong><span class="sn-file-drop__accept" id="fd-h">JSON exported from SongNodes, up to 5 MB</span></div>' +
+    '<input type="file" class="sn-sr sn-file-drop__input" id="fd-in" accept=".json" aria-labelledby="fd-l fd-btn" aria-describedby="fd-h"><label for="fd-in" class="sn-btn sn-btn--sm sn-file-drop__choose" id="fd-btn">Choose file</label></div>' +
+    '<ul class="sn-file-drop__files" aria-label="Selected files"><li class="sn-file-drop__file">' + S.icon("file-json") + '<div class="sn-file-drop__name"><b>target-tracks-2026-10.json</b><span class="sn-file-drop__size">12 KB</span></div><button type="button" class="sn-btn sn-btn--quiet sn-btn--icon sn-btn--sm" aria-label="Remove target-tracks-2026-10.json">' + S.icon("x") + '</button>' +
+    '<div class="sn-file-drop__result">' + S.html.pill("ok", "Read") + "<span>42 target tracks: 38 new, 4 already in the list</span></div></li></ul></div>";
+
+  document.getElementById("aboutKv").innerHTML = [["Version", '<span class="sn-mono">SongNodes ' + S.version + "</span>"], ["Design system", '<span class="sn-mono">1.0.0</span>'], ["Library data", '<span class="sn-mono">' + S.format.stamp("2026-10-23T19:00:00Z") + "</span>"], ["Source", '<a class="sn-link sn-link--ext" href="#" target="_blank" rel="noopener">github.com/songnodes<span class="sn-sr">, opens in a new tab</span></a>']]
+    .map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("");
+
+  /* ---- danger zone: ConfirmDialog ---- */
+  var dlg = document.getElementById("dlg"), opener = null;
+  var D = {
+    svc: ["plug", "Disconnect Spotify and TIDAL?", "<p class=\"sn-confirm-dialog__text\">SongNodes forgets both sign-ins. <strong>Monday’s TIDAL run stops</strong> until you reconnect.</p><ul class=\"sn-confirm-dialog__facts\"><li>Playlists already on TIDAL and Spotify stay there.</li></ul>", "Disconnect all", false],
+    sets: ["trash-2", "Delete all 12 saved sets?", "<p class=\"sn-confirm-dialog__text\">Every running order is removed <strong>for everyone the sets are shared with</strong>, and SongNodes-made TIDAL playlists are deleted. <strong>This can’t be undone.</strong> Tracks stay in the library.</p><div class=\"sn-field sn-confirm-dialog__typed\"><label for=\"typed\">Type <span class=\"sn-mono\">delete 12 sets</span> to confirm</label><input class=\"sn-input\" id=\"typed\" autocomplete=\"off\" spellcheck=\"false\"></div>", "Delete 12 sets", true]
+  };
+  document.addEventListener("click", function (e) {
+    var o = e.target.closest("[data-open]");
+    if (o) { opener = o; var d = D[o.dataset.open];
+      dlg.innerHTML = '<div class="sn-dialog__head"><span class="sn-confirm-dialog__icon">' + S.icon(d[0]) + '</span><h2 class="sn-title title-s sn-dialog__title" id="dlg-t">' + d[1] + '</h2></div><div class="sn-dialog__body" id="dlg-d">' + d[2] + '</div><div class="sn-dialog__foot"><button class="sn-btn" type="button" data-cancel>Cancel</button><button class="sn-btn sn-btn--danger" type="button" data-confirm' + (d[4] ? " disabled" : "") + ">" + d[3] + "</button></div>";
+      dlg.showModal(); var ty = dlg.querySelector("#typed");
+      if (ty) { ty.addEventListener("input", function () { dlg.querySelector("[data-confirm]").disabled = ty.value.trim() !== "delete 12 sets"; }); ty.focus(); } else dlg.querySelector("[data-cancel]").focus(); }
+    if (e.target.closest("#dlg [data-cancel]")) dlg.close();
+    if (e.target.closest("#dlg [data-confirm]")) { dlg.close(); snToast("Done (preview only: nothing was changed).", "info"); }
+  });
+  dlg.addEventListener("close", function () { if (opener) opener.focus(); });
+  snWire();
+})();
+</script>
+</body>
+</html>

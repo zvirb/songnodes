@@ -1,0 +1,82 @@
+<!-- @dsCard group="Navigation" height=300 subtitle="Track detail tabs with counts and a change dot; a narrow Plan-mode panel where tabs overflow into a fade and a More menu; arrow keys, Home and End" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Tabs — preview</title>
+<style>
+  .narrow { width: 380px; max-width: 100%; border: 1px solid var(--line); border-radius: var(--radius-card); padding: 4px 12px 12px; background: var(--surface-1); }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Track detail · Bicep – Glue</div>
+  <div class="sn-m-library" id="t1"></div>
+  <div class="sn-preview__label">Plan mode side panel · 380px, overflowing</div>
+  <div class="narrow sn-m-graph" id="t2"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+(function () {
+  var S = window.SongNodes;
+/*@@menu@@*/
+  /** tabs: [{id,label,count,countLabel,dot,panel}] */
+  function tabsHtml(id, label, tabs, sel) {
+    var h = '<div class="sn-tabs__wrap"><div class="sn-tabs" role="tablist" aria-label="' + S.esc(label) + '" id="' + id + '-list">';
+    tabs.forEach(function (t, i) {
+      var on = i === sel;
+      h += '<button class="sn-tab" role="tab" type="button" id="' + id + "-tab" + i + '" aria-controls="' + id + "-panel" + i + '" aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + S.esc(t.label) +
+        (t.count != null ? '<span class="sn-tab__badge">' + S.format.count(t.count) + '</span><span class="sn-sr"> ' + S.esc(t.countLabel || "") + "</span>" : "") +
+        (t.dot ? '<span class="sn-tab__dot" aria-hidden="true"></span><span class="sn-sr">, changed since you last looked</span>' : "") + "</button>";
+    });
+    h += '</div><div class="sn-tabs__more" hidden>' + '<button class="sn-btn sn-btn--quiet sn-btn--sm" type="button" id="' + id + '-more-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="' + id + '-more">More' + S.icon("chevron-down", { size: 14 }) + "</button>" +
+      '<div class="sn-overflow-menu__menu" role="menu" id="' + id + '-more" aria-labelledby="' + id + '-more-btn" hidden></div></div></div>';
+    tabs.forEach(function (t, i) { h += '<div class="sn-tabs__panel" role="tabpanel" id="' + id + "-panel" + i + '" aria-labelledby="' + id + "-tab" + i + '" tabindex="0"' + (i === sel ? "" : " hidden") + ">" + t.panel + "</div>"; });
+    return h;
+  }
+  function wire(root) {
+    var list = root.querySelector('[role="tablist"]'), wrap = root.querySelector(".sn-tabs__wrap"), tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    var moreBox = root.querySelector(".sn-tabs__more"), moreBtn = moreBox.querySelector("button"), moreMenu = moreBox.querySelector('[role="menu"]');
+    function select(t, focus) {
+      tabs.forEach(function (x) { var on = x === t; x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1; document.getElementById(x.getAttribute("aria-controls")).hidden = !on; });
+      var dot = t.querySelector(".sn-tab__dot"); if (dot) { dot.nextSibling.remove(); dot.remove(); }
+      t.scrollIntoView({ block: "nearest", inline: "nearest" });
+      if (focus) t.focus();
+    }
+    list.addEventListener("click", function (e) { var t = e.target.closest('[role="tab"]'); if (t) select(t, true); });
+    list.addEventListener("keydown", function (e) {
+      var i = tabs.indexOf(document.activeElement); if (i < 0) return;
+      var j = e.key === "ArrowRight" ? (i + 1) % tabs.length : e.key === "ArrowLeft" ? (i - 1 + tabs.length) % tabs.length : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : -1;
+      if (j >= 0) { e.preventDefault(); select(tabs[j], true); }
+    });
+    function measure() {
+      var l = list.scrollLeft, max = list.scrollWidth - list.clientWidth;
+      wrap.toggleAttribute("data-fade-start", l > 2); wrap.toggleAttribute("data-fade-end", l < max - 2);
+      var lr = list.getBoundingClientRect(), hidden = tabs.filter(function (t) { var r = t.getBoundingClientRect(); return r.left < lr.left - 1 || r.right > lr.right + 1; });
+      moreBox.hidden = max <= 2;
+      moreMenu.innerHTML = hidden.map(function (t) { return '<button type="button" tabindex="-1" role="menuitem" class="sn-overflow-menu__item" data-tab="' + t.id + '">' + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(t.firstChild.textContent) + "</span></span>" + (t.querySelector(".sn-tab__badge") ? '<span class="sn-tab__badge">' + t.querySelector(".sn-tab__badge").textContent + "</span>" : "") + "</button>"; }).join("");
+    }
+    list.addEventListener("scroll", measure, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(measure).observe(list);
+    measure();
+    snMenu(moreBtn, moreMenu, function (it) { select(document.getElementById(it.getAttribute("data-tab")), true); });
+  }
+  var rows = function (list) { return '<table class="sn-table sn-table--compact"><thead><tr><th>Track</th><th>Key</th><th class="num">BPM</th><th>Energy</th></tr></thead><tbody>' + list.map(function (r) { return "<tr><td>" + S.esc(r[0]) + "</td><td>" + S.html.key(r[1]) + '</td><td class="num">' + r[2] + "</td><td>" + S.html.energy(r[3]) + "</td></tr>"; }).join("") + "</tbody></table>"; };
+  document.getElementById("t1").innerHTML = tabsHtml("a", "Track detail", [
+    { label: "Overview", panel: '<p class="sn-muted" style="margin:0">' + S.html.key("8A", true) + " · <span class=\"sn-bpm\"><b>130</b> BPM</span> · 4:55 · Ninja Tune, 2017</p>" },
+    { label: "Heard on", count: 6, countLabel: "shows", panel: '<p class="sn-muted" style="margin:0">PBS Soul Time, 3RRR Superfreak, triple j Mix Up and 3 more.</p>' },
+    { label: "Transitions", count: 14, countLabel: "transitions", dot: true, panel: '<div class="sn-tablebox">' + rows([["Overmono – So U Kno", "9A", 131, 7], ["Ross From Friends – Talk To Me You'll Drown", "8A", 128, 6]]) + "</div>" },
+    { label: "Audio analysis", panel: '<p class="sn-muted" style="margin:0">Intro 0:00–0:32 · breakdown 2:48 · outro from 4:20.</p>' },
+    { label: "Sources", count: 3, countLabel: "sources", panel: '<p class="sn-muted" style="margin:0">1001tracklists, MixesDB, Beatport.</p>' }
+  ], 0);
+  document.getElementById("t2").innerHTML = tabsHtml("b", "Plan panel", [
+    { label: "Track analysis", panel: '<p class="sn-muted" style="margin:0">Overmono – So U Kno: ' + S.html.key("9A") + ", 131 BPM, energy 7.</p>" },
+    { label: "Key & mood", panel: '<p class="sn-muted" style="margin:0">Mostly 8A–10A tonight; mood: driving, euphoric.</p>' },
+    { label: "Pathfinder", panel: '<p class="sn-muted" style="margin:0">Start: Bicep – Glue. Finish not set.</p>' },
+    { label: "TIDAL", panel: '<p class="sn-muted" style="margin:0">Connected. 3 playlists.</p>' },
+    { label: "Spotify", panel: '<p class="sn-muted" style="margin:0">Not connected.</p>' },
+    { label: "Target tracks", count: 12, countLabel: "targets", dot: true, panel: '<p class="sn-muted" style="margin:0">12 target tracks, 3 found this week.</p>' }
+  ], 0);
+  wire(document.getElementById("t1")); wire(document.getElementById("t2"));
+})();
+</script>
+</body>
+</html>

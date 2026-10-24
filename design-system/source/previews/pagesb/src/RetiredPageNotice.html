@@ -1,0 +1,51 @@
+<!-- @dsCard group="Pages" width=1280 height=1060 subtitle="Moved page (old Target tracks tab → Sources: Target tracks) with the new place as a link in its module colour, reason, dates and an opt-in redirect with no countdown; retired page with no replacement (debug-storage.html)" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>RetiredPageNotice — preview</title></head>
+<body>
+<div class="sn-preview" id="root" style="padding:0;gap:0">
+  <a class="sn-skip" href="#main">Skip to content</a>
+  <div id="sh-head" data-drawer-inert></div>
+  <main class="sn-page-retired" id="main" tabindex="-1" data-drawer-inert>
+    <section class="sn-card sn-page-retired__card" aria-labelledby="moved-h">
+      <span class="sn-page-retired__icon" id="ic1" aria-hidden="true"></span>
+      <h1 class="sn-title title-l" id="moved-h">This page has moved</h1>
+      <p class="body-l sn-muted">Target tracks used to be a tab in the Plan view’s right panel. They now have their own page in Sources, with priority filters, bulk actions and a run log.</p>
+      <p class="sn-page-retired__dest"><a class="sn-link sn-m-sources" href="#/sources/targets" id="dest">Go to Sources: Target tracks</a></p>
+      <dl class="sn-page-retired__facts">
+        <dt>Old address</dt><dd><code>/?mode=plan&amp;tab=targets</code></dd>
+        <dt>New address</dt><dd><code>/sources/targets</code></dd>
+        <dt>Moved</dt><dd>24 Oct 2026</dd>
+        <dt>This notice</dt><dd>Shows until 22 Jan 2027; after that the old address goes straight to the new page.</dd>
+      </dl>
+      <label class="sn-checkbox"><input type="checkbox" id="auto" aria-describedby="auto-h"><span class="sn-checkbox__text"><span>Skip this notice on this device</span><span class="sn-checkbox__hint" id="auto-h">Off by default. When on, the old address opens Target tracks directly; there is no countdown.</span></span></label>
+      <p class="sn-inline-message" data-status="ok" id="auto-msg" hidden>Saved. Next time the old address opens Target tracks directly.</p>
+    </section>
+  </main>
+  <div class="sn-page-retired" aria-label="Variant: retired, no replacement" role="region" style="padding-top:0">
+    <span class="sn-preview__label" style="align-self:stretch">Variant · retired, no replacement</span>
+    <section class="sn-card sn-page-retired__card" aria-labelledby="gone-h">
+      <span class="sn-page-retired__icon" id="ic2" aria-hidden="true"></span>
+      <h2 class="sn-title title-l" id="gone-h">This page is retired</h2>
+      <p class="body-l sn-muted">debug-storage.html was a developer tool for looking inside saved settings. It is no longer part of SongNodes and nothing replaces it.</p>
+      <dl class="sn-page-retired__facts">
+        <dt>Address</dt><dd><code>/debug-storage.html</code></dd>
+        <dt>Retired</dt><dd>24 Oct 2026</dd>
+        <dt>From 22 Jan 2027</dt><dd>This address answers “Gone” (410).</dd>
+      </dl>
+      <p class="sn-row"><a class="sn-link" href="#/">Go to Home</a><span class="sn-dim">·</span><span>Theme and text size are in <a class="sn-link sn-m-services" href="#/settings#appearance">Services: Settings</a></span></p>
+    </section>
+  </div>
+  <div id="sh-drawer"></div>
+  <p class="sn-sr" role="status" id="sn-live"></p>
+</div>
+<script>
+/*@COMMON@*/
+(function () {
+  snShell({ lead: "SongNodes", title: "Page moved", stampVerb: "Updated", stamp: "2026-10-24T06:00:00+11:00" });
+  $("ic1").innerHTML = I("route"); $("ic2").innerHTML = I("archive");
+  $("auto").addEventListener("change", function () { $("auto-msg").hidden = !this.checked; try { localStorage.setItem("sn-skip-moved-targets", this.checked ? "1" : ""); } catch (e) {} });
+})();
+</script>
+</body>
+</html>

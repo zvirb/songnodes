@@ -1,0 +1,24 @@
+<!-- @dsCard group="Data" height=385 subtitle="Spotify connected (account, expiry), TIDAL expired with reconnect, Beatport not connected, an API error; service colours only on Connect buttons" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ServiceStatus — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-service-status-list" id="list" style="max-width:760px"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var rows = [
+    { svc: "Spotify", mark: "Sp", status: "ok", word: "Connected", detail: 'Signed in as <span class="sn-mono">markusz</span> · expires 24 Oct 2026, 21:30 AEDT and renews itself', act: '<button class="sn-btn sn-btn--quiet sn-btn--sm" type="button">Disconnect</button>' },
+    { svc: "TIDAL", mark: "Ti", status: "warn", word: "Expired", detail: "Sign-in expired 21 Oct 2026, 06:00 AEDT. Sunday's “Send to TIDAL” run will skip until you reconnect.", act: '<button class="sn-btn sn-btn--sm sn-service-status__btn--tidal" type="button">Reconnect TIDAL</button>' },
+    { svc: "Beatport", mark: "Bp", status: "idle", word: "Not connected", detail: "Connect to check matches and pull genre and label data.", act: '<button class="sn-btn sn-btn--sm" type="button">Connect Beatport</button>' },
+    { svc: "Spotify", mark: "Sp", status: "bad", word: "Error", detail: "Spotify refused the last 3 requests (429, too many requests). SongNodes retries at 21:45; nothing to do unless this keeps happening.", act: '<button class="sn-btn sn-btn--sm sn-service-status__btn--spotify" type="button">Reconnect Spotify</button>' }
+  ];
+  document.getElementById("list").innerHTML = rows.map(function (r) {
+    return '<section class="sn-service-status" aria-label="' + r.svc + ' connection"><span class="sn-service-status__mark" aria-hidden="true">' + r.mark + '</span>' +
+      '<div class="sn-service-status__main"><div class="sn-service-status__name">' + r.svc + ' <span class="sn-pill sn-status-pill" data-status="' + r.status + '">' + r.word + '</span></div><div class="sn-service-status__detail">' + r.detail + "</div></div>" +
+      '<div class="sn-service-status__act">' + r.act + "</div></section>";
+  }).join("");
+</script>
+</body>
+</html>
