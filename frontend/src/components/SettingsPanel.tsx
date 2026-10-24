@@ -5,6 +5,7 @@ import { KeyRound } from 'lucide-react';
 import { StatusPill } from '../lib/songnodes';
 import { Dialog, ConfirmDialog, showToast } from './ds';
 import './SettingsPanel.css';
+import { API_BASE_URL, oauthRedirectUri } from '../lib/apiBase';
 
 /**
  * SettingsPanel - User Credential Management
@@ -243,8 +244,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
   const connectTidal = async () => {
                     try {
                       general.setLoading(true);
-                      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
-                      const REDIRECT_URI = 'http://127.0.0.1:3006/oauth/callback';
+                      const REDIRECT_URI = oauthRedirectUri('/oauth/callback');
 
                       const initResponse = await fetch(
                         `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/init`,
@@ -286,8 +286,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                       .map(b => b.toString(16).padStart(2, '0')).join('');
                     sessionStorage.setItem('spotify_auth_state', state);
 
-                    const redirectUri = 'http://127.0.0.1:3006/callback/spotify';
-                    const authorizeUrl = `http://127.0.0.1:8082/api/v1/music-auth/spotify/authorize?` + new URLSearchParams({
+                    const redirectUri = oauthRedirectUri('/callback/spotify');
+                    const authorizeUrl = `${API_BASE_URL}/api/v1/music-auth/spotify/authorize?` + new URLSearchParams({
                       redirect_uri: redirectUri,
                       state: state
                     });

@@ -6,8 +6,9 @@ import { DEFAULT_CONSTRAINTS, AVAILABLE_ALGORITHMS } from '../types/pathfinding'
 import { formatCamelotKey } from '../utils/harmonic';
 import clsx from 'clsx';
 import Fuse, { FuseResult } from 'fuse.js';
+import { API_BASE_URL } from '../lib/apiBase';
 
-const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+const REST_API_BASE = API_BASE_URL;
 
 type EnergyFlowType = 'ascending' | 'descending' | 'plateau' | 'wave' | 'custom';
 

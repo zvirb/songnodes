@@ -24,6 +24,7 @@ import {
 } from '../types/pathfinding';
 import { filterNodes, filterEdges } from '../utils/filterNodes';
 import { Community, CommunityDetectionResult } from '../utils/communityDetection';
+import { API_BASE_URL } from '../lib/apiBase';
 
 // Music service credentials interface
 interface MusicServiceCredentials {
@@ -1087,7 +1088,6 @@ export const useStore = create<StoreState>()(
               }), false, 'credentials/testConnectionStart');
 
               // Implement actual connection testing based on service
-              const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
               switch (service) {
                 case 'tidal':

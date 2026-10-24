@@ -13,6 +13,7 @@ import {
   WIZARD_STEPS,
 } from './types';
 import { Track } from '../../types';
+import { API_BASE_URL } from '../../lib/apiBase';
 
 const initialContext: PathfinderContext = {
   startTrack: null,
@@ -27,7 +28,7 @@ const initialContext: PathfinderContext = {
 };
 
 async function calculatePath(context: PathfinderContext): Promise<PathfinderResult> {
-  const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+  const REST_API_BASE = API_BASE_URL;
 
   // Prepare request body
   const requestBody = {

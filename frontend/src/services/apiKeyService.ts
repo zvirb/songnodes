@@ -4,8 +4,8 @@
  */
 
 import { APIKey, APIKeyRequirement } from '../types';
+import { API_BASE_URL } from '../lib/apiBase';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
 /**
  * Fetches the list of required API keys from the backend.

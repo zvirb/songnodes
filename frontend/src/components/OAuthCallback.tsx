@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
+import { API_BASE_URL } from '../lib/apiBase';
 
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -86,7 +87,6 @@ const OAuthCallback: React.FC = () => {
 
         // Exchange authorization code for tokens
         // SECURITY: Client secret handled entirely by backend, never exposed to frontend
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
         // Route to correct backend endpoint based on service (2025 Best Practice: Service isolation)
         const callbackEndpoint = detectedService === 'spotify'

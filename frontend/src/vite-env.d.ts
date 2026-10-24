@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string;
+  readonly VITE_OAUTH_REDIRECT_ORIGIN?: string;
   readonly VITE_WS_URL?: string;
   readonly VITE_SPOTIFY_CLIENT_ID?: string;
   readonly VITE_TIDAL_CLIENT_ID?: string;

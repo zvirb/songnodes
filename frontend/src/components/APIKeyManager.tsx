@@ -17,6 +17,7 @@ import { Eye, EyeOff, ExternalLink, KeyRound } from 'lucide-react';
 import { SN, StatusPill } from '../lib/songnodes';
 import { Dialog, ConfirmDialog, Tabs, TabPanel, EmptyPanel, LoadingPanel, showToast } from './ds';
 import './APIKeyManager.css';
+import { API_BASE_URL } from '../lib/apiBase';
 
 interface APIKeyManagerProps {
   isOpen: boolean;
@@ -42,7 +43,6 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ service: string; key: string; label: string } | null>(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
   // Fetch requirements and existing keys on mount
   useEffect(() => {
