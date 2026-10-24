@@ -19,7 +19,7 @@ import 'd3-transition'; // Adds .transition() method to selections
 import useStore from '../store/useStore';
 import { GraphNode, GraphEdge, DEFAULT_CONFIG, Bounds, Track } from '../types';
 import { ContextMenu, useContextMenu } from './ContextMenu';
-// import { GraphMiniMap } from './GraphMiniMap'; // DISABLED: Minimap commented out
+import { GraphMiniMap } from './GraphMiniMap';
 
 // Performance constants - updated for 2025 best practices
 const PERFORMANCE_THRESHOLDS = {
@@ -3588,67 +3588,66 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   return (
     <div
       ref={containerRef}
-      className="graph-canvas graph-container graph-visualization graph-component w-full h-full overflow-hidden bg-gray-900 relative"
+      className="graph-canvas graph-container graph-visualization graph-component w-full h-full overflow-hidden bg-[var(--color-bg-base)] relative"
       style={{ touchAction: 'none' }}
       onContextMenu={handleContextMenu}
       onClick={handleCanvasClick}
     >
       {!isInitialized && (
-        <div className="graph-loading absolute inset-0 flex items-center justify-center text-white">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-            <p>Initializing visualization...</p>
+        <div className="graph-loading absolute inset-0 flex items-center justify-center text-[var(--color-text-primary)] z-[var(--z-loading)] bg-[var(--color-bg-base)]/80 backdrop-blur-md">
+          <div className="text-center p-6 bg-[var(--color-bg-elevated-1)] rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] shadow-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-brand-primary)] mx-auto mb-3"></div>
+            <p className="font-medium text-sm">Initializing visualization...</p>
           </div>
         </div>
       )}
 
       {isInitialized && graphData.nodes.length === 0 && (
-        <div className="graph-empty absolute inset-0 flex items-center justify-center text-white/60">
-          <div className="text-center">
-            <p className="text-lg mb-2">No graph data available</p>
-            <p className="text-sm">Load some tracks to see the visualization</p>
+        <div className="graph-empty absolute inset-0 flex items-center justify-center text-[var(--color-text-tertiary)] z-[var(--z-base)] pointer-events-none">
+          <div className="text-center p-8 bg-[var(--color-bg-elevated-1)]/80 backdrop-blur-md rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] shadow-lg max-w-sm">
+            <p className="text-base font-semibold text-[var(--color-text-primary)] mb-1">No Graph Data</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">Load tracks or search to populate nodes</p>
           </div>
         </div>
       )}
 
-
-      {/* DISABLED: Mini-map commented out */}
-      {/* {isInitialized && mainGraphWidth > 0 && mainGraphHeight > 0 && (
+      {/* Mini-map HUD Control */}
+      {isInitialized && mainGraphWidth > 0 && mainGraphHeight > 0 && (
         <GraphMiniMap mainGraphWidth={mainGraphWidth} mainGraphHeight={mainGraphHeight} />
-      )} */}
+      )}
 
       {/* Debug overlay */}
       {showDebugInfo && (
-        <div className="absolute top-4 left-4 bg-black/80 text-green-400 p-4 rounded-lg font-mono text-xs max-w-md">
-          <div className="mb-2 text-yellow-400 font-bold">🐛 DEBUG MODE</div>
-          <div>Press 'D' to toggle</div>
-          <div className="mt-2">
-            <div>Nodes: {enhancedNodesRef.current.size}</div>
-            <div>Selected: {viewState.selectedNodes.size} nodes</div>
-            <div>Hovered: {viewState.hoveredNode || 'none'}</div>
-            <div>Tool: {viewState.selectedTool}</div>
-            <div>Zoom: {viewState.zoom.toFixed(2)}x</div>
-            <div>FPS: {performanceMetrics?.frameRate?.toFixed(0) || 'N/A'}</div>
+        <div className="absolute top-4 left-4 z-[var(--z-tooltip)] bg-[var(--color-bg-elevated-1)]/90 backdrop-blur-md text-[var(--color-brand-primary)] p-4 rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] font-mono text-xs max-w-md shadow-2xl">
+          <div className="mb-2 text-[var(--color-warning)] font-bold flex items-center gap-1.5">
+            <span>🐛</span> DEBUG MODE
+          </div>
+          <div className="text-[var(--color-text-tertiary)]">Press 'D' to toggle</div>
+          <div className="mt-2 pt-2 border-t border-[var(--color-border-subtle)] space-y-0.5">
+            <div>Nodes: <span className="text-[var(--color-text-primary)]">{enhancedNodesRef.current.size}</span></div>
+            <div>Selected: <span className="text-[var(--color-text-primary)]">{viewState.selectedNodes.size}</span></div>
+            <div>Hovered: <span className="text-[var(--color-text-primary)]">{viewState.hoveredNode || 'none'}</span></div>
+            <div>Tool: <span className="text-[var(--color-text-primary)]">{viewState.selectedTool}</span></div>
+            <div>Zoom: <span className="text-[var(--color-text-primary)]">{viewState.zoom.toFixed(2)}x</span></div>
+            <div>FPS: <span className="text-[var(--color-text-primary)]">{performanceMetrics?.frameRate?.toFixed(0) || 'N/A'}</span></div>
             {('memory' in window.performance) && (
-              <div className="mt-1 text-yellow-300">
+              <div className="mt-1 text-[var(--color-info)]">
                 <div>Memory: {((window.performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(1)}MB</div>
                 <div>Limit: {((window.performance as any).memory.jsHeapSizeLimit / 1024 / 1024).toFixed(0)}MB</div>
               </div>
             )}
           </div>
-          <div className="mt-2 text-cyan-400">
-            <div>Animation:</div>
-            <div className="text-xs">• Active: {animationStateRef.current.isActive ? 'YES' : 'NO'}</div>
-            <div className="text-xs">• Paused: {isSimulationPaused ? 'YES' : 'NO'}</div>
-            <div className="text-xs">• Trigger: {animationStateRef.current.trigger}</div>
-            <div className="text-xs">• Alpha: {simulationRef.current?.alpha()?.toFixed(3) || 'N/A'}</div>
-            <div className="text-xs">• Manual: window.manualRefresh()</div>
+          <div className="mt-2 pt-2 border-t border-[var(--color-border-subtle)] text-[var(--color-brand-secondary)] space-y-0.5">
+            <div className="font-semibold text-[var(--color-text-primary)]">Animation:</div>
+            <div>• Active: {animationStateRef.current.isActive ? 'YES' : 'NO'}</div>
+            <div>• Paused: {isSimulationPaused ? 'YES' : 'NO'}</div>
+            <div>• Trigger: {animationStateRef.current.trigger}</div>
+            <div>• Alpha: {simulationRef.current?.alpha()?.toFixed(3) || 'N/A'}</div>
           </div>
-          <div className="mt-2 text-orange-400">
-            <div>Click Events:</div>
-            <div className="text-xs">• Extended hit boxes enabled</div>
-            <div className="text-xs">• Zoom-aware hit detection</div>
-            <div className="text-xs">• Animation blocking for first 2s</div>
+          <div className="mt-2 pt-2 border-t border-[var(--color-border-subtle)] text-[var(--color-warning)] space-y-0.5">
+            <div className="font-semibold text-[var(--color-text-primary)]">Click Events:</div>
+            <div>• Extended hit boxes enabled</div>
+            <div>• Zoom-aware hit detection</div>
           </div>
         </div>
       )}

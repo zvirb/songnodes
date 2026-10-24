@@ -435,45 +435,45 @@ export const Graph3D: React.FC<Graph3DProps> = ({
       />
 
       {/* Camera Controls Overlay */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
+      <div className="absolute top-4 right-4 z-[var(--z-toolbar)] flex flex-col gap-1.5 p-1.5 bg-[var(--color-bg-elevated-1)]/80 backdrop-blur-md border border-[var(--color-border-subtle)] rounded-[var(--radius-lg)] shadow-lg">
         <button
           onClick={handleZoomIn}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2)]/80 hover:bg-[var(--color-bg-elevated-3)] text-[var(--color-text-primary)] rounded-[var(--radius-md)] transition-colors border border-[var(--color-border-subtle)]"
           title="Zoom In"
         >
-          <ZoomIn size={20} />
+          <ZoomIn size={18} />
         </button>
         <button
           onClick={handleZoomOut}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2)]/80 hover:bg-[var(--color-bg-elevated-3)] text-[var(--color-text-primary)] rounded-[var(--radius-md)] transition-colors border border-[var(--color-border-subtle)]"
           title="Zoom Out"
         >
-          <ZoomOut size={20} />
+          <ZoomOut size={18} />
         </button>
         <button
           onClick={handleFitView}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2)]/80 hover:bg-[var(--color-bg-elevated-3)] text-[var(--color-text-primary)] rounded-[var(--radius-md)] transition-colors border border-[var(--color-border-subtle)]"
           title="Fit to View"
         >
-          <Maximize2 size={20} />
+          <Maximize2 size={18} />
         </button>
         <button
           onClick={handleResetCamera}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2)]/80 hover:bg-[var(--color-bg-elevated-3)] text-[var(--color-text-primary)] rounded-[var(--radius-md)] transition-colors border border-[var(--color-border-subtle)]"
           title="Reset Camera"
         >
-          <RotateCcw size={20} />
+          <RotateCcw size={18} />
         </button>
       </div>
 
       {/* Info Overlay */}
-      <div className="absolute bottom-4 left-4 bg-black/70 text-white px-4 py-2 rounded-lg text-xs">
-        <div className="font-semibold mb-1">3D Graph Controls</div>
-        <div>Left Click + Drag: Rotate</div>
-        <div>Right Click + Drag: Pan</div>
-        <div>Scroll: Zoom</div>
-        <div>Click Node: Select</div>
-        <div className="mt-2 text-white/60">
+      <div className="absolute bottom-4 left-4 z-[var(--z-toolbar)] bg-[var(--color-bg-elevated-1)]/80 text-[var(--color-text-primary)] px-4 py-3 rounded-[var(--radius-lg)] text-xs backdrop-blur-md border border-[var(--color-border-subtle)] shadow-lg">
+        <div className="font-semibold text-[var(--color-brand-primary)] mb-1">3D Graph Controls</div>
+        <div className="text-[var(--color-text-secondary)]">Left Click + Drag: Rotate</div>
+        <div className="text-[var(--color-text-secondary)]">Right Click + Drag: Pan</div>
+        <div className="text-[var(--color-text-secondary)]">Scroll: Zoom</div>
+        <div className="text-[var(--color-text-secondary)]">Click Node: Select</div>
+        <div className="mt-2 text-[var(--color-text-tertiary)] pt-1.5 border-t border-[var(--color-border-subtle)]">
           Nodes: {enhancedGraphData.nodes.length} | Links: {enhancedGraphData.links.length}
         </div>
       </div>

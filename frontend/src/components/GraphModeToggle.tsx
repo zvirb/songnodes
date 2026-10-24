@@ -52,16 +52,16 @@ export const GraphModeToggle: React.FC<GraphModeToggleProps> = ({
   const buttonClass = sizeClasses[size];
 
   return (
-    <div className={`inline-flex rounded-lg bg-black/30 backdrop-blur-sm border border-white/10 ${className}`}>
+    <div className={`inline-flex rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated-1)]/80 backdrop-blur-md border border-[var(--color-border-subtle)] p-1 gap-1 shadow-md ${className}`}>
       {/* 2D Mode */}
       <button
         onClick={() => onModeChange('2d')}
         className={`
           ${buttonClass}
-          flex items-center gap-2 rounded-l-lg transition-all duration-200
+          flex items-center gap-2 rounded-[var(--radius-md)] transition-all duration-200
           ${mode === '2d'
-            ? 'bg-blue-600 text-white shadow-lg'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary)] text-[var(--color-text-inverse)] shadow-sm font-semibold'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated-2)]/60 font-medium'
           }
         `}
         title="2D Graph View (PIXI.js)"
@@ -75,10 +75,10 @@ export const GraphModeToggle: React.FC<GraphModeToggleProps> = ({
         onClick={() => onModeChange('3d')}
         className={`
           ${buttonClass}
-          flex items-center gap-2 border-x border-white/10 transition-all duration-200
+          flex items-center gap-2 rounded-[var(--radius-md)] transition-all duration-200
           ${mode === '3d'
-            ? 'bg-purple-600 text-white shadow-lg'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary)] text-[var(--color-text-inverse)] shadow-sm font-semibold'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated-2)]/60 font-medium'
           }
         `}
         title="3D Force Graph (react-force-graph-3d)"
@@ -92,10 +92,10 @@ export const GraphModeToggle: React.FC<GraphModeToggleProps> = ({
         onClick={() => onModeChange('3d-helix')}
         className={`
           ${buttonClass}
-          flex items-center gap-2 rounded-r-lg transition-all duration-200
+          flex items-center gap-2 rounded-[var(--radius-md)] transition-all duration-200
           ${mode === '3d-helix'
-            ? 'bg-green-600 text-white shadow-lg'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary)] text-[var(--color-text-inverse)] shadow-sm font-semibold'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated-2)]/60 font-medium'
           }
         `}
         title="3D Camelot Helix (Three.js)"
@@ -146,14 +146,14 @@ export const GraphModeToggleCompact: React.FC<{
   className?: string;
 }> = ({ mode, onModeChange, className = '' }) => {
   return (
-    <div className={`inline-flex rounded-lg bg-black/30 backdrop-blur-sm border border-white/10 ${className}`}>
+    <div className={`inline-flex rounded-[var(--radius-lg)] bg-[var(--color-bg-elevated-1)]/80 backdrop-blur-md border border-[var(--color-border-subtle)] p-1 gap-1 shadow-md ${className}`}>
       <button
         onClick={() => onModeChange('2d')}
         className={`
-          p-2 rounded-l-lg transition-all duration-200
+          p-2 rounded-[var(--radius-md)] transition-all duration-200
           ${mode === '2d'
-            ? 'bg-blue-600 text-white'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary)] text-[var(--color-text-inverse)] shadow-sm'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated-2)]/60'
           }
         `}
         title="2D View"
@@ -164,10 +164,10 @@ export const GraphModeToggleCompact: React.FC<{
       <button
         onClick={() => onModeChange('3d')}
         className={`
-          p-2 border-x border-white/10 transition-all duration-200
+          p-2 rounded-[var(--radius-md)] transition-all duration-200
           ${mode === '3d'
-            ? 'bg-purple-600 text-white'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary)] text-[var(--color-text-inverse)] shadow-sm'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated-2)]/60'
           }
         `}
         title="3D View"
@@ -178,10 +178,10 @@ export const GraphModeToggleCompact: React.FC<{
       <button
         onClick={() => onModeChange('3d-helix')}
         className={`
-          p-2 rounded-r-lg transition-all duration-200
+          p-2 rounded-[var(--radius-md)] transition-all duration-200
           ${mode === '3d-helix'
-            ? 'bg-green-600 text-white'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary)] text-[var(--color-text-inverse)] shadow-sm'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated-2)]/60'
           }
         `}
         title="Helix View"

@@ -392,56 +392,29 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
   return (
     <div
       ref={containerRef}
-      style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        backgroundColor: 'rgba(42, 42, 42, 0.95)',
-        padding: '12px',
-        borderRadius: '8px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7)',
-        zIndex: 1000,
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        pointerEvents: 'auto'
-      }}
+      className="absolute bottom-5 right-5 z-[var(--z-toolbar)] bg-[var(--color-bg-elevated-1)]/80 backdrop-blur-md p-3 rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] shadow-xl pointer-events-auto"
     >
-      <h4 style={{
-        color: '#FFFFFF',
-        fontSize: '12px',
-        marginBottom: '8px',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px'
-      }}>
-        Mini-map
-        {simulationState.isSettled && (
-          <span style={{
-            marginLeft: '6px',
-            fontSize: '10px',
-            color: '#00ff41',
-            opacity: 0.7
-          }}>
-            [Cached]
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-[var(--color-text-primary)] text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+          Mini-map
+        </h4>
+        {simulationState.isSettled ? (
+          <span className="text-[10px] font-semibold text-[var(--color-brand-primary)] bg-[var(--color-brand-primary-muted)] px-1.5 py-0.5 rounded-[var(--radius-badge)] border border-[var(--color-brand-primary)]/30">
+            Cached
+          </span>
+        ) : (
+          <span className="text-[10px] font-medium text-[var(--color-text-tertiary)] bg-[var(--color-bg-elevated-2)] px-1.5 py-0.5 rounded-[var(--radius-badge)] border border-[var(--color-border-subtle)]">
+            Live
           </span>
         )}
-      </h4>
+      </div>
       <canvas
         ref={canvasRef}
         width={MINI_MAP_SIZE}
         height={MINI_MAP_SIZE}
-        style={{
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '4px',
-          display: 'block',
-          cursor: 'default'
-        }}
+        className="border border-[var(--color-border-subtle)] rounded-[var(--radius-md)] block cursor-default bg-[var(--color-bg-base)]"
       />
-      <p style={{
-        fontSize: '10px',
-        color: 'rgba(255, 255, 255, 0.6)',
-        marginTop: '6px',
-        textAlign: 'center'
-      }}>
+      <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1.5 text-center font-mono">
         {simulationState.isSettled ? 'Static View' : `Dynamic (α: ${simulationState.alpha.toFixed(3)})`}
       </p>
     </div>

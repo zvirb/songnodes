@@ -246,76 +246,39 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(5px)'
-      }}
+      className="fixed inset-0 bg-[var(--color-modal-overlay)] flex items-center justify-center z-[var(--z-modal)] backdrop-blur-md p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div
-        style={{
-          backgroundColor: '#1A1A1A',
-          borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          width: '90%',
-          maxWidth: '700px',
-          maxHeight: '85vh',
-          overflow: 'hidden',
-          color: '#FFFFFF'
-        }}
-      >
+      <div className="bg-[#1a1a1a] rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] w-full max-w-[700px] max-h-[85vh] overflow-hidden text-[var(--color-text-primary)] shadow-2xl flex flex-col">
         {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.1)'
-          }}
-        >
+        <div className="flex justify-between items-center px-6 py-5 border-b border-[var(--color-border-subtle)]">
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
-              🎛️ Graph Filters
+            <h2 className="m-0 text-lg font-bold flex items-center gap-2 text-[var(--color-text-primary)]">
+              <span>🎛️</span> Graph Filters
             </h2>
-            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#8E8E93' }}>
+            <p className="m-0 mt-1 text-xs text-[var(--color-text-secondary)]">
               Showing {filteredNodeCount} of {totalNodes} nodes, {filteredEdgeCount} of {totalEdges} edges
             </p>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#8E8E93',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px'
-            }}
+            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] text-2xl cursor-pointer p-1 transition-colors leading-none rounded-[var(--radius-sm)] bg-transparent border-none"
+            aria-label="Close"
           >
             ×
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px', maxHeight: '60vh', overflowY: 'auto' }}>
+        <div className="p-6 max-h-[60vh] overflow-y-auto space-y-6 flex flex-col">
 
           {/* Node Limit Slider */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-semibold text-[var(--color-text-primary)]">
                 Maximum Nodes
               </label>
-              <span style={{ fontSize: '14px', color: '#7ED321', fontWeight: 600 }}>
+              <span className="text-sm font-bold text-[var(--color-brand-primary)]">
                 {filteredNodeCount} nodes
               </span>
             </div>
@@ -325,16 +288,9 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
               max={totalNodes}
               value={maxNodes}
               onChange={(e) => setMaxNodes(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: `linear-gradient(to right, #7ED321 0%, #7ED321 ${(maxNodes / totalNodes) * 100}%, #333 ${(maxNodes / totalNodes) * 100}%, #333 100%)`,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
+              className="w-full h-2 rounded-[var(--radius-full)] cursor-pointer accent-[var(--color-brand-primary)] bg-[var(--color-bg-elevated-3)]"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
+            <div className="flex justify-between text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
               <span>10</span>
               <span>{maxNodes}</span>
               <span>{totalNodes}</span>
@@ -342,12 +298,12 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
           </div>
 
           {/* Edge Limit Slider */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-semibold text-[var(--color-text-primary)]">
                 Maximum Edges
               </label>
-              <span style={{ fontSize: '14px', color: '#4A90E2', fontWeight: 600 }}>
+              <span className="text-sm font-bold text-[var(--color-brand-secondary)]">
                 {filteredEdgeCount} edges
               </span>
             </div>
@@ -357,16 +313,9 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
               max={totalEdges}
               value={maxEdges}
               onChange={(e) => setMaxEdges(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: `linear-gradient(to right, #4A90E2 0%, #4A90E2 ${(maxEdges / totalEdges) * 100}%, #333 ${(maxEdges / totalEdges) * 100}%, #333 100%)`,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
+              className="w-full h-2 rounded-[var(--radius-full)] cursor-pointer accent-[var(--color-brand-secondary)] bg-[var(--color-bg-elevated-3)]"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
+            <div className="flex justify-between text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
               <span>10</span>
               <span>{maxEdges}</span>
               <span>{totalEdges}</span>
@@ -374,12 +323,12 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
           </div>
 
           {/* Connection Strength Filter */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-semibold text-[var(--color-text-primary)]">
                 Minimum Connection Strength
               </label>
-              <span style={{ fontSize: '14px', color: '#F39C12', fontWeight: 600 }}>
+              <span className="text-sm font-bold text-[var(--color-warning)]">
                 {minConnectionStrength}+
               </span>
             </div>
@@ -389,16 +338,9 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
               max={Math.max(...connectionStrengths, 10)}
               value={minConnectionStrength}
               onChange={(e) => setMinConnectionStrength(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: `linear-gradient(to right, #F39C12 0%, #F39C12 ${(minConnectionStrength / Math.max(...connectionStrengths, 10)) * 100}%, #333 ${(minConnectionStrength / Math.max(...connectionStrengths, 10)) * 100}%, #333 100%)`,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
+              className="w-full h-2 rounded-[var(--radius-full)] cursor-pointer accent-[var(--color-warning)] bg-[var(--color-bg-elevated-3)]"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
+            <div className="flex justify-between text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
               <span>1 (weakest)</span>
               <span>{Math.max(...connectionStrengths, 10)} (strongest)</span>
             </div>
@@ -406,30 +348,23 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
 
           {/* Year Range Filter */}
           {years.length > 0 && (
-            <div style={{ marginBottom: '32px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Release Year Range
                 </label>
-                <span style={{ fontSize: '14px', color: '#9B59B6', fontWeight: 600 }}>
+                <span className="text-sm font-bold text-[var(--color-brand-secondary)]">
                   {yearRange[0]} - {yearRange[1]}
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div className="flex gap-4 items-center">
                 <input
                   type="range"
                   min={years[0]}
                   max={years[years.length - 1]}
                   value={yearRange[0]}
                   onChange={(e) => setYearRange([parseInt(e.target.value), yearRange[1]])}
-                  style={{
-                    flex: 1,
-                    height: '6px',
-                    borderRadius: '3px',
-                    background: '#9B59B6',
-                    outline: 'none',
-                    cursor: 'pointer'
-                  }}
+                  className="flex-1 h-2 rounded-[var(--radius-full)] cursor-pointer accent-[var(--color-brand-secondary)] bg-[var(--color-bg-elevated-3)]"
                 />
                 <input
                   type="range"
@@ -437,17 +372,10 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
                   max={years[years.length - 1]}
                   value={yearRange[1]}
                   onChange={(e) => setYearRange([yearRange[0], parseInt(e.target.value)])}
-                  style={{
-                    flex: 1,
-                    height: '6px',
-                    borderRadius: '3px',
-                    background: '#9B59B6',
-                    outline: 'none',
-                    cursor: 'pointer'
-                  }}
+                  className="flex-1 h-2 rounded-[var(--radius-full)] cursor-pointer accent-[var(--color-brand-secondary)] bg-[var(--color-bg-elevated-3)]"
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8E8E93', marginTop: '4px' }}>
+              <div className="flex justify-between text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
                 <span>{years[0]}</span>
                 <span>{years[years.length - 1]}</span>
               </div>
@@ -455,22 +383,16 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
           )}
 
           {/* Genre Filter */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>
+          <div>
+            <div className="flex justify-between mb-3">
+              <label className="text-sm font-semibold text-[var(--color-text-primary)]">
                 Genres
               </label>
-              <span style={{ fontSize: '12px', color: '#8E8E93' }}>
+              <span className="text-xs text-[var(--color-text-tertiary)]">
                 {selectedGenres.length} selected
               </span>
             </div>
-            <div style={{
-              maxHeight: '200px',
-              overflowY: 'auto',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '8px'
-            }}>
+            <div className="max-h-[200px] overflow-y-auto border border-[var(--color-border-subtle)] rounded-[var(--radius-md)] p-2 space-y-1 bg-[var(--color-bg-elevated-2)]">
               {genres.map(({ genre, count }) => {
                 const isSelected = selectedGenres.includes(genre);
                 const filteredCount = filteredGenreCounts.get(genre) || 0;
@@ -478,50 +400,28 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
                 return (
                   <label
                     key={genre}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      cursor: 'pointer',
-                      borderRadius: '6px',
-                      backgroundColor: isSelected ? 'rgba(126, 211, 33, 0.1)' : 'transparent',
-                      border: isSelected ? '1px solid rgba(126, 211, 33, 0.3)' : '1px solid transparent',
-                      marginBottom: '4px',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
+                    className={`flex items-center justify-between px-3 py-2 cursor-pointer rounded-[var(--radius-md)] transition-colors ${
+                      isSelected
+                        ? 'bg-[var(--color-brand-primary-muted)] border border-[var(--color-brand-primary)]'
+                        : 'border border-transparent hover:bg-[var(--color-bg-elevated-3)]'
+                    }`}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    <div className="flex items-center gap-2.5 flex-1">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleGenre(genre)}
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          accentColor: '#7ED321',
-                          cursor: 'pointer'
-                        }}
+                        className="w-4 h-4 accent-[var(--color-brand-primary)] cursor-pointer rounded-[var(--radius-sm)]"
                       />
-                      <span style={{ fontSize: '13px', color: '#FFFFFF' }}>{genre}</span>
+                      <span className="text-xs font-medium text-[var(--color-text-primary)]">{genre}</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div className="flex gap-3 items-center">
                       {isSelected && filteredCount !== count && (
-                        <span style={{ fontSize: '12px', color: '#7ED321', fontWeight: 600 }}>
+                        <span className="text-xs font-bold text-[var(--color-brand-primary)]">
                           {filteredCount}
                         </span>
                       )}
-                      <span style={{ fontSize: '12px', color: '#8E8E93' }}>
+                      <span className="text-xs text-[var(--color-text-tertiary)] font-mono">
                         {count}
                       </span>
                     </div>
@@ -534,76 +434,24 @@ export const GraphFilterPanel: React.FC<GraphFilterPanelProps> = ({ isOpen, onCl
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 24px',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)'
-          }}
-        >
+        <div className="flex justify-between items-center px-6 py-4 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-2)] mt-auto">
           <button
             onClick={resetFilters}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'transparent',
-              border: '1px solid #F56565',
-              borderRadius: '6px',
-              color: '#F56565',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(245, 101, 101, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+            className="px-4 py-2 bg-transparent border border-[var(--color-error-border)] rounded-[var(--radius-md)] text-[var(--color-error)] text-xs font-semibold cursor-pointer hover:bg-[var(--color-error-bg)] transition-colors"
           >
             Reset All Filters
           </button>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="flex gap-3">
             <button
               onClick={onClose}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'transparent',
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: '6px',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
+              className="px-4 py-2 bg-transparent border border-[var(--color-border-default)] rounded-[var(--radius-md)] text-[var(--color-text-primary)] text-xs font-semibold cursor-pointer hover:bg-[var(--color-bg-elevated-3)] transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={applyFilters}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#7ED321',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#000000',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#8FE831';
-                e.currentTarget.style.transform = 'scale(1.02)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#7ED321';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
+              className="px-4 py-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] border-none rounded-[var(--radius-md)] text-[var(--color-text-inverse)] text-xs font-bold cursor-pointer transition-all shadow-md active:scale-95"
             >
               Apply Filters ({filteredNodeCount} nodes, {filteredEdgeCount} edges)
             </button>

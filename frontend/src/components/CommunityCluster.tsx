@@ -59,15 +59,11 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
 
   return (
     <div
-      className="community-cluster rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md"
-      style={{
-        borderColor: community.color,
-        backgroundColor: `${community.color}10`
-      }}
+      className="community-cluster rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]/80 backdrop-blur-md shadow-md transition-all duration-200 hover:border-[var(--color-border-strong)]"
     >
       {/* Header */}
       <button
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[var(--color-bg-elevated-2)]/60 transition-colors rounded-[var(--radius-lg)]"
         onClick={() => onToggle(community.id)}
         aria-expanded={isExpanded}
         aria-label={`Toggle community ${community.id}`}
@@ -75,25 +71,25 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
         <div className="flex items-center gap-3">
           {/* Expand/Collapse Icon */}
           {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-[var(--color-text-tertiary)]" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <ChevronRight className="w-5 h-5 text-[var(--color-text-tertiary)]" />
           )}
 
           {/* Community Icon */}
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: community.color }}
+            className="w-8 h-8 rounded-[var(--radius-full)] flex items-center justify-center font-bold text-xs"
+            style={{ backgroundColor: community.color, color: '#000000' }}
           >
-            <Users className="w-4 h-4 text-white" />
+            <Users className="w-4 h-4 text-black" />
           </div>
 
           {/* Community Info */}
           <div className="text-left">
-            <div className="font-semibold text-gray-900 dark:text-gray-100">
+            <div className="font-semibold text-[var(--color-text-primary)] text-sm">
               Community {community.id}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="text-xs text-[var(--color-text-secondary)]">
               {community.size} track{community.size !== 1 ? 's' : ''}
               {community.dominantGenre && ` • ${community.dominantGenre}`}
             </div>
@@ -103,11 +99,11 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
         {/* Metadata Pills */}
         <div className="flex items-center gap-2">
           {community.averageBPM && (
-            <div className="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-xs font-medium">
+            <div className="px-2.5 py-0.5 rounded-[var(--radius-badge)] bg-[var(--color-brand-secondary-muted)] text-[var(--color-brand-secondary)] text-xs font-semibold border border-[var(--color-brand-secondary)]/30">
               {Math.round(community.averageBPM)} BPM
             </div>
           )}
-          <div className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium">
+          <div className="px-2.5 py-0.5 rounded-[var(--radius-badge)] bg-[var(--color-bg-elevated-2)] text-[var(--color-text-secondary)] text-xs font-medium border border-[var(--color-border-subtle)]">
             {community.size} nodes
           </div>
         </div>
@@ -115,30 +111,30 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-4 pb-4 border-t" style={{ borderColor: `${community.color}40` }}>
+        <div className="px-4 pb-4 border-t border-[var(--color-border-subtle)]">
           {/* Metadata Section */}
           <div className="py-3 space-y-2">
             {bpmRange && (
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">BPM Range:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">{bpmRange}</span>
+              <div className="flex items-center gap-2 text-xs">
+                <TrendingUp className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                <span className="text-[var(--color-text-secondary)]">BPM Range:</span>
+                <span className="font-semibold text-[var(--color-text-primary)]">{bpmRange}</span>
               </div>
             )}
 
             {topKeys && (
-              <div className="flex items-center gap-2 text-sm">
-                <Hash className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">Top Keys:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">{topKeys}</span>
+              <div className="flex items-center gap-2 text-xs">
+                <Hash className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                <span className="text-[var(--color-text-secondary)]">Top Keys:</span>
+                <span className="font-semibold text-[var(--color-text-primary)]">{topKeys}</span>
               </div>
             )}
 
             {community.dominantGenre && (
-              <div className="flex items-center gap-2 text-sm">
-                <Music className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">Genre:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
+              <div className="flex items-center gap-2 text-xs">
+                <Music className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                <span className="text-[var(--color-text-secondary)]">Genre:</span>
+                <span className="font-semibold text-[var(--color-text-primary)]">
                   {community.dominantGenre}
                 </span>
               </div>
@@ -146,33 +142,33 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
           </div>
 
           {/* Nodes List */}
-          <div className="mt-3 space-y-1 max-h-64 overflow-y-auto">
-            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+          <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+            <div className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-2">
               Tracks in this community
             </div>
             {communityNodes.map(node => (
               <button
                 key={node.id}
-                className="w-full text-left px-3 py-2 rounded hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors group"
+                className="w-full text-left px-3 py-2 rounded-[var(--radius-md)] bg-[var(--color-bg-elevated-2)]/40 hover:bg-[var(--color-bg-elevated-2)] transition-colors group border border-transparent hover:border-[var(--color-border-subtle)]"
                 onClick={() => onNodeClick?.(node.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate text-sm">
+                    <div className="font-medium text-[var(--color-text-primary)] truncate text-xs group-hover:text-[var(--color-brand-primary)] transition-colors">
                       {node.label || node.track?.name || node.name || 'Unknown Track'}
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    <div className="text-[11px] text-[var(--color-text-tertiary)] truncate">
                       {node.track?.artist || node.artist || 'Unknown Artist'}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     {node.bpm && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-[11px] text-[var(--color-text-secondary)]">
                         {Math.round(node.bpm)} BPM
                       </span>
                     )}
                     {(node.key || node.camelot_key) && (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-badge)] bg-[var(--color-brand-primary-muted)] text-[var(--color-brand-primary)] font-semibold border border-[var(--color-brand-primary)]/30">
                         {node.camelot_key || node.key}
                       </span>
                     )}
@@ -212,17 +208,17 @@ export const CommunityClusterList: React.FC<CommunityClusterListProps> = ({
 
   if (communities.length === 0) {
     return (
-      <div className={`text-center py-8 text-gray-500 dark:text-gray-400 ${className}`}>
-        <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-        <p>No communities detected</p>
-        <p className="text-sm mt-1">Click "Detect Communities" to analyze the graph</p>
+      <div className={`text-center py-8 text-[var(--color-text-tertiary)] bg-[var(--color-bg-elevated-1)]/60 backdrop-blur-md rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] p-6 ${className}`}>
+        <Users className="w-10 h-10 mx-auto mb-2 opacity-40 text-[var(--color-text-tertiary)]" />
+        <p className="font-medium text-sm text-[var(--color-text-primary)]">No communities detected</p>
+        <p className="text-xs mt-1 text-[var(--color-text-secondary)]">Click "Detect Communities" to analyze the graph</p>
       </div>
     );
   }
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+      <div className="text-xs font-medium text-[var(--color-text-secondary)] mb-3">
         Found {communities.length} communit{communities.length !== 1 ? 'ies' : 'y'} in the graph
       </div>
       {sortedCommunities.map(community => (

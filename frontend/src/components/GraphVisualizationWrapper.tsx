@@ -25,29 +25,10 @@ import { Loader2 } from 'lucide-react';
  * to enable 3D mode toggling
  */
 
-// Lazy load 3D components for better performance
+// Lazy load 3D components and 2D component
+const GraphVisualization = lazy(() => import('./GraphVisualization'));
 const Graph3D = lazy(() => import('./Graph3D'));
 const CamelotHelix3D = lazy(() => import('./CamelotHelix3D'));
-
-// Import 2D component directly (always needed)
-// NOTE: You'll need to import your existing 2D graph component here
-// For now, we'll create a placeholder
-const Graph2DPlaceholder: React.FC<any> = ({ width, height }) => (
-  <div
-    style={{ width, height }}
-    className="flex items-center justify-center bg-gray-900 rounded-lg"
-  >
-    <div className="text-white text-center">
-      <div className="text-lg font-semibold mb-2">2D Graph Visualization</div>
-      <div className="text-sm text-white/60">
-        Replace this with your existing GraphVisualization component
-      </div>
-      <div className="text-xs text-white/40 mt-4">
-        Import from: ./GraphVisualization.tsx
-      </div>
-    </div>
-  </div>
-);
 
 interface GraphVisualizationWrapperProps {
   width?: number;
@@ -94,10 +75,21 @@ export const GraphVisualizationWrapper: React.FC<GraphVisualizationWrapperProps>
     switch (mode) {
       case '2d':
         return (
-          <Graph2DPlaceholder
-            width={width}
-            height={height}
-          />
+          <Suspense
+            fallback={
+              <div
+                style={{ width, height }}
+                className="flex items-center justify-center bg-[var(--color-bg-base)] rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)]"
+              >
+                <div className="text-[var(--color-text-primary)] flex items-center gap-2 font-medium">
+                  <Loader2 className="animate-spin text-[var(--color-brand-primary)]" size={24} />
+                  <span>Loading 2D Graph...</span>
+                </div>
+              </div>
+            }
+          >
+            <GraphVisualization />
+          </Suspense>
         );
 
       case '3d':
@@ -106,10 +98,10 @@ export const GraphVisualizationWrapper: React.FC<GraphVisualizationWrapperProps>
             fallback={
               <div
                 style={{ width, height }}
-                className="flex items-center justify-center bg-gray-900 rounded-lg"
+                className="flex items-center justify-center bg-[var(--color-bg-base)] rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)]"
               >
-                <div className="text-white flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={24} />
+                <div className="text-[var(--color-text-primary)] flex items-center gap-2 font-medium">
+                  <Loader2 className="animate-spin text-[var(--color-brand-primary)]" size={24} />
                   <span>Loading 3D Graph...</span>
                 </div>
               </div>
@@ -129,10 +121,10 @@ export const GraphVisualizationWrapper: React.FC<GraphVisualizationWrapperProps>
             fallback={
               <div
                 style={{ width, height }}
-                className="flex items-center justify-center bg-gray-900 rounded-lg"
+                className="flex items-center justify-center bg-[var(--color-bg-base)] rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)]"
               >
-                <div className="text-white flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={24} />
+                <div className="text-[var(--color-text-primary)] flex items-center gap-2 font-medium">
+                  <Loader2 className="animate-spin text-[var(--color-brand-primary)]" size={24} />
                   <span>Loading Camelot Helix...</span>
                 </div>
               </div>
@@ -155,7 +147,7 @@ export const GraphVisualizationWrapper: React.FC<GraphVisualizationWrapperProps>
     <div className={`relative ${className}`}>
       {/* Mode Toggle */}
       {showModeToggle && (
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-4 left-4 z-[var(--z-toolbar)]">
           <GraphModeToggle
             mode={mode}
             onModeChange={handleModeChange}
@@ -165,7 +157,7 @@ export const GraphVisualizationWrapper: React.FC<GraphVisualizationWrapperProps>
       )}
 
       {/* Mode Info Badge */}
-      <div className="absolute top-4 right-4 z-10 bg-black/70 text-white px-3 py-1 rounded-lg text-xs font-medium backdrop-blur-sm border border-white/10">
+      <div className="absolute top-4 right-4 z-[var(--z-toolbar)] bg-[var(--color-bg-elevated-1)]/80 text-[var(--color-text-primary)] px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold backdrop-blur-md border border-[var(--color-border-subtle)] shadow-md">
         {mode === '2d' && '2D View'}
         {mode === '3d' && '3D Force Graph'}
         {mode === '3d-helix' && 'Camelot Helix'}
@@ -176,9 +168,9 @@ export const GraphVisualizationWrapper: React.FC<GraphVisualizationWrapperProps>
 
       {/* Performance Notice for 3D */}
       {(mode === '3d' || mode === '3d-helix') && (
-        <div className="absolute bottom-4 right-4 z-10 bg-yellow-900/70 text-yellow-100 px-3 py-2 rounded-lg text-xs backdrop-blur-sm border border-yellow-500/30 max-w-xs">
-          <div className="font-semibold mb-1">Performance Note</div>
-          <div>3D rendering is GPU-intensive. For large graphs (&gt;1000 nodes), 2D mode is recommended.</div>
+        <div className="absolute bottom-4 right-4 z-[var(--z-toolbar)] bg-[var(--color-warning-bg)] text-[var(--color-text-primary)] px-3.5 py-2.5 rounded-[var(--radius-md)] text-xs backdrop-blur-md border border-[var(--color-warning-border)] max-w-xs shadow-lg">
+          <div className="font-semibold text-[var(--color-warning)] mb-1">Performance Note</div>
+          <div className="text-[var(--color-text-secondary)]">3D rendering is GPU-intensive. For large graphs (&gt;1000 nodes), 2D mode is recommended.</div>
         </div>
       )}
     </div>
