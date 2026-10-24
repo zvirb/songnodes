@@ -13,16 +13,22 @@ from hygiene import remove_orphans, started_at
 from test_dev_workflows import ROOT, request, sql
 
 
+def service_running(service):
+    """True if the dev Compose stack runs this service; False without Docker."""
+    try:
+        out = subprocess.run(['docker', 'compose', '-f', 'compose.dev.yaml', 'ps', '--status', 'running', '--format', '{{.Service}}', service],
+                             cwd=ROOT, capture_output=True)
+    except FileNotFoundError:
+        return False
+    return service.encode() in out.stdout
+
+
 def worker_running():
-    out = subprocess.run(['docker', 'compose', '-f', 'compose.dev.yaml', 'ps', '--status', 'running', '--format', '{{.Service}}', 'worker'],
-                         cwd=ROOT, capture_output=True)
-    return b'worker' in out.stdout
+    return service_running('worker')
 
 
 def scraper_running():
-    out = subprocess.run(['docker', 'compose', '-f', 'compose.dev.yaml', 'ps', '--status', 'running', '--format', '{{.Service}}', 'unified-scraper'],
-                         cwd=ROOT, capture_output=True)
-    return b'unified-scraper' in out.stdout
+    return service_running('unified-scraper')
 
 
 def wait_for(job_id, states, timeout=60):
