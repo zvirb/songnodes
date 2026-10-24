@@ -1,14 +1,18 @@
 # Implementation status
 
-## Current task: sync dependency upgrades
+## Completed task: sync dependency upgrades
 
 24 Oct 2026, branch `chore/upgrade-dependencies-on-work`.
-Scope: publish the already-committed dependency upgrades and compatibility fixes without changing
-the separate design-system branch.
-Next concrete step: push this integration branch to `origin` and verify the remote commit.
+Published the dependency upgrades and compatibility fixes without changing the separate
+design-system branch.
 
 The dependency upgrade commit is `b88f950`; integration and compatibility fixes are in
-`9486b72`. The dependency set covers frontend, Node services, Python services and workflow actions.
+`9486b72`. Status tracking was committed as `570ddcf`. The branch is pushed and tracks
+`origin/chore/upgrade-dependencies-on-work`; local and remote HEADs matched after push.
+
+Checks for this sync: `git diff --check` passed; push succeeded; final worktree was clean.
+No PR was created. Next task: open a PR for `chore/upgrade-dependencies-on-work` and review the
+dependency compatibility notes and validation limits already recorded below.
 
 Maintained plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
