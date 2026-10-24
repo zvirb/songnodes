@@ -1,10 +1,14 @@
 # Implementation status
 
-## Completed task: verify dependency upgrades on main
+## Current task: verify dependency upgrade state on main
 
 24 Oct 2026, branch `chore/upgrade-dependencies-on-work`.
-Verified the dependency upgrades are already merged to `origin/main`; no additional merge was
-needed or performed.
+The checkout is on `chore/upgrade-dependencies-on-work`, not `main`. The original upgrade
+(`b88f950`) and integration (`9486b72`) commits are ancestors of `origin/main` (`677180f`), but
+the current checkout remains on the feature branch and some paths differ because of subsequent
+branch changes. No merge or switch to `main` has been performed in this verification step.
+Next concrete step: commit this correction on the feature branch, then switch the checkout to
+`main` and verify its status.
 
 The dependency upgrade commit is `b88f950`; integration and compatibility fixes are in
 `9486b72`. Both commits are ancestors of `origin/main`, whose current merge commit is `677180f`.
