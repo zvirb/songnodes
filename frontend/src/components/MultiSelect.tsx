@@ -43,33 +43,65 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-gray-300">{label}</label>
+        <label className="text-sm font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+          {label}
+        </label>
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-blue-400 font-mono">({selectedValues.length})</span>
-          <button onClick={() => setIsExpanded(!isExpanded)} className="text-gray-400 hover:text-blue-400">
+          <span className="font-mono font-bold" style={{ color: 'var(--color-brand-primary)' }}>
+            ({selectedValues.length})
+          </span>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{ color: 'var(--color-text-tertiary)', transition: 'var(--transition-color)' }}
+            className="hover:opacity-80"
+          >
             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         </div>
       </div>
       {isExpanded && (
-        <div className="space-y-2 p-2 bg-gray-800 rounded-md">
+        <div
+          className="space-y-2 p-2 rounded-md"
+          style={{
+            backgroundColor: 'var(--color-bg-elevated-2)',
+            border: '1px solid var(--color-border-subtle)',
+            borderRadius: 'var(--radius-md)'
+          }}
+        >
           {searchable && (
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={`Search ${label.toLowerCase()}...`}
-              className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded focus:outline-none"
+              style={{
+                backgroundColor: 'var(--color-bg-elevated-1)',
+                border: '1px solid var(--color-border-default)',
+                color: 'var(--color-text-primary)',
+                borderRadius: 'var(--radius-input)',
+                fontSize: 'var(--font-size-sm)'
+              }}
             />
           )}
           <div className={`overflow-y-auto space-y-1 ${maxHeight}`}>
             {filteredOptions.map(option => (
-              <label key={option} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white cursor-pointer p-1.5 hover:bg-gray-700 rounded">
+              <label
+                key={option}
+                className="flex items-center gap-2 text-sm cursor-pointer p-1.5 rounded transition-colors"
+                style={{
+                  color: selectedValues.includes(option) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                  borderRadius: 'var(--radius-sm)'
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={selectedValues.includes(option)}
                   onChange={() => toggleOption(option)}
-                  className="w-4 h-4 bg-gray-700 border-gray-600 rounded text-blue-500 focus:ring-blue-500"
+                  className="w-4 h-4 rounded cursor-pointer"
+                  style={{
+                    accentColor: 'var(--color-brand-primary)'
+                  }}
                 />
                 <span>{option}</span>
               </label>

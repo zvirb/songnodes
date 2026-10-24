@@ -241,25 +241,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'var(--color-modal-overlay)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(5px)'
+        zIndex: 'var(--z-modal)',
+        backdropFilter: 'blur(10px)'
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         style={{
-          backgroundColor: '#1A1A1A',
-          borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.1)',
+          backgroundColor: 'var(--color-bg-elevated-1)',
+          borderRadius: 'var(--radius-modal)',
+          border: '1px solid var(--color-border-subtle)',
+          boxShadow: 'var(--shadow-modal)',
           width: '90%',
           maxWidth: '600px',
           maxHeight: '80vh',
           overflow: 'hidden',
-          color: '#FFFFFF'
+          color: 'var(--color-text-primary)'
         }}
       >
         {/* Header */}
@@ -269,10 +270,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.1)'
+            borderBottom: '1px solid var(--color-border-subtle)',
+            backgroundColor: 'var(--color-bg-elevated-2)'
           }}
         >
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
+          <h2 style={{ margin: 0, fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
             ⚙️ Music Service Settings
           </h2>
           <button
@@ -280,7 +282,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
             style={{
               background: 'none',
               border: 'none',
-              color: '#8E8E93',
+              color: 'var(--color-text-tertiary)',
               fontSize: '24px',
               cursor: 'pointer',
               padding: '4px'
@@ -294,8 +296,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         <div style={{ padding: '32px', maxHeight: '60vh', overflowY: 'auto' }}>
           <div>
               <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '24px', fontWeight: 600 }}>Connect Music Services</h3>
-                <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-semibold)' }}>Connect Music Services</h3>
+                <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-tertiary)' }}>
                   Click the buttons below to connect your music streaming accounts.
                   Credentials are securely managed by the backend.
                 </p>
@@ -307,15 +309,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                 {isTidalConnected && (
                   <div style={{
                     padding: '12px 16px',
-                    backgroundColor: 'rgba(29, 185, 84, 0.2)',
-                    border: '1px solid rgba(29, 185, 84, 0.4)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--color-success-bg)',
+                    border: '1px solid var(--color-success-border)',
+                    borderRadius: 'var(--radius-md)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}>
                     <span style={{ fontSize: '18px' }}>✅</span>
-                    <span style={{ color: '#1DB954', fontWeight: 600 }}>Tidal Connected</span>
+                    <span style={{ color: 'var(--color-success)', fontWeight: 'var(--font-weight-semibold)' }}>Tidal Connected</span>
                   </div>
                 )}
 
@@ -323,15 +325,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                 {isSpotifyConnected && (
                   <div style={{
                     padding: '12px 16px',
-                    backgroundColor: 'rgba(29, 185, 84, 0.2)',
-                    border: '1px solid rgba(29, 185, 84, 0.4)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--color-success-bg)',
+                    border: '1px solid var(--color-success-border)',
+                    borderRadius: 'var(--radius-md)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}>
                     <span style={{ fontSize: '18px' }}>✅</span>
-                    <span style={{ color: '#1DB954', fontWeight: 600 }}>Spotify Connected</span>
+                    <span style={{ color: 'var(--color-success)', fontWeight: 'var(--font-weight-semibold)' }}>Spotify Connected</span>
                   </div>
                 )}
               </div>
@@ -374,30 +376,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   style={{
                     width: '100%',
                     padding: '20px',
-                    backgroundColor: isTidalConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000',
-                    border: '2px solid #FFFFFF',
-                    borderRadius: '12px',
-                    color: '#FFFFFF',
-                    fontSize: '18px',
-                    fontWeight: 700,
+                    backgroundColor: isTidalConnected ? 'var(--color-success-border)' : 'var(--color-bg-base)',
+                    border: '2px solid var(--color-border-strong)',
+                    borderRadius: 'var(--radius-card)',
+                    color: 'var(--color-text-primary)',
+                    fontSize: 'var(--font-size-lg)',
+                    fontWeight: 'var(--font-weight-bold)',
                     cursor: !isLoading ? 'pointer' : 'not-allowed',
                     opacity: !isLoading ? 1 : 0.5,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '12px',
-                    transition: 'all 0.3s ease',
+                    transition: 'var(--transition-all)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    letterSpacing: 'var(--letter-spacing-wider)'
                   }}
                   onMouseEnter={(e) => {
                     if (!isLoading) {
-                      e.currentTarget.style.backgroundColor = isTidalConnected ? '#1DB954' : '#1A1A1A';
+                      e.currentTarget.style.backgroundColor = isTidalConnected ? 'var(--color-success)' : 'var(--color-bg-elevated-2)';
                       e.currentTarget.style.transform = 'scale(1.02)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = isTidalConnected ? 'rgba(29, 185, 84, 0.8)' : '#000000';
+                    e.currentTarget.style.backgroundColor = isTidalConnected ? 'var(--color-success-border)' : 'var(--color-bg-base)';
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
@@ -445,27 +447,27 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   style={{
                     width: '100%',
                     padding: '20px',
-                    backgroundColor: isSpotifyConnected ? '#1ed760' : '#1DB954',
+                    backgroundColor: isSpotifyConnected ? 'var(--color-brand-primary-hover)' : 'var(--color-brand-primary)',
                     border: 'none',
-                    borderRadius: '12px',
-                    color: '#FFFFFF',
-                    fontSize: '18px',
-                    fontWeight: 700,
+                    borderRadius: 'var(--radius-card)',
+                    color: 'var(--color-text-inverse)',
+                    fontSize: 'var(--font-size-lg)',
+                    fontWeight: 'var(--font-weight-bold)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '12px',
-                    transition: 'all 0.3s ease',
+                    transition: 'var(--transition-all)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    letterSpacing: 'var(--letter-spacing-wider)'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#1fdf64';
+                    e.currentTarget.style.backgroundColor = 'var(--color-brand-primary-hover)';
                     e.currentTarget.style.transform = 'scale(1.02)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = isSpotifyConnected ? '#1ed760' : '#1DB954';
+                    e.currentTarget.style.backgroundColor = isSpotifyConnected ? 'var(--color-brand-primary-hover)' : 'var(--color-brand-primary)';
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
@@ -477,7 +479,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
               </div>
 
               {/* API Keys Button */}
-              <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--color-border-subtle)' }}>
                 <button
                   onClick={() => {
                     setShowAPIKeyManager(true);
@@ -485,25 +487,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                   style={{
                     width: '100%',
                     padding: '16px',
-                    backgroundColor: 'rgba(74, 144, 226, 0.2)',
-                    border: '1px solid rgba(74, 144, 226, 0.4)',
-                    borderRadius: '12px',
-                    color: '#FFFFFF',
-                    fontSize: '16px',
-                    fontWeight: 600,
+                    backgroundColor: 'var(--color-info-bg)',
+                    border: '1px solid var(--color-info-border)',
+                    borderRadius: 'var(--radius-card)',
+                    color: 'var(--color-text-primary)',
+                    fontSize: 'var(--font-size-base)',
+                    fontWeight: 'var(--font-weight-semibold)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '12px',
-                    transition: 'all 0.3s ease'
+                    transition: 'var(--transition-all)'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(74, 144, 226, 0.3)';
+                    e.currentTarget.style.backgroundColor = 'var(--color-brand-secondary-muted)';
                     e.currentTarget.style.transform = 'scale(1.02)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(74, 144, 226, 0.2)';
+                    e.currentTarget.style.backgroundColor = 'var(--color-info-bg)';
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
@@ -516,13 +518,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
               <div style={{
                 marginTop: '24px',
                 padding: '16px',
-                backgroundColor: 'rgba(74, 144, 226, 0.1)',
-                border: '1px solid rgba(74, 144, 226, 0.3)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                color: '#8E8E93'
+                backgroundColor: 'var(--color-info-bg)',
+                border: '1px solid var(--color-info-border)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--color-text-secondary)'
               }}>
-                <strong style={{ color: '#4A90E2' }}>🔐 Secure OAuth:</strong> Your music service credentials are securely stored in the backend environment.
+                <strong style={{ color: 'var(--color-info)' }}>🔐 Secure OAuth:</strong> Your music service credentials are securely stored in the backend environment.
                 Client secrets are never exposed to the browser. Each connection uses industry-standard OAuth 2.1 with PKCE for maximum security.
               </div>
             </div>
@@ -535,8 +537,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '20px 24px',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)'
+            borderTop: '1px solid var(--color-border-subtle)',
+            backgroundColor: 'var(--color-bg-elevated-2)'
           }}
         >
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -545,10 +547,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
               style={{
                 padding: '8px 16px',
                 backgroundColor: 'transparent',
-                border: '1px solid #F56565',
-                borderRadius: '6px',
-                color: '#F56565',
-                fontSize: '14px',
+                border: '1px solid var(--color-error)',
+                borderRadius: 'var(--radius-button)',
+                color: 'var(--color-error)',
+                fontSize: 'var(--font-size-sm)',
                 cursor: 'pointer'
               }}
             >
@@ -558,10 +560,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             {saveStatus === 'saved' && (
-              <span style={{ color: '#7ED321', fontSize: '14px' }}>✓ Saved</span>
+              <span style={{ color: 'var(--color-success)', fontSize: 'var(--font-size-sm)' }}>✓ Saved</span>
             )}
             {saveStatus === 'error' && (
-              <span style={{ color: '#F56565', fontSize: '14px' }}>✗ Error</span>
+              <span style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-sm)' }}>✗ Error</span>
             )}
 
             <button
@@ -569,10 +571,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
               style={{
                 padding: '8px 16px',
                 backgroundColor: 'transparent',
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: '6px',
-                color: '#FFFFFF',
-                fontSize: '14px',
+                border: '1px solid var(--color-border-default)',
+                borderRadius: 'var(--radius-button)',
+                color: 'var(--color-text-primary)',
+                fontSize: 'var(--font-size-sm)',
                 cursor: 'pointer'
               }}
             >
@@ -583,11 +585,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
               disabled={saveStatus === 'saving'}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#7ED321',
+                backgroundColor: 'var(--color-brand-primary)',
                 border: 'none',
-                borderRadius: '6px',
-                color: '#FFFFFF',
-                fontSize: '14px',
+                borderRadius: 'var(--radius-button)',
+                color: 'var(--color-text-inverse)',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-semibold)',
                 cursor: saveStatus === 'saving' ? 'not-allowed' : 'pointer',
                 opacity: saveStatus === 'saving' ? 0.7 : 1
               }}
@@ -601,10 +604,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
         <div
           style={{
             padding: '16px 24px',
-            backgroundColor: 'rgba(245,101,101,0.1)',
-            borderTop: '1px solid rgba(245,101,101,0.2)',
-            fontSize: '12px',
-            color: '#F56565'
+            backgroundColor: 'var(--color-error-bg)',
+            borderTop: '1px solid var(--color-error-border)',
+            fontSize: 'var(--font-size-xs)',
+            color: 'var(--color-error)'
           }}
         >
           🔒 <strong>Security Notice:</strong> Credentials are stored locally in your browser.

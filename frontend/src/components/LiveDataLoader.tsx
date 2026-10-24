@@ -479,15 +479,16 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         position: 'fixed',
         top: '20px',
         right: '20px',
-        zIndex: 1000,
-        backgroundColor: 'rgba(30, 30, 40, 0.95)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '12px',
+        zIndex: 'var(--z-panels)',
+        backgroundColor: 'var(--color-panel-bg)',
+        border: '1px solid var(--color-border-subtle)',
+        borderRadius: 'var(--radius-panel)',
+        boxShadow: 'var(--shadow-panel)',
         padding: '16px',
         minWidth: '280px',
         backdropFilter: 'blur(20px)',
-        color: 'white',
-        fontSize: '13px'
+        color: 'var(--color-text-primary)',
+        fontSize: 'var(--font-size-xs)'
       }}
     >
       {/* Header */}
@@ -501,8 +502,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          fontSize: '14px',
-          fontWeight: '600'
+          fontSize: 'var(--font-size-sm)',
+          fontWeight: 'var(--font-weight-semibold)',
+          color: 'var(--color-text-primary)'
         }}>
           <Database size={16} />
           Live Data
@@ -513,9 +515,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           disabled={isLoading}
           style={{
             background: 'transparent',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '6px',
-            color: 'white',
+            border: '1px solid var(--color-border-default)',
+            borderRadius: 'var(--radius-button)',
+            color: 'var(--color-text-primary)',
             cursor: isLoading ? 'not-allowed' : 'pointer',
             padding: '6px',
             opacity: isLoading ? 0.5 : 1
@@ -532,25 +534,26 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         gap: '8px',
         marginBottom: '12px',
         padding: '8px',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: '6px'
+        backgroundColor: 'var(--color-bg-elevated-1)',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--color-border-subtle)'
       }}>
         {status.connected ? (
           <>
-            <Wifi size={16} color="#10b981" />
-            <span style={{ color: '#10b981' }}>Connected</span>
+            <Wifi size={16} color="var(--color-success)" />
+            <span style={{ color: 'var(--color-success)', fontWeight: 'var(--font-weight-semibold)' }}>Connected</span>
             {status.latency > 0 && (
-              <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+              <span className="font-mono" style={{ color: 'var(--color-text-tertiary)' }}>
                 ({status.latency}ms)
               </span>
             )}
           </>
         ) : (
           <>
-            <WifiOff size={16} color="#ef4444" />
-            <span style={{ color: '#ef4444' }}>Disconnected</span>
+            <WifiOff size={16} color="var(--color-error)" />
+            <span style={{ color: 'var(--color-error)', fontWeight: 'var(--font-weight-semibold)' }}>Disconnected</span>
             {status.retryCount > 0 && (
-              <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+              <span className="font-mono" style={{ color: 'var(--color-text-tertiary)' }}>
                 (Retry {status.retryCount}/{maxRetries})
               </span>
             )}
@@ -566,13 +569,13 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           gap: '8px',
           marginBottom: '12px',
           padding: '8px',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.2)',
-          borderRadius: '6px',
-          color: '#fecaca'
+          backgroundColor: 'var(--color-error-bg)',
+          border: '1px solid var(--color-error-border)',
+          borderRadius: 'var(--radius-sm)',
+          color: 'var(--color-error)'
         }}>
           <AlertTriangle size={14} />
-          <span style={{ fontSize: '12px' }}>{status.error}</span>
+          <span style={{ fontSize: 'var(--font-size-xs)' }}>{status.error}</span>
         </div>
       )}
 
@@ -583,10 +586,10 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
           alignItems: 'center',
           gap: '8px',
           marginBottom: '12px',
-          color: 'rgba(255, 255, 255, 0.7)'
+          color: 'var(--color-text-tertiary)'
         }}>
           <Clock size={14} />
-          <span>
+          <span className="font-mono">
             Last update: {new Date(status.lastUpdate).toLocaleTimeString()}
           </span>
         </div>
@@ -596,9 +599,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       {recentUpdates.length > 0 && (
         <div style={{ marginTop: '12px' }}>
           <div style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            color: 'rgba(255, 255, 255, 0.8)',
+            fontSize: 'var(--font-size-xs)',
+            fontWeight: 'var(--font-weight-semibold)',
+            color: 'var(--color-text-secondary)',
             marginBottom: '8px'
           }}>
             Recent Updates
@@ -617,17 +620,20 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '6px 8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                  borderRadius: '4px',
-                  fontSize: '11px'
+                  backgroundColor: 'var(--color-bg-elevated-2)',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 'var(--font-size-xs)'
                 }}
               >
-                <span style={{
-                  color: update.source === 'websocket' ? '#3b82f6' : '#8b5cf6'
-                }}>
+                <span
+                  className="font-mono font-semibold"
+                  style={{
+                    color: update.source === 'websocket' ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)'
+                  }}
+                >
                   {update.type}
                 </span>
-                <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                <span className="font-mono" style={{ color: 'var(--color-text-disabled)' }}>
                   {new Date(update.timestamp).toLocaleTimeString()}
                 </span>
               </div>

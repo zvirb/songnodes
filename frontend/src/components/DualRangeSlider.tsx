@@ -38,16 +38,25 @@ export const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-gray-300">{label}</label>
-        <span className="text-sm text-blue-400 font-mono">
+        <label className="text-sm font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+          {label}
+        </label>
+        <span className="text-sm font-mono font-bold" style={{ color: 'var(--color-brand-primary)' }}>
           {formatDisplayValue(value[0])} - {formatDisplayValue(value[1])}
         </span>
       </div>
       <div className="relative h-4 flex items-center">
-        <div className="relative w-full h-1 bg-gray-700 rounded-full">
+        <div
+          className="relative w-full h-1 rounded-full"
+          style={{ backgroundColor: 'var(--color-bg-elevated-3)' }}
+        >
           <div
-            className="absolute h-1 bg-blue-500 rounded-full"
-            style={{ left: `${leftPercentage}%`, width: `${rangePercentage}%` }}
+            className="absolute h-1 rounded-full"
+            style={{
+              left: `${leftPercentage}%`,
+              width: `${rangePercentage}%`,
+              backgroundColor: 'var(--color-brand-primary)'
+            }}
           />
           <input
             type="range"
@@ -67,7 +76,7 @@ export const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
           />
         </div>
       </div>
-      <div className="flex justify-between text-xs text-gray-500">
+      <div className="flex justify-between text-xs font-mono" style={{ color: 'var(--color-text-disabled)' }}>
         <span>{formatDisplayValue(min)}</span>
         <span>{formatDisplayValue(max)}</span>
       </div>

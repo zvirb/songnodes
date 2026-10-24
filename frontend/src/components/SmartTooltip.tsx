@@ -225,19 +225,19 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
         left: position.x,
         top: position.y,
         maxWidth: `${maxWidth}px`,
-        backgroundColor: 'rgba(30, 30, 40, 0.98)',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
-        borderRadius: '12px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'var(--color-tooltip-bg)',
+        border: '1px solid var(--color-border-subtle)',
+        borderRadius: 'var(--radius-tooltip)',
+        boxShadow: 'var(--shadow-tooltip)',
         backdropFilter: 'blur(20px)',
-        color: 'white',
-        fontSize: '13px',
-        lineHeight: '1.4',
-        zIndex: 10001,
+        color: 'var(--color-tooltip-text)',
+        fontSize: 'var(--font-size-xs)',
+        lineHeight: 'var(--line-height-normal)',
+        zIndex: 'var(--z-tooltip)',
         opacity: isAnimating ? 0 : 1,
         transform: `scale(${isAnimating ? 0.95 : 1}) translateY(${isAnimating ?
           actualPlacement === 'bottom' ? '-5px' : '5px' : '0px'})`,
-        transition: 'opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        transition: 'opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-spring)',
         pointerEvents: interactive ? 'auto' : 'none'
       }}
       onMouseEnter={() => {
@@ -253,8 +253,8 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
           position: 'absolute',
           width: '12px',
           height: '12px',
-          backgroundColor: 'rgba(30, 30, 40, 0.98)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'var(--color-tooltip-bg)',
+          border: '1px solid var(--color-border-subtle)',
           transform: 'rotate(45deg)',
           ...(actualPlacement === 'top' && {
             bottom: '-7px',
@@ -291,9 +291,9 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
         {/* Header */}
         <div style={{ marginBottom: content.details || content.actions ? '12px' : '0' }}>
           <div style={{
-            fontSize: '14px',
-            fontWeight: '600',
-            color: 'rgba(255, 255, 255, 0.95)',
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 'var(--font-weight-semibold)',
+            color: 'var(--color-text-primary)',
             marginBottom: content.subtitle ? '4px' : '0',
             wordBreak: 'break-word'
           }}>
@@ -301,8 +301,8 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
           </div>
           {content.subtitle && (
             <div style={{
-              fontSize: '12px',
-              color: 'rgba(255, 255, 255, 0.6)',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-tertiary)',
               wordBreak: 'break-word'
             }}>
               {content.subtitle}

@@ -119,7 +119,7 @@ export const DesignTrendsShowcase: React.FC = () => {
             className="glass p-8 rounded-[var(--radius-lg)]"
             style={{
               background:
-                'linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(26, 26, 26, 0.8) 100%)',
+                'linear-gradient(135deg, var(--color-panel-bg) 0%, var(--color-bg-elevated-1) 100%)',
               backdropFilter: 'blur(10px) saturate(180%)',
               WebkitBackdropFilter: 'blur(10px) saturate(180%)',
             }}

@@ -291,23 +291,33 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
   }, [graphStats, bpmDistribution, keyDistribution, genreDistribution, mostConnectedTracks, performanceMetrics]);
 
   return (
-    <div className={`stats-panel ${className}`}>
+    <div className={`stats-panel p-4 ${className}`} style={{ backgroundColor: 'var(--color-bg-base)', color: 'var(--color-text-primary)' }}>
       <div className="stats-header">
-        <h2 className="text-lg font-semibold text-white mb-4">Graph Statistics</h2>
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>Graph Statistics</h2>
 
         {/* Export Controls */}
         <div className="export-controls mb-4 flex gap-2">
           <select
             value={exportFormat}
             onChange={(e) => setExportFormat(e.target.value as 'json' | 'csv')}
-            className="bg-gray-700 text-white text-sm px-2 py-1 rounded"
+            className="text-sm px-2 py-1 rounded"
+            style={{
+              backgroundColor: 'var(--color-bg-elevated-2)',
+              color: 'var(--color-text-primary)',
+              border: '1px solid var(--color-border-subtle)'
+            }}
           >
             <option value="json">JSON</option>
             <option value="csv">CSV</option>
           </select>
           <button
             onClick={() => exportData(exportFormat)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded transition-colors"
+            className="text-sm px-3 py-1 rounded transition-colors"
+            style={{
+              backgroundColor: 'var(--color-brand-primary)',
+              color: 'var(--color-text-inverse)',
+              fontWeight: 'var(--font-weight-semibold)'
+            }}
           >
             Export
           </button>
@@ -328,11 +338,13 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
               <button
                 key={key}
                 onClick={() => setSelectedChart(key)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${
-                  selectedChart === key
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
+                className="text-xs px-2 py-1 rounded transition-colors"
+                style={{
+                  backgroundColor: selectedChart === key ? 'var(--color-brand-primary)' : 'var(--color-bg-elevated-2)',
+                  color: selectedChart === key ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
+                  border: '1px solid var(--color-border-subtle)',
+                  fontWeight: selectedChart === key ? 'var(--font-weight-semibold)' : 'var(--font-weight-normal)'
+                }}
               >
                 {label}
               </button>
@@ -345,62 +357,170 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
         {selectedChart === 'overview' && (
           <div className="overview-stats">
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Nodes</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.nodeCount.toLocaleString()}</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Nodes</div>
+                <div className="stat-value text-xl font-bold font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                  {graphStats.nodeCount.toLocaleString()}
+                </div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Edges</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.edgeCount.toLocaleString()}</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Edges</div>
+                <div className="stat-value text-xl font-bold font-mono" style={{ color: 'var(--color-brand-primary)' }}>
+                  {graphStats.edgeCount.toLocaleString()}
+                </div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Density</div>
-                <div className="stat-value text-white text-xl font-bold">{(graphStats.density * 100).toFixed(2)}%</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Density</div>
+                <div className="stat-value text-xl font-bold font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                  {(graphStats.density * 100).toFixed(2)}%
+                </div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Avg Degree</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.averageDegree.toFixed(1)}</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Avg Degree</div>
+                <div className="stat-value text-xl font-bold font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                  {graphStats.averageDegree.toFixed(1)}
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 mb-6">
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Connected Components</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.componentCount}</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Connected Components</div>
+                <div className="stat-value text-lg font-semibold font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                  {graphStats.componentCount}
+                </div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Largest Component</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.largestComponentSize} nodes</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Largest Component</div>
+                <div className="stat-value text-lg font-semibold font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                  {graphStats.largestComponentSize} nodes
+                </div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Avg Path Length</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.averagePathLength.toFixed(2)}</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Avg Path Length</div>
+                <div className="stat-value text-lg font-semibold font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                  {graphStats.averagePathLength.toFixed(2)}
+                </div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Clustering</div>
-                <div className="stat-value text-white text-lg font-semibold">{(graphStats.clustering * 100).toFixed(1)}%</div>
+              <div
+                className="stat-card p-3 rounded"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-panel)'
+                }}
+              >
+                <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Clustering</div>
+                <div className="stat-value text-lg font-semibold font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                  {(graphStats.clustering * 100).toFixed(1)}%
+                </div>
               </div>
             </div>
 
             {/* Performance Metrics */}
             <div className="performance-section">
-              <h3 className="text-sm font-semibold text-gray-300 mb-2">Performance</h3>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-secondary)' }}>Performance</h3>
               <div className="grid grid-cols-2 gap-2">
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">FPS</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.frameRate.toFixed(0)}</div>
+                <div
+                  className="stat-card p-2 rounded"
+                  style={{
+                    backgroundColor: 'var(--color-bg-elevated-1)',
+                    border: '1px solid var(--color-border-subtle)',
+                    borderRadius: 'var(--radius-panel)'
+                  }}
+                >
+                  <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>FPS</div>
+                  <div className="stat-value text-lg font-mono font-bold" style={{ color: 'var(--color-success)' }}>
+                    {performanceMetrics.frameRate.toFixed(0)}
+                  </div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Render (ms)</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.renderTime.toFixed(1)}</div>
+                <div
+                  className="stat-card p-2 rounded"
+                  style={{
+                    backgroundColor: 'var(--color-bg-elevated-1)',
+                    border: '1px solid var(--color-border-subtle)',
+                    borderRadius: 'var(--radius-panel)'
+                  }}
+                >
+                  <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Render (ms)</div>
+                  <div className="stat-value text-lg font-mono font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                    {performanceMetrics.renderTime.toFixed(1)}
+                  </div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Visible Nodes</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.visibleNodes}</div>
+                <div
+                  className="stat-card p-2 rounded"
+                  style={{
+                    backgroundColor: 'var(--color-bg-elevated-1)',
+                    border: '1px solid var(--color-border-subtle)',
+                    borderRadius: 'var(--radius-panel)'
+                  }}
+                >
+                  <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Visible Nodes</div>
+                  <div className="stat-value text-lg font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                    {performanceMetrics.visibleNodes}
+                  </div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Memory (MB)</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.memoryUsage.toFixed(1)}</div>
+                <div
+                  className="stat-card p-2 rounded"
+                  style={{
+                    backgroundColor: 'var(--color-bg-elevated-1)',
+                    border: '1px solid var(--color-border-subtle)',
+                    borderRadius: 'var(--radius-panel)'
+                  }}
+                >
+                  <div className="stat-label text-xs" style={{ color: 'var(--color-text-tertiary)' }}>Memory (MB)</div>
+                  <div className="stat-value text-lg font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                    {performanceMetrics.memoryUsage.toFixed(1)}
+                  </div>
                 </div>
               </div>
             </div>

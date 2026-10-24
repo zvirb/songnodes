@@ -238,25 +238,26 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.85)',
+        backgroundColor: 'var(--color-modal-overlay)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 2000,
-        backdropFilter: 'blur(5px)',
+        zIndex: 'var(--z-modal)',
+        backdropFilter: 'blur(10px)',
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         style={{
-          backgroundColor: '#1A1A1A',
-          borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.1)',
+          backgroundColor: 'var(--color-bg-elevated-1)',
+          borderRadius: 'var(--radius-modal)',
+          border: '1px solid var(--color-border-subtle)',
+          boxShadow: 'var(--shadow-modal)',
           width: '90%',
           maxWidth: '900px',
           maxHeight: '85vh',
           overflow: 'hidden',
-          color: '#FFFFFF',
+          color: 'var(--color-text-primary)',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -268,14 +269,15 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            borderBottom: '1px solid var(--color-border-subtle)',
+            backgroundColor: 'var(--color-bg-elevated-2)'
           }}
         >
           <div>
-            <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 600 }}>
+            <h2 style={{ margin: '0 0 4px 0', fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
               API Key Management
             </h2>
-            <p style={{ margin: 0, fontSize: '13px', color: '#8E8E93' }}>
+            <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
               Configure API keys for scraper and enrichment services
             </p>
           </div>
@@ -284,7 +286,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
             style={{
               background: 'none',
               border: 'none',
-              color: '#8E8E93',
+              color: 'var(--color-text-tertiary)',
               fontSize: '24px',
               cursor: 'pointer',
               padding: '4px',
@@ -299,8 +301,8 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
           style={{
             display: 'flex',
             overflowX: 'auto',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)',
+            borderBottom: '1px solid var(--color-border-subtle)',
+            backgroundColor: 'var(--color-bg-elevated-2)',
           }}
         >
           {uniqueServices.map((service) => {
@@ -318,22 +320,22 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                 style={{
                   flex: '0 0 auto',
                   padding: '16px 20px',
-                  backgroundColor: activeService === service ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  backgroundColor: activeService === service ? 'var(--color-bg-elevated-1)' : 'transparent',
                   border: 'none',
-                  color: activeService === service ? '#FFFFFF' : '#8E8E93',
-                  fontSize: '14px',
-                  fontWeight: 600,
+                  color: activeService === service ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 'var(--font-weight-semibold)',
                   cursor: 'pointer',
-                  borderBottom: activeService === service ? '2px solid #4A90E2' : '2px solid transparent',
-                  transition: 'all 0.2s',
+                  borderBottom: activeService === service ? '2px solid var(--color-brand-primary)' : '2px solid transparent',
+                  transition: 'var(--transition-color)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                 }}
               >
                 {service.toUpperCase()}
-                {allConfigured && someValid && <span style={{ color: '#7ED321' }}>✓</span>}
-                {allConfigured && !someValid && <span style={{ color: '#FFA500' }}>⚠</span>}
+                {allConfigured && someValid && <span style={{ color: 'var(--color-success)' }}>✓</span>}
+                {allConfigured && !someValid && <span style={{ color: 'var(--color-warning)' }}>⚠</span>}
               </button>
             );
           })}
@@ -342,7 +344,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
         {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#8E8E93' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-tertiary)' }}>
               Loading API keys...
             </div>
           ) : (
@@ -359,45 +361,47 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                     style={{
                       marginBottom: '24px',
                       padding: '20px',
-                      backgroundColor: 'rgba(255,255,255,0.03)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: 'var(--color-bg-elevated-2)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border-subtle)',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+                          <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
                             {req.display_name}
                           </h3>
                           {req.required && (
                             <span
                               style={{
-                                fontSize: '11px',
+                                fontSize: 'var(--font-size-xs)',
                                 padding: '2px 8px',
-                                backgroundColor: '#F56565',
-                                borderRadius: '4px',
-                                fontWeight: 600,
+                                backgroundColor: 'var(--color-error-bg)',
+                                color: 'var(--color-error)',
+                                border: '1px solid var(--color-error-border)',
+                                borderRadius: 'var(--radius-badge)',
+                                fontWeight: 'var(--font-weight-semibold)',
                               }}
                             >
                               REQUIRED
                             </span>
                           )}
                           {existing?.is_valid === true && (
-                            <span style={{ color: '#7ED321', fontSize: '16px' }}>✓</span>
+                            <span style={{ color: 'var(--color-success)', fontSize: '16px' }}>✓</span>
                           )}
                           {existing?.is_valid === false && (
-                            <span style={{ color: '#F56565', fontSize: '16px' }}>✗</span>
+                            <span style={{ color: 'var(--color-error)', fontSize: '16px' }}>✗</span>
                           )}
                         </div>
-                        <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#8E8E93' }}>
+                        <p style={{ margin: '0 0 8px 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
                           {req.description}
                         </p>
                         <a
                           href={req.documentation_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ fontSize: '12px', color: '#4A90E2', textDecoration: 'none' }}
+                          style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-brand-primary)', textDecoration: 'none' }}
                         >
                           Get API Key →
                         </a>
@@ -407,7 +411,10 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                     {existing ? (
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                          <div style={{ flex: 1, fontSize: '14px', color: '#8E8E93', fontFamily: 'monospace' }}>
+                          <div
+                            className="font-mono"
+                            style={{ flex: 1, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}
+                          >
                             {existing.masked_value}
                           </div>
                           <button
@@ -415,11 +422,12 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                             disabled={isTesting}
                             style={{
                               padding: '8px 16px',
-                              backgroundColor: '#4A90E2',
+                              backgroundColor: 'var(--color-brand-secondary)',
                               border: 'none',
-                              borderRadius: '6px',
-                              color: '#FFFFFF',
-                              fontSize: '13px',
+                              borderRadius: 'var(--radius-button)',
+                              color: 'var(--color-text-inverse)',
+                              fontSize: 'var(--font-size-sm)',
+                              fontWeight: 'var(--font-weight-semibold)',
                               cursor: isTesting ? 'wait' : 'pointer',
                               opacity: isTesting ? 0.6 : 1,
                             }}
@@ -431,10 +439,10 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                             style={{
                               padding: '8px 16px',
                               backgroundColor: 'transparent',
-                              border: '1px solid #F56565',
-                              borderRadius: '6px',
-                              color: '#F56565',
-                              fontSize: '13px',
+                              border: '1px solid var(--color-error)',
+                              borderRadius: 'var(--radius-button)',
+                              color: 'var(--color-error)',
+                              fontSize: 'var(--font-size-sm)',
                               cursor: 'pointer',
                             }}
                           >
@@ -443,10 +451,10 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                         </div>
 
                         {existing.last_tested_at && (
-                          <div style={{ fontSize: '12px', color: '#8E8E93' }}>
+                          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
                             Last tested: {new Date(existing.last_tested_at).toLocaleString()}
                             {existing.test_error && (
-                              <span style={{ color: '#F56565', marginLeft: '8px' }}>
+                              <span style={{ color: 'var(--color-error)', marginLeft: '8px' }}>
                                 ({existing.test_error})
                               </span>
                             )}
@@ -462,14 +470,15 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                               value={keyValues[activeService]?.[req.key_name] || ''}
                               onChange={(e) => updateKeyValue(activeService, req.key_name, e.target.value)}
                               placeholder={`Enter ${req.display_name}`}
+                              className="font-mono"
                               style={{
                                 width: '100%',
                                 padding: '10px 40px 10px 12px',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                borderRadius: '6px',
-                                color: '#FFFFFF',
-                                fontSize: '14px',
+                                backgroundColor: 'var(--color-input-bg)',
+                                border: '1px solid var(--color-input-border)',
+                                borderRadius: 'var(--radius-input)',
+                                color: 'var(--color-text-primary)',
+                                fontSize: 'var(--font-size-sm)',
                               }}
                             />
                             <button
@@ -482,9 +491,9 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                                 transform: 'translateY(-50%)',
                                 background: 'none',
                                 border: 'none',
-                                color: '#8E8E93',
+                                color: 'var(--color-text-tertiary)',
                                 cursor: 'pointer',
-                                fontSize: '14px',
+                                fontSize: 'var(--font-size-sm)',
                               }}
                             >
                               {isShowingKey ? '👁️' : '🙈'}
@@ -495,12 +504,12 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                             disabled={saveStatus === 'saving'}
                             style={{
                               padding: '10px 20px',
-                              backgroundColor: '#7ED321',
+                              backgroundColor: 'var(--color-brand-primary)',
                               border: 'none',
-                              borderRadius: '6px',
-                              color: '#FFFFFF',
-                              fontSize: '14px',
-                              fontWeight: 600,
+                              borderRadius: 'var(--radius-button)',
+                              color: 'var(--color-text-inverse)',
+                              fontSize: 'var(--font-size-sm)',
+                              fontWeight: 'var(--font-weight-semibold)',
                               cursor: saveStatus === 'saving' ? 'wait' : 'pointer',
                               opacity: saveStatus === 'saving' ? 0.6 : 1,
                             }}
@@ -521,26 +530,26 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
         <div
           style={{
             padding: '16px 24px',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)',
+            borderTop: '1px solid var(--color-border-subtle)',
+            backgroundColor: 'var(--color-bg-elevated-2)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
-          <div style={{ fontSize: '12px', color: '#8E8E93' }}>
-            {saveStatus === 'saved' && <span style={{ color: '#7ED321' }}>✓ Saved successfully</span>}
-            {saveStatus === 'error' && <span style={{ color: '#F56565' }}>✗ {errorMessage || 'Save failed'}</span>}
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+            {saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>✓ Saved successfully</span>}
+            {saveStatus === 'error' && <span style={{ color: 'var(--color-error)' }}>✗ {errorMessage || 'Save failed'}</span>}
           </div>
           <button
             onClick={onClose}
             style={{
               padding: '10px 24px',
               backgroundColor: 'transparent',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '6px',
-              color: '#FFFFFF',
-              fontSize: '14px',
+              border: '1px solid var(--color-border-default)',
+              borderRadius: 'var(--radius-button)',
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-sm)',
               cursor: 'pointer',
             }}
           >
@@ -552,10 +561,10 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
         <div
           style={{
             padding: '12px 24px',
-            backgroundColor: 'rgba(74,144,226,0.1)',
-            borderTop: '1px solid rgba(74,144,226,0.2)',
-            fontSize: '11px',
-            color: '#4A90E2',
+            backgroundColor: 'var(--color-info-bg)',
+            borderTop: '1px solid var(--color-info-border)',
+            fontSize: 'var(--font-size-xs)',
+            color: 'var(--color-info)',
           }}
         >
           🔒 <strong>Security:</strong> All API keys are encrypted at rest using PostgreSQL pgcrypto.

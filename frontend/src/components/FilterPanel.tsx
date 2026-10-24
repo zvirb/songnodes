@@ -455,14 +455,29 @@ export const FilterPanel: React.FC = () => {
   }, [currentFilters, bpmRange, energyRange, yearRange]);
 
   return (
-    <div className="h-full flex flex-col bg-dj-dark">
+    <div
+      className="h-full flex flex-col"
+      style={{ backgroundColor: 'var(--color-bg-base)', color: 'var(--color-text-primary)' }}
+    >
       {/* Header */}
-      <div className="p-4 border-b border-dj-light-gray">
+      <div
+        className="p-4"
+        style={{ borderBottom: '1px solid var(--color-border-subtle)', backgroundColor: 'var(--color-bg-elevated-1)' }}
+      >
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2
+            className="text-lg font-bold flex items-center gap-2"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             <span>🎛️</span> Graph Filters
             {activeFilterCount > 0 && (
-              <span className="text-xs bg-dj-accent text-black px-2 py-1 rounded-full font-bold">
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-bold"
+                style={{
+                  backgroundColor: 'var(--color-brand-primary)',
+                  color: 'var(--color-text-inverse)'
+                }}
+              >
                 {activeFilterCount}
               </span>
             )}
@@ -471,13 +486,23 @@ export const FilterPanel: React.FC = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setShowPresets(!showPresets)}
-              className="text-xs text-gray-400 hover:text-dj-accent transition-colors px-2 py-1 bg-dj-gray rounded"
+              className="text-xs px-2 py-1 rounded transition-colors"
+              style={{
+                backgroundColor: 'var(--color-bg-elevated-2)',
+                color: 'var(--color-text-secondary)',
+                border: '1px solid var(--color-border-subtle)'
+              }}
             >
               Presets
             </button>
             <button
               onClick={resetAllFilters}
-              className="text-xs text-gray-400 hover:text-dj-danger transition-colors px-2 py-1 bg-dj-gray rounded"
+              className="text-xs px-2 py-1 rounded transition-colors"
+              style={{
+                backgroundColor: 'var(--color-bg-elevated-2)',
+                color: 'var(--color-error)',
+                border: '1px solid var(--color-error-border)'
+              }}
             >
               Reset All
             </button>
@@ -485,16 +510,16 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Current filter status */}
-        <div className="text-xs text-gray-400 space-y-1">
+        <div className="text-xs space-y-1" style={{ color: 'var(--color-text-tertiary)' }}>
           <div className="flex justify-between">
             <span>Showing:</span>
-            <span className="font-mono text-dj-accent">
+            <span className="font-mono font-bold" style={{ color: 'var(--color-brand-primary)' }}>
               {graphData.nodes.length} / {originalGraphData?.nodes.length || graphData.nodes.length} nodes
             </span>
           </div>
           <div className="flex justify-between">
             <span>Edges:</span>
-            <span className="font-mono text-dj-info">
+            <span className="font-mono font-bold" style={{ color: 'var(--color-info)' }}>
               {graphData.edges.length} / {originalGraphData?.edges.length || graphData.edges.length}
             </span>
           </div>
@@ -502,20 +527,35 @@ export const FilterPanel: React.FC = () => {
 
         {/* Filter Presets */}
         {showPresets && (
-          <div className="space-y-2 p-3 bg-dj-gray rounded">
+          <div
+            className="space-y-2 p-3 mt-2 rounded"
+            style={{
+              backgroundColor: 'var(--color-bg-elevated-2)',
+              border: '1px solid var(--color-border-subtle)'
+            }}
+          >
             <div className="flex gap-2">
               <input
                 type="text"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
                 placeholder="Preset name..."
-                className="flex-1 px-2 py-1 bg-dj-dark border border-dj-light-gray rounded text-sm text-white"
+                className="flex-1 px-2 py-1 text-sm rounded focus:outline-none"
+                style={{
+                  backgroundColor: 'var(--color-bg-elevated-1)',
+                  border: '1px solid var(--color-border-default)',
+                  color: 'var(--color-text-primary)'
+                }}
                 onKeyDown={(e) => e.key === 'Enter' && savePreset()}
               />
               <button
                 onClick={savePreset}
                 disabled={!presetName.trim()}
-                className="px-3 py-1 bg-dj-accent text-black text-sm rounded font-semibold hover:bg-opacity-80 disabled:opacity-50"
+                className="px-3 py-1 text-sm rounded font-semibold disabled:opacity-50"
+                style={{
+                  backgroundColor: 'var(--color-brand-primary)',
+                  color: 'var(--color-text-inverse)'
+                }}
               >
                 Save
               </button>
@@ -523,19 +563,25 @@ export const FilterPanel: React.FC = () => {
 
             <div className="space-y-1 max-h-32 overflow-y-auto">
               {filterPresets.map(preset => (
-                <div key={preset.id} className="flex items-center gap-2 p-2 bg-dj-dark rounded">
+                <div
+                  key={preset.id}
+                  className="flex items-center gap-2 p-2 rounded"
+                  style={{ backgroundColor: 'var(--color-bg-elevated-1)' }}
+                >
                   <button
                     onClick={() => loadPreset(preset)}
-                    className="flex-1 text-left text-sm text-white hover:text-dj-accent"
+                    className="flex-1 text-left text-sm"
+                    style={{ color: 'var(--color-text-primary)' }}
                   >
                     {preset.name}
                   </button>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
                     {preset.created.toLocaleDateString()}
                   </span>
                   <button
                     onClick={() => deletePreset(preset.id)}
-                    className="text-xs text-dj-danger hover:text-red-400 px-1"
+                    className="text-xs px-1"
+                    style={{ color: 'var(--color-error)' }}
                   >
                     ×
                   </button>
