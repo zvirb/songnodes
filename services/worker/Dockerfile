@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY services/common /app/common
 COPY services/worker/ .
 # Migrations 012-014 (idempotent), applied by `python migrate.py`.
+COPY sql/migrations/medallion/001_bronze_layer_up.sql sql/migrations/medallion/002_silver_layer_up.sql sql/migrations/medallion/006_track_adjacency_edges_up.sql /app/sql/base/
 COPY sql/migrations/012_target_tracks_up.sql sql/migrations/013_ingestion_jobs_up.sql sql/migrations/014_data_layer_up.sql /app/sql/
 
 RUN useradd --create-home --uid 10001 appuser && chown -R appuser /app

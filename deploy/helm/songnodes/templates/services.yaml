@@ -61,7 +61,7 @@ spec:
       containers:
         - name: {{ $svc.name }}
           image: {{ printf "%s:%s" $svc.image.repository $svc.image.tag }}
-          imagePullPolicy: {{ $svc.image.pullPolicy | default "IfNotPresent" }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicyOverride | default ($svc.image.pullPolicy | default "IfNotPresent") }}
           {{- if $svc.command }}
           command:
             {{- range $svc.command }}

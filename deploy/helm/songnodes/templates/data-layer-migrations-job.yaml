@@ -31,7 +31,7 @@ spec:
       containers:
         - name: migrate
           image: {{ printf "%s:%s" $worker.image.repository $worker.image.tag }}
-          imagePullPolicy: {{ $worker.image.pullPolicy | default "IfNotPresent" }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicyOverride | default ($worker.image.pullPolicy | default "IfNotPresent") }}
           command: ["python", "migrate.py"]
           envFrom:
             - configMapRef:

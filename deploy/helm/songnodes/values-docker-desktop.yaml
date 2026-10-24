@@ -1,0 +1,72 @@
+# Overlay for a LOCAL Docker Desktop Kubernetes cluster (not production; production is k3s via Flux).
+#
+#   helm upgrade --install songnodes deploy/helm/songnodes -n songnodes \
+#     -f deploy/helm/songnodes/values.yaml -f deploy/helm/songnodes/values-docker-desktop.yaml
+#
+# or simply: bash scripts/k8s-docker-desktop.sh
+#
+# What differs from production:
+#  * images are the ones you built locally (localhost:5000/songnodes_<name>:latest), used straight from Docker's image
+#    cache (kubeadm mode) with IfNotPresent, so no registry is needed;
+#  * storage uses the cluster default class (`hostpath`), not k3s `local-path`;
+#  * ingress and network policies are off (reach services with `kubectl port-forward`);
+#  * only the services the data layer needs are enabled; legacy/gold cron jobs and the Ollama-dependent NLP service are off;
+#  * the namespace and the `songnodes-secrets` Secret are created by the script, never by the chart or this file.
+
+global:
+  imagePullPolicyOverride: IfNotPresent
+
+namespace:
+  create: false
+
+secrets:
+  create: false
+
+ingress:
+  enabled: false
+
+networkPolicy:
+  enabled: false
+
+postgres:
+  persistence:
+    size: 5Gi
+    storageClassName: ""
+  backup:
+    enabled: false
+    storageClassName: ""
+
+redis:
+  persistence:
+    storageClassName: ""
+
+rabbitmq:
+  persistence:
+    storageClassName: ""
+
+cronjobs:
+  silverToGold:
+    enabled: false
+  goldToOperational:
+    enabled: false
+  targetTrackScraper:
+    enabled: false
+
+services:
+  websocketApi:
+    enabled: false
+  nlpProcessor:
+    enabled: false
+  scraperOrchestrator:
+    enabled: false
+  metadataEnrichment:
+    enabled: false
+  # Needed for scraping; its image is large (browsers). Disable with `--skip-scraper` in the script if you only want the data layer.
+  unifiedScraper:
+    enabled: true
+  worker:
+    enabled: true
+    env:
+      static:
+        # Same allow-list as production. A provider with no real credential in the Secret is simply not used.
+        ENRICHMENT_PROVIDERS: "tidal,deezer,musicbrainz,discogs,lastfm"

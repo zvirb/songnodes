@@ -1,5 +1,9 @@
 """Apply the data-layer migrations (012-014) to the configured database. Idempotent and safe to run repeatedly.
 
+On an EMPTY database (a fresh cluster) it first creates the base bronze/silver/transition schema (medallion 001, 002, 006),
+because nothing else in the chart does; each base file runs only if its sentinel table is missing, since those files are
+not themselves idempotent. Existing databases skip the base step entirely.
+
     python migrate.py            # apply every migration in /app/sql in order
     python migrate.py --check    # report whether the objects the data layer needs exist, change nothing
 
@@ -14,8 +18,11 @@ from pathlib import Path
 import asyncpg
 
 SQL_DIR = Path(os.getenv('MIGRATIONS_DIR', '/app/sql'))
+BASE_DIR = SQL_DIR / 'base'
+BASE = (('001_bronze_layer_up.sql', 'bronze_scraped_tracks'), ('002_silver_layer_up.sql', 'silver_enriched_tracks'),
+        ('006_track_adjacency_edges_up.sql', 'silver_track_transitions'))
 REQUIRED = {
-    'tables': ['target_tracks', 'ingestion_jobs', 'silver_track_metadata_evidence', 'outbox_events', 'outbox_consumers',
+    'tables': ['bronze_scraped_tracks', 'silver_enriched_tracks', 'silver_track_transitions', 'target_tracks', 'ingestion_jobs', 'silver_track_metadata_evidence', 'outbox_events', 'outbox_consumers',
                'projection_tracks', 'entity_merge_history', 'entity_redirects', 'er_decisions', 'backfill_checkpoints',
                'silver_camelot_corrections'],
     'columns': [('bronze_scraped_tracks', 'playlist_id'), ('bronze_scraped_tracks', 'position'),
@@ -59,6 +66,12 @@ async def main(check_only: bool) -> int:
     conn = await connect()
     try:
         if not check_only:
+            if BASE_DIR.is_dir():
+                await conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; CREATE EXTENSION IF NOT EXISTS pgcrypto;')
+                for name, sentinel in BASE:
+                    if not await conn.fetchval('SELECT to_regclass($1) IS NOT NULL', sentinel):
+                        print(f'bootstrapping base schema: {name}', flush=True)
+                        await conn.execute((BASE_DIR / name).read_text(encoding='utf-8'))
             for path in sorted(SQL_DIR.glob('*_up.sql')):
                 print(f'applying {path.name}', flush=True)
                 await conn.execute(path.read_text(encoding='utf-8'))

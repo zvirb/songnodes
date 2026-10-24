@@ -42,7 +42,7 @@ spec:
           containers:
             - name: target-track-scraper
               image: {{ printf "%s:%s" .Values.cronjobs.targetTrackScraper.image.repository .Values.cronjobs.targetTrackScraper.image.tag }}
-              imagePullPolicy: {{ .Values.cronjobs.targetTrackScraper.image.pullPolicy | default "IfNotPresent" }}
+              imagePullPolicy: {{ .Values.global.imagePullPolicyOverride | default (.Values.cronjobs.targetTrackScraper.image.pullPolicy | default "IfNotPresent") }}
               command:
                 - python
                 - -u

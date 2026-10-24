@@ -33,6 +33,24 @@ The chart runs `data-layer-migrate` (Helm hook, post-install / pre-upgrade) whic
 It also creates the **new bronze columns** (`bronze_scraped_tracks.playlist_id`, `position`) that the scraper pipeline
 already writes but no earlier migration created: until they exist, every scraped track insert fails.
 
+## 2b. Local Kubernetes on Docker Desktop (instead of the k3s/Flux path)
+
+Production is k3s deployed by Flux from `main`. For a local cluster use Docker Desktop's own Kubernetes; the repo has an
+overlay and a guarded script for it (microk8s is not used).
+
+1. Docker Desktop: **Settings > Kubernetes > Enable Kubernetes**, mode **Kubeadm** (single node). `kind` mode does not share
+   Docker's image cache, so locally built images would not be found; the script refuses it.
+2. If `~/.kube/config` is corrupt (it was on this machine: mixed-width line endings from an old microk8s export), move it
+   aside first so Docker Desktop can write a fresh one: `mv ~/.kube/config ~/.kube/config.corrupt.bak`.
+3. `kubectl config use-context docker-desktop`, then export any provider credentials you have and run
+   `bash scripts/k8s-docker-desktop.sh` (add `--skip-scraper` for the data layer only, `--render-only` to just validate).
+
+The script only runs against Docker Desktop's context, builds the images into Docker's cache, creates the Secret once
+(infrastructure passwords are kept on re-runs; add provider credentials later with `--secrets-only`), installs the chart with
+`values-docker-desktop.yaml` (no ingress or network policies, default `hostpath` storage, `IfNotPresent` pulls, legacy gold
+cron jobs and the Ollama-dependent NLP service off) and waits. The migration hook Job now also creates the base
+bronze/silver schema on an empty database. Reach services with `kubectl port-forward` (printed at the end).
+
 ## 3. Verify before scraping
 
 ```

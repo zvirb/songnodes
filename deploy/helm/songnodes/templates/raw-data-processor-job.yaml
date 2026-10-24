@@ -68,7 +68,7 @@ spec:
       containers:
         - name: raw-data-processor
           image: {{ printf "%s:%s" .Values.jobs.rawDataProcessor.image.repository .Values.jobs.rawDataProcessor.image.tag }}
-          imagePullPolicy: {{ .Values.jobs.rawDataProcessor.image.pullPolicy | default "Always" }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicyOverride | default (.Values.jobs.rawDataProcessor.image.pullPolicy | default "Always") }}
           command:
             - python
             - /app/raw_data_processor.py

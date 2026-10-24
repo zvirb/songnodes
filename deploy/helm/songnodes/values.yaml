@@ -2,6 +2,9 @@ global:
   namespace: songnodes
   imagePullSecrets: []
   configMapName: songnodes-config
+  # When set (e.g. IfNotPresent for a local cluster that shares the Docker image cache) it replaces every application
+  # image's pullPolicy. Empty keeps each service's own setting (production uses Always with :latest).
+  imagePullPolicyOverride: ""
   secretName: songnodes-secrets
   commonLabels:
     app.kubernetes.io/part-of: songnodes

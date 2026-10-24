@@ -82,7 +82,7 @@ spec:
           containers:
             - name: silver-to-gold-processor
               image: {{ printf "%s:%s" .Values.cronjobs.silverToGold.image.repository .Values.cronjobs.silverToGold.image.tag }}
-              imagePullPolicy: {{ .Values.cronjobs.silverToGold.image.pullPolicy | default "Always" }}
+              imagePullPolicy: {{ .Values.global.imagePullPolicyOverride | default (.Values.cronjobs.silverToGold.image.pullPolicy | default "Always") }}
               command:
                 - python
                 - /app/silver_to_gold_scheduler.py
