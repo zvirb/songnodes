@@ -55,11 +55,8 @@ export default defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
         codeSplitting: {
+          // Vendor groups come first: an earlier group takes the modules its members import.
           groups: [
-            {
-              name: 'graph-visualization',
-              test: /[\\/]src[\\/]components[\\/]GraphVisualization\.tsx$/,
-            },
             {
               name: 'pixi-vendor',
               test: /node_modules[\\/]pixi\.js[\\/]/,
@@ -67,6 +64,10 @@ export default defineConfig({
             {
               name: 'd3-vendor',
               test: /node_modules[\\/]d3-(force|quadtree)[\\/]/,
+            },
+            {
+              name: 'graph-visualization',
+              test: /[\\/]src[\\/]components[\\/]GraphVisualization\.tsx$/,
             },
             {
               name: 'ui-components',
