@@ -3,6 +3,40 @@
 ## Overview
 Comprehensive test automation framework for the SongNodes music database project covering unit, integration, API, performance, and end-to-end testing.
 
+## Python test suites
+
+The repository-root `pytest.ini` governs every Python run below (its `testpaths` is
+`tests`). There is no other pytest config under `tests/`. Install
+`tests/requirements.txt` and `tests/requirements-test.txt`; the latter provides the
+plugins its `addopts` need.
+Output goes to `tests/reports/`, which is git-ignored.
+
+| Suite | Command (from the repository root unless noted) | Needs |
+|---|---|---|
+| Root suite (`tests/`) | `python -m pytest` | Development Compose stack for `tests/integration` |
+| Collection check | `python -m pytest --collect-only -q` | Nothing |
+| Development API tests | `python -m pytest tests/integration -k test_dev_`, or `python -m unittest discover -s tests/integration -p 'test_dev_*.py' -v` | `scripts/start-dev.sh` (REST 8082, graph 8084, worker) |
+| Shared library (`services/common`) | `cd services && python -m pytest common/tests` | Nothing; runs in CI (`.github/workflows/python-tests.yml`) |
+| Live provider contracts | `RUN_LIVE_PROVIDER_TESTS=1 python -m pytest tests/live` | Real provider credentials; opt-in |
+
+- `tests/integration/conftest.py` puts `tests/integration` on `sys.path` so the
+  `test_dev_*` modules can import `hygiene`, `scenario_runner` and `test_dev_workflows`.
+  Its legacy-service check (API gateway 8100, metadata enrichment 8020, DLQ manager 8024)
+  applies only to the older integration modules, not to `test_dev_*`.
+- `tests/unit/scrapers/conftest.py` puts `scrapers/` on `sys.path`, as the scraper
+  image does (`/app`), so scraper modules resolve `items`, `utils` and `spiders`.
+- `tests/integration/test_api_endpoints.py`, `test_graph_api_comprehensive.py` and
+  `tests/e2e/test_complete_workflows.py` target services that are not in the
+  development stack (ports 8001, 8020–8022, 8080, 8088, 8090, 8100). Without them
+  the integration modules skip and the e2e module fails on connection errors.
+
+Per-service folders `services/*/tests/` (and `scrapers/tests/`) hold only a
+`conftest.py` and empty `unit/` and `integration/` packages; none contains a test
+module, so they are not run. `services/common/tests` is the only service suite with
+tests. A service that gains tests runs them from its own directory with its own
+`pytest.ini`, for example `cd services/rest_api && python -m pytest`. Add it to
+`python-tests.yml` once it passes.
+
 ## Testing Strategy
 
 ### Test Coverage Goals

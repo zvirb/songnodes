@@ -1,5 +1,107 @@
 # Implementation status
 
+## Current task: bring `main` to a fully verified state
+
+Started 24 Oct 2026 (Australia/Melbourne). Scope: CLAUDE.md §4 gates on `main`
+(sync check, unit, type-check, build, root pytest, full sequential Playwright with
+zero console errors), CI green, branches tidied. Steps: 1 pytest collection
+(`fix/pytest-collection`), 2 Playwright environment (`fix/e2e-environment`),
+3 design-system phase 3 (`refactor/ds-phase3`, after 1 and 2 merge), 4 branch
+tidy-up, 5 close-out.
+
+Deployment contradiction (flagged, not resolved): CLAUDE.md says Kubernetes only and
+Docker Compose forbidden, but the documented and tested development stack is
+`compose.dev.yaml` (`scripts/start-dev.sh`). All checks here used that stack.
+
+### Step 1: Python test collection (`fix/pytest-collection`)
+
+Changes:
+- `pytest.ini`: header `[tool:pytest]` → `[pytest]`, so `testpaths = tests`, markers
+  and options now apply and the duplicate `services/*/tests/conftest.py` files are no
+  longer crawled. Removed options that are invalid under `--strict-config` or need
+  absent packages: `collect_ignore` (replaced by `norecursedirs = reports fixtures
+  utils coverage __pycache__ .*`), `cov_config` (pytest-cov reads `.coveragerc` by
+  default), `deselect_markers` (not a pytest option; slow tests were never actually
+  deselected, and are still not), `mock_use_standalone_module` (needs the `mock`
+  package; tests use `unittest.mock`), and `--html`/`--self-contained-html`
+  (pytest-html is not in `tests/requirements-test.txt`).
+- Deleted `tests/pytest.ini`: as the nearest config to `tests/`, it silently replaced
+  the root config for every `pytest tests/...` call (with a wrong `testpaths`).
+- `tests/integration/conftest.py`: puts `tests/integration` on `sys.path` (bare-name
+  sibling imports in the `test_dev_*` modules). Its autouse check for legacy services
+  (8100, 8020, 8024) skipped every integration module, including `test_dev_*`, which
+  target the dev stack; it now applies only to the non-`test_dev_` modules.
+- `tests/unit/scrapers/conftest.py` (new) puts `scrapers/` on `sys.path`, as the
+  scraper image does; the spider test imports `spiders.1001tracklists_spider` and
+  `items` (the old `musicdb_scrapy` package no longer exists).
+- `.gitignore`: `**/tests/reports/`. New CI workflow `python-tests.yml` runs the
+  `services/common` tests. `tests/README.md` documents every Python suite command.
+- Per-service `services/*/tests/` folders contain no test modules (only a conftest and
+  empty packages); `services/common/tests` is the only service suite. Documented.
+
+Results (Windows, Python 3.13, dev stack up):
+- `python -m pytest --collect-only -q`: 138 collected, **1 error** (see below), no
+  config warnings. Before: 26 errors.
+- `cd services && python -m pytest common/tests`: 112 passed.
+- `python -m pytest tests/integration -k test_dev_`: 56 passed, 1 skipped (would start
+  a real scrape). `python -m unittest discover -s tests/integration -p 'test_dev_*.py'`
+  gives the same 57 tests (56 + 1 skipped); the earlier "57 passed, 1 skipped" was a
+  miscount.
+- `python -m pytest --ignore=tests/unit/services/test_scraper_orchestrator.py`
+  (exclusion on the command line only, not committed): 63 passed, 14 failed,
+  61 skipped.
+
+Open, needs a decision (no test deleted or skipped):
+- `tests/unit/services/test_scraper_orchestrator.py` (22 tests): imports `TaskQueue`,
+  `ScraperManager` and `execute_scraping_task` from the scraper orchestrator; none
+  exists in `services/scraper-orchestrator/main.py` any more (only the enums,
+  `ScrapingTask` and `app` remain). The code under test is gone, so the import was not
+  rewritten. This one collection error stops a plain `pytest` run.
+- `tests/unit/scrapers/test_1001tracklists_spider.py`: 5 pass, 7 fail with
+  `NotImplementedError: parse callback is not defined`. The spider no longer has
+  `parse()`; it uses `parse_search_results`/`parse_tracklist` and emits different
+  items. Each spider construction also waits about 25 s on Redis/Postgres.
+- `tests/e2e/test_complete_workflows.py`: 7 fail (connection refused) and 2 skip;
+  `tests/integration/test_api_endpoints.py` (24) and `test_graph_api_comprehensive.py`
+  (30) skip. All target services that are not in the dev stack (ports 8001, 8020–8022,
+  8080, 8088, 8090, 8100).
+- `tests/live` (4) skip unless `RUN_LIVE_PROVIDER_TESTS=1` (opt-in, real credentials).
+
+## Previous run: full test suite — completed with blockers
+
+Run: 2026-10-24 (Australia/Sydney). No application code changed.
+
+Passed:
+- `cd services; python -m pytest common/tests`: 112 passed.
+- With the documented development stack running,
+  `python -m unittest discover -s tests/integration -p 'test_dev_*.py' -v`:
+  57 passed, 1 skipped (the test that would scrape external sites).
+- `cd frontend; npm run test:unit`: 75 passed across 6 files.
+- `cd frontend; npm run type-check`: passed.
+- `cd frontend; npm run build`: passed; Vite warned that the graph visualization
+  chunk exceeds 1 MB.
+- `docker compose -f compose.dev.yaml build`: passed.
+- `git diff --check`: passed.
+
+Blocked/incomplete:
+- Root `python -m pytest` stopped during collection: 182 items found and 26
+  collection errors, including duplicate `tests.conftest` names in service
+  directories and unresolved test imports. `python -m pytest tests` narrowed
+  this to 11 collection errors, including missing `hygiene`, `musicdb_scrapy`,
+  and scraper-orchestrator imports.
+- `cd frontend; npm test -- --workers=1` started 2,103 Playwright tests. It was
+  stopped after 21 tests (15 failed, 4 passed, 2 skipped); the initial failures
+  include absent screenshot snapshot baselines, and setup reported WebGL
+  unsupported. The full browser suite did not complete.
+
+The documented Compose stack was built and started for integration tests, then
+stopped afterward; its named Postgres volume was preserved. No live provider
+tests were run.
+
+Next task: repair Python test discovery/import setup and establish or validate
+the required Playwright screenshot baselines, then rerun the full sequential
+browser suite (2,103 tests) and root Python tests.
+
 ## Current task: design system as the single source of truth
 
 24 Oct 2026, branch `feature/design-system` (from `main` 677180f).
@@ -265,3 +367,91 @@ milestone 3; availability of complete real-set fixtures must be checked in miles
 4. Optional later work: Milestones 5-7 (search, graph projection and wave routing, renderer) and 8 (audio), retire the legacy ETL.
 
 Update this file whenever a new task begins and when work stops or a milestone completes.
+
+## Design-system check exclusion — committed and synced (2026-10-24)
+
+On PR #58, removed `frontend/src/lib/graphColours.ts` from the migrated-product
+colour, emoji and browser-dialog scan list; the module implements design-system
+token resolution and its `rgb()` regex example caused a false positive. The
+workflow explicitly documents that the design-system token implementation
+is excluded. Commit `5014bbc` was pushed to PR #58 from the isolated worktree
+at `E:\songnodes-pr58`; the worktree is clean.
+
+Validation:
+- Exact migrated-code conformance scans: passed (Git Bash).
+- `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`: passed.
+- `git diff --check`: passed.
+- The sync check without `PYTHONUTF8=1` hit Windows Python's default cp1252
+  decoding; retrying in UTF-8 mode passed.
+- CI type-check, unit tests, and production build were not run.
+- Four GitHub Actions runs were created for commit `5014bbc` and were in
+  progress at the time of verification.
+
+Unresolved: the four CI runs have not completed yet.
+Next task: monitor PR #58 checks and address any remaining failures.
+
+## PR review and merge — review complete; merge blocked (2026-10-24)
+
+Reviewed all 10 open PRs (#47–#56), all targeting `main`. GitHub reported each
+as mergeable with its Build, CodeQL, SAST, and Trivy checks successful. The
+review found no material issues in #47–#54 or #56. No touched code is marked
+deprecated; the current Pixi graph remains active pending the planned
+Milestone 7 renderer evaluation.
+
+PR #55 re-enables `GraphMiniMap`. Its async Pixi initialization can complete
+after unmount, when cleanup has already run and the app ref is still null,
+leaking the renderer. This needs a cancellation-safe cleanup before merge.
+
+Combined validation in a temporary integration worktree:
+
+```text
+npm ci                                      passed (540 packages; 0 vulnerabilities)
+npm run type-check                          passed
+npm run test:unit                           passed (49 tests)
+npm run build                               passed
+npm run test:e2e -- --config=playwright.pr-review.config.ts --workers=1
+                                             started 2,103 tests; stopped at test #52 after failures
+```
+
+The full E2E run did not complete or pass: browser logs included graph-fetch
+failures and the test setup reported WebGL unavailable. REST and graph health
+URLs returned HTTP 200. Node 25 also emitted a Vitest engine warning. No PR was
+merged or closed: the mandatory pre-merge E2E gate is not satisfied, and #55
+has the renderer-lifecycle issue. GitHub merges automatically close PRs, so no
+separate archive action was performed.
+
+Unresolved: fix and validate #55; run the complete sequential E2E suite in a
+supported browser/backend environment. Next task: make the minimap
+initialization cancellation-safe, then rerun integration validation and merge
+only after the required E2E suite passes.
+
+## PR #55 follow-up — in progress (2026-10-24)
+
+The user authorized a direct, surgical fix to PR #55 and continued validation.
+Scope is limited to making `GraphMiniMap` initialization safe when unmounted
+while Pixi `Application.init()` is pending. Next step: implement and test the
+cleanup on the PR branch, then rerun integration validation.
+
+## Container rebuild and deployment — completed 2026-10-24
+
+Rebuilt the five `songnodes-dev` application images and deployed the full
+Compose stack. The Windows host had no usable WSL shell, so the documented
+`scripts/start-dev.sh` sequence was run directly with Docker Compose: existing
+Postgres/Redis were retained, migrations 012–014 were applied idempotently, and
+all services were started with health checks. No database volume was reset.
+
+Checks passed:
+
+```text
+docker compose -f compose.dev.yaml build graph-api rest-api worker unified-scraper frontend
+docker compose -f compose.dev.yaml up -d --no-build --wait --wait-timeout 120
+docker compose -f compose.dev.yaml exec -T worker python migrate.py --check
+```
+
+All eight containers reported healthy; REST `/health`, graph `/api/graph/data`,
+scraper `/health`, and frontend `/` each returned HTTP 200. The worker schema
+check reported `data layer schema is complete`.
+
+Unresolved deployment issues: none observed. No live provider checks or
+scraping were run. Next task: once ready for real data, complete the documented
+credential-gated live provider checks before the first real scrape.

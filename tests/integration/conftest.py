@@ -8,6 +8,14 @@ import httpx
 from typing import AsyncGenerator, Dict, Any
 from datetime import datetime
 import os
+import sys
+from pathlib import Path
+
+# The test_dev_* modules import their siblings by bare name (hygiene, scenario_runner,
+# test_dev_workflows), as they do under `unittest discover -s tests/integration`.
+_INTEGRATION_DIR = str(Path(__file__).resolve().parent)
+if _INTEGRATION_DIR not in sys.path:
+    sys.path.insert(0, _INTEGRATION_DIR)
 
 
 # Database configuration
@@ -119,15 +127,22 @@ async def wait_for_service(http_client) -> callable:
     return _wait
 
 
-@pytest.fixture(scope="session", autouse=True)
-async def verify_services():
-    """Verify all required services are running before tests."""
-    async with httpx.AsyncClient(timeout=5.0) as client:
+@pytest.fixture(scope="module", autouse=True)
+def verify_services(request):
+    """Verify the services in SERVICE_URLS are running before the legacy tests.
+
+    The test_dev_* modules run against the development Compose stack (REST 8082,
+    graph 8084), which does not include these services, so they are not gated here.
+    """
+    if request.module.__name__.rpartition(".")[2].startswith("test_dev_"):
+        return
+
+    with httpx.Client(timeout=5.0) as client:
         services_ok = True
 
         for service_name, url in SERVICE_URLS.items():
             try:
-                response = await client.get(f"{url}/health")
+                response = client.get(f"{url}/health")
                 if response.status_code != 200:
                     print(f"WARNING: {service_name} at {url} not healthy")
                     services_ok = False

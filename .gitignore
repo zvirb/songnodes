@@ -250,3 +250,6 @@ gha-creds-*.json
 # Music library export served by the /library and /sets pages (scripts/sync-music-library.sh)
 !frontend/public/data/
 !frontend/public/data/music-library.json
+
+# Python test output (pytest junit, coverage, log)
+**/tests/reports/

@@ -1,0 +1,28 @@
+# Python unit tests that need no running services (tests/README.md, "Python test suites").
+# The root suite and tests/integration need the development Compose stack and run locally.
+name: python-tests
+
+on:
+  pull_request:
+    paths: ["services/**", "tests/**", "pytest.ini", ".github/workflows/python-tests.yml"]
+  push:
+    branches: [main, develop]
+    paths: ["services/**", "tests/**", "pytest.ini"]
+
+permissions:
+  contents: read
+
+jobs:
+  common:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - name: Install dependencies
+        # services/common ships inside the REST image, so its requirements cover it;
+        # the test requirements supply the plugins the root pytest.ini addopts need.
+        run: pip install -r services/rest_api/requirements.txt -r tests/requirements-test.txt
+      - name: services/common tests
+        working-directory: services
+        run: python -m pytest common/tests -q -p no:cacheprovider

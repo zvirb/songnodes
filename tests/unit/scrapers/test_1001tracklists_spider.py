@@ -5,8 +5,12 @@ Unit tests for 1001tracklists spider.
 import pytest
 from scrapy.http import HtmlResponse, Request
 from scrapy.utils.test import get_crawler
-from musicdb_scrapy.project_musicdb.spiders.spider_1001tracklists import OneThousandOneTracklistsSpider
-from musicdb_scrapy.project_musicdb.items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+from importlib import import_module
+
+from items import SetlistItem, TrackItem, TrackArtistItem, SetlistTrackItem
+
+# The module name starts with a digit, so it cannot be imported with an import statement.
+OneThousandOneTracklistsSpider = import_module("spiders.1001tracklists_spider").OneThousandOneTracklistsSpider
 
 
 class Test1001TracklistsSpider:
