@@ -115,7 +115,10 @@ fresh-volume init and `migrate.py` from an empty database, repeated; live provid
 NOT done / NOT verified:
 - No provider client has run against a live API with credentials. Docs for Deezer, GetSongBPM, MusicBrainz, Discogs could not
   be read; TIDAL OAS was read but not its live responses (BPM/key population, array-filter style, auth form unconfirmed).
-- Not run: Playwright E2E (mandatory before merge per CLAUDE.md), Kubernetes deployment, the unified scraper, real playlists.
+- Playwright E2E (mandatory before merge per CLAUDE.md): only `basic-validation.desktop.spec.ts` was run (chromium): 7 of 9 pass,
+  including the zero-console-errors test. The 2 failures are a pixel-baseline test (no win32 baseline exists) and a test-code bug
+  (`Route is already handled`); not proven unrelated to the upgrades. The other 63 specs were not run. Also not run: Kubernetes
+  deployment, the unified scraper, real playlists.
 - ER thresholds and tempo/genre ranges are judgement calls validated on synthetic cases; automatic merging is off.
 - Energy bands are provisional until ratified.
 - Legacy `data-transformer` ETL and the scraper pipeline's direct silver writes still exist (adopted, not removed).
