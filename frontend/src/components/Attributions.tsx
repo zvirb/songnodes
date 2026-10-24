@@ -12,10 +12,20 @@ export const Attributions: React.FC = () => {
   }, []);
 
   if (items.length === 0) return null;
+
   return (
-    <footer aria-label="Data provider attributions" style={{ padding: '4px 12px', fontSize: 12, opacity: 0.8 }}>
+    <footer
+      aria-label="Data provider attributions"
+      className="px-3 py-1 text-xs text-[var(--color-text-secondary)] border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] flex flex-wrap gap-3 items-center"
+    >
       {items.map((item) => (
-        <a key={item.provider} href={item.url} target="_blank" rel="noopener noreferrer" style={{ marginRight: 12 }}>
+        <a
+          key={item.provider}
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-link-hover)] transition-colors underline-offset-2 hover:underline"
+        >
           {item.text}
         </a>
       ))}

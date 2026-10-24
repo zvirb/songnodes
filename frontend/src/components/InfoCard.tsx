@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GraphNode, Track, PerformanceMetrics } from '../types';
 import { useStore } from '../store/useStore';
 import { useToast, ToastContainer } from '../hooks/useToast';
+import { Card } from './ui';
 import {
   Music,
   User,
@@ -66,7 +67,8 @@ export const InfoCard: React.FC<InfoCardProps> = ({
   const currentSetlist = useStore(state => state.currentSetlist);
 
   useEffect(() => {
-    setTimeout(() => setIsAnimating(false), 100);
+    const timer = setTimeout(() => setIsAnimating(false), 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Get appropriate data based on type
@@ -259,7 +261,6 @@ export const InfoCard: React.FC<InfoCardProps> = ({
     try {
       await navigator.clipboard.writeText(value.toString());
 
-      // Truncate long values for display
       const displayValue = value.length > 30
         ? `${value.substring(0, 30)}...`
         : value;
@@ -292,16 +293,9 @@ export const InfoCard: React.FC<InfoCardProps> = ({
     let style: React.CSSProperties = {
       maxWidth: compact ? '200px' : '300px',
       minWidth: compact ? '150px' : '250px',
-      backgroundColor: 'rgba(30, 30, 40, 0.98)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      borderRadius: '12px',
-      backdropFilter: 'blur(20px)',
-      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-      color: 'white',
-      overflow: 'hidden',
       transform: isAnimating ? 'scale(0.95) translateY(10px)' : 'scale(1) translateY(0)',
       opacity: isAnimating ? 0 : 1,
-      transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+      transition: 'all var(--duration-fast) var(--ease-out)',
     };
 
     if (position) {
@@ -320,42 +314,22 @@ export const InfoCard: React.FC<InfoCardProps> = ({
   };
 
   return (
-    <div
+    <Card
       ref={cardRef}
       className={`info-card ${className}`}
       style={getCardStyle()}
     >
       {/* Header */}
-      <div
-        style={{
-          padding: '16px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}
-      >
-        <h3 style={{
-          margin: 0,
-          fontSize: compact ? '14px' : '16px',
-          fontWeight: '600',
-          color: 'rgba(255, 255, 255, 0.9)'
-        }}>
+      <div className="p-4 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
+        <h3 className={`m-0 font-semibold text-[var(--color-text-primary)] ${compact ? 'text-xs' : 'text-sm'}`}>
           {getCardTitle()}
         </h3>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="flex items-center gap-2">
           {compact && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'rgba(255, 255, 255, 0.7)',
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '4px'
-              }}
+              className="bg-transparent border-none text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer p-1 rounded-[var(--radius-sm)]"
             >
               {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
@@ -364,14 +338,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'rgba(255, 255, 255, 0.7)',
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '4px'
-              }}
+              className="bg-transparent border-none text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer p-1 rounded-[var(--radius-sm)]"
             >
               <X size={16} />
             </button>
@@ -381,60 +348,27 @@ export const InfoCard: React.FC<InfoCardProps> = ({
 
       {/* Content */}
       {(!compact || isExpanded) && (
-        <div style={{ padding: '16px' }}>
-          <div style={{
-            display: 'grid',
-            gap: '12px',
-            gridTemplateColumns: '1fr'
-          }}>
-            {infoFields.map((field, index) => (
+        <div className="p-4">
+          <div className="grid gap-3 grid-cols-1">
+            {infoFields.map((field) => (
               <div
                 key={field.key}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '8px',
-                  minHeight: '32px'
-                }}
+                className="flex items-center justify-between p-2 bg-[var(--color-bg-elevated-2)] border border-[var(--color-border-subtle)] rounded-[var(--radius-md)] min-h-[32px]"
               >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  fontSize: '13px'
-                }}>
+                <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-xs">
                   {field.icon}
                   <span>{field.label}</span>
                 </div>
 
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <span style={{
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: 'rgba(255, 255, 255, 0.9)'
-                  }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-[var(--color-text-primary)]">
                     {field.formatter ? field.formatter(field.value) : field.value}
                   </span>
 
                   {field.copyable && (
                     <button
                       onClick={() => handleCopy(field.value)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        cursor: 'pointer',
-                        padding: '2px',
-                        borderRadius: '2px'
-                      }}
+                      className="bg-transparent border-none text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer p-0.5 rounded-[var(--radius-sm)]"
                       title="Copy to clipboard"
                     >
                       <Copy size={12} />
@@ -444,14 +378,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({
                   {field.clickable && field.onClick && (
                     <button
                       onClick={field.onClick}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        cursor: 'pointer',
-                        padding: '2px',
-                        borderRadius: '2px'
-                      }}
+                      className="bg-transparent border-none text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer p-0.5 rounded-[var(--radius-sm)]"
                     >
                       <ExternalLink size={12} />
                     </button>
@@ -465,45 +392,13 @@ export const InfoCard: React.FC<InfoCardProps> = ({
 
       {/* Actions (for interactive cards) */}
       {interactive && (type === 'track' || type === 'node') && (!compact || isExpanded) && (
-        <div style={{
-          padding: '16px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          display: 'flex',
-          gap: '8px',
-          justifyContent: 'flex-end'
-        }}>
-          <button
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'rgba(16, 185, 129, 0.2)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '6px',
-              color: '#10b981',
-              cursor: 'pointer',
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
+        <div className="p-4 border-t border-[var(--color-border-subtle)] flex gap-2 justify-end">
+          <button className="px-3 py-1.5 bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-[var(--radius-button)] text-[var(--color-success)] text-xs font-medium cursor-pointer flex items-center gap-1.5 hover:bg-[var(--color-success-bg)]/80 transition-colors">
             <Play size={14} />
             Play
           </button>
 
-          <button
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'rgba(59, 130, 246, 0.2)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              borderRadius: '6px',
-              color: '#3b82f6',
-              cursor: 'pointer',
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
+          <button className="px-3 py-1.5 bg-[var(--color-brand-secondary-muted)] border border-[var(--color-brand-secondary)]/30 rounded-[var(--radius-button)] text-[var(--color-brand-secondary)] text-xs font-medium cursor-pointer flex items-center gap-1.5 hover:bg-[var(--color-brand-secondary-muted)]/80 transition-colors">
             <Share size={14} />
             Share
           </button>
@@ -512,7 +407,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={hideToast} position="bottom-right" />
-    </div>
+    </Card>
   );
 };
 

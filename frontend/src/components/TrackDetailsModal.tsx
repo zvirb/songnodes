@@ -1,15 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Link2, Search, Play } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Link2, Search, Play } from 'lucide-react';
 import { HarmonicCompatibility } from './HarmonicCompatibility';
 import { formatStoredEnergy } from '../utils/trackMetadata';
 import { Track } from '../types/dj';
 import { useGraphNodes, useGraphEdges } from '../store/useStore';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  Button,
+  Badge,
+} from './ui';
 
 /**
  * TrackDetailsModal - Detailed track inspection interface
  * Shows track metadata, relationships, and edges with option to set as currently playing
  *
- * ✅ FIX: Uses edges from Zustand store instead of making API calls
+ * Conforms to Design System Modal specifications
  */
 
 interface TrackDetailsModalProps {
@@ -40,9 +49,8 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
   isOpen,
   onClose,
   onSetAsCurrentlyPlaying,
-  currentlyPlayingTrack
+  currentlyPlayingTrack,
 }) => {
-  // ✅ FIX: Get edges and nodes from Zustand store instead of API
   const graphNodes = useGraphNodes();
   const graphEdges = useGraphEdges();
 
@@ -52,15 +60,13 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
       return [];
     }
 
-    // Find all edges connected to this track
     const connectedEdges = graphEdges.filter(
-      edge => edge.source === track.id || edge.target === track.id
+      (edge) => edge.source === track.id || edge.target === track.id
     );
 
-    // Transform edges and add related track info from nodes
     const trackEdges: TrackEdge[] = connectedEdges.map((edge, index) => {
       const relatedNodeId = edge.source === track.id ? edge.target : edge.source;
-      const relatedNode = graphNodes.find(node => node.id === relatedNodeId);
+      const relatedNode = graphNodes.find((node) => node.id === relatedNodeId);
 
       const trackEdge: TrackEdge = {
         id: edge.id || `edge-${index}`,
@@ -71,7 +77,11 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
         relatedTrack: relatedNode
           ? {
               id: relatedNode.id,
-              name: relatedNode.track?.name || relatedNode.title || relatedNode.label || 'ERROR: No Track Name (Related)',
+              name:
+                relatedNode.track?.name ||
+                relatedNode.title ||
+                relatedNode.label ||
+                'ERROR: No Track Name (Related)',
               artist: relatedNode.track?.artist || relatedNode.artist || 'ERROR: No Artist (Related)',
               bpm: relatedNode.track?.bpm || relatedNode.bpm,
               key: relatedNode.track?.key || relatedNode.key,
@@ -89,233 +99,74 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
     return trackEdges;
   }, [track, isOpen, graphEdges, graphNodes]);
 
-  if (!isOpen || !track) return null;
+  if (!track) return null;
 
   const isCurrentlyPlaying = currentlyPlayingTrack?.id === track.id;
 
   return (
-    <div
-      className="track-details-modal-overlay"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '20px'
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div
-        className="track-details-modal"
-        style={{
-          backgroundColor: '#1A1A1A',
-          borderRadius: '16px',
-          border: '2px solid rgba(255, 255, 255, 0.2)',
-          maxWidth: '800px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          position: 'relative'
-        }}
-      >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          aria-label="Close track details"
-          style={{
-            position: 'absolute',
-            top: '16px',
-            right: '16px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#8E8E93',
-            cursor: 'pointer',
-            padding: '8px',
-            borderRadius: '50%',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-            e.currentTarget.style.color = '#FFFFFF';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#8E8E93';
-          }}
-        >
-          <X size={24} strokeWidth={2} aria-hidden="true" />
-        </button>
-
-        <div style={{ padding: '32px' }}>
-          {/* Track Header */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '24px'
-          }}>
-            <div style={{ flex: 1, paddingRight: '20px' }}>
-              <h2 style={{
-                color: '#FFFFFF',
-                fontSize: '28px',
-                margin: '0 0 8px 0',
-                fontWeight: 700,
-                lineHeight: 1.2
-              }}>
+    <Modal open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <ModalContent size="lg" className="p-6">
+        <ModalHeader className="pb-4 border-b border-[var(--color-border-subtle)]">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pr-6">
+            <div className="flex-1">
+              <ModalTitle className="text-[var(--font-size-2xl)] font-bold leading-tight text-[var(--color-text-primary)]">
                 {track.name}
-              </h2>
-              <p style={{
-                color: '#8E8E93',
-                fontSize: '18px',
-                margin: '0 0 16px 0'
-              }}>
+              </ModalTitle>
+              <p className="text-[var(--font-size-lg)] text-[var(--color-text-secondary)] mt-1">
                 {track.artist}
               </p>
 
               {isCurrentlyPlaying && (
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  backgroundColor: '#7ED321',
-                  borderRadius: '20px',
-                  marginBottom: '16px'
-                }}>
-                  <Play size={14} fill="#FFFFFF" stroke="#FFFFFF" aria-hidden="true" />
-                  <span style={{
-                    color: '#FFFFFF',
-                    fontSize: '14px',
-                    fontWeight: 600
-                  }}>
+                <div className="mt-3">
+                  <Badge variant="success" size="md" className="py-1 px-3">
+                    <Play size={12} className="fill-current" aria-hidden="true" />
                     Currently Playing
-                  </span>
+                  </Badge>
                 </div>
               )}
             </div>
 
-            {/* Action Button */}
             {!isCurrentlyPlaying && (
-              <button
-                onClick={() => {
-                  onSetAsCurrentlyPlaying(track);
-                }}
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => onSetAsCurrentlyPlaying(track)}
+                className="shrink-0 gap-2"
                 aria-label="Set this track as currently playing"
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#4A90E2',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#FFFFFF',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#357ABD';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#4A90E2';
-                }}
               >
-                <Play size={16} fill="#FFFFFF" stroke="#FFFFFF" aria-hidden="true" />
+                <Play size={16} className="fill-current" aria-hidden="true" />
                 Set as Currently Playing
-              </button>
+              </Button>
             )}
           </div>
+        </ModalHeader>
 
+        <ModalBody className="space-y-6 pt-4">
           {/* Track Metrics */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-            gap: '16px',
-            marginBottom: '32px'
-          }}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {/* BPM */}
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'rgba(74, 144, 226, 0.1)',
-              borderRadius: '8px',
-              border: '1px solid rgba(74, 144, 226, 0.3)',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                color: '#8E8E93',
-                fontSize: '12px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                marginBottom: '8px'
-              }}>
+            <div className="p-4 bg-[var(--color-brand-secondary-muted)] border border-[var(--color-brand-secondary)]/30 rounded-[var(--radius-md)] text-center">
+              <div className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider font-semibold mb-1">
                 BPM
               </div>
-              <div style={{
-                color: '#4A90E2',
-                fontSize: '24px',
-                fontWeight: 700
-              }}>
+              <div className="text-[var(--color-brand-secondary)] text-2xl font-bold">
                 {track.bpm || '---'}
               </div>
             </div>
 
             {/* Key */}
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'rgba(126, 211, 33, 0.1)',
-              borderRadius: '8px',
-              border: '1px solid rgba(126, 211, 33, 0.3)',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                color: '#8E8E93',
-                fontSize: '12px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                marginBottom: '8px'
-              }}>
+            <div className="p-4 bg-[var(--color-brand-primary-muted)] border border-[var(--color-brand-primary)]/30 rounded-[var(--radius-md)] text-center">
+              <div className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider font-semibold mb-1">
                 Key
               </div>
-              <div style={{
-                color: '#7ED321',
-                fontSize: '24px',
-                fontWeight: 700
-              }}>
+              <div className="text-[var(--color-brand-primary)] text-2xl font-bold">
                 {track.key || '---'}
               </div>
             </div>
 
             {/* Energy */}
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'rgba(255, 107, 53, 0.1)',
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 107, 53, 0.3)',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                color: '#8E8E93',
-                fontSize: '12px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                marginBottom: '12px'
-              }}>
+            <div className="p-4 bg-[var(--color-brand-tertiary-muted)] border border-[var(--color-brand-tertiary)]/30 rounded-[var(--radius-md)] text-center">
+              <div className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider font-semibold mb-2">
                 Energy
               </div>
               <span>{formatStoredEnergy(track.energy, track.energy_scale)}</span>
@@ -323,27 +174,11 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
 
             {/* Duration */}
             {track.duration && (
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                textAlign: 'center'
-              }}>
-                <div style={{
-                  color: '#8E8E93',
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  marginBottom: '8px'
-                }}>
+              <div className="p-4 bg-[var(--color-bg-elevated-1)] border border-[var(--color-border-subtle)] rounded-[var(--radius-md)] text-center">
+                <div className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider font-semibold mb-1">
                   Duration
                 </div>
-                <div style={{
-                  color: '#FFFFFF',
-                  fontSize: '24px',
-                  fontWeight: 700
-                }}>
+                <div className="text-[var(--color-text-primary)] text-2xl font-bold">
                   {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
                 </div>
               </div>
@@ -352,69 +187,33 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
 
           {/* Edges/Relationships Section */}
           <div>
-            <h3 style={{
-              color: '#FFFFFF',
-              fontSize: '20px',
-              margin: '0 0 16px 0',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <Link2 size={20} strokeWidth={2} aria-hidden="true" />
+            <h3 className="text-[var(--font-size-lg)] font-semibold text-[var(--color-text-primary)] mb-3 flex items-center gap-2">
+              <Link2 size={18} aria-hidden="true" />
               Connected Tracks ({edges.length})
             </h3>
 
             {edges.length > 0 ? (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                maxHeight: '300px',
-                overflowY: 'auto'
-              }}>
-                {edges.map(edge => (
+              <div className="flex flex-col gap-3 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
+                {edges.map((edge) => (
                   <div
                     key={edge.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '16px',
-                      padding: '12px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}
+                    className="flex items-center gap-4 p-3 bg-[var(--color-bg-elevated-1)] border border-[var(--color-border-subtle)] rounded-[var(--radius-md)]"
                   >
                     {/* Connection Type */}
-                    <div style={{
-                      padding: '4px 8px',
-                      backgroundColor: edge.type === 'adjacency' ? 'rgba(126, 211, 33, 0.2)' : 'rgba(74, 144, 226, 0.2)',
-                      color: edge.type === 'adjacency' ? '#7ED321' : '#4A90E2',
-                      borderRadius: '12px',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      minWidth: '60px',
-                      textAlign: 'center'
-                    }}>
+                    <Badge
+                      variant={edge.type === 'adjacency' ? 'success' : 'secondary'}
+                      size="sm"
+                      className="uppercase shrink-0 min-w-[60px] justify-center"
+                    >
                       {edge.type}
-                    </div>
+                    </Badge>
 
                     {/* Track Info */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        color: '#FFFFFF',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        marginBottom: '2px'
-                      }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
                         {edge.relatedTrack?.name || 'Unknown Track'}
                       </div>
-                      <div style={{
-                        color: '#8E8E93',
-                        fontSize: '12px'
-                      }}>
+                      <div className="text-xs text-[var(--color-text-secondary)] truncate">
                         {edge.relatedTrack?.artist || 'Unknown Artist'}
                       </div>
                     </div>
@@ -429,43 +228,29 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
                     )}
 
                     {/* Weight */}
-                    <div style={{
-                      color: '#8E8E93',
-                      fontSize: '12px',
-                      minWidth: '40px',
-                      textAlign: 'right'
-                    }}>
+                    <div className="text-xs text-[var(--color-text-tertiary)] shrink-0 font-mono">
                       w: {edge.weight.toFixed(1)}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{
-                padding: '40px',
-                textAlign: 'center',
-                color: '#8E8E93',
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '16px'
-              }}>
-                <Search size={48} strokeWidth={1.5} color="#8E8E93" aria-hidden="true" />
-                <div style={{ fontSize: '16px', marginBottom: '8px' }}>
-                  No connections found
-                </div>
-                <div style={{ fontSize: '14px' }}>
-                  This track doesn't have any adjacency relationships in the current dataset
+              <div className="p-8 text-center text-[var(--color-text-secondary)] bg-[var(--color-bg-elevated-1)]/50 border border-[var(--color-border-subtle)] rounded-[var(--radius-md)] flex flex-col items-center gap-3">
+                <Search size={40} className="text-[var(--color-text-disabled)]" aria-hidden="true" />
+                <div>
+                  <div className="text-base font-medium text-[var(--color-text-primary)] mb-1">
+                    No connections found
+                  </div>
+                  <div className="text-xs text-[var(--color-text-tertiary)]">
+                    This track doesn't have any adjacency relationships in the current dataset
+                  </div>
                 </div>
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 };
 

@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { SetlistTrack } from '../types';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Input,
+} from './ui';
 
 interface TrackEditModalProps {
   track: SetlistTrack | null;
@@ -103,9 +113,7 @@ export const TrackEditModal: React.FC<TrackEditModalProps> = ({ track, onClose, 
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-    } else if (e.key === 'Enter' && e.ctrlKey) {
+    if (e.key === 'Enter' && e.ctrlKey) {
       handleSave();
     }
   };
@@ -113,141 +121,114 @@ export const TrackEditModal: React.FC<TrackEditModalProps> = ({ track, onClose, 
   if (!track) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
-        <div className="modal-header">
-          <h3>Edit Track Cues & Transitions</h3>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
+    <Modal open={!!track} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <ModalContent size="md" className="p-6">
+        <div onKeyDown={handleKeyDown}>
+          <ModalHeader className="pb-4 border-b border-[var(--color-border-subtle)]">
+            <ModalTitle>Edit Track Cues & Transitions</ModalTitle>
+          </ModalHeader>
 
-        <div className="modal-content">
-          <div className="track-info-summary" style={{ marginBottom: '20px', padding: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{track.track.name}</div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{track.track.artist}</div>
-            {track.track.duration && (
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                Duration: {Math.floor(track.track.duration / 60)}:{String(track.track.duration % 60).padStart(2, '0')}
-              </div>
-            )}
-          </div>
-
-          <div className="input-group" style={{ marginBottom: '16px' }}>
-            <label className="input-label">Transition Notes</label>
-            <textarea
-              className="input"
-              placeholder="Add notes about how to transition to the next track..."
-              value={transitionNotes}
-              onChange={(e) => setTransitionNotes(e.target.value)}
-              rows={3}
-              style={{ resize: 'vertical' }}
-            />
-            <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-              Tips for mixing, energy flow, or special techniques
+          <ModalBody className="space-y-4 pt-4">
+            {/* Track Info Summary */}
+            <div className="p-3 bg-[var(--color-bg-elevated-1)] border border-[var(--color-border-subtle)] rounded-[var(--radius-card)]">
+              <div className="text-sm font-bold text-[var(--color-text-primary)]">{track.track.name}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">{track.track.artist}</div>
+              {track.track.duration && (
+                <div className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                  Duration: {Math.floor(track.track.duration / 60)}:{String(track.track.duration % 60).padStart(2, '0')}
+                </div>
+              )}
             </div>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-            <div className="input-group">
-              <label className="input-label">Key Shift (semitones)</label>
-              <input
+            {/* Transition Notes */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-[var(--color-text-primary)]">
+                Transition Notes
+              </label>
+              <textarea
+                className="w-full rounded-[var(--radius-input)] bg-[var(--color-input-bg)] border border-[var(--color-input-border)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-disabled)] focus:outline-none focus:ring-2 focus:ring-[var(--color-input-focus)]"
+                placeholder="Add notes about how to transition to the next track..."
+                value={transitionNotes}
+                onChange={(e) => setTransitionNotes(e.target.value)}
+                rows={3}
+              />
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                Tips for mixing, energy flow, or special techniques
+              </p>
+            </div>
+
+            {/* Key Shift & Tempo Change */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Key Shift (semitones)"
                 type="number"
-                className="input"
                 placeholder="0"
                 value={keyShift}
                 onChange={(e) => setKeyShift(e.target.value)}
-                step="1"
-                min="-12"
-                max="12"
+                error={errors.keyShift}
+                helperText="-12 to +12 semitones"
+                min={-12}
+                max={12}
+                step={1}
               />
-              {errors.keyShift && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.keyShift}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                -12 to +12 semitones
-              </div>
-            </div>
 
-            <div className="input-group">
-              <label className="input-label">Tempo Change (%)</label>
-              <input
+              <Input
+                label="Tempo Change (%)"
                 type="number"
-                className="input"
                 placeholder="0"
                 value={tempoChange}
                 onChange={(e) => setTempoChange(e.target.value)}
-                step="0.1"
-                min="-50"
-                max="50"
+                error={errors.tempoChange}
+                helperText="-50% to +50%"
+                min={-50}
+                max={50}
+                step={0.1}
               />
-              {errors.tempoChange && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.tempoChange}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                -50% to +50%
-              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div className="input-group">
-              <label className="input-label">Mix Cue In (seconds)</label>
-              <input
+            {/* Mix Cue In & Cue Out */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Mix Cue In (seconds)"
                 type="number"
-                className="input"
                 placeholder="0"
                 value={mixCueIn}
                 onChange={(e) => setMixCueIn(e.target.value)}
-                step="0.1"
-                min="0"
+                error={errors.mixCueIn}
+                helperText="Start point for mixing"
+                min={0}
+                step={0.1}
               />
-              {errors.mixCueIn && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.mixCueIn}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                Start point for mixing
-              </div>
-            </div>
 
-            <div className="input-group">
-              <label className="input-label">Mix Cue Out (seconds)</label>
-              <input
-                type="number"
-                className="input"
+              <Input
+                label="Mix Cue Out (seconds)"
                 placeholder={track.track.duration ? String(track.track.duration) : '0'}
+                type="number"
                 value={mixCueOut}
                 onChange={(e) => setMixCueOut(e.target.value)}
-                step="0.1"
-                min="0"
+                error={errors.mixCueOut}
+                helperText="End point for mixing"
+                min={0}
+                step={0.1}
               />
-              {errors.mixCueOut && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.mixCueOut}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                End point for mixing
-              </div>
             </div>
-          </div>
-        </div>
+          </ModalBody>
 
-        <div className="modal-actions">
-          <button className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave}>
-            Save Changes
-          </button>
+          <ModalFooter className="pt-4 mt-4 border-t border-[var(--color-border-subtle)] justify-between items-center">
+            <div className="text-xs text-[var(--color-text-tertiary)]">
+              Press <kbd className="px-1.5 py-0.5 bg-[var(--color-bg-elevated-3)] rounded text-[var(--color-text-secondary)] font-mono">Esc</kbd> to cancel or <kbd className="px-1.5 py-0.5 bg-[var(--color-bg-elevated-3)] rounded text-[var(--color-text-secondary)] font-mono">Ctrl+Enter</kbd> to save
+            </div>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleSave}>
+                Save Changes
+              </Button>
+            </div>
+          </ModalFooter>
         </div>
-
-        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', textAlign: 'center', marginTop: '8px' }}>
-          Press <kbd>Esc</kbd> to cancel or <kbd>Ctrl+Enter</kbd> to save
-        </div>
-      </div>
-    </div>
+      </ModalContent>
+    </Modal>
   );
 };

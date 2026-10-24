@@ -2,17 +2,11 @@
  * Data Quality Review Component
  *
  * Human-in-the-loop interface for validating low-confidence enrichment data.
- * Implements 2025 best practices for data quality management.
- *
- * Features:
- * - Multi-tier confidence filtering (high/medium/low)
- * - Setlist context view (surrounding tracks)
- * - Approve/reject/skip actions
- * - Bulk review workflow
- * - Real-time statistics dashboard
+ * Implements design system standards and modern review workflows.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Button, Badge } from './ui';
 import './DataQualityReview.css';
 
 // Types
@@ -169,14 +163,12 @@ export const DataQualityReview: React.FC = () => {
       switch (e.key) {
         case 'a':
         case 'A':
-          // Approve suggestion
           if (currentTrack.suggested_genre) {
             handleAction('approve', 'genre', currentTrack.suggested_genre);
           }
           break;
         case 'r':
         case 'R':
-          // Reject suggestion
           if (currentTrack.suggested_genre) {
             handleAction('reject', 'genre', currentTrack.suggested_genre);
           }
@@ -184,13 +176,11 @@ export const DataQualityReview: React.FC = () => {
         case 's':
         case 'S':
         case ' ':
-          // Skip
           e.preventDefault();
           handleAction('skip', 'genre');
           break;
         case 'c':
         case 'C':
-          // Toggle context
           setShowContext(!showContext);
           break;
       }
@@ -217,11 +207,26 @@ export const DataQualityReview: React.FC = () => {
         <div className="empty-state">
           <h2>🎉 All Caught Up!</h2>
           <p>No tracks currently need review.</p>
-          <button onClick={loadTracks}>Refresh</button>
+          <Button variant="primary" onClick={loadTracks}>
+            Refresh
+          </Button>
         </div>
       </div>
     );
   }
+
+  const getConfidenceBadgeVariant = (level?: 'high' | 'medium' | 'low') => {
+    switch (level) {
+      case 'high':
+        return 'success';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'error';
+      default:
+        return 'secondary';
+    }
+  };
 
   return (
     <div className="data-quality-review">
@@ -254,8 +259,9 @@ export const DataQualityReview: React.FC = () => {
       {/* Filters */}
       <div className="filters-bar">
         <div className="filter-group">
-          <label>Confidence Level:</label>
+          <label htmlFor="confidence-filter">Confidence Level:</label>
           <select
+            id="confidence-filter"
             value={confidenceFilter}
             onChange={(e) => setConfidenceFilter(e.target.value as ConfidenceLevel)}
           >
@@ -267,8 +273,9 @@ export const DataQualityReview: React.FC = () => {
         </div>
 
         <div className="filter-group">
-          <label>Issue Type:</label>
+          <label htmlFor="issue-type-filter">Issue Type:</label>
           <select
+            id="issue-type-filter"
             value={issueTypeFilter}
             onChange={(e) => setIssueTypeFilter(e.target.value as IssueType)}
           >
@@ -279,7 +286,7 @@ export const DataQualityReview: React.FC = () => {
           </select>
         </div>
 
-        <div className="filter-group">
+        <div className="filter-group ml-auto">
           <label>Progress:</label>
           <span className="progress-indicator">
             {currentTrackIndex + 1} / {tracks.length}
@@ -334,9 +341,12 @@ export const DataQualityReview: React.FC = () => {
             </div>
 
             <div className="confidence-info">
-              <span className={`confidence-badge ${currentTrack.genre_confidence}`}>
+              <Badge
+                variant={getConfidenceBadgeVariant(currentTrack.genre_confidence)}
+                size="md"
+              >
                 {currentTrack.genre_confidence?.toUpperCase()} CONFIDENCE
-              </span>
+              </Badge>
               {currentTrack.genre_match_score && (
                 <span className="match-score">
                   Match Score: {currentTrack.genre_match_score.toFixed(1)}%
@@ -357,39 +367,46 @@ export const DataQualityReview: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="action-buttons">
-          <button
-            className="action-btn approve"
+          <Button
+            variant="primary"
+            size="lg"
+            className="flex-1"
             onClick={() => handleAction('approve', 'genre', currentTrack.suggested_genre)}
             disabled={!currentTrack.suggested_genre}
             title="Keyboard: A"
           >
             ✓ Approve
-          </button>
+          </Button>
 
-          <button
-            className="action-btn reject"
+          <Button
+            variant="outline"
+            size="lg"
+            className="flex-1 border-[var(--color-border-error)] text-[var(--color-error)] hover:bg-[var(--color-error-bg)]"
             onClick={() => handleAction('reject', 'genre', currentTrack.suggested_genre)}
             disabled={!currentTrack.suggested_genre}
             title="Keyboard: R"
           >
             ✗ Reject
-          </button>
+          </Button>
 
-          <button
-            className="action-btn skip"
+          <Button
+            variant="secondary"
+            size="lg"
+            className="flex-1"
             onClick={() => handleAction('skip', 'genre')}
             title="Keyboard: S or Space"
           >
             → Skip
-          </button>
+          </Button>
 
-          <button
-            className="action-btn context"
+          <Button
+            variant="outline"
+            size="lg"
             onClick={() => setShowContext(!showContext)}
             title="Keyboard: C"
           >
             {showContext ? '▼' : '▶'} Context ({currentTrack.setlist_contexts.length})
-          </button>
+          </Button>
         </div>
 
         {/* Setlist Context */}
