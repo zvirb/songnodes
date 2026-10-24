@@ -80,6 +80,9 @@ const badgeVariants = cva(
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /** Icon to display before the badge text */
   icon?: React.ReactNode;
 
@@ -121,6 +124,7 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       icon,
       showDot,
       children,
+      'data-testid': testId = 'badge',
       ...props
     },
     ref
@@ -128,6 +132,7 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
     return (
       <div
         ref={ref}
+        data-testid={testId}
         className={cn(badgeVariants({ variant, size }), className)}
         {...props}
       >

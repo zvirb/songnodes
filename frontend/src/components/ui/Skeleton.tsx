@@ -41,6 +41,9 @@ const skeletonVariants = cva(
 export interface SkeletonProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof skeletonVariants> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /** Width of the skeleton */
   width?: string | number;
 
@@ -77,6 +80,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
       height,
       noAnimation,
       style,
+      'data-testid': testId = 'skeleton',
       ...props
     },
     ref
@@ -84,6 +88,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
     return (
       <div
         ref={ref}
+        data-testid={testId}
         role="status"
         aria-busy="true"
         aria-live="polite"

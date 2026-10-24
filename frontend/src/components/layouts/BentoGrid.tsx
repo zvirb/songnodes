@@ -28,6 +28,9 @@ import { Card } from '../ui/Card';
  * BentoGrid Props
  */
 export interface BentoGridProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /**
    * Number of columns for desktop layout
    * @default 3
@@ -72,6 +75,7 @@ export const BentoGrid = React.forwardRef<HTMLDivElement, BentoGridProps>(
       columns = 3,
       gap = 'md',
       animate = true,
+      'data-testid': testId = 'bento-grid',
       ...props
     },
     ref
@@ -93,6 +97,7 @@ export const BentoGrid = React.forwardRef<HTMLDivElement, BentoGridProps>(
     return (
       <Comp
         ref={ref}
+        data-testid={testId}
         className={cn(
           'grid',
           columnClasses[columns],
@@ -116,6 +121,9 @@ BentoGrid.displayName = 'BentoGrid';
  * BentoCard Props
  */
 export interface BentoCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /**
    * Number of columns to span
    * @default 1
@@ -196,6 +204,7 @@ export const BentoCard = React.forwardRef<HTMLDivElement, BentoCardProps>(
       variant = 'default',
       animate = true,
       style,
+      'data-testid': testId = 'bento-card',
       ...props
     },
     ref
@@ -215,19 +224,14 @@ export const BentoCard = React.forwardRef<HTMLDivElement, BentoCardProps>(
         }
       : undefined;
 
-    const glassStyles = glass
-      ? {
-          background:
-            'linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(26, 26, 26, 0.8) 100%)',
-          backdropFilter: 'blur(10px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(10px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        }
-      : {};
+    const glassClasses = glass
+      ? 'bg-[var(--color-panel-bg)] border border-[var(--color-border-subtle)] backdrop-blur-md'
+      : '';
 
     return (
       <motion.div
         ref={ref}
+        data-testid={testId}
         className={cn(
           colSpanClasses[colSpan],
           rowSpanClasses[rowSpan],
@@ -243,8 +247,7 @@ export const BentoCard = React.forwardRef<HTMLDivElement, BentoCardProps>(
         <Card
           variant={variant}
           enable3D={enable3D}
-          className="h-full w-full p-6"
-          style={glassStyles}
+          className={cn('h-full w-full p-6', glassClasses)}
         >
           {children}
         </Card>

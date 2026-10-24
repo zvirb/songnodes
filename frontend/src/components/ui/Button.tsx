@@ -44,38 +44,38 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: [
-          'bg-[rgb(var(--color-brand-primary))] text-[rgb(var(--color-text-inverse))]',
-          'hover:bg-[rgb(var(--color-brand-primary-hover))]',
-          'active:bg-[rgb(var(--color-brand-primary-active))]',
+          'bg-[var(--color-brand-primary)] text-[var(--color-text-inverse)]',
+          'hover:bg-[var(--color-brand-primary-hover)]',
+          'active:bg-[var(--color-brand-primary-active)]',
           'shadow-[var(--shadow-button)] hover:shadow-[var(--shadow-button-hover)]',
-          'focus-visible:ring-[rgb(var(--color-brand-primary))]',
+          'focus-visible:ring-[var(--color-brand-primary)]',
         ].join(' '),
         secondary: [
-          'bg-[rgb(var(--color-bg-elevated-2))] text-[rgb(var(--color-text-primary))]',
-          'border border-[rgb(var(--color-border-default))]',
-          'hover:bg-[rgb(var(--color-bg-elevated-3))]',
-          'active:bg-[rgb(var(--color-bg-elevated-4))]',
-          'focus-visible:ring-[rgb(var(--color-brand-primary))]',
+          'bg-[var(--color-bg-elevated-2)] text-[var(--color-text-primary)]',
+          'border border-[var(--color-border-default)]',
+          'hover:bg-[var(--color-bg-elevated-3)]',
+          'active:bg-[var(--color-bg-elevated-4)]',
+          'focus-visible:ring-[var(--color-brand-primary)]',
         ].join(' '),
         ghost: [
-          'text-[rgb(var(--color-text-primary))]',
-          'hover:bg-[rgba(255,255,255,0.1)]',
-          'active:bg-[rgba(255,255,255,0.15)]',
-          'focus-visible:ring-[rgb(var(--color-brand-primary))]',
+          'text-[var(--color-text-primary)]',
+          'hover:bg-[var(--color-bg-elevated-2)]',
+          'active:bg-[var(--color-bg-elevated-3)]',
+          'focus-visible:ring-[var(--color-brand-primary)]',
         ].join(' '),
         outline: [
-          'border border-[rgb(var(--color-border-default))]',
-          'text-[rgb(var(--color-text-primary))]',
-          'hover:bg-[rgb(var(--color-bg-elevated-1))]',
-          'hover:border-[rgb(var(--color-brand-primary))]',
-          'focus-visible:ring-[rgb(var(--color-brand-primary))]',
+          'border border-[var(--color-border-default)]',
+          'text-[var(--color-text-primary)]',
+          'hover:bg-[var(--color-bg-elevated-1)]',
+          'hover:border-[var(--color-brand-primary)]',
+          'focus-visible:ring-[var(--color-brand-primary)]',
         ].join(' '),
         link: [
-          'text-[rgb(var(--color-brand-primary))]',
+          'text-[var(--color-brand-primary)]',
           'underline-offset-4',
           'hover:underline',
-          'hover:text-[rgb(var(--color-brand-primary-hover))]',
-          'focus-visible:ring-[rgb(var(--color-brand-primary))]',
+          'hover:text-[var(--color-brand-primary-hover)]',
+          'focus-visible:ring-[var(--color-brand-primary)]',
         ].join(' '),
       },
       size: {
@@ -126,6 +126,9 @@ const microInteractions = {
 export interface ButtonProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDrag' | 'onDragEnd' | 'onDragStart'>,
     VariantProps<typeof buttonVariants> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /**
    * Render as child component (Radix Slot pattern)
    * Useful for rendering as Link or other interactive elements
@@ -233,6 +236,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       disableAnimations = false,
       children,
+      'data-testid': testId = 'button',
       ...props
     },
     ref
@@ -253,6 +257,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Slot
           className={cn(buttonVariants({ variant, size, fullWidth, className }))}
           ref={ref}
+          data-testid={testId}
           aria-busy={loading}
           aria-disabled={isDisabled}
           {...props}
@@ -306,6 +311,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <motion.button
         className={cn(buttonVariants({ variant, size, fullWidth, className }))}
         ref={ref}
+        data-testid={testId}
         disabled={isDisabled}
         aria-busy={loading}
         aria-disabled={isDisabled}

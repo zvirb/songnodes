@@ -43,10 +43,11 @@ const SelectValue = SelectPrimitive.Value;
  */
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & { 'data-testid'?: string }
+>(({ className, children, 'data-testid': testId = 'select-trigger', ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
+    data-testid={testId}
     className={cn(
       'flex h-[var(--input-height-base)] w-full items-center justify-between',
       'rounded-[var(--radius-input)] border border-[var(--color-input-border)]',
@@ -155,11 +156,12 @@ SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayNam
  */
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = 'popper', ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & { 'data-testid'?: string }
+>(({ className, children, position = 'popper', 'data-testid': testId = 'select-content', ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
+      data-testid={testId}
       className={cn(
         'relative z-[var(--z-dropdown)] max-h-96 min-w-[8rem] overflow-hidden',
         'rounded-[var(--radius-md)] border border-[var(--color-border-default)]',
@@ -217,10 +219,11 @@ SelectLabel.displayName = SelectPrimitive.Label.displayName;
  */
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & { 'data-testid'?: string }
+>(({ className, children, 'data-testid': testId = 'select-item', ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
+    data-testid={testId}
     className={cn(
       'relative flex w-full cursor-default select-none items-center',
       'rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none',

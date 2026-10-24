@@ -61,6 +61,9 @@ const cardVariants = cva(
 export interface CardProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'>,
     VariantProps<typeof cardVariants> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /**
    * Enable 3D hover effect (2025 Design Trend)
    * @default false
@@ -73,7 +76,7 @@ export interface CardProps
  * 2025 Design Trend: 3D Interactive Elements
  */
 const Card3D = React.forwardRef<HTMLDivElement, Omit<CardProps, 'enable3D'>>(
-  ({ className, variant, interactive, selected, onMouseMove, onMouseLeave, style, ...props }, ref) => {
+  ({ className, variant, interactive, selected, onMouseMove, onMouseLeave, style, 'data-testid': testId = 'card', ...props }, ref) => {
     const x = useMotionValue(0);
     const y = useMotionValue(0);
 
@@ -109,6 +112,7 @@ const Card3D = React.forwardRef<HTMLDivElement, Omit<CardProps, 'enable3D'>>(
     return (
       <motion.div
         ref={ref}
+        data-testid={testId}
         className={cn(
           cardVariants({ variant, interactive, selected }),
           className
@@ -171,7 +175,7 @@ Card3D.displayName = 'Card3D';
  * </Card>
  */
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, interactive, selected, enable3D = false, ...props }, ref) => {
+  ({ className, variant, interactive, selected, enable3D = false, 'data-testid': testId = 'card', ...props }, ref) => {
     // Check if user prefers reduced motion
     const prefersReducedMotion = typeof window !== 'undefined'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -182,6 +186,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       return (
         <Card3D
           ref={ref}
+          data-testid={testId}
           className={className}
           variant={variant}
           interactive={interactive}
@@ -194,6 +199,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
+        data-testid={testId}
         className={cn(
           cardVariants({ variant, interactive, selected }),
           className

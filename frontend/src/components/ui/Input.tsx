@@ -63,6 +63,9 @@ const inputVariants = cva(
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     VariantProps<typeof inputVariants> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /** Label text for the input */
   label?: string;
 
@@ -136,6 +139,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       id,
       maxLength,
       value,
+      'data-testid': testId = 'input',
       ...props
     },
     ref
@@ -185,6 +189,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {/* Input field */}
           <input
             type={type}
+            data-testid={testId}
             className={cn(
               inputVariants({ variant: effectiveVariant, inputSize }),
               leftIcon && 'pl-10',

@@ -138,6 +138,7 @@ export interface ZIndexTokens {
   panels: number;
   toolbar: number;
   header: number;
+  'modal-backdrop': number;
   modal: number;
   dropdown: number;
   tooltip: number;
@@ -198,7 +199,7 @@ export const colors: ColorTokens = {
 
   // Semantic
   success: '#00ff41',
-  warning: '#ffaa44',
+  warning: '#D68910',
   error: '#ff4444',
   info: '#44aaff',
 
@@ -305,6 +306,7 @@ export const zIndex: ZIndexTokens = {
   panels: 20,
   toolbar: 30,
   header: 40,
+  'modal-backdrop': 45,
   modal: 50,
   dropdown: 60,
   tooltip: 70,

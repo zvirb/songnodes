@@ -57,6 +57,13 @@
   --color-brand-tertiary-active: #dd2222;
   --color-brand-tertiary-muted: rgba(255, 68, 68, 0.2);
 
+  /* Neon Accent Tokens */
+  --color-neon-green: #00ff41;
+  --color-neon-blue: #44aaff;
+  --color-neon-red: #ff4444;
+  --color-neon-purple: #b026ff;
+  --color-neon-yellow: #ffaa44;
+
   /* Semantic Colors */
   --color-success: #00ff41;
   --color-success-bg: rgba(0, 255, 65, 0.1);
@@ -301,6 +308,7 @@
   --z-panels: 20;
   --z-toolbar: 30;
   --z-header: 40;
+  --z-modal-backdrop: 45;
   --z-modal: 50;
   --z-dropdown: 60;
   --z-tooltip: 70;

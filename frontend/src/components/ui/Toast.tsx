@@ -78,44 +78,46 @@ export interface ToastConfig {
  *   );
  * }
  */
-export function Toaster() {
+export function Toaster({ 'data-testid': testId = 'toaster' }: { 'data-testid'?: string }) {
   return (
-    <Sonner
-      position="bottom-right"
-      theme="dark"
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast: [
-            'group toast',
-            'group-[.toaster]:bg-[var(--color-modal-bg)]',
-            'group-[.toaster]:text-[var(--color-text-primary)]',
-            'group-[.toaster]:border-[var(--color-border-default)]',
-            'group-[.toaster]:shadow-[var(--shadow-lg)]',
-            'group-[.toaster]:rounded-[var(--radius-lg)]',
-          ].join(' '),
-          description: 'group-[.toast]:text-[var(--color-text-secondary)]',
-          actionButton: [
-            'group-[.toast]:bg-[var(--color-brand-primary)]',
-            'group-[.toast]:text-[var(--color-text-inverse)]',
-          ].join(' '),
-          cancelButton: [
-            'group-[.toast]:bg-[var(--color-bg-elevated-3)]',
-            'group-[.toast]:text-[var(--color-text-primary)]',
-          ].join(' '),
-          closeButton: [
-            'group-[.toast]:bg-[var(--color-bg-elevated-2)]',
-            'group-[.toast]:text-[var(--color-text-secondary)]',
-            'group-[.toast]:border-[var(--color-border-default)]',
-          ].join(' '),
-        },
-      }}
-      expand={false}
-      richColors
-      closeButton
-      duration={4000}
-      visibleToasts={3}
-    />
+    <div data-testid={testId}>
+      <Sonner
+        position="bottom-right"
+        theme="dark"
+        className="toaster group"
+        toastOptions={{
+          classNames: {
+            toast: [
+              'group toast',
+              'group-[.toaster]:bg-[var(--color-modal-bg)]',
+              'group-[.toaster]:text-[var(--color-text-primary)]',
+              'group-[.toaster]:border-[var(--color-border-default)]',
+              'group-[.toaster]:shadow-[var(--shadow-lg)]',
+              'group-[.toaster]:rounded-[var(--radius-lg)]',
+            ].join(' '),
+            description: 'group-[.toast]:text-[var(--color-text-secondary)]',
+            actionButton: [
+              'group-[.toast]:bg-[var(--color-brand-primary)]',
+              'group-[.toast]:text-[var(--color-text-inverse)]',
+            ].join(' '),
+            cancelButton: [
+              'group-[.toast]:bg-[var(--color-bg-elevated-3)]',
+              'group-[.toast]:text-[var(--color-text-primary)]',
+            ].join(' '),
+            closeButton: [
+              'group-[.toast]:bg-[var(--color-bg-elevated-2)]',
+              'group-[.toast]:text-[var(--color-text-secondary)]',
+              'group-[.toast]:border-[var(--color-border-default)]',
+            ].join(' '),
+          },
+        }}
+        expand={false}
+        richColors
+        closeButton
+        duration={4000}
+        visibleToasts={3}
+      />
+    </div>
   );
 }
 

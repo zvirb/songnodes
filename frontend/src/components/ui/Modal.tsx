@@ -58,21 +58,19 @@ const ModalPortal = DialogPrimitive.Portal;
  */
 const ModalOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & { 'data-testid'?: string }
+>(({ className, 'data-testid': testId = 'modal-overlay', ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
+    data-testid={testId}
     className={cn(
       'fixed inset-0 z-[var(--z-modal-backdrop)]',
+      'bg-[var(--color-modal-overlay)]',
+      'backdrop-blur-md',
       'data-[state=open]:animate-in data-[state=open]:fade-in-0',
       'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
       className
     )}
-    style={{
-      background: 'radial-gradient(circle, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.9) 100%)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    }}
     {...props}
   />
 ));
@@ -104,6 +102,9 @@ const modalPositionClasses: Record<ModalPosition, string> = {
 
 export interface ModalContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+  /** Test identifier for component */
+  'data-testid'?: string;
+
   /**
    * Size of the modal
    * @default 'md'
@@ -158,6 +159,7 @@ const ModalContent = React.forwardRef<
       position = 'center',
       showClose = true,
       preventBackdropClose = false,
+      'data-testid': testId = 'modal-content',
       ...props
     },
     ref
@@ -166,6 +168,7 @@ const ModalContent = React.forwardRef<
       <ModalOverlay onClick={preventBackdropClose ? (e) => e.preventDefault() : undefined} />
       <DialogPrimitive.Content
         ref={ref}
+        data-testid={testId}
         className={cn(
           'fixed left-[50%] translate-x-[-50%] z-[var(--z-modal)]',
           'w-full',
@@ -173,23 +176,17 @@ const ModalContent = React.forwardRef<
           'flex flex-col',
           'max-h-[85vh]',
           'gap-4 p-6',
+          'bg-[var(--color-modal-bg)] border border-[var(--color-border-default)]',
           'rounded-[var(--radius-modal)]',
           'shadow-[var(--shadow-modal)]',
-          'focus:outline-none',
+          'focus:outline-none focus:ring-2 focus:ring-[var(--color-border-focus)]',
           'data-[state=open]:animate-in data-[state=open]:fade-in-0',
           'data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-2',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
           'data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-bottom-2',
-          // Glass morphism effect (2025 Design Trend)
           'relative overflow-hidden',
           className
         )}
-        style={{
-          background: 'linear-gradient(135deg, rgba(26, 26, 26, 0.98) 0%, rgba(26, 26, 26, 0.85) 100%)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
         {...props}
       >
         {children}

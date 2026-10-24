@@ -47,44 +47,44 @@ p, h1, h2, h3, h4, h5, h6 {
 /* Dark Theme Colors */
 :root {
   /* Primary Colors */
-  --color-bg-primary: #0a0a0a;
-  --color-bg-secondary: #1a1a1a;
-  --color-bg-tertiary: #2a2a2a;
-  --color-bg-elevated: #3a3a3a;
+  --color-bg-primary: var(--color-bg-base);
+  --color-bg-secondary: var(--color-bg-elevated-1);
+  --color-bg-tertiary: var(--color-bg-elevated-2);
+  --color-bg-elevated: var(--color-bg-elevated-3);
 
   /* Accent Colors */
-  --color-accent-primary: #00ff41;
-  --color-accent-secondary: #ff4444;
-  --color-accent-tertiary: #44aaff;
-  --color-accent-warning: #ffaa44;
+  --color-accent-primary: var(--color-brand-primary);
+  --color-accent-secondary: var(--color-brand-tertiary);
+  --color-accent-tertiary: var(--color-brand-secondary);
+  --color-accent-warning: var(--color-warning);
 
   /* Text Colors - WCAG AA Compliant */
   --color-text-primary: #ffffff;        /* 21:1 contrast - PASS */
-  --color-text-secondary: #e0e0e0;      /* 6.2:1 contrast - PASS (was #cccccc at 3.82:1) */
-  --color-text-tertiary: #b0b0b0;       /* 4.6:1 contrast - PASS (was #999999 at 2.94:1) */
+  --color-text-secondary: #e0e0e0;      /* 6.2:1 contrast - PASS */
+  --color-text-tertiary: #b0b0b0;       /* 4.6:1 contrast - PASS */
   --color-text-disabled: #808080;       /* 3.1:1 - PASS for disabled state */
 
   /* Border Colors - WCAG AA Compliant for UI Components */
-  --color-border-primary: #4a4a4a;      /* 3.2:1 contrast - PASS (was #333333 at 1.93:1) */
-  --color-border-secondary: #5a5a5a;    /* 3.8:1 contrast - PASS (was #444444) */
-  --color-border-focus: #00ff41;
-  --color-border-error: #ff4444;
+  --color-border-primary: var(--color-border-default);
+  --color-border-secondary: var(--color-border-strong);
+  --color-border-focus: var(--color-brand-primary);
+  --color-border-error: var(--color-error);
 
   /* Graph Colors */
-  --color-node-default: #44aaff;
-  --color-node-selected: #00ff41;
+  --color-node-default: var(--color-brand-secondary);
+  --color-node-selected: var(--color-brand-primary);
   --color-node-hover: #66ccff;
   --color-edge-default: #333333;
   --color-edge-active: #666666;
-  --color-edge-path: #00ff41;
+  --color-edge-path: var(--color-brand-primary);
 
   /* UI Element Colors */
-  --color-button-bg: #2a2a2a;
-  --color-button-hover: #3a3a3a;
-  --color-button-active: #4a4a4a;
-  --color-input-bg: #1a1a1a;
+  --color-button-bg: var(--color-bg-elevated-2);
+  --color-button-hover: var(--color-bg-elevated-3);
+  --color-button-active: var(--color-bg-elevated-4);
+  --color-input-bg: var(--color-bg-elevated-1);
   --color-panel-bg: rgba(26, 26, 26, 0.95);
-  --color-panel-border: #333333;
+  --color-panel-border: var(--color-border-subtle);
 
   /* Shadows */
   --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.5);
@@ -292,8 +292,8 @@ p, h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary:hover {
-  background: #00dd37;
-  border-color: #00dd37;
+  background: var(--color-brand-primary-hover);
+  border-color: var(--color-brand-primary-hover);
 }
 
 .btn-secondary {
@@ -789,8 +789,8 @@ p, h1, h2, h3, h4, h5, h6 {
 }
 
 .onboarding-primary:hover {
-  background: #00dd37;
-  border-color: #00dd37;
+  background: var(--color-brand-primary-hover);
+  border-color: var(--color-brand-primary-hover);
 }
 
 .onboarding-secondary {
