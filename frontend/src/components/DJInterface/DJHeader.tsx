@@ -43,10 +43,10 @@ export function DJHeader({
     : 'Show a quick orientation guide';
 
   return (
-    <header className={styles.header}>
+    <header className={styles.header} data-testid="dj-header">
       <div className={styles.headerLeft}>
         <h1 className={styles.headerTitle}>
-          <Music size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} aria-hidden="true" />
+          <Music size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 'var(--space-2)' }} aria-hidden="true" />
           SongNodes DJ
         </h1>
 
@@ -54,17 +54,18 @@ export function DJHeader({
       </div>
 
       <div className={styles.headerRight}>
-        <span className={styles.statBadge}>
+        <span className={styles.statBadge} data-testid="stat-badge-tracks">
           {trackCount} Tracks Loaded
         </span>
 
-        <span className={`${styles.statBadge} ${styles.success}`}>
+        <span className={`${styles.statBadge} ${styles.success}`} data-testid="stat-badge-connections">
           {connectionCount} Connections
         </span>
 
         <button
           onClick={onOpenArtistAttribution}
           className={`${styles.headerButton} ${styles.danger}`}
+          data-testid="fix-artist-attribution-button"
           aria-label="Fix artist attribution for unknown tracks"
         >
           <Wand2 size={16} strokeWidth={2} aria-hidden="true" />
@@ -74,6 +75,7 @@ export function DJHeader({
         <button
           onClick={onOpenTracklistImporter}
           className={`${styles.headerButton} ${styles.info}`}
+          data-testid="import-tracklist-button"
           aria-label="Import tracklist from text or file"
         >
           <FileUp size={16} strokeWidth={2} aria-hidden="true" />
@@ -83,6 +85,7 @@ export function DJHeader({
         <button
           onClick={onOpenGraphFilters}
           className={styles.headerButton}
+          data-testid="graph-filters-button"
           aria-label="Configure graph visualization filters"
         >
           <Filter size={16} strokeWidth={2} aria-hidden="true" />
@@ -92,6 +95,7 @@ export function DJHeader({
         <button
           onClick={onOpenSettings}
           className={styles.headerButton}
+          data-testid="settings-toggle"
           aria-label="Open application settings"
         >
           <SettingsIcon size={16} strokeWidth={2} aria-hidden="true" />
@@ -101,10 +105,11 @@ export function DJHeader({
         <button
           onClick={onOpenOnboarding}
           className={styles.headerButton}
+          data-testid="quick-tour-button"
           title={onboardingTooltip}
           aria-label={onboardingTooltip}
         >
-          <HelpCircle size={18} strokeWidth={1.8} />
+          <HelpCircle size={18} strokeWidth={1.8} aria-hidden="true" />
           Quick Tour
         </button>
       </div>

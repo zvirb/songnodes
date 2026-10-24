@@ -242,10 +242,10 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
 
       {/* Loading State */}
       {isLoading && (
-        <div className={styles.loadingContainer}>
+        <div className={styles.loadingContainer} data-testid="graph-loading">
           <div className={styles.spinner} />
-          <p style={{ fontSize: '16px', margin: 0 }}>Loading your music library...</p>
-          <p style={{ fontSize: '14px', margin: '8px 0 0 0', opacity: 0.7 }}>
+          <p style={{ fontSize: 'var(--font-size-base)', margin: 0 }}>Loading your music library...</p>
+          <p style={{ fontSize: 'var(--font-size-sm)', margin: 'var(--space-2) 0 0 0', opacity: 0.7 }}>
             Found {tracks.length} tracks so far
           </p>
         </div>
@@ -253,13 +253,14 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
 
       {/* Error State */}
       {error && !isLoading && (
-        <div className={styles.errorContainer}>
+        <div className={styles.errorContainer} data-testid="data-loading-error">
           <div className={styles.errorIcon}>⚠️</div>
           <h2 className={styles.errorTitle}>Failed to Load Music Library</h2>
           <p className={styles.errorMessage}>{error}</p>
           <button
             onClick={() => window.location.reload()}
             className={styles.headerButton}
+            aria-label="Retry loading library"
           >
             Retry
           </button>

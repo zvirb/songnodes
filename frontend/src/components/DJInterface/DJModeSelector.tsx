@@ -47,9 +47,10 @@ export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): Rea
   };
 
   return (
-    <div className={styles.modeSelector}>
+    <div className={styles.modeSelector} data-testid="dj-mode-selector" role="group" aria-label="Interface Mode Selector">
       <button
         onClick={handlePlayClick}
+        data-testid="mode-toggle"
         aria-label="Switch to PLAY mode"
         aria-pressed={mode === 'play'}
         className={`${styles.modeButton} ${mode === 'play' ? styles.modeButtonActive : ''}`}
@@ -60,6 +61,7 @@ export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): Rea
 
       <button
         onClick={handlePlanClick}
+        data-testid="mode-toggle-plan"
         aria-label="Switch to PLAN mode"
         aria-pressed={mode === 'plan'}
         className={`${styles.modeButton} ${mode === 'plan' ? styles.modeButtonActive : ''}`}

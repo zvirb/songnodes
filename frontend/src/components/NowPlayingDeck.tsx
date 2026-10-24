@@ -37,8 +37,8 @@ const WaveformDisplay: React.FC<{
       const y = (canvas.height - barHeight) / 2;
 
       const gradient = ctx.createLinearGradient(x, 0, x, canvas.height);
-      gradient.addColorStop(0, '#4A90E2');
-      gradient.addColorStop(1, '#7ED321');
+      gradient.addColorStop(0, '#44aaff'); // var(--color-brand-secondary)
+      gradient.addColorStop(1, '#00ff41'); // var(--color-brand-primary)
       ctx.fillStyle = gradient;
 
       ctx.fillRect(x, y, barWidth - 1, barHeight);
@@ -48,10 +48,10 @@ const WaveformDisplay: React.FC<{
       const clampedProgress = Math.max(0, Math.min(progress, 1));
       const progressX = canvas.width * clampedProgress;
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
       ctx.fillRect(0, 0, progressX, canvas.height);
 
-      ctx.fillStyle = '#7ED321';
+      ctx.fillStyle = '#00ff41'; // var(--color-brand-primary)
       ctx.fillRect(progressX - 1, 0, 2, canvas.height);
     }
   }, [waveformData, progress]);
@@ -61,12 +61,14 @@ const WaveformDisplay: React.FC<{
       ref={canvasRef}
       width={800}
       height={height}
+      data-testid="waveform-canvas"
+      aria-label="Track audio waveform visualization"
       style={{
         width: '100%',
         height: `${height}px`,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: '4px',
-        border: '1px solid rgba(255,255,255,0.2)'
+        backgroundColor: 'var(--color-bg-elevated-1)',
+        borderRadius: 'var(--radius-base)',
+        border: '1px solid var(--color-border-subtle)'
       }}
     />
   );
@@ -254,24 +256,29 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
 
   if (!track) {
     return (
-      <div className="now-playing-deck-empty" style={{
-        padding: '40px',
-        backgroundColor: 'rgba(0,0,0,0.9)',
-        borderRadius: '12px',
-        border: '2px solid rgba(255,255,255,0.1)',
-        textAlign: 'center'
-      }}>
+      <div
+        className="now-playing-deck-empty"
+        data-testid="now-playing-empty"
+        style={{
+          padding: 'var(--space-8)',
+          backgroundColor: 'var(--color-bg-elevated-1)',
+          borderRadius: 'var(--radius-xl)',
+          border: '2px solid var(--color-border-subtle)',
+          textAlign: 'center'
+        }}
+      >
         <p style={{
-          color: '#8E8E93',
-          fontSize: '18px',
+          color: 'var(--color-text-secondary)',
+          fontSize: 'var(--font-size-lg)',
+          fontWeight: 'var(--font-weight-medium)',
           margin: 0
         }}>
           No Track Selected
         </p>
         <p style={{
-          color: '#8E8E93',
-          fontSize: '14px',
-          marginTop: '8px'
+          color: 'var(--color-text-tertiary)',
+          fontSize: 'var(--font-size-sm)',
+          marginTop: 'var(--space-2)'
         }}>
           Select a track from the graph or browser
         </p>
@@ -280,64 +287,85 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
   }
 
   return (
-    <div className="now-playing-deck" style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '14px',
-      padding: '16px 20px',
-      backgroundColor: 'rgba(0,0,0,0.9)',
-      borderRadius: '12px',
-      border: '2px solid rgba(255,255,255,0.2)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-      height: '100%',
-      maxHeight: '280px',
-      overflow: 'hidden'
-    }}>
-      <div style={{
+    <div
+      className="now-playing-deck"
+      data-testid="now-playing-deck"
+      style={{
         display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        minHeight: 0,
-        whiteSpace: 'nowrap',
+        flexDirection: 'column',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-4) var(--space-5)',
+        backgroundColor: 'var(--color-panel-bg)',
+        borderRadius: 'var(--radius-xl)',
+        border: '2px solid var(--color-border-default)',
+        boxShadow: 'var(--shadow-lg)',
+        height: '100%',
+        maxHeight: '280px',
         overflow: 'hidden'
-      }}>
-        <span style={{
-          color: '#FFFFFF',
-          fontSize: '18px',
-          fontWeight: 700,
-          letterSpacing: '-0.5px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          flexShrink: 1
-        }}>
+      }}
+    >
+      <div
+        data-testid="now-playing"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+          minHeight: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden'
+        }}
+      >
+        <span
+          data-testid="telemetry-title"
+          style={{
+            color: 'var(--color-text-primary)',
+            fontSize: 'var(--font-size-lg)',
+            fontWeight: 'var(--font-weight-bold)',
+            letterSpacing: 'var(--letter-spacing-tight)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            flexShrink: 1
+          }}
+        >
           {track.name}
         </span>
-        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
-        <span style={{
-          color: '#8E8E93',
-          fontSize: '14px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          flexShrink: 1
-        }}>
+        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-base)', flexShrink: 0 }}>•</span>
+        <span
+          data-testid="telemetry-artist"
+          style={{
+            color: 'var(--color-text-secondary)',
+            fontSize: 'var(--font-size-sm)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            flexShrink: 1
+          }}
+        >
           {track.artist}
         </span>
-        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
-        <span style={{
-          color: '#4A90E2',
-          fontSize: '14px',
-          fontWeight: 600,
-          flexShrink: 0
-        }}>
+        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-base)', flexShrink: 0 }}>•</span>
+        <span
+          data-testid="telemetry-bpm"
+          style={{
+            color: 'var(--color-brand-secondary)',
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 'var(--font-weight-semibold)',
+            fontVariantNumeric: 'tabular-nums',
+            flexShrink: 0
+          }}
+        >
           {track.bpm ?? '—'} BPM
         </span>
-        <span style={{ color: '#8E8E93', fontSize: '16px', flexShrink: 0 }}>•</span>
-        <span style={{
-          color: '#7ED321',
-          fontSize: '14px',
-          fontWeight: 600,
-          flexShrink: 0
-        }}>
+        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-base)', flexShrink: 0 }}>•</span>
+        <span
+          data-testid="telemetry-key"
+          style={{
+            color: 'var(--color-brand-primary)',
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 'var(--font-weight-semibold)',
+            fontVariantNumeric: 'tabular-nums',
+            flexShrink: 0
+          }}
+        >
           {track.key ?? '—'}
         </span>
       </div>
@@ -345,32 +373,35 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '12px'
+        gap: 'var(--space-3)'
       }}>
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '8px 12px',
-          backgroundColor: 'rgba(74,144,226,0.08)',
-          borderRadius: '8px',
-          border: '1px solid rgba(74,144,226,0.25)'
+          padding: 'var(--space-2) var(--space-3)',
+          backgroundColor: 'var(--color-brand-secondary-muted)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--color-border-subtle)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)',
             textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '4px'
+            letterSpacing: 'var(--letter-spacing-wider)',
+            marginBottom: 'var(--space-1)'
           }}>
             Energy
           </span>
-          <span style={{
-            color: '#7ED321',
-            fontSize: '20px',
-            fontWeight: 700,
-            fontVariantNumeric: 'tabular-nums'
-          }}>
+          <span
+            data-testid="telemetry-energy"
+            style={{
+              color: 'var(--color-brand-primary)',
+              fontSize: 'var(--font-size-xl)',
+              fontWeight: 'var(--font-weight-bold)',
+              fontVariantNumeric: 'tabular-nums'
+            }}
+          >
             {energyDisplay}
           </span>
         </div>
@@ -379,26 +410,29 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '8px 12px',
-          backgroundColor: 'rgba(126,211,33,0.1)',
-          borderRadius: '8px',
-          border: '1px solid rgba(126,211,33,0.28)'
+          padding: 'var(--space-2) var(--space-3)',
+          backgroundColor: 'var(--color-success-bg)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--color-success-border)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)',
             textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '4px'
+            letterSpacing: 'var(--letter-spacing-wider)',
+            marginBottom: 'var(--space-1)'
           }}>
             Valence
           </span>
-          <span style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
-            fontWeight: 700,
-            fontVariantNumeric: 'tabular-nums'
-          }}>
+          <span
+            data-testid="telemetry-valence"
+            style={{
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-xl)',
+              fontWeight: 'var(--font-weight-bold)',
+              fontVariantNumeric: 'tabular-nums'
+            }}
+          >
             {valencePercent !== null ? `${valencePercent}` : '—'}
           </span>
         </div>
@@ -407,26 +441,29 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '8px 12px',
-          backgroundColor: 'rgba(148,163,184,0.12)',
-          borderRadius: '8px',
-          border: '1px solid rgba(148,163,184,0.28)'
+          padding: 'var(--space-2) var(--space-3)',
+          backgroundColor: 'var(--color-bg-elevated-1)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--color-border-subtle)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)',
             textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '4px'
+            letterSpacing: 'var(--letter-spacing-wider)',
+            marginBottom: 'var(--space-1)'
           }}>
             Genre
           </span>
-          <span style={{
-            color: '#FFFFFF',
-            fontSize: '14px',
-            fontWeight: 600,
-            textTransform: 'uppercase'
-          }}>
+          <span
+            data-testid="telemetry-genre"
+            style={{
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: 'var(--font-weight-semibold)',
+              textTransform: 'uppercase'
+            }}
+          >
             {track.genre ?? 'N/A'}
           </span>
         </div>
@@ -435,26 +472,29 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '8px 12px',
-          backgroundColor: 'rgba(59,130,246,0.12)',
-          borderRadius: '8px',
-          border: '1px solid rgba(59,130,246,0.28)'
+          padding: 'var(--space-2) var(--space-3)',
+          backgroundColor: 'var(--color-info-bg)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--color-info-border)'
         }}>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '10px',
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)',
             textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '4px'
+            letterSpacing: 'var(--letter-spacing-wider)',
+            marginBottom: 'var(--space-1)'
           }}>
             Length
           </span>
-          <span style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
-            fontWeight: 700,
-            fontVariantNumeric: 'tabular-nums'
-          }}>
+          <span
+            data-testid="telemetry-length"
+            style={{
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-xl)',
+              fontWeight: 'var(--font-weight-bold)',
+              fontVariantNumeric: 'tabular-nums'
+            }}
+          >
             {formatSeconds(trackDurationSeconds)}
           </span>
         </div>
@@ -463,39 +503,41 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
       <WaveformDisplay waveformData={waveformData} height={56} progress={progress} />
 
       {(previewUrl || isPreviewLoading || previewError) ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <button
               onClick={handleTogglePreview}
               disabled={!previewUrl || isPreviewLoading}
+              data-testid="play-trigger"
               style={{
                 width: '36px',
                 height: '36px',
-                borderRadius: '50%',
-                border: '1px solid rgba(255,255,255,0.2)',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                color: '#FFFFFF',
+                borderRadius: 'var(--radius-full)',
+                border: '1px solid var(--color-border-default)',
+                backgroundColor: 'var(--color-bg-elevated-2)',
+                color: 'var(--color-text-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: previewUrl ? 'pointer' : 'not-allowed'
+                cursor: previewUrl ? 'pointer' : 'not-allowed',
+                transition: 'var(--transition-button)'
               }}
               aria-label={isPlayingPreview ? 'Pause preview' : 'Play preview'}
             >
               {isPreviewLoading ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
               ) : isPlayingPreview ? (
-                <Pause size={18} />
+                <Pause size={18} aria-hidden="true" />
               ) : (
-                <Play size={18} />
+                <Play size={18} aria-hidden="true" />
               )}
             </button>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
               <div style={{
                 position: 'relative',
                 height: '6px',
-                borderRadius: '999px',
-                backgroundColor: 'rgba(255,255,255,0.08)'
+                borderRadius: 'var(--radius-full)',
+                backgroundColor: 'var(--color-bg-elevated-1)'
               }}>
                 <div style={{
                   position: 'absolute',
@@ -503,43 +545,49 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
                   left: 0,
                   height: '100%',
                   width: `${progressPercent}%`,
-                  background: 'linear-gradient(90deg, #4A90E2, #7ED321)',
-                  borderRadius: '999px',
-                  transition: 'width 0.12s ease-out'
+                  background: 'linear-gradient(90deg, var(--color-brand-secondary), var(--color-brand-primary))',
+                  borderRadius: 'var(--radius-full)',
+                  transition: 'width var(--duration-fast) var(--ease-out)'
                 }} />
               </div>
               <input
                 type="range"
+                data-testid="scrub-slider"
+                aria-label="Seek preview position"
                 min={0}
                 max={100}
                 value={Math.floor(progressPercent)}
                 onChange={(event) => handleScrub(Number(event.target.value))}
                 disabled={!previewUrl}
-                style={{ width: '100%' }}
+                style={{ width: '100%', cursor: 'pointer' }}
               />
             </div>
-            <span style={{
-              fontSize: '12px',
-              color: '#8E8E93',
-              minWidth: '68px',
-              textAlign: 'right'
-            }}>
+            <span
+              data-testid="preview-timer"
+              style={{
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--color-text-tertiary)',
+                minWidth: '68px',
+                textAlign: 'right',
+                fontVariantNumeric: 'tabular-nums'
+              }}
+            >
               {formatSeconds(totalPreviewSeconds * progress)} / {formatSeconds(totalPreviewSeconds)}
             </span>
           </div>
           {isPreviewLoading && (
-            <span style={{ fontSize: '11px', color: '#8E8E93' }}>
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
               Fetching preview from connected services…
             </span>
           )}
           {previewError && (
-            <span style={{ fontSize: '11px', color: '#EF4444' }}>{previewError}</span>
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-error)' }}>{previewError}</span>
           )}
         </div>
       ) : (
         <p style={{
-          fontSize: '12px',
-          color: '#8E8E93',
+          fontSize: 'var(--font-size-xs)',
+          color: 'var(--color-text-tertiary)',
           margin: 0
         }}>
           Connect Spotify or Tidal from settings to audition a 30s preview.

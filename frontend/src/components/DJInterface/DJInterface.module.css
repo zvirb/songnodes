@@ -34,7 +34,7 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4) var(--space-6);
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: var(--color-panel-bg);
   border-bottom: 1px solid var(--color-border-subtle);
   backdrop-filter: blur(10px);
   flex-shrink: 0;
@@ -50,7 +50,7 @@
   margin: 0;
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
-  background: linear-gradient(90deg, #4A90E2, #7ED321);
+  background: linear-gradient(90deg, var(--color-brand-secondary), var(--color-brand-primary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -58,16 +58,16 @@
 
 .headerRight {
   display: flex;
-  gap: var(--space-4);  /* Increased from 12px to 16px for better spacing */
+  gap: var(--space-4);
   align-items: center;
   overflow-x: auto;
   flex-wrap: nowrap;
   flex: 1;
   min-width: 0;
-  padding-right: var(--space-4);  /* Prevent icon truncation */
+  padding-right: var(--space-4);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  scrollbar-color: var(--color-border-subtle) transparent;
 }
 
 /* ============================================
@@ -77,7 +77,7 @@
 .modeSelector {
   display: flex;
   gap: var(--space-2);
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: var(--color-bg-elevated-1);
   padding: var(--space-1);
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border-subtle);
@@ -97,17 +97,23 @@
   cursor: pointer;
   transition: var(--transition-button);
   opacity: 0.7;
-  min-height: var(--button-height-base);  /* Increased to 44px for WCAG 2.1 AA */
+  min-height: var(--button-height-base);
 }
 
 .modeButton:hover {
   opacity: 1;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-bg-elevated-2);
+  color: var(--color-text-primary);
+}
+
+.modeButton:active {
+  background-color: var(--color-bg-elevated-3);
 }
 
 .modeButton:focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
+  box-shadow: var(--glow-focus);
 }
 
 .modeButtonActive {
@@ -116,11 +122,13 @@
 }
 
 .modeButton[data-mode="play"].modeButtonActive {
-  background-color: #7ED321;
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-inverse);
 }
 
 .modeButton[data-mode="plan"].modeButtonActive {
-  background-color: #4A90E2;
+  background-color: var(--color-brand-secondary);
+  color: var(--color-text-primary);
 }
 
 /* ============================================
@@ -131,12 +139,12 @@
   padding: var(--space-2) var(--space-3);
   background-color: var(--color-brand-secondary-muted);
   border-radius: var(--radius-lg);
-  font-size: var(--font-size-sm);  /* Increased from xs (11.1px) to sm (13.3px) for better readability */
+  font-size: var(--font-size-sm);
   color: var(--color-brand-secondary);
   font-weight: var(--font-weight-semibold);
   flex-shrink: 0;
   white-space: nowrap;
-  min-height: var(--button-height-base);  /* 44px for WCAG 2.1 AA touch targets */
+  min-height: var(--button-height-base);
   display: flex;
   align-items: center;
 }
@@ -152,8 +160,8 @@
 
 .headerButton {
   padding: var(--space-2) var(--space-3);
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: var(--color-bg-elevated-2);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
@@ -165,34 +173,44 @@
   transition: var(--transition-button);
   flex-shrink: 0;
   white-space: nowrap;
-  min-height: var(--button-height-base);  /* Increased to 44px for WCAG 2.1 AA */
+  min-height: var(--button-height-base);
 }
 
 .headerButton:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--color-bg-elevated-3);
+  border-color: var(--color-border-strong);
+}
+
+.headerButton:active {
+  background-color: var(--color-bg-elevated-4);
 }
 
 .headerButton:focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
+  box-shadow: var(--glow-focus);
 }
 
 .headerButton.danger {
-  background-color: rgba(231, 76, 60, 0.2);
-  border-color: rgba(231, 76, 60, 0.4);
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error-border);
+  color: var(--color-text-primary);
 }
 
 .headerButton.danger:hover {
-  background-color: rgba(231, 76, 60, 0.3);
+  background-color: rgba(255, 68, 68, 0.25);
+  border-color: var(--color-error);
 }
 
 .headerButton.info {
-  background-color: rgba(155, 89, 182, 0.2);
-  border-color: rgba(155, 89, 182, 0.4);
+  background-color: var(--color-info-bg);
+  border-color: var(--color-info-border);
+  color: var(--color-text-primary);
 }
 
 .headerButton.info:hover {
-  background-color: rgba(155, 89, 182, 0.3);
+  background-color: rgba(68, 170, 255, 0.25);
+  border-color: var(--color-info);
 }
 
 /* ============================================
@@ -222,7 +240,7 @@
 }
 
 .graphContainer {
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--color-panel-bg);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-subtle);
   overflow: hidden;
@@ -250,7 +268,7 @@
 }
 
 .libraryPanel {
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--color-panel-bg);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-subtle);
   padding: var(--space-5);
@@ -263,12 +281,13 @@
   margin: 0 0 var(--space-3) 0;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .searchInput {
   width: 100%;
   padding: var(--space-3) var(--space-8) var(--space-3) var(--space-3);
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: var(--color-bg-elevated-1);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
@@ -278,13 +297,15 @@
   margin-bottom: var(--space-3);
 }
 
+.searchInput:focus-visible,
 .searchInput:focus {
   border-color: var(--color-border-focus);
   box-shadow: var(--glow-focus);
+  outline: none;
 }
 
 .searchInput::placeholder {
-  color: var(--color-text-placeholder);  /* Darkened for WCAG AA contrast (3.0:1) */
+  color: var(--color-text-placeholder);
 }
 
 .trackList {
@@ -297,7 +318,7 @@
 }
 
 .rightPanel {
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--color-panel-bg);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-subtle);
   overflow: hidden;
@@ -326,10 +347,18 @@
   transition: var(--transition-color);
   white-space: nowrap;
   border-bottom: 2px solid transparent;
+  min-height: var(--button-height-base);
 }
 
 .tabButton:hover {
   color: var(--color-text-secondary);
+  background-color: var(--color-bg-elevated-2);
+}
+
+.tabButton:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+  box-shadow: var(--glow-focus);
 }
 
 .tabButton.tabButtonActive {
@@ -403,7 +432,6 @@
    RESPONSIVE DESIGN (Mobile-First)
    ============================================ */
 
-/* Extra Small Phones (375px and below) */
 @media (max-width: 375px) {
   .header {
     padding: var(--fluid-space-sm) var(--fluid-space-xs);
@@ -444,7 +472,6 @@
   }
 }
 
-/* Small Phones (480px and below) */
 @media (max-width: 480px) {
   .header {
     flex-direction: column;
@@ -469,7 +496,7 @@
   }
 
   .browserContainer {
-    display: none; /* Hide on mobile, show MobileTrackExplorer instead */
+    display: none;
   }
 
   .planModeLayout {
@@ -507,7 +534,6 @@
   }
 }
 
-/* Tablet Portrait (640px and below) */
 @media (max-width: 640px) {
   .main {
     padding: var(--fluid-space-sm);
@@ -528,7 +554,6 @@
   }
 }
 
-/* Tablet Landscape (768px and below) */
 @media (max-width: 768px) {
   .playModeLayout {
     grid-template-columns: 1fr;
@@ -544,7 +569,6 @@
   }
 }
 
-/* Small Desktop (1024px and above) */
 @media (min-width: 1024px) {
   .playModeLayout {
     grid-template-columns: 1fr 400px;
@@ -559,7 +583,6 @@
   }
 }
 
-/* Large Desktop (1200px and above) */
 @media (min-width: 1200px) {
   .planModeLayout {
     grid-template-columns: 280px 1fr 400px;
@@ -570,7 +593,6 @@
   }
 }
 
-/* Extra Large Desktop (1440px and above) */
 @media (min-width: 1440px) {
   .planModeLayout {
     grid-template-columns: 320px 1fr 480px;
@@ -582,10 +604,9 @@
 }
 
 /* ============================================
-   ACCESSIBILITY
+   ACCESSIBILITY & FOCUS
    ============================================ */
 
-/* High contrast mode */
 @media (prefers-contrast: high) {
   .modeButton,
   .headerButton,
@@ -599,7 +620,6 @@
   }
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .modeButton,
   .headerButton,
@@ -613,8 +633,8 @@
   }
 }
 
-/* Focus visible (keyboard navigation) */
 *:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
+  outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
+  box-shadow: var(--glow-focus);
 }

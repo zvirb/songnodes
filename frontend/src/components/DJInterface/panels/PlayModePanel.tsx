@@ -47,9 +47,9 @@ export function PlayModePanel({
   const isMobile = useIsMobile();
 
   return (
-    <div className={styles.playModeLayout}>
+    <div className={styles.playModeLayout} data-testid="play-mode-panel">
       {/* Graph Visualization */}
-      <div className={styles.graphContainer}>
+      <div className={styles.graphContainer} data-testid="graph-container">
         {isMobile ? (
           <MobileTrackExplorer />
         ) : (
@@ -62,29 +62,29 @@ export function PlayModePanel({
             {/* Graph Legend Overlay */}
             <div style={{
               position: 'absolute',
-              bottom: '20px',
-              left: '20px',
-              padding: '12px',
-              backgroundColor: 'rgba(0,0,0,0.8)',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.2)',
+              bottom: 'var(--space-5)',
+              left: 'var(--space-5)',
+              padding: 'var(--space-3)',
+              backgroundColor: 'var(--color-bg-base)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border-default)',
               backdropFilter: 'blur(10px)'
             }}>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#8E8E93' }}>
+              <h4 style={{ margin: '0 0 var(--space-2) 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
                 Node Colors
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#7ED321', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Perfect Match</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{ width: '12px', height: '12px', backgroundColor: 'var(--color-brand-primary)', borderRadius: '50%' }} />
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-primary)' }}>Perfect Match</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#F5A623', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Compatible</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{ width: '12px', height: '12px', backgroundColor: 'var(--color-warning)', borderRadius: '50%' }} />
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-primary)' }}>Compatible</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#4A90E2', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Default</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{ width: '12px', height: '12px', backgroundColor: 'var(--color-brand-secondary)', borderRadius: '50%' }} />
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-primary)' }}>Default</span>
                 </div>
               </div>
             </div>
@@ -94,7 +94,7 @@ export function PlayModePanel({
 
       {/* Intelligent Browser */}
       {!isMobile && (
-        <div className={styles.browserContainer}>
+        <div className={styles.browserContainer} data-testid="browser-container">
           <IntelligentBrowser
             currentTrack={nowPlaying as any}
             allTracks={tracks as any}

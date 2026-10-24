@@ -59,15 +59,16 @@ export function PlanModePanel({
   }, [tracks, librarySearchQuery]);
 
   return (
-    <div className={styles.planModeLayout}>
+    <div className={styles.planModeLayout} data-testid="plan-mode-panel">
       {/* Left: Library Browser */}
       <div className={styles.libraryPanel}>
         <h3 className={styles.libraryHeader}>Library</h3>
 
         {/* Search Input */}
-        <div style={{ position: 'relative', marginBottom: '12px' }}>
+        <div style={{ position: 'relative', marginBottom: 'var(--space-3)' }}>
           <input
             type="text"
+            data-testid="track-search-input"
             placeholder="🔍 Search tracks, artists, BPM, key..."
             value={librarySearchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
@@ -77,17 +78,22 @@ export function PlanModePanel({
           {librarySearchQuery && (
             <button
               onClick={() => onSearchQueryChange('')}
+              data-testid="clear-search-button"
               style={{
                 position: 'absolute',
-                right: '8px',
+                right: 'var(--space-2)',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 backgroundColor: 'transparent',
                 border: 'none',
-                color: '#8E8E93',
+                color: 'var(--color-text-tertiary)',
                 cursor: 'pointer',
-                padding: '4px',
-                fontSize: '16px'
+                padding: 'var(--space-1)',
+                fontSize: 'var(--font-size-base)',
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
               aria-label="Clear search"
             >
@@ -98,7 +104,7 @@ export function PlanModePanel({
 
         {/* Results Counter */}
         {librarySearchQuery && (
-          <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '8px' }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)' }}>
             {filteredTracks.length} of {tracks.length} tracks
           </div>
         )}
@@ -106,16 +112,19 @@ export function PlanModePanel({
         {/* Track List */}
         <div className={styles.trackList}>
           {filteredTracks.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#8E8E93', padding: '60px 20px' }}>
+            <div
+              data-testid="no-search-results"
+              style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', padding: 'var(--space-10) var(--space-5)' }}
+            >
               {librarySearchQuery ? (
                 <>
-                  <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🔍</div>
-                  <div style={{ fontWeight: 600, marginBottom: '8px' }}>No tracks found</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7 }}>Try a different search term</div>
+                  <div style={{ fontSize: 'var(--font-size-4xl)', marginBottom: 'var(--space-4)', opacity: 0.5 }}>🔍</div>
+                  <div style={{ fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-2)' }}>No tracks found</div>
+                  <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.7 }}>Try a different search term</div>
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📚</div>
+                  <div style={{ fontSize: 'var(--font-size-4xl)', marginBottom: 'var(--space-4)', opacity: 0.5 }}>📚</div>
                   <div>No tracks in library</div>
                 </>
               )}
@@ -124,6 +133,7 @@ export function PlanModePanel({
             filteredTracks.map(track => (
               <button
                 key={track.id}
+                data-testid="track-item"
                 onClick={() => onTrackSelect(track)}
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -131,26 +141,28 @@ export function PlanModePanel({
                     onTrackRightClick(track, { x: e.clientX, y: e.clientY });
                   }
                 }}
+                aria-label={`${track.name} by ${track.artist}`}
+                aria-current={nowPlaying?.id === track.id ? 'true' : undefined}
                 style={{
-                  padding: '8px 10px',
-                  backgroundColor: nowPlaying?.id === track.id ? 'rgba(126,211,33,0.2)' : 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '6px',
-                  color: '#F8F8F8',
+                  padding: 'var(--space-2) var(--space-3)',
+                  backgroundColor: nowPlaying?.id === track.id ? 'var(--color-brand-primary-muted)' : 'transparent',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-base)',
+                  color: 'var(--color-text-primary)',
                   textAlign: 'left',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  minHeight: '52px',
+                  transition: 'var(--transition-button)',
+                  minHeight: 'var(--touch-target-min)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
                   width: '100%'
                 }}
               >
-                <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {track.name}
                 </div>
-                <div style={{ fontSize: '11px', color: '#8E8E93', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {track.artist}
                   {track.bpm && <> • {track.bpm} BPM</>}
                   {track.key && <> • {track.key}</>}
@@ -162,7 +174,7 @@ export function PlanModePanel({
       </div>
 
       {/* Center: Graph Visualization */}
-      <div className={styles.graphContainer}>
+      <div className={styles.graphContainer} data-testid="graph-container">
         {isMobile ? (
           <MobileTrackExplorer />
         ) : (
@@ -174,41 +186,59 @@ export function PlanModePanel({
       </div>
 
       {/* Right: Tabbed Analysis Panel */}
-      <div className={styles.rightPanel}>
+      <div className={styles.rightPanel} data-testid="right-panel">
         {/* Tab Header */}
-        <div className={styles.tabHeader}>
+        <div className={styles.tabHeader} role="tablist" aria-label="Analysis Panels">
           <button
             onClick={() => onRightPanelTabChange('analysis')}
+            data-testid="right-panel-tab-analysis"
+            role="tab"
+            aria-selected={rightPanelTab === 'analysis'}
             className={`${styles.tabButton} ${rightPanelTab === 'analysis' ? styles.tabButtonActive : ''}`}
           >
             Track Analysis
           </button>
           <button
             onClick={() => onRightPanelTabChange('keymood')}
+            data-testid="right-panel-tab-keymood"
+            role="tab"
+            aria-selected={rightPanelTab === 'keymood'}
             className={`${styles.tabButton} ${rightPanelTab === 'keymood' ? styles.tabButtonActive : ''}`}
           >
             🎭 Key & Mood
           </button>
           <button
             onClick={() => onRightPanelTabChange('pathfinder')}
+            data-testid="right-panel-tab-pathfinder"
+            role="tab"
+            aria-selected={rightPanelTab === 'pathfinder'}
             className={`${styles.tabButton} ${rightPanelTab === 'pathfinder' ? styles.tabButtonActive : ''}`}
           >
             🗺️ Pathfinder
           </button>
           <button
             onClick={() => onRightPanelTabChange('tidal')}
+            data-testid="right-panel-tab-tidal"
+            role="tab"
+            aria-selected={rightPanelTab === 'tidal'}
             className={`${styles.tabButton} ${rightPanelTab === 'tidal' ? styles.tabButtonActive : ''}`}
           >
             🎵 Tidal
           </button>
           <button
             onClick={() => onRightPanelTabChange('spotify')}
+            data-testid="right-panel-tab-spotify"
+            role="tab"
+            aria-selected={rightPanelTab === 'spotify'}
             className={`${styles.tabButton} ${rightPanelTab === 'spotify' ? styles.tabButtonActive : ''}`}
           >
             🎧 Spotify
           </button>
           <button
             onClick={() => onRightPanelTabChange('targets')}
+            data-testid="right-panel-tab-targets"
+            role="tab"
+            aria-selected={rightPanelTab === 'targets'}
             className={`${styles.tabButton} ${rightPanelTab === 'targets' ? styles.tabButtonActive : ''}`}
           >
             🎯 Targets
@@ -218,46 +248,64 @@ export function PlanModePanel({
         {/* Tab Content */}
         <div className={styles.tabContent}>
           {rightPanelTab === 'analysis' && (
-            <>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Track Analysis</h3>
+            <div data-testid="analysis-panel">
+              <h3 style={{ margin: '0 0 var(--space-4) 0', fontSize: 'var(--font-size-base)' }}>Track Analysis</h3>
               {nowPlaying ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                   <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#F8F8F8' }}>
+                    <h4 style={{ margin: '0 0 var(--space-2) 0', fontSize: 'var(--font-size-lg)', color: 'var(--color-text-primary)' }}>
                       {nowPlaying.name}
                     </h4>
-                    <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
+                    <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-tertiary)' }}>
                       {nowPlaying.artist}
                     </p>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>BPM</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm || '---'}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                    <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-bg-elevated-1)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-1)' }}>BPM</div>
+                      <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)' }}>{nowPlaying.bpm || '---'}</div>
                     </div>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>KEY</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key || '---'}</div>
+                    <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-bg-elevated-1)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-1)' }}>KEY</div>
+                      <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)' }}>{nowPlaying.key || '---'}</div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <p style={{ color: '#8E8E93', fontSize: '14px' }}>
+                <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-sm)' }}>
                   Select a track to view analysis
                 </p>
               )}
-            </>
+            </div>
           )}
 
           {rightPanelTab === 'keymood' && (
-            <KeyMoodPanel showInSidePanel={true} className="h-full" />
+            <div data-testid="key-mood-panel">
+              <KeyMoodPanel showInSidePanel={true} className="h-full" />
+            </div>
           )}
 
-          {rightPanelTab === 'pathfinder' && <PathfinderPanel />}
-          {rightPanelTab === 'tidal' && <TidalPlaylistManager />}
-          {rightPanelTab === 'spotify' && <SpotifyPlaylistManager />}
-          {rightPanelTab === 'targets' && <TargetTracksManager />}
+          {rightPanelTab === 'pathfinder' && (
+            <div data-testid="pathfinder-panel">
+              <PathfinderPanel />
+            </div>
+          )}
+          {rightPanelTab === 'tidal' && (
+            <div data-testid="tidal-panel">
+              <TidalPlaylistManager />
+            </div>
+          )}
+          {rightPanelTab === 'spotify' && (
+            <div data-testid="spotify-panel">
+              <SpotifyPlaylistManager />
+            </div>
+          )}
+          {rightPanelTab === 'targets' && (
+            <div data-testid="targets-panel">
+              <TargetTracksManager />
+            </div>
+          )}
         </div>
       </div>
     </div>
