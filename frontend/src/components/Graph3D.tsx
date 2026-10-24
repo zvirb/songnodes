@@ -255,8 +255,8 @@ export const Graph3D: React.FC<Graph3DProps> = ({
    * Node color based on energy
    */
   const nodeColor = useCallback((node: any) => {
-    if (selectedNodes.has(node.id)) return '#ff6b35'; // Selected
-    if (hoveredNode === node.id) return '#7ed321'; // Hovered
+    if (selectedNodes.has(node.id)) return '#00ff41'; // Selected - var(--color-brand-primary)
+    if (hoveredNode === node.id) return '#66ccff'; // Hovered - var(--color-node-hover)
 
     const energy = node.energy || node.track?.energy || 0.5;
     return getEnergyColor(energy);
@@ -282,9 +282,9 @@ export const Graph3D: React.FC<Graph3DProps> = ({
    */
   const linkColor = useCallback((link: any) => {
     if (highlightLinks.has(`${link.source.id}-${link.target.id}`)) {
-      return 'rgba(255, 107, 53, 0.8)'; // Highlighted
+      return 'rgba(0, 255, 65, 0.8)'; // Highlighted - var(--color-brand-primary)
     }
-    return link.color || 'rgba(142, 142, 147, 0.3)';
+    return link.color || 'rgba(51, 51, 51, 0.6)'; // var(--color-edge-default)
   }, [highlightLinks]);
 
   /**
@@ -414,7 +414,7 @@ export const Graph3D: React.FC<Graph3DProps> = ({
         graphData={enhancedGraphData}
         width={width}
         height={height}
-        backgroundColor="#0a0a0f"
+        backgroundColor="#0a0a0a"
         nodeLabel={nodeLabel}
         nodeColor={nodeColor}
         nodeVal={nodeSize}
@@ -435,31 +435,35 @@ export const Graph3D: React.FC<Graph3DProps> = ({
       />
 
       {/* Camera Controls Overlay */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
+      <div className="absolute top-4 right-4 flex flex-col gap-2 z-[var(--z-toolbar,30)]">
         <button
+          type="button"
           onClick={handleZoomIn}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2,#2a2a2a)] border border-[var(--color-border-subtle,#333333)] text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)] rounded-[var(--radius-button,0.375rem)] shadow-md backdrop-blur-md transition-colors"
           title="Zoom In"
         >
           <ZoomIn size={20} />
         </button>
         <button
+          type="button"
           onClick={handleZoomOut}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2,#2a2a2a)] border border-[var(--color-border-subtle,#333333)] text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)] rounded-[var(--radius-button,0.375rem)] shadow-md backdrop-blur-md transition-colors"
           title="Zoom Out"
         >
           <ZoomOut size={20} />
         </button>
         <button
+          type="button"
           onClick={handleFitView}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2,#2a2a2a)] border border-[var(--color-border-subtle,#333333)] text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)] rounded-[var(--radius-button,0.375rem)] shadow-md backdrop-blur-md transition-colors"
           title="Fit to View"
         >
           <Maximize2 size={20} />
         </button>
         <button
+          type="button"
           onClick={handleResetCamera}
-          className="p-2 bg-black/70 hover:bg-black/90 text-white rounded-lg transition-colors"
+          className="p-2 bg-[var(--color-bg-elevated-2,#2a2a2a)] border border-[var(--color-border-subtle,#333333)] text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)] rounded-[var(--radius-button,0.375rem)] shadow-md backdrop-blur-md transition-colors"
           title="Reset Camera"
         >
           <RotateCcw size={20} />
@@ -467,13 +471,13 @@ export const Graph3D: React.FC<Graph3DProps> = ({
       </div>
 
       {/* Info Overlay */}
-      <div className="absolute bottom-4 left-4 bg-black/70 text-white px-4 py-2 rounded-lg text-xs">
-        <div className="font-semibold mb-1">3D Graph Controls</div>
+      <div className="absolute bottom-4 left-4 z-[var(--z-panels,20)] bg-[var(--color-panel-bg,rgba(26,26,26,0.95))] border border-[var(--color-panel-border,#4a4a4a)] text-[var(--color-text-primary,#ffffff)] px-4 py-2.5 rounded-[var(--radius-panel,0.5rem)] shadow-[var(--shadow-panel)] backdrop-blur-md text-xs">
+        <div className="font-semibold mb-1 text-[var(--color-brand-primary,#00ff41)]">3D Graph Controls</div>
         <div>Left Click + Drag: Rotate</div>
         <div>Right Click + Drag: Pan</div>
         <div>Scroll: Zoom</div>
         <div>Click Node: Select</div>
-        <div className="mt-2 text-white/60">
+        <div className="mt-2 text-[var(--color-text-tertiary,#b0b0b0)]">
           Nodes: {enhancedGraphData.nodes.length} | Links: {enhancedGraphData.links.length}
         </div>
       </div>

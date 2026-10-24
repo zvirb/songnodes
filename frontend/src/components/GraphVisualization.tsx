@@ -40,23 +40,23 @@ const PERFORMANCE_THRESHOLDS = {
 // Debug flag - set to true to enable LOD debugging
 const DEBUG_LOD = false;
 
-// Color schemes
+// Color schemes (Standardized with tokens.css)
 const COLOR_SCHEMES = {
   node: {
-    default: 0x4a90e2,
-    selected: 0xff6b35,      // Orange - regular selection
-    hovered: 0x7ed321,        // Green - hover state
-    nowPlaying: 0xff1744,     // Bright red - currently playing track
-    path: 0x9013fe,           // Purple - nodes in calculated path
-    waypoint: 0xf5a623,       // Amber - intermediate waypoints
-    startPoint: 0x00ff00,     // Bright green - path start
-    endPoint: 0xff0000,       // Bright red - path end/destination
+    default: 0x44aaff,        // --color-node-default / --color-brand-secondary
+    selected: 0x00ff41,       // --color-node-selected / --color-brand-primary
+    hovered: 0x66ccff,        // --color-node-hover
+    nowPlaying: 0xff4444,     // --color-brand-tertiary
+    path: 0x00ff41,           // --color-edge-path / --color-brand-primary
+    waypoint: 0xd68910,       // --color-warning
+    startPoint: 0x00ff41,     // --color-brand-primary
+    endPoint: 0xff4444,       // --color-brand-tertiary
   },
   edge: {
-    default: 0x8e8e93,
-    selected: 0xff6b35,
-    path: 0xff1744,           // Bright red - edges in calculated path (more visible)
-    strong: 0x4a90e2,
+    default: 0x333333,        // --color-edge-default
+    selected: 0x00ff41,       // --color-edge-path / --color-brand-primary
+    path: 0x00ff41,           // --color-edge-path / --color-brand-primary
+    strong: 0x44aaff,         // --color-brand-secondary
   },
   genre: {
     // Electronic/Dance genres
@@ -417,7 +417,7 @@ class TextureAtlasGenerator {
   }
 
   // Generate a glow texture (GPU-optimized cached sprite)
-  generateGlowTexture(radius: number, color: number = 0x7ed321): PIXI.Texture {
+  generateGlowTexture(radius: number, color: number = 0x00ff41): PIXI.Texture {
     // OPTIMIZATION: Round radius to improve cache hit rate
     const roundedRadius = Math.round(radius);
     const key = `glow_${roundedRadius}_${color}`;
@@ -772,7 +772,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       await app.init({
         width: Math.max(rect.width || 800, 100),  // Ensure minimum width
         height: Math.max(rect.height || 600, 100), // Ensure minimum height
-        backgroundColor: 0x1a1a1a,
+        backgroundColor: 0x0a0a0a,
         antialias: true,
         autoDensity: true,
         resolution: window.devicePixelRatio || 1,
@@ -920,7 +920,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // Offset background to compensate for stage centering transform
     const background = new PIXI.Graphics();
     background.rect(-rect.width / 2, -rect.height / 2, rect.width, rect.height);
-    background.fill(0x1a1a1a); // Darker background for better contrast
+    background.fill(0x0a0a0a); // Conforms to --color-bg-base
     app.stage.addChildAt(background, 0); // Add as first child (bottom layer)
     // DEBUG: Background visual logging disabled (too noisy)
     // console.log('Added background visual to PIXI stage (offset for centered stage)');

@@ -89,7 +89,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
 
     const { scale, offsetX, offsetY } = calculateBoundsAndScale();
 
-    // Render edges
+    // Render edges conforming to --color-edge-default (#333333)
     graphData.edges.forEach(edge => {
       const sourceNode = graphData.nodes.find(n => n.id === edge.source);
       const targetNode = graphData.nodes.find(n => n.id === edge.target);
@@ -98,7 +98,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
           typeof sourceNode.x === 'number' && typeof sourceNode.y === 'number' &&
           typeof targetNode.x === 'number' && typeof targetNode.y === 'number') {
         const line = new PIXI.Graphics();
-        line.setStrokeStyle({ width: EDGE_WIDTH, color: 0x5a5a5a, alpha: 0.5 });
+        line.setStrokeStyle({ width: EDGE_WIDTH, color: 0x333333, alpha: 0.6 });
         line.moveTo(sourceNode.x * scale + offsetX, sourceNode.y * scale + offsetY);
         line.lineTo(targetNode.x * scale + offsetX, targetNode.y * scale + offsetY);
         line.stroke();
@@ -106,20 +106,20 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
       }
     });
 
-    // Render nodes
+    // Render nodes conforming to --color-node-default (#44aaff)
     graphData.nodes.forEach(node => {
       if (typeof node.x === 'number' && typeof node.y === 'number') {
         const circle = new PIXI.Graphics();
         const radius = Math.max(NODE_MIN_RADIUS, Math.min(NODE_MAX_RADIUS, (node.degree || 1) * 0.2));
         circle.circle(0, 0, radius);
-        circle.fill(0x8e8e93);
+        circle.fill(0x44aaff);
         circle.position.set(node.x * scale + offsetX, node.y * scale + offsetY);
         nodesContainer.addChild(circle);
       }
     });
   }, [graphData, calculateBoundsAndScale]);
 
-  // Render viewport rectangle
+  // Render viewport rectangle conforming to --color-brand-primary (#00ff41)
   const renderViewportRect = useCallback(() => {
     if (!viewportRectRef.current) return;
 
@@ -236,7 +236,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
       canvas: canvasRef.current,
       width: MINI_MAP_SIZE,
       height: MINI_MAP_SIZE,
-      backgroundColor: 0x2a2a2a,
+      backgroundColor: 0x1a1a1a, // Conforms to --color-bg-elevated-1
       antialias: true,
       autoDensity: true,
       resolution: window.devicePixelRatio || 1,
@@ -396,17 +396,18 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
         position: 'absolute',
         bottom: '20px',
         right: '20px',
-        backgroundColor: 'rgba(42, 42, 42, 0.95)',
+        backgroundColor: 'var(--color-panel-bg, rgba(26, 26, 26, 0.95))',
         padding: '12px',
-        borderRadius: '8px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7)',
-        zIndex: 1000,
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: 'var(--radius-panel, 0.5rem)',
+        boxShadow: 'var(--shadow-panel, 0 10px 15px rgba(0, 0, 0, 0.7))',
+        backdropFilter: 'blur(8px)',
+        zIndex: 'var(--z-panels, 20)' as any,
+        border: '1px solid var(--color-panel-border, #4a4a4a)',
         pointerEvents: 'auto'
       }}
     >
       <h4 style={{
-        color: '#FFFFFF',
+        color: 'var(--color-text-primary, #ffffff)',
         fontSize: '12px',
         marginBottom: '8px',
         fontWeight: 600,
@@ -418,8 +419,8 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
           <span style={{
             marginLeft: '6px',
             fontSize: '10px',
-            color: '#00ff41',
-            opacity: 0.7
+            color: 'var(--color-brand-primary, #00ff41)',
+            opacity: 0.8
           }}>
             [Cached]
           </span>
@@ -430,15 +431,15 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
         width={MINI_MAP_SIZE}
         height={MINI_MAP_SIZE}
         style={{
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '4px',
+          border: '1px solid var(--color-border-subtle, #333333)',
+          borderRadius: 'var(--radius-sm, 0.25rem)',
           display: 'block',
           cursor: 'default'
         }}
       />
       <p style={{
         fontSize: '10px',
-        color: 'rgba(255, 255, 255, 0.6)',
+        color: 'var(--color-text-tertiary, #b0b0b0)',
         marginTop: '6px',
         textAlign: 'center'
       }}>

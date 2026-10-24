@@ -5,13 +5,13 @@ import useStore from '../store/useStore';
 /**
  * GraphModeToggle Component
  *
- * Toggle between 2D and 3D graph visualization modes
+ * Toggle between 2D and 3D graph visualization modes.
+ * Enforces Design System Segmented Button Control Specifications.
  *
  * FEATURES:
- * - Smooth mode switching
- * - Visual indication of active mode
- * - Preserves camera position across modes
- * - Maintains node selection state
+ * - Smooth mode switching with segmented button control styling
+ * - Design system tokens for elevations, borders, active states, and hover
+ * - Full accessibility with role="group", aria-label, and aria-pressed
  * - Keyboard shortcut support (Ctrl+Shift+3)
  *
  * MODES:
@@ -37,71 +37,84 @@ export const GraphModeToggle: React.FC<GraphModeToggleProps> = ({
 }) => {
   // Size variants
   const sizeClasses = {
-    small: 'p-1.5 text-xs',
-    medium: 'p-2 text-sm',
-    large: 'p-3 text-base',
+    small: 'px-2 py-1 text-xs',
+    medium: 'px-3 py-1.5 text-sm',
+    large: 'px-4 py-2 text-base',
   };
 
   const iconSizes = {
-    small: 16,
-    medium: 20,
-    large: 24,
+    small: 14,
+    medium: 18,
+    large: 22,
   };
 
   const iconSize = iconSizes[size];
   const buttonClass = sizeClasses[size];
 
   return (
-    <div className={`inline-flex rounded-lg bg-black/30 backdrop-blur-sm border border-white/10 ${className}`}>
+    <div
+      role="group"
+      aria-label="Graph Visualization View Mode"
+      className={`inline-flex p-1 gap-1 items-center rounded-[var(--radius-button,0.375rem)] bg-[var(--color-bg-elevated-1,#1a1a1a)] border border-[var(--color-border-subtle,#333333)] backdrop-blur-md shadow-md ${className}`}
+    >
       {/* 2D Mode */}
       <button
+        type="button"
         onClick={() => onModeChange('2d')}
+        aria-label="Switch to 2D Graph View"
+        aria-pressed={mode === '2d'}
         className={`
           ${buttonClass}
-          flex items-center gap-2 rounded-l-lg transition-all duration-200
+          flex items-center gap-2 rounded-[calc(var(--radius-button,0.375rem)-2px)] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)]
           ${mode === '2d'
-            ? 'bg-blue-600 text-white shadow-lg'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary,#00ff41)] text-[var(--color-text-inverse,#0a0a0a)] font-semibold shadow-sm'
+            : 'text-[var(--color-text-tertiary,#b0b0b0)] hover:text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)]'
           }
         `}
         title="2D Graph View (PIXI.js)"
       >
         <Layers size={iconSize} />
-        <span className="font-medium">2D</span>
+        <span>2D</span>
       </button>
 
       {/* 3D Mode */}
       <button
+        type="button"
         onClick={() => onModeChange('3d')}
+        aria-label="Switch to 3D Force Graph View"
+        aria-pressed={mode === '3d'}
         className={`
           ${buttonClass}
-          flex items-center gap-2 border-x border-white/10 transition-all duration-200
+          flex items-center gap-2 rounded-[calc(var(--radius-button,0.375rem)-2px)] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)]
           ${mode === '3d'
-            ? 'bg-purple-600 text-white shadow-lg'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary,#00ff41)] text-[var(--color-text-inverse,#0a0a0a)] font-semibold shadow-sm'
+            : 'text-[var(--color-text-tertiary,#b0b0b0)] hover:text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)]'
           }
         `}
         title="3D Force Graph (react-force-graph-3d)"
       >
         <Box size={iconSize} />
-        <span className="font-medium">3D</span>
+        <span>3D</span>
       </button>
 
       {/* 3D Helix Mode */}
       <button
+        type="button"
         onClick={() => onModeChange('3d-helix')}
+        aria-label="Switch to 3D Camelot Helix View"
+        aria-pressed={mode === '3d-helix'}
         className={`
           ${buttonClass}
-          flex items-center gap-2 rounded-r-lg transition-all duration-200
+          flex items-center gap-2 rounded-[calc(var(--radius-button,0.375rem)-2px)] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)]
           ${mode === '3d-helix'
-            ? 'bg-green-600 text-white shadow-lg'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary,#00ff41)] text-[var(--color-text-inverse,#0a0a0a)] font-semibold shadow-sm'
+            : 'text-[var(--color-text-tertiary,#b0b0b0)] hover:text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)]'
           }
         `}
         title="3D Camelot Helix (Three.js)"
       >
         <Boxes size={iconSize} />
-        <span className="font-medium">Helix</span>
+        <span>Helix</span>
       </button>
     </div>
   );
@@ -146,14 +159,21 @@ export const GraphModeToggleCompact: React.FC<{
   className?: string;
 }> = ({ mode, onModeChange, className = '' }) => {
   return (
-    <div className={`inline-flex rounded-lg bg-black/30 backdrop-blur-sm border border-white/10 ${className}`}>
+    <div
+      role="group"
+      aria-label="Graph View Mode Switcher"
+      className={`inline-flex p-1 gap-1 items-center rounded-[var(--radius-button,0.375rem)] bg-[var(--color-bg-elevated-1,#1a1a1a)] border border-[var(--color-border-subtle,#333333)] backdrop-blur-md shadow-md ${className}`}
+    >
       <button
+        type="button"
         onClick={() => onModeChange('2d')}
+        aria-label="2D View"
+        aria-pressed={mode === '2d'}
         className={`
-          p-2 rounded-l-lg transition-all duration-200
+          p-2 rounded-[calc(var(--radius-button,0.375rem)-2px)] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)]
           ${mode === '2d'
-            ? 'bg-blue-600 text-white'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary,#00ff41)] text-[var(--color-text-inverse,#0a0a0a)] font-semibold shadow-sm'
+            : 'text-[var(--color-text-tertiary,#b0b0b0)] hover:text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)]'
           }
         `}
         title="2D View"
@@ -162,12 +182,15 @@ export const GraphModeToggleCompact: React.FC<{
       </button>
 
       <button
+        type="button"
         onClick={() => onModeChange('3d')}
+        aria-label="3D View"
+        aria-pressed={mode === '3d'}
         className={`
-          p-2 border-x border-white/10 transition-all duration-200
+          p-2 rounded-[calc(var(--radius-button,0.375rem)-2px)] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)]
           ${mode === '3d'
-            ? 'bg-purple-600 text-white'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary,#00ff41)] text-[var(--color-text-inverse,#0a0a0a)] font-semibold shadow-sm'
+            : 'text-[var(--color-text-tertiary,#b0b0b0)] hover:text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)]'
           }
         `}
         title="3D View"
@@ -176,12 +199,15 @@ export const GraphModeToggleCompact: React.FC<{
       </button>
 
       <button
+        type="button"
         onClick={() => onModeChange('3d-helix')}
+        aria-label="Helix View"
+        aria-pressed={mode === '3d-helix'}
         className={`
-          p-2 rounded-r-lg transition-all duration-200
+          p-2 rounded-[calc(var(--radius-button,0.375rem)-2px)] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)]
           ${mode === '3d-helix'
-            ? 'bg-green-600 text-white'
-            : 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'bg-[var(--color-brand-primary,#00ff41)] text-[var(--color-text-inverse,#0a0a0a)] font-semibold shadow-sm'
+            : 'text-[var(--color-text-tertiary,#b0b0b0)] hover:text-[var(--color-text-primary,#ffffff)] hover:bg-[var(--color-bg-elevated-3,#3a3a3a)]'
           }
         `}
         title="Helix View"
