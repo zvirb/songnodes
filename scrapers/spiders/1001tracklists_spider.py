@@ -40,6 +40,7 @@ try:
     from .utils import parse_track_string
     from ..track_id_generator import generate_track_id, generate_track_id_from_parsed
     from ..utils.memory_monitor import MemoryMonitor
+    from ..nlp_spider_mixin import NLPFallbackSpiderMixin
 except ImportError:
     # Fallback for standalone execution
     import sys
@@ -64,9 +65,10 @@ except ImportError:
     from spiders.utils import parse_track_string
     from track_id_generator import generate_track_id, generate_track_id_from_parsed
     from utils.memory_monitor import MemoryMonitor
+    from nlp_spider_mixin import NLPFallbackSpiderMixin
 
 
-class OneThousandOneTracklistsSpider(scrapy.Spider):
+class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
     name = '1001tracklists'
     allowed_domains = ['1001tracklists.com']
 
@@ -774,8 +776,7 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             self.memory_monitor.page_opened()
 
         try:
-            # Initialize LLM scraper engine
-            self._parse_search_results_impl(response)
+            yield from self._parse_search_results_impl(response)
         finally:
             # Ensure Playwright page is always closed
             if page:
@@ -876,7 +877,7 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             self.memory_monitor.page_opened()
 
         try:
-            self._parse_tracklist_impl(response)
+            yield from self._parse_tracklist_impl(response)
         finally:
             # Ensure Playwright page is always closed
             if page:
@@ -892,26 +893,6 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
     def _parse_tracklist_impl(self, response):
         """Implementation of parse_tracklist (separated for try/finally pattern)"""
         try:
-            # Check if this is an HTML page (not JSON/structured response)
-            content_type = response.headers.get('Content-Type', b'').decode('utf-8').lower()
-            if 'text/html' in content_type or not self._is_json_response(response):
-                self.logger.info(f"📄 Detected HTML page. Using NLP fallback for extraction. URL: {response.url}")
-
-                if self.enable_nlp_fallback:
-                    tracks_data = self.extract_via_nlp_sync(
-                        html_or_text=response.text,
-                        url=response.url,
-                        extract_timestamps=True
-                    )
-
-                    if tracks_data:
-                        self.logger.info(f"✅ NLP extraction: {len(tracks_data)} tracks found")
-                        for track_data in tracks_data:
-                            yield self._create_track_item_from_nlp(track_data, response.url)
-                    else:
-                        self.logger.warning(f"⚠️ NLP extraction returned no tracks: {response.url}")
-                return
-
             # Extract comprehensive setlist metadata
             setlist_data = self.extract_setlist_metadata(response)
             if setlist_data:
@@ -924,6 +905,21 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
 
             # Extract tracks and relationships
             tracks_data = self.extract_tracks_with_metadata(response, setlist_data)
+
+            # Structured extraction found nothing: fall back to the NLP processor
+            if not tracks_data and self.enable_nlp_fallback:
+                nlp_tracks = self.extract_via_nlp_sync(
+                    html_or_text=response.text,
+                    url=response.url,
+                    extract_timestamps=True
+                )
+                if nlp_tracks:
+                    self.logger.info(f"✅ NLP extraction: {len(nlp_tracks)} tracks found")
+                    for track_data in nlp_tracks:
+                        track_item = self._create_track_item_from_nlp(track_data, response.url)
+                        if track_item:
+                            yield track_item
+                    return
 
             # CRITICAL: Validate track extraction
             if not tracks_data or len(tracks_data) == 0:
@@ -1233,7 +1229,6 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
                         'track': {
                             'track_name': track.get('name', ''),
                             'track_id': None,
-                            'duration': None,
                             'start_time': None,
                             'track_type': 'DJ Mix',
                             'is_remix': self.is_remix_track(track.get('name', '')),
@@ -1276,6 +1271,14 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
                 continue
 
         return tracks_data
+
+    def is_remix_track(self, track_name: str) -> bool:
+        """True for "(Artist Remix|Edit|Flip|Rework|Bootleg|Mashup)" titles, as parse_track_string detects them."""
+        return bool(re.search(r'\([^)]+?\s+(?:Remix|Edit|Flip|Rework|Bootleg|Mashup)\)', track_name or '', re.IGNORECASE))
+
+    def is_mashup_track(self, track_name: str) -> bool:
+        """True for "A vs. B" titles, as parse_track_string detects mashups."""
+        return bool(re.search(r'\s+vs\.\s+', track_name or '', re.IGNORECASE))
 
     def extract_track_elements(self, response):
         """Extract track elements using multiple selectors"""
@@ -1610,8 +1613,12 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             TrackItem ready for pipeline processing
         """
         try:
-            artist_name = nlp_track.get('artist', 'Unknown Artist')
-            title = nlp_track.get('title', 'Unknown Track')
+            artist_name = (nlp_track.get('artist') or '').strip()
+            title = (nlp_track.get('title') or '').strip()
+            # Both endpoints of a transition need a real artist (CLAUDE.md, artist attribution)
+            if not artist_name or not title:
+                self.logger.debug(f"Skipping NLP track without artist or title: {nlp_track}")
+                return None
 
             # Generate deterministic track_id
             track_id = generate_track_id(
@@ -1626,8 +1633,8 @@ class OneThousandOneTracklistsSpider(scrapy.Spider):
             loader = TrackLoader(item=EnhancedTrackItem())
             loader.add_value('track_id', track_id)
             loader.add_value('track_name', f"{artist_name} - {title}")  # Combined format
-            loader.add_value('track_url', source_url)
-            loader.add_value('source_platform', '1001tracklists_html_nlp')
+            loader.add_value('external_urls', json.dumps({'1001tracklists': source_url}))
+            loader.add_value('metadata', json.dumps({'extraction_method': '1001tracklists_html_nlp'}))
             loader.add_value('data_source', self.name)
             loader.add_value('scrape_timestamp', datetime.utcnow())
 
