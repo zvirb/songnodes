@@ -54,6 +54,11 @@ services:
       DATABASE_URL: postgresql://songnodes@postgres:5432/songnodes
       REDIS_HOST: redis
       REDIS_PASSWORD: ''
+      # OAuth sign-in for Spotify and TIDAL (routers/music_auth.py), from the host environment or an untracked .env.
+      TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID:-}
+      TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET:-}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
     ports: ['127.0.0.1:8082:8082']
     depends_on:
       postgres: {condition: service_healthy}
