@@ -14,7 +14,7 @@ export function tokenHex(n: string): number {
 function hex(n: string): number {
   let v = css(n);
   if (!v.startsWith('#')) {
-    // var() aliases or rgb(): let the browser resolve them
+    // var() aliases and functional colours: let the browser resolve them
     const probe = document.createElement('span');
     probe.style.color = `var(--${n})`;
     probe.style.display = 'none';
