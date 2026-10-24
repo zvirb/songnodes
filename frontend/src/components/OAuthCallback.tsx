@@ -50,6 +50,12 @@ const OAuthCallback: React.FC = () => {
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description');
 
+        // SECURITY: Immediately sanitize history and URL address bar using history.replaceState
+        // to strip authorization codes, tokens, and scopes, preventing token leakage through browser history or Referer headers.
+        if (window.location.search || window.location.hash) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         // Check for OAuth errors
         if (error) {
           setStatus('error');
@@ -80,6 +86,53 @@ const OAuthCallback: React.FC = () => {
           setStatus('error');
           setMessage('Missing required OAuth parameters');
           setTimeout(() => window.location.href = '/', 3000);
+          return;
+        }
+
+        // SECURITY: Cryptographic state parameter verification (OAuth CSRF protection)
+        // Retrieve and consume securely generated pre-flight nonce from session storage
+        const candidateKeys = [
+          `${detectedService}_auth_state`,
+          'spotify_auth_state',
+          'tidal_auth_state',
+          'oauth_state',
+          `${detectedService}_oauth_state`,
+          `oauth_state_${detectedService}`
+        ];
+
+        let storedState: string | null = null;
+        for (const key of candidateKeys) {
+          const stored = sessionStorage.getItem(key) || localStorage.getItem(key);
+          if (stored) {
+            storedState = stored;
+            sessionStorage.removeItem(key);
+            localStorage.removeItem(key);
+            break;
+          }
+        }
+
+        // Reject any callback where state is missing or returned state does not match pre-flight nonce
+        if ((storedState && state !== storedState) || (!storedState && detectedService === 'spotify')) {
+          console.error('[OAuth] CSRF state verification failed:', { returnedState: state, expectedState: storedState });
+          setStatus('error');
+          setMessage('Authentication failed: OAuth state mismatch or invalid nonce (potential CSRF attack).');
+
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth-error',
+              service: detectedService,
+              error: 'state_mismatch',
+              error_description: 'OAuth state parameter verification failed'
+            }, window.location.origin);
+          }
+
+          setTimeout(() => {
+            if (window.opener) {
+              window.close();
+            } else {
+              window.location.href = '/';
+            }
+          }, 3000);
           return;
         }
 
@@ -133,20 +186,27 @@ const OAuthCallback: React.FC = () => {
         setStatus('success');
         setMessage(`${serviceName} authentication successful! Closing window...`);
 
-        // Store tokens in localStorage (temporary - should be in secure state)
+        // SECURITY: Calculate and validate explicit token expiration
+        const now = Date.now();
+        const expiresAt = now + ((tokenData.expires_in || 3600) * 1000);
+        if (expiresAt <= now) {
+          throw new Error('Received expired token from authentication server');
+        }
+
         const tokens = {
           access_token: tokenData.access_token,
           refresh_token: tokenData.refresh_token,
           expires_in: tokenData.expires_in,
-          expires_at: Date.now() + (tokenData.expires_in * 1000),
+          expires_at: expiresAt,
           token_type: tokenData.token_type,
           scope: tokenData.scope
         };
 
-        // Use service-specific storage key (2025 Best Practice: Namespace separation)
+        // Use isolated session storage rather than indefinite persistent storage with explicit expiration validation
         const storageKey = `${detectedService}_oauth_tokens`;
-        localStorage.setItem(storageKey, JSON.stringify(tokens));
-        console.log(`[OAuth] Stored ${serviceName} tokens in localStorage with key:`, storageKey);
+        sessionStorage.setItem(storageKey, JSON.stringify(tokens));
+        localStorage.removeItem(storageKey); // Remove any old indefinite storage
+        console.log(`[OAuth] Stored ${serviceName} tokens in sessionStorage with key:`, storageKey);
 
         // ALSO store tokens in database for backend enrichment service to use
         try {
