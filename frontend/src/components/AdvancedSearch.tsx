@@ -44,7 +44,6 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
       setIsSearching(false);
     };
 
-    // Debounce search
     const timeoutId = setTimeout(performSearch, 300);
     return () => {
       clearTimeout(timeoutId);
@@ -104,145 +103,230 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
     return count;
   }, [filters]);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      if (query) {
+        setQuery('');
+      } else if (onClose) {
+        onClose();
+      }
+    }
+  };
+
   return (
-    <div className={`advanced-search bg-gray-900 rounded-lg shadow-2xl ${className}`}>
+    <div
+      className={`advanced-search ${className}`}
+      onKeyDown={handleKeyDown}
+      style={{
+        backgroundColor: 'var(--surface-1)',
+        color: 'var(--fg)',
+        borderRadius: 'var(--radius-card)',
+        border: '1px solid var(--line)',
+        boxShadow: 'var(--shadow-2)',
+        overflow: 'hidden'
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Search size={24} />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 'var(--space-4)',
+          borderBottom: '1px solid var(--line)'
+        }}
+      >
+        <h2 className="sn-title title-s" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <Search size={20} strokeWidth={2} aria-hidden="true" />
           Advanced Search
         </h2>
-        {onClose && (
+        {onClose ? (
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-white transition-colors"
+            className="sn-btn sn-btn--icon sn-btn--quiet"
             aria-label="Close search"
           >
-            <X size={20} />
+            <X size={18} strokeWidth={2} aria-hidden="true" />
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Search Input */}
-      <div className="p-4 border-b border-gray-700">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+      <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ position: 'relative' }}>
+          <span
+            style={{
+              position: 'absolute',
+              left: 'var(--space-3)',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--fg-3)',
+              pointerEvents: 'none',
+              display: 'inline-flex'
+            }}
+          >
+            <Search size={18} strokeWidth={2} aria-hidden="true" />
+          </span>
           <input
-            type="text"
+            type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tracks, artists, genres... (supports fuzzy matching)"
-            className="w-full pl-10 pr-12 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+            className="sn-input"
+            style={{
+              width: '100%',
+              paddingLeft: 'var(--space-10)',
+              paddingRight: 'var(--space-10)',
+              height: 'var(--control-md)'
+            }}
+            aria-label="Search query"
           />
-          {isSearching && (
+          {isSearching ? (
             <Loader2
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 animate-spin"
+              style={{
+                position: 'absolute',
+                right: 'var(--space-3)',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--brand)',
+                animation: 'spin 1s linear infinite'
+              }}
               size={18}
               aria-label="Searching..."
             />
-          )}
-          {query && !isSearching && (
+          ) : query ? (
             <button
+              type="button"
               onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              style={{
+                position: 'absolute',
+                right: 'var(--space-3)',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--fg-3)',
+                cursor: 'pointer',
+                padding: 'var(--space-1)',
+                borderRadius: 'var(--radius-chip)'
+              }}
               aria-label="Clear search"
             >
-              <X size={18} />
+              <X size={18} strokeWidth={2} aria-hidden="true" />
             </button>
-          )}
+          ) : null}
         </div>
 
         {/* Filter Toggle */}
-        <div className="flex items-center justify-between mt-3">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'var(--space-3)' }}>
           <button
+            type="button"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="sn-btn sn-btn--quiet"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
           >
-            <Filter size={16} />
+            <Filter size={16} strokeWidth={2} aria-hidden="true" />
             Filters
-            {activeFilterCount > 0 && (
-              <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+            {activeFilterCount > 0 ? (
+              <span className="sn-pill" style={{ backgroundColor: 'var(--brand)', color: 'var(--on-brand)' }}>
                 {activeFilterCount}
               </span>
-            )}
-            {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            ) : null}
+            {showFilters ? <ChevronUp size={16} strokeWidth={2} /> : <ChevronDown size={16} strokeWidth={2} />}
           </button>
 
-          {activeFilterCount > 0 && (
+          {activeFilterCount > 0 ? (
             <button
+              type="button"
               onClick={clearFilters}
-              className="text-sm text-blue-400 hover:text-blue-300"
+              className="sn-btn sn-btn--quiet sn-btn--sm"
+              style={{ color: 'var(--brand)' }}
             >
               Clear all filters
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
       {/* Filters Panel */}
-      {showFilters && (
-        <div className="p-4 border-b border-gray-700 bg-gray-850 max-h-96 overflow-y-auto">
-          <div className="space-y-4">
+      {showFilters ? (
+        <div
+          style={{
+            padding: 'var(--space-4)',
+            borderBottom: '1px solid var(--line)',
+            backgroundColor: 'var(--surface-2)',
+            maxHeight: '384px',
+            overflowY: 'auto'
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {/* BPM Range */}
             <FilterGroup
               title="BPM Range"
-              icon={<Sliders size={16} />}
+              icon={<Sliders size={16} strokeWidth={2} />}
               isExpanded={activeFilterGroups.has('bpm')}
               onToggle={() => toggleFilterGroup('bpm')}
             >
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Min BPM</label>
+                  <label className="label" style={{ display: 'block', marginBottom: 'var(--space-1)', color: 'var(--fg-3)' }}>
+                    Min BPM
+                  </label>
                   <input
                     type="number"
                     value={filters.bpmMin || ''}
                     onChange={(e) => updateFilter('bpmMin', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="60"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="sn-input"
+                    style={{ width: '100%', height: 'var(--control-sm)' }}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Max BPM</label>
+                  <label className="label" style={{ display: 'block', marginBottom: 'var(--space-1)', color: 'var(--fg-3)' }}>
+                    Max BPM
+                  </label>
                   <input
                     type="number"
                     value={filters.bpmMax || ''}
                     onChange={(e) => updateFilter('bpmMax', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="180"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="sn-input"
+                    style={{ width: '100%', height: 'var(--control-sm)' }}
                   />
                 </div>
               </div>
-              {/* BPM Quick Select */}
-              {facets?.bpmRanges && facets.bpmRanges.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
+              {facets?.bpmRanges && facets.bpmRanges.length > 0 ? (
+                <div style={{ marginTop: 'var(--space-2)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-1)' }}>
                   {facets.bpmRanges.map(range => (
                     <button
                       key={range.value}
+                      type="button"
                       onClick={() => {
                         const [min, max] = range.value.match(/\d+/g)?.map(Number) || [];
                         if (min !== undefined) updateFilter('bpmMin', min);
                         if (max !== undefined) updateFilter('bpmMax', max);
                       }}
-                      className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
+                      className="sn-btn sn-btn--quiet sn-btn--sm"
                     >
                       {range.value} ({range.count})
                     </button>
                   ))}
                 </div>
-              )}
+              ) : null}
             </FilterGroup>
 
             {/* Genres */}
-            {facets?.genres && facets.genres.length > 0 && (
+            {facets?.genres && facets.genres.length > 0 ? (
               <FilterGroup
                 title="Genres"
-                icon={<Filter size={16} />}
+                icon={<Filter size={16} strokeWidth={2} />}
                 isExpanded={activeFilterGroups.has('genres')}
                 onToggle={() => toggleFilterGroup('genres')}
               >
-                <div className="space-y-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                   {facets.genres.slice(0, 10).map(genre => (
-                    <label key={genre.value} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white cursor-pointer">
+                    <label key={genre.value} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.875rem', cursor: 'pointer', color: 'var(--fg)' }}>
                       <input
                         type="checkbox"
                         checked={filters.genres?.includes(genre.value) || false}
@@ -253,90 +337,91 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                             : current.filter(g => g !== genre.value);
                           updateFilter('genres', updated.length > 0 ? updated : undefined);
                         }}
-                        className="rounded"
                       />
-                      <span className="flex-1">{genre.value}</span>
-                      <span className="text-xs text-gray-500">({genre.count})</span>
+                      <span style={{ flex: 1 }}>{genre.value}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>({genre.count})</span>
                     </label>
                   ))}
                 </div>
               </FilterGroup>
-            )}
+            ) : null}
 
             {/* Keys */}
-            {facets?.keys && facets.keys.length > 0 && (
+            {facets?.keys && facets.keys.length > 0 ? (
               <FilterGroup
                 title="Keys"
-                icon={<Filter size={16} />}
+                icon={<Filter size={16} strokeWidth={2} />}
                 isExpanded={activeFilterGroups.has('keys')}
                 onToggle={() => toggleFilterGroup('keys')}
               >
-                <div className="grid grid-cols-4 gap-2">
-                  {facets.keys.slice(0, 24).map(key => (
-                    <button
-                      key={key.value}
-                      onClick={() => {
-                        const current = filters.keys || [];
-                        const updated = current.includes(key.value)
-                          ? current.filter(k => k !== key.value)
-                          : [...current, key.value];
-                        updateFilter('keys', updated.length > 0 ? updated : undefined);
-                      }}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
-                        filters.keys?.includes(key.value)
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      }`}
-                    >
-                      {key.value}
-                    </button>
-                  ))}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-1)' }}>
+                  {facets.keys.slice(0, 24).map(key => {
+                    const isSelected = filters.keys?.includes(key.value);
+                    return (
+                      <button
+                        key={key.value}
+                        type="button"
+                        onClick={() => {
+                          const current = filters.keys || [];
+                          const updated = current.includes(key.value)
+                            ? current.filter(k => k !== key.value)
+                            : [...current, key.value];
+                          updateFilter('keys', updated.length > 0 ? updated : undefined);
+                        }}
+                        className={`sn-btn sn-btn--sm ${isSelected ? 'sn-btn--primary' : 'sn-btn--quiet'}`}
+                      >
+                        {key.value}
+                      </button>
+                    );
+                  })}
                 </div>
               </FilterGroup>
-            )}
+            ) : null}
 
             {/* Moods */}
-            {facets?.moods && facets.moods.length > 0 && (
+            {facets?.moods && facets.moods.length > 0 ? (
               <FilterGroup
                 title="Moods"
-                icon={<Filter size={16} />}
+                icon={<Filter size={16} strokeWidth={2} />}
                 isExpanded={activeFilterGroups.has('moods')}
                 onToggle={() => toggleFilterGroup('moods')}
               >
-                <div className="flex flex-wrap gap-2">
-                  {facets.moods.slice(0, 10).map(mood => (
-                    <button
-                      key={mood.value}
-                      onClick={() => {
-                        const current = filters.moods || [];
-                        const updated = current.includes(mood.value)
-                          ? current.filter(m => m !== mood.value)
-                          : [...current, mood.value];
-                        updateFilter('moods', updated.length > 0 ? updated : undefined);
-                      }}
-                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                        filters.moods?.includes(mood.value)
-                          ? 'bg-purple-500 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      }`}
-                    >
-                      {mood.value} ({mood.count})
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-1)' }}>
+                  {facets.moods.slice(0, 10).map(mood => {
+                    const isSelected = filters.moods?.includes(mood.value);
+                    return (
+                      <button
+                        key={mood.value}
+                        type="button"
+                        onClick={() => {
+                          const current = filters.moods || [];
+                          const updated = current.includes(mood.value)
+                            ? current.filter(m => m !== mood.value)
+                            : [...current, mood.value];
+                          updateFilter('moods', updated.length > 0 ? updated : undefined);
+                        }}
+                        className={`sn-btn sn-btn--sm ${isSelected ? 'sn-btn--primary' : 'sn-btn--quiet'}`}
+                      >
+                        {mood.value} ({mood.count})
+                      </button>
+                    );
+                  })}
                 </div>
               </FilterGroup>
-            )}
+            ) : null}
 
             {/* Energy Range */}
             <FilterGroup
               title="Energy Level"
-              icon={<Sliders size={16} />}
+              icon={<Sliders size={16} strokeWidth={2} />}
               isExpanded={activeFilterGroups.has('energy')}
               onToggle={() => toggleFilterGroup('energy')}
             >
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Min Energy</label>
+                  <label className="label" style={{ display: 'block', marginBottom: 'var(--space-1)', color: 'var(--fg-3)' }}>
+                    Min Energy
+                  </label>
                   <input
                     type="number"
                     step="0.1"
@@ -345,11 +430,14 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                     value={filters.energyMin || ''}
                     onChange={(e) => updateFilter('energyMin', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="0.0"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="sn-input"
+                    style={{ width: '100%', height: 'var(--control-sm)' }}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Max Energy</label>
+                  <label className="label" style={{ display: 'block', marginBottom: 'var(--space-1)', color: 'var(--fg-3)' }}>
+                    Max Energy
+                  </label>
                   <input
                     type="number"
                     step="0.1"
@@ -358,107 +446,112 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                     value={filters.energyMax || ''}
                     onChange={(e) => updateFilter('energyMax', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="1.0"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="sn-input"
+                    style={{ width: '100%', height: 'var(--control-sm)' }}
                   />
                 </div>
               </div>
             </FilterGroup>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Results */}
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-400">
+      <div style={{ padding: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+          <span className="caption" style={{ color: 'var(--fg-3)', fontWeight: 600 }}>
             {results.length} {results.length === 1 ? 'result' : 'results'}
-          </h3>
+          </span>
         </div>
 
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: '384px', overflowY: 'auto' }}>
           {results.map(node => (
             <button
               key={node.id}
+              type="button"
               onClick={() => handleResultClick(node.id)}
-              className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors group"
+              style={{
+                width: '100%',
+                padding: 'var(--space-3)',
+                backgroundColor: 'var(--surface-2)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-control)',
+                textAlign: 'left',
+                cursor: 'pointer',
+                color: 'var(--fg)',
+                transition: 'background var(--duration-fast) var(--ease-standard)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--surface-2)';
+              }}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-white font-medium truncate group-hover:text-blue-400">
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 600, color: 'var(--fg)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                     {node.track?.title || node.label || 'Unknown Track'}
                   </h4>
-                  <p className="text-sm text-gray-400 truncate">
+                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: 'var(--fg-2)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                     {node.track?.artist || 'Unknown Artist'}
                   </p>
                 </div>
-                <div className="ml-3 text-right flex-shrink-0">
-                  {node.track?.bpm && (
-                    <span className="text-xs text-gray-500">{node.track.bpm} BPM</span>
-                  )}
-                  {node.track?.key && (
-                    <span className="block text-xs text-gray-500">{node.track.key}</span>
-                  )}
+                <div style={{ marginLeft: 'var(--space-3)', textAlign: 'right', flexShrink: 0 }}>
+                  {node.track?.bpm ? (
+                    <span style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'var(--font-data)', color: 'var(--fg-2)' }}>
+                      {node.track.bpm} BPM
+                    </span>
+                  ) : null}
+                  {node.track?.key ? (
+                    <span style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'var(--font-data)', color: 'var(--fg-2)' }}>
+                      {node.track.key}
+                    </span>
+                  ) : null}
                 </div>
               </div>
-              {node.metadata?.genre && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">
-                    {node.metadata.genre}
-                  </span>
-                  {node.metadata?.mood && (
-                    <span className="px-2 py-0.5 bg-purple-900/30 text-purple-300 text-xs rounded">
-                      {node.metadata.mood}
-                    </span>
-                  )}
+              {node.metadata?.genre ? (
+                <div style={{ marginTop: 'var(--space-2)', display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                  <span className="sn-tag">{node.metadata.genre}</span>
+                  {node.metadata?.mood ? (
+                    <span className="sn-tag">{node.metadata.mood}</span>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
             </button>
           ))}
 
-          {results.length === 0 && query && !isSearching && (
-            <div className="text-center py-8 text-gray-500">
-              <Search size={48} className="mx-auto mb-3 opacity-50" />
-              <p className="text-white mb-2">No results found for "{query}"</p>
+          {results.length === 0 && query && !isSearching ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--fg-3)' }}>
+              <Search size={40} strokeWidth={1.5} style={{ opacity: 0.5, marginBottom: 'var(--space-2)' }} />
+              <p style={{ color: 'var(--fg)', marginBottom: 'var(--space-2)' }}>No results found for "{query}"</p>
 
-              {/* Specific suggestions based on active filters */}
-              {activeFilterCount > 0 && (
+              {activeFilterCount > 0 ? (
                 <button
+                  type="button"
                   onClick={clearFilters}
-                  className="text-blue-400 hover:text-blue-300 underline mb-3 inline-block"
+                  className="sn-btn sn-btn--quiet sn-btn--sm"
+                  style={{ color: 'var(--brand)' }}
                 >
                   Try clearing {activeFilterCount} active filter{activeFilterCount > 1 ? 's' : ''}
                 </button>
-              )}
-
-              {/* General suggestions */}
-              {activeFilterCount === 0 && (
-                <div className="text-sm mt-3 space-y-1">
-                  <p>Suggestions:</p>
-                  <ul className="list-disc list-inside text-gray-400">
-                    <li>Check for typos in your search</li>
-                    <li>Try broader search terms</li>
-                    <li>Use fewer words in your search</li>
-                    <li>Search by BPM, key, or genre instead</li>
-                  </ul>
-                </div>
-              )}
+              ) : null}
             </div>
-          )}
+          ) : null}
 
-          {results.length === 0 && !query && (
-            <div className="text-center py-8 text-gray-500">
-              <Search size={48} className="mx-auto mb-3 opacity-50" />
-              <p>Start typing to search tracks</p>
-              <p className="text-sm mt-1">Supports fuzzy matching and advanced filters</p>
+          {results.length === 0 && !query ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--fg-3)' }}>
+              <Search size={40} strokeWidth={1.5} style={{ opacity: 0.5, marginBottom: 'var(--space-2)' }} />
+              <p style={{ margin: 0 }}>Start typing to search tracks</p>
+              <p className="caption" style={{ marginTop: 'var(--space-1)' }}>Supports fuzzy matching and advanced filters</p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
   );
 };
 
-// Filter Group Component
 interface FilterGroupProps {
   title: string;
   icon: React.ReactNode;
@@ -469,22 +562,35 @@ interface FilterGroupProps {
 
 const FilterGroup: React.FC<FilterGroupProps> = ({ title, icon, isExpanded, onToggle, children }) => {
   return (
-    <div className="border border-gray-700 rounded-lg overflow-hidden">
+    <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', overflow: 'hidden' }}>
       <button
+        type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 'var(--space-3)',
+          backgroundColor: 'var(--surface-1)',
+          border: 'none',
+          color: 'var(--fg)',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+          cursor: 'pointer'
+        }}
       >
-        <div className="flex items-center gap-2 text-white font-medium">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           {icon}
           {title}
         </div>
-        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        {isExpanded ? <ChevronUp size={16} strokeWidth={2} /> : <ChevronDown size={16} strokeWidth={2} />}
       </button>
-      {isExpanded && (
-        <div className="p-3 bg-gray-800/50">
+      {isExpanded ? (
+        <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--surface-2)', borderTop: '1px solid var(--line)' }}>
           {children}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

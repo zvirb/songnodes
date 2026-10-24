@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Fuse from 'fuse.js';
-import clsx from 'clsx';
-import { LocateFixed, ListPlus, Route, Search as SearchIcon } from 'lucide-react';
+import { LocateFixed, ListPlus, Route, Search as SearchIcon, X } from 'lucide-react';
 
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
@@ -296,7 +295,11 @@ export const QuickSearch: React.FC = () => {
       }
       case 'Escape': {
         event.preventDefault();
-        closePalette();
+        if (query) {
+          setQuery('');
+        } else {
+          closePalette();
+        }
         break;
       }
       default:
@@ -311,80 +314,136 @@ export const QuickSearch: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 'var(--z-dialog)',
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        paddingTop: 'var(--space-16)',
+        backgroundColor: 'var(--overlay)'
+      }}
+    >
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        style={{ position: 'absolute', inset: 0 }}
         onClick={closePalette}
       />
 
-      <div className="relative w-full max-w-3xl mx-4 overflow-hidden rounded-xl border border-dj-gray bg-dj-dark shadow-2xl">
-        <div className="flex items-center border-b border-dj-gray px-4">
-          <SearchIcon size={18} className="mr-3 flex-none text-gray-500" aria-hidden="true" />
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '720px',
+          margin: '0 var(--space-4)',
+          overflow: 'hidden',
+          borderRadius: 'var(--radius-card)',
+          border: '1px solid var(--line)',
+          backgroundColor: 'var(--surface-1)',
+          color: 'var(--fg)',
+          boxShadow: 'var(--shadow-3)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--line)', padding: '0 var(--space-4)' }}>
+          <SearchIcon size={18} strokeWidth={2} style={{ marginRight: 'var(--space-3)', color: 'var(--fg-3)' }} aria-hidden="true" />
           <input
             ref={inputRef}
-            type="text"
+            type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleInputKeyDown}
             placeholder="Search tracks, artists, genres…"
-            className="flex-1 bg-transparent py-3 text-base text-white placeholder-gray-500 focus:outline-none"
+            style={{
+              flex: 1,
+              backgroundColor: 'transparent',
+              padding: 'var(--space-3) 0',
+              fontSize: '1rem',
+              color: 'var(--fg)',
+              border: 'none',
+              outline: 'none',
+              fontFamily: 'var(--font-body)'
+            }}
             aria-label="Quick search"
           />
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-500">
-            <span className="hidden sm:inline">Ctrl</span>
-            <kbd className="rounded border border-dj-gray px-1.5 py-0.5">K</kbd>
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
+              aria-label="Clear query"
+              title="Clear query"
+            >
+              <X size={16} strokeWidth={2} aria-hidden="true" />
+            </button>
+          ) : null}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>
+              Cmd+K
+            </kbd>
           </div>
         </div>
 
-        <div className="max-h-[420px] overflow-y-auto">
+        <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
           {showEmptyState ? (
-            <div className="px-6 py-12 text-center text-sm text-gray-400">
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', fontSize: '0.875rem', color: 'var(--fg-2)' }}>
               {searchableItems.length === 0 ? (
-                <div className="space-y-2">
-                  <p>No tracks available yet.</p>
-                  <p className="text-xs text-gray-500">
-                    Load graph data via the API gateway (`docker compose up -d rest-api api-gateway`) or add target tracks to scrape.
+                <div>
+                  <p style={{ margin: 0 }}>No tracks available yet.</p>
+                  <p style={{ margin: 'var(--space-1) 0 0', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+                    Load graph data or add target tracks to scrape.
                   </p>
                 </div>
               ) : (
-                <p>No matches for “{query}”. Try a different search or adjust your filters.</p>
+                <p style={{ margin: 0 }}>No matches for “{query}”.</p>
               )}
             </div>
           ) : (
-            <ul className="divide-y divide-dj-gray/60">
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {results.map(({ item, score }, index) => {
                 const isActive = index === highlightedIndex;
                 const pathLabel = pathActionLabel(item.track.id);
 
                 return (
-                  <li key={item.id}>
+                  <li key={item.id} style={{ borderBottom: '1px solid var(--line)' }}>
                     <button
                       type="button"
                       onClick={() => focusTrack(item, true)}
-                      className={clsx(
-                        'flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors',
-                        isActive ? 'bg-dj-gray text-white' : 'text-gray-200 hover:bg-dj-gray',
-                      )}
+                      style={{
+                        display: 'flex',
+                        width: '100%',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 'var(--space-3)',
+                        padding: 'var(--space-3) var(--space-4)',
+                        textAlign: 'left',
+                        backgroundColor: isActive ? 'var(--hover-bg)' : 'transparent',
+                        border: 'none',
+                        color: 'var(--fg)',
+                        cursor: 'pointer'
+                      }}
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-semibold">{item.title}</span>
-                          {score !== undefined && (
-                            <span className="rounded-full bg-dj-gray px-2 py-0.5 text-[11px] text-gray-200">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {item.title}
+                          </span>
+                          {score !== undefined ? (
+                            <span className="sn-tag">
                               {Math.round((1 - (score ?? 0)) * 100)}%
                             </span>
-                          )}
+                          ) : null}
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-gray-400">
-                          <span className="truncate font-medium text-gray-300">{item.artist}</span>
-                          {item.genre && <span className="rounded bg-dj-gray px-1.5 py-0.5 text-xs uppercase tracking-wide text-gray-400">{item.genre}</span>}
-                          {item.bpm && <span>{item.bpm} BPM</span>}
-                          {item.key && <span>{item.key}</span>}
-                          {item.year && <span>{item.year}</span>}
+                        <div style={{ marginTop: '2px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+                          <span style={{ fontWeight: 500, color: 'var(--fg-2)' }}>{item.artist}</span>
+                          {item.genre ? <span className="sn-tag">{item.genre}</span> : null}
+                          {item.bpm ? <span style={{ fontFamily: 'var(--font-data)' }}>{item.bpm} BPM</span> : null}
+                          {item.key ? <span style={{ fontFamily: 'var(--font-data)' }}>{item.key}</span> : null}
+                          {item.year ? <span>{item.year}</span> : null}
                         </div>
                       </div>
 
-                      <div className="flex flex-none items-center gap-2">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={(event) => {
@@ -392,11 +451,9 @@ export const QuickSearch: React.FC = () => {
                             focusTrack(item, true);
                           }}
                           title="Focus in graph"
-                          className={clsx(
-                            'flex h-8 w-8 items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
-                          )}
+                          className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
                         >
-                          <LocateFixed size={ACTION_ICON_SIZE} aria-hidden="true" />
+                          <LocateFixed size={ACTION_ICON_SIZE} strokeWidth={2} aria-hidden="true" />
                         </button>
 
                         <button
@@ -406,12 +463,9 @@ export const QuickSearch: React.FC = () => {
                             handleAddToSetlist(item);
                           }}
                           title={currentSetlist ? 'Add to current setlist' : 'Create a setlist and add track'}
-                          className={clsx(
-                            'flex h-8 w-8 items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
-                            !currentSetlist && 'border-dashed',
-                          )}
+                          className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
                         >
-                          <ListPlus size={ACTION_ICON_SIZE} aria-hidden="true" />
+                          <ListPlus size={ACTION_ICON_SIZE} strokeWidth={2} aria-hidden="true" />
                         </button>
 
                         <button
@@ -421,12 +475,9 @@ export const QuickSearch: React.FC = () => {
                             handlePathAction(item);
                           }}
                           title={pathLabel}
-                          className={clsx(
-                            'flex h-8 w-8 items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
-                            (pathfindingState.startTrackId === item.track.id || pathfindingState.endTrackId === item.track.id || pathfindingState.selectedWaypoints.has(item.track.id)) && 'border-gray-200 text-white',
-                          )}
+                          className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
                         >
-                          <Route size={ACTION_ICON_SIZE} aria-hidden="true" />
+                          <Route size={ACTION_ICON_SIZE} strokeWidth={2} aria-hidden="true" />
                         </button>
                       </div>
                     </button>
@@ -437,18 +488,16 @@ export const QuickSearch: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-dj-gray/80 px-4 py-2 text-[11px] uppercase tracking-wide text-gray-500">
-          <div className="flex items-center gap-2">
-            <kbd className="rounded border border-dj-gray px-1.5 py-0.5">↑↓</kbd>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--line)', padding: 'var(--space-2) var(--space-4)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>↑↓</kbd>
             Navigate
           </div>
-          <div className="flex items-center gap-2">
-            <kbd className="rounded border border-dj-gray px-1.5 py-0.5">Enter</kbd>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>Enter</kbd>
             Focus
-            <span className="hidden sm:flex items-center gap-1">
-              <kbd className="rounded border border-dj-gray px-1.5 py-0.5">Esc</kbd>
-              Close
-            </span>
+            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>Esc</kbd>
+            Close
           </div>
         </div>
       </div>

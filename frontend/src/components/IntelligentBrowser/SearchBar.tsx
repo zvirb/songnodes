@@ -1,6 +1,7 @@
 /**
  * SearchBar Component
- * Accessible search input with clear functionality
+ * Accessible search input with clear button, keyboard handling (Escape to clear),
+ * and Design System input tokens.
  */
 
 import React, { useRef } from 'react';
@@ -17,7 +18,7 @@ interface SearchBarProps {
 export const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChange,
-  placeholder = 'Search suggestions',
+  placeholder = 'Search tracks, artists, genres...',
   resultCount
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,9 +28,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     inputRef.current?.focus();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape' && value) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleClear();
+    }
+  };
+
   return (
     <div className={styles.search} role="search">
-      <span className={styles.searchIcon} aria-hidden="true"><Search size={16} strokeWidth={2} /></span>
+      <span className={styles.searchIcon} aria-hidden="true">
+        <Search size={16} strokeWidth={2} />
+      </span>
       <input
         ref={inputRef}
         id="track-search"
@@ -37,15 +48,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         className="sn-input"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         aria-label="Search suggestions by track, artist or genre"
         aria-describedby="search-hint"
         autoComplete="off"
       />
 
-      {value && (
+      {value ? (
         <button
-          className={`sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm ${styles.clear}`}
+          className={styles.clear}
           onClick={handleClear}
           aria-label="Clear search"
           title="Clear search"
@@ -53,17 +65,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         >
           <X size={16} strokeWidth={2} aria-hidden="true" />
         </button>
-      )}
+      ) : null}
 
       <span id="search-hint" className="sn-sr">
         Type to filter by track, artist or genre. Press Escape to clear.
       </span>
 
-      {resultCount !== undefined && value && (
+      {resultCount !== undefined && value ? (
         <span className="sn-sr" role="status" aria-live="polite">
           {resultCount} {resultCount === 1 ? 'result' : 'results'}
         </span>
-      )}
+      ) : null}
     </div>
   );
 };

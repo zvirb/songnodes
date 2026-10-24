@@ -1,7 +1,6 @@
 /**
  * FilterTabs Component
- * Sort order for the suggestions: a design-system SegmentedControl
- * (one view, three orderings), not tabs.
+ * Sort order for recommendations using Design System SegmentedControl
  */
 
 import React from 'react';
