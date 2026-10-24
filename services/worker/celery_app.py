@@ -29,12 +29,15 @@ PROJECTION_INTERVAL = int(os.getenv('PROJECTION_INTERVAL_SECONDS', '15'))
 MAX_JOBS_PER_DRAIN = int(os.getenv('MAX_JOBS_PER_DRAIN', '25'))
 
 def broker_url() -> str:
-    """CELERY_BROKER_URL, or assembled from the chart's RABBITMQ_HOST/PORT/USER/PASS (password URL-encoded)."""
+    """CELERY_BROKER_URL, or assembled from the chart's RABBITMQ_HOST/PORT/USER/PASS (credentials URL-encoded). No defaults."""
     explicit = os.getenv('CELERY_BROKER_URL')
     if explicit:
         return explicit
-    user, password = os.getenv('RABBITMQ_USER', 'guest'), os.getenv('RABBITMQ_PASS') or os.getenv('RABBITMQ_PASSWORD') or 'guest'
-    return f"amqp://{quote(user, safe='')}:{quote(password, safe='')}@{os.getenv('RABBITMQ_HOST', 'rabbitmq')}:{os.getenv('RABBITMQ_PORT', '5672')}/{quote(os.getenv('RABBITMQ_VHOST', '/'), safe='')}"
+    user, password = os.getenv('RABBITMQ_USER'), os.getenv('RABBITMQ_PASS') or os.getenv('RABBITMQ_PASSWORD')
+    if not user or not password:
+        raise RuntimeError('Set CELERY_BROKER_URL, or RABBITMQ_USER and RABBITMQ_PASS (and RABBITMQ_HOST/PORT)')
+    vhost = quote(os.getenv('RABBITMQ_VHOST', '/'), safe='')
+    return f"amqp://{quote(user, safe='')}:{quote(password, safe='')}@{os.getenv('RABBITMQ_HOST', 'rabbitmq')}:{os.getenv('RABBITMQ_PORT', '5672')}/{vhost}"
 
 
 app = Celery('songnodes', broker=broker_url())

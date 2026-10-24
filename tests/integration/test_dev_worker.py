@@ -19,6 +19,12 @@ def worker_running():
     return b'worker' in out.stdout
 
 
+def scraper_running():
+    out = subprocess.run(['docker', 'compose', '-f', 'compose.dev.yaml', 'ps', '--status', 'running', '--format', '{{.Service}}', 'unified-scraper'],
+                         cwd=ROOT, capture_output=True)
+    return b'unified-scraper' in out.stdout
+
+
 def wait_for(job_id, states, timeout=60):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -62,6 +68,7 @@ class WorkerEndToEnd(unittest.TestCase):
         self.assertEqual((job['status'], job['attempts']), ('succeeded', 1), job)
         self.assertEqual(set(job['result']) >= {'missing', 'extra', 'stale'}, True)
 
+    @unittest.skipIf(scraper_running(), 'a scraper is running: this test would start a real scrape against external sites')
     def test_scrape_trigger_is_retried_by_the_worker_when_the_scraper_is_unreachable(self):
         status, queued = request(8082, '/api/v1/scrape/trigger?source=mixesdb&search_query=' + f'Marker%20{self.marker}', 'POST')
         self.assertEqual(status, 202, queued)

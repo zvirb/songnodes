@@ -152,6 +152,8 @@ def compare(before, after):
 
 
 def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')   # the report uses arrows; a cp1252 console or pipe would crash after the file was written
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     capture = commands.add_parser('snapshot')

@@ -17,6 +17,11 @@ BACKOFF_SECONDS = 30
 TRANSIENT = (RetryableError, ProviderUnavailable)
 
 
+def is_permanent(error: Exception) -> bool:
+    """A request the handler or the service rejected as invalid never succeeds on retry (429 and 408 are the exceptions)."""
+    return isinstance(error, CatalogError) and 400 <= error.status < 500 and error.status not in (408, 429)
+
+
 async def run_one(conn, ctx: Context, kinds: Optional[List[str]] = None, lease_seconds: int = jobs.DEFAULT_LEASE_SECONDS) -> Optional[Dict[str, Any]]:
     """Run at most one runnable job. Returns a summary, or None when nothing was runnable."""
     kinds = kinds or sorted(HANDLERS)
@@ -38,7 +43,7 @@ async def run_one(conn, ctx: Context, kinds: Optional[List[str]] = None, lease_s
         outcome.update(status='succeeded', result=result, enqueued=[f['kind'] for f in follow_ups])
     except Exception as error:  # noqa: BLE001 - every handler failure goes through the retry/dead-letter policy
         final = await jobs.fail(conn, job['id'], f'{error.__class__.__name__}: {error}',
-                                BACKOFF_SECONDS * (4 if isinstance(error, TRANSIENT) else 1))
+                                BACKOFF_SECONDS * (4 if isinstance(error, TRANSIENT) else 1), permanent=is_permanent(error))
         outcome.update(status=final['status'], error=str(error), transient=isinstance(error, TRANSIENT))
     return outcome
 

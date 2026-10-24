@@ -45,7 +45,7 @@ except ImportError:
                 'port': port,
                 'database': parsed.path.lstrip('/') or 'musicdb',
                 'user': parsed.username or 'musicdb_user',
-                'password': parsed.password or 'musicdb_secure_pass_2024'
+                'password': parsed.password
             }
 
         # Fallback to individual env vars

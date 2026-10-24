@@ -24,7 +24,7 @@ class Context:
     """Per-process dependencies, injected so tests can supply fakes."""
     providers: Callable[[], List[Any]] = lambda: []
     http: Optional[httpx.AsyncClient] = None
-    scraper_url: str = field(default_factory=lambda: os.getenv('UNIFIED_SCRAPER_URL', 'http://unified-scraper:8012'))
+    scraper_url: str = field(default_factory=lambda: os.getenv('UNIFIED_SCRAPER_URL', 'http://unified-scraper:8000'))
 
 
 Handler = Callable[[Any, Context, Dict[str, Any]], Awaitable[Dict[str, Any]]]
@@ -54,14 +54,26 @@ def after(kind: str, payload: Dict[str, Any], extra: Optional[Dict[str, Any]] = 
     return follow(kind, f'{tag}:{payload.get("job_id", "manual")}', extra)
 
 
+SCRAPE_TIMEOUT_SECONDS = 960   # the unified scraper itself gives a spider up to 900 s
+
+
 @handler('scrape')
 async def scrape(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Dispatch to the unified scraper (the only scraper pod), then ingest what it wrote to bronze."""
-    if not payload.get('search_query'):
-        raise CatalogError(422, 'scrape jobs need payload.search_query (artist and title together)')
-    body = {'spider_name': payload.get('source', '1001tracklists'),
-            'search_params': {'search_query': payload['search_query'], 'limit': int(payload.get('limit', 5))}}
-    client = ctx.http or httpx.AsyncClient(timeout=120)
+    """Run one spider through the unified scraper (the only scraper service), then queue ingestion.
+
+    The scraper's API is synchronous: `POST /scrape {source, search_query, limit}` returns when the spider has finished
+    and has already written bronze. Spider-side errors (unknown source, invalid request) are permanent; timeouts,
+    throttling and 5xx are retried with backoff.
+    """
+    if not payload.get('search_query') and not payload.get('url'):
+        raise CatalogError(422, 'scrape jobs need payload.search_query (artist and title together) or payload.url')
+    body = {'source': payload.get('source', '1001tracklists')}
+    for key in ('search_query', 'url', 'artist_name', 'max_pages'):
+        if payload.get(key) not in (None, ''):
+            body[key] = payload[key]
+    if payload.get('limit') is not None:
+        body['limit'] = int(payload['limit'])
+    client = ctx.http or httpx.AsyncClient(timeout=SCRAPE_TIMEOUT_SECONDS)
     try:
         response = await client.post(f'{ctx.scraper_url.rstrip("/")}/scrape', json=body)
     except httpx.TransportError as error:
@@ -70,10 +82,14 @@ async def scrape(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
         if ctx.http is None:
             await client.aclose()
     if response.status_code >= 500 or response.status_code == 429:
-        raise RetryableError(f'unified scraper returned HTTP {response.status_code}')
+        raise RetryableError(f'unified scraper returned HTTP {response.status_code}: {response.text[:200]}')
     if response.status_code >= 400:
         raise CatalogError(response.status_code, f'unified scraper rejected the request: {response.text[:200]}')
-    return {'scraper': response.json() if response.content else {}, 'enqueue': [after('ingest_pending', payload, tag='ingest-after-scrape')]}
+    result = response.json() if response.content else {}
+    persisted = {'bronze_playlists': int(result.get('bronze_playlists_persisted') or 0),
+                 'bronze_tracks': int(result.get('bronze_tracks_persisted') or 0)}
+    return {'scraper': result, **persisted, 'found_nothing': not any(persisted.values()),
+            'enqueue': [after('ingest_pending', payload, tag='ingest-after-scrape')]}
 
 
 @handler('ingest_pending')

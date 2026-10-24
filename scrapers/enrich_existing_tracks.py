@@ -33,7 +33,7 @@ def get_database_config():
         parsed = urlparse(db_url)
         return {
             'user': parsed.username or 'musicdb_user',
-            'password': parsed.password or 'musicdb_secure_pass_2024',
+            'password': parsed.password,
             'host': parsed.hostname or 'postgres',
             'port': parsed.port or 5432,
             'database': parsed.path.lstrip('/') or 'musicdb'

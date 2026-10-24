@@ -18,8 +18,7 @@ ENV PYTHONUNBUFFERED=1 \
     POSTGRES_HOST=postgres \
     POSTGRES_PORT=5432 \
     POSTGRES_DB=musicdb \
-    POSTGRES_USER=musicuser \
-    POSTGRES_PASSWORD=musicpass
+    POSTGRES_USER=musicuser
 
 RUN cat <<'ENTRY' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 #!/bin/bash

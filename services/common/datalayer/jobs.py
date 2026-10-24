@@ -14,6 +14,9 @@ from .errors import CatalogError
 
 MAX_BACKOFF_SECONDS = 3600
 DEFAULT_LEASE_SECONDS = 300
+# A scrape is one synchronous request of up to 15 minutes, so it needs a longer lease than ordinary jobs; otherwise a
+# second worker would reclaim a still-running scrape and run it twice.
+KIND_LEASES = {'scrape': 1800.0}
 
 
 async def enqueue(conn, kind: str, idempotency_key: str, payload: Dict[str, Any],
@@ -37,20 +40,22 @@ async def claim_next(conn, kinds: Optional[List[str]] = None, lease_seconds: int
             UPDATE ingestion_jobs SET status = 'dead', finished_at = NOW(), updated_at = NOW(),
                    last_error = COALESCE(last_error, 'lease expired with no attempts left')
             WHERE status = 'running' AND attempts >= max_attempts
-              AND started_at < NOW() - make_interval(secs => $1)
-        """, float(lease_seconds))
+              AND started_at < NOW() - make_interval(secs => COALESCE((SELECT l.s FROM unnest($2::text[], $3::float8[]) AS l(k, s)
+                                                                       WHERE l.k = ingestion_jobs.kind), $1::float8))
+        """, float(lease_seconds), list(KIND_LEASES), list(KIND_LEASES.values()))
         return await conn.fetchrow("""
             WITH next AS (
                 SELECT id FROM ingestion_jobs
                 WHERE ($1::text[] IS NULL OR kind = ANY($1))
                   AND ((status = 'queued' AND run_after <= NOW())
-                       OR (status = 'running' AND started_at < NOW() - make_interval(secs => $2)))
+                       OR (status = 'running' AND started_at < NOW() - make_interval(secs => COALESCE(
+                              (SELECT l.s FROM unnest($3::text[], $4::float8[]) AS l(k, s) WHERE l.k = ingestion_jobs.kind), $2::float8))))
                 ORDER BY run_after, created_at
                 FOR UPDATE SKIP LOCKED LIMIT 1)
             UPDATE ingestion_jobs j
             SET status = 'running', attempts = j.attempts + 1, started_at = NOW(), updated_at = NOW()
             FROM next WHERE j.id = next.id RETURNING j.*
-        """, kinds, float(lease_seconds))
+        """, kinds, float(lease_seconds), list(KIND_LEASES), list(KIND_LEASES.values()))
 
 
 async def complete(conn, job_id: UUID, result: Optional[Dict[str, Any]] = None):
@@ -64,17 +69,17 @@ async def complete(conn, job_id: UUID, result: Optional[Dict[str, Any]] = None):
     return row
 
 
-async def fail(conn, job_id: UUID, error: str, backoff_seconds: float = 30):
-    """Re-queue with exponential backoff, or dead-letter once the attempt budget is spent."""
+async def fail(conn, job_id: UUID, error: str, backoff_seconds: float = 30, permanent: bool = False):
+    """Re-queue with exponential backoff, or dead-letter once the attempt budget is spent (immediately if `permanent`)."""
     row = await conn.fetchrow("""
         UPDATE ingestion_jobs SET
-            status = CASE WHEN attempts >= max_attempts THEN 'dead' ELSE 'queued' END,
-            run_after = CASE WHEN attempts >= max_attempts THEN run_after ELSE NOW() +
+            status = CASE WHEN attempts >= max_attempts OR $5::boolean THEN 'dead' ELSE 'queued' END,
+            run_after = CASE WHEN attempts >= max_attempts OR $5::boolean THEN run_after ELSE NOW() +
                 make_interval(secs => LEAST($3::float8 * power(2, attempts - 1), $4::float8)) END,
-            finished_at = CASE WHEN attempts >= max_attempts THEN NOW() END,
+            finished_at = CASE WHEN attempts >= max_attempts OR $5::boolean THEN NOW() END,
             last_error = $2, updated_at = NOW()
         WHERE id = $1 AND status = 'running' RETURNING *
-    """, job_id, error[:2000], float(backoff_seconds), float(MAX_BACKOFF_SECONDS))
+    """, job_id, error[:2000], float(backoff_seconds), float(MAX_BACKOFF_SECONDS), permanent)
     if row is None:
         raise CatalogError(409, 'Job is not running')
     return row

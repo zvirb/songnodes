@@ -9,6 +9,9 @@ SKIP = {'node_modules', 'sample_data_env', '.git', 'dist', '__pycache__', '.loca
 SECRET_NAME = r'[A-Z_]*(?:PASSWORD|PASSWD|PASS|SECRET|SECRET_KEY|TOKEN|API_KEY)[A-Z_]*'
 DEFAULTED = re.compile(r"""os\.(?:getenv|environ\.get)\(\s*['"]""" + SECRET_NAME + r"""['"]\s*,\s*['"][^'"\s]{4,}['"]""")
 KNOWN_LEAK = '7D82_xqNs55tGyk'
+# `parsed.password or 'literal'`-style fallbacks, and passwords baked into Dockerfile ENV lines.
+FALLBACK = re.compile(r"""(?i)password[^\n]{0,40}\bor\s+['"][^'"\s]{4,}['"]""")
+DOCKER_SECRET = re.compile(r"""^\s*(?:ENV\s+)?[A-Z_]*(?:PASSWORD|PASSWD|SECRET|TOKEN|API_KEY)[A-Z_]*\s*=\s*[^\s\\$"']+""", re.MULTILINE)
 
 
 def sources():
@@ -26,6 +29,20 @@ class NoCommittedSecrets(unittest.TestCase):
             text = path.read_text(encoding='utf-8', errors='ignore')
             for match in DEFAULTED.finditer(text):
                 hits.append(f'{path.relative_to(ROOT)}:{text.count(chr(10), 0, match.start()) + 1}: {match.group(0)[:90]}')
+        self.assertEqual(hits, [])
+
+    def test_no_password_fallback_literals_and_no_secrets_in_dockerfiles(self):
+        hits = []
+        for path in sources():
+            text = path.read_text(encoding='utf-8', errors='ignore')
+            hits += [f'{path.relative_to(ROOT)}: {m.group(0)[:80]}' for m in FALLBACK.finditer(text)]
+        for folder, dirs, files in os.walk(ROOT):
+            dirs[:] = [d for d in dirs if d not in SKIP]
+            for name in files:
+                if name.startswith('Dockerfile'):
+                    path = Path(folder) / name
+                    text = path.read_text(encoding='utf-8', errors='ignore')
+                    hits += [f'{path.relative_to(ROOT)}: {m.group(0).strip()}' for m in DOCKER_SECRET.finditer(text)]
         self.assertEqual(hits, [])
 
     def test_the_credential_that_was_committed_is_gone_from_the_tree(self):

@@ -73,6 +73,24 @@ QUEUE_SCENARIO = textwrap.dedent('''
         assert await jobs.claim_next(conn, [KIND], lease_seconds=60) is None
         assert await conn.fetchval('SELECT status FROM ingestion_jobs WHERE id = $1', spent['id']) == 'dead'
 
+        # A scrape is one long synchronous call: its lease is 30 minutes, so a 10-minute-old claim is NOT reclaimed,
+        # while an ordinary job (5-minute lease) claimed at the same time is.
+        slow, _ = await jobs.enqueue(conn, 'scrape', f'{KIND}-slow', {'search_query': 'x y'})
+        fast, _ = await jobs.enqueue(conn, KIND, 'fast', {})
+        await jobs.claim_next(conn, ['scrape', KIND])
+        await jobs.claim_next(conn, ['scrape', KIND])
+        await conn.execute("UPDATE ingestion_jobs SET started_at = NOW() - interval '10 minutes' WHERE id = ANY($1::uuid[])", [slow['id'], fast['id']])
+        again = await jobs.claim_next(conn, ['scrape', KIND])
+        assert again is not None and again['id'] == fast['id'], 'only the ordinary job is reclaimed'
+        assert await conn.fetchval('SELECT status FROM ingestion_jobs WHERE id = $1', slow['id']) == 'running'
+        await conn.execute("UPDATE ingestion_jobs SET started_at = NOW() - interval '40 minutes' WHERE id = $1", slow['id'])
+        reclaimed = await jobs.claim_next(conn, ['scrape'])
+        assert reclaimed is not None and reclaimed['id'] == slow['id'], 'a scrape past its own lease is reclaimed'
+        perm, _ = await jobs.enqueue(conn, KIND, 'perm', {}, max_attempts=5)
+        claimed = await jobs.claim_next(conn, [KIND])
+        assert claimed['id'] == perm['id']
+        assert (await jobs.fail(conn, perm['id'], 'invalid', permanent=True))['status'] == 'dead'
+        await conn.execute("DELETE FROM ingestion_jobs WHERE id = $1", slow['id'])
         await conn.execute('DELETE FROM ingestion_jobs WHERE kind = $1', KIND)
         for n in range(5):
             await jobs.enqueue(conn, KIND, f'c{n}', {})

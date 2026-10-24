@@ -26,6 +26,8 @@ fi
 docker build "${build_args[@]}" -f services/graph-visualization-api/Dockerfile -t songnodes-dev-graph-api .
 docker build "${build_args[@]}" -f services/rest_api/Dockerfile -t songnodes-dev-rest-api .
 docker build "${build_args[@]}" -f services/worker/Dockerfile -t songnodes-dev-worker .
+docker build "${build_args[@]}" -f scrapers/Dockerfile.unified -t songnodes-dev-unified-scraper scrapers/
+docker build "${build_args[@]}" -t songnodes-dev-frontend frontend/
 docker compose -f compose.dev.yaml up -d --wait --wait-timeout 120 postgres redis
 # Add the work queue to existing volumes too; this migration preserves existing rows.
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/012_target_tracks_up.sql

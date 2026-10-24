@@ -109,16 +109,23 @@ Built (all on `feature/catalog-writes-silver`, commits from `f3083c2` to `d51f65
 
 Checks run (all synthetic data; database left empty): `services/common` 111 unit tests; 57 integration tests twice in a row,
 none skipped (real Postgres, real Celery worker end to end, REST and graph APIs); frontend type-check 0 errors, 43 unit tests,
-production build; `helm lint` and render of chart and dev values; `start-dev.sh` end to end with 6 healthy containers;
+production build; `helm lint` and render of chart and dev values; `start-dev.sh` end to end with 8 healthy containers (adds unified-scraper and frontend);
 fresh-volume init and `migrate.py` from an empty database, repeated; live provider tests skip without credentials.
+
+Deployment target is now plain Docker Compose (`compose.dev.yaml`, `docs/DEPLOYMENT_CHECKLIST.md`); the Docker Desktop Kubernetes
+overlay was removed. The Helm/Flux files remain but are unused. Worker-to-scraper contract fixed (`POST /scrape {source, search_query, ...}`
+on container port 8000, synchronous, 30-minute scrape lease, invalid requests dead-lettered at once). The real scraper persistence pipeline
+was run once against the Compose schema with a synthetic playlist: bronze (playlist_id, positions) and silver writes succeeded, rows removed;
+it logs harmless errors for the absent legacy `artists`/`song_adjacency` tables. Docker secrets/fallback password literals removed (guard test).
+CLAUDE.md still says "Kubernetes only; Docker Compose forbidden" - not edited, needs your decision.
 
 NOT done / NOT verified:
 - No provider client has run against a live API with credentials. Docs for Deezer, GetSongBPM, MusicBrainz, Discogs could not
   be read; TIDAL OAS was read but not its live responses (BPM/key population, array-filter style, auth form unconfirmed).
 - Playwright E2E (mandatory before merge per CLAUDE.md): only `basic-validation.desktop.spec.ts` was run (chromium): 7 of 9 pass,
   including the zero-console-errors test. The 2 failures are a pixel-baseline test (no win32 baseline exists) and a test-code bug
-  (`Route is already handled`); not proven unrelated to the upgrades. The other 63 specs were not run. Also not run: Kubernetes
-  deployment, the unified scraper, real playlists.
+  (`Route is already handled`); not proven unrelated to the upgrades. The other 63 specs were not run. Also not run: real spiders against live sites,
+  real playlists.
 - ER thresholds and tempo/genre ranges are judgement calls validated on synthetic cases; automatic merging is off.
 - Energy bands are provisional until ratified.
 - Legacy `data-transformer` ETL and the scraper pipeline's direct silver writes still exist (adopted, not removed).

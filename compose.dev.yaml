@@ -39,6 +39,9 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ''
     ports: ['127.0.0.1:8084:8084']
+    networks:
+      default:
+        aliases: [graph-visualization]   # the frontend image's nginx proxies to this name
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -77,7 +80,7 @@ services:
     environment:
       DATABASE_URL: postgresql://songnodes@postgres:5432/songnodes
       CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
-      UNIFIED_SCRAPER_URL: ${UNIFIED_SCRAPER_URL:-http://unified-scraper:8012}
+      UNIFIED_SCRAPER_URL: ${UNIFIED_SCRAPER_URL:-http://unified-scraper:8000}
       # Provider credentials are read from the host environment or an untracked .env file; none are committed.
       TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID:-}
       TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET:-}
@@ -93,6 +96,60 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
+
+  unified-scraper:
+    # The only scraper service. POST /scrape is synchronous (up to 15 minutes) and writes bronze itself.
+    build:
+      context: scrapers
+      dockerfile: Dockerfile.unified
+    environment:
+      # The compose Postgres trusts connections from inside the network, so no password is needed or set.
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: songnodes
+      DATABASE_USER: songnodes
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: songnodes
+      POSTGRES_USER: songnodes
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: songnodes
+      DB_USER: songnodes
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
+      DISCOGS_API_TOKEN: ${DISCOGS_API_TOKEN:-}
+    ports: ['127.0.0.1:8012:8000']
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 12
+      start_period: 20s
+
+  frontend:
+    build:
+      context: frontend
+    ports: ['127.0.0.1:3006:80']
+    depends_on:
+      rest-api: {condition: service_healthy}
+      graph-api: {condition: service_started}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1/']
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 volumes:
   dev-postgres:

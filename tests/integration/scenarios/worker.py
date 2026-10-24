@@ -142,21 +142,21 @@ async def main():
 
         bad, _ = await jobs.enqueue(conn, 'enrich_track', f'{KIND_PREFIX}-bad', {'track_id': 'not-a-uuid'}, max_attempts=2)
         first_try = await runner.run_one(conn, ctx, ['enrich_track'])
-        assert first_try['status'] == 'queued' and 'payload.track_id' in first_try['error'], first_try
-        await conn.execute('UPDATE ingestion_jobs SET run_after = NOW() WHERE id = $1', bad['id'])
-        assert (await runner.run_one(conn, ctx, ['enrich_track']))['status'] == 'dead'
+        assert first_try['status'] == 'dead' and 'payload.track_id' in first_try['error'], first_try   # invalid request: no retries
+        assert (await conn.fetchval('SELECT attempts FROM ingestion_jobs WHERE id = $1', bad['id'])) == 1
         assert await runner.run_one(conn, ctx, ['enrich_track']) is None
 
         # scrape: unreachable scraper is retried (transient), success enqueues ingest exactly once
         def scraper(request):
             body = json.loads(request.content)
-            assert body == {'spider_name': 'mixesdb', 'search_params': {'search_query': 'Deadmau5 Strobe', 'limit': 2}}, body
-            return httpx.Response(200, json={'status': 'started', 'task_id': 'x'})
+            assert body == {'source': 'mixesdb', 'search_query': 'Deadmau5 Strobe', 'limit': 2}, body   # the real /scrape contract
+            return httpx.Response(200, json={'status': 'completed', 'bronze_playlists_persisted': 1, 'bronze_tracks_persisted': 14})
 
         http_ok = Context(http=httpx.AsyncClient(transport=httpx.MockTransport(scraper)), scraper_url='http://scraper.test')
         scrape, _ = await jobs.enqueue(conn, 'scrape', f'{KIND_PREFIX}-scrape', {'source': 'mixesdb', 'search_query': 'Deadmau5 Strobe', 'limit': 2})
         done = await runner.run_one(conn, http_ok, ['scrape'])
         assert done['status'] == 'succeeded' and done['enqueued'] == ['ingest_pending'], done
+        assert (done['result']['bronze_playlists'], done['result']['bronze_tracks'], done['result']['found_nothing']) == (1, 14, False)
         follow = await conn.fetchrow("SELECT * FROM ingestion_jobs WHERE idempotency_key = $1", f'ingest-after-scrape:{scrape["id"]}')
         assert follow is not None and follow['kind'] == 'ingest_pending'
 
@@ -167,8 +167,23 @@ async def main():
         retry, _ = await jobs.enqueue(conn, 'scrape', f'{KIND_PREFIX}-down', {'search_query': 'x y'})
         out = await runner.run_one(conn, http_down, ['scrape'])
         assert out['status'] == 'queued' and out['transient'] and 'unreachable' in out['error'], out
-        missing_query, _ = await jobs.enqueue(conn, 'scrape', f'{KIND_PREFIX}-noq', {}, max_attempts=1)
-        assert (await runner.run_one(conn, http_ok, ['scrape']))['status'] == 'dead'
+        missing_query, _ = await jobs.enqueue(conn, 'scrape', f'{KIND_PREFIX}-noq', {}, max_attempts=5)
+        assert (await runner.run_one(conn, http_ok, ['scrape']))['status'] == 'dead', 'a request that can never succeed is not retried'
+
+        def rejects(request):
+            return httpx.Response(400, json={'detail': "Unknown source 'nope'"})
+
+        http_400 = Context(http=httpx.AsyncClient(transport=httpx.MockTransport(rejects)))
+        await jobs.enqueue(conn, 'scrape', f'{KIND_PREFIX}-400', {'source': 'nope', 'search_query': 'a b'}, max_attempts=5)
+        rejected = await runner.run_one(conn, http_400, ['scrape'])
+        assert rejected['status'] == 'dead' and 'Unknown source' in rejected['error'], rejected
+
+        def slow_gateway(request):
+            return httpx.Response(504, json={'detail': 'timeout'})
+
+        await jobs.enqueue(conn, 'scrape', f'{KIND_PREFIX}-504', {'search_query': 'a b'}, max_attempts=5)
+        timed_out = await runner.run_one(conn, Context(http=httpx.AsyncClient(transport=httpx.MockTransport(slow_gateway))), ['scrape'])
+        assert timed_out['status'] == 'queued' and timed_out['transient'], timed_out
 
         # ingest -> projection chain with a real bronze playlist
         bronze = uuid.uuid4()
