@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
+import { Button } from './ui/Button';
 
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -94,8 +95,6 @@ const OAuthCallback: React.FC = () => {
           : `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/callback`;
 
         console.log(`[OAuth] Calling ${detectedService} callback endpoint:`, callbackEndpoint);
-        console.log(`[OAuth] Authorization code: ${code.substring(0, 10)}...`);
-        console.log(`[OAuth] State: ${state.substring(0, 10)}...`);
 
         const response = await fetch(
           `${callbackEndpoint}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
@@ -110,7 +109,6 @@ const OAuthCallback: React.FC = () => {
           const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
           console.error('[OAuth] Token exchange failed:', errorData);
 
-          // Provide user-friendly error messages
           let userMessage = errorData.detail || `HTTP ${response.status}`;
           if (userMessage.includes('Invalid or expired state')) {
             userMessage = 'OAuth session expired. This can happen if you took too long to authorize or if the backend restarted. Please try connecting again.';
@@ -119,12 +117,6 @@ const OAuthCallback: React.FC = () => {
         }
 
         const tokenData = await response.json();
-        console.log(`[OAuth] ${serviceName} token data received:`, {
-          success: tokenData.success,
-          hasAccessToken: !!tokenData.access_token,
-          hasRefreshToken: !!tokenData.refresh_token,
-          expiresIn: tokenData.expires_in
-        });
 
         if (!tokenData.success || !tokenData.access_token) {
           throw new Error('Invalid token response from server');
@@ -133,7 +125,7 @@ const OAuthCallback: React.FC = () => {
         setStatus('success');
         setMessage(`${serviceName} authentication successful! Closing window...`);
 
-        // Store tokens in localStorage (temporary - should be in secure state)
+        // Store tokens in localStorage
         const tokens = {
           access_token: tokenData.access_token,
           refresh_token: tokenData.refresh_token,
@@ -143,14 +135,12 @@ const OAuthCallback: React.FC = () => {
           scope: tokenData.scope
         };
 
-        // Use service-specific storage key (2025 Best Practice: Namespace separation)
         const storageKey = `${detectedService}_oauth_tokens`;
         localStorage.setItem(storageKey, JSON.stringify(tokens));
-        console.log(`[OAuth] Stored ${serviceName} tokens in localStorage with key:`, storageKey);
 
         // ALSO store tokens in database for backend enrichment service to use
         try {
-          const storeResponse = await fetch(`${API_BASE_URL}/api/v1/music-auth/store-token`, {
+          await fetch(`${API_BASE_URL}/api/v1/music-auth/store-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -162,30 +152,20 @@ const OAuthCallback: React.FC = () => {
               scope: tokenData.scope
             })
           });
-
-          if (storeResponse.ok) {
-            console.log(`[OAuth] ✅ Stored ${serviceName} tokens in database for enrichment service`);
-          } else {
-            console.warn(`[OAuth] ⚠️ Failed to store ${serviceName} tokens in database (enrichment may not work)`);
-          }
         } catch (dbError) {
           console.error(`[OAuth] Failed to store tokens in database:`, dbError);
-          // Don't fail the whole flow, tokens are still in localStorage
         }
 
-        // Notify parent window (if opened as popup) - 2025 Best Practice: Include service identifier
+        // Notify parent window (if opened as popup)
         if (window.opener) {
-          console.log(`[OAuth] Posting success message to parent window for service: ${detectedService}`);
           window.opener.postMessage({
             type: 'oauth-success',
-            service: detectedService,  // CRITICAL: Service identifier
+            service: detectedService,
             tokens: tokens
           }, window.location.origin);
 
-          // Close popup after short delay
           setTimeout(() => window.close(), 1500);
         } else {
-          // Redirect to main app if not a popup
           setTimeout(() => window.location.href = '/', 1500);
         }
 
@@ -194,7 +174,6 @@ const OAuthCallback: React.FC = () => {
         setStatus('error');
         setMessage(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
 
-        // Notify parent window of error
         if (window.opener) {
           window.opener.postMessage({
             type: 'oauth-error',
@@ -216,86 +195,45 @@ const OAuthCallback: React.FC = () => {
   }, []);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      backgroundColor: '#1a1a1a',
-      color: '#ffffff',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      padding: '20px'
-    }}>
-      <div style={{
-        textAlign: 'center',
-        maxWidth: '500px',
-        padding: '40px',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.1)'
-      }}>
+    <div className="flex h-screen w-screen items-center justify-center bg-[var(--color-bg-primary,#121212)] p-6 text-[var(--color-text-primary,#ffffff)] font-sans">
+      <div className="flex w-full max-w-md flex-col items-center rounded-[var(--radius-modal,16px)] border border-[var(--color-border-subtle,rgba(255,255,255,0.1))] bg-[var(--color-bg-secondary,#1a1a1a)] p-8 text-center shadow-[var(--shadow-modal)]">
         {/* Status Icon */}
-        <div style={{ fontSize: '64px', marginBottom: '20px' }}>
+        <div className="mb-4 text-5xl">
           {status === 'processing' && '⏳'}
           {status === 'success' && '✅'}
           {status === 'error' && '❌'}
         </div>
 
         {/* Title */}
-        <h1 style={{ margin: '0 0 16px 0', fontSize: '24px' }}>
+        <h1 className="mb-2 text-xl font-bold text-[var(--color-text-primary)]">
           {status === 'processing' && `Authenticating with ${service.charAt(0).toUpperCase() + service.slice(1)}`}
           {status === 'success' && 'Authentication Successful!'}
           {status === 'error' && 'Authentication Failed'}
         </h1>
 
         {/* Message */}
-        <p style={{ margin: 0, fontSize: '16px', color: '#8E8E93', lineHeight: 1.5 }}>
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
           {message}
         </p>
 
         {/* Loading Spinner */}
         {status === 'processing' && (
-          <div style={{
-            marginTop: '24px',
-            width: '40px',
-            height: '40px',
-            border: '4px solid rgba(255,255,255,0.1)',
-            borderTop: '4px solid #1DB954',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '24px auto 0'
-          }} />
+          <div className="mt-6 h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-border-subtle)] border-t-[var(--color-brand-primary)]" />
         )}
 
         {/* Manual close button for errors */}
         {status === 'error' && (
-          <button
-            onClick={() => window.opener ? window.close() : window.location.href = '/'}
-            style={{
-              marginTop: '24px',
-              padding: '10px 20px',
-              backgroundColor: '#4A90E2',
-              border: 'none',
-              borderRadius: '6px',
-              color: '#ffffff',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}
-          >
-            Close Window
-          </button>
+          <div className="mt-6">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => window.opener ? window.close() : window.location.href = '/'}
+            >
+              Close Window
+            </Button>
+          </div>
         )}
       </div>
-
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
     </div>
   );
 };
