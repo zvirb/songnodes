@@ -136,15 +136,47 @@ export const getQualityColor = (quality: string): string => {
   switch (quality) {
     case 'excellent':
     case 'perfect':
-      return 'rgb(126 211 33)'; // Green
+      return 'var(--color-success)';
     case 'good':
-      return 'rgb(59 130 246)'; // Blue
+      return 'var(--color-info)';
     case 'fair':
-      return 'rgb(250 204 21)'; // Yellow
+      return 'var(--color-warning)';
     case 'poor':
-      return 'rgb(239 68 68)'; // Red
+      return 'var(--color-error)';
     default:
-      return 'rgb(156 163 175)'; // Gray
+      return 'var(--color-text-tertiary)';
+  }
+};
+
+export const getQualityBgColor = (quality: string): string => {
+  switch (quality) {
+    case 'excellent':
+    case 'perfect':
+      return 'var(--color-success-bg)';
+    case 'good':
+      return 'var(--color-info-bg)';
+    case 'fair':
+      return 'var(--color-warning-bg)';
+    case 'poor':
+      return 'var(--color-error-bg)';
+    default:
+      return 'transparent';
+  }
+};
+
+export const getQualityBorderColor = (quality: string): string => {
+  switch (quality) {
+    case 'excellent':
+    case 'perfect':
+      return 'var(--color-success-border)';
+    case 'good':
+      return 'var(--color-info-border)';
+    case 'fair':
+      return 'var(--color-warning-border)';
+    case 'poor':
+      return 'var(--color-error-border)';
+    default:
+      return 'var(--color-border-subtle)';
   }
 };
 

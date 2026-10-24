@@ -6,9 +6,9 @@
 import React, { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Grip, Edit, Trash2 } from 'lucide-react';
+import { GripVertical, Edit2, Trash2 } from 'lucide-react';
 import type { SetlistTrack, Track, TransitionQuality } from './types';
-import { formatDuration, getQualityColor } from './utils';
+import { formatDuration, getQualityColor, getQualityBgColor, getQualityBorderColor } from './utils';
 
 interface TrackListItemProps {
   setlistTrack: SetlistTrack;
@@ -50,51 +50,51 @@ const TrackListItemComponent: React.FC<TrackListItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all"
+      className="group relative flex flex-col bg-card-bg border border-card-border hover:border-border-strong hover:bg-card-hover rounded-card shadow-card hover:shadow-card-hover transition-all duration-fast"
       {...attributes}
     >
       <div className="flex items-center gap-3 p-3">
         {/* Drag Handle */}
         <button
-          className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-none"
+          className="flex-shrink-0 cursor-grab active:cursor-grabbing text-text-tertiary hover:text-text-primary transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded-sm touch-none"
           {...listeners}
           aria-label="Drag to reorder"
         >
-          <Grip size={20} />
+          <GripVertical size={20} />
         </button>
 
         {/* Track Position */}
-        <div className="flex-shrink-0 w-8 text-center font-semibold text-gray-700 dark:text-gray-300">
+        <div className="flex-shrink-0 w-8 text-center font-semibold text-text-secondary text-sm">
           {index + 1}.
         </div>
 
         {/* Track Info */}
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-gray-900 dark:text-white truncate">
+          <div className="font-medium text-text-primary truncate text-sm">
             {track.name}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+          <div className="text-xs text-text-secondary truncate mt-0.5">
             {track.artist}
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex flex-wrap gap-2 mt-2 text-xs">
             {track.bpm && (
-              <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+              <span className="px-2 py-0.5 bg-info-bg text-info border border-info-border rounded-badge font-mono">
                 {track.bpm} BPM
               </span>
             )}
             {track.key && (
-              <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+              <span className="px-2 py-0.5 bg-brand-secondary-muted text-brand-secondary border border-border-subtle rounded-badge font-mono">
                 {track.key}
               </span>
             )}
             {track.duration && (
-              <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+              <span className="px-2 py-0.5 bg-bg-elevated2 text-text-secondary border border-border-subtle rounded-badge font-mono">
                 {formatDuration(track.duration)}
               </span>
             )}
             {track.energy !== undefined && (
-              <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded">
+              <span className="px-2 py-0.5 bg-warning-bg text-warning border border-warning-border rounded-badge font-mono">
                 Energy: {Math.round(track.energy * 100)}%
               </span>
             )}
@@ -102,18 +102,18 @@ const TrackListItemComponent: React.FC<TrackListItemProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-fast">
           <button
             onClick={() => onEdit(setlistTrack.id)}
-            className="p-2 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            className="p-2 text-text-tertiary hover:text-info hover:bg-bg-elevated2 rounded-button transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             aria-label="Edit track cues"
             title="Edit track cues"
           >
-            <Edit size={16} />
+            <Edit2 size={16} />
           </button>
           <button
             onClick={() => onRemove(setlistTrack.id)}
-            className="p-2 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            className="p-2 text-text-tertiary hover:text-error hover:bg-error-bg rounded-button transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             aria-label="Remove from setlist"
             title="Remove from setlist"
           >
@@ -125,8 +125,11 @@ const TrackListItemComponent: React.FC<TrackListItemProps> = ({
       {/* Transition Indicator */}
       {transitionQuality && nextTrack && (
         <div
-          className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-xs"
-          style={{ backgroundColor: `${getQualityColor(transitionQuality.overall)}10` }}
+          className="px-3 py-2 border-t text-xs rounded-b-card transition-colors duration-fast"
+          style={{
+            backgroundColor: getQualityBgColor(transitionQuality.overall),
+            borderColor: getQualityBorderColor(transitionQuality.overall),
+          }}
         >
           <div className="flex items-center justify-between">
             <span className="font-semibold" style={{ color: getQualityColor(transitionQuality.overall) }}>

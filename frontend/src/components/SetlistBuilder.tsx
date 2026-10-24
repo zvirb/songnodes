@@ -19,6 +19,7 @@ import {
 import {
   CSS,
 } from '@dnd-kit/utilities';
+import { GripVertical, Edit2, X, Save, Download, Upload, Trash2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Track, SetlistTrack } from '../types';
 import { TrackEditModal } from './TrackEditModal';
@@ -171,11 +172,31 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
 
   const getQualityColor = (quality: string) => {
     switch (quality) {
-      case 'excellent': return 'var(--color-accent-primary)';
-      case 'good': return 'var(--color-accent-tertiary)';
-      case 'fair': return 'var(--color-accent-warning)';
-      case 'poor': return 'var(--color-accent-secondary)';
+      case 'excellent': return 'var(--color-success)';
+      case 'good': return 'var(--color-info)';
+      case 'fair': return 'var(--color-warning)';
+      case 'poor': return 'var(--color-error)';
       default: return 'var(--color-text-tertiary)';
+    }
+  };
+
+  const getQualityBgColor = (quality: string) => {
+    switch (quality) {
+      case 'excellent': return 'var(--color-success-bg)';
+      case 'good': return 'var(--color-info-bg)';
+      case 'fair': return 'var(--color-warning-bg)';
+      case 'poor': return 'var(--color-error-bg)';
+      default: return 'transparent';
+    }
+  };
+
+  const getQualityBorderColor = (quality: string) => {
+    switch (quality) {
+      case 'excellent': return 'var(--color-success-border)';
+      case 'good': return 'var(--color-info-border)';
+      case 'fair': return 'var(--color-warning-border)';
+      case 'poor': return 'var(--color-error-border)';
+      default: return 'var(--color-border-subtle)';
     }
   };
 
@@ -183,76 +204,89 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="setlist-track-item"
+      className="group relative flex flex-col bg-card-bg border border-card-border hover:border-border-strong hover:bg-card-hover rounded-card shadow-card hover:shadow-card-hover transition-all duration-fast mb-2"
       {...attributes}
     >
-      <div className="setlist-track-content">
-        <div className="track-drag-handle" {...listeners}>
-          ⋮⋮
-        </div>
+      <div className="flex items-center gap-3 p-3">
+        <button
+          className="flex-shrink-0 cursor-grab active:cursor-grabbing text-text-tertiary hover:text-text-primary transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded-sm touch-none"
+          {...listeners}
+          aria-label="Drag to reorder"
+        >
+          <GripVertical size={20} />
+        </button>
 
-        <div className="track-position">
+        <div className="flex-shrink-0 w-8 text-center font-semibold text-text-secondary text-sm">
           {index + 1}.
         </div>
 
-        <div className="track-info">
-          <div className="track-title">{track.name}</div>
-          <div className="track-artist">{track.artist}</div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-text-primary truncate text-sm">{track.name}</div>
+          <div className="text-xs text-text-secondary truncate mt-0.5">{track.artist}</div>
 
-          <div className="track-metadata">
+          <div className="flex flex-wrap gap-2 mt-2 text-xs">
             {track.bpm && (
-              <span className="track-bpm">
+              <span className="px-2 py-0.5 bg-info-bg text-info border border-info-border rounded-badge font-mono">
                 {track.bpm} BPM
               </span>
             )}
             {track.key && (
-              <span className="track-key">
+              <span className="px-2 py-0.5 bg-brand-secondary-muted text-brand-secondary border border-border-subtle rounded-badge font-mono">
                 {track.key}
               </span>
             )}
-            <span className="track-duration">
+            <span className="px-2 py-0.5 bg-bg-elevated2 text-text-secondary border border-border-subtle rounded-badge font-mono">
               {formatDuration(track.duration)}
             </span>
             {track.energy && (
-              <span className="track-energy">
+              <span className="px-2 py-0.5 bg-warning-bg text-warning border border-warning-border rounded-badge font-mono">
                 Energy: {Math.round(track.energy * 100)}%
               </span>
             )}
           </div>
         </div>
 
-        <div className="track-actions">
+        <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-fast">
           <button
-            className="btn btn-small btn-icon"
+            className="p-2 text-text-tertiary hover:text-info hover:bg-bg-elevated2 rounded-button transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             onClick={() => onEdit(setlistTrack.id)}
             title="Edit track cues"
+            aria-label="Edit track cues"
           >
-            ✏️
+            <Edit2 size={16} />
           </button>
           <button
-            className="btn btn-small btn-icon btn-danger"
+            className="p-2 text-text-tertiary hover:text-error hover:bg-error-bg rounded-button transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             onClick={() => onRemove(setlistTrack.id)}
             title="Remove from setlist"
+            aria-label="Remove from setlist"
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
       </div>
 
       {transitionQuality && (
-        <div className="transition-indicator">
-          <div className="transition-quality" style={{ color: getQualityColor(transitionQuality.overall) }}>
-            <span className="transition-label">Transition:</span>
-            <span className="transition-overall">{transitionQuality.overall.toUpperCase()}</span>
-            <div className="transition-details">
-              <span className="key-compatibility" style={{ color: getQualityColor(transitionQuality.key) }}>
+        <div
+          className="px-3 py-2 border-t text-xs rounded-b-card transition-colors duration-fast"
+          style={{
+            backgroundColor: getQualityBgColor(transitionQuality.overall),
+            borderColor: getQualityBorderColor(transitionQuality.overall),
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-semibold" style={{ color: getQualityColor(transitionQuality.overall) }}>
+              Transition: {transitionQuality.overall.toUpperCase()}
+            </span>
+            <div className="flex gap-3">
+              <span style={{ color: getQualityColor(transitionQuality.key) }}>
                 Key: {transitionQuality.key}
               </span>
-              <span className="bpm-compatibility" style={{ color: getQualityColor(transitionQuality.bpm) }}>
+              <span style={{ color: getQualityColor(transitionQuality.bpm) }}>
                 BPM: {transitionQuality.bpm}
               </span>
               {transitionQuality.energy && transitionQuality.energy !== 'unknown' && (
-                <span className="energy-compatibility" style={{ color: getQualityColor(transitionQuality.energy) }}>
+                <span style={{ color: getQualityColor(transitionQuality.energy) }}>
                   Energy: {transitionQuality.energy}
                 </span>
               )}
@@ -269,12 +303,14 @@ const TrackDragOverlay: React.FC<{ track: SetlistTrack | null }> = ({ track }) =
   if (!track) return null;
 
   return (
-    <div className="setlist-track-item dragging-overlay">
-      <div className="setlist-track-content">
-        <div className="track-drag-handle">⋮⋮</div>
-        <div className="track-info">
-          <div className="track-title">{track.track.name}</div>
-          <div className="track-artist">{track.track.artist}</div>
+    <div className="bg-card-bg border border-brand-primary rounded-card shadow-lg p-3 opacity-90">
+      <div className="flex items-center gap-3">
+        <div className="text-brand-primary">
+          <GripVertical size={20} />
+        </div>
+        <div>
+          <div className="font-medium text-text-primary text-sm">{track.track.name}</div>
+          <div className="text-xs text-text-secondary">{track.track.artist}</div>
         </div>
       </div>
     </div>
@@ -639,61 +675,64 @@ const SetlistBuilder: React.FC = () => {
     <div className="setlist-builder">
       {/* Error Message Display */}
       {errorMessage && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+        <div className="p-3 bg-error-bg border border-error-border rounded-card mb-4">
           <div className="flex items-start justify-between">
-            <p className="text-red-800 text-sm flex-1">{errorMessage}</p>
+            <p className="text-error text-sm flex-1">{errorMessage}</p>
             <button
-              className="ml-2 text-red-600 hover:text-red-800 font-bold"
+              className="ml-2 text-error hover:text-brand-tertiary-hover p-1 rounded-button"
               onClick={() => setErrorMessage(null)}
               title="Dismiss error"
+              aria-label="Dismiss error"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
         </div>
       )}
 
-      <div className="setlist-header">
-        <div className="input-group">
-          <label className="input-label">Setlist Name</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
-              className="input"
-              placeholder="Enter setlist name..."
-              value={setlistName}
-              onChange={(e) => setSetlistName(e.target.value)}
-              onBlur={handleUpdateSetlistName}
-              onKeyPress={(e) => e.key === 'Enter' && handleUpdateSetlistName()}
-            />
-            {!currentSetlist && (
-              <button
-                className="btn btn-primary"
-                onClick={handleCreateSetlist}
-                disabled={!setlistName.trim()}
-              >
-                Create
-              </button>
-            )}
+      <div className="p-4 bg-bg-elevated1 border-b border-border-subtle rounded-t-card mb-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-text-tertiary mb-1">Setlist Name</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="flex-1 px-3 py-2 bg-input-bg border border-input-border text-text-primary rounded-input focus-visible:outline-none focus-visible:border-input-focus focus-visible:ring-2 focus-visible:ring-border-focus text-sm transition-all duration-fast"
+                placeholder="Enter setlist name..."
+                value={setlistName}
+                onChange={(e) => setSetlistName(e.target.value)}
+                onBlur={handleUpdateSetlistName}
+                onKeyPress={(e) => e.key === 'Enter' && handleUpdateSetlistName()}
+              />
+              {!currentSetlist && (
+                <button
+                  className="px-4 py-2 bg-brand-primary text-text-inverse font-medium rounded-button hover:bg-brand-primary-hover disabled:opacity-50 transition-colors duration-fast text-sm"
+                  onClick={handleCreateSetlist}
+                  disabled={!setlistName.trim()}
+                >
+                  Create
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {currentSetlist && (
-          <div className="setlist-stats">
-            <div className="stat-item">
-              <span className="stat-label">Tracks:</span>
-              <span className="stat-value">{currentSetlist.tracks.length}</span>
+          {currentSetlist && (
+            <div className="flex gap-4 bg-bg-elevated2 border border-border-subtle p-2.5 rounded-card text-xs">
+              <div>
+                <span className="text-text-tertiary">Tracks: </span>
+                <span className="font-semibold text-text-primary">{currentSetlist.tracks.length}</span>
+              </div>
+              <div className="border-l border-border-subtle pl-4">
+                <span className="text-text-tertiary">Duration: </span>
+                <span className="font-semibold text-text-primary">{formatDuration(totalDuration)}</span>
+              </div>
+              <div className="border-l border-border-subtle pl-4">
+                <span className="text-text-tertiary">Avg BPM: </span>
+                <span className="font-semibold text-text-primary">{averageBpm || '--'}</span>
+              </div>
             </div>
-            <div className="stat-item">
-              <span className="stat-label">Duration:</span>
-              <span className="stat-value">{formatDuration(totalDuration)}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Avg BPM:</span>
-              <span className="stat-value">{averageBpm || '--'}</span>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="setlist-content">
@@ -772,62 +811,72 @@ const SetlistBuilder: React.FC = () => {
         )}
       </div>
 
-      <div className="setlist-actions">
-        <div className="action-group">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border-subtle mt-4">
+        <div className="flex flex-wrap gap-2">
           <button
-            className="btn btn-primary"
+            className="px-3 py-2 text-sm bg-brand-primary text-text-inverse font-medium rounded-button hover:bg-brand-primary-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             onClick={handleSaveSetlist}
             disabled={!currentSetlist || currentSetlist.tracks.length === 0}
           >
-            💾 Save Setlist
+            <Save size={16} />
+            Save Setlist
           </button>
 
           <button
-            className="btn"
+            className="px-3 py-2 text-sm bg-button-bg text-text-primary border border-border-default rounded-button hover:bg-button-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             onClick={() => setShowExportModal(true)}
             disabled={!currentSetlist || currentSetlist.tracks.length === 0}
           >
-            📤 Export
+            <Download size={16} />
+            Export
           </button>
 
           <button
-            className="btn"
+            className="px-3 py-2 text-sm bg-button-bg text-text-primary border border-border-default rounded-button hover:bg-button-hover flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             onClick={() => setShowImportModal(true)}
           >
-            📥 Import
+            <Upload size={16} />
+            Import
           </button>
         </div>
 
-        <div className="action-group">
+        <div>
           <button
-            className="btn btn-danger"
+            className="px-3 py-2 text-sm bg-error-bg text-error border border-error-border rounded-button hover:bg-error/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             onClick={handleClearSetlist}
             disabled={!currentSetlist || currentSetlist.tracks.length === 0}
           >
-            🗑️ Clear All
+            <Trash2 size={16} />
+            Clear All
           </button>
         </div>
       </div>
 
       {/* Export Modal */}
       {showExportModal && (
-        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Export Setlist</h3>
-              <button className="modal-close" onClick={() => setShowExportModal(false)}>✕</button>
+        <div className="fixed inset-0 bg-modal-overlay flex items-center justify-center z-modal" onClick={() => setShowExportModal(false)}>
+          <div className="bg-modal-bg border border-border-default rounded-modal p-6 max-w-md w-full shadow-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-text-primary">Export Setlist</h3>
+              <button className="text-text-tertiary hover:text-text-primary p-1 rounded-button" onClick={() => setShowExportModal(false)} aria-label="Close export modal">
+                <X size={20} />
+              </button>
             </div>
-            <div className="modal-content">
+            <div className="space-y-4 text-sm text-text-secondary mb-6">
               <p>Export your setlist as a JSON file that can be shared or imported later.</p>
-              <div className="export-stats">
-                <div>Name: <strong>{currentSetlist?.name}</strong></div>
-                <div>Tracks: <strong>{currentSetlist?.tracks.length}</strong></div>
-                <div>Duration: <strong>{formatDuration(totalDuration)}</strong></div>
+              <div className="bg-bg-elevated1 border border-border-subtle p-3 rounded-card space-y-1">
+                <div>Name: <strong className="text-text-primary">{currentSetlist?.name}</strong></div>
+                <div>Tracks: <strong className="text-text-primary">{currentSetlist?.tracks.length}</strong></div>
+                <div>Duration: <strong className="text-text-primary">{formatDuration(totalDuration)}</strong></div>
               </div>
             </div>
-            <div className="modal-actions">
-              <button className="btn" onClick={() => setShowExportModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleExportSetlist}>Export</button>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 bg-button-bg text-text-primary border border-border-default rounded-button hover:bg-button-hover" onClick={() => setShowExportModal(false)}>
+                Cancel
+              </button>
+              <button className="px-4 py-2 bg-brand-primary text-text-inverse font-medium rounded-button hover:bg-brand-primary-hover" onClick={handleExportSetlist}>
+                Export
+              </button>
             </div>
           </div>
         </div>
@@ -835,26 +884,30 @@ const SetlistBuilder: React.FC = () => {
 
       {/* Import Modal */}
       {showImportModal && (
-        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Import Setlist</h3>
-              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
+        <div className="fixed inset-0 bg-modal-overlay flex items-center justify-center z-modal" onClick={() => setShowImportModal(false)}>
+          <div className="bg-modal-bg border border-border-default rounded-modal p-6 max-w-md w-full shadow-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-text-primary">Import Setlist</h3>
+              <button className="text-text-tertiary hover:text-text-primary p-1 rounded-button" onClick={() => setShowImportModal(false)} aria-label="Close import modal">
+                <X size={20} />
+              </button>
             </div>
-            <div className="modal-content">
-              <p>Paste the JSON data from an exported setlist:</p>
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-text-secondary">Paste the JSON data from an exported setlist:</p>
               <textarea
-                className="import-textarea"
+                className="w-full p-3 bg-input-bg border border-input-border text-text-primary rounded-input focus-visible:outline-none focus-visible:border-input-focus focus-visible:ring-2 focus-visible:ring-border-focus font-mono text-xs"
                 placeholder="Paste setlist JSON here..."
                 value={importData}
                 onChange={(e) => setImportData(e.target.value)}
                 rows={10}
               />
             </div>
-            <div className="modal-actions">
-              <button className="btn" onClick={() => setShowImportModal(false)}>Cancel</button>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 bg-button-bg text-text-primary border border-border-default rounded-button hover:bg-button-hover" onClick={() => setShowImportModal(false)}>
+                Cancel
+              </button>
               <button
-                className="btn btn-primary"
+                className="px-4 py-2 bg-brand-primary text-text-inverse font-medium rounded-button hover:bg-brand-primary-hover disabled:opacity-50"
                 onClick={handleImportSetlist}
                 disabled={!importData.trim()}
               >

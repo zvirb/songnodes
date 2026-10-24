@@ -209,18 +209,18 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Header */}
-      <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex-shrink-0 p-4 bg-bg-elevated1 border-b border-border-subtle">
         <div className="flex items-center justify-between mb-4">
           <div className="flex-1">
             <input
               type="text"
               value={setlistName}
               onChange={(e) => setSetlistName(e.target.value)}
-              className="text-2xl font-bold bg-transparent border-none outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 -ml-2"
+              className="text-2xl font-bold bg-transparent text-text-primary border-none outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded-button px-2 -ml-2 transition-all duration-fast"
               placeholder="Setlist name..."
               aria-label="Setlist name"
             />
-            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-sm text-text-tertiary mt-1">
               {setlist?.tracks.length || 0} tracks • {formatDuration(totalDuration)} • {saveStatus.status === 'saving' ? 'Saving...' : saveStatus.status === 'saved' ? 'Saved' : 'Auto-save enabled'}
             </div>
           </div>
@@ -229,7 +229,7 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
             <button
               onClick={() => undo()}
               disabled={!canUndo}
-              className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-elevated2 rounded-button transition-colors duration-fast disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
               aria-label="Undo (Cmd+Z)"
               title="Undo (Cmd+Z)"
             >
@@ -238,7 +238,7 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
             <button
               onClick={() => redo()}
               disabled={!canRedo}
-              className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-elevated2 rounded-button transition-colors duration-fast disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
               aria-label="Redo (Cmd+Shift+Z)"
               title="Redo (Cmd+Shift+Z)"
             >
@@ -246,7 +246,7 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
             </button>
             <button
               onClick={() => setShowHelp(true)}
-              className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-elevated2 rounded-button transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
               aria-label="Help (Cmd+/)"
               title="Help (Cmd+/)"
             >
@@ -259,7 +259,7 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
           <button
             onClick={() => handleExport('json')}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-2 text-sm bg-info-bg text-info border border-info-border rounded-button hover:bg-info/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <Download size={16} />
             Export JSON
@@ -267,7 +267,7 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
           <button
             onClick={() => handleExport('csv')}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-2 text-sm bg-success-bg text-success border border-success-border rounded-button hover:bg-success/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <Download size={16} />
             Export CSV
@@ -275,7 +275,7 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
           <button
             onClick={() => handleExport('clipboard')}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-2 text-sm bg-brand-secondary-muted text-brand-secondary border border-border-subtle rounded-button hover:bg-brand-secondary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <Upload size={16} />
             Copy to Clipboard
@@ -283,14 +283,14 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
           <button
             onClick={() => setShowAnalytics(!showAnalytics)}
             disabled={!setlist || setlist.tracks.length < 2}
-            className="px-3 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 text-sm bg-button-bg text-text-primary border border-border-default rounded-button hover:bg-button-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             {showAnalytics ? 'Hide' : 'Show'} Analytics
           </button>
           <button
             onClick={clearSetlist}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-2 text-sm bg-error-bg text-error border border-error-border rounded-button hover:bg-error/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <Trash2 size={16} />
             Clear All
@@ -327,35 +327,35 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
 
       {showHelp && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-modal-overlay flex items-center justify-center z-modal"
           onClick={() => setShowHelp(false)}
         >
           <div
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md"
+            className="bg-modal-bg border border-border-default rounded-modal p-6 max-w-md shadow-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold mb-4">Keyboard Shortcuts</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
+            <h3 className="text-xl font-bold text-text-primary mb-4">Keyboard Shortcuts</h3>
+            <div className="space-y-2 text-sm text-text-secondary">
+              <div className="flex justify-between items-center">
                 <span>Undo</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+Z</kbd>
+                <kbd className="px-2 py-1 bg-bg-elevated3 text-text-primary border border-border-subtle rounded font-mono text-xs">Cmd+Z</kbd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Redo</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+Shift+Z</kbd>
+                <kbd className="px-2 py-1 bg-bg-elevated3 text-text-primary border border-border-subtle rounded font-mono text-xs">Cmd+Shift+Z</kbd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Save</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+S</kbd>
+                <kbd className="px-2 py-1 bg-bg-elevated3 text-text-primary border border-border-subtle rounded font-mono text-xs">Cmd+S</kbd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Help</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+/</kbd>
+                <kbd className="px-2 py-1 bg-bg-elevated3 text-text-primary border border-border-subtle rounded font-mono text-xs">Cmd+/</kbd>
               </div>
             </div>
             <button
               onClick={() => setShowHelp(false)}
-              className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="mt-6 w-full px-4 py-2 bg-brand-primary text-text-inverse font-medium rounded-button hover:bg-brand-primary-hover transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
               Close
             </button>

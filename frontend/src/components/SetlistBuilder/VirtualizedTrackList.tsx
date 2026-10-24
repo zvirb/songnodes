@@ -38,12 +38,12 @@ const VIRTUALIZATION_THRESHOLD = 50;
 const ITEM_HEIGHT = 120; // Estimated height per item
 
 const EmptyState: React.FC = () => (
-  <div className="flex flex-col items-center justify-center p-12 text-center">
-    <Music size={64} className="text-gray-300 dark:text-gray-600 mb-4" />
-    <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+  <div className="flex flex-col items-center justify-center p-12 text-center rounded-panel border border-dashed border-border-subtle bg-bg-elevated1">
+    <Music size={64} className="text-text-tertiary mb-4 opacity-60" />
+    <h3 className="text-lg font-medium text-text-primary mb-2">
       No tracks in this setlist yet
     </h3>
-    <p className="text-sm text-gray-500 dark:text-gray-400">
+    <p className="text-sm text-text-tertiary">
       Search for tracks and drag them here to build your setlist
     </p>
   </div>
