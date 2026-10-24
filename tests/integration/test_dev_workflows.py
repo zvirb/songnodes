@@ -12,6 +12,8 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
+from hygiene import remove_orphans, started_at
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -44,6 +46,8 @@ class DevelopmentWorkflows(unittest.TestCase):
         cls.targets = set()
         cls.marker = str(uuid4())
         # Register cleanup before inserting, so a setup error cannot strand rows.
+        started = started_at(sql)
+        cls.addClassCleanup(lambda: remove_orphans(sql, started))   # registered first, so it runs last (live worker projects asynchronously)
         cls.addClassCleanup(cls.cleanup)
         a, b, c, unknown = cls.ids
         sql(f"""BEGIN;
@@ -63,7 +67,8 @@ class DevelopmentWorkflows(unittest.TestCase):
         for target in cls.targets:
             request(8082, f'/api/v1/target-tracks/{target}', 'DELETE')
         values = ','.join(f"'{value}'" for value in cls.ids)
-        sql(f'DELETE FROM silver_enriched_tracks WHERE id IN ({values});')
+        sql(f'DELETE FROM outbox_events WHERE aggregate_id IN ({values}); '
+            f'DELETE FROM silver_enriched_tracks WHERE id IN ({values});')
 
     def graph(self, path):
         status, body = request(8084, path)

@@ -2,23 +2,11 @@
 
 ## Overview
 
-The Spotify API spider (`spotify_spider.py`) is a production-ready scraper that integrates with the Spotify Web API to collect rich audio features and metadata for DJ playlists and electronic music tracks.
+The Spotify API spider (`spotify_spider.py`) is a production-ready scraper that integrates with the Spotify Web API to collect playlist and track metadata for DJ playlists and electronic music tracks. Spotify's audio-features data (BPM, key, energy, danceability, valence, etc.) is no longer used by this project; tempo and key come from other providers.
 
 **Priority Score: 3.85 (HIGHEST ROI)**
 
 ## Features
-
-### Rich Audio Features Extraction
-- **BPM** (tempo in beats per minute)
-- **Musical Key** (e.g., "Cmaj", "Amin")
-- **Energy** (0.0-1.0) - intensity and activity
-- **Danceability** (0.0-1.0) - suitability for dancing
-- **Valence** (0.0-1.0) - musical positivity/happiness
-- **Acousticness** (0.0-1.0) - confidence track is acoustic
-- **Instrumentalness** (0.0-1.0) - predicts if track contains vocals
-- **Liveness** (0.0-1.0) - presence of audience in recording
-- **Speechiness** (0.0-1.0) - presence of spoken words
-- **Loudness** (dB) - overall loudness
 
 ### Track Metadata
 - Track name, ISRC, duration, popularity
@@ -126,7 +114,6 @@ The spider implements **conservative rate limiting** to ensure compliance with S
 - **Download Delay**: 20 seconds between requests
 - **Concurrent Requests**: 1 (no parallel requests)
 - **AutoThrottle**: Enabled with max 60s delay
-- **Batch Size**: 50 tracks per audio features request (max 100 allowed)
 - **Playlist Limit**: 10 playlists per search query
 
 Spotify API limits:
@@ -148,11 +135,7 @@ Spotify API limits:
    - Fetch playlist: `GET /v1/playlists/{id}`
    - Extract track URIs and metadata
 
-4. **Audio Features (Batch)**
-   - Fetch features: `GET /v1/audio-features?ids={track_ids}`
-   - Process 50 tracks per request (conservative batch size)
-
-5. **Data Storage**
+4. **Data Storage**
    - Transform with ItemLoaders (TrackLoader, ArtistLoader, PlaylistLoader)
    - Validate with Pydantic models
    - Insert into PostgreSQL via DatabasePipeline
@@ -165,9 +148,8 @@ The spider uses **ItemLoaders** for consistent data transformation:
 ```python
 loader = TrackLoader(item=EnhancedTrackItem(), response=response)
 loader.add_value('track_name', track.get('name'))
-loader.add_value('bpm', features.get('tempo'))  # Cleaned with clean_bpm()
-loader.add_value('musical_key', self._map_key(...))  # Converted to notation
-loader.add_value('energy', features.get('energy'))  # to_float()
+loader.add_value('isrc', track.get('external_ids', {}).get('isrc'))
+loader.add_value('duration_ms', track.get('duration_ms'))
 track_item = loader.load_item()
 ```
 
@@ -271,7 +253,7 @@ docker compose logs -f scrapers
 # ✓ Spotify authentication successful (expires in 3600s)
 # Found 15 playlists for query: DJ Mix
 # Processing playlist: Afterlife Presents: Top of Mind
-# ✓ Extracted 47 tracks with audio features
+# ✓ Extracted 47 tracks
 ```
 
 ### Redis Cache Inspection
@@ -343,7 +325,6 @@ scrapy crawl spotify -a search_query="FISHER DJ Set"
 - **Authentication**: ~1 second
 - **Playlist Search**: ~2-3 seconds per query
 - **Playlist Fetch**: ~2-3 seconds per playlist
-- **Audio Features**: ~3-5 seconds per 50-track batch
 - **Total Time**: ~5-10 minutes for 100 tracks with conservative rate limiting
 
 ### Throughput
@@ -355,16 +336,16 @@ scrapy crawl spotify -a search_query="FISHER DJ Set"
 
 The Spotify spider complements the metadata enrichment service:
 
-1. **Spider**: Collects audio features for discovered tracks
+1. **Spider**: Collects playlists and track metadata for discovered tracks
 2. **Enrichment Service**: Adds Spotify data to existing tracks from other sources
 3. **Unified Database**: Consolidates all track metadata
 
 ```python
-# Enrichment service can fetch additional data
+# Enrichment service can fetch additional data (ISRC, duration, release date)
 from services.metadata_enrichment.api_clients import SpotifyClient
 
 client = SpotifyClient()
-audio_features = await client.get_audio_features(spotify_id)
+track = await client.search_by_isrc(isrc)
 ```
 
 ## Best Practices
@@ -383,11 +364,9 @@ audio_features = await client.get_audio_features(spotify_id)
 - [ ] Recommendations API (`/v1/recommendations`)
 - [ ] Followed playlists (`/v1/me/playlists`) - requires user auth
 - [ ] Track popularity trends over time
-- [ ] Genre-based clustering using audio features
 
 ## References
 
 - [Spotify Web API Documentation](https://developer.spotify.com/documentation/web-api)
-- [Audio Features Reference](https://developer.spotify.com/documentation/web-api/reference/get-audio-features)
 - [OAuth Client Credentials Flow](https://developer.spotify.com/documentation/web-api/tutorials/client-credentials-flow)
 - [Rate Limiting Guidelines](https://developer.spotify.com/documentation/web-api/concepts/rate-limits)

@@ -2,8 +2,8 @@
 Production-Ready Spotify API Spider for SongNodes (Priority Score 3.85 - HIGHEST ROI)
 =====================================================================================
 
-Integrates with Spotify Web API to collect rich audio features for DJ playlists:
-- BPM, key, energy, danceability, valence, acousticness
+Integrates with Spotify Web API to collect playlist and track metadata for DJ playlists
+(Spotify audio features are not used; BPM/key come from other providers):
 - Track metadata (name, ISRC, duration, popularity)
 - Artist information and relationships
 - Playlist context for DJ sets and electronic music
@@ -150,8 +150,8 @@ class SpotifySpider(scrapy.Spider):
             db_port = int(os.getenv('DB_PORT', '5432'))
             db_name = os.getenv('DB_NAME', 'musicdb')
             db_user = os.getenv('DB_USER', 'musicdb_user')
-            db_password = os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024')
-            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET', 'songnodes_change_in_production_2024')
+            db_password = (os.getenv('POSTGRES_PASSWORD') or os.getenv('DATABASE_PASSWORD'))
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET')
 
             async def fetch_credentials():
                 conn = await asyncpg.connect(
@@ -357,7 +357,7 @@ class SpotifySpider(scrapy.Spider):
             self.logger.error(f"Error parsing search results: {e}")
 
     def parse_playlist(self, response):
-        """Parse individual playlist and extract tracks with audio features"""
+        """Parse individual playlist and extract its tracks"""
         try:
             playlist_data = json.loads(response.text)
             playlist_id = playlist_data.get('id')
@@ -381,49 +381,17 @@ class SpotifySpider(scrapy.Spider):
 
             playlist_item = loader.load_item()
 
-            # Extract track URIs for batch audio features request
             tracks = playlist_data.get('tracks', {}).get('items', [])
-            track_ids = [
-                track['track']['id']
-                for track in tracks
-                if track.get('track') and track['track'].get('id')
-            ]
-
-            if track_ids:
-                # Fetch audio features in batches (max 100 tracks per request)
-                for i in range(0, len(track_ids), 50):  # Conservative: 50 per batch
-                    batch = track_ids[i:i+50]
-                    yield scrapy.Request(
-                        url=f"https://api.spotify.com/v1/audio-features?ids={','.join(batch)}",
-                        headers=self._get_api_headers(),
-                        callback=self.parse_audio_features,
-                        errback=self.handle_error,
-                        meta={
-                            'playlist_data': playlist_data,
-                            'playlist_item': playlist_item,
-                            'tracks': tracks,
-                            'track_batch': batch
-                        }
-                    )
+            yield from self._build_items(response, playlist_data, playlist_item, tracks)
 
             self._mark_playlist_processed(playlist_id)
 
         except Exception as e:
             self.logger.error(f"Error parsing playlist: {e}")
 
-    def parse_audio_features(self, response):
-        """Parse audio features and create enhanced track items"""
+    def _build_items(self, response, playlist_data, playlist_item, tracks):
+        """Create track, artist and playlist items from the playlist payload"""
         try:
-            audio_features_data = json.loads(response.text)
-            audio_features = audio_features_data.get('audio_features', [])
-
-            playlist_data = response.meta['playlist_data']
-            playlist_item = response.meta['playlist_item']
-            tracks = response.meta['tracks']
-
-            # Map audio features to tracks
-            features_map = {f['id']: f for f in audio_features if f}
-
             track_names = []
 
             for i, track_item in enumerate(tracks):
@@ -433,7 +401,6 @@ class SpotifySpider(scrapy.Spider):
                         continue
 
                     track_id = track.get('id')
-                    features = features_map.get(track_id, {})
 
                     # Use ItemLoader for consistent data transformation
                     loader = TrackLoader(item=EnhancedTrackItem(), response=response)
@@ -444,18 +411,6 @@ class SpotifySpider(scrapy.Spider):
                     loader.add_value('duration_ms', track.get('duration_ms'))
                     loader.add_value('spotify_id', track_id)
                     loader.add_value('isrc', track.get('external_ids', {}).get('isrc'))
-
-                    # Audio features from /audio-features endpoint
-                    loader.add_value('bpm', features.get('tempo'))
-                    loader.add_value('musical_key', self._map_key(features.get('key'), features.get('mode')))
-                    loader.add_value('energy', features.get('energy'))
-                    loader.add_value('danceability', features.get('danceability'))
-                    loader.add_value('valence', features.get('valence'))
-                    loader.add_value('acousticness', features.get('acousticness'))
-                    loader.add_value('instrumentalness', features.get('instrumentalness'))
-                    loader.add_value('liveness', features.get('liveness'))
-                    loader.add_value('speechiness', features.get('speechiness'))
-                    loader.add_value('loudness', features.get('loudness'))
 
                     # Track metadata
                     loader.add_value('release_date', track.get('album', {}).get('release_date'))
@@ -475,8 +430,7 @@ class SpotifySpider(scrapy.Spider):
                     loader.add_value('metadata', json.dumps({
                         'spotify_popularity': track.get('popularity'),
                         'preview_url': track.get('preview_url'),
-                        'album': track.get('album', {}).get('name'),
-                        'audio_features': features
+                        'album': track.get('album', {}).get('name')
                     }))
 
                     loader.add_value('external_urls', json.dumps({
@@ -501,7 +455,7 @@ class SpotifySpider(scrapy.Spider):
             yield playlist_item
 
         except Exception as e:
-            self.logger.error(f"Error parsing audio features: {e}")
+            self.logger.error(f"Error building playlist items: {e}")
 
     def _create_artist_items(self, artist_data: Dict, track_item: EnhancedTrackItem, position: int):
         """Create artist and relationship items"""
@@ -529,20 +483,6 @@ class SpotifySpider(scrapy.Spider):
             data_source=self.name,
             scrape_timestamp=datetime.utcnow()
         )
-
-    def _map_key(self, key_code: Optional[int], mode: Optional[int]) -> Optional[str]:
-        """Map Spotify key code to musical key notation"""
-        if key_code is None:
-            return None
-
-        keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        key = keys[key_code] if 0 <= key_code < 12 else None
-
-        if key and mode is not None:
-            suffix = 'maj' if mode == 1 else 'min'
-            return f"{key}{suffix}"
-
-        return key
 
     def _is_playlist_processed(self, playlist_id: str) -> bool:
         """Check if playlist has already been processed"""

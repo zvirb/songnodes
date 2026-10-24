@@ -77,11 +77,6 @@ class ConfigDrivenEnricher:
                 ('spotify', 'spotify_id'): lambda data: data.get('id'),
                 ('spotify', 'isrc'): lambda data: data.get('external_ids', {}).get('isrc'),
                 ('spotify', 'duration_ms'): lambda data: data.get('duration_ms'),
-                ('spotify', 'bpm'): lambda data: data.get('audio_features', {}).get('tempo'),
-                ('spotify', 'key'): lambda data: self._extract_spotify_key(data),
-                ('spotify', 'energy'): lambda data: data.get('audio_features', {}).get('energy'),
-                ('spotify', 'danceability'): lambda data: data.get('audio_features', {}).get('danceability'),
-                ('spotify', 'valence'): lambda data: data.get('audio_features', {}).get('valence'),
                 ('spotify', 'genre'): lambda data: self._extract_spotify_genre(data),
                 ('spotify', 'release_date'): lambda data: data.get('album', {}).get('release_date'),
                 ('spotify', 'artist_name'): lambda data: ', '.join(a['name'] for a in data.get('artists', [])),
@@ -430,20 +425,6 @@ class ConfigDrivenEnricher:
         # - Historical provider accuracy
 
         return round(base, 2)
-
-    def _extract_spotify_key(self, data: Dict) -> Optional[str]:
-        """Extract musical key from Spotify data"""
-        audio_features = data.get('audio_features', {})
-        key_num = audio_features.get('key')
-        mode = audio_features.get('mode')
-
-        if key_num is None or mode is None:
-            return None
-
-        key_map = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        key_str = f"{key_map[key_num]} {'Major' if mode == 1 else 'Minor'}"
-
-        return key_str
 
     def _extract_spotify_genre(self, data: Dict) -> Optional[str]:
         """Extract genre from Spotify data"""

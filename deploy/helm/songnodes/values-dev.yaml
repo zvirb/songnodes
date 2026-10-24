@@ -38,6 +38,12 @@ services:
       pullPolicy: Always
   nlpProcessor:
     enabled: false
+  worker:
+    enabled: true
+    image:
+      repository: localhost:5000/songnodes_worker
+      tag: latest
+      pullPolicy: Always
   scraperOrchestrator:
     enabled: true
     image:

@@ -183,9 +183,8 @@ class DiscogsAPISpider(scrapy.Spider):
             db_port = int(os.getenv('DB_PORT', '6432'))
             db_name = os.getenv('DB_NAME', 'musicdb')
             db_user = os.getenv('DB_USER', 'musicdb_user')
-            db_password = os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass_2024')
-            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET',
-                                         'songnodes_change_in_production_2024')
+            db_password = (os.getenv('POSTGRES_PASSWORD') or os.getenv('DATABASE_PASSWORD'))
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET')
 
             # Create connection and fetch token
             async def fetch_token():

@@ -368,22 +368,6 @@ export const trackApi = {
     return apiClient.get(`/v1/tracks/${trackId}/relationships`);
   },
 
-  // Get track audio features
-  async getTrackFeatures(trackId: string): Promise<ApiResponse<{
-    bpm: number;
-    key: string;
-    camelotKey: string;
-    energy: number;
-    danceability: number;
-    valence: number;
-    acousticness: number;
-    instrumentalness: number;
-    liveness: number;
-    speechiness: number;
-  }>> {
-    return apiClient.get(`/v1/tracks/${trackId}/features`);
-  },
-
   // Batch get multiple tracks
   async getTracks(trackIds: string[]): Promise<ApiResponse<Track[]>> {
     return apiClient.post('/v1/tracks/batch', { trackIds });

@@ -51,7 +51,7 @@ class RawDataStoragePipeline:
                 'port': int(os.getenv('DATABASE_PORT', '5432')),
                 'database': os.getenv('DATABASE_NAME', 'musicdb'),
                 'user': os.getenv('DATABASE_USER', 'musicdb_user'),
-                'password': os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass_2024')
+                'password': (os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD'))
             }
             logger.info(f"✓ Raw data storage using env vars: {db_config['host']}:{db_config['port']}")
 

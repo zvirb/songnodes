@@ -116,8 +116,8 @@ class MusicBrainzSpider(scrapy.Spider):
             db_port = int(os.getenv('DATABASE_PORT', '5432'))
             db_name = os.getenv('DATABASE_NAME', 'musicdb')
             db_user = os.getenv('DATABASE_USER', 'musicdb_user')
-            db_password = os.getenv('DATABASE_PASSWORD', 'musicdb_secure_pass_2024')
-            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET', 'songnodes_change_in_production_2024')
+            db_password = (os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD'))
+            encryption_secret = os.getenv('API_KEY_ENCRYPTION_SECRET')
 
             async def fetch_user_agent():
                 conn = await asyncpg.connect(

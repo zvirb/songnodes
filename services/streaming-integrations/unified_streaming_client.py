@@ -681,7 +681,7 @@ class UnifiedStreamingClient:
             "port": int(os.getenv("DATABASE_PORT", "5432")),
             "database": os.getenv("DATABASE_NAME", "musicdb"),
             "user": os.getenv("DATABASE_USER", "musicdb_user"),
-            "password": os.getenv("DATABASE_PASSWORD", "7D82_xqNs55tGyk"),
+            "password": (os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD')),
         }
 
     async def initialize(self) -> None:

@@ -5,6 +5,9 @@ can be read from legacy JSONB until their versioned column migration is applied.
 """
 import json
 import math
+from decimal import Decimal
+
+from .metadata import energy as energy_contract
 
 
 def object_value(value):
@@ -47,6 +50,11 @@ def stored_metadata(record):
 
     duration_ms = number('duration_ms', authoritative=True)
     key = field('key', authoritative=True)
+    # Canonical 1-10 energy (versioned contract). Legacy 0-1 `energy` is never relabelled as this; the band is only
+    # present for calibrated values, so unknown or uncalibrated energy has no band.
+    canonical = number('energy_canonical', authoritative=True)
+    calibrated = record.get('energy_calibrated') if canonical is not None else None
+    reasons = record.get('metadata_review_reasons')
     return {
         'bpm': number('bpm', authoritative=True), 'key': key, 'musical_key': key,
         'camelot_key': string('camelot_key', 'camelotKey'),
@@ -58,4 +66,10 @@ def stored_metadata(record):
         'apple_music_id': string('apple_music_id'), 'beatport_id': string('beatport_id'),
         'tidal_id': string('tidal_id'), 'deezer_id': string('deezer_id'),
         'record_label': string('record_label', 'label'), 'mix_name': string('mix_name', 'version'),
+        'energy_canonical': canonical, 'energy_calibrated': bool(calibrated) if calibrated is not None else None,
+        'energy_source': record.get('energy_source') if canonical is not None else None,
+        'energy_contract_version': record.get('energy_contract_version') if canonical is not None else None,
+        'energy_band': energy_contract.classify_band(Decimal(str(canonical)), bool(calibrated)) if canonical is not None else None,
+        'metadata_review': bool(record.get('metadata_review')),
+        'metadata_review_reasons': list(reasons) if reasons else [],
     }

@@ -6,6 +6,7 @@ Imports festival setlist data directly into the persistence pipeline for process
 This file uses the modern pipelines.persistence_pipeline.PersistencePipeline architecture.
 """
 
+import os
 import asyncio
 import json
 import logging
@@ -474,11 +475,11 @@ class SetlistDataImporter:
     def __init__(self):
         # Database configuration
         self.db_config = {
-            'host': 'postgres',  # Use service name from docker-compose
-            'port': 5432,
-            'database': 'musicdb',
-            'user': 'musicdb_user',
-            'password': '7D82_xqNs55tGyk'
+            'host': os.getenv('DATABASE_HOST') or os.getenv('POSTGRES_HOST') or 'postgres',
+            'port': int(os.getenv('DATABASE_PORT') or os.getenv('POSTGRES_PORT') or 5432),
+            'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_DB') or 'musicdb',
+            'user': os.getenv('DATABASE_USER') or os.getenv('POSTGRES_USER') or 'musicdb_user',
+            'password': os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD'),
         }
 
         # Initialize the database pipeline

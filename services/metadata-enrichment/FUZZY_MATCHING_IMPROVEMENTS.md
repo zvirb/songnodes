@@ -87,7 +87,7 @@ self.MIN_TITLE_SIMILARITY = 0.75  # NEW - prevents bad matches
 **Status**: ✅ Tidal is already integrated into the enrichment pipeline
 
 The enrichment pipeline already supports a waterfall approach:
-1. Spotify (primary) → ISRC/audio features
+1. Spotify (primary) → ISRC/basic metadata
 2. Tidal (fallback) → Alternative streaming metadata
 3. MusicBrainz (fallback) → Canonical identifiers
 4. Discogs/Last.fm (supplementary) → Release-specific data

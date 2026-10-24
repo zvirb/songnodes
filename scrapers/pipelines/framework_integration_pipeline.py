@@ -6,16 +6,15 @@ Orchestrates the complete Framework-compliant pipeline:
 1. Text Normalization (Section 3.1)
 2. Fuzzy Matching Cascade (Section 3.1, Table 3.1)
 3. MusicBrainz Entity Resolution (Section 1.1)
-4. Spotify Audio Features Enrichment (Section 1.2)
-5. Camelot Wheel Mapping (Section 1.2)
-6. Multi-Source Deduplication
+4. Camelot Wheel Mapping (Section 1.2)
+5. Multi-Source Deduplication
 
 Priority: 150 (runs after validation, before database insertion)
 
 Framework Quote:
 "The quality of the final dataset is determined not by the sheer volume of data
 collected, but by the accuracy of this integration process. A failure to correctly
-match a track's scraped setlist data with its API-derived audio features renders
+match a track's scraped setlist data with its API-derived metadata renders
 both pieces of information useless for the intended relational analysis."
 """
 
@@ -274,7 +273,7 @@ class FrameworkIntegrationPipeline:
         Factors:
         - Has canonical ID (MBID/ISRC): +0.4
         - Normalized successfully: +0.2
-        - Has audio features: +0.2
+        - Has BPM/energy/danceability: +0.1
         - Has Camelot key: +0.1
         - Fuzzy match confidence: +0.0-0.5 (from match_result)
         """

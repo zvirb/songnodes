@@ -2,6 +2,9 @@ global:
   namespace: songnodes
   imagePullSecrets: []
   configMapName: songnodes-config
+  # When set (e.g. IfNotPresent for a local cluster that shares the Docker image cache) it replaces every application
+  # image's pullPolicy. Empty keeps each service's own setting (production uses Always with :latest).
+  imagePullPolicyOverride: ""
   secretName: songnodes-secrets
   commonLabels:
     app.kubernetes.io/part-of: songnodes
@@ -73,6 +76,10 @@ secrets:
     ANTHROPIC_API_KEY: CHANGE_ME
     PROXY_USERNAME: ""
     PROXY_PASSWORD: ""
+
+# Applies migrations 012-014 (idempotent) from the worker image as a Helm hook before upgrades / after install.
+dataLayerMigrations:
+  enabled: true
 
 postgres:
   enabled: true
@@ -598,6 +605,47 @@ services:
               sleep 2
             done
             echo "postgres-0.postgres-service.songnodes.svc.cluster.local:5432 - accepting connections"
+
+  # Data-layer worker: Celery tasks draining the durable ingestion_jobs queue (ingest, enrich, project, scrape dispatch).
+  # No HTTP port, so no Service is created. Provider credentials come from the songnodes secret; a provider whose
+  # credential is still a CHANGE_ME placeholder is simply not used. ENRICHMENT_PROVIDERS is the explicit allow-list.
+  worker:
+    enabled: true
+    name: worker
+    component: backend
+    replicaCount: 1
+    image:
+      repository: localhost:5000/songnodes_worker
+      tag: latest
+      pullPolicy: Always
+    envFrom:
+      configMap: true
+      secret: true
+    env:
+      static:
+        ENRICHMENT_PROVIDERS: "tidal,deezer,musicbrainz,discogs,lastfm"
+        TIDAL_COUNTRY_CODE: "AU"
+        UNIFIED_SCRAPER_URL: "http://unified-scraper:8012"
+        GETSONGBPM_ENABLED: "false"
+        LOG_LEVEL: "INFO"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    probes:
+      liveness:
+        enabled: true
+        exec:
+          command:
+            - python
+            - -c
+            - "import os,sys,time; sys.exit(0 if time.time()-os.path.getmtime('/tmp/worker-heartbeat') < 120 else 1)"
+        initialDelaySeconds: 90
+        periodSeconds: 30
+        failureThreshold: 3
 
   scraperOrchestrator:
     enabled: true

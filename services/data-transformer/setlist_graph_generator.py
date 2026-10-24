@@ -35,7 +35,7 @@ class SetlistGraphGenerator:
             'port': int(os.getenv('POSTGRES_PORT', 5433)),  # Match docker-compose port
             'database': os.getenv('POSTGRES_DB', 'musicdb'),
             'user': os.getenv('POSTGRES_USER', 'musicdb_user'),  # Match docker-compose user
-            'password': os.getenv('POSTGRES_PASSWORD', 'musicdb_secure_pass'),  # Match docker-compose
+            'password': (os.getenv('POSTGRES_PASSWORD') or os.getenv('DATABASE_PASSWORD')),  # Match docker-compose
         }
         self.connection = None
         self.cursor = None

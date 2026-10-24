@@ -6,7 +6,6 @@ Implements Spotify Web API integration with:
 - OAuth 2.0 Client Credentials Flow
 - Automatic token refresh
 - Search and track retrieval
-- Audio features extraction (deprecated - use audio-analysis service)
 
 Built on BaseAPIClient for automatic caching, rate limiting, and circuit breaking.
 
@@ -225,41 +224,6 @@ class SpotifyClient(BaseAPIClient):
         )
 
         return response
-
-    def get_audio_features(self, spotify_id: str, use_cache: bool = True) -> Optional[Dict]:
-        """
-        Get audio features for track (DEPRECATED).
-
-        WARNING: Spotify is deprecating the Audio Features API.
-        Use self-hosted audio-analysis service instead.
-
-        Args:
-            spotify_id: Spotify track ID
-            use_cache: Use Redis cache
-
-        Returns:
-            Audio features or None if unavailable
-
-        API Endpoint: GET /v1/audio-features/{id}
-        """
-        logger.warning(
-            "Spotify Audio Features API is deprecated. "
-            "Use self-hosted audio-analysis service instead."
-        )
-
-        cache_key = f"spotify:audio_features:{spotify_id}"
-
-        try:
-            response = self._make_request(
-                method='GET',
-                endpoint=f'/audio-features/{spotify_id}',
-                cache_key=cache_key if use_cache else None,
-                cache_ttl=2592000,  # 30 days
-            )
-            return response
-        except Exception as e:
-            logger.error(f"Spotify: Audio features request failed - {e}")
-            return None
 
     def get_artist(self, artist_id: str, use_cache: bool = True) -> Optional[Dict]:
         """

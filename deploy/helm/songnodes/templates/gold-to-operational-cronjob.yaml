@@ -82,7 +82,7 @@ spec:
           containers:
             - name: gold-to-operational-etl
               image: {{ printf "%s:%s" .Values.cronjobs.goldToOperational.image.repository .Values.cronjobs.goldToOperational.image.tag }}
-              imagePullPolicy: {{ .Values.cronjobs.goldToOperational.image.pullPolicy | default "Always" }}
+              imagePullPolicy: {{ .Values.global.imagePullPolicyOverride | default (.Values.cronjobs.goldToOperational.image.pullPolicy | default "Always") }}
               command:
                 - python
                 - gold_to_operational_etl.py
