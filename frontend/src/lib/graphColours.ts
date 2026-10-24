@@ -48,8 +48,17 @@ export function graphColours(): GraphColours {
     label: { fill: hex('fg'), stroke: hex('bg') },
     bg: hex('bg'),
     chart: Array.from({ length: 8 }, (_, i) => hex(`chart-${i + 1}`)),
-    key: (code: string) => hex(`key-${code.toLowerCase()}`),
-    energy: (e: number) => hex(`energy-${Math.min(10, Math.max(1, Math.round(e)))}`),
+    key: (code: string) => {
+      if (!code) return hex('fg-2');
+      const clean = code.trim().toLowerCase().replace(/[^0-9ab]/g, '');
+      const val = hex(`key-${clean}`);
+      return val || hex('fg-2');
+    },
+    energy: (e: number) => {
+      if (typeof e !== 'number' || isNaN(e)) return hex('fg-2');
+      const val = hex(`energy-${Math.min(10, Math.max(1, Math.round(e)))}`);
+      return val || hex('fg-2');
+    },
     faded: Number(css('opacity-faded')) || 0.15,
     edgeAlpha: Number(css('opacity-edge')) || 0.6,
   };

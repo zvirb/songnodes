@@ -59,41 +59,62 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
 
   return (
     <div
-      className="community-cluster rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md"
+      className="community-cluster"
       style={{
-        borderColor: community.color,
-        backgroundColor: `${community.color}10`
+        borderRadius: 'var(--radius-control)',
+        border: `1px solid ${community.color || 'var(--line)'}`,
+        boxShadow: 'var(--shadow-1)',
+        backgroundColor: 'var(--surface-1)',
+        transition: 'all var(--duration-base) var(--ease-standard)'
       }}
     >
       {/* Header */}
       <button
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+        style={{
+          width: '100%',
+          padding: 'var(--space-3) var(--space-4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--fg)'
+        }}
         onClick={() => onToggle(community.id)}
         aria-expanded={isExpanded}
         aria-label={`Toggle community ${community.id}`}
       >
-        <div className="flex items-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           {/* Expand/Collapse Icon */}
           {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown size={20} style={{ color: 'var(--fg-3)' }} />
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <ChevronRight size={20} style={{ color: 'var(--fg-3)' }} />
           )}
 
           {/* Community Icon */}
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: community.color }}
+            style={{
+              width: 'var(--space-8)',
+              height: 'var(--space-8)',
+              borderRadius: 'var(--radius-pill)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: community.color || 'var(--brand)',
+              color: 'var(--on-brand)'
+            }}
           >
-            <Users className="w-4 h-4 text-white" />
+            <Users size={16} />
           </div>
 
           {/* Community Info */}
-          <div className="text-left">
-            <div className="font-semibold text-gray-900 dark:text-gray-100">
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontWeight: 600, color: 'var(--fg)', fontSize: '0.9375rem' }}>
               Community {community.id}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div style={{ fontSize: '0.8125rem', color: 'var(--fg-2)' }}>
               {community.size} track{community.size !== 1 ? 's' : ''}
               {community.dominantGenre && ` • ${community.dominantGenre}`}
             </div>
@@ -101,13 +122,27 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
         </div>
 
         {/* Metadata Pills */}
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           {community.averageBPM && (
-            <div className="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-xs font-medium">
+            <div style={{
+              padding: 'var(--space-0.5) var(--space-2)',
+              borderRadius: 'var(--radius-pill)',
+              backgroundColor: 'var(--mod-graph-bg)',
+              color: 'var(--mod-graph)',
+              fontSize: '0.75rem',
+              fontWeight: 600
+            }}>
               {Math.round(community.averageBPM)} BPM
             </div>
           )}
-          <div className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium">
+          <div style={{
+            padding: 'var(--space-0.5) var(--space-2)',
+            borderRadius: 'var(--radius-pill)',
+            backgroundColor: 'var(--surface-2)',
+            color: 'var(--fg-2)',
+            fontSize: '0.75rem',
+            fontWeight: 600
+          }}>
             {community.size} nodes
           </div>
         </div>
@@ -115,30 +150,33 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-4 pb-4 border-t" style={{ borderColor: `${community.color}40` }}>
+        <div style={{
+          padding: '0 var(--space-4) var(--space-4) var(--space-4)',
+          borderTop: `1px solid var(--line)`
+        }}>
           {/* Metadata Section */}
-          <div className="py-3 space-y-2">
+          <div style={{ padding: 'var(--space-3) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {bpmRange && (
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">BPM Range:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">{bpmRange}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem' }}>
+                <TrendingUp size={16} style={{ color: 'var(--fg-3)' }} />
+                <span style={{ color: 'var(--fg-2)' }}>BPM Range:</span>
+                <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{bpmRange}</span>
               </div>
             )}
 
             {topKeys && (
-              <div className="flex items-center gap-2 text-sm">
-                <Hash className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">Top Keys:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">{topKeys}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem' }}>
+                <Hash size={16} style={{ color: 'var(--fg-3)' }} />
+                <span style={{ color: 'var(--fg-2)' }}>Top Keys:</span>
+                <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{topKeys}</span>
               </div>
             )}
 
             {community.dominantGenre && (
-              <div className="flex items-center gap-2 text-sm">
-                <Music className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">Genre:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem' }}>
+                <Music size={16} style={{ color: 'var(--fg-3)' }} />
+                <span style={{ color: 'var(--fg-2)' }}>Genre:</span>
+                <span style={{ fontWeight: 600, color: 'var(--fg)' }}>
                   {community.dominantGenre}
                 </span>
               </div>
@@ -146,33 +184,43 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
           </div>
 
           {/* Nodes List */}
-          <div className="mt-3 space-y-1 max-h-64 overflow-y-auto">
-            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+          <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', maxHeight: '16rem', overflowY: 'auto' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 'var(--space-2)' }}>
               Tracks in this community
             </div>
             {communityNodes.map(node => (
               <button
                 key={node.id}
-                className="w-full text-left px-3 py-2 rounded hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors group"
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: 'var(--space-2) var(--space-3)',
+                  borderRadius: 'var(--radius-chip)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--fg)',
+                  display: 'block'
+                }}
                 onClick={() => onNodeClick?.(node.id)}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate text-sm">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: 'var(--fg)', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {node.label || node.track?.name || node.name || 'Unknown Track'}
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {node.track?.artist || node.artist || 'Unknown Artist'}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-2">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginLeft: 'var(--space-2)' }}>
                     {node.bpm && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                         {Math.round(node.bpm)} BPM
                       </span>
                     )}
                     {(node.key || node.camelot_key) && (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100">
+                      <span style={{ fontSize: '0.75rem', padding: 'var(--space-0.5) var(--space-1.5)', borderRadius: 'var(--radius-chip)', backgroundColor: 'var(--brand-soft)', color: 'var(--brand-strong)' }}>
                         {node.camelot_key || node.key}
                       </span>
                     )}
@@ -212,17 +260,17 @@ export const CommunityClusterList: React.FC<CommunityClusterListProps> = ({
 
   if (communities.length === 0) {
     return (
-      <div className={`text-center py-8 text-gray-500 dark:text-gray-400 ${className}`}>
-        <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-        <p>No communities detected</p>
-        <p className="text-sm mt-1">Click "Detect Communities" to analyze the graph</p>
+      <div className={className} style={{ textAlign: 'center', padding: 'var(--space-8) 0', color: 'var(--fg-3)' }}>
+        <Users size={48} style={{ margin: '0 auto var(--space-2) auto', opacity: 0.5 }} />
+        <p style={{ margin: 0, fontWeight: 600 }}>No communities detected</p>
+        <p style={{ margin: 'var(--space-1) 0 0 0', fontSize: '0.8125rem' }}>Click "Detect Communities" to analyze the graph</p>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <div style={{ fontSize: '0.8125rem', color: 'var(--fg-2)', marginBottom: 'var(--space-1)' }}>
         Found {communities.length} communit{communities.length !== 1 ? 'ies' : 'y'} in the graph
       </div>
       {sortedCommunities.map(community => (
