@@ -7,6 +7,7 @@ import { max } from 'd3-array';
 import { schemeCategory10 } from 'd3-scale-chromatic';
 import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
+import { colors, fontSize, radius } from '../lib/tokens';
 import {
   calculateGraphStats,
   calculateNodeDegrees,
@@ -345,62 +346,62 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
         {selectedChart === 'overview' && (
           <div className="overview-stats">
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Nodes</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.nodeCount.toLocaleString()}</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Nodes</div>
+                <div className="stat-value text-xl font-bold text-[var(--color-text-primary)]">{graphStats.nodeCount.toLocaleString()}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Edges</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.edgeCount.toLocaleString()}</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Edges</div>
+                <div className="stat-value text-xl font-bold text-[var(--color-text-primary)]">{graphStats.edgeCount.toLocaleString()}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Density</div>
-                <div className="stat-value text-white text-xl font-bold">{(graphStats.density * 100).toFixed(2)}%</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Density</div>
+                <div className="stat-value text-xl font-bold text-[var(--color-text-primary)]">{(graphStats.density * 100).toFixed(2)}%</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Avg Degree</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.averageDegree.toFixed(1)}</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Avg Degree</div>
+                <div className="stat-value text-xl font-bold text-[var(--color-text-primary)]">{graphStats.averageDegree.toFixed(1)}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 mb-6">
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Connected Components</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.componentCount}</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Connected Components</div>
+                <div className="stat-value text-lg font-semibold text-[var(--color-text-primary)]">{graphStats.componentCount}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Largest Component</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.largestComponentSize} nodes</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Largest Component</div>
+                <div className="stat-value text-lg font-semibold text-[var(--color-text-primary)]">{graphStats.largestComponentSize} nodes</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Avg Path Length</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.averagePathLength.toFixed(2)}</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Avg Path Length</div>
+                <div className="stat-value text-lg font-semibold text-[var(--color-text-primary)]">{graphStats.averagePathLength.toFixed(2)}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Clustering</div>
-                <div className="stat-value text-white text-lg font-semibold">{(graphStats.clustering * 100).toFixed(1)}%</div>
+              <div className="stat-card p-3 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Clustering</div>
+                <div className="stat-value text-lg font-semibold text-[var(--color-text-primary)]">{(graphStats.clustering * 100).toFixed(1)}%</div>
               </div>
             </div>
 
             {/* Performance Metrics */}
             <div className="performance-section">
-              <h3 className="text-sm font-semibold text-gray-300 mb-2">Performance</h3>
+              <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2">Performance</h3>
               <div className="grid grid-cols-2 gap-2">
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">FPS</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.frameRate.toFixed(0)}</div>
+                <div className="stat-card p-2 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                  <div className="stat-label text-xs text-[var(--color-text-tertiary)]">FPS</div>
+                  <div className="stat-value text-lg text-[var(--color-text-primary)]">{performanceMetrics.frameRate.toFixed(0)}</div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Render (ms)</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.renderTime.toFixed(1)}</div>
+                <div className="stat-card p-2 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                  <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Render (ms)</div>
+                  <div className="stat-value text-lg text-[var(--color-text-primary)]">{performanceMetrics.renderTime.toFixed(1)}</div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Visible Nodes</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.visibleNodes}</div>
+                <div className="stat-card p-2 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                  <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Visible Nodes</div>
+                  <div className="stat-value text-lg text-[var(--color-text-primary)]">{performanceMetrics.visibleNodes}</div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Memory (MB)</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.memoryUsage.toFixed(1)}</div>
+                <div className="stat-card p-2 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                  <div className="stat-label text-xs text-[var(--color-text-tertiary)]">Memory (MB)</div>
+                  <div className="stat-value text-lg text-[var(--color-text-primary)]">{performanceMetrics.memoryUsage.toFixed(1)}</div>
                 </div>
               </div>
             </div>

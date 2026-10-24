@@ -5,6 +5,7 @@ import { line, curveCatmullRom } from 'd3-shape';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge, Setlist, SetlistTrack } from '../types';
+import { colors } from '../lib/tokens';
 import {
   TrendingUp,
   TrendingDown,
@@ -257,16 +258,16 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
     return transitions;
   }, [energySequence, graphData.edges]);
 
-  // Color schemes for different moods
+  // Color schemes for different moods based on design system tokens
   const moodColors = {
-    euphoric: '#ef4444',    // Red
-    energetic: '#f97316',   // Orange
-    uplifting: '#f59e0b',   // Amber
-    balanced: '#10b981',    // Green
-    mellow: '#06b6d4',      // Cyan
-    contemplative: '#3b82f6', // Blue
-    melancholic: '#8b5cf6', // Purple
-    ambient: '#6b7280'      // Gray
+    euphoric: colors['brand-tertiary'],    // Brand tertiary red
+    energetic: '#f97316',                  // Vibrant orange
+    uplifting: colors.warning,             // Semantic warning/amber
+    balanced: colors.success,              // Semantic success/green
+    mellow: '#06b6d4',                     // Cyan
+    contemplative: colors['brand-secondary'], // Brand secondary blue
+    melancholic: '#8b5cf6',                // Purple
+    ambient: colors['text-tertiary']        // Text tertiary
   };
 
   // Handle point selection
@@ -314,7 +315,7 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
       g.append('path')
         .datum(energySequence)
         .attr('d', energyLine)
-        .attr('stroke', '#10b981')
+        .attr('stroke', colors['brand-primary'])
         .attr('stroke-width', 2)
         .attr('fill', 'none')
         .attr('opacity', 0.8);
@@ -328,7 +329,7 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
           .attr('y1', yScale(transition.from.energy))
           .attr('x2', xScale(transition.to.position))
           .attr('y2', yScale(transition.to.energy))
-          .attr('stroke', transition.isPlaylistEdge ? '#10b981' : '#6b7280')
+          .attr('stroke', transition.isPlaylistEdge ? colors['brand-primary'] : colors['border-strong'])
           .attr('stroke-width', transition.isPlaylistEdge ? Math.max(2, transition.strength * 4) : 1)
           .attr('stroke-opacity', transition.isPlaylistEdge ? 0.8 : 0.4)
           .attr('stroke-dasharray', transition.isPlaylistEdge ? '0' : '3,3')
@@ -356,8 +357,8 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
         // Point circle
         group.append('circle')
           .attr('r', isSelected ? 8 : isHovered ? 6 : 4)
-          .attr('fill', viewMode === 'mood' ? moodColors[d.mood as keyof typeof moodColors] : '#3b82f6')
-          .attr('stroke', '#fff')
+          .attr('fill', viewMode === 'mood' ? moodColors[d.mood as keyof typeof moodColors] : colors['brand-secondary'])
+          .attr('stroke', colors['text-primary'])
           .attr('stroke-width', isSelected ? 2 : 1)
           .attr('opacity', 0.8)
           .style('cursor', 'pointer');

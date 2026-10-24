@@ -59,15 +59,14 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
 
   return (
     <div
-      className="community-cluster rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md"
+      className="community-cluster rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] shadow-sm transition-all duration-200 hover:shadow-md bg-[var(--color-bg-elevated-1)]"
       style={{
-        borderColor: community.color,
-        backgroundColor: `${community.color}10`
+        borderColor: community.color || 'var(--color-border-subtle)'
       }}
     >
       {/* Header */}
       <button
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[var(--color-bg-elevated-2)] transition-colors"
         onClick={() => onToggle(community.id)}
         aria-expanded={isExpanded}
         aria-label={`Toggle community ${community.id}`}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CamelotKey, HarmonicCompatibility as HarmonicType } from '../types/dj';
+import { colors, fontSize, radius } from '../lib/tokens';
 
 /**
  * HarmonicCompatibility Component - Visual indicator for key compatibility
@@ -39,29 +40,29 @@ const getCompatibility = (current: CamelotKey, target: CamelotKey): HarmonicType
   return 'clash';
 };
 
-// Color scheme following cognitive load principles
+// Color scheme following cognitive load principles and design system tokens
 const COMPATIBILITY_COLORS = {
   perfect: {
-    bg: '#7ED321',      // Bright green - instant recognition
-    text: '#FFFFFF',
+    bg: colors.success,             // Bright green token - instant recognition
+    text: colors['text-inverse'],
     label: 'Perfect',
     icon: '✓✓'
   },
   compatible: {
-    bg: '#F5A623',      // Yellow - good to go
-    text: '#000000',
+    bg: colors.info,                // Info blue/teal token - good to go
+    text: colors['text-inverse'],
     label: 'Compatible',
     icon: '✓'
   },
   possible: {
-    bg: '#FFA500',      // Orange - use with caution
-    text: '#000000',
+    bg: colors.warning,             // Warning amber token - use with caution
+    text: colors['text-inverse'],
     label: 'Possible',
     icon: '~'
   },
   clash: {
-    bg: '#D0021B',      // Red - avoid
-    text: '#FFFFFF',
+    bg: colors.error,               // Error red token - avoid
+    text: colors['text-primary'],
     label: 'Clash',
     icon: '✗'
   }
@@ -152,13 +153,14 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
       flexDirection: 'column',
       gap: '8px',
       padding: '12px',
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      borderRadius: '8px'
+      backgroundColor: colors['bg-elevated-1'],
+      borderRadius: radius.md,
+      border: `1px solid ${colors['border-subtle']}`
     }}>
       <h3 style={{
-        color: '#F8F8F8',
+        color: colors['text-primary'],
         margin: 0,
-        fontSize: '14px',
+        fontSize: fontSize.sm,
         textTransform: 'uppercase',
         letterSpacing: '1px'
       }}>
@@ -174,7 +176,9 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
             alignItems: 'center',
             gap: '12px',
             padding: '8px',
-            borderRadius: '4px',
+            borderRadius: radius.sm,
+            backgroundColor: 'transparent',
+            border: 'none',
             cursor: 'pointer',
             transition: 'background-color 0.2s',
             width: '100%',
@@ -187,15 +191,15 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({
             size="small"
           />
           <span style={{
-            color: '#F8F8F8',
-            fontSize: '14px',
+            color: colors['text-primary'],
+            fontSize: fontSize.sm,
             flex: 1
           }}>
             {track.name}
           </span>
           <span style={{
-            color: '#8E8E93',
-            fontSize: '12px'
+            color: colors['text-tertiary'],
+            fontSize: fontSize.xs
           }}>
             {track.key}
           </span>

@@ -290,14 +290,14 @@ export const InfoCard: React.FC<InfoCardProps> = ({
   // Calculate position if anchored to element
   const getCardStyle = (): React.CSSProperties => {
     let style: React.CSSProperties = {
-      maxWidth: compact ? '200px' : '300px',
-      minWidth: compact ? '150px' : '250px',
-      backgroundColor: 'rgba(30, 30, 40, 0.98)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      borderRadius: '12px',
+      maxWidth: compact ? '200px' : '320px',
+      minWidth: compact ? '150px' : '260px',
+      backgroundColor: 'var(--color-panel-bg, rgba(26, 26, 26, 0.95))',
+      border: '1px solid var(--color-border-subtle, #333333)',
+      borderRadius: 'var(--radius-card, 0.75rem)',
       backdropFilter: 'blur(20px)',
-      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-      color: 'white',
+      boxShadow: 'var(--shadow-lg, 0 10px 15px rgba(0, 0, 0, 0.7))',
+      color: 'var(--color-text-primary, #ffffff)',
       overflow: 'hidden',
       transform: isAnimating ? 'scale(0.95) translateY(10px)' : 'scale(1) translateY(0)',
       opacity: isAnimating ? 0 : 1,
@@ -328,18 +328,19 @@ export const InfoCard: React.FC<InfoCardProps> = ({
       {/* Header */}
       <div
         style={{
-          padding: '16px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--color-border-subtle, #333333)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          backgroundColor: 'var(--color-bg-elevated-2, #2a2a2a)'
         }}
       >
         <h3 style={{
           margin: 0,
-          fontSize: compact ? '14px' : '16px',
+          fontSize: compact ? 'var(--font-size-sm, 0.833rem)' : 'var(--font-size-base, 1rem)',
           fontWeight: '600',
-          color: 'rgba(255, 255, 255, 0.9)'
+          color: 'var(--color-text-primary, #ffffff)'
         }}>
           {getCardTitle()}
         </h3>

@@ -164,7 +164,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
       {isExpanded && (
         <div className="space-y-6">
           {/* Settings Row */}
-          <div className="flex flex-wrap items-center gap-4 p-3 bg-white/5 rounded-lg border border-white/10">
+          <div className="flex flex-wrap items-center gap-4 p-3 bg-[var(--color-bg-elevated-1)] rounded-lg border border-[var(--color-border-subtle)]">
             <label className="flex items-center gap-2 text-sm text-white">
               <input
                 type="checkbox"
@@ -195,7 +195,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
           {/* Camelot Wheel */}
           {(activeTab === 'wheel' || activeTab === 'both') && (
             <div className={activeTab === 'both' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}>
-              <div className="bg-white/5 rounded-lg border border-white/10 p-4">
+              <div className="bg-[var(--color-bg-elevated-1)] rounded-lg border border-[var(--color-border-subtle)] p-4">
                 <CamelotWheel
                   size={showInSidePanel ? 250 : 300}
                   showHarmonicSuggestions={showHarmonicSuggestions}
@@ -206,7 +206,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
               </div>
 
               {activeTab === 'both' && (
-                <div className="bg-white/5 rounded-lg border border-white/10 p-4">
+                <div className="bg-[var(--color-bg-elevated-1)] rounded-lg border border-[var(--color-border-subtle)] p-4">
                   <MoodVisualizer
                     width={showInSidePanel ? 300 : 400}
                     height={200}
@@ -221,7 +221,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
 
           {/* Mood Visualizer (solo) */}
           {activeTab === 'flow' && (
-            <div className="bg-white/5 rounded-lg border border-white/10 p-4">
+            <div className="bg-[var(--color-bg-elevated-1)] rounded-lg border border-[var(--color-border-subtle)] p-4">
               <MoodVisualizer
                 width={showInSidePanel ? 350 : 500}
                 height={250}
@@ -235,7 +235,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
           )}
 
           {/* Analysis Summary */}
-          <div className="bg-white/5 rounded-lg border border-white/10 p-4">
+          <div className="bg-[var(--color-bg-elevated-1)] rounded-lg border border-[var(--color-border-subtle)] p-4">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <BarChart3 />
               Quick Stats

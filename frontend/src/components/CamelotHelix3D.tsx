@@ -3,30 +3,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useStore from '../store/useStore';
 import { GraphNode } from '../types';
+import { CAMELOT_KEYS as SYSTEM_CAMELOT_KEYS } from '../utils/camelotData';
+import { hexToPixi, colors } from '../lib/tokens';
 import { Music, RotateCcw, Maximize2, Eye, EyeOff } from 'lucide-react';
-
-/**
- * CamelotHelix3D Component
- *
- * 3D visualization of the Camelot wheel as a double helix/cylinder
- *
- * FEATURES:
- * - Major keys: Outer cylinder (larger radius)
- * - Minor keys: Inner cylinder (smaller radius)
- * - Height (Z-axis): BPM range
- * - Tracks positioned by key and BPM
- * - Color coding by energy
- * - Interactive rotation and zoom
- * - Track selection and highlighting
- * - Harmonic compatibility connections
- *
- * STRUCTURE:
- * - 12 positions around cylinder (Camelot wheel positions)
- * - 2 concentric cylinders (major/minor)
- * - Vertical axis represents BPM (60-180 typical range)
- * - Tracks are spheres positioned in 3D space
- * - Lines connect harmonically compatible keys
- */
 
 interface CamelotHelix3DProps {
   width?: number;
@@ -36,35 +15,11 @@ interface CamelotHelix3DProps {
   className?: string;
 }
 
-// Camelot key data
-const CAMELOT_KEYS = [
-  // Major keys (outer)
-  { id: '8B', musical: 'C Major', position: 0, mode: 'major', color: 0x3b82f6 },
-  { id: '9B', musical: 'G Major', position: 1, mode: 'major', color: 0x10b981 },
-  { id: '10B', musical: 'D Major', position: 2, mode: 'major', color: 0xf59e0b },
-  { id: '11B', musical: 'A Major', position: 3, mode: 'major', color: 0xf97316 },
-  { id: '12B', musical: 'E Major', position: 4, mode: 'major', color: 0xef4444 },
-  { id: '1B', musical: 'B Major', position: 5, mode: 'major', color: 0xec4899 },
-  { id: '2B', musical: 'F# Major', position: 6, mode: 'major', color: 0xa855f7 },
-  { id: '3B', musical: 'C# Major', position: 7, mode: 'major', color: 0x8b5cf6 },
-  { id: '4B', musical: 'G# Major', position: 8, mode: 'major', color: 0x6366f1 },
-  { id: '5B', musical: 'D# Major', position: 9, mode: 'major', color: 0x06b6d4 },
-  { id: '6B', musical: 'A# Major', position: 10, mode: 'major', color: 0x0891b2 },
-  { id: '7B', musical: 'F Major', position: 11, mode: 'major', color: 0x059669 },
-  // Minor keys (inner)
-  { id: '8A', musical: 'A Minor', position: 0, mode: 'minor', color: 0x374151 },
-  { id: '9A', musical: 'E Minor', position: 1, mode: 'minor', color: 0x475569 },
-  { id: '10A', musical: 'B Minor', position: 2, mode: 'minor', color: 0x581c87 },
-  { id: '11A', musical: 'F# Minor', position: 3, mode: 'minor', color: 0x7c2d12 },
-  { id: '12A', musical: 'C# Minor', position: 4, mode: 'minor', color: 0x92400e },
-  { id: '1A', musical: 'G# Minor', position: 5, mode: 'minor', color: 0x991b1b },
-  { id: '2A', musical: 'D# Minor', position: 6, mode: 'minor', color: 0xbe185d },
-  { id: '3A', musical: 'A# Minor', position: 7, mode: 'minor', color: 0x7c3aed },
-  { id: '4A', musical: 'F Minor', position: 8, mode: 'minor', color: 0x4338ca },
-  { id: '5A', musical: 'C Minor', position: 9, mode: 'minor', color: 0x0e7490 },
-  { id: '6A', musical: 'G Minor', position: 10, mode: 'minor', color: 0x047857 },
-  { id: '7A', musical: 'D Minor', position: 11, mode: 'minor', color: 0x365314 },
-] as const;
+// Convert system CAMELOT_KEYS to 3D helper objects with numeric hex colors
+const CAMELOT_KEYS = SYSTEM_CAMELOT_KEYS.map(k => ({
+  ...k,
+  colorNum: hexToPixi(k.color)
+}));
 
 export const CamelotHelix3D: React.FC<CamelotHelix3DProps> = ({
   width = 800,
@@ -266,7 +221,7 @@ export const CamelotHelix3D: React.FC<CamelotHelix3DProps> = ({
 
       // Marker sphere
       const markerGeometry = new THREE.SphereGeometry(1, 16, 16);
-      const markerMaterial = new THREE.MeshBasicMaterial({ color: keyData.color });
+      const markerMaterial = new THREE.MeshBasicMaterial({ color: keyData.colorNum });
       const marker = new THREE.Mesh(markerGeometry, markerMaterial);
 
       const x = Math.cos(angle) * radius;

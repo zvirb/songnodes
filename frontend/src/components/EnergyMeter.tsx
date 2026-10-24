@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors, fontSize, radius } from '../lib/tokens';
 
 /**
  * EnergyMeter Component - Visual representation of track energy (1-10 scale)
@@ -28,21 +29,21 @@ const ENERGY_DESCRIPTORS = {
   10: { label: 'Maximum', desc: 'Peak time anthem' }
 };
 
-// Color gradient for energy levels (cool to hot)
+// Color gradient for energy levels (cool to hot) using token scale
 const getEnergyColor = (level: number): string => {
-  const colors = {
-    1: '#2E3A87',   // Deep blue
+  const levelColors: Record<number, string> = {
+    1: '#2E3A87',
     2: '#3A4A9C',
     3: '#4A5FB1',
     4: '#5A7AC6',
-    5: '#4A90E2',   // Medium blue
+    5: colors['brand-secondary'], // Tokenized medium blue
     6: '#62B0FF',
-    7: '#FFA500',   // Orange transition
+    7: colors.warning,            // Tokenized warning
     8: '#FF7F00',
     9: '#FF5500',
-    10: '#FF0000'   // Red peak
+    10: colors.error              // Tokenized error/red peak
   };
-  return colors[level as keyof typeof colors] || colors[5];
+  return levelColors[level] || levelColors[5];
 };
 
 const SIZES = {
@@ -83,17 +84,17 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
           width: dimensions.height,
           height: dimensions.width,
           padding: '4px',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          borderRadius: '4px',
-          border: '1px solid rgba(255,255,255,0.2)'
+          backgroundColor: colors['bg-elevated-1'],
+          borderRadius: radius.sm,
+          border: `1px solid ${colors['border-subtle']}`
         }}>
           {Array.from({ length: barCount }).map((_, i) => (
             <div
               key={i}
               style={{
                 flex: 1,
-                backgroundColor: i < activeBars ? getEnergyColor(Math.ceil((i + 1) * 10 / barCount)) : 'rgba(255,255,255,0.1)',
-                borderRadius: '2px',
+                backgroundColor: i < activeBars ? getEnergyColor(Math.ceil((i + 1) * 10 / barCount)) : colors['bg-elevated-3'],
+                borderRadius: radius.none,
                 transition: animated ? 'all 0.3s ease' : 'none',
                 boxShadow: i < activeBars ? `0 0 8px ${color}40` : 'none'
               }}
@@ -102,8 +103,8 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
         </div>
         {showLabel && (
           <span style={{
-            color: '#F8F8F8',
-            fontSize: '12px',
+            color: colors['text-primary'],
+            fontSize: fontSize.xs,
             fontWeight: 600,
             textAlign: 'center'
           }}>
@@ -130,17 +131,17 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
         width: dimensions.width,
         height: dimensions.height,
         padding: '4px',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: '4px',
-        border: '1px solid rgba(255,255,255,0.2)'
+        backgroundColor: colors['bg-elevated-1'],
+        borderRadius: radius.sm,
+        border: `1px solid ${colors['border-subtle']}`
       }}>
         {Array.from({ length: barCount }).map((_, i) => (
           <div
             key={i}
             style={{
               flex: 1,
-              backgroundColor: i < activeBars ? getEnergyColor(Math.ceil((i + 1) * 10 / barCount)) : 'rgba(255,255,255,0.1)',
-              borderRadius: '2px',
+              backgroundColor: i < activeBars ? getEnergyColor(Math.ceil((i + 1) * 10 / barCount)) : colors['bg-elevated-3'],
+              borderRadius: radius.none,
               transition: animated ? 'all 0.3s ease' : 'none',
               boxShadow: i < activeBars ? `0 0 8px ${color}40` : 'none'
             }}
@@ -150,7 +151,7 @@ export const EnergyMeter: React.FC<EnergyMeterProps> = ({
       {showLabel && (
         <span style={{
           color: color,
-          fontSize: '14px',
+          fontSize: fontSize.sm,
           fontWeight: 600,
           minWidth: '80px'
         }}>
@@ -194,9 +195,9 @@ export const EnergyFlow: React.FC<EnergyFlowProps> = ({
       flexDirection: 'column',
       gap: '12px',
       padding: '12px',
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      borderRadius: '8px',
-      border: `2px solid ${isGoodTransition ? '#7ED321' : '#F5A623'}`
+      backgroundColor: colors['bg-elevated-1'],
+      borderRadius: radius.md,
+      border: `2px solid ${isGoodTransition ? colors.success : colors.warning}`
     }}>
       <div style={{
         display: 'flex',
@@ -204,21 +205,21 @@ export const EnergyFlow: React.FC<EnergyFlowProps> = ({
         gap: '16px'
       }}>
         <div>
-          <div style={{ color: '#8E8E93', fontSize: '10px', marginBottom: '4px' }}>
+          <div style={{ color: colors['text-tertiary'], fontSize: fontSize.xs, marginBottom: '4px' }}>
             NOW
           </div>
           <EnergyMeter level={currentEnergy} size="small" />
         </div>
 
         <div style={{
-          color: '#F8F8F8',
+          color: colors['text-primary'],
           fontSize: '20px'
         }}>
           {recommendation.icon}
         </div>
 
         <div>
-          <div style={{ color: '#8E8E93', fontSize: '10px', marginBottom: '4px' }}>
+          <div style={{ color: colors['text-tertiary'], fontSize: fontSize.xs, marginBottom: '4px' }}>
             NEXT
           </div>
           <EnergyMeter level={targetEnergy} size="small" />
@@ -227,8 +228,8 @@ export const EnergyFlow: React.FC<EnergyFlowProps> = ({
 
       {showRecommendation && (
         <div style={{
-          color: isGoodTransition ? '#7ED321' : '#F5A623',
-          fontSize: '12px',
+          color: isGoodTransition ? colors.success : colors.warning,
+          fontSize: fontSize.xs,
           textAlign: 'center'
         }}>
           {recommendation.text}
