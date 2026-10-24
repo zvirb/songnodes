@@ -1,6 +1,34 @@
 # Implementation status
 
-## Current task: bring `main` to a fully verified state
+## Current task: Compose not Kubernetes, same-origin API, design system 1.1.1
+
+25 Oct 2026. Three requests from Markus, one PR each, E2E run against each frontend
+change before merge:
+
+- **No Kubernetes for now** (#64, `docs/compose-not-kubernetes`): CLAUDE.md drops the
+  Kubernetes-only and Compose-forbidden rules and documents the Compose stack
+  (`scripts/start-dev.sh`, rebuild-and-recreate, Compose commands, `scripts/e2e-docker.sh`
+  as the E2E gate); SDLC.md and the PR template follow. `deploy/` and `k8s/` are kept.
+  This resolves the deployment contradiction flagged below. `README.md` still has
+  Kubernetes sections (not changed).
+- **Hard-coded localhost fixed** (#65, `fix/api-base-urls`): 14 sites used
+  `http://localhost:8082`/`127.0.0.1` as the API base. `frontend/src/lib/apiBase.ts` now
+  makes the API same-origin (proxied by Vite and nginx) unless `VITE_API_BASE_URL` is set;
+  OAuth redirect URIs use the page origin, or `VITE_OAUTH_REDIRECT_ORIGIN` to pin the URI
+  registered with Spotify/TIDAL. Unit 79 passed (4 new); built bundle has no loopback
+  addresses; E2E 307 passed. Not tested: the real Spotify and TIDAL OAuth round trips.
+- **Exceptions added upstream** (this PR, `feat/design-system-1.1.1`): EX-001 and EX-002
+  are rows in the "Approved exceptions" register of `17-governance.md`, published to the
+  design-system artifact (version 10) as design system 1.1.1 (only the version changes in
+  `tokens.json` and `bundle.js`, rebuilt with the build scripts), mirrored, synced
+  (`VERSION` 1.1.1), docs references regenerated and the standalone reference artifact
+  republished. The settings E2E test reads `VERSION` instead of a hard-coded version.
+  Results on this branch (frontend image built from it, dev stack up): `scripts/e2e-docker.sh`
+  307 passed, zero console errors; `npm run type-check` 0 errors; `npm run test:unit` 75
+  passed; `npm run build` passed; `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`
+  in sync (1.1.1); conformance scan passes; `build_tokens.py` contrast report: all pairs pass.
+
+## Previous task: bring `main` to a fully verified state
 
 Started 24 Oct 2026 (Australia/Melbourne). Scope: CLAUDE.md §4 gates on `main`
 (sync check, unit, type-check, build, root pytest, full sequential Playwright with
@@ -9,8 +37,8 @@ zero console errors), CI green, branches tidied. Steps: 1 pytest collection
 3 design-system phase 3 (`refactor/ds-phase3`, after 1 and 2 merge), 4 branch
 tidy-up, 5 close-out.
 
-Deployment contradiction (flagged, not resolved): CLAUDE.md says Kubernetes only and
-Docker Compose forbidden, but the documented and tested development stack is
+Deployment contradiction (flagged at the time; resolved 25 Oct 2026 by #64): CLAUDE.md
+said Kubernetes only and Docker Compose forbidden, but the documented and tested stack is
 `compose.dev.yaml` (`scripts/start-dev.sh`). All checks here used that stack.
 
 ### Close-out (step 5)
@@ -43,9 +71,7 @@ list). Local worktrees `E:\songnodes-pr55-fix` and `E:\songnodes-pr58` predate t
 and were left alone.
 
 Open, for a decision:
-- E2E in CI needs the Compose dev stack on the runner (Compose-vs-Kubernetes, above).
-- Hard-coded `http://localhost:8082` API bases in several components (step 2 notes).
-- EX-001 and EX-002 still need rows in the design-system artifact's register.
+- E2E in CI needs the Compose dev stack on the runner (now allowed by #64; not built).
 - Graph node/edge behaviour is untested until a real scrape; the 1001tracklists spider
   fixes (step 1) are untested against the live site.
 - 30 files in `frontend/design-system-pending.txt` (phases 4–6).
