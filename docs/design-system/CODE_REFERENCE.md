@@ -34,7 +34,7 @@ cd design-system && python3 source/build_tokens.py . && python3 source/build_bun
 ## Tokens
 
 <!-- BEGIN GENERATED: tokens -->
-<!-- tokens.json 1.1.0; themes: dark (Dark), light (Light), booth (Booth) -->
+<!-- tokens.json 1.1.1; themes: dark (Dark), light (Light), booth (Booth) -->
 
 ### Colour (`var(--name)`; value per theme where they differ)
 
@@ -434,6 +434,8 @@ SongNodes.prefs.applySystem()
 import { SN, SnIcon, Title, EnergyBar, KeyBadge, Bpm, StatusPill, CompatPill, MODULE_ROUTES, moduleOf } from '../lib/songnodes';
 export type { ModuleKey, CompatLevel, DesignStatus };
 export const SN: SongNodesHelpers;
+export const GLYPH = extra.GLYPH;
+export const TIER_LABEL = extra.TIER_LABEL;
 export const MODULE_ROUTES: Record<ModuleKey, string>;
 export const moduleOf = (key: ModuleKey) => SN.modules.find((m) => m.key === key)!;
 export const SnIcon: React.FC<SnIconProps>;

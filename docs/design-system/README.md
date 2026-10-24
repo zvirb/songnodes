@@ -14,7 +14,7 @@ This folder explains how it works here. The system itself lives in [`design-syst
 
 - **Source:** `design-system/`. It mirrors the published design-system artifact. Treat it as read-only in this repo; it is not edited by hand downstream.
 - **What is in it:** `tokens.json` (every token, with the version), `tokens.css` (the tokens as CSS variables plus `@font-face`), `components/bundle.css` (every `sn-*` class), `components/bundle.js` (defines `window.SongNodes`), `components/<Comp>/README.md` and `preview.html` for 92 components, `components/index.d.ts` and `source/types/*.d.ts` (props and the helper API), `fonts/` (Sora, Inter, JetBrains Mono, self-hosted), and the generators in `source/`.
-- **Version:** one semver number in `tokens.json` and `SongNodes.version`; they must match. Currently 1.1.0.
+- **Version:** one semver number in `tokens.json` and `SongNodes.version`; they must match. Currently 1.1.1.
 
 ## How it reaches the app
 

@@ -1,10 +1,10 @@
 # Design-system exceptions (SongNodes app)
 
 Approved exceptions to the SongNodes design system, following
-`design-system/17-governance.md` "Exceptions". The authoritative register is the
-open questions register in the design-system artifact. `design-system/` is a
-read-only mirror, so these rows still have to be added there upstream; until then
-this file is the record for this repository. Each site carries the comment
+`design-system/17-governance.md` "Exceptions". The authoritative register is
+"Approved exceptions" under Open questions in `design-system/17-governance.md`
+(added in design system 1.1.1, published to the design-system artifact); this file
+repeats it for this repository. Each site carries the comment
 `design-system exception EX-NNN`.
 
 | ID | Rule | Why | Scope | Approved | Expires |

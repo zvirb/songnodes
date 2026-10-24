@@ -20,6 +20,9 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.1.1 — 25 Oct 2026: exceptions register**
+- Added the approved exceptions EX-001 (AppHeader wordmark contrast in dark) and EX-002 (LauncherCard accessible name) to the register under Open questions. No token, class or helper changed.
+
 **1.1.0 — 24 Oct 2026: open questions answered**
 - Changed `now` to its own amber token; selected stays brand lavender (DR-024).
 - Changed booth statuses to the traffic-light set used in dark and light (DR-018 revised).
@@ -112,6 +115,13 @@ All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 r
 | # | Question | Options | Default until answered |
 |---|---|---|---|
 | Q9 | Score bands for recommendations | 80/60/40 (current code) · fit to Markus's accepted picks | 80/60/40 until enough accepted picks exist to fit, then fitted from his own picks |
+
+### Approved exceptions
+
+| # | Rule | Why | Scope | Approved | Expires |
+|---|---|---|---|---|---|
+| EX-001 | WCAG 1.4.3 text contrast (axe `color-contrast`) | The AppHeader wordmark is the SongNodes logotype (section 14: the identity is the wordmark), and WCAG 1.4.3 exempts logotypes. Dark `brand` #9b85cb on `surface-1` #2d2d2d measures 4.33:1. | `.sn-app-header__wordmark`, all themes; SongNodes checks it in `frontend/tests/e2e/accessibility.spec.ts` | Markus, 25 Oct 2026 | 1.2.0 |
+| EX-002 | WCAG 2.5.3 label in name (axe `label-content-name-mismatch`) | `LauncherCard` names its link from the title only (`aria-labelledby="lc-t"`), so the visible module label is not part of the accessible name. Kept as specified until the markup is decided. | `.sn-launcher-card` links (HomePage); same test file | Markus, 25 Oct 2026 | 1.2.0 |
 
 ## Distribution and staying in sync
 

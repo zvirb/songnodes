@@ -1,4 +1,8 @@
+import { readFileSync } from 'fs';
 import { test, expect, openRoute } from './fixtures';
+
+/** The design-system version the frontend synced (scripts/sync-design-system.sh). */
+const DS_VERSION = readFileSync(new URL('../../src/styles/design-system/VERSION', import.meta.url), 'utf-8').trim();
 
 /** Settings and the PreferencesPanel: preferences apply live and persist on this device. */
 
@@ -55,7 +59,7 @@ test('reset restores the defaults', async ({ page }) => {
 
 test('the About section shows the design-system version and locale', async ({ page }) => {
   const about = page.locator('#about');
-  await expect(about).toContainText('1.1.0');
+  await expect(about).toContainText(DS_VERSION);
   await expect(about).toContainText('en-AU');
   await expect(about).toContainText('Australia/Melbourne');
 });
