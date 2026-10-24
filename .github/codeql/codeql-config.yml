@@ -1,0 +1,13 @@
+# CodeQL configuration for SongNodes.
+#
+# Excludes the design system's static demo pages from analysis. They are the read-only mirror of the
+# published design-system artifact (design-system/, never patched downstream per CLAUDE.md) and the
+# rendered reference built from it. They hold hard-coded demo markup, take no user input, and ship
+# only as documentation, so the "DOM text reinterpreted as HTML" findings there are not reachable.
+# Decision: author, 24 Oct 2026. Revisit if any of these pages starts reading external data.
+name: songnodes-codeql
+paths-ignore:
+  - design-system/components/**/preview.html
+  - design-system/source/previews/**
+  - docs/design-system/reference.html
+  - docs/design-system/reference.standalone.html
