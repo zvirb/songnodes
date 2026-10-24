@@ -43,17 +43,18 @@ const SelectValue = SelectPrimitive.Value;
  */
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & { 'data-testid'?: string }
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
+    data-testid={props['data-testid'] || 'select-trigger'}
     className={cn(
       'flex h-[var(--input-height-base)] w-full items-center justify-between',
       'rounded-[var(--radius-input)] border border-[var(--color-input-border)]',
       'bg-[var(--color-input-bg)] px-3 py-2',
       'text-sm text-[var(--color-text-primary)]',
       'placeholder:text-[var(--color-text-disabled)]',
-      'focus:outline-none focus:ring-2 focus:ring-[var(--color-input-focus)] focus:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-base)]',
       'disabled:cursor-not-allowed disabled:opacity-50',
       '[&>span]:line-clamp-1',
       className
@@ -155,11 +156,12 @@ SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayNam
  */
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & { 'data-testid'?: string }
 >(({ className, children, position = 'popper', ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
+      data-testid={props['data-testid'] || 'select-content'}
       className={cn(
         'relative z-[var(--z-dropdown)] max-h-96 min-w-[8rem] overflow-hidden',
         'rounded-[var(--radius-md)] border border-[var(--color-border-default)]',
@@ -217,10 +219,11 @@ SelectLabel.displayName = SelectPrimitive.Label.displayName;
  */
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & { 'data-testid'?: string }
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
+    data-testid={props['data-testid'] || 'select-item'}
     className={cn(
       'relative flex w-full cursor-default select-none items-center',
       'rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none',

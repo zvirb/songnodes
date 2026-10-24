@@ -78,10 +78,15 @@ export interface ToastConfig {
  *   );
  * }
  */
-export function Toaster() {
+export interface ToasterProps {
+  'data-testid'?: string;
+}
+
+export function Toaster({ 'data-testid': dataTestId = 'toaster' }: ToasterProps = {}) {
   return (
     <Sonner
       position="bottom-right"
+      data-testid={dataTestId}
       theme="dark"
       className="toaster group"
       toastOptions={{

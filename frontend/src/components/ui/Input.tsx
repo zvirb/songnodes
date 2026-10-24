@@ -28,8 +28,8 @@ const inputVariants = cva(
     'transition-colors',
     'file:border-0 file:bg-transparent file:text-sm file:font-medium',
     'placeholder:text-[var(--color-text-disabled)]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-    'disabled:cursor-not-allowed disabled:opacity-50',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-base)]',
+    'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-[var(--color-bg-elevated-1)] disabled:text-[var(--color-text-disabled)]',
   ].join(' '),
   {
     variants: {
@@ -39,11 +39,11 @@ const inputVariants = cva(
           'focus-visible:ring-[var(--color-input-focus)]',
         ].join(' '),
         error: [
-          'border-2 border-[var(--color-border-error)]',
+          'border border-[var(--color-border-error)]',
           'focus-visible:ring-[var(--color-error)]',
         ].join(' '),
         success: [
-          'border-2 border-[var(--color-border-success)]',
+          'border border-[var(--color-border-success)]',
           'focus-visible:ring-[var(--color-success)]',
         ].join(' '),
       },
@@ -63,6 +63,7 @@ const inputVariants = cva(
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     VariantProps<typeof inputVariants> {
+  'data-testid'?: string;
   /** Label text for the input */
   label?: string;
 
@@ -185,6 +186,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {/* Input field */}
           <input
             type={type}
+            data-testid={props['data-testid'] || 'input'}
             className={cn(
               inputVariants({ variant: effectiveVariant, inputSize }),
               leftIcon && 'pl-10',

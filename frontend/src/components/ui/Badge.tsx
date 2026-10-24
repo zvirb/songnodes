@@ -26,7 +26,7 @@ const badgeVariants = cva(
     'px-2 py-0.5',
     'text-xs font-semibold',
     'transition-colors',
-    'focus:outline-none focus:ring-2 focus:ring-offset-2',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-base)]',
   ].join(' '),
   {
     variants: {
@@ -80,6 +80,7 @@ const badgeVariants = cva(
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {
+  'data-testid'?: string;
   /** Icon to display before the badge text */
   icon?: React.ReactNode;
 
@@ -128,6 +129,7 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
     return (
       <div
         ref={ref}
+        data-testid={props['data-testid'] || 'badge'}
         className={cn(badgeVariants({ variant, size }), className)}
         {...props}
       >

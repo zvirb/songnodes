@@ -28,6 +28,7 @@ const cardVariants = cva(
     'bg-[var(--color-card-bg)]',
     'text-[var(--color-text-primary)]',
     'shadow-[var(--shadow-card)]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-base)]',
   ].join(' '),
   {
     variants: {
@@ -61,6 +62,7 @@ const cardVariants = cva(
 export interface CardProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'>,
     VariantProps<typeof cardVariants> {
+  'data-testid'?: string;
   /**
    * Enable 3D hover effect (2025 Design Trend)
    * @default false
@@ -109,6 +111,7 @@ const Card3D = React.forwardRef<HTMLDivElement, Omit<CardProps, 'enable3D'>>(
     return (
       <motion.div
         ref={ref}
+        data-testid={props['data-testid'] || 'card'}
         className={cn(
           cardVariants({ variant, interactive, selected }),
           className
@@ -194,6 +197,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
+        data-testid={props['data-testid'] || 'card'}
         className={cn(
           cardVariants({ variant, interactive, selected }),
           className
@@ -210,11 +214,12 @@ Card.displayName = 'Card';
  */
 const CardHeader = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  React.HTMLAttributes<HTMLDivElement> & { 'data-testid'?: string }
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex flex-col space-y-1.5 p-6', className)}
+    data-testid={props['data-testid'] || 'card-header'}
+    className={cn('flex flex-col space-y-1.5 p-[var(--space-6)]', className)}
     {...props}
   />
 ));
@@ -225,10 +230,11 @@ CardHeader.displayName = 'CardHeader';
  */
 const CardTitle = React.forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
+  React.HTMLAttributes<HTMLHeadingElement> & { 'data-testid'?: string }
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
+    data-testid={props['data-testid'] || 'card-title'}
     className={cn(
       'text-[var(--font-size-xl)] font-semibold leading-none tracking-tight',
       className
@@ -243,10 +249,11 @@ CardTitle.displayName = 'CardTitle';
  */
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
+  React.HTMLAttributes<HTMLParagraphElement> & { 'data-testid'?: string }
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
+    data-testid={props['data-testid'] || 'card-description'}
     className={cn(
       'text-[var(--font-size-sm)] text-[var(--color-text-secondary)]',
       className
@@ -261,11 +268,12 @@ CardDescription.displayName = 'CardDescription';
  */
 const CardContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  React.HTMLAttributes<HTMLDivElement> & { 'data-testid'?: string }
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('p-6 pt-0', className)}
+    data-testid={props['data-testid'] || 'card-content'}
+    className={cn('p-[var(--space-6)] pt-0', className)}
     {...props}
   />
 ));
@@ -276,11 +284,12 @@ CardContent.displayName = 'CardContent';
  */
 const CardFooter = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  React.HTMLAttributes<HTMLDivElement> & { 'data-testid'?: string }
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center p-6 pt-0', className)}
+    data-testid={props['data-testid'] || 'card-footer'}
+    className={cn('flex items-center p-[var(--space-6)] pt-0', className)}
     {...props}
   />
 ));

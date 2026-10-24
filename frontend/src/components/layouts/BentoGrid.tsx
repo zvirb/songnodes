@@ -28,6 +28,7 @@ import { Card } from '../ui/Card';
  * BentoGrid Props
  */
 export interface BentoGridProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'> {
+  'data-testid'?: string;
   /**
    * Number of columns for desktop layout
    * @default 3
@@ -93,6 +94,7 @@ export const BentoGrid = React.forwardRef<HTMLDivElement, BentoGridProps>(
     return (
       <Comp
         ref={ref}
+        data-testid={props['data-testid'] || 'bento-grid'}
         className={cn(
           'grid',
           columnClasses[columns],
@@ -116,6 +118,7 @@ BentoGrid.displayName = 'BentoGrid';
  * BentoCard Props
  */
 export interface BentoCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart'> {
+  'data-testid'?: string;
   /**
    * Number of columns to span
    * @default 1
@@ -217,17 +220,17 @@ export const BentoCard = React.forwardRef<HTMLDivElement, BentoCardProps>(
 
     const glassStyles = glass
       ? {
-          background:
-            'linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(26, 26, 26, 0.8) 100%)',
+          background: 'var(--color-panel-bg)',
           backdropFilter: 'blur(10px) saturate(180%)',
           WebkitBackdropFilter: 'blur(10px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid var(--color-border-subtle)',
         }
       : {};
 
     return (
       <motion.div
         ref={ref}
+        data-testid={props['data-testid'] || 'bento-card'}
         className={cn(
           colSpanClasses[colSpan],
           rowSpanClasses[rowSpan],
@@ -243,7 +246,7 @@ export const BentoCard = React.forwardRef<HTMLDivElement, BentoCardProps>(
         <Card
           variant={variant}
           enable3D={enable3D}
-          className="h-full w-full p-6"
+          className="h-full w-full p-[var(--space-6)]"
           style={glassStyles}
         >
           {children}
@@ -266,6 +269,7 @@ BentoCard.displayName = 'BentoCard';
  * </BentoSection>
  */
 export interface BentoSectionProps extends React.HTMLAttributes<HTMLDivElement> {
+  'data-testid'?: string;
   /**
    * Section title
    */
@@ -279,7 +283,12 @@ export interface BentoSectionProps extends React.HTMLAttributes<HTMLDivElement> 
 
 export const BentoSection = React.forwardRef<HTMLDivElement, BentoSectionProps>(
   ({ className, title, description, children, ...props }, ref) => (
-    <div ref={ref} className={cn('space-y-4', className)} {...props}>
+    <div
+      ref={ref}
+      data-testid={props['data-testid'] || 'bento-section'}
+      className={cn('space-y-4', className)}
+      {...props}
+    >
       {(title || description) && (
         <div className="space-y-1">
           {title && (

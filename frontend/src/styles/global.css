@@ -56,7 +56,7 @@ p, h1, h2, h3, h4, h5, h6 {
   --color-accent-primary: #00ff41;
   --color-accent-secondary: #ff4444;
   --color-accent-tertiary: #44aaff;
-  --color-accent-warning: #ffaa44;
+  --color-accent-warning: #D68910;
 
   /* Text Colors - WCAG AA Compliant */
   --color-text-primary: #ffffff;        /* 21:1 contrast - PASS */

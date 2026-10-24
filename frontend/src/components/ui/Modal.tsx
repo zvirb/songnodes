@@ -69,7 +69,7 @@ const ModalOverlay = React.forwardRef<
       className
     )}
     style={{
-      background: 'radial-gradient(circle, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.9) 100%)',
+      background: 'var(--color-modal-overlay)',
       backdropFilter: 'blur(20px) saturate(180%)',
       WebkitBackdropFilter: 'blur(20px) saturate(180%)',
     }}
@@ -104,6 +104,7 @@ const modalPositionClasses: Record<ModalPosition, string> = {
 
 export interface ModalContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+  'data-testid'?: string;
   /**
    * Size of the modal
    * @default 'md'
@@ -166,29 +167,28 @@ const ModalContent = React.forwardRef<
       <ModalOverlay onClick={preventBackdropClose ? (e) => e.preventDefault() : undefined} />
       <DialogPrimitive.Content
         ref={ref}
+        data-testid={props['data-testid'] || 'modal-content'}
         className={cn(
           'fixed left-[50%] translate-x-[-50%] z-[var(--z-modal)]',
           'w-full',
           modalSizeClasses[size],
           'flex flex-col',
           'max-h-[85vh]',
-          'gap-4 p-6',
+          'gap-[var(--space-4)] p-[var(--space-6)]',
           'rounded-[var(--radius-modal)]',
           'shadow-[var(--shadow-modal)]',
-          'focus:outline-none',
+          'bg-[var(--color-modal-bg)] border border-[var(--color-border-default)]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]',
           'data-[state=open]:animate-in data-[state=open]:fade-in-0',
           'data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-2',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
           'data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-bottom-2',
-          // Glass morphism effect (2025 Design Trend)
           'relative overflow-hidden',
           className
         )}
         style={{
-          background: 'linear-gradient(135deg, rgba(26, 26, 26, 0.98) 0%, rgba(26, 26, 26, 0.85) 100%)',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
         {...props}
       >
@@ -202,7 +202,7 @@ const ModalContent = React.forwardRef<
               'rounded-sm opacity-70',
               'ring-offset-background transition-opacity',
               'hover:opacity-100',
-              'focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] focus:ring-offset-2',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-base)]',
               'disabled:pointer-events-none'
             )}
             aria-label="Close modal"
