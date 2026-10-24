@@ -4,10 +4,10 @@ name: python-tests
 
 on:
   pull_request:
-    paths: ["services/**", "tests/**", "pytest.ini", ".github/workflows/python-tests.yml"]
+    paths: ["services/**", "scrapers/**", "tests/**", "pytest.ini", ".github/workflows/python-tests.yml"]
   push:
     branches: [main, develop]
-    paths: ["services/**", "tests/**", "pytest.ini"]
+    paths: ["services/**", "scrapers/**", "tests/**", "pytest.ini"]
 
 permissions:
   contents: read
@@ -26,3 +26,16 @@ jobs:
       - name: services/common tests
         working-directory: services
         run: python -m pytest common/tests -q -p no:cacheprovider
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - name: Install dependencies
+        run: pip install -r scrapers/requirements.txt -r tests/requirements.txt -r tests/requirements-test.txt
+      - name: Collection check (whole root suite)
+        run: python -m pytest --collect-only -q -p no:cacheprovider
+      - name: tests/unit (no services needed)
+        run: python -m pytest tests/unit -q -p no:cacheprovider

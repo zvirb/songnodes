@@ -28,44 +28,56 @@ Changes:
 - Deleted `tests/pytest.ini`: as the nearest config to `tests/`, it silently replaced
   the root config for every `pytest tests/...` call (with a wrong `testpaths`).
 - `tests/integration/conftest.py`: puts `tests/integration` on `sys.path` (bare-name
-  sibling imports in the `test_dev_*` modules). Its autouse check for legacy services
-  (8100, 8020, 8024) skipped every integration module, including `test_dev_*`, which
-  target the dev stack; it now applies only to the non-`test_dev_` modules.
+  sibling imports in the `test_dev_*` modules). Its autouse legacy-service check (8100,
+  8020, 8024) skipped every integration module, including `test_dev_*`; it and the
+  fixtures only the deleted modules used are removed.
 - `tests/unit/scrapers/conftest.py` (new) puts `scrapers/` on `sys.path`, as the
   scraper image does; the spider test imports `spiders.1001tracklists_spider` and
   `items` (the old `musicdb_scrapy` package no longer exists).
+- Deleted as obsolete (Markus's decision, 24 Oct 2026):
+  `tests/unit/services/test_scraper_orchestrator.py` (tested `TaskQueue`,
+  `ScraperManager` and `execute_scraping_task`, which no longer exist in
+  `services/scraper-orchestrator/main.py`), and `tests/e2e/test_complete_workflows.py`,
+  `tests/integration/test_api_endpoints.py`, `test_graph_api_comprehensive.py` (they
+  targeted the pre-unified services on ports 8001, 8020–8022, 8080, 8088, 8090 and
+  8100, none of which is in the dev stack; the `test_dev_*` suite covers the current
+  stack).
+- Spider defects fixed in `scrapers/spiders/1001tracklists_spider.py` (Markus approved
+  fixing all; found while rewriting its tests for the current API):
+  - `parse_tracklist` and `parse_search_results` called their generator `_impl`
+    methods without `yield from`, so the spider emitted nothing after the start
+    request.
+  - HTML pages went straight to an NLP branch that used `enable_nlp_fallback`,
+    `extract_via_nlp_sync` and an undefined `_is_json_response`; the class did not
+    inherit the NLP mixin, so it raised and the CSS extraction never ran on real pages.
+    Now CSS extraction runs first and `NLPFallbackSpiderMixin` is used only when it
+    finds no tracks.
+  - The LLM branch called the missing `is_remix_track`/`is_mashup_track` (added, same
+    patterns as `parse_track_string`) and set a `duration` field `EnhancedTrackItem`
+    does not have. The NLP item builder set nonexistent `track_url`/`source_platform`
+    fields (now `external_urls`/`metadata`) and defaulted to "Unknown Artist"/"Unknown
+    Track"; tracks without an artist or title are now dropped (CLAUDE.md artist rule).
+  - Not fixed, noted: `parse_track_string` keeps the artist in a mashup's title
+    ("Artist - A vs. B" gives the title "Artist - A vs. B").
+- The spider test is rewritten for `parse_tracklist`/`parse_search_results` and the
+  `Enhanced*` items: 17 tests, no network (credentials, Redis, robots.txt and the
+  Ollama LLM extractor are stubbed), about 1 s instead of 25 s per test.
 - `.gitignore`: `**/tests/reports/`. New CI workflow `python-tests.yml` runs the
-  `services/common` tests. `tests/README.md` documents every Python suite command.
+  `services/common` tests, the root collection check and `tests/unit`. `tests/README.md` documents every Python suite command.
 - Per-service `services/*/tests/` folders contain no test modules (only a conftest and
   empty packages); `services/common/tests` is the only service suite. Documented.
 
 Results (Windows, Python 3.13, dev stack up):
-- `python -m pytest --collect-only -q`: 138 collected, **1 error** (see below), no
-  config warnings. Before: 26 errors.
+- `python -m pytest --collect-only -q`: 78 collected, 0 errors, no config warnings
+  (before: 26 errors).
+- `python -m pytest` (root): 73 passed, 5 skipped, 0 failed. Skips:
+  `test_dev_worker` real-scrape test (1, would scrape external sites) and
+  `tests/live` (4, opt-in with `RUN_LIVE_PROVIDER_TESTS=1` and real credentials).
 - `cd services && python -m pytest common/tests`: 112 passed.
-- `python -m pytest tests/integration -k test_dev_`: 56 passed, 1 skipped (would start
-  a real scrape). `python -m unittest discover -s tests/integration -p 'test_dev_*.py'`
-  gives the same 57 tests (56 + 1 skipped); the earlier "57 passed, 1 skipped" was a
-  miscount.
-- `python -m pytest --ignore=tests/unit/services/test_scraper_orchestrator.py`
-  (exclusion on the command line only, not committed): 63 passed, 14 failed,
-  61 skipped.
-
-Open, needs a decision (no test deleted or skipped):
-- `tests/unit/services/test_scraper_orchestrator.py` (22 tests): imports `TaskQueue`,
-  `ScraperManager` and `execute_scraping_task` from the scraper orchestrator; none
-  exists in `services/scraper-orchestrator/main.py` any more (only the enums,
-  `ScrapingTask` and `app` remain). The code under test is gone, so the import was not
-  rewritten. This one collection error stops a plain `pytest` run.
-- `tests/unit/scrapers/test_1001tracklists_spider.py`: 5 pass, 7 fail with
-  `NotImplementedError: parse callback is not defined`. The spider no longer has
-  `parse()`; it uses `parse_search_results`/`parse_tracklist` and emits different
-  items. Each spider construction also waits about 25 s on Redis/Postgres.
-- `tests/e2e/test_complete_workflows.py`: 7 fail (connection refused) and 2 skip;
-  `tests/integration/test_api_endpoints.py` (24) and `test_graph_api_comprehensive.py`
-  (30) skip. All target services that are not in the dev stack (ports 8001, 8020–8022,
-  8080, 8088, 8090, 8100).
-- `tests/live` (4) skip unless `RUN_LIVE_PROVIDER_TESTS=1` (opt-in, real credentials).
+- `python -m pytest tests/integration -k test_dev_`: 56 passed, 1 skipped.
+  `python -m unittest discover -s tests/integration -p 'test_dev_*.py'` runs the same
+  57 tests (56 + 1 skipped); the earlier "57 passed, 1 skipped" was a miscount.
+- `python -m pytest tests/unit/scrapers`: 17 passed.
 
 ## Previous run: full test suite — completed with blockers
 
