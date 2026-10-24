@@ -12,7 +12,7 @@ import useStore from '../store/useStore';
  * - Large track info card for current track
  * - Connected tracks shown as smaller cards below
  * - Navigation history (breadcrumbs)
- * - No WebGL/PIXI.js rendering
+ * - Touch-optimized with design tokens and accessibility attributes
  */
 
 interface NavigationHistoryItem {
@@ -142,120 +142,64 @@ export const MobileTrackExplorer: React.FC = () => {
   // Render search view
   if (!currentTrackId || showSearch) {
     return (
-      <div style={{
-        padding: '16px',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#1C1C1E',
-        overflow: 'hidden',
-      }}>
+      <div
+        className="p-4 h-full flex flex-col bg-[var(--color-bg-base)] overflow-hidden"
+        data-testid="mobile-track-explorer"
+      >
         {/* Header */}
-        <div style={{ marginBottom: '16px' }}>
-          <h2 style={{
-            margin: '0 0 8px 0',
-            color: '#F8F8F8',
-            fontSize: '24px',
-            fontWeight: 700,
-          }}>
+        <div className="mb-4">
+          <h2 className="m-0 mb-2 text-[var(--color-text-primary)] text-[var(--fluid-font-xl)] font-bold">
             Explore Tracks
           </h2>
-          <p style={{
-            margin: 0,
-            color: '#8E8E93',
-            fontSize: '14px',
-          }}>
+          <p className="m-0 text-[var(--color-text-secondary)] text-[var(--fluid-font-sm)]">
             Search for a track to start exploring connections
           </p>
         </div>
 
         {/* Search Input */}
-        <div style={{ marginBottom: '16px' }}>
+        <div className="mb-4">
           <input
             type="text"
             placeholder="Search by track, artist, or genre..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: '#2C2C2E',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px',
-              color: '#F8F8F8',
-              fontSize: '16px',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
+            className="w-full px-4 py-3 bg-[var(--color-bg-elevated-1)] border border-[var(--color-border-subtle)] rounded-[var(--radius-card)] text-[var(--color-text-primary)] text-[var(--fluid-font-base)] outline-none focus:border-[var(--color-brand-primary)] min-h-[44px]"
             autoFocus
+            data-testid="mobile-search-input"
           />
         </div>
 
         {/* Search Results */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          marginRight: '-16px',
-          paddingRight: '16px',
-        }}>
+        <div className="flex-1 overflow-y-auto pr-2">
           {searchQuery.trim() === '' ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '40px 20px',
-              color: '#8E8E93',
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-              <p style={{ margin: 0, fontSize: '16px' }}>Start typing to search</p>
-              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+            <div className="text-center py-10 px-5 text-[var(--color-text-secondary)]">
+              <div className="text-5xl mb-4">🔍</div>
+              <p className="m-0 text-[var(--fluid-font-base)]">Start typing to search</p>
+              <p className="mt-2 m-0 text-[var(--fluid-font-sm)]">
                 {allTracks.length} tracks available
               </p>
             </div>
           ) : searchResults.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '40px 20px',
-              color: '#8E8E93',
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>😕</div>
-              <p style={{ margin: 0, fontSize: '16px' }}>No tracks found</p>
-              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+            <div className="text-center py-10 px-5 text-[var(--color-text-secondary)]">
+              <div className="text-5xl mb-4">😕</div>
+              <p className="m-0 text-[var(--fluid-font-base)]">No tracks found</p>
+              <p className="mt-2 m-0 text-[var(--fluid-font-sm)]">
                 Try a different search term
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="flex flex-col gap-2" data-testid="mobile-search-results">
               {searchResults.map(track => (
                 <button
                   key={track.id}
                   onClick={() => navigateToTrack(track.id, track.name)}
-                  style={{
-                    padding: '12px',
-                    backgroundColor: '#2C2C2E',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px',
-                    color: '#F8F8F8',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onTouchStart={(e) => {
-                    e.currentTarget.style.backgroundColor = '#3C3C3E';
-                  }}
-                  onTouchEnd={(e) => {
-                    e.currentTarget.style.backgroundColor = '#2C2C2E';
-                  }}
+                  className="p-3 bg-[var(--color-card-bg)] border border-[var(--color-border-subtle)] rounded-[var(--radius-card)] text-[var(--color-text-primary)] text-left cursor-pointer hover:bg-[var(--color-card-hover)] min-h-[44px] flex flex-col justify-center transition-colors"
+                  data-testid={`mobile-track-card-${track.id}`}
                 >
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    marginBottom: '4px',
-                  }}>
+                  <div className="text-[var(--fluid-font-base)] font-semibold mb-1">
                     {track.name}
                   </div>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#8E8E93',
-                  }}>
+                  <div className="text-[var(--fluid-font-sm)] text-[var(--color-text-secondary)]">
                     {track.artist} • {track.bpm} BPM • {track.key}
                   </div>
                 </button>
@@ -269,159 +213,103 @@ export const MobileTrackExplorer: React.FC = () => {
 
   // Render track detail view
   return (
-    <div style={{
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#1C1C1E',
-      overflow: 'hidden',
-    }}>
+    <div
+      className="h-full flex flex-col bg-[var(--color-bg-base)] overflow-hidden"
+      data-testid="mobile-track-detail"
+    >
       {/* Navigation Bar */}
-      <div style={{
-        padding: '12px 16px',
-        backgroundColor: '#2C2C2E',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-      }}>
+      <div className="px-4 py-3 bg-[var(--color-bg-elevated-1)] border-b border-[var(--color-border-subtle)] flex items-center gap-3">
         <button
           onClick={navigateBack}
-          style={{
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#007AFF',
-            fontSize: '16px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-          }}
+          className="px-3 py-2 bg-transparent border-none text-[var(--color-brand-secondary)] text-[var(--fluid-font-base)] cursor-pointer flex items-center gap-1 min-h-[44px] font-medium"
+          data-testid="mobile-back-button"
         >
-          <span style={{ fontSize: '18px' }}>←</span>
+          <span className="text-lg">←</span>
           Back
         </button>
 
         <button
           onClick={resetNavigation}
-          style={{
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#007AFF',
-            fontSize: '16px',
-            cursor: 'pointer',
-          }}
+          className="px-3 py-2 bg-transparent border-none text-[var(--color-brand-secondary)] text-[var(--fluid-font-base)] cursor-pointer flex items-center min-h-[44px] font-medium"
+          data-testid="mobile-search-toggle"
         >
           🔍 Search
         </button>
 
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
 
         {navigationHistory.length > 0 && (
-          <div style={{
-            fontSize: '12px',
-            color: '#8E8E93',
-          }}>
+          <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)]">
             {navigationHistory.length} deep
           </div>
         )}
       </div>
 
       {/* Content Area */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '16px',
-      }}>
+      <div className="flex-1 overflow-y-auto p-4">
         {/* Current Track Card (Large) */}
         {currentTrack && (
-          <div style={{
-            padding: '24px',
-            backgroundColor: '#2C2C2E',
-            border: '2px solid rgba(126,211,33,0.5)',
-            borderRadius: '16px',
-            marginBottom: '24px',
-          }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#8E8E93',
-              marginBottom: '8px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}>
+          <div
+            className="p-6 bg-[var(--color-bg-elevated-1)] border-2 border-[var(--color-brand-primary)] rounded-[var(--radius-xl)] mb-6 shadow-lg"
+            data-testid="current-track-detail-card"
+          >
+            <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)] mb-2 uppercase tracking-wider font-semibold">
               Now Viewing
             </div>
 
-            <h1 style={{
-              margin: '0 0 8px 0',
-              fontSize: '24px',
-              fontWeight: 700,
-              color: '#F8F8F8',
-              lineHeight: 1.3,
-            }}>
+            <h1 className="m-0 mb-2 text-[var(--fluid-font-2xl)] font-bold text-[var(--color-text-primary)] leading-tight">
               {currentTrack.name}
             </h1>
 
-            <div style={{
-              fontSize: '18px',
-              color: '#8E8E93',
-              marginBottom: '20px',
-            }}>
+            <div className="text-[var(--fluid-font-lg)] text-[var(--color-text-secondary)] mb-5">
               {currentTrack.artist}
             </div>
 
             {/* Track Metadata Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '16px',
-              marginTop: '20px',
-            }}>
+            <div className="grid grid-cols-2 gap-4 mt-5">
               <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
+                <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)] mb-1">
                   BPM
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 600, color: '#F8F8F8' }}>
+                <div className="text-[var(--fluid-font-lg)] font-semibold text-[var(--color-brand-secondary)]">
                   {currentTrack.bpm}
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
+                <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)] mb-1">
                   Key
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 600, color: '#F8F8F8' }}>
+                <div className="text-[var(--fluid-font-lg)] font-semibold text-[var(--color-brand-primary)]">
                   {currentTrack.key}
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
+                <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)] mb-1">
                   Energy
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 600, color: '#F8F8F8' }}>
+                <div className="text-[var(--fluid-font-lg)] font-semibold text-[var(--color-text-primary)]">
                   {currentTrack.energy}/10
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
+                <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)] mb-1">
                   Genre
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: '#F8F8F8' }}>
+                <div className="text-[var(--fluid-font-base)] font-semibold text-[var(--color-text-primary)]">
                   {currentTrack.genre}
                 </div>
               </div>
             </div>
 
             {/* Duration */}
-            <div style={{ marginTop: '16px' }}>
-              <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>
+            <div className="mt-4">
+              <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)] mb-1">
                 Duration
               </div>
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#F8F8F8' }}>
+              <div className="text-[var(--fluid-font-base)] font-semibold text-[var(--color-text-primary)]">
                 {Math.floor(currentTrack.duration / 60)}:{(currentTrack.duration % 60).toString().padStart(2, '0')}
               </div>
             </div>
@@ -429,91 +317,39 @@ export const MobileTrackExplorer: React.FC = () => {
         )}
 
         {/* Connected Tracks Section */}
-        <div style={{ marginBottom: '16px' }}>
-          <h3 style={{
-            margin: '0 0 16px 0',
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#F8F8F8',
-          }}>
+        <div className="mb-4">
+          <h3 className="m-0 mb-4 text-[var(--fluid-font-lg)] font-bold text-[var(--color-text-primary)]">
             Connected Tracks ({connectedTracks.length})
           </h3>
 
           {connectedTracks.length === 0 ? (
-            <div style={{
-              padding: '32px',
-              textAlign: 'center',
-              backgroundColor: '#2C2C2E',
-              borderRadius: '12px',
-              color: '#8E8E93',
-            }}>
-              <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔗</div>
-              <p style={{ margin: 0 }}>No connected tracks found</p>
+            <div className="p-8 text-center bg-[var(--color-bg-elevated-1)] rounded-[var(--radius-lg)] text-[var(--color-text-secondary)]">
+              <div className="text-4xl mb-3">🔗</div>
+              <p className="m-0">No connected tracks found</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3" data-testid="connected-tracks-list">
               {connectedTracks.map(({ track, connectionStrength }) => (
                 <button
                   key={track.id}
                   onClick={() => navigateToTrack(track.id, track.name)}
-                  style={{
-                    padding: '16px',
-                    backgroundColor: '#2C2C2E',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px',
-                    color: '#F8F8F8',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    position: 'relative',
-                  }}
-                  onTouchStart={(e) => {
-                    e.currentTarget.style.backgroundColor = '#3C3C3E';
-                    e.currentTarget.style.transform = 'scale(0.98)';
-                  }}
-                  onTouchEnd={(e) => {
-                    e.currentTarget.style.backgroundColor = '#2C2C2E';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
+                  className="p-4 bg-[var(--color-card-bg)] border border-[var(--color-border-subtle)] rounded-[var(--radius-card)] text-[var(--color-text-primary)] text-left cursor-pointer transition-all relative hover:bg-[var(--color-card-hover)] min-h-[56px]"
+                  data-testid={`connected-track-${track.id}`}
                 >
                   {/* Connection Strength Indicator */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    padding: '4px 8px',
-                    backgroundColor: `rgba(126, 211, 33, ${Math.min(connectionStrength, 1)})`,
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: '#000',
-                  }}>
+                  <div className="absolute top-3 right-3 px-2 py-1 bg-[var(--color-brand-primary-muted)] border border-[var(--color-brand-primary)] rounded-[var(--radius-badge)] text-[var(--fluid-font-xs)] font-bold text-[var(--color-brand-primary)]">
                     {Math.round(connectionStrength * 100)}%
                   </div>
 
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    marginBottom: '6px',
-                    paddingRight: '60px', // Space for strength indicator
-                  }}>
+                  <div className="text-[var(--fluid-font-base)] font-semibold mb-1 pr-16">
                     {track.name}
                   </div>
 
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#8E8E93',
-                    marginBottom: '8px',
-                  }}>
+                  <div className="text-[var(--fluid-font-sm)] text-[var(--color-text-secondary)] mb-2">
                     {track.artist}
                   </div>
 
-                  <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    fontSize: '12px',
-                    color: '#8E8E93',
-                  }}>
+                  <div className="flex gap-3 text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)]">
                     <span>{track.bpm} BPM</span>
                     <span>•</span>
                     <span>{track.key}</span>
@@ -522,13 +358,7 @@ export const MobileTrackExplorer: React.FC = () => {
                   </div>
 
                   {/* Navigate Arrow */}
-                  <div style={{
-                    position: 'absolute',
-                    right: '16px',
-                    bottom: '16px',
-                    fontSize: '18px',
-                    color: '#007AFF',
-                  }}>
+                  <div className="absolute right-4 bottom-4 text-lg text-[var(--color-brand-secondary)]">
                     →
                   </div>
                 </button>
@@ -539,49 +369,27 @@ export const MobileTrackExplorer: React.FC = () => {
 
         {/* Breadcrumb Trail */}
         {navigationHistory.length > 0 && (
-          <div style={{
-            marginTop: '24px',
-            padding: '16px',
-            backgroundColor: '#2C2C2E',
-            borderRadius: '12px',
-          }}>
-            <div style={{
-              fontSize: '12px',
-              color: '#8E8E93',
-              marginBottom: '12px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}>
+          <div className="mt-6 p-4 bg-[var(--color-bg-elevated-1)] rounded-[var(--radius-lg)]">
+            <div className="text-[var(--fluid-font-xs)] text-[var(--color-text-tertiary)] mb-3 uppercase tracking-wider font-semibold">
               Navigation Trail
             </div>
 
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}>
+            <div className="flex flex-col gap-2">
               {navigationHistory.map((item, index) => (
                 <div
                   key={`${item.trackId}-${index}`}
-                  style={{
-                    fontSize: '14px',
-                    color: '#8E8E93',
-                    paddingLeft: `${index * 16}px`,
-                  }}
+                  className="text-[var(--fluid-font-sm)] text-[var(--color-text-secondary)]"
+                  style={{ paddingLeft: `${index * 16}px` }}
                 >
-                  {index > 0 && <span style={{ marginRight: '8px' }}>↳</span>}
+                  {index > 0 && <span className="mr-2">↳</span>}
                   {item.trackName}
                 </div>
               ))}
               <div
-                style={{
-                  fontSize: '14px',
-                  color: '#7ED321',
-                  fontWeight: 600,
-                  paddingLeft: `${navigationHistory.length * 16}px`,
-                }}
+                className="text-[var(--fluid-font-sm)] text-[var(--color-brand-primary)] font-semibold"
+                style={{ paddingLeft: `${navigationHistory.length * 16}px` }}
               >
-                <span style={{ marginRight: '8px' }}>↳</span>
+                <span className="mr-2">↳</span>
                 {currentTrack?.name} (current)
               </div>
             </div>

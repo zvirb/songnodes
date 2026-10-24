@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Fuse from 'fuse.js';
 import clsx from 'clsx';
-import { LocateFixed, ListPlus, Route, Search as SearchIcon } from 'lucide-react';
+import { LocateFixed, ListPlus, Route, Search as SearchIcon, X } from 'lucide-react';
 
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
@@ -148,6 +148,12 @@ export const QuickSearch: React.FC = () => {
     if (target) {
       requestAnimationFrame(() => target.focus());
     }
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setQuery('');
+    setHighlightedIndex(0);
+    inputRef.current?.focus();
   }, []);
 
   const focusTrack = useCallback(
@@ -311,14 +317,14 @@ export const QuickSearch: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20" data-testid="quick-search-modal">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={closePalette}
       />
 
       <div className="relative w-full max-w-3xl mx-4 overflow-hidden rounded-xl border border-dj-gray bg-dj-dark shadow-2xl">
-        <div className="flex items-center border-b border-dj-gray px-4">
+        <div className="flex items-center border-b border-dj-gray px-4 relative">
           <SearchIcon size={18} className="mr-3 flex-none text-gray-500" aria-hidden="true" />
           <input
             ref={inputRef}
@@ -327,10 +333,24 @@ export const QuickSearch: React.FC = () => {
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleInputKeyDown}
             placeholder="Search tracks, artists, genres…"
-            className="flex-1 bg-transparent py-3 text-base text-white placeholder-gray-500 focus:outline-none"
+            className="flex-1 bg-transparent py-3 pr-12 text-base text-white placeholder-[var(--color-text-placeholder)] focus:outline-none min-h-[44px]"
             aria-label="Quick search"
+            data-testid="quick-search-input"
           />
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-500">
+
+          {query && (
+            <button
+              type="button"
+              onClick={handleClear}
+              aria-label="Clear search"
+              data-testid="clear-search-button"
+              className="flex items-center justify-center min-w-[44px] min-h-[44px] text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-500 ml-2">
             <span className="hidden sm:inline">Ctrl</span>
             <kbd className="rounded border border-dj-gray px-1.5 py-0.5">K</kbd>
           </div>
@@ -351,19 +371,20 @@ export const QuickSearch: React.FC = () => {
               )}
             </div>
           ) : (
-            <ul className="divide-y divide-dj-gray/60">
+            <ul className="divide-y divide-dj-gray/60" role="listbox" data-testid="quick-search-results">
               {results.map(({ item, score }, index) => {
                 const isActive = index === highlightedIndex;
                 const pathLabel = pathActionLabel(item.track.id);
 
                 return (
-                  <li key={item.id}>
+                  <li key={item.id} role="option" aria-selected={isActive}>
                     <button
                       type="button"
                       onClick={() => focusTrack(item, true)}
+                      data-testid={`quick-search-item-${item.track.id}`}
                       className={clsx(
-                        'flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors',
-                        isActive ? 'bg-dj-gray text-white' : 'text-gray-200 hover:bg-dj-gray',
+                        'flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors min-h-[44px]',
+                        isActive ? 'bg-[var(--color-bg-elevated-3)] text-[var(--color-brand-primary)]' : 'text-gray-200 hover:bg-dj-gray',
                       )}
                     >
                       <div className="min-w-0 flex-1">
@@ -392,8 +413,9 @@ export const QuickSearch: React.FC = () => {
                             focusTrack(item, true);
                           }}
                           title="Focus in graph"
+                          data-testid={`focus-button-${item.track.id}`}
                           className={clsx(
-                            'flex h-8 w-8 items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
+                            'flex min-w-[44px] min-h-[44px] items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
                           )}
                         >
                           <LocateFixed size={ACTION_ICON_SIZE} aria-hidden="true" />
@@ -406,8 +428,9 @@ export const QuickSearch: React.FC = () => {
                             handleAddToSetlist(item);
                           }}
                           title={currentSetlist ? 'Add to current setlist' : 'Create a setlist and add track'}
+                          data-testid={`add-setlist-button-${item.track.id}`}
                           className={clsx(
-                            'flex h-8 w-8 items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
+                            'flex min-w-[44px] min-h-[44px] items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
                             !currentSetlist && 'border-dashed',
                           )}
                         >
@@ -421,8 +444,9 @@ export const QuickSearch: React.FC = () => {
                             handlePathAction(item);
                           }}
                           title={pathLabel}
+                          data-testid={`path-action-button-${item.track.id}`}
                           className={clsx(
-                            'flex h-8 w-8 items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
+                            'flex min-w-[44px] min-h-[44px] items-center justify-center rounded-md border border-dj-gray text-gray-300 transition-colors hover:border-gray-400 hover:text-white',
                             (pathfindingState.startTrackId === item.track.id || pathfindingState.endTrackId === item.track.id || pathfindingState.selectedWaypoints.has(item.track.id)) && 'border-gray-200 text-white',
                           )}
                         >

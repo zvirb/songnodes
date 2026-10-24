@@ -4,8 +4,6 @@
  */
 
 import React, { useRef } from 'react';
-import { HarmonicCompatibility } from '../HarmonicCompatibility';
-import { EnergyMeter } from '../EnergyMeter';
 import type { TrackRecommendation, Track } from './types';
 import { getScoreColor } from './utils';
 import styles from './IntelligentBrowser.module.css';
@@ -52,6 +50,8 @@ export const TrackItem = React.memo<TrackItemProps>(({
     }
   };
 
+  const scoreColor = getScoreColor(score);
+
   return (
     <div
       ref={itemRef}
@@ -63,16 +63,18 @@ export const TrackItem = React.memo<TrackItemProps>(({
       aria-label={`${track.name} by ${track.artist}, score ${score}`}
       tabIndex={isFocused ? 0 : -1}
       style={style}
+      data-testid={`track-item-${track.id}`}
     >
       {/* Score Badge */}
       <div
         className={styles.scoreBadge}
         style={{
-          backgroundColor: `${getScoreColor(score)}20`,
-          borderColor: getScoreColor(score),
-          color: getScoreColor(score)
+          backgroundColor: `${scoreColor}20`,
+          borderColor: scoreColor,
+          color: scoreColor
         }}
         aria-label={`Compatibility score ${score} out of 100`}
+        data-testid={`score-badge-${track.id}`}
       >
         {score}
       </div>

@@ -27,7 +27,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div className={styles.searchContainer} role="search">
+    <div className={styles.searchContainer} role="search" data-testid="search-bar-container">
       <label htmlFor="track-search" className="sr-only">
         Search tracks and artists
       </label>
@@ -43,6 +43,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         aria-label="Search tracks and artists"
         aria-describedby="search-hint"
         autoComplete="off"
+        data-testid="track-search-input"
       />
 
       {value && (
@@ -51,6 +52,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onClick={handleClear}
           aria-label="Clear search"
           type="button"
+          data-testid="clear-search-button"
         >
           ×
         </button>
@@ -68,7 +70,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
       {/* Result count */}
       {resultCount !== undefined && value && (
-        <div className={styles.resultCount} role="status" aria-live="polite">
+        <div className={styles.resultCount} role="status" aria-live="polite" data-testid="search-result-count">
           {resultCount} {resultCount === 1 ? 'result' : 'results'}
         </div>
       )}

@@ -105,7 +105,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
   }, [filters]);
 
   return (
-    <div className={`advanced-search bg-gray-900 rounded-lg shadow-2xl ${className}`}>
+    <div className={`advanced-search bg-gray-900 rounded-lg shadow-2xl ${className}`} data-testid="advanced-search-container">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -115,8 +115,9 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
         {onClose && (
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-white transition-colors"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
             aria-label="Close search"
+            data-testid="close-advanced-search-button"
           >
             <X size={20} />
           </button>
@@ -132,11 +133,12 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tracks, artists, genres... (supports fuzzy matching)"
-            className="w-full pl-10 pr-12 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+            className="w-full pl-10 pr-12 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-[var(--color-brand-primary)] focus:outline-none placeholder-[var(--color-text-placeholder)] min-h-[44px]"
+            data-testid="advanced-search-input"
           />
           {isSearching && (
             <Loader2
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 animate-spin"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--color-brand-primary)] animate-spin"
               size={18}
               aria-label="Searching..."
             />
@@ -144,8 +146,9 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
           {query && !isSearching && (
             <button
               onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white"
               aria-label="Clear search"
+              data-testid="clear-search-button"
             >
               <X size={18} />
             </button>
@@ -156,12 +159,13 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
         <div className="flex items-center justify-between mt-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 min-h-[44px] bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            data-testid="toggle-filters-button"
           >
             <Filter size={16} />
             Filters
             {activeFilterCount > 0 && (
-              <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+              <span className="px-2 py-0.5 bg-[var(--color-brand-primary)] text-black font-semibold text-xs rounded-full">
                 {activeFilterCount}
               </span>
             )}
@@ -171,7 +175,8 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
           {activeFilterCount > 0 && (
             <button
               onClick={clearFilters}
-              className="text-sm text-blue-400 hover:text-blue-300"
+              className="text-sm min-h-[44px] px-2 text-[var(--color-brand-secondary)] hover:underline flex items-center"
+              data-testid="clear-all-filters-button"
             >
               Clear all filters
             </button>
@@ -181,7 +186,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="p-4 border-b border-gray-700 bg-gray-850 max-h-96 overflow-y-auto">
+        <div className="p-4 border-b border-gray-700 bg-gray-850 max-h-96 overflow-y-auto" data-testid="filters-panel">
           <div className="space-y-4">
             {/* BPM Range */}
             <FilterGroup
@@ -198,7 +203,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                     value={filters.bpmMin || ''}
                     onChange={(e) => updateFilter('bpmMin', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="60"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-[var(--color-brand-primary)] focus:outline-none min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -208,7 +213,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                     value={filters.bpmMax || ''}
                     onChange={(e) => updateFilter('bpmMax', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="180"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-[var(--color-brand-primary)] focus:outline-none min-h-[44px]"
                   />
                 </div>
               </div>
@@ -223,7 +228,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                         if (min !== undefined) updateFilter('bpmMin', min);
                         if (max !== undefined) updateFilter('bpmMax', max);
                       }}
-                      className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
+                      className="px-2 py-1 text-xs min-h-[36px] bg-gray-700 text-gray-300 rounded hover:bg-gray-600 flex items-center"
                     >
                       {range.value} ({range.count})
                     </button>
@@ -242,7 +247,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
               >
                 <div className="space-y-2">
                   {facets.genres.slice(0, 10).map(genre => (
-                    <label key={genre.value} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white cursor-pointer">
+                    <label key={genre.value} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white cursor-pointer min-h-[36px]">
                       <input
                         type="checkbox"
                         checked={filters.genres?.includes(genre.value) || false}
@@ -253,7 +258,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                             : current.filter(g => g !== genre.value);
                           updateFilter('genres', updated.length > 0 ? updated : undefined);
                         }}
-                        className="rounded"
+                        className="rounded w-4 h-4"
                       />
                       <span className="flex-1">{genre.value}</span>
                       <span className="text-xs text-gray-500">({genre.count})</span>
@@ -282,9 +287,9 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                           : [...current, key.value];
                         updateFilter('keys', updated.length > 0 ? updated : undefined);
                       }}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                      className={`px-2 py-1 text-xs min-h-[36px] rounded transition-colors flex items-center justify-center ${
                         filters.keys?.includes(key.value)
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-[var(--color-brand-primary)] text-black font-semibold'
                           : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       }`}
                     >
@@ -314,7 +319,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                           : [...current, mood.value];
                         updateFilter('moods', updated.length > 0 ? updated : undefined);
                       }}
-                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                      className={`px-3 py-1 text-sm min-h-[36px] rounded-full transition-colors flex items-center ${
                         filters.moods?.includes(mood.value)
                           ? 'bg-purple-500 text-white'
                           : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -345,7 +350,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                     value={filters.energyMin || ''}
                     onChange={(e) => updateFilter('energyMin', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="0.0"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-[var(--color-brand-primary)] focus:outline-none min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -358,7 +363,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
                     value={filters.energyMax || ''}
                     onChange={(e) => updateFilter('energyMax', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="1.0"
-                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-700 focus:border-[var(--color-brand-primary)] focus:outline-none min-h-[44px]"
                   />
                 </div>
               </div>
@@ -375,16 +380,17 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
           </h3>
         </div>
 
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="space-y-2 max-h-96 overflow-y-auto" data-testid="advanced-search-results">
           {results.map(node => (
             <button
               key={node.id}
               onClick={() => handleResultClick(node.id)}
-              className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors group"
+              className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors group min-h-[44px]"
+              data-testid={`advanced-search-item-${node.id}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-white font-medium truncate group-hover:text-blue-400">
+                  <h4 className="text-white font-medium truncate group-hover:text-[var(--color-brand-primary)]">
                     {node.track?.title || node.label || 'Unknown Track'}
                   </h4>
                   <p className="text-sm text-gray-400 truncate">
@@ -424,7 +430,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onClose, classNa
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearFilters}
-                  className="text-blue-400 hover:text-blue-300 underline mb-3 inline-block"
+                  className="text-[var(--color-brand-secondary)] hover:underline mb-3 inline-block min-h-[44px]"
                 >
                   Try clearing {activeFilterCount} active filter{activeFilterCount > 1 ? 's' : ''}
                 </button>
@@ -472,7 +478,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({ title, icon, isExpanded, onTo
     <div className="border border-gray-700 rounded-lg overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+        className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-750 transition-colors min-h-[44px]"
       >
         <div className="flex items-center gap-2 text-white font-medium">
           {icon}

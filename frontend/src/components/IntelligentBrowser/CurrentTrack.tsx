@@ -15,7 +15,7 @@ interface CurrentTrackProps {
 export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
   if (!track) {
     return (
-      <div className={styles.currentTrackEmpty} role="status">
+      <div className={styles.currentTrackEmpty} role="status" data-testid="current-track-empty">
         <p className={styles.emptyMessage}>
           Load a track to see intelligent recommendations
         </p>
@@ -24,7 +24,7 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
   }
 
   return (
-    <div className={styles.currentTrack} role="status" aria-label="Currently playing">
+    <div className={styles.currentTrack} role="status" aria-label="Currently playing" data-testid="current-track-card">
       {/* Header */}
       <div className={styles.currentTrackHeader}>
         <div className={styles.currentTrackTitle}>
@@ -41,7 +41,7 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
         {/* BPM */}
         <div className={styles.metric}>
           <span className={styles.metricLabel}>BPM</span>
-          <span className={styles.metricValue} style={{ color: '#4A90E2' }}>
+          <span className={styles.metricValue} style={{ color: 'var(--color-brand-secondary)' }}>
             {track.bpm || '---'}
           </span>
         </div>
@@ -49,7 +49,7 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
         {/* Key */}
         <div className={styles.metric}>
           <span className={styles.metricLabel}>KEY</span>
-          <span className={styles.metricValue} style={{ color: '#7ED321' }}>
+          <span className={styles.metricValue} style={{ color: 'var(--color-brand-primary)' }}>
             {track.key || '---'}
           </span>
         </div>
@@ -64,7 +64,7 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
                   key={i}
                   className={styles.energyBar}
                   style={{
-                    backgroundColor: i < Math.ceil(track.energy! / 2) ? '#7ED321' : 'rgba(255,255,255,0.1)'
+                    backgroundColor: i < Math.ceil(track.energy! / 2) ? 'var(--color-brand-primary)' : 'var(--color-border-subtle)'
                   }}
                 />
               ))}

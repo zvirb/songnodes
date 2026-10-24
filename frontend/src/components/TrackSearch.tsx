@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-// import { FixedSizeList as List } from 'react-window'; // Removed for TypeScript compatibility
 import Fuse from 'fuse.js';
 import { useDebounce } from 'react-use';
 import clsx from 'clsx';
-import { LocateFixed, ListPlus, Route } from 'lucide-react';
+import { LocateFixed, ListPlus, Route, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { api } from '../services/api';
 import {
@@ -166,7 +165,6 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
-  // const listRef = useRef<any>(null); // Removed for now
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Load recent searches from localStorage
@@ -490,20 +488,18 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
         type="button"
         style={{ ...style, width: '100%', textAlign: 'left' }}
         className={clsx(
-          'px-4 py-2 cursor-pointer border-b border-gray-100 hover:bg-gray-50',
+          'px-4 py-2 cursor-pointer border-b border-gray-100 hover:bg-gray-50 min-h-[44px] flex items-center justify-between',
           index === selectedIndex && 'bg-blue-50'
         )}
         onClick={() => handleRecentSearchClick(search.query)}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-sm font-medium">{search.query}</span>
-          </div>
-          <span className="text-xs text-gray-500">{search.resultCount} results</span>
+        <div className="flex items-center space-x-3">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-sm font-medium">{search.query}</span>
         </div>
+        <span className="text-xs text-gray-500">{search.resultCount} results</span>
       </button>
     );
   };
@@ -520,11 +516,12 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
         type="button"
         style={{ ...style, width: '100%', textAlign: 'left' }}
         className={clsx(
-          'px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors',
-          index === selectedIndex && 'bg-blue-50',
-          viewState.selectedNodes.has(track.id) && 'ring-2 ring-blue-400'
+          'px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors min-h-[44px]',
+          index === selectedIndex && 'bg-[var(--color-bg-elevated-3)]',
+          viewState.selectedNodes.has(track.id) && 'ring-2 ring-[var(--color-brand-primary)]'
         )}
         onClick={() => handleTrackSelect(track)}
+        data-testid={`track-search-item-${track.id}`}
       >
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -560,17 +557,19 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           <div className="flex items-center space-x-1 ml-3">
             <button
               onClick={(e) => handleFocusTrack(e, track)}
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
               title="Focus in graph"
+              data-testid={`focus-button-${track.id}`}
             >
               <LocateFixed size={16} strokeWidth={1.8} />
             </button>
 
             <button
               onClick={(e) => handleAddToSetlist(e, track)}
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
               title={currentSetlist ? 'Add to setlist' : 'Create a setlist to store this track'}
               disabled={!currentSetlist}
+              data-testid={`add-setlist-button-${track.id}`}
             >
               <ListPlus size={16} strokeWidth={1.8} />
             </button>
@@ -578,13 +577,14 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
             <button
               onClick={(e) => handleAddToWaypoints(e, track)}
               className={clsx(
-                'p-1.5 rounded transition-colors',
+                'p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded transition-colors',
                 pathfindingState.selectedWaypoints.has(track.id)
                   ? 'text-purple-500 bg-purple-50'
                   : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
               )}
               title={pathfindingState.selectedWaypoints.has(track.id) ? 'Waypoint added' : 'Add to path waypoints'}
               disabled={pathfindingState.selectedWaypoints.has(track.id)}
+              data-testid={`add-waypoint-button-${track.id}`}
             >
               <Route size={16} strokeWidth={1.8} />
             </button>
@@ -604,7 +604,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           type="number"
           value={filters.bpmRange[0]}
           onChange={(e) => handleBpmRangeChange([parseInt(e.target.value) || 0, filters.bpmRange[1]])}
-          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-brand-primary)] focus:border-transparent min-h-[44px]"
           min="0"
           max="300"
         />
@@ -613,7 +613,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           type="number"
           value={filters.bpmRange[1]}
           onChange={(e) => handleBpmRangeChange([filters.bpmRange[0], parseInt(e.target.value) || 300])}
-          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-brand-primary)] focus:border-transparent min-h-[44px]"
           min="0"
           max="300"
         />
@@ -635,9 +635,9 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
               handleKeysChange(newKeys);
             }}
             className={clsx(
-              'px-2 py-1 text-xs rounded border transition-colors',
+              'px-2 py-1 text-xs min-h-[36px] rounded border transition-colors flex items-center justify-center',
               filters.keys.includes(key)
-                ? 'bg-blue-500 text-white border-blue-500'
+                ? 'bg-[var(--color-brand-primary)] text-black font-semibold border-[var(--color-brand-primary)]'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
             )}
           >
@@ -653,7 +653,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
       <label className="text-sm font-medium text-gray-700">Genres</label>
       <div className="space-y-1 max-h-32 overflow-y-auto">
         {GENRES.map(genre => (
-          <label key={genre} className="flex items-center">
+          <label key={genre} className="flex items-center min-h-[36px]">
             <input
               type="checkbox"
               checked={filters.genres.includes(genre)}
@@ -663,7 +663,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
                   : filters.genres.filter(g => g !== genre);
                 handleGenresChange(newGenres);
               }}
-              className="mr-2 w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="mr-2 w-4 h-4 text-[var(--color-brand-primary)] border-gray-300 rounded focus:ring-[var(--color-brand-primary)]"
             />
             <span className="text-sm text-gray-700">{genre}</span>
           </label>
@@ -673,7 +673,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
   );
 
   return (
-    <div className={clsx('relative w-full', className)}>
+    <div className={clsx('relative w-full', className)} data-testid="track-search-container">
       {/* Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -700,14 +700,15 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
           onBlur={handleInputBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full pl-10 pr-12 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-12 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-brand-primary)] focus:border-transparent placeholder-[var(--color-text-placeholder)] min-h-[44px]"
           autoComplete="off"
+          data-testid="track-search-input"
         />
 
         {/* Loading indicator */}
         {isSearching && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <div className="absolute inset-y-0 right-10 pr-3 flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-[var(--color-brand-primary)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -723,11 +724,11 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
               setSearchResults([]);
               setShowDropdown(false);
             }}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            aria-label="Clear search"
+            data-testid="clear-search-button"
+            className="absolute inset-y-0 right-0 flex items-center justify-center min-w-[44px] min-h-[44px] text-gray-400 hover:text-gray-600"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X size={18} />
           </button>
         )}
       </div>
@@ -737,6 +738,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
         <div
           ref={dropdownRef}
           className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-hidden"
+          data-testid="track-search-dropdown"
         >
           {searchError && (
             <div
@@ -761,7 +763,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
                 </span>
                 <button
                   onClick={clearRecentSearches}
-                  className="text-xs text-gray-500 hover:text-gray-700"
+                  className="text-xs text-gray-500 hover:text-gray-700 min-h-[36px] px-2 flex items-center"
                 >
                   Clear
                 </button>
@@ -845,7 +847,8 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
         <div className="mt-4">
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 transition-colors min-h-[44px]"
+            data-testid="toggle-advanced-filters-button"
           >
             <svg
               className={clsx(
@@ -879,7 +882,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
+                  <label className="flex items-center min-h-[44px]">
                     <input
                       type="checkbox"
                       checked={filters.hasPreview}
@@ -889,7 +892,7 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
                         setSearchFilters(convertFiltersToSearchFilters(newFilters));
                         if (localQuery) performSearch(localQuery);
                       }}
-                      className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="mr-2 w-4 h-4 text-[var(--color-brand-primary)] border-gray-300 rounded focus:ring-[var(--color-brand-primary)]"
                     />
                     <span className="text-sm text-gray-700">Has Preview</span>
                   </label>
@@ -897,7 +900,8 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
 
                 <button
                   onClick={clearFilters}
-                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded hover:bg-gray-50 transition-colors min-h-[44px]"
+                  data-testid="clear-filters-button"
                 >
                   Clear Filters
                 </button>
