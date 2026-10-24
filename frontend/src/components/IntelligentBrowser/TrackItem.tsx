@@ -1,13 +1,11 @@
 /**
  * TrackItem Component
- * Individual track recommendation with accessibility features
+ * Individual track recommendation with accessibility features and token styling
  */
 
 import React, { useRef } from 'react';
-import { HarmonicCompatibility } from '../HarmonicCompatibility';
-import { EnergyMeter } from '../EnergyMeter';
 import type { TrackRecommendation, Track } from './types';
-import { getScoreColor } from './utils';
+import { getScoreColor, getScoreBgColor } from './utils';
 import styles from './IntelligentBrowser.module.css';
 
 interface TrackItemProps {
@@ -68,7 +66,7 @@ export const TrackItem = React.memo<TrackItemProps>(({
       <div
         className={styles.scoreBadge}
         style={{
-          backgroundColor: `${getScoreColor(score)}20`,
+          backgroundColor: getScoreBgColor(score),
           borderColor: getScoreColor(score),
           color: getScoreColor(score)
         }}
@@ -82,10 +80,24 @@ export const TrackItem = React.memo<TrackItemProps>(({
         <h4 className={styles.trackName}>{track.name}</h4>
         <p className={styles.trackArtist}>{track.artist}</p>
       </div>
+
+      {/* Optional Preview Button */}
+      {onPreview && (
+        <button
+          type="button"
+          className={styles.previewButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPreview(track);
+          }}
+          aria-label={`Preview ${track.name}`}
+        >
+          ▶
+        </button>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Optimize re-renders by comparing only relevant props
   return (
     prevProps.recommendation.track.id === nextProps.recommendation.track.id &&
     prevProps.isSelected === nextProps.isSelected &&

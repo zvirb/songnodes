@@ -4,15 +4,13 @@ import { EnergyMeter } from './EnergyMeter';
 import {
   Track,
   TrackRecommendation,
-  DJFilterCriteria,
   IntelligentBrowserConfig,
   CamelotKey
 } from '../types/dj';
 
 /**
- * IntelligentBrowser - The Co-Pilot Interface
- * Implements Hick's Law by limiting choices to 10-20 tracks
- * Provides transparent reasoning for recommendations
+ * IntelligentBrowser - Legacy Co-Pilot Interface
+ * Refactored to utilize global design system tokens
  */
 
 interface IntelligentBrowserProps {
@@ -20,12 +18,11 @@ interface IntelligentBrowserProps {
   allTracks: Track[];
   onTrackSelect: (track: Track) => void;
   config?: Partial<IntelligentBrowserConfig>;
-  graphEdges?: Array<{ source: string; target: string; weight: number; type: string }>; // ✅ Add graph edges
+  graphEdges?: Array<{ source: string; target: string; weight: number; type: string }>;
 }
 
-// Default configuration following Hick's Law
 const DEFAULT_CONFIG: IntelligentBrowserConfig = {
-  maxRecommendations: 15, // Sweet spot between choice and paralysis
+  maxRecommendations: 15,
   sortBy: 'score',
   groupBy: 'compatibility',
   showReasons: true,
@@ -33,7 +30,6 @@ const DEFAULT_CONFIG: IntelligentBrowserConfig = {
   updateInterval: 5000
 };
 
-// ✅ Intelligent recommendation engine - PRIORITIZE GRAPH ADJACENCIES
 const calculateRecommendations = (
   currentTrack: Track | null,
   allTracks: Track[],
@@ -41,7 +37,6 @@ const calculateRecommendations = (
 ): TrackRecommendation[] => {
   if (!currentTrack) return [];
 
-  // ✅ Build adjacency map from graph edges
   const adjacencyMap = new Map<string, { weight: number; type: string }>();
   if (graphEdges && graphEdges.length > 0) {
     graphEdges.forEach(edge => {
@@ -67,10 +62,9 @@ const calculateRecommendations = (
         }
       };
 
-      // ✅ PRIORITY #1: Graph Adjacency (HIGHEST WEIGHT)
       const adjacency = adjacencyMap.get(track.id);
       if (adjacency) {
-        const adjacencyScore = 60 + (adjacency.weight * 20); // 60-80 points
+        const adjacencyScore = 60 + (adjacency.weight * 20);
         recommendation.score += adjacencyScore;
         recommendation.reasons.push({
           type: 'history',
@@ -79,7 +73,6 @@ const calculateRecommendations = (
         });
       }
 
-      // Harmonic compatibility scoring
       const keyCompat = getKeyCompatibility(currentTrack.key as any, track.key as any);
       if (keyCompat === 'perfect') {
         recommendation.score += 25;
@@ -99,7 +92,6 @@ const calculateRecommendations = (
         recommendation.compatibility.harmonic = 'compatible';
       }
 
-      // Energy flow scoring (with safety checks)
       if (track.energy !== undefined && currentTrack.energy !== undefined) {
         const energyDiff = Math.abs(track.energy - currentTrack.energy);
         if (energyDiff <= 1) {
@@ -121,7 +113,6 @@ const calculateRecommendations = (
         }
       }
 
-      // BPM compatibility scoring (with safety checks)
       if (track.bpm !== undefined && currentTrack.bpm !== undefined && currentTrack.bpm > 0) {
         const bpmDiff = Math.abs(track.bpm - currentTrack.bpm);
         const bpmPercent = (bpmDiff / currentTrack.bpm) * 100;
@@ -149,9 +140,7 @@ const calculateRecommendations = (
     .sort((a, b) => b.score - a.score);
 };
 
-// Helper function for key compatibility
 const getKeyCompatibility = (key1: CamelotKey, key2: CamelotKey): 'perfect' | 'compatible' | 'clash' => {
-  // Guard against undefined/null keys
   if (!key1 || !key2) return 'clash';
   if (key1 === key2) return 'perfect';
 
@@ -160,10 +149,8 @@ const getKeyCompatibility = (key1: CamelotKey, key2: CamelotKey): 'perfect' | 'c
   const num2 = parseInt(key2.slice(0, -1));
   const letter2 = key2.slice(-1);
 
-  // Same number, different letter (major/minor)
   if (num1 === num2) return 'perfect';
 
-  // Adjacent on wheel
   const diff = Math.abs(num1 - num2);
   const wrappedDiff = Math.min(diff, 12 - diff);
   if (wrappedDiff === 1 && letter1 === letter2) return 'compatible';
@@ -171,7 +158,6 @@ const getKeyCompatibility = (key1: CamelotKey, key2: CamelotKey): 'perfect' | 'c
   return 'clash';
 };
 
-// Track recommendation card component
 const RecommendationCard: React.FC<{
   recommendation: TrackRecommendation;
   currentTrack: Track;
@@ -180,20 +166,17 @@ const RecommendationCard: React.FC<{
 }> = ({ recommendation, currentTrack, onSelect, showReasons }) => {
   const { track, score, reasons, compatibility } = recommendation;
 
-  // Visual indicator for overall recommendation quality
   const getScoreColor = (score: number) => {
-    if (score >= 80) return '#7ED321'; // Excellent
-    if (score >= 60) return '#F5A623'; // Good
-    if (score >= 40) return '#FFA500'; // Okay
-    return '#8E8E93'; // Poor
+    if (score >= 80) return 'var(--color-brand-primary)';
+    if (score >= 60) return 'var(--color-warning)';
+    if (score >= 40) return 'var(--color-warning)';
+    return 'var(--color-text-disabled)';
   };
 
   return (
     <div
       className="recommendation-card"
-      onClick={() => {
-        onSelect();
-      }}
+      onClick={() => onSelect()}
       onTouchEnd={(e) => {
         e.preventDefault();
         onSelect();
@@ -201,13 +184,13 @@ const RecommendationCard: React.FC<{
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        padding: '16px',
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        border: `2px solid ${getScoreColor(score)}40`,
-        borderRadius: '8px',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-4)',
+        backgroundColor: 'var(--color-bg-elevated-1)',
+        border: '1px solid var(--color-border-subtle)',
+        borderRadius: 'var(--radius-md)',
         cursor: 'pointer',
-        transition: 'all 0.2s',
+        transition: 'all var(--duration-fast) var(--ease-out)',
         userSelect: 'none',
         WebkitTouchCallout: 'none',
         WebkitUserSelect: 'none'
@@ -221,17 +204,17 @@ const RecommendationCard: React.FC<{
       }}>
         <div style={{ flex: 1 }}>
           <h4 style={{
-            color: '#FFFFFF',
-            fontSize: '16px',
+            color: 'var(--color-text-primary)',
+            fontSize: 'var(--font-size-base)',
             margin: 0,
-            fontWeight: 600
+            fontWeight: 'var(--font-weight-semibold)'
           }}>
             {track.name}
           </h4>
           <p style={{
-            color: '#8E8E93',
-            fontSize: '14px',
-            margin: '4px 0 0 0'
+            color: 'var(--color-text-secondary)',
+            fontSize: 'var(--font-size-sm)',
+            margin: 'var(--space-1) 0 0 0'
           }}>
             {track.artist}
           </p>
@@ -244,12 +227,12 @@ const RecommendationCard: React.FC<{
           justifyContent: 'center',
           width: '48px',
           height: '48px',
-          borderRadius: '50%',
-          backgroundColor: `${getScoreColor(score)}20`,
+          borderRadius: 'var(--radius-full)',
+          backgroundColor: 'var(--color-bg-elevated-2)',
           border: `2px solid ${getScoreColor(score)}`,
           color: getScoreColor(score),
-          fontSize: '18px',
-          fontWeight: 700
+          fontSize: 'var(--font-size-lg)',
+          fontWeight: 'var(--font-weight-bold)'
         }}>
           {score}
         </div>
@@ -259,7 +242,7 @@ const RecommendationCard: React.FC<{
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '12px'
+        gap: 'var(--space-3)'
       }}>
         {/* Harmonic */}
         <div style={{ textAlign: 'center' }}>
@@ -269,9 +252,9 @@ const RecommendationCard: React.FC<{
             size="small"
           />
           <div style={{
-            color: '#8E8E93',
-            fontSize: '10px',
-            marginTop: '4px'
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)',
+            marginTop: 'var(--space-1)'
           }}>
             {track.key}
           </div>
@@ -281,9 +264,9 @@ const RecommendationCard: React.FC<{
         <div style={{ textAlign: 'center' }}>
           <EnergyMeter level={track.energy || 5} size="small" />
           <div style={{
-            color: '#8E8E93',
-            fontSize: '10px',
-            marginTop: '4px'
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)',
+            marginTop: 'var(--space-1)'
           }}>
             Energy
           </div>
@@ -297,16 +280,16 @@ const RecommendationCard: React.FC<{
           justifyContent: 'center'
         }}>
           <div style={{
-            color: compatibility.bpm === 'perfect' ? '#7ED321' :
-                   compatibility.bpm === 'close' ? '#F5A623' : '#8E8E93',
-            fontSize: '20px',
-            fontWeight: 600
+            color: compatibility.bpm === 'perfect' ? 'var(--color-brand-primary)' :
+                   compatibility.bpm === 'close' ? 'var(--color-warning)' : 'var(--color-text-disabled)',
+            fontSize: 'var(--font-size-lg)',
+            fontWeight: 'var(--font-weight-semibold)'
           }}>
             {track.bpm}
           </div>
           <div style={{
-            color: '#8E8E93',
-            fontSize: '10px'
+            color: 'var(--color-text-tertiary)',
+            fontSize: 'var(--font-size-xs)'
           }}>
             BPM
           </div>
@@ -320,36 +303,36 @@ const RecommendationCard: React.FC<{
           justifyContent: 'center'
         }}>
           <div style={{
-            padding: '4px 8px',
-            backgroundColor: 'rgba(74,144,226,0.2)',
-            borderRadius: '12px',
-            color: '#4A90E2',
-            fontSize: '10px',
-            fontWeight: 600
+            padding: 'var(--space-1) var(--space-2)',
+            backgroundColor: 'var(--color-brand-secondary-muted)',
+            borderRadius: 'var(--radius-full)',
+            color: 'var(--color-brand-secondary)',
+            fontSize: 'var(--font-size-xs)',
+            fontWeight: 'var(--font-weight-semibold)'
           }}>
             {track.genre || 'House'}
           </div>
         </div>
       </div>
 
-      {/* Reasoning (Co-pilot transparency) */}
+      {/* Reasoning */}
       {showReasons && reasons.length > 0 && (
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '6px',
-          paddingTop: '8px',
-          borderTop: '1px solid rgba(255,255,255,0.1)'
+          gap: 'var(--space-1)',
+          paddingTop: 'var(--space-2)',
+          borderTop: '1px solid var(--color-border-subtle)'
         }}>
           {reasons.slice(0, 3).map((reason, i) => (
             <span
               key={i}
               style={{
-                padding: '2px 8px',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                borderRadius: '12px',
-                color: '#8E8E93',
-                fontSize: '11px'
+                padding: 'var(--space-1) var(--space-2)',
+                backgroundColor: 'var(--color-bg-elevated-2)',
+                borderRadius: 'var(--radius-full)',
+                color: 'var(--color-text-secondary)',
+                fontSize: 'var(--font-size-xs)'
               }}
             >
               {reason.description}
@@ -366,28 +349,23 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
   allTracks,
   onTrackSelect,
   config = {},
-  graphEdges = [] // ✅ Accept graph edges
+  graphEdges = []
 }) => {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
   const [sortBy, setSortBy] = useState(finalConfig.sortBy);
 
-  // Calculate recommendations with graph edges
   const allRecommendations = useMemo(() => {
     return calculateRecommendations(currentTrack, allTracks, graphEdges);
   }, [currentTrack, allTracks, graphEdges]);
 
-  // Filter and sort recommendations based on selected tab
   const recommendations = useMemo(() => {
     let filtered = [...allRecommendations];
 
-    // Apply sorting based on selected tab
     switch (sortBy) {
       case 'score':
-        // Already sorted by score in calculateRecommendations
         break;
 
       case 'energy':
-        // Sort by energy similarity (closest energy to current track first)
         filtered = filtered.sort((a, b) => {
           const aDiff = Math.abs((a.track.energy ?? 0) - (currentTrack?.energy ?? 0));
           const bDiff = Math.abs((b.track.energy ?? 0) - (currentTrack?.energy ?? 0));
@@ -396,7 +374,6 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         break;
 
       case 'bpm':
-        // Sort by BPM similarity (closest BPM to current track first)
         filtered = filtered.sort((a, b) => {
           const aDiff = Math.abs((a.track.bpm ?? 0) - (currentTrack?.bpm ?? 0));
           const bDiff = Math.abs((b.track.bpm ?? 0) - (currentTrack?.bpm ?? 0));
@@ -408,7 +385,6 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
     return filtered.slice(0, finalConfig.maxRecommendations);
   }, [allRecommendations, sortBy, currentTrack, finalConfig.maxRecommendations]);
 
-  // Group recommendations by compatibility if requested
   const groupedRecommendations = useMemo(() => {
     if (finalConfig.groupBy === 'none') return { all: recommendations };
 
@@ -430,12 +406,13 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
   if (!currentTrack) {
     return (
       <div style={{
-        padding: '24px',
-        backgroundColor: 'rgba(0,0,0,0.9)',
-        borderRadius: '12px',
+        padding: 'var(--space-6)',
+        backgroundColor: 'var(--color-bg-base)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--color-border-subtle)',
         textAlign: 'center'
       }}>
-        <p style={{ color: '#8E8E93', fontSize: '16px' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-base)' }}>
           Load a track to see intelligent recommendations
         </p>
       </div>
@@ -446,11 +423,11 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
     <div className="intelligent-browser" style={{
       display: 'flex',
       flexDirection: 'column',
-      gap: '20px',
-      padding: '24px',
-      backgroundColor: 'rgba(0,0,0,0.9)',
-      borderRadius: '12px',
-      border: '2px solid rgba(255,255,255,0.1)',
+      gap: 'var(--space-5)',
+      padding: 'var(--space-6)',
+      backgroundColor: 'var(--color-bg-base)',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid var(--color-border-default)',
       maxHeight: '80vh',
       overflowY: 'auto'
     }}>
@@ -458,9 +435,8 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '16px'
+        gap: 'var(--space-4)'
       }}>
-        {/* Track Title and Artist */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -468,104 +444,100 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         }}>
           <div style={{ flex: 1 }}>
             <h3 style={{
-              color: '#FFFFFF',
-              fontSize: '20px',
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-xl)',
               margin: 0,
-              fontWeight: 700,
-              lineHeight: 1.2
+              fontWeight: 'var(--font-weight-bold)',
+              lineHeight: 'var(--line-height-tight)'
             }}>
               {currentTrack.name}
             </h3>
             <p style={{
-              color: '#8E8E93',
-              fontSize: '16px',
-              margin: '4px 0 0 0',
-              fontWeight: 400
+              color: 'var(--color-text-secondary)',
+              fontSize: 'var(--font-size-base)',
+              margin: 'var(--space-1) 0 0 0'
             }}>
               {currentTrack.artist}
             </p>
           </div>
           <span style={{
-            color: '#7ED321',
-            fontSize: '12px',
-            padding: '4px 12px',
-            backgroundColor: 'rgba(126,211,33,0.2)',
-            borderRadius: '12px',
+            color: 'var(--color-brand-primary)',
+            fontSize: 'var(--font-size-xs)',
+            padding: 'var(--space-1) var(--space-3)',
+            backgroundColor: 'var(--color-brand-primary-muted)',
+            borderRadius: 'var(--radius-full)',
             whiteSpace: 'nowrap'
           }}>
             Co-Pilot Active
           </span>
         </div>
 
-        {/* Track Metrics - BPM, Key, Energy, Time */}
+        {/* Track Metrics */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '12px'
+          gap: 'var(--space-3)'
         }}>
-          {/* BPM */}
           <div style={{
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            borderRadius: '8px',
-            padding: '12px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            backgroundColor: 'var(--color-bg-elevated-1)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-3)',
+            border: '1px solid var(--color-border-subtle)'
           }}>
             <div style={{
-              fontSize: '10px',
-              color: '#8E8E93',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-tertiary)',
               textTransform: 'uppercase',
-              marginBottom: '4px',
-              letterSpacing: '0.5px'
+              marginBottom: 'var(--space-1)',
+              letterSpacing: 'var(--letter-spacing-wider)'
             }}>
               BPM
             </div>
             <div style={{
-              fontSize: '24px',
-              color: '#4A90E2',
-              fontWeight: 700
+              fontSize: 'var(--font-size-xl)',
+              color: 'var(--color-brand-secondary)',
+              fontWeight: 'var(--font-weight-bold)'
             }}>
               {currentTrack.bpm || '---'}
             </div>
           </div>
 
-          {/* Key */}
           <div style={{
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            borderRadius: '8px',
-            padding: '12px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            backgroundColor: 'var(--color-bg-elevated-1)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-3)',
+            border: '1px solid var(--color-border-subtle)'
           }}>
             <div style={{
-              fontSize: '10px',
-              color: '#8E8E93',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-tertiary)',
               textTransform: 'uppercase',
-              marginBottom: '4px',
-              letterSpacing: '0.5px'
+              marginBottom: 'var(--space-1)',
+              letterSpacing: 'var(--letter-spacing-wider)'
             }}>
               KEY
             </div>
             <div style={{
-              fontSize: '24px',
-              color: '#7ED321',
-              fontWeight: 700
+              fontSize: 'var(--font-size-xl)',
+              color: 'var(--color-brand-primary)',
+              fontWeight: 'var(--font-weight-bold)'
             }}>
               {currentTrack.key || '---'}
             </div>
           </div>
 
-          {/* Energy */}
           <div style={{
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            borderRadius: '8px',
-            padding: '12px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            backgroundColor: 'var(--color-bg-elevated-1)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-3)',
+            border: '1px solid var(--color-border-subtle)'
           }}>
             <div style={{
-              fontSize: '10px',
-              color: '#8E8E93',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-tertiary)',
               textTransform: 'uppercase',
-              marginBottom: '4px',
-              letterSpacing: '0.5px'
+              marginBottom: 'var(--space-1)',
+              letterSpacing: 'var(--letter-spacing-wider)'
             }}>
               ENERGY
             </div>
@@ -582,55 +554,53 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
                     style={{
                       flex: 1,
                       height: '100%',
-                      backgroundColor: i < Math.ceil(currentTrack.energy! / 2) ? '#7ED321' : 'rgba(255,255,255,0.1)',
-                      borderRadius: '2px'
+                      backgroundColor: i < Math.ceil(currentTrack.energy! / 2) ? 'var(--color-brand-primary)' : 'var(--color-bg-elevated-3)',
+                      borderRadius: 'var(--radius-sm)'
                     }}
                   />
                 ))}
               </div>
             ) : (
               <div style={{
-                fontSize: '24px',
-                color: '#8E8E93',
-                fontWeight: 700
+                fontSize: 'var(--font-size-xl)',
+                color: 'var(--color-text-secondary)',
+                fontWeight: 'var(--font-weight-bold)'
               }}>
                 ---
               </div>
             )}
           </div>
 
-          {/* Time */}
           <div style={{
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            borderRadius: '8px',
-            padding: '12px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            backgroundColor: 'var(--color-bg-elevated-1)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-3)',
+            border: '1px solid var(--color-border-subtle)'
           }}>
             <div style={{
-              fontSize: '10px',
-              color: '#8E8E93',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-tertiary)',
               textTransform: 'uppercase',
-              marginBottom: '4px',
-              letterSpacing: '0.5px'
+              marginBottom: 'var(--space-1)',
+              letterSpacing: 'var(--letter-spacing-wider)'
             }}>
               TIME
             </div>
             <div style={{
-              fontSize: '24px',
-              color: '#FFFFFF',
-              fontWeight: 700
+              fontSize: 'var(--font-size-xl)',
+              color: 'var(--color-text-primary)',
+              fontWeight: 'var(--font-weight-bold)'
             }}>
               {currentTrack.duration ? `${Math.floor(currentTrack.duration / 60)}:${String(currentTrack.duration % 60).padStart(2, '0')}` : '---'}
             </div>
           </div>
         </div>
 
-        {/* Sort Info */}
         <div style={{
-          fontSize: '11px',
-          color: '#8E8E93',
-          paddingTop: '8px',
-          borderTop: '1px solid rgba(255,255,255,0.1)'
+          fontSize: 'var(--font-size-xs)',
+          color: 'var(--color-text-tertiary)',
+          paddingTop: 'var(--space-2)',
+          borderTop: '1px solid var(--color-border-subtle)'
         }}>
           {recommendations.length} track{recommendations.length !== 1 ? 's' : ''} • Sorted by {
             sortBy === 'score' ? 'Best Match' :
@@ -643,115 +613,78 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
       {/* Quick Filters */}
       <div style={{
         display: 'flex',
-        gap: '8px',
+        gap: 'var(--space-2)',
         flexWrap: 'wrap'
       }}>
         <button
           onClick={() => setSortBy('score')}
-          title="Sort by overall compatibility score (harmonic + energy + BPM + playlist history)"
           style={{
-            padding: '8px 16px',
-            backgroundColor: sortBy === 'score' ? '#4A90E2' : 'transparent',
-            color: '#FFFFFF',
-            border: '1px solid #4A90E2',
-            borderRadius: '20px',
+            padding: 'var(--space-2) var(--space-4)',
+            backgroundColor: sortBy === 'score' ? 'var(--color-brand-primary)' : 'transparent',
+            color: sortBy === 'score' ? 'var(--color-text-inverse)' : 'var(--color-text-primary)',
+            border: '1px solid var(--color-brand-primary)',
+            borderRadius: 'var(--radius-full)',
             cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            if (sortBy !== 'score') {
-              e.currentTarget.style.backgroundColor = 'rgba(74,144,226,0.2)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (sortBy !== 'score') {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 'var(--font-weight-semibold)',
+            transition: 'all var(--duration-fast) var(--ease-out)'
           }}
         >
           Best Match
         </button>
         <button
           onClick={() => setSortBy('energy')}
-          title="Sort by energy level similarity (smooth transitions)"
           style={{
-            padding: '8px 16px',
-            backgroundColor: sortBy === 'energy' ? '#7ED321' : 'transparent',
-            color: '#FFFFFF',
-            border: sortBy === 'energy' ? '1px solid #7ED321' : '1px solid #7ED32180',
-            borderRadius: '20px',
+            padding: 'var(--space-2) var(--space-4)',
+            backgroundColor: sortBy === 'energy' ? 'var(--color-brand-secondary)' : 'transparent',
+            color: sortBy === 'energy' ? 'var(--color-text-inverse)' : 'var(--color-text-primary)',
+            border: '1px solid var(--color-brand-secondary)',
+            borderRadius: 'var(--radius-full)',
             cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            if (sortBy !== 'energy') {
-              e.currentTarget.style.backgroundColor = 'rgba(126,211,33,0.2)';
-              e.currentTarget.style.borderColor = '#7ED321';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (sortBy !== 'energy') {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.borderColor = '#7ED32180';
-            }
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 'var(--font-weight-semibold)',
+            transition: 'all var(--duration-fast) var(--ease-out)'
           }}
         >
           Energy Flow
         </button>
         <button
           onClick={() => setSortBy('bpm')}
-          title="Sort by BPM similarity (closest tempo first)"
           style={{
-            padding: '8px 16px',
-            backgroundColor: sortBy === 'bpm' ? '#F5A623' : 'transparent',
-            color: '#FFFFFF',
-            border: sortBy === 'bpm' ? '1px solid #F5A623' : '1px solid #F5A62380',
-            borderRadius: '20px',
+            padding: 'var(--space-2) var(--space-4)',
+            backgroundColor: sortBy === 'bpm' ? 'var(--color-warning)' : 'transparent',
+            color: sortBy === 'bpm' ? 'var(--color-text-inverse)' : 'var(--color-text-primary)',
+            border: '1px solid var(--color-warning)',
+            borderRadius: 'var(--radius-full)',
             cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            if (sortBy !== 'bpm') {
-              e.currentTarget.style.backgroundColor = 'rgba(245,166,35,0.2)';
-              e.currentTarget.style.borderColor = '#F5A623';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (sortBy !== 'bpm') {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.borderColor = '#F5A62380';
-            }
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 'var(--font-weight-semibold)',
+            transition: 'all var(--duration-fast) var(--ease-out)'
           }}
         >
           Tempo Match
         </button>
       </div>
 
-      {/* Recommendations - Hide empty groups */}
+      {/* Recommendations */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px'
+        gap: 'var(--space-3)'
       }}>
         {Object.entries(groupedRecommendations)
-          .filter(([group, recs]) => recs.length > 0) // ✅ Hide empty groups
+          .filter(([_, recs]) => recs.length > 0)
           .map(([group, recs]) => (
           <div key={group}>
             {finalConfig.groupBy !== 'none' && (
               <h4 style={{
-                color: group === 'excellent' ? '#7ED321' :
-                       group === 'good' ? '#F5A623' : '#8E8E93',
-                fontSize: '12px',
-                margin: '0 0 8px 0',
+                color: group === 'excellent' ? 'var(--color-brand-primary)' :
+                       group === 'good' ? 'var(--color-warning)' : 'var(--color-text-secondary)',
+                fontSize: 'var(--font-size-xs)',
+                margin: '0 0 var(--space-2) 0',
                 textTransform: 'uppercase',
-                letterSpacing: '1px',
-                fontWeight: 700
+                letterSpacing: 'var(--letter-spacing-wider)',
+                fontWeight: 'var(--font-weight-bold)'
               }}>
                 {group} ({recs.length})
               </h4>
@@ -769,22 +702,21 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         ))}
       </div>
 
-      {/* No recommendations message */}
       {recommendations.length === 0 && (
         <div style={{
-          padding: '40px',
+          padding: 'var(--space-8)',
           textAlign: 'center'
         }}>
           <p style={{
-            color: '#F5A623',
-            fontSize: '16px'
+            color: 'var(--color-warning)',
+            fontSize: 'var(--font-size-base)'
           }}>
             No compatible tracks found
           </p>
           <p style={{
-            color: '#8E8E93',
-            fontSize: '14px',
-            marginTop: '8px'
+            color: 'var(--color-text-secondary)',
+            fontSize: 'var(--font-size-sm)',
+            marginTop: 'var(--space-2)'
           }}>
             Try adjusting your filters or adding more tracks to your library
           </p>

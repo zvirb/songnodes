@@ -1,6 +1,6 @@
 /**
  * CurrentTrack Component
- * Display currently playing track with metadata
+ * Display currently playing track with metadata using global CSS tokens
  */
 
 import React from 'react';
@@ -41,7 +41,7 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
         {/* BPM */}
         <div className={styles.metric}>
           <span className={styles.metricLabel}>BPM</span>
-          <span className={styles.metricValue} style={{ color: '#4A90E2' }}>
+          <span className={styles.metricValue} style={{ color: 'var(--color-brand-secondary)' }}>
             {track.bpm || '---'}
           </span>
         </div>
@@ -49,7 +49,7 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
         {/* Key */}
         <div className={styles.metric}>
           <span className={styles.metricLabel}>KEY</span>
-          <span className={styles.metricValue} style={{ color: '#7ED321' }}>
+          <span className={styles.metricValue} style={{ color: 'var(--color-brand-primary)' }}>
             {track.key || '---'}
           </span>
         </div>
@@ -64,7 +64,7 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
                   key={i}
                   className={styles.energyBar}
                   style={{
-                    backgroundColor: i < Math.ceil(track.energy! / 2) ? '#7ED321' : 'rgba(255,255,255,0.1)'
+                    backgroundColor: i < Math.ceil(track.energy! / 2) ? 'var(--color-brand-primary)' : 'var(--color-bg-elevated-3)'
                   }}
                 />
               ))}

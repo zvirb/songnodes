@@ -149,13 +149,23 @@ export const calculateRecommendations = (
 };
 
 /**
- * Get color for score visualization
+ * Get CSS variable for score visualization based on design tokens
  */
 export const getScoreColor = (score: number): string => {
-  if (score >= 80) return '#7ED321'; // Excellent
-  if (score >= 60) return '#F5A623'; // Good
-  if (score >= 40) return '#FFA500'; // Okay
-  return '#8E8E93'; // Poor
+  if (score >= 80) return 'var(--color-brand-primary)'; // Excellent
+  if (score >= 60) return 'var(--color-warning)'; // Good
+  if (score >= 40) return 'var(--color-warning)'; // Okay
+  return 'var(--color-text-disabled)'; // Poor
+};
+
+/**
+ * Get CSS variable for score background tint
+ */
+export const getScoreBgColor = (score: number): string => {
+  if (score >= 80) return 'var(--color-brand-primary-muted)';
+  if (score >= 60) return 'var(--color-warning-bg)';
+  if (score >= 40) return 'var(--color-warning-bg)';
+  return 'var(--color-bg-elevated-2)';
 };
 
 /**

@@ -1,6 +1,6 @@
 /**
  * SearchBar Component
- * Accessible search input with clear functionality
+ * Accessible search input aligned with design system input standards
  */
 
 import React, { useRef } from 'react';
@@ -32,6 +32,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         Search tracks and artists
       </label>
 
+      {/* Search icon */}
+      <div className={styles.searchIcon} aria-hidden="true">
+        🔍
+      </div>
+
       <input
         ref={inputRef}
         id="track-search"
@@ -55,11 +60,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           ×
         </button>
       )}
-
-      {/* Search icon */}
-      <div className={styles.searchIcon} aria-hidden="true">
-        🔍
-      </div>
 
       {/* Search hint */}
       <span id="search-hint" className="sr-only">

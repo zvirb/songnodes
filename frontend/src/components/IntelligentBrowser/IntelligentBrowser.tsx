@@ -1,7 +1,6 @@
 /**
  * IntelligentBrowser - Main Component
- * Modular, accessible track recommendation interface
- * Score: 9/10 - Modern React patterns with full accessibility
+ * Modular, accessible track recommendation interface aligned with design tokens and UI standards
  */
 
 import React, { useRef, useMemo } from 'react';
@@ -9,6 +8,7 @@ import { CurrentTrack } from './CurrentTrack';
 import { SearchBar } from './SearchBar';
 import { FilterTabs } from './FilterTabs';
 import { TrackItem } from './TrackItem';
+import { Skeleton } from '../ui/Skeleton';
 import {
   useBrowserState,
   useKeyboardNavigation,
@@ -27,6 +27,7 @@ interface IntelligentBrowserProps {
   config?: Partial<IntelligentBrowserConfig>;
   graphEdges?: GraphEdge[];
   onPreview?: (track: Track) => void;
+  isLoading?: boolean;
 }
 
 const DEFAULT_CONFIG: IntelligentBrowserConfig = {
@@ -44,7 +45,8 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
   onTrackSelect,
   config = {},
   graphEdges = [],
-  onPreview
+  onPreview,
+  isLoading = false
 }) => {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
   const [state, dispatch] = useBrowserState();
@@ -182,7 +184,19 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         aria-multiselectable="true"
         tabIndex={0}
       >
-        {recommendations.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-3 p-2" role="status" aria-label="Loading track recommendations">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex items-center space-x-4 p-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-1)]">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : recommendations.length === 0 ? (
           <div className={styles.emptyState} role="status">
             <p className={styles.emptyMessage}>
               {state.searchQuery

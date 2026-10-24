@@ -1,6 +1,6 @@
 /**
  * FilterTabs Component
- * Tabbed interface for sorting recommendations
+ * Tabbed interface for sorting recommendations using design tokens
  */
 
 import React from 'react';
@@ -26,22 +26,22 @@ const TABS: TabConfig[] = [
     id: 'score',
     label: 'Best Match',
     title: 'Sort by overall compatibility score (harmonic + energy + BPM + playlist history)',
-    color: '#4A90E2',
-    borderColor: '#4A90E2AA'  // 67% opacity for better visibility
+    color: 'var(--color-brand-primary)',
+    borderColor: 'var(--color-brand-primary)'
   },
   {
     id: 'energy',
     label: 'Energy Flow',
     title: 'Sort by energy level similarity (smooth transitions)',
-    color: '#7ED321',
-    borderColor: '#7ED321AA'  // 67% opacity for better visibility
+    color: 'var(--color-brand-secondary)',
+    borderColor: 'var(--color-brand-secondary)'
   },
   {
     id: 'bpm',
     label: 'Tempo Match',
     title: 'Sort by BPM similarity (closest tempo first)',
-    color: '#F5A623',
-    borderColor: '#F5A623AA'  // 67% opacity for better visibility
+    color: 'var(--color-warning)',
+    borderColor: 'var(--color-warning)'
   }
 ];
 
@@ -61,7 +61,8 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({ sortBy, onSortChange, re
             aria-controls="recommendations-list"
             style={{
               backgroundColor: sortBy === tab.id ? tab.color : 'transparent',
-              borderColor: sortBy === tab.id ? tab.color : tab.borderColor
+              borderColor: sortBy === tab.id ? tab.color : 'var(--color-border-default)',
+              color: sortBy === tab.id ? 'var(--color-text-inverse)' : 'var(--color-text-primary)'
             }}
           >
             {tab.label}
