@@ -1,0 +1,5 @@
+/* Hide values that change between runs (relative times, build stamps) but keep their space. */
+time,
+.sn-app-header__stamp {
+  visibility: hidden !important;
+}

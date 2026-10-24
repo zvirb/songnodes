@@ -1,96 +1,68 @@
 import { defineConfig, devices } from '@playwright/test';
+import { CHROMIUM_GL_ARGS } from './tests/setup/webgl';
+
+// Set PLAYWRIGHT_BASE_URL to test an already running frontend (for example the dev
+// Compose stack from inside the Playwright container); otherwise Vite is started.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3006';
 
 /**
- * Playwright Configuration for SongNodes E2E Tests
+ * Playwright configuration for the SongNodes E2E suite (tests/e2e, CLAUDE.md §4).
  *
- * This configuration ensures:
- * - Only .spec.ts files in tests/e2e are executed
- * - Proper WebGL support for graph visualization tests
- * - Parallel test execution with retries
- * - Console error detection (production blocker requirement)
+ * - Sequential (one worker) and no retries: a flaky test is a failing test.
+ * - Every test fails on a console error or uncaught page error (tests/e2e/fixtures.ts).
+ * - Chromium uses SwiftShader for WebGL so the graph renders without a GPU.
+ * - Visual baselines are made only in the Linux Playwright image (scripts/e2e-docker.sh)
+ *   and are checked in chromium only.
  */
 export default defineConfig({
-  // Test directory - only run tests from tests/e2e
   testDir: './tests/e2e',
-
-  // Test file patterns - only .spec.ts files
   testMatch: '**/*.spec.ts',
 
-  // Ignore patterns - exclude .test.ts files (like camelotConversion.test.ts)
-  testIgnore: ['**/*.test.ts', '**/node_modules/**'],
-
-  // Global setup and teardown
   globalSetup: './tests/setup/global-setup.ts',
   globalTeardown: './tests/setup/global-teardown.ts',
 
-  // Test timeout
   timeout: 30000,
-
-  // Expect timeout - increased for complex React app with PIXI.js/D3.js initialization
   expect: {
-    timeout: 15000,  // 15s to allow for graph library initialization and API calls
+    timeout: 15000,
+    toHaveScreenshot: { maxDiffPixelRatio: 0.002 },
   },
 
-  // Run tests in files in parallel
-  fullyParallel: true,
-
-  // Fail the build on CI if you accidentally left test.only in the source code
+  fullyParallel: false,
+  workers: 1,
+  retries: 0,
   forbidOnly: !!process.env.CI,
 
-  // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
-
-  // Opt out of parallel tests on CI
-  workers: process.env.CI ? 1 : undefined,
-
-  // Reporter to use
   reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }],
   ],
 
-  // Shared settings for all the projects below
   use: {
-    // Base URL for navigation
-    baseURL: 'http://localhost:3006',
-
-    // Collect trace when retrying the failed test
-    trace: 'on-first-retry',
-
-    // Screenshot on failure
+    baseURL,
+    locale: 'en-AU',
+    timezoneId: 'Australia/Melbourne',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-
-    // Video on failure
     video: 'retain-on-failure',
-
-    // Viewport size
-    viewport: { width: 1920, height: 1080 },
+    viewport: { width: 1440, height: 900 },
   },
 
-  // Configure projects for major browsers with WebGL support
   projects: [
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: [
-            '--enable-webgl',
-            '--enable-webgl2-compute-context',
-            '--enable-accelerated-2d-canvas',
-            '--enable-gpu-rasterization',
-            '--force-color-profile=srgb',
-            '--disable-software-rasterizer',
-          ],
-        },
+        viewport: { width: 1440, height: 900 },
+        launchOptions: { args: CHROMIUM_GL_ARGS },
       },
     },
-
     {
       name: 'firefox',
+      testIgnore: '**/visual.spec.ts',
       use: {
         ...devices['Desktop Firefox'],
+        viewport: { width: 1440, height: 900 },
         launchOptions: {
           firefoxUserPrefs: {
             'webgl.force-enabled': true,
@@ -99,102 +71,19 @@ export default defineConfig({
         },
       },
     },
-
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    // Graph visualization specific tests
-    {
-      name: 'graph-visualization',
-      testMatch: '**/*.graph.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: [
-            '--enable-webgl',
-            '--enable-webgl2-compute-context',
-            '--enable-accelerated-2d-canvas',
-            '--enable-gpu-rasterization',
-            '--force-color-profile=srgb',
-            '--disable-software-rasterizer',
-          ],
-        },
-      },
-    },
-
-    // Performance tests
-    {
-      name: 'performance',
-      testMatch: '**/*.performance.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: [
-            '--enable-webgl',
-            '--enable-precise-memory-info',
-          ],
-        },
-      },
-    },
-
-    // WebGL stress tests
-    {
-      name: 'webgl-stress-test',
-      testMatch: '**/webgl-stress.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: [
-            '--enable-webgl',
-            '--enable-webgl2-compute-context',
-            '--enable-accelerated-2d-canvas',
-            '--max-old-space-size=4096',
-          ],
-        },
-      },
-    },
-
-    // PIXI.js specific tests
-    {
-      name: 'pixi',
-      testMatch: '**/*.pixi.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: [
-            '--enable-webgl',
-            '--enable-accelerated-2d-canvas',
-          ],
-        },
-      },
-    },
-
-    // Visual regression tests
-    {
-      name: 'visual',
-      testMatch: '**/*.visual.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
-    },
-
-    // Desktop-specific tests
-    {
-      name: 'desktop',
-      testMatch: '**/*.desktop.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
+      testIgnore: '**/visual.spec.ts',
+      use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } },
     },
   ],
 
-  // Run local dev server before starting the tests
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3006',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+      },
 });

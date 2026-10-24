@@ -253,3 +253,7 @@ gha-creds-*.json
 
 # Python test output (pytest junit, coverage, log)
 **/tests/reports/
+
+# Playwright screenshot baselines (made only in the Linux image: scripts/e2e-docker.sh)
+!frontend/tests/e2e/*-snapshots/
+!frontend/tests/e2e/*-snapshots/*.png

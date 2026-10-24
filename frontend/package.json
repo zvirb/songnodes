@@ -14,11 +14,7 @@
     "lint": "eslint src --ext .ts,.tsx",
     "test": "playwright test",
     "test:e2e": "playwright test",
-    "test:graph": "playwright test --project=graph-visualization",
-    "test:webgl-stress": "playwright test --project=webgl-stress-test",
-    "test:pixi": "playwright test --project=pixi-compatibility",
-    "test:performance": "playwright test --project=performance",
-    "test:visual": "playwright test --project=visual-regression",
+    "test:visual": "playwright test visual --project=chromium",
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
@@ -79,6 +75,7 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/d3-array": "^3.2.2",
