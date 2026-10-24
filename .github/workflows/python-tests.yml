@@ -34,7 +34,11 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11", cache: pip }
       - name: Install dependencies
-        run: pip install -r scrapers/requirements.txt -r tests/requirements.txt -r tests/requirements-test.txt
+        # Not tests/requirements.txt: its python-dateutil==3.0.0 conflicts with tidalapi
+        # (scrapers). Only the packages tests/conftest.py imports are added, at its pins.
+        run: >-
+          pip install -r scrapers/requirements.txt -r services/rest_api/requirements.txt
+          -r tests/requirements-test.txt docker==7.2.0 testcontainers==4.15.0
       - name: Collection check (whole root suite)
         run: python -m pytest --collect-only -q -p no:cacheprovider
       - name: tests/unit (no services needed)
