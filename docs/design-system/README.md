@@ -61,6 +61,14 @@ Legacy CSS, Tailwind classes, a library default or the synced copy never win.
 
 From `17-governance.md`; the commands are in [`CODE_REFERENCE.md`](CODE_REFERENCE.md#conformance-checks-17-governance).
 
+CI (`.github/workflows/design-system.yml`) runs the colour, emoji and dialog checks on
+every tracked file in `frontend/src` except the synced copy, `lib/graphColours.ts` and
+the files in [`frontend/design-system-pending.txt`](../../frontend/design-system-pending.txt),
+which are still waiting for migration. That list only shrinks: CI fails if a listed file
+is clean or gone. The accessibility check runs in the E2E suite
+(`frontend/tests/e2e/accessibility.spec.ts`); approved exceptions are in
+[`EXCEPTIONS.md`](EXCEPTIONS.md).
+
 | Check | Fails when |
 |---|---|
 | No raw colours | Any hex, `rgb()` or named colour in app code outside `styles/design-system/` |

@@ -1,10 +1,9 @@
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3-selection';
-import { scaleBand, scaleLinear, scaleOrdinal } from 'd3-scale';
+import { scaleBand, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { pie, arc, PieArcDatum } from 'd3-shape';
 import { max } from 'd3-array';
-import { schemeCategory10 } from 'd3-scale-chromatic';
 import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
 import {
@@ -14,7 +13,6 @@ import {
 } from '../utils/graphHelpers';
 import {
   CamelotKey,
-  getKeyColor,
   keyToCamelot,
   formatCamelotKey,
   parseKeyToCamelot
@@ -194,7 +192,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
       .map(([label, value]) => ({
         label,
         value,
-        color: getKeyColor(parseKeyToCamelot(label.replace('m', 'A').replace('M', 'B')) || '1A')
+        color: keyColour(parseKeyToCamelot(label.replace('m', 'A').replace('M', 'B')))
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [nodes]);
@@ -528,6 +526,16 @@ function calculateBridgeTracks(nodes: GraphNode[], edges: GraphEdge[], degrees: 
     .slice(0, 10);
 }
 
+/** Categorical chart colour from the design system's eight chart slots. */
+function chartColour(i: number): string {
+  return `var(--chart-${(i % 8) + 1})`;
+}
+
+/** Camelot key colour from the design system's key tokens; unknown keys stay neutral. */
+function keyColour(key: CamelotKey | null | undefined): string {
+  return key ? `var(--key-${key.toLowerCase()})` : 'var(--fg-3)';
+}
+
 function renderBarChart(svg: SVGSVGElement, data: ChartData[], title: string) {
   const container = d3.select(svg);
   container.selectAll("*").remove();
@@ -561,31 +569,30 @@ function renderBarChart(svg: SVGSVGElement, data: ChartData[], title: string) {
     .attr("width", x.bandwidth())
     .attr("y", d => y(d.value))
     .attr("height", d => height - y(d.value))
-    .attr("fill", d => d.color || "#4F46E5");
+    .style("fill", d => d.color || chartColour(0));
 
   // X axis
   g.append("g")
     .attr("transform", `translate(0,${height})`)
     .call(axisBottom(x))
     .selectAll("text")
-    .style("fill", "#9CA3AF")
-    .style("font-size", "10px");
+    .attr("class", "data-s")
+    .style("fill", "var(--fg-3)");
 
   // Y axis
   g.append("g")
     .call(axisLeft(y))
     .selectAll("text")
-    .style("fill", "#9CA3AF")
-    .style("font-size", "10px");
+    .attr("class", "data-s")
+    .style("fill", "var(--fg-3)");
 
   // Title
   g.append("text")
     .attr("x", width / 2)
     .attr("y", -5)
     .attr("text-anchor", "middle")
-    .style("fill", "#F3F4F6")
-    .style("font-size", "14px")
-    .style("font-weight", "bold")
+    .attr("class", "body-strong")
+    .style("fill", "var(--fg)")
     .text(title);
 }
 
@@ -603,8 +610,6 @@ function renderPieChart(svg: SVGSVGElement, data: ChartData[], title: string) {
     .append("g")
     .attr("transform", `translate(${width / 2},${height / 2})`);
 
-  const color = scaleOrdinal(schemeCategory10);
-
   const pieGenerator = pie<ChartData>()
     .value(d => d.value)
     .sort(null);
@@ -621,13 +626,13 @@ function renderPieChart(svg: SVGSVGElement, data: ChartData[], title: string) {
 
   arcs.append("path")
     .attr("d", arcGenerator)
-    .attr("fill", (d: any, i: number) => d.data.color || color(i.toString()));
+    .style("fill", (d: any, i: number) => d.data.color || chartColour(i));
 
   arcs.append("text")
     .attr("transform", d => `translate(${arcGenerator.centroid(d)})`)
     .attr("text-anchor", "middle")
-    .style("fill", "#F3F4F6")
-    .style("font-size", "10px")
+    .attr("class", "data-s")
+    .style("fill", "var(--fg)")
     .text(d => d.data.value > 2 ? d.data.label : '');
 
   // Title
@@ -636,9 +641,8 @@ function renderPieChart(svg: SVGSVGElement, data: ChartData[], title: string) {
     .attr("x", width / 2)
     .attr("y", 20)
     .attr("text-anchor", "middle")
-    .style("fill", "#F3F4F6")
-    .style("font-size", "14px")
-    .style("font-weight", "bold")
+    .attr("class", "body-strong")
+    .style("fill", "var(--fg)")
     .text(title);
 }
 
@@ -703,9 +707,9 @@ function renderCamelotWheel(svg: SVGSVGElement, keyData: ChartData[]) {
 
     g.append("path")
       .attr("d", majorArc as any)
-      .attr("fill", getKeyColor(d.majorKey))
+      .style("fill", keyColour(d.majorKey))
       .attr("opacity", 0.3 + (d.majorCount / maxCount) * 0.7)
-      .attr("stroke", "#374151")
+      .style("stroke", "var(--line)")
       .attr("stroke-width", 1);
 
     // Minor key (inner ring)
@@ -717,9 +721,9 @@ function renderCamelotWheel(svg: SVGSVGElement, keyData: ChartData[]) {
 
     g.append("path")
       .attr("d", minorArc as any)
-      .attr("fill", getKeyColor(d.minorKey))
+      .style("fill", keyColour(d.minorKey))
       .attr("opacity", 0.3 + (d.minorCount / maxCount) * 0.7)
-      .attr("stroke", "#374151")
+      .style("stroke", "var(--line)")
       .attr("stroke-width", 1);
 
     // Labels
@@ -733,9 +737,8 @@ function renderCamelotWheel(svg: SVGSVGElement, keyData: ChartData[]) {
       .attr("y", Math.sin(labelAngle) * majorLabelRadius)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central")
-      .style("fill", "#F3F4F6")
-      .style("font-size", "10px")
-      .style("font-weight", "bold")
+      .attr("class", "data-strong")
+      .style("fill", "var(--fg)")
       .text(formatCamelotKey(d.majorKey));
 
     // Minor key label
@@ -744,8 +747,8 @@ function renderCamelotWheel(svg: SVGSVGElement, keyData: ChartData[]) {
       .attr("y", Math.sin(labelAngle) * minorLabelRadius)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central")
-      .style("fill", "#F3F4F6")
-      .style("font-size", "9px")
+      .attr("class", "data-s")
+      .style("fill", "var(--fg)")
       .text(formatCamelotKey(d.minorKey));
   });
 
@@ -755,10 +758,9 @@ function renderCamelotWheel(svg: SVGSVGElement, keyData: ChartData[]) {
     .attr("x", centerX)
     .attr("y", 20)
     .attr("text-anchor", "middle")
-    .style("fill", "#F3F4F6")
-    .style("font-size", "14px")
-    .style("font-weight", "bold")
-    .text("Camelot Wheel");
+    .attr("class", "body-strong")
+    .style("fill", "var(--fg)")
+    .text("Camelot wheel");
 
   // Legend
   container
@@ -766,9 +768,9 @@ function renderCamelotWheel(svg: SVGSVGElement, keyData: ChartData[]) {
     .attr("x", centerX)
     .attr("y", height - 5)
     .attr("text-anchor", "middle")
-    .style("fill", "#9CA3AF")
-    .style("font-size", "10px")
-    .text("Outer: Major Keys | Inner: Minor Keys | Opacity: Track Count");
+    .attr("class", "caption")
+    .style("fill", "var(--fg-3)")
+    .text("Outer ring: major keys · inner ring: minor keys · opacity: track count");
 }
 
 function convertToCSV(data: any): string {
