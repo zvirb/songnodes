@@ -228,12 +228,13 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
   }, [renderGraphGeometry, renderViewportRect]);
 
   // Initialize PIXI app ONCE
-  const initializeMiniMap = useCallback(async () => {
-    if (!canvasRef.current || pixiAppRef.current) return;
+  const initializeMiniMap = useCallback(async (isDisposed: () => boolean) => {
+    const canvas = canvasRef.current;
+    if (!canvas || pixiAppRef.current) return;
 
     const app = new PIXI.Application();
     await app.init({
-      canvas: canvasRef.current,
+      canvas,
       width: MINI_MAP_SIZE,
       height: MINI_MAP_SIZE,
       backgroundColor: 0x2a2a2a,
@@ -242,6 +243,11 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
       resolution: window.devicePixelRatio || 1,
       eventMode: 'passive', // Disable PIXI event system completely
     });
+
+    if (isDisposed()) {
+      app.destroy(true, { children: true, texture: true });
+      return;
+    }
 
     pixiAppRef.current = app;
 
@@ -268,8 +274,12 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
 
   // Effect 1: Initialize PIXI
   useEffect(() => {
-    initializeMiniMap();
+    let isDisposed = false;
+    void initializeMiniMap(() => isDisposed);
+
     return () => {
+      isDisposed = true;
+
       // Cleanup
       if (snapshotTextureRef.current) {
         snapshotTextureRef.current.destroy(true);
