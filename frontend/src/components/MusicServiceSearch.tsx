@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import clsx from 'clsx';
+import { Button, Badge, Card, Input } from './ui';
 
 interface MusicServiceTrack {
   id: string;
@@ -60,7 +60,6 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
           allResults.push(...tracks);
         } catch (err) {
           console.error(`Error searching ${service}:`, err);
-          // Continue with other service even if one fails
         }
       }
 
@@ -102,135 +101,121 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col space-y-4">
       {/* Search Controls */}
-      <div className="flex-shrink-0 space-y-4 p-4 border-b border-dj-gray">
+      <Card variant="elevated" className="p-4 space-y-4">
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             placeholder="Search for tracks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="flex-1"
           />
           <select
             value={selectedService}
             onChange={(e) => setSelectedService(e.target.value as any)}
-            className="px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+            className="px-3 py-2 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-md text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-input-focus)]"
           >
             <option value="both">Both Services</option>
             <option value="spotify">Spotify Only</option>
             <option value="tidal">Tidal Only</option>
           </select>
-          <button
+          <Button
             onClick={handleSearch}
             disabled={isSearching || !searchQuery.trim()}
-            className="px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all disabled:opacity-50"
+            variant="primary"
           >
             {isSearching ? 'Searching...' : '🔍 Search'}
-          </button>
+          </Button>
         </div>
 
         {error && (
-          <div className="bg-dj-danger bg-opacity-20 border border-dj-danger rounded p-3 text-sm">
-            {error}
-          </div>
+          <Card className="border-[var(--color-error-border)] bg-[var(--color-error-bg)] p-3">
+            <p className="text-xs text-[var(--color-error)] font-medium">{error}</p>
+          </Card>
         )}
 
         {selectedTracks.size > 0 && (
-          <div className="flex items-center justify-between p-3 bg-dj-black border border-dj-accent rounded">
-            <span className="text-sm">{selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected</span>
+          <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated-2)] border border-[var(--color-border-subtle)] rounded-lg">
+            <span className="text-sm text-[var(--color-text-secondary)] font-medium">
+              {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
+            </span>
             <div className="flex gap-2">
-              <button
-                onClick={handleAddSelected}
-                className="px-3 py-1 bg-dj-accent text-black rounded text-sm hover:bg-opacity-90"
-              >
+              <Button size="sm" variant="primary" onClick={handleAddSelected}>
                 ➕ Add to Targets
-              </button>
-              <button
-                onClick={selectAll}
-                className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-              >
+              </Button>
+              <Button size="sm" variant="outline" onClick={selectAll}>
                 Select All
-              </button>
-              <button
-                onClick={clearSelection}
-                className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-              >
+              </Button>
+              <Button size="sm" variant="ghost" onClick={clearSelection}>
                 Clear
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Search Results */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
         {isSearching ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dj-accent"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-brand-primary)]"></div>
           </div>
         ) : searchResults.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-[var(--color-text-tertiary)] py-8 text-sm">
             {searchQuery ? 'No results found. Try a different search.' : 'Search for tracks to add to your target list'}
           </div>
         ) : (
           <div className="space-y-2">
             {searchResults.map((track) => (
-              <div
+              <Card
                 key={track.id}
-                className={clsx(
-                  "bg-dj-black border rounded-lg p-3 transition-all cursor-pointer",
+                variant="default"
+                className={`p-3 transition-all cursor-pointer border ${
                   selectedTracks.has(track.id)
-                    ? "border-dj-accent bg-dj-accent bg-opacity-10"
-                    : "border-dj-gray hover:border-dj-accent"
-                )}
+                    ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-muted)]'
+                    : 'border-[var(--color-border-subtle)] hover:border-[var(--color-border-default)]'
+                }`}
                 onClick={() => toggleTrackSelection(track.id)}
               >
                 <div className="flex items-center gap-3">
-                  {/* Selection Checkbox */}
                   <input
                     type="checkbox"
                     checked={selectedTracks.has(track.id)}
                     onChange={() => {}}
-                    className="rounded border-dj-gray"
+                    className="w-4 h-4 accent-[var(--color-brand-primary)] rounded"
                   />
 
-                  {/* Album Art */}
                   {track.image_url && (
                     <img
                       src={track.image_url}
                       alt={track.album}
-                      className="w-12 h-12 rounded"
+                      className="w-12 h-12 rounded object-cover"
                     />
                   )}
 
-                  {/* Track Info */}
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{track.title}</h4>
-                    <p className="text-sm text-gray-400">{track.artist}</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm text-[var(--color-text-primary)] truncate">{track.title}</h4>
+                    <p className="text-xs text-[var(--color-text-secondary)] truncate">{track.artist}</p>
                     {track.album && (
-                      <p className="text-xs text-gray-500">{track.album}</p>
+                      <p className="text-[11px] text-[var(--color-text-tertiary)] truncate">{track.album}</p>
                     )}
                   </div>
 
-                  {/* Service Badge */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {track.duration_ms && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[var(--color-text-tertiary)]">
                         {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}
                       </span>
                     )}
-                    <span className={clsx(
-                      'px-2 py-1 rounded text-xs font-semibold uppercase',
-                      track.service === 'spotify' ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'
-                    )}>
+                    <Badge variant={track.service === 'spotify' ? 'success' : 'secondary'} size="sm">
                       {track.service}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}

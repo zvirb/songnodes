@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
-/**
- * APIKeyManager - Secure API Key Management Interface
- * Manages API keys for scraper and enrichment services
- *
- * Features:
- * - Encrypted storage via backend
- * - Show/hide sensitive values
- * - Test connection functionality
- * - Service-specific validation
- * - Visual status indicators
- */
-
 import type { APIKey, APIKeyRequirement } from '../types';
+import { Button, Badge, Card, CardHeader, CardTitle, CardContent, Input } from './ui';
 
 interface APIKeyManagerProps {
   isOpen: boolean;
@@ -38,7 +26,6 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
-  // Fetch requirements and existing keys on mount
   useEffect(() => {
     if (isOpen) {
       fetchRequirements();
@@ -53,7 +40,6 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
         const data = await response.json();
         setRequirements(data);
 
-        // Set first service as active
         if (data.length > 0 && !activeService) {
           setActiveService(data[0].service_name);
         }
@@ -112,7 +98,6 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
         setSaveStatus('saved');
         await fetchExistingKeys();
 
-        // Clear the input field
         setKeyValues((prev) => ({
           ...prev,
           [serviceName]: {
@@ -169,7 +154,6 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
         alert(`❌ Test failed: ${result.detail || 'Unknown error'}`);
       }
 
-      // Refresh keys to show updated test status
       await fetchExistingKeys();
     } catch (error) {
       alert(`❌ Test error: ${error}`);
@@ -232,77 +216,30 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.85)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000,
-        backdropFilter: 'blur(5px)',
-      }}
+      className="fixed inset-0 bg-[var(--color-modal-overlay)] flex items-center justify-center z-[var(--z-modal)] backdrop-blur-sm p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div
-        style={{
-          backgroundColor: '#1A1A1A',
-          borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          width: '90%',
-          maxWidth: '900px',
-          maxHeight: '85vh',
-          overflow: 'hidden',
-          color: '#FFFFFF',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+      <Card
+        variant="elevated"
+        className="w-full max-w-4xl max-h-[85vh] flex flex-col border-[var(--color-border-default)] bg-[var(--color-bg-elevated-1)] overflow-hidden shadow-2xl"
       >
         {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-          }}
-        >
+        <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-border-subtle)] px-6 py-4">
           <div>
-            <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 600 }}>
+            <CardTitle className="text-xl font-semibold text-[var(--color-text-primary)]">
               API Key Management
-            </h2>
-            <p style={{ margin: 0, fontSize: '13px', color: '#8E8E93' }}>
+            </CardTitle>
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
               Configure API keys for scraper and enrichment services
             </p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#8E8E93',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px',
-            }}
-          >
-            ×
-          </button>
-        </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-lg px-2 py-1">
+            ✕
+          </Button>
+        </CardHeader>
 
         {/* Service Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            overflowX: 'auto',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)',
-          }}
-        >
+        <div className="flex overflow-x-auto border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-4">
           {uniqueServices.map((service) => {
             const serviceReqs = getServiceRequirements(service);
             const allConfigured = serviceReqs.every((req) => getExistingKey(service, req.key_name));
@@ -312,41 +249,37 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
             });
 
             return (
-              <button
+              <Button
                 key={service}
+                variant={activeService === service ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setActiveService(service)}
-                style={{
-                  flex: '0 0 auto',
-                  padding: '16px 20px',
-                  backgroundColor: activeService === service ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  border: 'none',
-                  color: activeService === service ? '#FFFFFF' : '#8E8E93',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  borderBottom: activeService === service ? '2px solid #4A90E2' : '2px solid transparent',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
+                className={`rounded-none border-b-2 px-5 py-3 transition-colors flex items-center gap-2 font-medium text-xs uppercase tracking-wider ${
+                  activeService === service
+                    ? 'border-[var(--color-brand-primary)] text-[var(--color-brand-primary)]'
+                    : 'border-transparent text-[var(--color-text-tertiary)]'
+                }`}
               >
-                {service.toUpperCase()}
-                {allConfigured && someValid && <span style={{ color: '#7ED321' }}>✓</span>}
-                {allConfigured && !someValid && <span style={{ color: '#FFA500' }}>⚠</span>}
-              </button>
+                {service}
+                {allConfigured && someValid && (
+                  <Badge variant="success" size="sm">Active</Badge>
+                )}
+                {allConfigured && !someValid && (
+                  <Badge variant="warning" size="sm">Warning</Badge>
+                )}
+              </Button>
             );
           })}
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <CardContent className="flex-1 overflow-y-auto p-6 space-y-6">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#8E8E93' }}>
+            <div className="text-center py-10 text-[var(--color-text-tertiary)]">
               Loading API keys...
             </div>
           ) : (
-            <div>
+            <div className="space-y-6">
               {getServiceRequirements(activeService).map((req) => {
                 const existing = getExistingKey(activeService, req.key_name);
                 const inputKey = `${activeService}:${req.key_name}`;
@@ -354,99 +287,68 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                 const isTesting = testing[inputKey];
 
                 return (
-                  <div
-                    key={inputKey}
-                    style={{
-                      marginBottom: '24px',
-                      padding: '20px',
-                      backgroundColor: 'rgba(255,255,255,0.03)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+                  <Card key={inputKey} variant="default" className="p-5 border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated-2)]">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-base text-[var(--color-text-primary)]">
                             {req.display_name}
                           </h3>
                           {req.required && (
-                            <span
-                              style={{
-                                fontSize: '11px',
-                                padding: '2px 8px',
-                                backgroundColor: '#F56565',
-                                borderRadius: '4px',
-                                fontWeight: 600,
-                              }}
-                            >
-                              REQUIRED
-                            </span>
+                            <Badge variant="error" size="sm">REQUIRED</Badge>
                           )}
                           {existing?.is_valid === true && (
-                            <span style={{ color: '#7ED321', fontSize: '16px' }}>✓</span>
+                            <Badge variant="success" size="sm">Valid</Badge>
                           )}
                           {existing?.is_valid === false && (
-                            <span style={{ color: '#F56565', fontSize: '16px' }}>✗</span>
+                            <Badge variant="error" size="sm">Expired / Invalid</Badge>
                           )}
                         </div>
-                        <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#8E8E93' }}>
+                        <p className="text-xs text-[var(--color-text-tertiary)] mb-2">
                           {req.description}
                         </p>
-                        <a
-                          href={req.documentation_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ fontSize: '12px', color: '#4A90E2', textDecoration: 'none' }}
-                        >
-                          Get API Key →
-                        </a>
+                        {req.documentation_url && (
+                          <a
+                            href={req.documentation_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1"
+                          >
+                            Get API Key →
+                          </a>
+                        )}
                       </div>
                     </div>
 
                     {existing ? (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                          <div style={{ flex: 1, fontSize: '14px', color: '#8E8E93', fontFamily: 'monospace' }}>
+                      <div className="space-y-2 pt-2 border-t border-[var(--color-border-subtle)] mt-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 font-mono text-xs text-[var(--color-text-secondary)] bg-[var(--color-bg-elevated-1)] px-3 py-2 rounded border border-[var(--color-border-subtle)]">
                             {existing.masked_value}
                           </div>
-                          <button
+                          <Button
+                            size="sm"
+                            variant="secondary"
                             onClick={() => handleTestKey(activeService, req.key_name)}
                             disabled={isTesting}
-                            style={{
-                              padding: '8px 16px',
-                              backgroundColor: '#4A90E2',
-                              border: 'none',
-                              borderRadius: '6px',
-                              color: '#FFFFFF',
-                              fontSize: '13px',
-                              cursor: isTesting ? 'wait' : 'pointer',
-                              opacity: isTesting ? 0.6 : 1,
-                            }}
                           >
                             {isTesting ? 'Testing...' : 'Test'}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-[var(--color-error-border)] text-[var(--color-error)] hover:bg-[var(--color-error-bg)]"
                             onClick={() => handleDeleteKey(activeService, req.key_name)}
-                            style={{
-                              padding: '8px 16px',
-                              backgroundColor: 'transparent',
-                              border: '1px solid #F56565',
-                              borderRadius: '6px',
-                              color: '#F56565',
-                              fontSize: '13px',
-                              cursor: 'pointer',
-                            }}
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
 
                         {existing.last_tested_at && (
-                          <div style={{ fontSize: '12px', color: '#8E8E93' }}>
+                          <div className="text-[11px] text-[var(--color-text-tertiary)]">
                             Last tested: {new Date(existing.last_tested_at).toLocaleString()}
                             {existing.test_error && (
-                              <span style={{ color: '#F56565', marginLeft: '8px' }}>
+                              <span className="text-[var(--color-error)] ml-2">
                                 ({existing.test_error})
                               </span>
                             )}
@@ -454,114 +356,57 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                         )}
                       </div>
                     ) : (
-                      <div>
-                        <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
-                          <div style={{ flex: 1, position: 'relative' }}>
-                            <input
+                      <div className="pt-2">
+                        <div className="flex gap-3 items-center">
+                          <div className="flex-1 relative">
+                            <Input
                               type={isShowingKey ? 'text' : 'password'}
                               value={keyValues[activeService]?.[req.key_name] || ''}
                               onChange={(e) => updateKeyValue(activeService, req.key_name, e.target.value)}
                               placeholder={`Enter ${req.display_name}`}
-                              style={{
-                                width: '100%',
-                                padding: '10px 40px 10px 12px',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                borderRadius: '6px',
-                                color: '#FFFFFF',
-                                fontSize: '14px',
-                              }}
+                              className="pr-10"
                             />
                             <button
                               type="button"
                               onClick={() => toggleShowKey(inputKey)}
-                              style={{
-                                position: 'absolute',
-                                right: '12px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'none',
-                                border: 'none',
-                                color: '#8E8E93',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                              }}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] text-sm"
                             >
                               {isShowingKey ? '👁️' : '🙈'}
                             </button>
                           </div>
-                          <button
+                          <Button
+                            variant="primary"
                             onClick={() => handleSaveKey(activeService, req.key_name)}
                             disabled={saveStatus === 'saving'}
-                            style={{
-                              padding: '10px 20px',
-                              backgroundColor: '#7ED321',
-                              border: 'none',
-                              borderRadius: '6px',
-                              color: '#FFFFFF',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              cursor: saveStatus === 'saving' ? 'wait' : 'pointer',
-                              opacity: saveStatus === 'saving' ? 0.6 : 1,
-                            }}
                           >
                             {saveStatus === 'saving' ? 'Saving...' : 'Save'}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
           )}
-        </div>
+        </CardContent>
 
         {/* Footer */}
-        <div
-          style={{
-            padding: '16px 24px',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ fontSize: '12px', color: '#8E8E93' }}>
-            {saveStatus === 'saved' && <span style={{ color: '#7ED321' }}>✓ Saved successfully</span>}
-            {saveStatus === 'error' && <span style={{ color: '#F56565' }}>✗ {errorMessage || 'Save failed'}</span>}
+        <div className="border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-6 py-4 flex items-center justify-between">
+          <div className="text-xs">
+            {saveStatus === 'saved' && <Badge variant="success">✓ Saved successfully</Badge>}
+            {saveStatus === 'error' && <Badge variant="error">✗ {errorMessage || 'Save failed'}</Badge>}
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 24px',
-              backgroundColor: 'transparent',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '6px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}
-          >
+          <Button variant="outline" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </div>
 
         {/* Security Notice */}
-        <div
-          style={{
-            padding: '12px 24px',
-            backgroundColor: 'rgba(74,144,226,0.1)',
-            borderTop: '1px solid rgba(74,144,226,0.2)',
-            fontSize: '11px',
-            color: '#4A90E2',
-          }}
-        >
-          🔒 <strong>Security:</strong> All API keys are encrypted at rest using PostgreSQL pgcrypto.
-          Keys are never exposed in API responses.
+        <div className="bg-[var(--color-brand-primary-muted)] border-t border-[var(--color-brand-primary)] px-6 py-2 text-[11px] text-[var(--color-brand-primary)]">
+          🔒 <strong>Security:</strong> All API keys are encrypted at rest using PostgreSQL pgcrypto. Keys are never exposed in API responses.
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

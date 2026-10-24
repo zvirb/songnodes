@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { Track } from '../types';
+import { Button, Badge, Card, CardHeader, CardTitle, CardContent, Input } from './ui';
 
 interface TidalPlaylist {
   id: string;
@@ -35,14 +35,12 @@ export const TidalPlaylistManager: React.FC = () => {
   const [playlistName, setPlaylistName] = useState('');
   const [playlistDescription, setPlaylistDescription] = useState('');
   const [trackAvailability, setTrackAvailability] = useState<Map<string, TidalTrackResponse | null>>(new Map());
-  const [oauthData, setOauthData] = useState<{auth_url?: string; user_code?: string; instructions?: string} | null>(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
 
   // Use existing Tidal authentication from Zustand (Settings Panel)
   const isAuthenticated = !!(musicCredentials.tidal?.accessToken && musicCredentials.tidal?.isConnected);
 
   // CRITICAL: Add ref to avoid closure issues with polling and setTimeout
-  const authStatusRef = useRef<{authenticated: boolean; message?: string; status?: string}>({authenticated: false});
+  const authStatusRef = useRef<{ authenticated: boolean; message?: string; status?: string }>({ authenticated: false });
 
   // Check Tidal authentication status from Zustand
   useEffect(() => {
@@ -114,7 +112,7 @@ export const TidalPlaylistManager: React.FC = () => {
             },
             body: JSON.stringify({
               artist: track.artist,
-              title: track.title || track.name, // Support both title and name
+              title: track.title || track.name,
               isrc: track.isrc,
             }),
           });
@@ -286,162 +284,173 @@ export const TidalPlaylistManager: React.FC = () => {
 
   const stats = getAvailabilityStats();
 
-  // No need to check for credentials since we use OAuth now
-
   return (
     <div className="space-y-6">
       {/* Authentication Status */}
-      <div className={`p-3 rounded-lg ${isAuthenticated ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-yellow-500'}`} />
-          <span className={`text-sm font-medium ${isAuthenticated ? 'text-green-800' : 'text-yellow-800'}`}>
-            {isAuthenticated ? 'Connected to Tidal' : 'Not connected to Tidal'}
-          </span>
-        </div>
-        <p className={`mt-1 text-xs ${isAuthenticated ? 'text-green-600' : 'text-yellow-600'}`}>
-          {isAuthenticated
-            ? 'Authentication managed via Settings Panel'
-            : 'Connect Tidal in Settings to use playlist features'}
-        </p>
-
-        {/* Link to Settings Panel */}
-        {!isAuthenticated && (
-          <button
-            onClick={openSettings}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Open Settings to Connect Tidal
-          </button>
-        )}
-      </div>
+      <Card variant="default">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Badge variant={isAuthenticated ? 'success' : 'warning'}>
+                {isAuthenticated ? 'Connected' : 'Disconnected'}
+              </Badge>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                {isAuthenticated ? 'Connected to Tidal' : 'Not connected to Tidal'}
+              </span>
+            </div>
+            {!isAuthenticated && (
+              <Button size="sm" onClick={openSettings}>
+                Open Settings
+              </Button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+            {isAuthenticated
+              ? 'Authentication managed via Settings Panel'
+              : 'Connect Tidal in Settings to use playlist features'}
+          </p>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 text-sm">{error}</p>
-        </div>
+        <Card className="border-[var(--color-error-border)] bg-[var(--color-error-bg)]">
+          <CardContent className="p-3">
+            <p className="text-[var(--color-error)] text-sm">{error}</p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Current Setlist Status */}
       {currentSetlist && (
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="font-medium text-gray-900 mb-2">Current Setlist: {currentSetlist.name}</h3>
-          <div className="text-sm text-gray-600 space-y-1">
+        <Card variant="elevated">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Current Setlist: {currentSetlist.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-[var(--color-text-secondary)]">
             <p>Total tracks: {stats.total}</p>
             {isAuthenticated && trackAvailability.size > 0 && (
               <>
-                <p className="text-green-600">Available on Tidal: {stats.available}</p>
-                <p className="text-red-600">Not available: {stats.unavailable}</p>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div className="flex gap-4">
+                  <span className="text-[var(--color-success)]">Available on Tidal: {stats.available}</span>
+                  <span className="text-[var(--color-error)]">Not available: {stats.unavailable}</span>
+                </div>
+                <div className="w-full bg-[var(--color-bg-elevated-3)] rounded-full h-2 mt-2 overflow-hidden">
                   <div
-                    className="bg-green-500 h-2 rounded-full"
-                    style={{ width: `${(stats.available / stats.total) * 100}%` }}
+                    className="bg-[var(--color-brand-primary)] h-2 rounded-full transition-all"
+                    style={{ width: `${(stats.available / Math.max(stats.total, 1)) * 100}%` }}
                   />
                 </div>
               </>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Playlist Creation */}
       {isAuthenticated && (
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="font-medium text-gray-900 mb-4">Create New Playlist</h3>
-
-          <div className="space-y-3">
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle className="text-base">Create New Playlist</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                 Playlist Name
               </label>
-              <input
+              <Input
                 type="text"
                 value={playlistName}
                 onChange={(e) => setPlaylistName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="My Awesome Playlist"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                 Description (optional)
               </label>
               <textarea
                 value={playlistDescription}
                 onChange={(e) => setPlaylistDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-md text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-input-focus)] text-sm"
                 rows={2}
                 placeholder="Created with SongNodes"
               />
             </div>
 
-            <div className="flex gap-2">
-              <button
+            <div className="flex gap-3 pt-2">
+              <Button
                 onClick={createEmptyPlaylist}
                 disabled={isLoading || !playlistName.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="primary"
               >
                 {isLoading ? 'Creating...' : 'Create Empty Playlist'}
-              </button>
+              </Button>
 
               {currentSetlist && (
-                <button
+                <Button
                   onClick={createPlaylistFromSetlist}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="secondary"
                 >
                   {isLoading ? 'Creating...' : 'Create from Setlist'}
-                </button>
+                </Button>
               )}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* User Playlists */}
       {isAuthenticated && (
-        <div className="border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-gray-900">Your Tidal Playlists</h3>
-            <button
+        <Card variant="elevated">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-base">Your Tidal Playlists</CardTitle>
+            <Button
               onClick={loadPlaylists}
               disabled={isLoading}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+              variant="outline"
+              size="sm"
             >
               {isLoading ? 'Loading...' : 'Refresh'}
-            </button>
-          </div>
-
-          {playlists.length === 0 ? (
-            <p className="text-gray-500 text-sm">No playlists found</p>
-          ) : (
-            <div className="space-y-2">
-              {playlists.map((playlist) => (
-                <div key={playlist.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{playlist.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      {playlist.track_count} tracks • {Math.floor(playlist.duration / 60)}:{(playlist.duration % 60).toString().padStart(2, '0')}
-                    </p>
-                    {playlist.description && (
-                      <p className="text-xs text-gray-500 mt-1">{playlist.description}</p>
-                    )}
-                  </div>
-                  {playlist.url && (
-                    <a
-                      href={playlist.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Open in Tidal
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {playlists.length === 0 ? (
+              <p className="text-[var(--color-text-tertiary)] text-sm">No playlists found</p>
+            ) : (
+              <div className="space-y-3">
+                {playlists.map((playlist) => (
+                  <Card key={playlist.id} variant="default" className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 space-y-1">
+                        <h4 className="font-medium text-[var(--color-text-primary)] text-sm">{playlist.name}</h4>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">
+                          {playlist.track_count} tracks • {Math.floor(playlist.duration / 60)}:{(playlist.duration % 60).toString().padStart(2, '0')}
+                        </p>
+                        {playlist.description && (
+                          <p className="text-xs text-[var(--color-text-tertiary)] line-clamp-1">{playlist.description}</p>
+                        )}
+                      </div>
+                      {playlist.url && (
+                        <a
+                          href={playlist.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-3"
+                        >
+                          <Button size="sm" variant="outline">
+                            Open in Tidal
+                          </Button>
+                        </a>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

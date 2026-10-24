@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button, Badge, Card, CardHeader, CardTitle, CardContent } from './ui';
 
 interface TracklistImporterProps {
   onClose: () => void;
@@ -14,13 +15,6 @@ interface ParsedTrack {
 /**
  * TracklistImporter - Manual tracklist input component
  * Allows users to paste tracklists and import them as raw data
- *
- * Supported formats:
- * - "1. Artist - Title"
- * - "Artist - Title"
- * - "Artist / Title"
- * - "Title by Artist"
- * - Handles ft., feat., featuring
  */
 export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose }) => {
   const [tracklistText, setTracklistText] = useState('');
@@ -33,16 +27,10 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  /**
-   * Parse a single line to extract artist and title
-   * Handles various common tracklist formats
-   */
   const parseTrackLine = (line: string): ParsedTrack | null => {
-    // Skip empty lines
     const trimmed = line.trim();
     if (!trimmed) return null;
 
-    // Remove track number prefix (e.g., "1.", "01.", "Track 1:")
     const numberPattern = /^(\d+[\.\):]?\s*)/;
     const trackNumberMatch = trimmed.match(numberPattern);
     const trackNumber = trackNumberMatch ? parseInt(trackNumberMatch[1]) : undefined;
@@ -53,38 +41,26 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     let artist = '';
     let title = '';
 
-    // Pattern 1: "Artist - Title" (most common)
     if (withoutNumber.includes(' - ')) {
       const parts = withoutNumber.split(' - ');
       artist = parts[0].trim();
-      title = parts.slice(1).join(' - ').trim(); // Handle multiple dashes
-    }
-    // Pattern 2: "Artist / Title"
-    else if (withoutNumber.includes(' / ')) {
+      title = parts.slice(1).join(' - ').trim();
+    } else if (withoutNumber.includes(' / ')) {
       const parts = withoutNumber.split(' / ');
       artist = parts[0].trim();
       title = parts.slice(1).join(' / ').trim();
-    }
-    // Pattern 3: "Title by Artist"
-    else if (withoutNumber.toLowerCase().includes(' by ')) {
+    } else if (withoutNumber.toLowerCase().includes(' by ')) {
       const byIndex = withoutNumber.toLowerCase().indexOf(' by ');
       title = withoutNumber.substring(0, byIndex).trim();
       artist = withoutNumber.substring(byIndex + 4).trim();
-    }
-    // Pattern 4: Assume entire line is "Artist - Title" with unicode dash
-    else if (withoutNumber.includes('–') || withoutNumber.includes('—')) {
+    } else if (withoutNumber.includes('–') || withoutNumber.includes('—')) {
       const dash = withoutNumber.includes('–') ? '–' : '—';
       const parts = withoutNumber.split(dash);
       artist = parts[0].trim();
       title = parts.slice(1).join(dash).trim();
-    }
-    // Pattern 5: No clear separator - return as unknown format
-    else {
-      // If no clear separator, try to guess based on common patterns
-      // Last resort: assume format is "Artist Title"
+    } else {
       const words = withoutNumber.split(' ');
       if (words.length >= 3) {
-        // Heuristic: First half is artist, second half is title
         const midpoint = Math.floor(words.length / 2);
         artist = words.slice(0, midpoint).join(' ');
         title = words.slice(midpoint).join(' ');
@@ -94,10 +70,6 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
       }
     }
 
-    // Clean up featuring/ft notation (keep it with the title)
-    // Common patterns: feat., ft., featuring, ft, (ft, [ft
-    // We keep these with the title, as they're part of the track name
-
     return {
       trackNumber,
       artist: artist || 'Unknown Artist',
@@ -106,9 +78,6 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     };
   };
 
-  /**
-   * Parse the entire tracklist textarea
-   */
   const handleParse = () => {
     const lines = tracklistText.split('\n');
     const parsed: ParsedTrack[] = [];
@@ -125,9 +94,6 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     setErrorMessage(null);
   };
 
-  /**
-   * Import parsed tracks to backend
-   */
   const handleImport = async () => {
     if (parsedTracks.length === 0) {
       setErrorMessage('No tracks to import. Please paste a tracklist and click Parse first.');
@@ -164,7 +130,6 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
         total: parsedTracks.length
       });
 
-      // Clear form on success
       if (result.failed === 0) {
         setTracklistText('');
         setParsedTracks([]);
@@ -179,260 +144,132 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10000,
-        padding: '20px'
-      }}
+      className="fixed inset-0 bg-[var(--color-modal-overlay)] flex items-center justify-center z-[var(--z-modal)] backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      <div
-        style={{
-          backgroundColor: '#1E1E1E',
-          borderRadius: '12px',
-          padding: '24px',
-          maxWidth: '900px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}
+      <Card
+        variant="elevated"
+        className="w-full max-w-4xl max-h-[90vh] flex flex-col border-[var(--color-border-default)] bg-[var(--color-bg-elevated-1)] overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
-        }}>
-          <h2 style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
-            fontWeight: 600,
-            margin: 0
-          }}>
+        <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-border-subtle)] px-6 py-4">
+          <CardTitle className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
             📝 Import Tracklist
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#8E8E93',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px 8px'
-            }}
-          >
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-lg px-2 py-1">
             ✕
-          </button>
-        </div>
+          </Button>
+        </CardHeader>
 
-        {/* Instructions */}
-        <div style={{
-          backgroundColor: 'rgba(74,144,226,0.1)',
-          border: '1px solid rgba(74,144,226,0.3)',
-          borderRadius: '8px',
-          padding: '12px',
-          marginBottom: '16px'
-        }}>
-          <p style={{ color: '#4A90E2', fontSize: '13px', margin: '0 0 8px 0', fontWeight: 600 }}>
-            ℹ️ How to use:
-          </p>
-          <ul style={{ color: '#8E8E93', fontSize: '12px', margin: 0, paddingLeft: '20px' }}>
-            <li>Paste your tracklist below (one track per line)</li>
-            <li>Supported formats: "Artist - Title", "1. Artist - Title", "Artist / Title"</li>
-            <li>Click "Parse" to preview how tracks will be imported</li>
-            <li>Click "Import to Database" to add tracks (creates new or updates existing)</li>
-          </ul>
-        </div>
+        <CardContent className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Instructions */}
+          <Card variant="default" className="bg-[var(--color-brand-primary-muted)] border-[var(--color-brand-primary)] p-4">
+            <p className="text-sm font-semibold text-[var(--color-brand-primary)] mb-2">
+              ℹ️ How to use:
+            </p>
+            <ul className="text-xs text-[var(--color-text-secondary)] space-y-1 list-disc list-inside">
+              <li>Paste your tracklist below (one track per line)</li>
+              <li>Supported formats: "Artist - Title", "1. Artist - Title", "Artist / Title"</li>
+              <li>Click "Parse" to preview how tracks will be imported</li>
+              <li>Click "Import to Database" to add tracks</li>
+            </ul>
+          </Card>
 
-        {/* Textarea for tracklist input */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            color: '#FFFFFF',
-            fontSize: '14px',
-            fontWeight: 600,
-            marginBottom: '8px'
-          }}>
-            Tracklist (paste here):
-          </label>
-          <textarea
-            value={tracklistText}
-            onChange={(e) => setTracklistText(e.target.value)}
-            placeholder="Paste your tracklist here...&#10;Example:&#10;1. Axwell Λ Ingrosso - More Than You Know&#10;2. Vicetone - Walk Thru Fire (ft. Meron Ryan)&#10;3. Artist Name - Track Title"
-            style={{
-              width: '100%',
-              minHeight: '200px',
-              backgroundColor: '#2A2A2A',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#F8F8F8',
-              fontSize: '13px',
-              padding: '12px',
-              fontFamily: 'monospace',
-              resize: 'vertical'
-            }}
-          />
-        </div>
+          {/* Textarea Dropzone Area */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
+              Tracklist (paste raw text here):
+            </label>
+            <textarea
+              value={tracklistText}
+              onChange={(e) => setTracklistText(e.target.value)}
+              placeholder="Paste your tracklist here...&#10;Example:&#10;1. Axwell Λ Ingrosso - More Than You Know&#10;2. Vicetone - Walk Thru Fire (ft. Meron Ryan)&#10;3. Artist Name - Track Title"
+              className="w-full min-h-[180px] p-4 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-lg text-[var(--color-text-primary)] font-mono text-xs focus:outline-none focus:border-[var(--color-input-focus)] transition-all resize-y"
+            />
+          </div>
 
-        {/* Parse button */}
-        <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
-          <button
-            onClick={handleParse}
-            disabled={!tracklistText.trim()}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: tracklistText.trim() ? 'rgba(74,144,226,0.3)' : 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(74,144,226,0.5)',
-              borderRadius: '8px',
-              color: tracklistText.trim() ? '#FFFFFF' : '#8E8E93',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: tracklistText.trim() ? 'pointer' : 'not-allowed'
-            }}
-          >
-            🔍 Parse Tracklist
-          </button>
+          {/* Controls */}
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={handleParse}
+              disabled={!tracklistText.trim()}
+              variant="secondary"
+            >
+              🔍 Parse Tracklist
+            </Button>
+            {parsedTracks.length > 0 && (
+              <Badge variant="success">
+                ✓ {parsedTracks.length} tracks parsed
+              </Badge>
+            )}
+          </div>
+
+          {/* Parsed Preview */}
           {parsedTracks.length > 0 && (
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              color: '#7ED321',
-              fontSize: '14px',
-              fontWeight: 600
-            }}>
-              ✓ {parsedTracks.length} tracks parsed
-            </span>
-          )}
-        </div>
-
-        {/* Preview parsed tracks */}
-        {parsedTracks.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
-            <h3 style={{
-              color: '#FFFFFF',
-              fontSize: '16px',
-              fontWeight: 600,
-              marginBottom: '12px'
-            }}>
-              Preview ({parsedTracks.length} tracks):
-            </h3>
-            <div style={{
-              maxHeight: '300px',
-              overflow: 'auto',
-              backgroundColor: '#2A2A2A',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '12px'
-            }}>
-              {parsedTracks.map((track, index) => (
-                <div
-                  key={index}
-                  style={{
-                    padding: '8px',
-                    marginBottom: '4px',
-                    backgroundColor: 'rgba(255,255,255,0.05)',
-                    borderRadius: '4px',
-                    fontSize: '13px'
-                  }}
-                >
-                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>
-                    {track.trackNumber && `${track.trackNumber}. `}
-                    <span style={{ color: '#4A90E2' }}>{track.artist}</span>
-                    {' - '}
-                    <span style={{ color: '#7ED321' }}>{track.title}</span>
-                  </div>
-                  <div style={{ color: '#8E8E93', fontSize: '11px', marginTop: '2px' }}>
-                    Original: {track.originalLine}
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                Preview ({parsedTracks.length} tracks):
+              </h3>
+              <div className="max-h-[250px] overflow-y-auto space-y-2 p-3 bg-[var(--color-bg-base)] border border-[var(--color-border-subtle)] rounded-lg">
+                {parsedTracks.map((track, index) => (
+                  <Card key={index} variant="default" className="p-3 bg-[var(--color-bg-elevated-2)] border-[var(--color-border-subtle)]">
+                    <div className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-1">
+                      {track.trackNumber && <span className="text-[var(--color-text-tertiary)]">{track.trackNumber}. </span>}
+                      <span className="text-[var(--color-brand-secondary)]">{track.artist}</span>
+                      <span className="text-[var(--color-text-tertiary)]"> - </span>
+                      <span className="text-[var(--color-brand-primary)]">{track.title}</span>
+                    </div>
+                    <div className="text-[10px] text-[var(--color-text-tertiary)] mt-1 truncate">
+                      Original: {track.originalLine}
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Error message */}
-        {errorMessage && (
-          <div style={{
-            backgroundColor: 'rgba(231,76,60,0.1)',
-            border: '1px solid rgba(231,76,60,0.3)',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '16px'
-          }}>
-            <p style={{ color: '#E74C3C', fontSize: '13px', margin: 0 }}>
-              ❌ {errorMessage}
-            </p>
-          </div>
-        )}
+          {/* Feedback messaging */}
+          {errorMessage && (
+            <Card className="border-[var(--color-error-border)] bg-[var(--color-error-bg)] p-3">
+              <p className="text-xs text-[var(--color-error)] font-medium">❌ {errorMessage}</p>
+            </Card>
+          )}
 
-        {/* Import status */}
-        {importStatus && (
-          <div style={{
-            backgroundColor: 'rgba(126,211,33,0.1)',
-            border: '1px solid rgba(126,211,33,0.3)',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '16px'
-          }}>
-            <p style={{ color: '#7ED321', fontSize: '14px', margin: 0, fontWeight: 600 }}>
-              ✓ Import Complete
-            </p>
-            <p style={{ color: '#8E8E93', fontSize: '12px', margin: '8px 0 0 0' }}>
-              {importStatus.success} tracks processed successfully
-              {importStatus.failed > 0 && `, ${importStatus.failed} failed`}
-            </p>
-          </div>
-        )}
+          {importStatus && (
+            <Card className="border-[var(--color-success-border)] bg-[var(--color-success-bg)] p-3 space-y-1">
+              <p className="text-sm font-semibold text-[var(--color-success)]">✓ Import Complete</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {importStatus.success} tracks processed successfully
+                {importStatus.failed > 0 && `, ${importStatus.failed} failed`}
+              </p>
+            </Card>
+          )}
+        </CardContent>
 
-        {/* Import button */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
+        {/* Footer */}
+        <div className="border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-6 py-4 flex justify-end gap-3 items-center">
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             onClick={handleImport}
             disabled={parsedTracks.length === 0 || isProcessing}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: parsedTracks.length > 0 && !isProcessing
-                ? 'rgba(126,211,33,0.3)'
-                : 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(126,211,33,0.5)',
-              borderRadius: '8px',
-              color: parsedTracks.length > 0 && !isProcessing ? '#FFFFFF' : '#8E8E93',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: parsedTracks.length > 0 && !isProcessing ? 'pointer' : 'not-allowed'
-            }}
           >
-            {isProcessing ? '⏳ Importing...' : '📥 Import to Database'}
-          </button>
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                Importing...
+              </span>
+            ) : (
+              '📥 Import to Database'
+            )}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
+
+export default TracklistImporter;

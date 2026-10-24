@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Button, Badge, Card, CardHeader, CardTitle, CardContent } from './ui';
 import './DataQualityReview.css';
 
 // Types
@@ -169,14 +170,12 @@ export const DataQualityReview: React.FC = () => {
       switch (e.key) {
         case 'a':
         case 'A':
-          // Approve suggestion
           if (currentTrack.suggested_genre) {
             handleAction('approve', 'genre', currentTrack.suggested_genre);
           }
           break;
         case 'r':
         case 'R':
-          // Reject suggestion
           if (currentTrack.suggested_genre) {
             handleAction('reject', 'genre', currentTrack.suggested_genre);
           }
@@ -184,13 +183,11 @@ export const DataQualityReview: React.FC = () => {
         case 's':
         case 'S':
         case ' ':
-          // Skip
           e.preventDefault();
           handleAction('skip', 'genre');
           break;
         case 'c':
         case 'C':
-          // Toggle context
           setShowContext(!showContext);
           break;
       }
@@ -217,7 +214,7 @@ export const DataQualityReview: React.FC = () => {
         <div className="empty-state">
           <h2>🎉 All Caught Up!</h2>
           <p>No tracks currently need review.</p>
-          <button onClick={loadTracks}>Refresh</button>
+          <Button onClick={loadTracks} variant="primary">Refresh</Button>
         </div>
       </div>
     );
@@ -288,7 +285,7 @@ export const DataQualityReview: React.FC = () => {
       </div>
 
       {/* Main Review Card */}
-      <div className="review-card">
+      <Card className="review-card">
         <div className="track-header">
           <div className="track-info">
             <h2 className="track-title">{currentTrack.title}</h2>
@@ -297,19 +294,13 @@ export const DataQualityReview: React.FC = () => {
 
           <div className="quality-indicators">
             {currentTrack.has_spotify_id && (
-              <span className="indicator spotify" title="Has Spotify ID">
-                <span className="icon">🎵</span> Spotify
-              </span>
+              <Badge variant="success">🎵 Spotify</Badge>
             )}
             {currentTrack.has_musicbrainz_id && (
-              <span className="indicator mb" title="Has MusicBrainz ID">
-                <span className="icon">🎼</span> MB
-              </span>
+              <Badge variant="secondary">🎼 MB</Badge>
             )}
             {currentTrack.has_isrc && (
-              <span className="indicator isrc" title="Has ISRC">
-                <span className="icon">🔢</span> ISRC
-              </span>
+              <Badge variant="outline">🔢 ISRC</Badge>
             )}
           </div>
         </div>
@@ -334,9 +325,17 @@ export const DataQualityReview: React.FC = () => {
             </div>
 
             <div className="confidence-info">
-              <span className={`confidence-badge ${currentTrack.genre_confidence}`}>
+              <Badge
+                variant={
+                  currentTrack.genre_confidence === 'high'
+                    ? 'success'
+                    : currentTrack.genre_confidence === 'medium'
+                    ? 'warning'
+                    : 'error'
+                }
+              >
                 {currentTrack.genre_confidence?.toUpperCase()} CONFIDENCE
-              </span>
+              </Badge>
               {currentTrack.genre_match_score && (
                 <span className="match-score">
                   Match Score: {currentTrack.genre_match_score.toFixed(1)}%
@@ -347,9 +346,9 @@ export const DataQualityReview: React.FC = () => {
             <div className="enrichment-sources">
               <label>Sources:</label>
               {currentTrack.enrichment_sources.map((source) => (
-                <span key={source} className="source-badge">
+                <Badge key={source} variant="outline">
                   {source}
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
@@ -357,39 +356,40 @@ export const DataQualityReview: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="action-buttons">
-          <button
-            className="action-btn approve"
+          <Button
+            variant="primary"
             onClick={() => handleAction('approve', 'genre', currentTrack.suggested_genre)}
             disabled={!currentTrack.suggested_genre}
             title="Keyboard: A"
           >
             ✓ Approve
-          </button>
+          </Button>
 
-          <button
-            className="action-btn reject"
+          <Button
+            variant="outline"
+            className="border-[var(--color-error-border)] text-[var(--color-error)] hover:bg-[var(--color-error-bg)]"
             onClick={() => handleAction('reject', 'genre', currentTrack.suggested_genre)}
             disabled={!currentTrack.suggested_genre}
             title="Keyboard: R"
           >
             ✗ Reject
-          </button>
+          </Button>
 
-          <button
-            className="action-btn skip"
+          <Button
+            variant="secondary"
             onClick={() => handleAction('skip', 'genre')}
             title="Keyboard: S or Space"
           >
             → Skip
-          </button>
+          </Button>
 
-          <button
-            className="action-btn context"
+          <Button
+            variant="outline"
             onClick={() => setShowContext(!showContext)}
             title="Keyboard: C"
           >
             {showContext ? '▼' : '▶'} Context ({currentTrack.setlist_contexts.length})
-          </button>
+          </Button>
         </div>
 
         {/* Setlist Context */}
@@ -424,9 +424,9 @@ export const DataQualityReview: React.FC = () => {
                           <span className="track-info">
                             {track.title} - {track.artists}
                           </span>
-                          {track.genre && <span className="genre-tag">{track.genre}</span>}
-                          {track.bpm && <span className="bpm-tag">{track.bpm} BPM</span>}
-                          {track.key && <span className="key-tag">{track.key}</span>}
+                          {track.genre && <Badge variant="secondary">{track.genre}</Badge>}
+                          {track.bpm && <Badge variant="warning">{track.bpm} BPM</Badge>}
+                          {track.key && <Badge variant="success">{track.key}</Badge>}
                         </div>
                       ))}
                     </div>
@@ -448,9 +448,9 @@ export const DataQualityReview: React.FC = () => {
                           <span className="track-info">
                             {track.title} - {track.artists}
                           </span>
-                          {track.genre && <span className="genre-tag">{track.genre}</span>}
-                          {track.bpm && <span className="bpm-tag">{track.bpm} BPM</span>}
-                          {track.key && <span className="key-tag">{track.key}</span>}
+                          {track.genre && <Badge variant="secondary">{track.genre}</Badge>}
+                          {track.bpm && <Badge variant="warning">{track.bpm} BPM</Badge>}
+                          {track.key && <Badge variant="success">{track.key}</Badge>}
                         </div>
                       ))}
                     </div>
@@ -460,7 +460,7 @@ export const DataQualityReview: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Keyboard Shortcuts Help */}
       <div className="keyboard-shortcuts">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { Track } from '../types';
+import { Button, Badge, Card, CardHeader, CardTitle, CardContent, Input } from './ui';
 
 interface SpotifyPlaylist {
   id: string;
@@ -41,7 +41,7 @@ export const SpotifyPlaylistManager: React.FC = () => {
   const isAuthenticated = !!(musicCredentials.spotify?.accessToken);
 
   // CRITICAL: Add ref to avoid closure issues
-  const authStatusRef = useRef<{authenticated: boolean}>({authenticated: false});
+  const authStatusRef = useRef<{ authenticated: boolean }>({ authenticated: false });
 
   // Check Spotify authentication status from Zustand
   useEffect(() => {
@@ -190,7 +190,6 @@ export const SpotifyPlaylistManager: React.FC = () => {
 
       // Step 3: Add tracks to playlist (max 100 at a time)
       if (spotifyTrackIds.length > 0) {
-        // Split into chunks of 100
         for (let i = 0; i < spotifyTrackIds.length; i += 100) {
           const chunk = spotifyTrackIds.slice(i, i + 100);
           await fetch(`${REST_API_BASE}/api/v1/spotify/playlists/${newPlaylist.id}/tracks`, {
@@ -286,85 +285,92 @@ export const SpotifyPlaylistManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Authentication Status */}
-      <div className={`p-3 rounded-lg ${isAuthenticated ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-yellow-500'}`} />
-          <span className={`text-sm font-medium ${isAuthenticated ? 'text-green-800' : 'text-yellow-800'}`}>
-            {isAuthenticated ? 'Connected to Spotify' : 'Not connected to Spotify'}
-          </span>
-        </div>
-        <p className={`mt-1 text-xs ${isAuthenticated ? 'text-green-600' : 'text-yellow-600'}`}>
-          {isAuthenticated
-            ? 'Authentication managed via Settings Panel'
-            : 'Connect Spotify in Settings to use playlist features'}
-        </p>
-
-        {/* Link to Settings Panel */}
-        {!isAuthenticated && (
-          <button
-            onClick={openSettings}
-            className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-          >
-            Open Settings to Connect Spotify
-          </button>
-        )}
-      </div>
+      <Card variant="default">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Badge variant={isAuthenticated ? 'success' : 'warning'}>
+                {isAuthenticated ? 'Connected' : 'Disconnected'}
+              </Badge>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                {isAuthenticated ? 'Connected to Spotify' : 'Not connected to Spotify'}
+              </span>
+            </div>
+            {!isAuthenticated && (
+              <Button size="sm" onClick={openSettings}>
+                Open Settings
+              </Button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+            {isAuthenticated
+              ? 'Authentication managed via Settings Panel'
+              : 'Connect Spotify in Settings to use playlist features'}
+          </p>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 text-sm">{error}</p>
-        </div>
+        <Card className="border-[var(--color-error-border)] bg-[var(--color-error-bg)]">
+          <CardContent className="p-3">
+            <p className="text-[var(--color-error)] text-sm">{error}</p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Current Setlist Status */}
       {currentSetlist && (
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="font-medium text-gray-900 mb-2">Current Setlist: {currentSetlist.name}</h3>
-          <div className="text-sm text-gray-600 space-y-1">
+        <Card variant="elevated">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Current Setlist: {currentSetlist.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-[var(--color-text-secondary)]">
             <p>Total tracks: {stats.total}</p>
             {isAuthenticated && trackAvailability.size > 0 && (
               <>
-                <p className="text-green-600">Available on Spotify: {stats.available}</p>
-                <p className="text-red-600">Not available: {stats.unavailable}</p>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div className="flex gap-4">
+                  <span className="text-[var(--color-success)]">Available on Spotify: {stats.available}</span>
+                  <span className="text-[var(--color-error)]">Not available: {stats.unavailable}</span>
+                </div>
+                <div className="w-full bg-[var(--color-bg-elevated-3)] rounded-full h-2 mt-2 overflow-hidden">
                   <div
-                    className="bg-green-500 h-2 rounded-full"
-                    style={{ width: `${(stats.available / stats.total) * 100}%` }}
+                    className="bg-[var(--color-brand-primary)] h-2 rounded-full transition-all"
+                    style={{ width: `${(stats.available / Math.max(stats.total, 1)) * 100}%` }}
                   />
                 </div>
               </>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Playlist Creation */}
       {isAuthenticated && (
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="font-medium text-gray-900 mb-4">Create New Playlist</h3>
-
-          <div className="space-y-3">
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle className="text-base">Create New Playlist</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                 Playlist Name
               </label>
-              <input
+              <Input
                 type="text"
                 value={playlistName}
                 onChange={(e) => setPlaylistName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 placeholder="My Awesome Playlist"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                 Description (optional)
               </label>
               <textarea
                 value={playlistDescription}
                 onChange={(e) => setPlaylistDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-md text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-input-focus)] text-sm"
                 rows={2}
                 placeholder="Created with SongNodes"
               />
@@ -376,88 +382,94 @@ export const SpotifyPlaylistManager: React.FC = () => {
                 id="playlist-public"
                 checked={playlistPublic}
                 onChange={(e) => setPlaylistPublic(e.target.checked)}
-                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                className="w-4 h-4 accent-[var(--color-brand-primary)] border-[var(--color-border-default)] rounded"
               />
-              <label htmlFor="playlist-public" className="text-sm text-gray-700">
+              <label htmlFor="playlist-public" className="text-sm text-[var(--color-text-secondary)] cursor-pointer">
                 Make playlist public
               </label>
             </div>
 
-            <div className="flex gap-2">
-              <button
+            <div className="flex gap-3 pt-2">
+              <Button
                 onClick={createEmptyPlaylist}
                 disabled={isLoading || !playlistName.trim()}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="primary"
               >
                 {isLoading ? 'Creating...' : 'Create Empty Playlist'}
-              </button>
+              </Button>
 
               {currentSetlist && (
-                <button
+                <Button
                   onClick={createPlaylistFromSetlist}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="secondary"
                 >
                   {isLoading ? 'Creating...' : 'Create from Setlist'}
-                </button>
+                </Button>
               )}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* User Playlists */}
       {isAuthenticated && (
-        <div className="border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-gray-900">Your Spotify Playlists</h3>
-            <button
+        <Card variant="elevated">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-base">Your Spotify Playlists</CardTitle>
+            <Button
               onClick={loadPlaylists}
               disabled={isLoading}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+              variant="outline"
+              size="sm"
             >
               {isLoading ? 'Loading...' : 'Refresh'}
-            </button>
-          </div>
-
-          {playlists.length === 0 ? (
-            <p className="text-gray-500 text-sm">No playlists found</p>
-          ) : (
-            <div className="space-y-2">
-              {playlists.map((playlist) => (
-                <div key={playlist.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900">{playlist.name}</h4>
-                      {!playlist.public && (
-                        <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">Private</span>
-                      )}
-                      {playlist.collaborative && (
-                        <span className="px-2 py-0.5 text-xs bg-blue-200 text-blue-600 rounded">Collaborative</span>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {playlists.length === 0 ? (
+              <p className="text-[var(--color-text-tertiary)] text-sm">No playlists found</p>
+            ) : (
+              <div className="space-y-3">
+                {playlists.map((playlist) => (
+                  <Card key={playlist.id} variant="default" className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-[var(--color-text-primary)] text-sm">{playlist.name}</h4>
+                          {!playlist.public && (
+                            <Badge variant="outline" size="sm">Private</Badge>
+                          )}
+                          {playlist.collaborative && (
+                            <Badge variant="secondary" size="sm">Collaborative</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">
+                          {playlist.track_count} tracks
+                        </p>
+                        {playlist.description && (
+                          <p className="text-xs text-[var(--color-text-tertiary)] line-clamp-1">{playlist.description}</p>
+                        )}
+                      </div>
+                      {playlist.url && (
+                        <a
+                          href={playlist.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-3"
+                        >
+                          <Button size="sm" variant="outline">
+                            Open in Spotify
+                          </Button>
+                        </a>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {playlist.track_count} tracks
-                    </p>
-                    {playlist.description && (
-                      <p className="text-xs text-gray-500 mt-1">{playlist.description}</p>
-                    )}
-                  </div>
-                  {playlist.url && (
-                    <a
-                      href={playlist.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                    >
-                      Open in Spotify
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

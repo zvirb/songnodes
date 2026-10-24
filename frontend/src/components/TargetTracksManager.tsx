@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import { api } from '../services/api';
 import MusicServiceSearch from './MusicServiceSearch';
+import { Button, Badge, Card, CardHeader, CardTitle, CardContent, Input } from './ui';
 
 interface TargetTrack {
   track_id?: string;
@@ -57,12 +58,10 @@ const TargetTracksManager: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('/target-tracks');
-      // ✅ FIX: Ensure we always set an array, even if API returns undefined
       setTracks(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       showNotification('error', 'Failed to load target tracks');
       console.error('Error loading tracks:', error);
-      // ✅ FIX: Set empty array on error to prevent undefined state
       setTracks([]);
     } finally {
       setLoading(false);
@@ -142,7 +141,6 @@ const TargetTracksManager: React.FC = () => {
 
   const handleUpdateCompletion = async (trackId: string, completion_percentage: number) => {
     try {
-      // Optimistically update the UI
       setTracks(prevTracks =>
         prevTracks.map(t =>
           t.track_id === trackId ? { ...t, completion_percentage } : t
@@ -361,19 +359,16 @@ const TargetTracksManager: React.FC = () => {
 
   // Priority badge component
   const PriorityBadge: React.FC<{ priority: string }> = ({ priority }) => {
-    const colors = {
-      high: 'bg-dj-danger text-white',
-      medium: 'bg-dj-warning text-black',
-      low: 'bg-dj-light-gray text-gray-300'
+    const variants: Record<string, 'error' | 'warning' | 'secondary'> = {
+      high: 'error',
+      medium: 'warning',
+      low: 'secondary'
     };
 
     return (
-      <span className={clsx(
-        'px-2 py-1 rounded text-xs font-semibold uppercase',
-        colors[priority as keyof typeof colors] || colors.low
-      )}>
-        {priority}
-      </span>
+      <Badge variant={variants[priority] || 'secondary'} size="sm">
+        {priority.toUpperCase()}
+      </Badge>
     );
   };
 
@@ -403,258 +398,194 @@ const TargetTracksManager: React.FC = () => {
   }, [isAddModalOpen]);
 
   return (
-    <div className="h-full flex flex-col bg-dj-dark text-gray-200">
+    <div className="h-full flex flex-col space-y-4">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-dj-gray p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <span className="text-2xl">🎯</span>
-            Target Tracks Manager
+      <Card variant="elevated" className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <span>🎯</span> Target Tracks Manager
             {(tracks?.length ?? 0) > 0 && (
-              <span className="text-sm text-gray-400 font-normal">({tracks.length} tracks)</span>
+              <span className="text-xs text-[var(--color-text-tertiary)] font-normal">({tracks.length} tracks)</span>
             )}
-          </h2>
+          </CardTitle>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleExportTracks}
-              className="px-3 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all flex items-center gap-1 text-sm"
               disabled={(tracks?.length ?? 0) === 0}
             >
               📤 Export
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setIsImportModalOpen(true)}
-              className="px-3 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all flex items-center gap-1 text-sm"
             >
               📥 Import
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleAddTrack}
-              className="px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all flex items-center gap-2"
             >
-              <span className="text-lg">+</span>
-              Add Track
-            </button>
+              + Add Track
+            </Button>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-dj-gray mb-4">
-          <button
+        <div className="flex gap-2 border-b border-[var(--color-border-subtle)] pb-2">
+          <Button
+            variant={activeTab === 'manage' ? 'primary' : 'ghost'}
+            size="sm"
             onClick={() => setActiveTab('manage')}
-            className={clsx(
-              'px-4 py-2 font-semibold transition-all',
-              activeTab === 'manage'
-                ? 'text-dj-accent border-b-2 border-dj-accent'
-                : 'text-gray-400 hover:text-gray-300'
-            )}
           >
             📋 Manage Tracks
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={activeTab === 'search' ? 'primary' : 'ghost'}
+            size="sm"
             onClick={() => setActiveTab('search')}
-            className={clsx(
-              'px-4 py-2 font-semibold transition-all',
-              activeTab === 'search'
-                ? 'text-dj-accent border-b-2 border-dj-accent'
-                : 'text-gray-400 hover:text-gray-300'
-            )}
           >
             🔍 Search Services
-          </button>
+          </Button>
         </div>
 
-        {/* Tab Content: Manage Tracks */}
+        {/* Tab Content: Manage Tracks Controls */}
         {activeTab === 'manage' && (
-          <>
+          <div className="space-y-4 pt-2">
             {/* Bulk Operations Bar */}
             {selectedTracks.size > 0 && (
-              <div className="mb-4 p-3 bg-dj-black border border-dj-accent rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">
-                {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleBulkActivate(true)}
-                  className="px-3 py-1 bg-dj-accent text-black rounded text-sm hover:bg-opacity-90"
-                >
-                  ✅ Activate
-                </button>
-                <button
-                  onClick={() => handleBulkActivate(false)}
-                  className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                >
-                  ⏸️ Deactivate
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="px-3 py-1 bg-dj-danger text-white rounded text-sm hover:bg-opacity-90"
-                >
-                  🗑️ Delete
-                </button>
-                <button
-                  onClick={clearSelection}
-                  className="px-3 py-1 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                >
-                  ✖️ Clear
-                </button>
-              </div>
-            </div>
-              </div>
+              <Card variant="default" className="p-3 bg-[var(--color-bg-elevated-2)] border-[var(--color-border-subtle)] flex items-center justify-between">
+                <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+                  {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
+                </span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="primary" onClick={() => handleBulkActivate(true)}>
+                    ✅ Activate
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => handleBulkActivate(false)}>
+                    ⏸️ Deactivate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[var(--color-error-border)] text-[var(--color-error)] hover:bg-[var(--color-error-bg)]"
+                    onClick={handleBulkDelete}
+                  >
+                    🗑️ Delete
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={clearSelection}>
+                    ✖️ Clear
+                  </Button>
+                </div>
+              </Card>
             )}
 
             {/* Filters */}
-            <div className="flex gap-4 items-center">
-              <input
+            <div className="flex gap-3 items-center">
+              <Input
                 type="text"
                 placeholder="Search tracks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+                className="flex-1"
               />
               <select
                 value={selectedPriority}
                 onChange={(e) => setSelectedPriority(e.target.value as any)}
-                className="px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+                className="px-3 py-2 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-md text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-input-focus)]"
               >
                 <option value="all">All Priorities</option>
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--color-text-secondary)]">
                 <input
                   type="checkbox"
                   checked={showArchived}
                   onChange={(e) => setShowArchived(e.target.checked)}
-                  className="rounded border-dj-gray"
+                  className="w-4 h-4 accent-[var(--color-brand-primary)]"
                 />
-                <span className="text-sm">Show Archived</span>
+                Show Archived
               </label>
               {filteredTracks.length > 0 && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={selectAllTracks}
-                    className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                  >
-                    Select All
-                  </button>
-                  {selectedTracks.size > 0 && (
-                    <button
-                      onClick={clearSelection}
-                      className="px-3 py-2 bg-dj-gray text-gray-300 rounded text-sm hover:bg-opacity-90"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+                <Button size="sm" variant="outline" onClick={selectAllTracks}>
+                  Select All
+                </Button>
               )}
             </div>
+          </div>
+        )}
+      </Card>
 
-            {/* Track List */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-              {loading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dj-accent"></div>
-                </div>
-              ) : filteredTracks.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
-                  No target tracks found. Add some tracks to get started!
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredTracks.map((track) => (
-                    <div
-                      key={track.track_id}
-                      className={clsx(
-                        "bg-dj-black border rounded-lg p-4 transition-all",
-                        selectedTracks.has(track.track_id!)
-                          ? "border-dj-accent bg-dj-accent bg-opacity-10"
-                          : "border-dj-gray hover:border-dj-accent"
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Selection Checkbox */}
-                        <div className="pt-1">
-                          <input
-                            type="checkbox"
-                            checked={selectedTracks.has(track.track_id!)}
-                            onChange={() => toggleTrackSelection(track.track_id!)}
-                            className="rounded border-dj-gray"
-                          />
-                        </div>
+      {/* Main Tab Content */}
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+        {activeTab === 'manage' ? (
+          loading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-brand-primary)]"></div>
+            </div>
+          ) : filteredTracks.length === 0 ? (
+            <div className="text-center text-[var(--color-text-tertiary)] py-8 text-sm">
+              No target tracks found. Add some tracks to get started!
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredTracks.map((track) => (
+                <Card
+                  key={track.track_id}
+                  variant="default"
+                  className={`p-4 transition-all border ${
+                    selectedTracks.has(track.track_id!)
+                      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-muted)]'
+                      : 'border-[var(--color-border-subtle)] hover:border-[var(--color-border-default)]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedTracks.has(track.track_id!)}
+                      onChange={() => toggleTrackSelection(track.track_id!)}
+                      className="mt-1 w-4 h-4 accent-[var(--color-brand-primary)]"
+                    />
 
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{track.title}</h3>
-                            <PriorityBadge priority={track.priority} />
-                            {!track.is_active && (
-                              <span className="px-2 py-1 bg-dj-gray text-gray-500 rounded text-xs">
-                                Inactive
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-gray-400 mb-2">by {track.artist}</p>
-
-                          {/* Stats */}
-                          <div className="flex gap-4 text-sm text-gray-500">
-                            <span>📋 {track.playlists_found || 0} playlists</span>
-                            <span>🔗 {track.adjacencies_found || 0} adjacencies</span>
-                            {track.last_searched && (
-                              <span>🔍 Last searched: {new Date(track.last_searched).toLocaleDateString()}</span>
-                            )}
-                          </div>
-
-                          {/* Genres and Search Terms */}
-                          {track.genres && track.genres.length > 0 && (
-                            <div className="mt-2 flex gap-2">
-                              {track.genres.map((genre, idx) => (
-                                <span key={idx} className="px-2 py-1 bg-dj-gray rounded text-xs">
-                                  {genre}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => handleArchiveTrack(track.track_id!, !track.archived)}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-dj-gray rounded transition-all"
-                            title={track.archived ? 'Unarchive' : 'Archive'}
-                          >
-                            {track.archived ? '📂' : '🗄️'}
-                          </button>
-                          <button
-                            onClick={() => handleSearchNow(track.track_id!)}
-                            className="p-2 text-dj-accent hover:bg-dj-gray rounded transition-all"
-                            title="Search now"
-                          >
-                            🔍
-                          </button>
-                          <button
-                            onClick={() => handleEditTrack(track)}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-dj-gray rounded transition-all"
-                            title="Edit"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTrack(track.track_id!)}
-                            className="p-2 text-dj-danger hover:bg-dj-gray rounded transition-all"
-                            title="Delete"
-                          >
-                            🗑️
-                          </button>
-                        </div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-base text-[var(--color-text-primary)] truncate">{track.title}</h3>
+                        <PriorityBadge priority={track.priority} />
+                        {!track.is_active && (
+                          <Badge variant="secondary" size="sm">Inactive</Badge>
+                        )}
                       </div>
+                      <p className="text-xs text-[var(--color-text-secondary)]">by {track.artist}</p>
+
+                      <div className="flex gap-4 text-xs text-[var(--color-text-tertiary)]">
+                        <span>📋 {track.playlists_found || 0} playlists</span>
+                        <span>🔗 {track.adjacencies_found || 0} adjacencies</span>
+                        {track.last_searched && (
+                          <span>🔍 Last searched: {new Date(track.last_searched).toLocaleDateString()}</span>
+                        )}
+                      </div>
+
+                      {track.genres && track.genres.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {track.genres.map((genre, idx) => (
+                            <Badge key={idx} variant="outline" size="sm">
+                              {genre}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Completion Slider */}
-                      <div className="mt-4">
-                        <label className="text-xs text-gray-400">
-                          Completion: {track.completion_percentage || 0}%
-                        </label>
+                      <div className="pt-2 space-y-1">
+                        <div className="flex justify-between text-[11px] text-[var(--color-text-tertiary)]">
+                          <span>Completion</span>
+                          <span>{track.completion_percentage || 0}%</span>
+                        </div>
                         <input
                           type="range"
                           min="0"
@@ -663,62 +594,92 @@ const TargetTracksManager: React.FC = () => {
                           onChange={(e) =>
                             handleUpdateCompletion(track.track_id!, parseInt(e.target.value))
                           }
-                          className="w-full h-2 bg-dj-gray rounded-lg appearance-none cursor-pointer"
+                          className="w-full h-1.5 bg-[var(--color-bg-elevated-3)] rounded appearance-none cursor-pointer accent-[var(--color-brand-primary)]"
                         />
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
 
-        {/* Tab Content: Search Services */}
-        {activeTab === 'search' && (
-          <div className="flex-1 overflow-hidden">
-            <MusicServiceSearch onAddToTargets={handleAddFromMusicService} />
-          </div>
+                    {/* Actions */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleArchiveTrack(track.track_id!, !track.archived)}
+                        title={track.archived ? 'Unarchive' : 'Archive'}
+                      >
+                        {track.archived ? '📂' : '🗄️'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleSearchNow(track.track_id!)}
+                        title="Search now"
+                      >
+                        🔍
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditTrack(track)}
+                        title="Edit"
+                      >
+                        ✏️
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-[var(--color-error)]"
+                        onClick={() => handleDeleteTrack(track.track_id!)}
+                        title="Delete"
+                      >
+                        🗑️
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )
+        ) : (
+          <MusicServiceSearch onAddToTargets={handleAddFromMusicService} />
         )}
       </div>
 
       {/* Add/Edit Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div ref={modalRef} className="bg-dj-dark border border-dj-gray rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">
+        <div className="fixed inset-0 bg-[var(--color-modal-overlay)] flex items-center justify-center z-[var(--z-modal)] p-4 backdrop-blur-sm">
+          <Card ref={modalRef} variant="elevated" className="w-full max-w-md p-6 border-[var(--color-border-default)] bg-[var(--color-bg-elevated-1)] space-y-4">
+            <CardTitle className="text-lg font-bold">
               {editingTrack ? 'Edit Target Track' : 'Add Target Track'}
-            </h3>
+            </CardTitle>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Title</label>
-                <input
+                <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Title</label>
+                <Input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Artist</label>
-                <input
+                <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Artist</label>
+                <Input
                   type="text"
                   required
                   value={formData.artist}
                   onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
-                  className="w-full px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Priority</label>
+                <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Priority</label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                  className="w-full px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+                  className="w-full px-3 py-2 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-md text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-input-focus)]"
                 >
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
@@ -728,84 +689,34 @@ const TargetTracksManager: React.FC = () => {
 
               {/* Genres */}
               <div>
-                <label className="block text-sm font-medium mb-1">Genres</label>
+                <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Genres</label>
                 <div className="space-y-2">
                   <div className="flex gap-2">
-                    <input
+                    <Input
                       type="text"
                       value={newGenre}
                       onChange={(e) => setNewGenre(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
                       placeholder="Add genre..."
-                      className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
+                      className="flex-1"
                     />
-                    <button
-                      type="button"
-                      onClick={addGenre}
-                      className="px-3 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
-                    >
+                    <Button type="button" size="sm" variant="secondary" onClick={addGenre}>
                       Add
-                    </button>
+                    </Button>
                   </div>
                   {formData.genres && formData.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                       {formData.genres.map((genre, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-dj-gray rounded text-sm flex items-center gap-1"
-                        >
+                        <Badge key={index} variant="outline" size="sm" className="flex items-center gap-1">
                           {genre}
                           <button
                             type="button"
                             onClick={() => removeGenre(genre)}
-                            className="text-dj-danger hover:text-red-400 ml-1"
+                            className="text-[var(--color-error)] ml-1"
                           >
                             ×
                           </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Search Terms */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Search Terms</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newSearchTerm}
-                      onChange={(e) => setNewSearchTerm(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSearchTerm())}
-                      placeholder="Add search term..."
-                      className="flex-1 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent"
-                    />
-                    <button
-                      type="button"
-                      onClick={addSearchTerm}
-                      className="px-3 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  {formData.search_terms && formData.search_terms.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {formData.search_terms.map((term, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-dj-gray rounded text-sm flex items-center gap-1"
-                        >
-                          {term}
-                          <button
-                            type="button"
-                            onClick={() => removeSearchTerm(term)}
-                            className="text-dj-danger hover:text-red-400 ml-1"
-                          >
-                            ×
-                          </button>
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   )}
@@ -813,48 +724,41 @@ const TargetTracksManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--color-text-secondary)]">
                   <input
                     type="checkbox"
                     checked={formData.is_active}
                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="rounded border-dj-gray"
+                    className="w-4 h-4 accent-[var(--color-brand-primary)]"
                   />
-                  <span className="text-sm">Active</span>
+                  Active
                 </label>
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all"
-                >
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" variant="primary" className="flex-1">
                   {editingTrack ? 'Update' : 'Add'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 px-4 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all"
-                >
+                </Button>
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setIsAddModalOpen(false)}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Import Modal */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-dj-dark border border-dj-gray rounded-lg p-6 w-full max-w-lg">
-            <h3 className="text-lg font-bold mb-4">Import Target Tracks</h3>
+        <div className="fixed inset-0 bg-[var(--color-modal-overlay)] flex items-center justify-center z-[var(--z-modal)] p-4 backdrop-blur-sm">
+          <Card variant="elevated" className="w-full max-w-lg p-6 border-[var(--color-border-default)] bg-[var(--color-bg-elevated-1)] space-y-4">
+            <CardTitle className="text-lg font-bold">Import Target Tracks</CardTitle>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2">
                   JSON Data
-                  <span className="text-gray-400 ml-2">(Paste JSON array of tracks)</span>
+                  <span className="text-[var(--color-text-tertiary)] ml-2">(Paste JSON array of tracks)</span>
                 </label>
                 <textarea
                   value={importData}
@@ -865,40 +769,35 @@ const TargetTracksManager: React.FC = () => {
     "artist": "Artist Name",
     "priority": "medium",
     "genres": ["Electronic", "House"],
-    "search_terms": ["remix", "original mix"],
     "is_active": true
   }
 ]`}
-                  className="w-full h-64 px-3 py-2 bg-dj-black border border-dj-gray rounded focus:outline-none focus:border-dj-accent font-mono text-sm"
+                  className="w-full h-48 px-3 py-2 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-md text-[var(--color-text-primary)] font-mono text-xs focus:outline-none focus:border-[var(--color-input-focus)]"
                 />
               </div>
 
-              <div className="bg-dj-black p-3 rounded border border-dj-gray">
-                <p className="text-sm text-gray-400">
-                  <strong>Format:</strong> JSON array with fields: title, artist, priority, genres, search_terms, is_active
-                </p>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <button
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="primary"
+                  className="flex-1"
                   onClick={handleImportTracks}
                   disabled={!importData.trim()}
-                  className="flex-1 px-4 py-2 bg-dj-accent text-black rounded hover:bg-opacity-90 transition-all disabled:opacity-50"
                 >
                   Import Tracks
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
                   onClick={() => {
                     setIsImportModalOpen(false);
                     setImportData('');
                   }}
-                  className="flex-1 px-4 py-2 bg-dj-gray text-gray-300 rounded hover:bg-opacity-90 transition-all"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -906,8 +805,10 @@ const TargetTracksManager: React.FC = () => {
       {notification && (
         <div
           className={clsx(
-            'fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg transition-all z-50',
-            notification.type === 'success' ? 'bg-dj-accent text-black' : 'bg-dj-danger text-white'
+            'fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg transition-all z-50 text-xs font-semibold',
+            notification.type === 'success'
+              ? 'bg-[var(--color-success-bg)] text-[var(--color-success)] border border-[var(--color-success-border)]'
+              : 'bg-[var(--color-error-bg)] text-[var(--color-error)] border border-[var(--color-error-border)]'
           )}
         >
           {notification.message}
