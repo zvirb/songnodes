@@ -9,8 +9,9 @@ import { Track } from '../types';
 
 import type { ServerPathResult as PathfinderResult } from '../types/pathfinding';
 import { adaptServerPath } from '../utils/serverPath';
+import { API_BASE_URL } from '../lib/apiBase';
 
-const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+const REST_API_BASE = API_BASE_URL;
 
 export const PathfinderPanel: React.FC = () => {
   // Use store's graphData which includes any applied filters

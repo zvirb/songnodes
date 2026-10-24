@@ -35,6 +35,14 @@ loopback port 8082, and the graph API on loopback port 8084. Vite uses port 3006
 and proxies API requests to those backends. The script supports the cloud's
 existing proxy and CA certificate without disabling verification.
 
+The frontend calls the API on its own origin (`/api/...`, `frontend/src/lib/apiBase.ts`):
+Vite proxies it in development and the frontend container's nginx proxies it in the
+Compose stack. Set `VITE_API_BASE_URL` only for an API on another origin. OAuth redirect
+URIs default to the page's origin; Spotify accepts loopback redirects only as
+`127.0.0.1`, so open the app at `http://127.0.0.1:3006` or set
+`VITE_OAUTH_REDIRECT_ORIGIN=http://127.0.0.1:3006` before building. The URI must match
+the one registered with Spotify or TIDAL exactly.
+
 The development database is private to this Compose network and has no published
 port. It uses trust authentication for development only. Never use this Compose
 file on a shared or production network. Redis also has no published port.

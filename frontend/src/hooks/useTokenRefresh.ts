@@ -17,6 +17,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import useStore from '../store/useStore';
+import { API_BASE_URL } from '../lib/apiBase';
 
 interface TokenRefreshState {
   isRefreshing: boolean;
@@ -28,7 +29,6 @@ interface UseTokenRefreshReturn extends TokenRefreshState {
   forceRefresh: (service: 'spotify' | 'tidal') => Promise<void>;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
 // Refresh tokens 5 minutes before expiration
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;

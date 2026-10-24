@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { Track } from '../types';
 import { ServicePlaylistView } from './ServicePlaylistView';
 import { showToast } from './ds';
+import { API_BASE_URL } from '../lib/apiBase';
 
 interface SpotifyPlaylist {
   id: string;
@@ -27,7 +28,7 @@ interface SpotifyTrackResponse {
   url?: string;
 }
 
-const REST_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
+const REST_API_BASE = API_BASE_URL;
 
 export const SpotifyPlaylistManager: React.FC = () => {
   const { currentSetlist, musicCredentials } = useStore();
