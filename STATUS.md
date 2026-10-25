@@ -791,3 +791,24 @@ check reported `data layer schema is complete`.
 Unresolved deployment issues: none observed. No live provider checks or
 scraping were run. Next task: once ready for real data, complete the documented
 credential-gated live provider checks before the first real scrape.
+
+### FE1: 2026-10-25 03:55:30Z - Initializing unified track data bridge task
+## FE1: Unified track data bridge (2025)
+
+Started working on FE1 to introduce the unified track data bridge as defined by the shared contract. The desync of 294 library tracks not being visible to Target Tracks has been addressed by providing a shared data layer for all modules.
+
+1. `types/unifiedTrack.ts`: Created the interface.
+2. `unifiedTrackService.ts`: Created the service to load targets from the backend (`/api/v1/target-tracks`) and fallback logic via `fromLibraryRow()` mapping `/data/music-library.json`.
+3. `trackSyncAdapter.ts`: Created local-first persistence of target flags with optimistic syncing.
+4. `useUnifiedTracks.ts`: Implemented `UseUnifiedTracks` using `zustand` for module-level state.
+5. Unit tests: Added `unifiedTrackService.test.ts` for fixture hydration, normalization, and track mappings.
+6. Validation checks:
+   - `npm run type-check`: Passed.
+   - `npm run test:unit`: Passed (87/87).
+   - `npm run build`: Passed.
+   - `scripts/sync-design-system.sh --check`: Passed.
+   - Note: Linting was not successfully run due to missing config file / configuration migration error on ESLint 9; ignoring per context. Playwright tests could not be run as per sandbox limits and design guidance.
+
+The route to consume the target tracking is effectively the `/sources/targets` endpoint and any other app pages that need unified view access.
+
+Ready for submission. Handback completed via branch `fe1-track-bridge`.
