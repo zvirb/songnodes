@@ -45,11 +45,12 @@ jobs:
           done <<< "$pending"
           exit $status
       - uses: actions/setup-node@v7
-        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - name: Type-check, unit tests and build
+        with: { node-version: 26, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: Type-check, lint, unit tests and build
         working-directory: frontend
         run: |
           npm ci --no-audit --no-fund
           npx tsc --noEmit -p .
+          npx oxlint src
           npx vitest run src
           npx vite build
