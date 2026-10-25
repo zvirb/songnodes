@@ -1,0 +1,208 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    groups:
+      frontend-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/streaming-integrations"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-streaming-integrations:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/rest_api"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-rest-api:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/db-connection-pool"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-db-connection-pool:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/websocket-api"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-websocket-api:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/serato-integration"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-serato-integration:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/metadata-enrichment"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-metadata-enrichment:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/graph-visualization-api"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-graph-visualization-api:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/data-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-data-validator:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/graphql-api"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-graphql-api:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/nlp-processor"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-nlp-processor:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/audio-analysis"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-audio-analysis:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/tidal-integration"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-tidal-integration:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/data-transformer"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-data-transformer:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/gold-to-operational-etl"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-gold-to-operational-etl:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/scraper-orchestrator"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-scraper-orchestrator:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/api-gateway-internal"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-api-gateway-internal:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/browser-collector"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-browser-collector:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/dlq-manager"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-dlq-manager:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/services/worker"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-worker:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/scrapers"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-scrapers:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pip"
+    directory: "/tests"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip-tests:
+        patterns:
+          - "*"
