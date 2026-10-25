@@ -104,12 +104,15 @@ async def library_search(
              OR pt.mix_name ILIKE ${idx}
              OR array_to_string(sa.aliases, ' ') ILIKE ${idx}
              OR to_tsvector('english', pt.track_title || ' ' || pt.artist_name) @@ plainto_tsquery('english', ${idx}))
+             OR array_to_string(sa.aliases, ' ') ILIKE ${idx})
         """)
 
     if rotation is not None:
         params.append(rotation)
         idx = len(params)
-        where_clauses.append(f"(SELECT r.rotation::int FROM library.rotation_history r WHERE r.track_id = pt.track_id ORDER BY changed_at DESC LIMIT 1) = ${idx}")
+        where_clauses.append(f"""
+            (SELECT r.rotation::int FROM library.rotation_history r WHERE r.track_id = pt.track_id ORDER BY changed_at DESC LIMIT 1) = ${idx}
+        """)
 
     if tags:
         tags_list = [t.strip() for t in tags.split(',')]

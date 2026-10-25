@@ -382,7 +382,9 @@ export const Banner: React.FC<{ status: 'info' | 'warn' | 'ok'; title: string; c
   </div>
 );
 
+
 /* ------------------------------------------------------------------ TrackCell */
+
 
 const EXT: [keyof LibraryTrack, string][] = [['tidal', 'TIDAL'], ['dz', 'Deezer'], ['bp', 'Beatport']];
 
@@ -405,6 +407,10 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
 dump: ${t.mbdump || 'N/A'}`} onClick={() => setShowCov(s => !s)} style={{ marginLeft: "0.5rem", padding: "0.1rem 0.4rem", height: "auto" }}>
             MB Match
           </button>
+          <span className="sn-tag sn-category-tag" style={{ marginLeft: "0.5rem" }} title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'})
+dump date: ${t.mbdump || 'N/A'}`}>
+            MB Match
+          </span>
         )}
       </span>
       {showCov && <CoveragePanel t={t} />}
@@ -424,6 +430,8 @@ dump: ${t.mbdump || 'N/A'}`} onClick={() => setShowCov(s => !s)} style={{ margin
     </div>
   );
 };
+
+
 
 
 /* ------------------------------------------------------------------ CoveragePanel */
