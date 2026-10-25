@@ -382,9 +382,7 @@ export const Banner: React.FC<{ status: 'info' | 'warn' | 'ok'; title: string; c
   </div>
 );
 
-
 /* ------------------------------------------------------------------ TrackCell */
-
 
 const EXT: [keyof LibraryTrack, string][] = [['tidal', 'TIDAL'], ['dz', 'Deezer'], ['bp', 'Beatport']];
 
@@ -397,17 +395,19 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
   if (t.lbl) meta.push(<span key="l">{t.lbl}</span>);
   if (t.d) meta.push(<span className="sn-track-cell__dur" key="d">{SN.format.duration(t.d)}</span>);
   const ext = links ? EXT.filter(([k]) => t[k]) : [];
+  const [showCov, setShowCov] = useState(false);
   return (
     <div className="sn-track-cell">
       <span className="sn-track-cell__title">
         <span className="sn-track-cell__name" title={name}><span className="sn-track-cell__artist">{t.a} –</span> {t.t}</span>
         {t.mbid && (
-          <span className="sn-tag sn-category-tag" style={{ marginLeft: "0.5rem" }} title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'})
-dump date: ${t.mbdump || 'N/A'}`}>
+          <button className="sn-btn sn-btn--quiet sn-tag sn-category-tag sn-u-ml-xs" title={`MB Match (confidence: ${t.mbconf || 'high'})
+dump: ${t.mbdump || 'N/A'}`} onClick={() => setShowCov(s => !s)} style={{ marginLeft: "0.5rem", padding: "0.1rem 0.4rem", height: "auto" }}>
             MB Match
-          </span>
+          </button>
         )}
       </span>
+      {showCov && <CoveragePanel t={t} />}
       <span className="sn-track-cell__meta">
         {meta.map((m, i) => (
           <React.Fragment key={i}>{i ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}{m}</React.Fragment>
@@ -424,8 +424,6 @@ dump date: ${t.mbdump || 'N/A'}`}>
     </div>
   );
 };
-
-
 
 
 /* ------------------------------------------------------------------ CoveragePanel */

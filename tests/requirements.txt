@@ -130,7 +130,7 @@ rpds-py==2026.9.1
 ruamel.yaml==0.19.1
 ruamel.yaml.clib==0.2.15
 safety==3.8.1
-safety-schemas
+safety-schemas==0.0.16
 schemathesis==4.32.4
 Scrapy==2.19.0
 service-identity==26.1.0

@@ -554,6 +554,7 @@ const SetBuilderPage: React.FC = () => {
       <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
       <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
       <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+          <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
     </main>
   );
 };
