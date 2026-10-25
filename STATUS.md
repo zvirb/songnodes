@@ -408,8 +408,8 @@ Started working on Python 3.12 upgrade audit.
 
 <!-- SLOT:WP8 BEGIN -->
 ### WP8: Graph projection as an outbox consumer
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25 - Initiated graph projection module creation.
+- End: 2026-10-25 - Completed implementation of Memgraph consumer, runners, SQL migrations, and tests. Tests were created but skipped locally due to testcontainer/docker restrictions.
 <!-- SLOT:WP8 END -->
 
 <!-- SLOT:WP9 BEGIN -->
