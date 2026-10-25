@@ -107,9 +107,6 @@ updates:
       pip-nlp-processor:
         patterns:
           - "*"
-    ignore:
-      - dependency-name: "numpy"
-        versions: [">=2.5.0"] # Requires Python 3.12, but this service stays on 3.11
 
   - package-ecosystem: "pip"
     directory: "/services/audio-analysis"
