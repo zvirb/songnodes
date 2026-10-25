@@ -6,6 +6,11 @@ Provides monitoring and management for PgBouncer connection pooling
 import asyncio
 import logging
 import os
+
+import sys
+if '/app' not in sys.path:
+    sys.path.insert(0, '/app')
+from services.common.security.cors import setup_cors
 import time
 from contextlib import asynccontextmanager
 from typing import Dict, List, Optional
@@ -283,13 +288,7 @@ app = FastAPI(
 )
 
 # Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for non-security-conscious app
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+setup_cors(app)
 
 @app.get("/health")
 async def health_check():
