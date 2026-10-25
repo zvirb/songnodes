@@ -301,9 +301,9 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'var(--overlay)',
           backdropFilter: 'blur(2px)',
-          zIndex: 9999,
+          zIndex: 'var(--z-popover)',
           cursor: 'pointer'
         }}
         onMouseDown={(e) => {
@@ -316,12 +316,14 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
       {/* Radial Menu */}
       <div
         ref={menuRef}
+        role="menu"
+        aria-label="Actions menu"
         style={{
           position: 'fixed',
           left: x,
           top: y,
           transform: 'translate(-50%, -50%)',
-          zIndex: 10000,
+          zIndex: 'calc(var(--z-popover) + 1)',
           width: RADIUS * 2 + ITEM_RADIUS * 2,
           height: RADIUS * 2 + ITEM_RADIUS * 2,
           pointerEvents: 'none'

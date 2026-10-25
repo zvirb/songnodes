@@ -39,7 +39,7 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ open, onCl
       role="dialog"
       aria-modal="true"
       aria-labelledby="onboarding-title"
-      style={{ zIndex: 9999 }}
+      style={{ zIndex: 'var(--z-dialog)' }}
     >
       <div className="onboarding-backdrop" onClick={onClose} />
       <div className="onboarding-card" onClick={(event) => event.stopPropagation()}>

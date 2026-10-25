@@ -41,35 +41,60 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   }, [selectedValues, onChange]);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-gray-300">{label}</label>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-blue-400 font-mono">({selectedValues.length})</span>
-          <button onClick={() => setIsExpanded(!isExpanded)} className="text-gray-400 hover:text-blue-400">
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)' }}>{label}</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.75rem' }}>
+          <span style={{ color: 'var(--brand-strong)', fontFamily: 'var(--font-data)' }}>({selectedValues.length})</span>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? `Collapse ${label} options` : `Expand ${label} options`}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--fg-3)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '2px'
+            }}
+          >
+            {isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
           </button>
         </div>
       </div>
       {isExpanded && (
-        <div className="space-y-2 p-2 bg-gray-800 rounded-md">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-control)', border: '1px solid var(--line)' }}>
           {searchable && (
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={`Search ${label.toLowerCase()}...`}
-              className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="sn-input"
+              aria-label={`Search ${label}`}
+              style={{
+                width: '100%',
+                padding: 'var(--space-2) var(--space-3)',
+                backgroundColor: 'var(--surface-1)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-chip)',
+                color: 'var(--fg)',
+                fontSize: '0.8125rem'
+              }}
             />
           )}
-          <div className={`overflow-y-auto space-y-1 ${maxHeight}`}>
+          <div className={maxHeight} style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
             {filteredOptions.map(option => (
-              <label key={option} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white cursor-pointer p-1.5 hover:bg-gray-700 rounded">
+              <label key={option} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem', color: 'var(--fg-2)', cursor: 'pointer', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-chip)' }}>
                 <input
                   type="checkbox"
                   checked={selectedValues.includes(option)}
                   onChange={() => toggleOption(option)}
-                  className="w-4 h-4 bg-gray-700 border-gray-600 rounded text-blue-500 focus:ring-blue-500"
+                  className="sn-checkbox"
+                  style={{ accentColor: 'var(--brand)' }}
                 />
                 <span>{option}</span>
               </label>

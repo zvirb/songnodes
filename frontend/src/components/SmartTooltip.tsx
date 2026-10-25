@@ -225,21 +225,22 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
         left: position.x,
         top: position.y,
         maxWidth: `${maxWidth}px`,
-        backgroundColor: 'rgba(30, 30, 40, 0.98)',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
-        borderRadius: '12px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'var(--surface-1)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--radius-control)',
+        boxShadow: 'var(--shadow-2)',
         backdropFilter: 'blur(20px)',
-        color: 'white',
-        fontSize: '13px',
+        color: 'var(--fg)',
+        fontSize: '0.8125rem',
         lineHeight: '1.4',
-        zIndex: 10001,
+        zIndex: 'var(--z-tooltip)',
         opacity: isAnimating ? 0 : 1,
         transform: `scale(${isAnimating ? 0.95 : 1}) translateY(${isAnimating ?
           actualPlacement === 'bottom' ? '-5px' : '5px' : '0px'})`,
         transition: 'opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
         pointerEvents: interactive ? 'auto' : 'none'
       }}
+      role="tooltip"
       onMouseEnter={() => {
         if (hideTimeoutRef.current) {
           clearTimeout(hideTimeoutRef.current);
@@ -253,8 +254,8 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
           position: 'absolute',
           width: '12px',
           height: '12px',
-          backgroundColor: 'rgba(30, 30, 40, 0.98)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'var(--surface-1)',
+          border: '1px solid var(--line)',
           transform: 'rotate(45deg)',
           ...(actualPlacement === 'top' && {
             bottom: '-7px',
