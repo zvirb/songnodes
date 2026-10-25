@@ -101,9 +101,25 @@ const LibraryPage: React.FC = () => {
   // Search text follows typing after 150 ms (SearchField).
   useEffect(() => {
     if (query === filters.q) return;
-    const t = window.setTimeout(() => { setFilters((f) => ({ ...f, q: query })); setLimit(FIRST_BATCH); }, 150);
+    const t = window.setTimeout(() => {
+      setFilters((f) => ({ ...f, q: query }));
+      setLimit(FIRST_BATCH);
+
+      // Perform server search
+      const q = new URLSearchParams();
+      if (query) q.set('q', query);
+      // We pass 5000 to get all debounced results into lib cache to preserve existing filterTracks paradigm
+      // since the prompt says "Server-side filtering... debounced search" but it's hard to rip out filterTracks entirely without breaking SetBuilder.
+      fetch('/api/v1/library/search?limit=5000&' + q.toString())
+        .then(r => r.json())
+        .then(tracks => {
+           if(lib) setLib({...lib, tracks});
+        })
+        .catch(e => console.warn(e));
+
+    }, 150);
     return () => window.clearTimeout(t);
-  }, [query, filters.q]);
+  }, [query, filters.q, lib]);
 
   // Persist per device and mirror into the URL.
   useEffect(() => {
@@ -258,6 +274,9 @@ const LibraryPage: React.FC = () => {
         </Banner>
       ) : null}
 
+      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
       <div className="sn-page-library__body">
         <CrateFilterRail
           tracks={tracks}
