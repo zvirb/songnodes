@@ -6,6 +6,7 @@ import { KeyCompat } from './ds';
 /**
  * HarmonicCompatibility: key verdict between two tracks as a design-system
  * CompatibilityBadge (glyph + words), from SN.compat on standard Camelot codes.
+ * Ensures JetBrains Mono rendering for Camelot key notations.
  */
 
 interface HarmonicCompatibilityProps {
@@ -21,7 +22,7 @@ export const HarmonicCompatibility: React.FC<HarmonicCompatibilityProps> = ({
   targetKey,
   showLabel = false,
 }) => (
-  <span className="harmonic-indicator" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+  <span className="harmonic-indicator" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', fontFamily: 'var(--font-data)' }}>
     <KeyCompat from={currentKey} to={targetKey} outline />
     {showLabel ? <KeyBadge value={targetKey} /> : null}
   </span>
@@ -44,7 +45,7 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({ currentKey, tracks, on
   const sortedTracks = tracks.slice(0, 20).sort((a, b) => ORDER[levelOf(currentKey, a.key)] - ORDER[levelOf(currentKey, b.key)]);
   return (
     <div className="harmonic-set" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-      <h3 className="sn-title title-s" style={{ margin: 0 }}>
+      <h3 className="sn-title title-s" style={{ margin: 0, fontFamily: 'var(--font-display)' }}>
         Keys that mix from <KeyBadge value={currentKey} />
       </h3>
       {sortedTracks.map((track) => (
@@ -53,10 +54,10 @@ export const HarmonicSet: React.FC<HarmonicSetProps> = ({ currentKey, tracks, on
           key={track.id}
           className="sn-btn sn-btn--quiet"
           onClick={() => onTrackSelect?.(track.id)}
-          style={{ justifyContent: 'flex-start', gap: 'var(--space-3)', width: '100%' }}
+          style={{ justifyContent: 'flex-start', gap: 'var(--space-3)', width: '100%', fontFamily: 'var(--font-body)' }}
         >
           <KeyCompat from={currentKey} to={track.key} outline />
-          <span style={{ flex: 1, textAlign: 'left', color: 'var(--fg)' }}>{track.name}</span>
+          <span style={{ flex: 1, textAlign: 'left', color: 'var(--fg)', fontFamily: 'var(--font-body)' }}>{track.name}</span>
           <KeyBadge value={track.key} />
         </button>
       ))}
