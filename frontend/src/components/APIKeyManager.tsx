@@ -503,9 +503,9 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
               <SegmentedControl
                 label="Preferred AI Provider"
                 options={[
-                  { value: 'claude', label: 'Anthropic (Claude)' },
+                  { value: 'claude', label: 'Claude' },
                   { value: 'openai', label: 'OpenAI' },
-                  { value: 'gemini', label: 'Google (Gemini)' },
+                  { value: 'gemini', label: 'Gemini' },
                 ]}
                 value={aiConfig.preferredProvider || 'claude'}
                 onChange={(val) => handlePreferredProviderChange(val as AIProvider)}

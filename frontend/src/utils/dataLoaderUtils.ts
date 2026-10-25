@@ -1,6 +1,6 @@
 /**
  * @file Data Loader Utilities
- * @description Contains helper functions for the LiveDataLoader component.
+ * @description Contains helper functions for LiveDataLoader, Pipeline Telemetry, and Scraper Progress.
  */
 
 import { GraphNode } from '../types';
@@ -27,4 +27,142 @@ export const hasValidArtist = (node: GraphNode): boolean => {
   if (invalidPrefixes.some(prefix => normalizedArtist.startsWith(prefix))) return false;
 
   return true;
+};
+
+export type MedallionStageId = 'bronze' | 'silver' | 'gold' | 'serving';
+export type PipelineStageState = 'done' | 'running' | 'waiting' | 'failed' | 'cancelled';
+
+export interface MedallionStageInfo {
+  id: MedallionStageId;
+  name: string;
+  description: string;
+  state: PipelineStageState;
+  done: number;
+  total: number;
+  detail?: string;
+  seconds?: number;
+}
+
+export interface PipelineBatchTelemetry {
+  activeWorkers: number;
+  itemsProcessed: number;
+  itemsRemaining: number;
+  throughputRate: number; // items per second
+  errorCount: number;
+  lastSyncIso: string;
+}
+
+export interface ScraperWorkerHealth {
+  id: string;
+  name: string;
+  kind: string;
+  status: 'idle' | 'running' | 'error' | 'disabled' | 'circuit_open';
+  lastSuccessAt: string | null;
+  successRate: number;
+  jobsToday: number;
+  activeTarget?: string;
+}
+
+/**
+ * Calculate default Medallion Pipeline Stages given raw processing metrics
+ */
+export const getDefaultMedallionStages = (
+  processed = 18420,
+  total = 20000,
+  activeWorkers = 12,
+  errorCount = 3
+): MedallionStageInfo[] => {
+  const isComplete = processed >= total;
+  const isSilverActive = processed > 5000;
+  const isGoldActive = processed > 12000;
+  const isServingActive = processed > 18000;
+
+  return [
+    {
+      id: 'bronze',
+      name: 'Stage 1: Bronze Ingestion',
+      description: 'Raw scraping & API queries from 1001TL, Spotify & Tidal',
+      state: isComplete ? 'done' : 'running',
+      done: Math.min(processed, total),
+      total: total,
+      detail: isComplete
+        ? `Ingested ${total.toLocaleString()} raw track logs`
+        : `Fetching targets via ${activeWorkers} active worker processes`,
+      seconds: 245,
+    },
+    {
+      id: 'silver',
+      name: 'Stage 2: Silver Normalization',
+      description: 'Artist cleaning, schema validation & key/BPM standardization',
+      state: isComplete ? 'done' : isSilverActive ? 'running' : 'waiting',
+      done: isComplete ? total : Math.floor(processed * 0.95),
+      total: total,
+      detail: isSilverActive
+        ? `Validated ${Math.floor(processed * 0.95).toLocaleString()} normalized entities (${errorCount} validation errors)`
+        : 'Awaiting raw ingestion stream',
+      seconds: isComplete ? 180 : undefined,
+    },
+    {
+      id: 'gold',
+      name: 'Stage 3: Gold Graphing',
+      description: 'Adjacency matrix generation, track affinity & edge weighting',
+      state: isComplete ? 'done' : isGoldActive ? 'running' : 'waiting',
+      done: isComplete ? total : Math.floor(processed * 0.88),
+      total: total,
+      detail: isGoldActive
+        ? `Computed harmonic affinity and co-occurrence edges`
+        : 'Queued for graph computation',
+      seconds: isComplete ? 112 : undefined,
+    },
+    {
+      id: 'serving',
+      name: 'Stage 4: Serving Index',
+      description: 'Operational cache synchronization & client delivery',
+      state: isComplete ? 'done' : isServingActive ? 'running' : 'waiting',
+      done: isComplete ? total : Math.floor(processed * 0.82),
+      total: total,
+      detail: isServingActive
+        ? 'Warming Redis cache and indexing graph vectors'
+        : 'Waiting for graph batch completion',
+      seconds: isComplete ? 45 : undefined,
+    },
+  ];
+};
+
+/**
+ * Format throughput rates cleanly (e.g., "142.5 items/s")
+ */
+export const formatThroughput = (rate: number): string => {
+  if (rate >= 1000) {
+    return `${(rate / 1000).toFixed(1)}k items/s`;
+  }
+  return `${rate.toFixed(1)} items/s`;
+};
+
+/**
+ * Map status strings to tokenized design system status colors
+ */
+export const getStatusTokenColor = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'ok':
+    case 'done':
+    case 'running':
+    case 'healthy':
+    case 'success':
+      return 'var(--status-ok)';
+    case 'warn':
+    case 'circuit_open':
+    case 'degraded':
+      return 'var(--status-warn)';
+    case 'bad':
+    case 'error':
+    case 'failed':
+      return 'var(--status-bad)';
+    case 'info':
+    case 'idle':
+    case 'waiting':
+    case 'disabled':
+    default:
+      return 'var(--status-info)';
+  }
 };
