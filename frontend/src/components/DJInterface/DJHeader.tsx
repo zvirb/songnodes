@@ -17,10 +17,10 @@ import styles from './DJInterface.module.css';
  * DJHeader - Main navigation and control bar
  *
  * Features:
- * - App title with gradient effect
+ * - App title using Sora display typography
  * - Mode selector (PLAN/PLAY toggle)
- * - Track and connection count badges
- * - Quick action buttons (Artist Attribution, Tracklist Import, etc.)
+ * - Track and connection count badges with JetBrains Mono figures
+ * - Quick action buttons
  * - Settings and onboarding access
  *
  * @param props - DJHeaderProps
@@ -46,8 +46,8 @@ export function DJHeader({
     <header className={styles.header}>
       <div className={styles.headerLeft}>
         <h1 className={styles.headerTitle}>
-          <Music size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} aria-hidden="true" />
-          SongNodes DJ
+          <Music size={22} strokeWidth={2} className={styles.headerTitleIcon} aria-hidden="true" />
+          <span>SongNodes DJ</span>
         </h1>
 
         <DJModeSelector mode={mode} onModeChange={onModeChange} />
@@ -55,16 +55,17 @@ export function DJHeader({
 
       <div className={styles.headerRight}>
         <span className={styles.statBadge}>
-          {trackCount} Tracks Loaded
+          <strong className={styles.statNumber}>{trackCount}</strong> Tracks Loaded
         </span>
 
         <span className={`${styles.statBadge} ${styles.success}`}>
-          {connectionCount} Connections
+          <strong className={styles.statNumber}>{connectionCount}</strong> Connections
         </span>
 
         <button
+          type="button"
           onClick={onOpenArtistAttribution}
-          className={`${styles.headerButton} ${styles.danger}`}
+          className={`${styles.headerButton} ${styles.warning}`}
           aria-label="Fix artist attribution for unknown tracks"
         >
           <Wand2 size={16} strokeWidth={2} aria-hidden="true" />
@@ -72,6 +73,7 @@ export function DJHeader({
         </button>
 
         <button
+          type="button"
           onClick={onOpenTracklistImporter}
           className={`${styles.headerButton} ${styles.info}`}
           aria-label="Import tracklist from text or file"
@@ -81,6 +83,7 @@ export function DJHeader({
         </button>
 
         <button
+          type="button"
           onClick={onOpenGraphFilters}
           className={styles.headerButton}
           aria-label="Configure graph visualization filters"
@@ -90,6 +93,7 @@ export function DJHeader({
         </button>
 
         <button
+          type="button"
           onClick={onOpenSettings}
           className={styles.headerButton}
           aria-label="Open application settings"
@@ -99,12 +103,13 @@ export function DJHeader({
         </button>
 
         <button
+          type="button"
           onClick={onOpenOnboarding}
           className={styles.headerButton}
           title={onboardingTooltip}
           aria-label={onboardingTooltip}
         >
-          <HelpCircle size={18} strokeWidth={1.8} />
+          <HelpCircle size={16} strokeWidth={2} aria-hidden="true" />
           Quick Tour
         </button>
       </div>
