@@ -1,8 +1,8 @@
-/* API keys dialog. Tokens only. */
+/* API keys dialog. Tokens only. Strictly adheres to Design System tokens. */
 .akm { display: flex; flex-direction: column; gap: var(--space-4); }
 .akm__key { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-control); }
 .akm__head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
-.akm__name { margin: 0; font-size: 0.9375rem; font-weight: 600; }
+.akm__name { margin: 0; font-size: 0.9375rem; font-weight: 600; color: var(--fg); }
 .akm__desc { margin: 0; font-size: 0.8125rem; color: var(--fg-2); }
 .akm__row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .akm__masked { flex: 1 1 auto; font: 400 0.8125rem/1.4 var(--font-data); color: var(--fg-2); }

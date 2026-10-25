@@ -1,6 +1,16 @@
-/** PreferencesPanel (design-system): theme, text size, density and motion, applied live through SN.prefs. */
-import React, { useState } from 'react';
+/** PreferencesPanel (design-system): theme, text size, density, motion, and AI Provider key configuration, applied live through SN.prefs. */
+import React, { useState, useEffect } from 'react';
 import { SN, SnIcon } from '../lib/songnodes';
+import { AIProvider, AIKeyConfig } from '../types';
+import { SecretField } from '../components/APIKeyManager';
+import {
+  getAIKeyConfig,
+  saveAIKey,
+  clearAIKey,
+  validateAIKey,
+  getMaskedKey,
+  setPreferredAIProvider,
+} from '../services/apiKeyService';
 
 type Theme = 'system' | 'dark' | 'light' | 'booth';
 const THEMES: [Theme, string, string][] = [
@@ -34,7 +44,38 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
 export const PreferencesPanel: React.FC<{ embedded?: boolean }> = ({ embedded = true }) => {
   const [p, setP] = useState(() => SN.prefs.get());
   const [announce, setAnnounce] = useState('');
+  const [aiConfig, setAiConfig] = useState<AIKeyConfig>(() => getAIKeyConfig());
+
+  useEffect(() => {
+    setAiConfig(getAIKeyConfig());
+  }, []);
+
   const refresh = (msg: string) => { setP(SN.prefs.get()); setAnnounce(msg); };
+
+  const handlePreferredProviderChange = (provider: AIProvider) => {
+    const updated = setPreferredAIProvider(provider);
+    setAiConfig(updated);
+    refresh(`Preferred AI provider set to ${provider.toUpperCase()}`);
+  };
+
+  const handleSaveAIKey = async (provider: AIProvider, key: string) => {
+    const updated = await saveAIKey(provider, key);
+    setAiConfig(updated);
+    refresh(`${provider.toUpperCase()} API key saved`);
+  };
+
+  const handleClearAIKey = async (provider: AIProvider) => {
+    const updated = await clearAIKey(provider);
+    setAiConfig(updated);
+    refresh(`${provider.toUpperCase()} API key cleared`);
+  };
+
+  const handleTestAIKey = async (provider: AIProvider) => {
+    const res = await validateAIKey(provider);
+    setAiConfig(getAIKeyConfig());
+    refresh(`${provider.toUpperCase()} key tested: ${res.message}`);
+    return res;
+  };
 
   return (
     <section className={`sn-preferences-panel${embedded ? ' sn-preferences-panel--embedded' : ''}`} aria-labelledby="pp-title">
@@ -72,6 +113,77 @@ export const PreferencesPanel: React.FC<{ embedded?: boolean }> = ({ embedded = 
             <label className="sn-check"><input type="radio" name="pp-motion" checked={p.motion === 'reduce'} onChange={() => { SN.prefs.setMotion('reduce'); refresh('Motion reduced'); }} /> <span>Always reduce motion</span></label>
           </div>
         </fieldset>
+
+        <div className="sn-preferences-panel__set">
+          <span className="sn-field__label">AI Provider Configuration</span>
+          <p className="sn-preferences-panel__help">Select your preferred AI provider and manage API keys using the SecretField pattern.</p>
+
+          <div style={{ marginBottom: 'var(--space-3)' }}>
+            <Segmented
+              label="Preferred AI Provider"
+              value={aiConfig.preferredProvider || 'claude'}
+              options={[
+                ['claude', 'Claude (Anthropic)'],
+                ['openai', 'OpenAI'],
+                ['gemini', 'Google (Gemini)'],
+              ]}
+              onChange={(v) => handlePreferredProviderChange(v as AIProvider)}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <SecretField
+              label="Anthropic (Claude) Key"
+              savedMask={getMaskedKey(aiConfig.claudeApiKey)}
+              status={aiConfig.claudeStatus || 'unconfigured'}
+              onSave={(key) => handleSaveAIKey('claude', key)}
+              onTest={() => handleTestAIKey('claude')}
+              onClear={() => handleClearAIKey('claude')}
+              lastTest={
+                aiConfig.lastTestedAt?.claude
+                  ? { ok: aiConfig.claudeStatus === 'valid', testedAt: aiConfig.lastTestedAt.claude }
+                  : undefined
+              }
+              getKeyUrl="https://console.anthropic.com/settings/keys"
+              getKeyLabel="Get key"
+              placeholder="sk-ant-..."
+            />
+
+            <SecretField
+              label="OpenAI Key"
+              savedMask={getMaskedKey(aiConfig.openaiApiKey)}
+              status={aiConfig.openaiStatus || 'unconfigured'}
+              onSave={(key) => handleSaveAIKey('openai', key)}
+              onTest={() => handleTestAIKey('openai')}
+              onClear={() => handleClearAIKey('openai')}
+              lastTest={
+                aiConfig.lastTestedAt?.openai
+                  ? { ok: aiConfig.openaiStatus === 'valid', testedAt: aiConfig.lastTestedAt.openai }
+                  : undefined
+              }
+              getKeyUrl="https://platform.openai.com/api-keys"
+              getKeyLabel="Get key"
+              placeholder="sk-..."
+            />
+
+            <SecretField
+              label="Google (Gemini) Key"
+              savedMask={getMaskedKey(aiConfig.geminiApiKey)}
+              status={aiConfig.geminiStatus || 'unconfigured'}
+              onSave={(key) => handleSaveAIKey('gemini', key)}
+              onTest={() => handleTestAIKey('gemini')}
+              onClear={() => handleClearAIKey('gemini')}
+              lastTest={
+                aiConfig.lastTestedAt?.gemini
+                  ? { ok: aiConfig.geminiStatus === 'valid', testedAt: aiConfig.lastTestedAt.gemini }
+                  : undefined
+              }
+              getKeyUrl="https://aistudio.google.com/app/apikey"
+              getKeyLabel="Get key"
+              placeholder="AIza..."
+            />
+          </div>
+        </div>
       </div>
       <div className="sn-preferences-panel__foot">
         <span>Saved on this device only</span>
