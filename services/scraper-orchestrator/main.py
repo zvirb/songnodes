@@ -482,13 +482,8 @@ async def scheduled_reddit_monitor():
         scrapers_dir = os.getenv('SCRAPERS_DIR', '/app/scrapers')
 
         # Run spider with time filter for recent posts
-        result = subprocess.run(
-            ['scrapy', 'crawl', 'reddit_monitor', '-a', 'time_filter=day'],
-            cwd=scrapers_dir,
-            capture_output=True,
-            text=True,
-            timeout=600  # 10 minute timeout
-        )
+        env = build_scraper_env(os.environ)
+        result = subprocess.run(['scrapy', 'crawl', 'reddit_monitor', '-a', 'time_filter=day'], cwd=scrapers_dir, env=env, capture_output=True, text=True, timeout=600)
 
         if result.returncode == 0:
             logger.info("Reddit monitoring completed successfully", output=result.stdout[-500:])
