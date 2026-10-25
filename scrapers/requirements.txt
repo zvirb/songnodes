@@ -40,7 +40,7 @@ uvicorn>=0.54.0
 
 # Utilities
 python-dotenv>=1.2.4
-python-dateutil>=2.8.2,<3.0.0
+python-dateutil>=3.0.0,<4.0.0
 psutil>=7.2.2
 
 # Observability (OpenTelemetry)
