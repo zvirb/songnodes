@@ -275,6 +275,51 @@ class PathfinderState:
             return self.pivot_score > other.pivot_score
         return self.f_score < other.f_score
 
+def prepare_adjacency(
+    adjacency: Dict[str, List[Tuple[str, float]]],
+    tracks_dict: Dict[str, TrackNode],
+    prefer_key_matching: bool,
+    synthetic_edges: Optional[Set[Tuple[str, str]]] = None
+) -> Dict[str, List[Tuple[str, float, float, bool, bool, int]]]:
+    """
+    Pre-compute static edge metrics and transition costs for all edges in the graph once.
+    This eliminates millions of redundant key compatibility and BPM difference calculation calls
+    during A* search expansions in progressive relaxation iterations.
+
+    Returns:
+        Dict mapping track_id -> List of pre-computed tuples:
+        (neighbor_id, edge_weight, base_transition_cost, key_compatible, is_synthetic, neighbor_duration_ms)
+    """
+    if synthetic_edges is None:
+        synthetic_edges = set()
+
+    prepared = {}
+    for u, neighbors in adjacency.items():
+        u_track = tracks_dict.get(u)
+        if not u_track:
+            continue
+
+        u_neighbors = []
+        for v, edge_weight in neighbors:
+            v_track = tracks_dict.get(v)
+            if not v_track:
+                continue
+
+            key_compatible = is_key_compatible(u_track.camelot_key, v_track.camelot_key) if prefer_key_matching else False
+            is_synthetic = (u, v) in synthetic_edges
+            key_bonus = get_key_compatibility_bonus(u_track.camelot_key, v_track.camelot_key) * 0.3 if prefer_key_matching else 0.0
+            bpm_diff = get_bpm_difference(u_track.bpm, v_track.bpm)
+            bpm_penalty = (bpm_diff / 100) ** 2
+            base_trans_cost = edge_weight - key_bonus + bpm_penalty
+            v_duration = v_track.duration_ms
+
+            u_neighbors.append((v, edge_weight, base_trans_cost, key_compatible, is_synthetic, v_duration))
+
+        prepared[u] = u_neighbors
+
+    return prepared
+
+
 def find_path(
     start_id: str,
     end_id: Optional[str],
@@ -285,7 +330,9 @@ def find_path(
     adjacency: Dict[str, List[Tuple[str, float]]],  # {from_id: [(to_id, weight), ...]}
     prefer_key_matching: bool,
     pivots: Set[str],
-    synthetic_edges: Optional[Set[Tuple[str, str]]] = None  # Set of (from_id, to_id) synthetic edges
+    synthetic_edges: Optional[Set[Tuple[str, str]]] = None,  # Set of (from_id, to_id) synthetic edges
+    prepared_adj: Optional[Dict[str, List[Tuple[str, float, float, bool, bool, int]]]] = None,
+    avg_duration: Optional[float] = None
 ) -> Tuple[Optional[List[Tuple[str, float, bool, bool]]], Optional[List[Tuple[str, float, bool, bool]]]]:
     """
     Modified A* pathfinding with constraints
@@ -301,8 +348,13 @@ def find_path(
     if synthetic_edges is None:
         synthetic_edges = set()
 
-    # Calculate average track duration for heuristic
-    avg_duration = sum(t.duration_ms for t in tracks_dict.values()) / len(tracks_dict)
+    # Pre-compute adjacency metrics if not already provided
+    if prepared_adj is None:
+        prepared_adj = prepare_adjacency(adjacency, tracks_dict, prefer_key_matching, synthetic_edges)
+
+    # Calculate average track duration for heuristic if not provided
+    if avg_duration is None:
+        avg_duration = sum(t.duration_ms for t in tracks_dict.values()) / max(len(tracks_dict), 1)
 
     # Initial state
     start_track = tracks_dict[start_id]
@@ -330,6 +382,7 @@ def find_path(
 
     iterations = 0
     max_iterations = 10000  # Prevent infinite loops
+    max_allowed_duration = target_duration + (tolerance * 2)
 
     while open_set and iterations < max_iterations:
         iterations += 1
@@ -350,7 +403,6 @@ def find_path(
 
         # Update longest valid path found so far
         # We consider a path "valid" for fallback if it ends at the correct endpoint (if specified)
-        # We want the longest path that doesn't excessively exceed the target (though strict over-shoot is handled by neighbor pruning)
         if is_correct_endpoint:
             if current_state.duration > longest_valid_duration:
                 longest_valid_path = current_state.path
@@ -363,72 +415,56 @@ def find_path(
                 best_duration_diff = duration_diff
             continue  # Keep searching for better paths
 
-        # Expand neighbors
-        if current_state.current_track_id not in adjacency:
+        # Expand neighbors using pre-calculated transition parameters
+        neighbors = prepared_adj.get(current_state.current_track_id)
+        if not neighbors:
             if iterations <= 5:
                 logger.warning(f"DEBUG iter {iterations}: Node {current_state.current_track_id} has NO neighbors in adjacency list")
             continue
 
-        current_track = tracks_dict[current_state.current_track_id]
-
         if iterations <= 5:
-            logger.info(f"DEBUG iter {iterations}: Expanding {len(adjacency[current_state.current_track_id])} neighbors")
+            logger.info(f"DEBUG iter {iterations}: Expanding {len(neighbors)} neighbors")
 
-        for neighbor_id, edge_weight in adjacency[current_state.current_track_id]:
+        curr_visited = current_state.visited
+        curr_duration = current_state.duration
+        curr_remaining_wp = current_state.remaining_waypoints
+        curr_cost = current_state.cost
+        curr_path = current_state.path
+        curr_piv_score = current_state.pivot_score
+
+        for neighbor_id, edge_weight, base_trans_cost, key_compatible, is_synthetic, neighbor_dur in neighbors:
             # Skip visited tracks
-            if neighbor_id in current_state.visited:
+            if neighbor_id in curr_visited:
                 continue
 
-            # Skip if already over duration (with generous buffer to allow exploration)
-            neighbor_track = tracks_dict[neighbor_id]
-            new_duration = current_state.duration + neighbor_track.duration_ms
-            # Allow 2x tolerance buffer to explore paths that might work
-            if new_duration > target_duration + (tolerance * 2):
+            # Skip if already over duration
+            new_duration = curr_duration + neighbor_dur
+            if new_duration > max_allowed_duration:
                 continue
-
-            # Calculate key compatibility
-            key_compatible = False
-            if prefer_key_matching:
-                key_compatible = is_key_compatible(current_track.camelot_key, neighbor_track.camelot_key)
-
-            # Check if this is a synthetic edge
-            is_synthetic = (current_state.current_track_id, neighbor_id) in synthetic_edges
-
-            # Calculate cost
-            # Edge weight is the base cost (lower = stronger connection)
-            # Add key compatibility bonus (reduces cost if keys are compatible)
-            key_bonus = get_key_compatibility_bonus(current_track.camelot_key, neighbor_track.camelot_key) * 0.3
-
-            # Add BPM similarity penalty
-            bpm_diff = get_bpm_difference(current_track.bpm, neighbor_track.bpm)
-            # Normalize penalty: 10 bpm diff = ~0.1 penalty. More than 20bpm diff gets heavily penalized.
-            bpm_penalty = (bpm_diff / 100) ** 2
-
-            transition_cost = edge_weight - key_bonus + bpm_penalty
 
             # Penalty for not visiting waypoints when we should
-            waypoint_penalty = 0
-            if neighbor_id in current_state.remaining_waypoints:
-                waypoint_penalty = -1.0  # Encourage visiting waypoints
+            waypoint_penalty = -1.0 if neighbor_id in curr_remaining_wp else 0.0
 
-            new_cost = current_state.cost + transition_cost + waypoint_penalty
+            new_cost = curr_cost + base_trans_cost + waypoint_penalty
 
-            # Update remaining waypoints
-            new_remaining_waypoints = current_state.remaining_waypoints - {neighbor_id}
+            # Update remaining waypoints efficiently
+            new_remaining_waypoints = curr_remaining_wp - {neighbor_id} if neighbor_id in curr_remaining_wp else curr_remaining_wp
 
             # Calculate heuristic
-            new_heuristic = calculate_heuristic(new_duration, target_duration, new_remaining_waypoints, float(avg_duration))
+            new_heuristic = calculate_heuristic(new_duration, target_duration, new_remaining_waypoints, avg_duration)
+
+            is_piv = 1 if neighbor_id in pivots else 0
 
             # Create new state
             new_state = PathfinderState(
                 current_track_id=neighbor_id,
-                path=current_state.path + [(neighbor_id, edge_weight, key_compatible, is_synthetic)],
-                visited=current_state.visited | {neighbor_id},
+                path=curr_path + [(neighbor_id, edge_weight, key_compatible, is_synthetic)],
+                visited=curr_visited | {neighbor_id},
                 duration=new_duration,
                 remaining_waypoints=new_remaining_waypoints,
                 cost=new_cost,
                 heuristic=new_heuristic,
-                pivot_score=current_state.pivot_score + (1 if neighbor_id in pivots else 0)
+                pivot_score=curr_piv_score + is_piv
             )
 
             heapq.heappush(open_set, new_state)
@@ -524,6 +560,15 @@ async def find_dj_path(request: PathfinderRequest):
         )
         logger.info(f"Identified {len(pivots)} pivot nodes to guide the search.")
 
+        # Pre-compute static graph adjacency properties once for all relaxation attempts
+        prepared_adj = prepare_adjacency(
+            adjacency=adjacency,
+            tracks_dict=tracks_dict,
+            prefer_key_matching=request.prefer_key_matching,
+            synthetic_edges=synthetic_edge_set
+        )
+        avg_track_duration = sum(t.duration_ms for t in request.tracks) / max(len(request.tracks), 1)
+
         # Progressive relaxation strategy (2025 best practice)
         # Try with increasing tolerance levels if strict search fails
         tolerance_multipliers = [1.0, 1.5, 2.0, 3.0]
@@ -547,7 +592,9 @@ async def find_dj_path(request: PathfinderRequest):
                 adjacency=adjacency,
                 prefer_key_matching=request.prefer_key_matching,
                 pivots=pivots,
-                synthetic_edges=synthetic_edge_set
+                synthetic_edges=synthetic_edge_set,
+                prepared_adj=prepared_adj,
+                avg_duration=avg_track_duration
             )
 
             # Update global fallback if this attempt found a longer valid path
@@ -580,7 +627,9 @@ async def find_dj_path(request: PathfinderRequest):
                 adjacency=adjacency,
                 prefer_key_matching=request.prefer_key_matching,
                 pivots=pivots,
-                synthetic_edges=synthetic_edge_set
+                synthetic_edges=synthetic_edge_set,
+                prepared_adj=prepared_adj,
+                avg_duration=avg_track_duration
             )
 
             # Update global fallback if this attempt found a longer valid path
