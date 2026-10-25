@@ -4,6 +4,8 @@ import { useStore } from '../store/useStore';
 import { validateWaypoints } from '../utils/pathfinding';
 import { DEFAULT_CONSTRAINTS, AVAILABLE_ALGORITHMS } from '../types/pathfinding';
 import { formatCamelotKey } from '../utils/harmonic';
+import { SN, KeyBadge } from '../lib/songnodes';
+import { CompatibilityBadge } from './ds';
 import clsx from 'clsx';
 import Fuse, { FuseResult } from 'fuse.js';
 import { API_BASE_URL } from '../lib/apiBase';
@@ -325,28 +327,44 @@ export const PathBuilder: React.FC = () => {
     if (!show || results.length === 0) return null;
 
     return (
-      <div className="absolute top-full left-0 right-0 z-50 bg-dj-dark border border-dj-light-gray rounded-b-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar">
+      <div
+        className="absolute top-full left-0 right-0 z-50 overflow-y-auto"
+        style={{
+          background: 'var(--surface-1)',
+          border: '1px solid var(--line)',
+          borderRadius: '0 0 var(--radius-card) var(--radius-card)',
+          boxShadow: 'var(--shadow-2)',
+          maxHeight: '240px',
+        }}
+      >
         {results.map(({ item, score }) => (
           <button
             key={item.id}
             onClick={() => onSelect(item)}
-            className="w-full text-left p-3 hover:bg-dj-gray transition-colors border-b border-dj-gray last:border-b-0"
+            className="w-full text-left sn-btn sn-btn--quiet"
+            style={{
+              display: 'block',
+              padding: 'var(--space-2) var(--space-3)',
+              borderRadius: 0,
+              borderBottom: '1px solid var(--line)',
+              height: 'auto',
+            }}
           >
-            <div className="flex justify-between items-start">
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                <div style={{ font: '600 0.8125rem/1.3 var(--font-body)', color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.title}
                 </div>
-                <div className="text-xs text-gray-400 truncate">
+                <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.artist}
                 </div>
-                <div className="flex gap-2 mt-1 text-xs text-gray-500">
+                <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                   {item.bpm && <span>{item.bpm} BPM</span>}
-                  {item.camelotKey && <span>{formatCamelotKey(item.camelotKey as any)}</span>}
+                  {item.camelotKey && <KeyBadge value={item.camelotKey} />}
                   {item.energy !== undefined && <span>E:{(item.energy * 100).toFixed(0)}%</span>}
                 </div>
               </div>
-              <div className="text-xs text-gray-500">
+              <div style={{ fontSize: '0.75rem', color: 'var(--fg-3)', fontFamily: 'var(--font-data)' }}>
                 {((1 - (score || 0)) * 100).toFixed(0)}%
               </div>
             </div>
@@ -357,31 +375,37 @@ export const PathBuilder: React.FC = () => {
   };
 
   const renderTrackCard = (track: TrackSearchResult, onRemove?: () => void, validation?: { isReachable: boolean; score: number; reason?: string }) => (
-    <div className={clsx(
-      'p-3 rounded-lg bg-dj-gray border',
-      validation?.isReachable === false ? 'border-dj-danger' : 'border-dj-light-gray'
-    )}>
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-white truncate">{track.title}</div>
-          <div className="text-xs text-gray-400 truncate">{track.artist}</div>
-          <div className="flex gap-2 mt-1 text-xs text-gray-500">
+    <div
+      style={{
+        padding: 'var(--space-2) var(--space-3)',
+        borderRadius: 'var(--radius-control)',
+        background: 'var(--surface-2)',
+        border: validation?.isReachable === false ? '1px solid var(--status-bad)' : '1px solid var(--line)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+          <div style={{ font: '600 0.8125rem/1.3 var(--font-body)', color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.title}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.artist}</div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)', alignItems: 'center' }}>
             {track.bpm && <span>{track.bpm} BPM</span>}
-            {track.camelotKey && <span>{formatCamelotKey(track.camelotKey as any)}</span>}
+            {track.camelotKey && <KeyBadge value={track.camelotKey} />}
             {track.energy !== undefined && <span>E:{(track.energy * 100).toFixed(0)}%</span>}
-            {track.duration && <span>{Math.round(track.duration / 60)}min</span>}
+            {track.duration && <span>{Math.round(track.duration / 60)}m</span>}
           </div>
           {validation && !validation.isReachable && (
-            <div className="text-xs text-dj-danger mt-1">
-              ⚠ {validation.reason || 'Not reachable'}
+            <div style={{ fontSize: '0.75rem', color: 'var(--status-bad)', marginTop: 'var(--space-1)' }}>
+              ▲ {validation.reason || 'Not reachable'}
             </div>
           )}
         </div>
         {onRemove && (
           <button
             onClick={onRemove}
-            className="ml-2 text-dj-danger hover:text-red-300 transition-colors"
+            type="button"
+            className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
             title="Remove waypoint"
+            aria-label={`Remove waypoint ${track.title}`}
           >
             ✕
           </button>
@@ -391,13 +415,15 @@ export const PathBuilder: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex flex-col bg-dj-dark text-white">
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--fg)' }}>
       {/* Header */}
-      <div className="p-4 border-b border-dj-gray flex justify-between items-center">
-        <h2 className="text-lg font-bold">Path Builder</h2>
+      <div style={{ padding: 'var(--space-3)', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 className="sn-title title-s" style={{ margin: 0 }}>Path Builder</h2>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1 hover:bg-dj-gray rounded transition-colors"
+          type="button"
+          className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
+          aria-label={isExpanded ? 'Collapse panel' : 'Expand panel'}
         >
           {isExpanded ? '⬇' : '⬆'}
         </button>
@@ -406,7 +432,7 @@ export const PathBuilder: React.FC = () => {
       {isExpanded && (
         <>
           {/* Tabs */}
-          <div className="flex border-b border-dj-gray">
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--line)' }}>
             {[
               { id: 'basic', label: 'Basic' },
               { id: 'advanced', label: 'Advanced' },
@@ -414,34 +440,52 @@ export const PathBuilder: React.FC = () => {
             ].map(tab => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={clsx(
-                  'px-4 py-2 text-sm font-medium transition-colors relative',
-                  activeTab === tab.id
-                    ? 'text-dj-accent border-b-2 border-dj-accent'
-                    : 'text-gray-400 hover:text-white'
-                )}
+                className="sn-tab"
+                aria-selected={activeTab === tab.id}
+                style={{
+                  position: 'relative',
+                  padding: 'var(--space-2) var(--space-4)',
+                  fontSize: '0.8125rem',
+                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  color: activeTab === tab.id ? 'var(--brand)' : 'var(--fg-2)',
+                  borderBottom: activeTab === tab.id ? '2px solid var(--brand)' : 'none',
+                  background: 'none',
+                  borderTop: 'none',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  cursor: 'pointer',
+                }}
               >
                 {tab.label}
                 {tab.id === 'results' && pathfindingState.currentPath && (
-                  <span className={clsx(
-                    'absolute -top-1 -right-1 w-2 h-2 rounded-full',
-                    pathfindingState.currentPath.success ? 'bg-dj-accent' : 'bg-dj-danger'
-                  )} />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 'var(--space-1)',
+                      right: 'var(--space-1)',
+                      width: 'var(--space-2)',
+                      height: 'var(--space-2)',
+                      borderRadius: 'var(--radius-pill)',
+                      background: pathfindingState.currentPath.success ? 'var(--status-ok)' : 'var(--status-bad)',
+                    }}
+                  />
                 )}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div style={{ flex: '1 1 auto', overflowY: 'auto' }}>
             {/* Basic Tab */}
             {activeTab === 'basic' && (
-              <div className="p-4 space-y-4">
+              <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {/* Start Track */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Start Track *</label>
-                  <div className="relative">
+                <div className="sn-field">
+                  <label htmlFor="pb-start-search">Start Track *</label>
+                  <div style={{ position: 'relative' }}>
                     <input
+                      id="pb-start-search"
                       type="text"
                       placeholder="Search for start track..."
                       value={startTrackSearch}
@@ -451,24 +495,25 @@ export const PathBuilder: React.FC = () => {
                       }}
                       onFocus={() => setShowStartResults(true)}
                       onBlur={() => setTimeout(() => setShowStartResults(false), 200)}
-                      className="w-full bg-dj-gray text-white px-3 py-2 rounded border border-dj-light-gray focus:border-dj-accent focus:outline-none"
+                      className="sn-input"
                     />
                     {renderSearchResults(startTrackResults, handleSelectStartTrack, showStartResults)}
                   </div>
                   {startTrack && (
-                    <div className="mt-2">
+                    <div style={{ marginTop: 'var(--space-2)' }}>
                       {renderTrackCard(startTrack)}
                     </div>
                   )}
                 </div>
 
                 {/* End Track */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
+                <div className="sn-field">
+                  <label htmlFor="pb-end-search">
                     End Track (optional - creates loop if empty)
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
+                      id="pb-end-search"
                       type="text"
                       placeholder="Search for end track..."
                       value={endTrackSearch}
@@ -478,12 +523,15 @@ export const PathBuilder: React.FC = () => {
                       }}
                       onFocus={() => setShowEndResults(true)}
                       onBlur={() => setTimeout(() => setShowEndResults(false), 200)}
-                      className="w-full bg-dj-gray text-white px-3 py-2 rounded border border-dj-light-gray focus:border-dj-accent focus:outline-none"
+                      className="sn-input"
                     />
                     {endTrackSearch && (
                       <button
                         onClick={handleClearEndTrack}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                        type="button"
+                        className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm"
+                        style={{ position: 'absolute', right: 'var(--space-2)', top: '50%', transform: 'translateY(-50%)' }}
+                        aria-label="Clear end track search"
                       >
                         ✕
                       </button>
@@ -491,19 +539,20 @@ export const PathBuilder: React.FC = () => {
                     {renderSearchResults(endTrackResults, handleSelectEndTrack, showEndResults)}
                   </div>
                   {endTrack && (
-                    <div className="mt-2">
+                    <div style={{ marginTop: 'var(--space-2)' }}>
                       {renderTrackCard(endTrack)}
                     </div>
                   )}
                 </div>
 
                 {/* Waypoints */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
+                <div className="sn-field">
+                  <label htmlFor="pb-waypoint-search">
                     Waypoints ({waypointTracks.length}) - Required tracks (unordered)
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
+                      id="pb-waypoint-search"
                       type="text"
                       placeholder="Search to add waypoint tracks..."
                       value={waypointSearch}
@@ -513,13 +562,13 @@ export const PathBuilder: React.FC = () => {
                       }}
                       onFocus={() => setShowWaypointResults(true)}
                       onBlur={() => setTimeout(() => setShowWaypointResults(false), 200)}
-                      className="w-full bg-dj-gray text-white px-3 py-2 rounded border border-dj-light-gray focus:border-dj-accent focus:outline-none"
+                      className="sn-input"
                     />
                     {renderSearchResults(waypointResults, handleAddWaypoint, showWaypointResults)}
                   </div>
 
                   {waypointTracks.length > 0 && (
-                    <div className="mt-2 space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    <div style={{ marginTop: 'var(--space-2)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: '160px', overflowY: 'auto' }}>
                       {waypointTracks.map(track => (
                         <div key={track.id}>
                           {renderTrackCard(
@@ -535,7 +584,9 @@ export const PathBuilder: React.FC = () => {
                   {waypointTracks.length > 0 && (
                     <button
                       onClick={() => pathActions.clearWaypoints()}
-                      className="mt-2 text-xs text-gray-400 hover:text-dj-danger transition-colors"
+                      type="button"
+                      className="sn-btn sn-btn--quiet sn-btn--sm"
+                      style={{ marginTop: 'var(--space-2)', color: 'var(--status-bad)', alignSelf: 'flex-start' }}
                     >
                       Clear all waypoints
                     </button>
@@ -544,90 +595,82 @@ export const PathBuilder: React.FC = () => {
 
                 {/* Generate Path Button */}
                 <button
+                  type="button"
                   onClick={handleGeneratePath}
                   disabled={!pathfindingState.startTrackId || pathfindingState.isCalculating}
-                  className={clsx(
-                    'w-full py-3 px-4 rounded-lg font-medium transition-all',
-                    pathfindingState.startTrackId && !pathfindingState.isCalculating
-                      ? 'bg-dj-accent text-black hover:bg-green-400 active:scale-95'
-                      : 'bg-dj-gray text-gray-500 cursor-not-allowed'
-                  )}
+                  className="sn-btn sn-btn--primary"
+                  aria-busy={pathfindingState.isCalculating || undefined}
                 >
-                  {pathfindingState.isCalculating ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-gray-500 border-t-black rounded-full animate-spin" />
-                      Calculating Path...
-                    </span>
-                  ) : (
-                    'Generate Path'
-                  )}
+                  {pathfindingState.isCalculating ? <span className="sn-spinner" aria-hidden="true" /> : null}
+                  {pathfindingState.isCalculating ? 'Calculating Path…' : 'Generate Path'}
                 </button>
               </div>
             )}
 
             {/* Advanced Tab */}
             {activeTab === 'advanced' && (
-              <div className="p-4 space-y-4">
+              <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {/* Target Duration */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Target Duration: {targetDuration} minutes
+                <div className="sn-field">
+                  <label htmlFor="pb-target-duration">
+                    Target Duration: <span className="data">{targetDuration} minutes</span>
                   </label>
                   <input
+                    id="pb-target-duration"
                     type="range"
                     min="10"
                     max="180"
                     step="5"
                     value={targetDuration}
                     onChange={(e) => setTargetDuration(Number(e.target.value))}
-                    className="w-full accent-dj-accent"
+                    style={{ width: '100%', accentColor: 'var(--brand)' }}
                   />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>10min</span>
-                    <span>3hrs</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+                    <span>10m</span>
+                    <span>3h</span>
                   </div>
                 </div>
 
                 {/* Max BPM Change */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Max BPM Change: ±{maxBpmChange} BPM
+                <div className="sn-field">
+                  <label htmlFor="pb-max-bpm">
+                    Max BPM Change: <span className="data">±{maxBpmChange} BPM</span>
                   </label>
                   <input
+                    id="pb-max-bpm"
                     type="range"
                     min="5"
                     max="50"
                     step="1"
                     value={maxBpmChange}
                     onChange={(e) => setMaxBpmChange(Number(e.target.value))}
-                    className="w-full accent-dj-accent"
+                    style={{ width: '100%', accentColor: 'var(--brand)' }}
                   />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                     <span>±5 BPM</span>
                     <span>±50 BPM</span>
                   </div>
                 </div>
 
                 {/* Harmonic Mixing */}
-                <div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={harmonicMixing}
-                      onChange={(e) => setHarmonicMixing(e.target.checked)}
-                      className="accent-dj-accent"
-                    />
-                    <span className="text-sm font-medium">Enable Harmonic Mixing</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Prioritize key-compatible transitions using the Camelot Wheel
-                  </p>
-                </div>
+                <label className="sn-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={harmonicMixing}
+                    onChange={(e) => setHarmonicMixing(e.target.checked)}
+                  />
+                  <span className="sn-checkbox__text">
+                    <span>Enable Harmonic Mixing</span>
+                  </span>
+                </label>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+                  Prioritize key-compatible transitions using the Camelot Wheel
+                </p>
 
                 {/* Energy Curve */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Energy Curve</label>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="sn-field">
+                  <label>Energy Curve</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
                     {[
                       { value: 'ascending', label: '📈 Ascending', desc: 'Build energy up' },
                       { value: 'descending', label: '📉 Descending', desc: 'Wind energy down' },
@@ -637,27 +680,33 @@ export const PathBuilder: React.FC = () => {
                     ].filter(option => option.value !== 'wave' || import.meta.env.VITE_ENABLE_WAVE_ROUTING === 'true').map(option => (
                       <button
                         key={option.value}
+                        type="button"
                         onClick={() => setEnergyCurve(option.value as EnergyFlowType)}
-                        className={clsx(
-                          'p-2 rounded text-left transition-colors text-xs',
-                          energyCurve === option.value
-                            ? 'bg-dj-accent text-black'
-                            : 'bg-dj-gray text-white hover:bg-dj-light-gray'
-                        )}
+                        className="sn-btn sn-btn--quiet"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          padding: 'var(--space-2)',
+                          height: 'auto',
+                          background: energyCurve === option.value ? 'var(--brand-soft)' : 'var(--surface-2)',
+                          border: energyCurve === option.value ? '1px solid var(--brand)' : '1px solid var(--line)',
+                          borderRadius: 'var(--radius-control)',
+                        }}
                       >
-                        <div className="font-medium">{option.label}</div>
-                        <div className="text-gray-500">{option.desc}</div>
+                        <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--fg)' }}>{option.label}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>{option.desc}</span>
                       </button>
                     ))}
                   </div>
 
                   {energyCurve === 'custom' && (
-                    <div className="mt-3 p-3 bg-dj-gray rounded">
-                      <div className="text-xs font-medium mb-2">Custom Energy Points</div>
-                      <div className="space-y-2">
+                    <div style={{ marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-control)' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: 'var(--space-2)', color: 'var(--fg-2)' }}>Custom Energy Points</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                         {customEnergyPoints.map((point, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                            <span className="text-xs w-12">#{index + 1}:</span>
+                          <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                            <span style={{ fontSize: '0.75rem', width: '32px', color: 'var(--fg-3)' }}>#{index + 1}:</span>
                             <input
                               type="range"
                               min="0"
@@ -669,9 +718,9 @@ export const PathBuilder: React.FC = () => {
                                 newPoints[index] = Number(e.target.value);
                                 setCustomEnergyPoints(newPoints);
                               }}
-                              className="flex-1 accent-dj-accent"
+                              style={{ flex: '1 1 auto', accentColor: 'var(--brand)' }}
                             />
-                            <span className="text-xs w-8">{(point * 100).toFixed(0)}%</span>
+                            <span style={{ fontSize: '0.75rem', width: '32px', color: 'var(--fg-2)', fontFamily: 'var(--font-data)' }}>{(point * 100).toFixed(0)}%</span>
                           </div>
                         ))}
                       </div>
@@ -680,15 +729,16 @@ export const PathBuilder: React.FC = () => {
                 </div>
 
                 {/* Algorithm Selection */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Pathfinding Algorithm</label>
+                <div className="sn-field">
+                  <label htmlFor="pb-algorithm">Pathfinding Algorithm</label>
                   <select
+                    id="pb-algorithm"
                     value={pathfindingState.algorithm.name}
                     onChange={(e) => {
                       const algo = AVAILABLE_ALGORITHMS.find(a => a.name === e.target.value);
                       if (algo) pathActions.setPathAlgorithm(algo);
                     }}
-                    className="w-full bg-dj-gray text-white px-3 py-2 rounded border border-dj-light-gray focus:border-dj-accent focus:outline-none"
+                    className="sn-select"
                   >
                     {AVAILABLE_ALGORITHMS.map(algo => (
                       <option key={algo.name} value={algo.name}>
@@ -696,7 +746,7 @@ export const PathBuilder: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                     Best for: {pathfindingState.algorithm.bestFor.join(', ')}
                   </p>
                 </div>
@@ -705,49 +755,51 @@ export const PathBuilder: React.FC = () => {
 
             {/* Results Tab */}
             {activeTab === 'results' && (
-              <div className="p-4">
+              <div style={{ padding: 'var(--space-4)' }}>
                 {pathfindingState.currentPath ? (
-                  <div className="space-y-4">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                     {/* Path Summary */}
-                    <div className={clsx(
-                      'p-4 rounded-lg border',
-                      pathfindingState.currentPath.success
-                        ? 'bg-green-900/20 border-dj-accent text-green-100'
-                        : 'bg-red-900/20 border-dj-danger text-red-100'
-                    )}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">
-                          {pathfindingState.currentPath.success ? '✅ Path Found' : '❌ No Path Found'}
+                    <div
+                      style={{
+                        padding: 'var(--space-4)',
+                        borderRadius: 'var(--radius-card)',
+                        border: '1px solid var(--line)',
+                        background: pathfindingState.currentPath.success ? 'var(--surface-1)' : 'var(--status-bad-bg)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+                        <h3 className="sn-title title-s" style={{ margin: 0, color: pathfindingState.currentPath.success ? 'var(--status-ok)' : 'var(--status-bad)' }}>
+                          {pathfindingState.currentPath.success ? '● Path Found' : '✕ No Path Found'}
                         </h3>
-                        <span className="text-sm">
+                        <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-data)', color: 'var(--fg-3)' }}>
                           {pathfindingState.currentPath.metadata.searchTime == null ? 'Not reported' : `${pathfindingState.currentPath.metadata.searchTime}ms`}
                         </span>
                       </div>
 
                       {pathfindingState.currentPath.success && (
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)', fontSize: '0.8125rem' }}>
                           <div>
-                            <div className="text-gray-400">Tracks</div>
-                            <div className="font-mono">{pathfindingState.currentPath.path.length}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)' }}>Tracks</div>
+                            <div className="data-strong">{pathfindingState.currentPath.path.length}</div>
                           </div>
                           <div>
-                            <div className="text-gray-400">Duration</div>
-                            <div className="font-mono">{Math.round(pathfindingState.currentPath.totalDuration / 60)}min</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)' }}>Duration</div>
+                            <div className="data-strong">{Math.round(pathfindingState.currentPath.totalDuration / 60)}m</div>
                           </div>
                           <div>
-                            <div className="text-gray-400">Harmony Score</div>
-                            <div className="font-mono">{(pathfindingState.currentPath.averageTransitionScore * 100).toFixed(0)}%</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)' }}>Harmony Score</div>
+                            <div className="data-strong">{(pathfindingState.currentPath.averageTransitionScore * 100).toFixed(0)}%</div>
                           </div>
                           <div>
-                            <div className="text-gray-400">Waypoints</div>
-                            <div className="font-mono">{pathfindingState.currentPath.waypointsIncluded.length}/{pathfindingState.selectedWaypoints.size}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)' }}>Waypoints</div>
+                            <div className="data-strong">{pathfindingState.currentPath.waypointsIncluded.length}/{pathfindingState.selectedWaypoints.size}</div>
                           </div>
                         </div>
                       )}
 
                       {pathfindingState.currentPath.waypointsSkipped.length > 0 && (
-                        <div className="mt-2 text-sm text-yellow-300">
-                          ⚠ Skipped waypoints: {pathfindingState.currentPath.waypointsSkipped.length}
+                        <div style={{ marginTop: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--status-warn)' }}>
+                          ▲ Skipped waypoints: {pathfindingState.currentPath.waypointsSkipped.length}
                         </div>
                       )}
                     </div>
@@ -755,31 +807,51 @@ export const PathBuilder: React.FC = () => {
                     {/* Path Tracks */}
                     {pathfindingState.currentPath.success && pathfindingState.currentPath.path.length > 0 && (
                       <div>
-                        <h4 className="font-medium mb-2">Path Tracks</h4>
-                        <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+                        <h4 className="sn-title title-s" style={{ margin: '0 0 var(--space-2) 0' }}>Path Tracks</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: '384px', overflowY: 'auto' }}>
                           {pathfindingState.currentPath.path.map((pathNode, index) => {
                             const track = trackSearchData.find(t => t.id === pathNode.id);
                             if (!track) return null;
 
                             return (
-                              <div key={pathNode.id} className="flex items-center gap-3 p-2 bg-dj-gray rounded">
-                                <div className={clsx(
-                                  'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                                  pathNode.isWaypoint ? 'bg-dj-accent text-black' : 'bg-dj-light-gray text-white'
-                                )}>
+                              <div
+                                key={pathNode.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 'var(--space-3)',
+                                  padding: 'var(--space-2) var(--space-3)',
+                                  background: 'var(--surface-2)',
+                                  borderRadius: 'var(--radius-control)',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    borderRadius: 'var(--radius-pill)',
+                                    display: 'grid',
+                                    placeItems: 'center',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    fontFamily: 'var(--font-data)',
+                                    background: pathNode.isWaypoint ? 'var(--mod-paths)' : 'var(--surface-3)',
+                                    color: pathNode.isWaypoint ? 'var(--on-mod-paths)' : 'var(--fg)',
+                                  }}
+                                >
                                   {index + 1}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-white truncate">{track.title}</div>
-                                  <div className="text-xs text-gray-400 truncate">{track.artist}</div>
-                                  <div className="flex gap-2 mt-1 text-xs text-gray-500">
+                                <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                                  <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.title}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.artist}</div>
+                                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)', alignItems: 'center' }}>
                                     {track.bpm && <span>{track.bpm} BPM</span>}
-                                    {track.camelotKey && <span>{formatCamelotKey(track.camelotKey as any)}</span>}
+                                    {track.camelotKey && <KeyBadge value={track.camelotKey} />}
                                     {track.energy !== undefined && <span>E:{(track.energy * 100).toFixed(0)}%</span>}
                                   </div>
                                 </div>
                                 {pathNode.isWaypoint && (
-                                  <div className="text-xs text-dj-accent font-medium">WAYPOINT</div>
+                                  <span className="sn-tag">WAYPOINT</span>
                                 )}
                               </div>
                             );
@@ -791,20 +863,21 @@ export const PathBuilder: React.FC = () => {
                     {/* Transition Analysis */}
                     {pathfindingState.currentPath.success && pathfindingState.currentPath.keyTransitions.length > 0 && (
                       <div>
-                        <h4 className="font-medium mb-2">Key Transitions</h4>
-                        <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+                        <h4 className="sn-title title-s" style={{ margin: '0 0 var(--space-2) 0' }}>Key Transitions</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', maxHeight: '128px', overflowY: 'auto' }}>
                           {pathfindingState.currentPath.keyTransitions.map((transition, index) => (
-                            <div key={index} className="flex items-center justify-between text-xs p-2 bg-dj-gray rounded">
+                            <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', padding: 'var(--space-2)', background: 'var(--surface-2)', borderRadius: 'var(--radius-chip)' }}>
                               <span>
                                 {formatCamelotKey(transition.fromKey as any)} → {formatCamelotKey(transition.toKey as any)}
                               </span>
-                              <span className={clsx(
-                                'font-medium',
-                                transition.compatibility > 0.7 ? 'text-dj-accent' :
-                                transition.compatibility > 0.4 ? 'text-dj-warning' : 'text-dj-danger'
-                              )}>
-                                {(transition.compatibility * 100).toFixed(0)}%
-                              </span>
+                              <CompatibilityBadge
+                                level={
+                                  transition.compatibility > 0.7 ? 'perfect' :
+                                  transition.compatibility > 0.4 ? 'compatible' : 'clash'
+                                }
+                                label={`${(transition.compatibility * 100).toFixed(0)}%`}
+                                outline
+                              />
                             </div>
                           ))}
                         </div>
@@ -812,8 +885,9 @@ export const PathBuilder: React.FC = () => {
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                       <button
+                        type="button"
                         onClick={() => {
                           // Add path tracks to setlist
                           if (pathfindingState.currentPath?.path) {
@@ -826,28 +900,25 @@ export const PathBuilder: React.FC = () => {
                           }
                         }}
                         disabled={!pathfindingState.currentPath?.success}
-                        className={clsx(
-                          'flex-1 py-2 px-4 rounded text-sm font-medium transition-colors',
-                          pathfindingState.currentPath?.success
-                            ? 'bg-dj-accent text-black hover:bg-green-400'
-                            : 'bg-dj-gray text-gray-500 cursor-not-allowed'
-                        )}
+                        className="sn-btn sn-btn--primary"
+                        style={{ flex: '1 1 auto' }}
                       >
                         Add to Setlist
                       </button>
                       <button
+                        type="button"
                         onClick={() => pathActions.clearPath()}
-                        className="px-4 py-2 rounded text-sm font-medium bg-dj-gray text-white hover:bg-dj-light-gray transition-colors"
+                        className="sn-btn"
                       >
                         Clear
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    <div className="text-4xl mb-2">🎯</div>
-                    <div>No path calculated yet</div>
-                    <div className="text-xs mt-2">Configure settings and generate a path</div>
+                  <div style={{ textAlign: 'center', color: 'var(--fg-3)', padding: 'var(--space-8) 0' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>🎯</div>
+                    <div style={{ font: '600 0.9375rem/1.45 var(--font-body)', color: 'var(--fg-2)' }}>No path calculated yet</div>
+                    <div style={{ fontSize: '0.75rem', marginTop: 'var(--space-2)' }}>Configure settings and generate a path</div>
                   </div>
                 )}
               </div>
