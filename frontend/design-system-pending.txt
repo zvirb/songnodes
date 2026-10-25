@@ -19,7 +19,6 @@ frontend/src/styles/global.css
 frontend/src/styles/globals.css
 frontend/src/styles/tokens.css
 frontend/src/utils/attributions.test.ts
-frontend/src/utils/camelotData.ts
 frontend/src/utils/energyUtils.ts
 frontend/src/utils/graphHelpers.ts
 frontend/src/utils/harmonicUtils.ts
