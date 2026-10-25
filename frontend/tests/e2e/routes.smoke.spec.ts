@@ -12,6 +12,20 @@ for (const route of ROUTES) {
   });
 }
 
+test('/harmony opens the Camelot explorer', async ({ page }) => {
+  await openRoute(page, '/harmony');
+  await expect(page.getByRole('heading', { name: 'Harmonic Modulation Explorer' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Camelot Wheel' })).toBeVisible();
+});
+
+test('/pipeline opens the ingestion dashboard', async ({ page }) => {
+  await openRoute(page, '/pipeline');
+  await expect(page.getByRole('heading', { name: 'Pipeline & Scraper Ingestion Progress' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ingestion Telemetry' })).toBeVisible();
+  await expect(page.locator('.sn-banner')).toContainText('Sample data is shown.');
+  await expect(page.getByRole('button', { name: 'Run Scrapers' })).toHaveCount(0);
+});
+
 test('/sources redirects to target tracks', async ({ page }) => {
   await openRoute(page, '/sources');
   await expect(page).toHaveURL(/\/sources\/targets$/);

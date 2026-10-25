@@ -1,6 +1,5 @@
 /**
- * Sources (target tracks), and module pages whose full design-system page is
- * still planned (Pathfinder, Key & mood, Pipeline), plus the not-found page.
+ * Sources (target tracks), the planned Pathfinder page, and the not-found page.
  */
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -22,7 +21,7 @@ export const SourcesPage: React.FC = () => {
   );
 };
 
-const PLANNED: Record<'paths' | 'harmony' | 'pipeline', { title: string; desc: string; empty: string; body: string; link?: [string, string] }> = {
+const PLANNED: Record<'paths', { title: string; desc: string; empty: string; body: string; link?: [string, string] }> = {
   paths: {
     title: 'Route finder',
     desc: 'Routes from a start track to a finish track through proven transitions.',
@@ -30,22 +29,9 @@ const PLANNED: Record<'paths' | 'harmony' | 'pipeline', { title: string; desc: s
     body: 'Open the graph, switch to Plan and use the Pathfinder tab. This page becomes the full route finder in migration phase 4.',
     link: ['/graph?tab=pathfinder', 'Open Pathfinder in Graph'],
   },
-  harmony: {
-    title: 'Camelot wheel',
-    desc: 'Keys, mood and energy across the library.',
-    empty: 'Key & mood lives in the graph for now',
-    body: 'Open the graph, switch to Plan and use the Key & mood tab. This page becomes the Camelot wheel and key coverage matrix in migration phase 4.',
-    link: ['/graph?tab=keymood', 'Open Key & mood in Graph'],
-  },
-  pipeline: {
-    title: 'Health',
-    desc: 'Scrapers, jobs, validation and data quality.',
-    empty: 'Pipeline health is planned',
-    body: 'Scraper and service metrics are in Grafana until the Monitoring page is built.',
-  },
 };
 
-export const PlannedModulePage: React.FC<{ mod: 'paths' | 'harmony' | 'pipeline' }> = ({ mod }) => {
+export const PlannedModulePage: React.FC<{ mod: 'paths' }> = ({ mod }) => {
   const m = moduleOf(mod as ModuleKey);
   const p = PLANNED[mod];
   usePageHeader({ lead: m.label, title: p.title, current: mod });

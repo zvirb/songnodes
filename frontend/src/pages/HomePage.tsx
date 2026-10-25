@@ -50,7 +50,7 @@ const HomePage: React.FC = () => {
             summary={lastRun ? `Weekly run ${SN.format.dateOnly(lastRun.date)} added ${SN.format.count(lastRun.added)} tracks.` : 'Tracklists, radio, targets and imports.'}
             figures={lastRun ? [['added', SN.format.count(lastRun.added)], ['rejected', SN.format.count(lastRun.rejected)]] : []}
           />
-          <LauncherCard mod="pipeline" title="Scrapers and jobs" summary="Pipeline health is planned; scrapers report through Grafana until then." />
+          <LauncherCard mod="pipeline" title="Scrapers and jobs" summary="Preview pipeline stages; live job and worker telemetry is not connected." />
           <LauncherCard mod="services" title="Settings" summary="Spotify, TIDAL, API keys, theme, text size and density." />
         </div>
       </section>
