@@ -1,0 +1,2 @@
+version,date,kind,unit,path,checksum,status,decision_link,notes
+1,2026-10-25,contracts,WP0,contracts/,N/A,ACTIVE,docs/integration/WP0/decisions/2026-10-25-WP0-contracts.md,Initial contracts and DDL

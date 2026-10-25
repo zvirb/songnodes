@@ -1,0 +1,37 @@
+wp0:
+  migrations: 100-119
+  directories:
+    - contracts/
+    - docs/integration/
+    - scripts/
+    - tests/contracts/
+    - tests/
+    - pipeline/djlib/normalise.py
+    - pipeline/test_normalise.py
+    - sql/migrations/
+    - pytest.ini
+wp2:
+  migrations: 120-139
+  directories:
+    - services/reference-data/mb_etl/
+wp3:
+  migrations: 140-159
+  directories:
+    - services/reference-data/resolver/
+wp4:
+  migrations: 160-179
+  directories:
+    - services/metadata-enrichment/
+wp5:
+  migrations: 180-219
+  directories:
+    - services/library/
+wp8:
+  migrations: 220-239
+  directories:
+    - services/graph-projection/
+wp9:
+  migrations: 240-259
+  directories:
+    - frontend/src/features/musicLibrary/
+    - services/rest_api/routers/library_search.py

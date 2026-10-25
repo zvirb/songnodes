@@ -14,7 +14,8 @@ Handles both targeted and URL-based scraping modes
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI
+from utils import build_scraper_env, HTTPException, Response
 from pydantic import BaseModel
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter, Histogram
 import subprocess
@@ -133,13 +134,8 @@ async def scrape_url(request: ScrapeRequest):
         timeout_seconds = int(os.getenv('SCRAPER_TIMEOUT', default_timeout))
 
         # Run the spider
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd="/app",
-            timeout=timeout_seconds
-        )
+        env = build_scraper_env(os.environ)
+        result = subprocess.run(cmd, env=env, capture_output=True, text=True, cwd="/app", timeout=timeout_seconds)
 
         # Log output for debugging
         if result.stdout:

@@ -4,6 +4,7 @@ Batch Scraper for All Discovered MixesDB Playlists
 Processes all 20 playlists discovered in Phase 1
 """
 import subprocess
+from utils import build_scraper_env
 import time
 from datetime import datetime
 
@@ -57,12 +58,9 @@ def run_batch_scrape():
 
     # Execute the scraping job
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=False,  # Let output stream to console
-            text=True,
-            check=True
-        )
+        import os
+        env = build_scraper_env(os.environ)
+        result = subprocess.run(cmd, env=env, capture_output=False, text=True, check=True, timeout=3600)
 
         duration = time.time() - start_time
 
