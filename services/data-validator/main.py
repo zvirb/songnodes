@@ -13,6 +13,11 @@ import asyncio
 import logging
 import json
 import os
+
+import sys
+if '/app' not in sys.path:
+    sys.path.insert(0, '/app')
+from services.common.security.cors import setup_cors
 import re
 from enum import Enum
 import hashlib
@@ -56,13 +61,7 @@ app = FastAPI(
 )
 
 # Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for non-security-conscious app
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+setup_cors(app)
 
 # Redis connection with connection pooling (2025 best practices)
 redis_connection_pool = redis.ConnectionPool(
