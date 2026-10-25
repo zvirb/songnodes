@@ -1,2 +1,0 @@
-version,date,kind,unit,path,checksum,status,decision_link,notes
-1.0,2026-10-25,feature,WP2_mb_etl,services/mb_etl,,ACTIVE,,Implemented extract, load, index, verify CLI

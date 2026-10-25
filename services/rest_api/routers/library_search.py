@@ -106,7 +106,8 @@ async def library_search(
             (pt.track_title ILIKE ${idx}
              OR pt.artist_name ILIKE ${idx}
              OR pt.mix_name ILIKE ${idx}
-             OR immutable_array_to_string(sa.aliases, ' ') ILIKE ${idx})
+             OR immutable_array_to_string(sa.aliases, ' ') ILIKE ${idx}
+             OR to_tsvector('english', pt.track_title || ' ' || pt.artist_name) @@ plainto_tsquery('english', ${idx}))
         """)
 
     if rotation is not None:
@@ -126,6 +127,16 @@ async def library_search(
         params.append(substring(label))
         idx = len(params)
         where_clauses.append(f"pt.record_label ILIKE ${idx}")
+
+    if pillar:
+        params.append(pillar)
+        idx = len(params)
+        where_clauses.append(f"pt.genre = ${idx}")
+
+    if source:
+        params.append(source)
+        idx = len(params)
+        where_clauses.append(f"EXISTS (SELECT 1 FROM library.appearances app WHERE app.track_id = pt.track_id AND app.source = ${idx})")
 
     if where_clauses:
         query_parts.append("WHERE " + " AND ".join(where_clauses))
