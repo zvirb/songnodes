@@ -72,15 +72,12 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
     const [searching, setSearching] = useState(false);
     const [assigning, setAssigning] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // Pagination
     const [page, setPage] = useState(0);
     const [sortBy, setSortBy] = useState<'importance' | 'alphabetical'>('importance');
     const ITEMS_PER_PAGE = 50;
 
-    // Statistics
-    
     // ============================================================================
     // Data Fetching
     // ============================================================================
@@ -182,29 +179,20 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                 })
             });
 
-            // Handle immediate success for async job (202) or synchronous success (200, 204)
             if (response.status === 202) {
-                // Backend accepted the job, but hasn't finished it.
-                // We can optimistically update the UI.
+                // Accepted async job
             } else if (!response.ok) {
-                // Handle non-JSON responses like 504 Gateway Timeout
                 const errorText = await response.text();
                 try {
                     const errorJson = JSON.parse(errorText);
                     throw new Error(errorJson.detail || `Server responded with ${response.status}`);
                 } catch (e) {
-                    // If parsing fails, it's likely an HTML error page from the gateway
                     throw new Error(errorText.substring(0, 100) || `Server responded with ${response.status}`);
                 }
             }
 
-            // Show success message
             showToast(`Artist set: ${artistName}`);
-
-            // Optimistic UI Update: Remove the assigned track from the list locally
-            // This provides instant feedback without waiting for a full refresh.
             setTracks(prevTracks => prevTracks.filter(t => t.track_id !== trackId));
-            // Clear selection
             setSelectedTrack(null);
             setSearchQuery('');
             setArtistResults([]);
@@ -251,10 +239,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             }
         }
 
-        // Show results
         showToast(`Artist set: ${selectedArtist.name} on ${successCount} tracks${failCount > 0 ? `, ${failCount} failed` : ''}`);
-
-        // Refresh and clear selection
         await fetchTracks();
         setSelectedTracks(new Set());
         setSearchQuery('');
@@ -293,11 +278,8 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             }
 
             const newArtist = await response.json();
-
-            // Show success and switch to the new artist
             showToast(`Artist added: ${newArtist.name}`);
 
-            // Set the newly created artist as selected
             setSelectedArtist({
                 artist_id: newArtist.artist_id,
                 name: newArtist.name,
@@ -309,11 +291,8 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                 track_count: 0
             });
 
-            // Close creation form
             setShowCreateArtist(false);
             setNewArtistName('');
-
-            // Refresh artist search to show the new artist
             await searchArtists(newArtist.name);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create artist');
@@ -332,7 +311,6 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
         setError(null);
 
         try {
-            // Use merge endpoint if there's a conflict, otherwise use rename
             const endpoint = dirtyArtist.has_conflict
                 ? `/api/v1/artists/${dirtyArtist.artist_id}/merge`
                 : `/api/v1/artists/${dirtyArtist.artist_id}/rename`;
@@ -350,10 +328,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                 throw new Error(errorData.detail || `Failed to ${dirtyArtist.has_conflict ? 'merge' : 'rename'} artist`);
             }
 
-            const successAction = dirtyArtist.has_conflict ? 'merged into' : 'renamed to';
             showToast(`Renamed: ${dirtyArtist.current_name} to ${dirtyArtist.suggested_clean_name}`);
-
-            // Refresh the dirty artists list
             await fetchDirtyArtists();
             setSelectedDirtyArtist(null);
         } catch (err) {
@@ -368,7 +343,6 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
 
     const deleteArtist = async (dirtyArtist: DirtyArtist) => {
         setPendingDelete(null);
-
         setAssigning(true);
         setError(null);
 
@@ -383,8 +357,6 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
             }
 
             showToast(`Artist deleted: ${dirtyArtist.current_name}`);
-
-            // Refresh the dirty artists list
             await fetchDirtyArtists();
             setSelectedDirtyArtist(null);
         } catch (err) {
@@ -539,10 +511,18 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                                 <div className="aam__create">
                                     <div className="sn-field">
                                         <label htmlFor="aam-new">Artist name</label>
-                                        <input id="aam-new" className="sn-input" type="text" value={newArtistName} onChange={(e) => setNewArtistName(e.target.value)} autoFocus />
+                                        <input
+                                            id="aam-new"
+                                            className="sn-input"
+                                            type="text"
+                                            value={newArtistName}
+                                            onChange={(e) => setNewArtistName(e.target.value)}
+                                            autoFocus
+                                            placeholder="Enter new artist name"
+                                        />
                                     </div>
                                     <div className="aam__row">
-                                        <button type="button" className="sn-btn sn-btn--sm" onClick={createArtist} disabled={assigning || newArtistName.trim().length < 2} aria-busy={assigning || undefined}>
+                                        <button type="button" className="sn-btn sn-btn--sm sn-btn--primary" onClick={createArtist} disabled={assigning || newArtistName.trim().length < 2} aria-busy={assigning || undefined}>
                                             {assigning ? 'Adding…' : 'Add artist'}
                                         </button>
                                         <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => { setShowCreateArtist(false); setNewArtistName(''); }}>Cancel</button>
@@ -555,7 +535,7 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                             ) : noTarget ? (
                                 <EmptyPanel compact icon={MousePointerClick} title="Pick a track first">Select one track, or tick several, then search for its artist.</EmptyPanel>
                             ) : artistResults.length === 0 && searchQuery.trim().length >= 2 ? (
-                                <EmptyPanel compact icon={SearchX} title="No artists match" actions={<button type="button" className="sn-btn" onClick={() => { setShowCreateArtist(true); setNewArtistName(searchQuery); }}>Add “{searchQuery}” as a new artist</button>}>
+                                <EmptyPanel compact icon={SearchX} title="No artists match" actions={<button type="button" className="sn-btn sn-btn--primary" onClick={() => { setShowCreateArtist(true); setNewArtistName(searchQuery); }}>Add “{searchQuery}” as a new artist</button>}>
                                     None of the artists in the library match “{searchQuery}”.
                                 </EmptyPanel>
                             ) : (
@@ -617,10 +597,10 @@ export const ArtistAttributionManager: React.FC<ArtistAttributionManagerProps> =
                                             <span className="sn-tag">{artist.pattern_type.replace(/_/g, ' ')}</span>
                                         </div>
                                         {artist.has_conflict && (
-                                            <p className="sn-inline-message" data-status="warn">An artist with the tidy name exists; applying merges the two.</p>
+                                            <p className="sn-inline-message" data-status="warn" role="status">An artist with the tidy name exists; applying merges the two.</p>
                                         )}
                                         <div className="aam__row">
-                                            <button type="button" className="sn-btn sn-btn--sm" onClick={() => applyCleanName(artist)} disabled={assigning}>
+                                            <button type="button" className="sn-btn sn-btn--sm sn-btn--primary" onClick={() => applyCleanName(artist)} disabled={assigning}>
                                                 {artist.has_conflict ? 'Merge into existing artist' : 'Use tidy name'}
                                             </button>
                                             <OverflowMenu
