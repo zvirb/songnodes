@@ -10,6 +10,8 @@ import { NotFoundPage, PlannedModulePage, SourcesPage } from './pages/ModulePage
 
 const GraphPage = React.lazy(() => import('./pages/GraphPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const CamelotPage = React.lazy(() => import('./pages/CamelotPage'));
+const ScraperProgressPage = React.lazy(() => import('./pages/ScraperProgressPage'));
 const LibraryPage = React.lazy(() => import('./features/musicLibrary/LibraryPage'));
 const SetBuilderPage = React.lazy(() => import('./features/musicLibrary/SetBuilderPage'));
 const OAuthCallback = React.lazy(() => import('./components/OAuthCallback'));
@@ -36,10 +38,10 @@ const App: React.FC = () => (
           <Route path="library" element={<LibraryPage />} />
           <Route path="sets" element={<SetBuilderPage />} />
           <Route path="paths" element={<PlannedModulePage mod="paths" />} />
-          <Route path="harmony" element={<PlannedModulePage mod="harmony" />} />
+          <Route path="harmony" element={<CamelotPage />} />
           <Route path="sources" element={<Navigate to="/sources/targets" replace />} />
           <Route path="sources/targets" element={<SourcesPage />} />
-          <Route path="pipeline" element={<PlannedModulePage mod="pipeline" />} />
+          <Route path="pipeline" element={<ScraperProgressPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

@@ -1,6 +1,135 @@
 # Implementation status
 
-## Current task: Compose not Kubernetes, same-origin API, design system 1.1.1
+## Current task: commit and sync verified local fixes
+
+Started at Markus's request. Scope: preserve the verified local frontend, search,
+Compose and startup-script changes, commit them on a feature branch (not `main`), and
+push/sync them using the repository's PR workflow. Exclude untracked test snapshots.
+Next: create the branch, commit the tracked changes and publish the branch/PR.
+
+## Current task: link the Pipeline and Camelot pages
+
+Started at Markus's request after confirming the pages from PRs #87 and #88 were not
+visible. Scope: verify whether their routes were registered, mount the existing pages,
+and avoid presenting the Pipeline page's fixture telemetry as live data.
+
+Diagnosis: the local frontend container was current, not stale. PRs #87 (Pipeline) and
+#88 (Camelot) added their page components but did not change `App.tsx`; the routes
+remained wired to `PlannedModulePage`. The route registration now points `/pipeline` at
+`ScraperProgressPage` and `/harmony` at `CamelotPage`. The Pipeline component's former
+"Run Scrapers" action only changed sample values, its refresh randomized those values,
+and its WebSocket target `/api/ws` does not exist. The route now disables that connection and the fake run/refresh actions; the displayed
+fixture metrics are explicitly marked as sample data, with no freshness stamp implying
+a live sync. The home-page description now matches this limitation. Added E2E
+assertions for both routes and the Pipeline sample-data notice.
+
+Rebuilt and force-recreated the frontend container from the working tree; it is healthy
+and all eight Compose services report healthy. Validation passed:
+
+- `npm run type-check`
+- `npm run test:unit` (84/84)
+- `docker compose -f compose.dev.yaml build frontend` (passed; runs the production build)
+- In PowerShell from `frontend`: `$env:PLAYWRIGHT_BASE_URL = 'http://127.0.0.1:3006'; npm run test:e2e -- tests/e2e/routes.smoke.spec.ts --project=chromium` (13/13, including both new pages, no console errors)
+- `scripts/sync-design-system.sh --check` (with `PYTHONUTF8=1` for Windows Python)
+- `git diff --check`
+
+Changes remain local and uncommitted. Existing unrelated local changes and the
+pre-existing untracked E2E snapshot directories have been preserved. Unresolved:
+Pipeline worker/job figures remain fixtures; no live worker telemetry is wired into
+that page. Next task: connect Pipeline to real job and worker status data before
+removing its sample-data notice.
+
+## Current task: fix music-service search query serialization
+
+Started 25 Oct 2026 (Australia/Melbourne) at Markus's request, based on 422 errors
+where `/api/v1/music-search/{provider}?params=[object Object]`. Fixed
+`MusicServiceSearch.tsx`: `api.get` expects query parameters directly, not nested under
+`params`. Added a typed response shape and filters out malformed provider entries.
+The malformed URL reproduces 422; valid `q`/`limit` requests through the frontend
+proxy return 200 for Spotify and TIDAL (development mock data). Frontend type-check,
+production build and unit tests (84/84) passed. Rebuilt/recreated the frontend; all
+eight Compose services report healthy. E2E was not run. No unresolved issue for this
+fix; live provider search is not verified because local API returned development mock
+results.
+
+## Current task: local code and running-version check — complete
+
+25 Oct 2026 (Australia/Melbourne). Local `main` and `origin/main` match at `95c51eb`.
+Rebuilt and recreated all five application services from that checkout; all eight
+Compose services now report healthy. The existing PostgreSQL volume was preserved;
+migrations 012–014 ran idempotently. The frontend now serves on container port 8080,
+matching its Dockerfile.
+
+Found and fixed two local development workflow issues: Compose mapped/health-checked
+frontend port 80 although nginx listens on 8080; and the startup script's raw image
+builds were not causing Compose to replace unchanged app containers. Updated the port
+mapping/health check and made the script force-recreate only the five app services
+after building. `bash scripts/start-dev.sh` completed successfully; frontend, REST,
+graph and unified-scraper HTTP smoke checks returned 200. `docker compose ps` showed
+all eight services healthy. Verified all five application container image IDs match
+their newly built local images. The existing `songnodes-dev_dev-postgres` volume stayed
+mounted and was not reset. `docker compose config --quiet` and `git diff --check`
+passed. No E2E suite was run.
+
+This confirms application code/images are current to local `main`, not that every
+external base or infrastructure image is the latest available upstream. Those images
+were not pulled; dependencies remain governed by the repository's image tags and lock
+files. Next task: commit or PR the local Compose/startup fixes if Markus wants them
+shared; otherwise await the next request.
+
+## Previous task: final PR #86 disposition — complete
+
+25 Oct 2026 (Australia/Melbourne). At Markus's request, reviewed the last open PR.
+Closed #86 without merging: it conflicts with current `main` in all four changed files,
+main has since advanced with newer implementations of those files, and the PR reported
+no CI checks. The branch was not force-merged or deleted; any remaining token cleanup
+should be proposed as a focused PR against current `main`.
+
+Validation: `git diff --check origin/main...FETCH_HEAD` passed. `git merge-tree
+--write-tree origin/main FETCH_HEAD` confirmed conflicts in all four changed files.
+`gh pr checks 86` reported no checks. No tests or E2E were run because the stale,
+conflicting branch was discarded rather than merged.
+
+No unresolved PR merge work from this batch. Next task: await Markus's next requested
+PR review or implementation.
+
+## Previous task: resolve PR conflicts, review green PRs, and update `main`
+
+Restarted 25 Oct 2026 (Australia/Melbourne) at Markus's request; the open PR set had
+reduced and merge conflicts had appeared. #77 was already merged.
+
+- **#78**: merged the PR branch with `main` at `a72cfcb`, resolving the
+  `TargetTracksManager.css` conflict with design-system tokens; later merged the
+  `d77e16a` backup/restore security fix without conflicts. Removed duplicated AI-key
+  controls from `PreferencesPanel`, shortened provider labels, refreshed four Settings
+  screenshots, and removed the now-stale `camelotData.ts` conformance exemption.
+  Validation passed: `npm run type-check`; `npm run test:unit` (79 passed);
+  `npm run build`; `scripts/sync-design-system.sh --check`; focused visual tests (4/4);
+  and `scripts/e2e-docker.sh` (307 passed). The full E2E run was against the rebuilt
+  frontend before the backend-only `d77e16a` merge. GitHub checks on `a106b3d` passed:
+  build, CodeQL, Semgrep, Trivy and design-system conformance. Merged as
+  `db8558f` on 25 Oct 2026; local `main` is fast-forwarded to that commit.
+- **#79**: rebased locally onto `db8558f`, retaining `main`'s `SN.status` mapping and
+  `useId` Tabs fallback; ported documented `TextLink` and `Switch` exports and fixed
+  Switch `aria-describedby` so it references only rendered descriptions. Added tests for
+  external-link attributes and description/reason combinations. The PR's old bridge had
+  a full-file conflict; its outdated CopyButton/ProgressBar implementations were not
+  copied. Type-check, focused tests (5), full unit tests (84), build, and
+  `scripts/sync-design-system.sh --check` passed. The full `scripts/e2e-docker.sh`
+  run against the rebuilt frontend passed (307/307). `npx eslint` could not run because
+  ESLint 9 has no config in this checkout. Pushed commit `7207aa7` with
+  `--force-with-lease` after confirming the remote head was `a59b66a`. Fresh GitHub
+  Build, CodeQL, Semgrep, Trivy and design-system conformance checks passed. Squash
+  merged as `95c51eb` on 25 Oct 2026; local `main` is fast-forwarded to that commit.
+- **#80**: closed on Markus's instruction as redundant. It duplicated AI-key management
+  already on `main` and stored keys in a path the current AI service does not read.
+- **#86**: left open on Markus's instruction; no checks were reported.
+
+At that point, the Docker Compose frontend port mismatch remained (nginx listens on
+8080, Compose targeted port 80); it was corrected in the current task above. PRs #78
+and #79 are merged; #80 and #86 are closed.
+
+## Previous task: Compose not Kubernetes, same-origin API, design system 1.1.1
 
 25 Oct 2026. Three requests from Markus, one PR each, E2E run against each frontend
 change before merge:

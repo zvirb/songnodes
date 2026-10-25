@@ -18,6 +18,22 @@ interface MusicServiceTrack {
   service: 'spotify' | 'tidal';
 }
 
+interface MusicServiceSearchResult {
+  id: string;
+  name?: string;
+  title?: string;
+  artist?: string;
+  artists?: Array<{ name: string }>;
+  album?: { name?: string; images?: Array<{ url: string }> };
+  duration_ms?: number;
+  preview_url?: string;
+  image?: string;
+}
+
+interface MusicServiceSearchResponse {
+  tracks?: MusicServiceSearchResult[];
+}
+
 interface Props {
   onAddToTargets: (tracks: MusicServiceTrack[]) => void;
 }
@@ -38,27 +54,32 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
     setSearchResults([]);
 
     try {
-      const services = selectedService === 'both' ? ['spotify', 'tidal'] : [selectedService];
+      const services: Array<'spotify' | 'tidal'> =
+        selectedService === 'both' ? ['spotify', 'tidal'] : [selectedService];
       const allResults: MusicServiceTrack[] = [];
 
       for (const service of services) {
         try {
-          const response = await (api as any).get(`/music-search/${service}`, {
-            params: { q: searchQuery, limit: 20 }
+          const response = await api.get(`/music-search/${service}`, {
+            q: searchQuery,
+            limit: 20,
           });
+          const data = response.data as MusicServiceSearchResponse;
 
-          const tracks = response.data.tracks?.map((track: any) => ({
-            id: `${service}_${track.id}`,
-            title: track.name || track.title,
-            artist: track.artists?.[0]?.name || track.artist,
-            album: track.album?.name,
-            duration_ms: track.duration_ms,
-            spotify_id: service === 'spotify' ? track.id : undefined,
-            tidal_id: service === 'tidal' ? track.id : undefined,
-            preview_url: track.preview_url,
-            image_url: track.album?.images?.[0]?.url || track.image,
-            service: service as 'spotify' | 'tidal'
-          })) || [];
+          const tracks = data.tracks
+            ?.filter(track => (track.name || track.title) && (track.artists?.[0]?.name || track.artist))
+            .map(track => ({
+              id: `${service}_${track.id}`,
+              title: track.name || track.title || '',
+              artist: track.artists?.[0]?.name || track.artist || '',
+              album: track.album?.name,
+              duration_ms: track.duration_ms,
+              spotify_id: service === 'spotify' ? track.id : undefined,
+              tidal_id: service === 'tidal' ? track.id : undefined,
+              preview_url: track.preview_url,
+              image_url: track.album?.images?.[0]?.url || track.image,
+              service,
+            })) || [];
 
           allResults.push(...tracks);
         } catch (err) {

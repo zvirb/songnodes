@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { usePageHeader } from '../shell/AppShell';
 import { PageHeader, SectionHeading } from '../shell/PageParts';
 import { useLiveDataLoader } from '../hooks/useLiveDataLoader';
@@ -10,145 +10,46 @@ import {
   Zap,
   AlertTriangle,
   RefreshCw,
-  Play,
   CheckCircle2,
   Clock,
   XCircle,
-  Radio
 } from 'lucide-react';
-import { SN } from '../lib/songnodes';
+import { SN, SnIcon } from '../lib/songnodes';
 
 export const ScraperProgressPage: React.FC = () => {
-  const [isTriggeringRun, setIsTriggeringRun] = useState(false);
-  const [triggerMessage, setTriggerMessage] = useState<string | null>(null);
-
   const {
-    isLoading,
-    lastUpdate,
     telemetry,
     stages,
     scrapers,
-    refresh,
-    LiveDataLoader: LiveLoaderComponent
   } = useLiveDataLoader({
-    autoStart: true,
-    updateInterval: 15000,
-    enableWebSocket: true
+    autoStart: false,
+    enableWebSocket: false
   });
-
-  const lastSyncIso = telemetry.lastSyncIso || new Date(lastUpdate).toISOString();
 
   usePageHeader({
     lead: 'Pipeline',
     title: 'Pipeline & Scraper Ingestion Progress',
-    current: 'pipeline',
-    updatedAt: lastSyncIso
+    current: 'pipeline'
   });
-
-  const handleRunScrapers = async () => {
-    setIsTriggeringRun(true);
-    setTriggerMessage(null);
-    try {
-      refresh();
-      setTriggerMessage('Scraper ingestion job triggered successfully.');
-      setTimeout(() => setTriggerMessage(null), 5000);
-    } catch (err) {
-      setTriggerMessage('Failed to trigger scraper job.');
-    } finally {
-      setIsTriggeringRun(false);
-    }
-  };
 
   const totalItems = telemetry.itemsProcessed + telemetry.itemsRemaining;
   const overallPercent = totalItems > 0 ? Math.round((telemetry.itemsProcessed / totalItems) * 100) : 0;
 
   return (
     <main className="sn-page__main" id="main" tabIndex={-1}>
-      {/* Background Live Data Listener */}
-      <LiveLoaderComponent showStatus={false} />
-
       <PageHeader
         mod="pipeline"
         lead="Pipeline"
         title="Pipeline & Scraper Ingestion Progress"
-        desc="Operational monitoring dashboard for multi-stage Medallion data ingestion, worker telemetry, and scrape targets."
-        stampVerb="Last synchronized at"
-        stamp={lastSyncIso}
+        desc="Demonstration of the pipeline dashboard layout. Live job and worker telemetry is not connected."
       />
 
-      {triggerMessage && (
-        <div
-          className="sn-inline-message sn-inline-message--boxed"
-          data-status="ok"
-          role="status"
-          style={{ marginBottom: 'var(--space-4)' }}
-        >
-          {triggerMessage}
-        </div>
-      )}
-
-      {/* Primary Control Bar */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 'var(--space-3)',
-          padding: 'var(--space-3) var(--space-4)',
-          backgroundColor: 'var(--color-surface-raised, var(--surface-2))',
-          border: '1px solid var(--line)',
-          borderRadius: 'var(--radius-card)',
-          marginBottom: 'var(--space-6)'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--space-1)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-pill)',
-              backgroundColor: 'var(--status-ok-bg)',
-              color: 'var(--color-status-success, var(--status-ok))',
-              fontSize: '0.75rem',
-              fontWeight: 600
-            }}
-          >
-            <Radio size={14} className="animate-pulse" /> Live Stream Connected
-          </span>
-          <span
-            className="sn-mono"
-            style={{
-              fontFamily: 'var(--font-mono, var(--font-data))',
-              fontSize: '0.8125rem',
-              color: 'var(--fg-2)'
-            }}
-          >
-            Worker Pool: <strong style={{ color: 'var(--fg)' }}>{telemetry.activeWorkers} Active</strong>
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <button
-            type="button"
-            className="sn-btn sn-btn--sm"
-            onClick={refresh}
-            disabled={isLoading}
-          >
-            <RefreshCw size={14} className={isLoading ? 'sn-spinner' : ''} />
-            Refresh Telemetry
-          </button>
-          <button
-            type="button"
-            className="sn-btn sn-btn--primary sn-btn--sm"
-            onClick={handleRunScrapers}
-            disabled={isTriggeringRun}
-          >
-            {isTriggeringRun ? <span className="sn-spinner" aria-hidden="true" /> : <Play size={14} />}
-            Run Scrapers
-          </button>
+      <div className="sn-banner" data-status="warn">
+        <span className="sn-banner__icon"><SnIcon name="triangle-alert" /></span>
+        <div className="sn-banner__body">
+          <p className="sn-banner__content">
+            <span className="sn-banner__title">Sample data is shown.</span> Worker counts, throughput, errors and scraper activity below are illustrative, not current pipeline telemetry.
+          </p>
         </div>
       </div>
 
@@ -224,7 +125,7 @@ export const ScraperProgressPage: React.FC = () => {
               {formatThroughput(telemetry.throughputRate)}
             </div>
             <div className="caption" style={{ color: 'var(--fg-2)', marginTop: 'var(--space-1)' }}>
-              Real-time ingestion velocity
+              Illustrative throughput rate
             </div>
           </div>
 
