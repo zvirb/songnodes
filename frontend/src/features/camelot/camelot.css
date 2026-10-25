@@ -1,0 +1,27 @@
+.sn-camelot-page__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 960px) {
+  .sn-camelot-page__grid {
+    grid-template-columns: 420px 1fr;
+    align-items: start;
+  }
+}
+
+.sn-camelot-page__wheel-card {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sn-camelot-page__stats {
+  margin-top: var(--space-4);
+  color: var(--fg-2);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  text-align: center;
+}
