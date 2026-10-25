@@ -1,3 +1,49 @@
+# Current task: redeploy containers from latest main
+
+Started at Markus's request. Scope: rebuild application images from current `main`
+and its checked-in dependency manifests, recreate the Compose stack without resetting
+persistent data, then verify health and running image IDs. First full build attempt
+stopped before any container changes: unified-scraper dependency resolution failed
+because `tidalapi 0.8.11` requires `python-dateutil <3`, conflicting with the new
+`python-dateutil>=3.0.0` requirement. Bounded the scraper requirement to the compatible
+2.8.2–2.x range; `docker build -f scrapers/Dockerfile.unified -t
+songnodes-dev-unified-scraper scrapers/` passed. No containers were restarted or
+database data changed. Next: publish the dependency correction through a PR, then
+rebuild/recreate the stack from merged `main`.
+
+## Previous task: verify all intended changes are pushed
+
+Completed at Markus's request. Fetched all remotes; local `main` matches `origin/main`
+at `cb223bd714822c09acae07e9058ef9d31e366336`. PR #90 and its two implementation
+commits are merged/pushed. Checked local-only commits: the all-dependencies commit
+`b88f950` is already an ancestor of `main`; the minimap fix from the separate
+`fix-pr55-minimap-lifecycle` worktree was merged in PR #59; the design-system audit
+branch belongs to merged PR #78. No outstanding implementation commit from these
+branches needs publishing. The only current worktree changes are local task notes in
+this tracked file and untracked generated Playwright PNG snapshots; neither should be
+published as product changes. No push was needed. Next task: if desired, review/remove
+the generated local screenshots or rebuild containers from current `main`.
+
+## Previous task: explain remaining untracked files
+
+Inspected the two untracked directories: they contain PNG screenshots named for
+Playwright accessibility/basic-validation scenarios. They are explicitly unignored by
+`.gitignore` (`frontend/tests/e2e/*-snapshots/`) and appear to be locally generated E2E
+visual snapshots; they were already present before the latest-main pull and were not
+changed or deleted. `STATUS.md` itself is tracked; its pending local edit is this task
+log, not an untracked file. No files were staged or removed.
+
+## Previous task: pull latest changes from main
+
+Completed at Markus's request. Local `main` was 22 commits behind `origin/main`;
+`git pull --ff-only origin main` fast-forwarded it to `cb223bd714822c09acae07e9058ef9d31e366336`
+(PR #112). All incoming changes are now present locally. The prior local container
+verification note was preserved before the pull and summarized here; the two existing
+untracked desktop E2E snapshot directories were left untouched. The running Compose
+services remain healthy but were not rebuilt/recreated for the newly pulled code.
+Next task: rebuild/recreate services from this checkout if Markus wants containers
+updated as well.
+
 ## SEC4 2026-10-25 Start
 
 Starting SEC4 CI scanning implementation.
