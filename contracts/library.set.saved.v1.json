@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "library.set.saved.v1",
+  "type": "object",
+  "properties": {
+    "aggregate_type": { "type": "string", "const": "library_set" },
+    "aggregate_id": { "type": "string" },
+    "event_type": { "type": "string", "const": "library.set.saved.v1" },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "set_name": { "type": "string" },
+        "track_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "saved_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["set_name", "track_ids"]
+    }
+  },
+  "required": ["aggregate_type", "aggregate_id", "event_type", "payload"]
+}

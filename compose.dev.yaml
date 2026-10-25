@@ -146,12 +146,12 @@ services:
   frontend:
     build:
       context: frontend
-    ports: ['127.0.0.1:3006:80']
+    ports: ['127.0.0.1:3006:8080']
     depends_on:
       rest-api: {condition: service_healthy}
       graph-api: {condition: service_started}
     healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1/']
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/']
       interval: 10s
       timeout: 5s
       retries: 6
