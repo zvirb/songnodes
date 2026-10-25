@@ -48,6 +48,12 @@ export interface LibraryTrack {
   ovr: boolean;
   /** Has a local file */
   local: boolean;
+
+  /** MusicBrainz provenance */
+  mbid?: string;
+  mbconf?: string;
+  mbdump?: string;
+  source_url?: string;
 }
 
 export interface LibrarySource { id: string; prior: number; club: boolean; on: boolean }
@@ -64,36 +70,47 @@ export interface LibraryFile {
 
 let cache: Promise<LibraryFile> | null = null;
 
-/** Loads the library once per session. */
 export function loadLibrary(): Promise<LibraryFile> {
   if (!cache) {
-    cache = fetch('/data/music-library.json', { cache: 'no-cache' }).then((r) => {
+    cache = (async () => {
+      try {
+        const res = await fetch('/api/v1/library/search?limit=5000');
+        if (res.ok) {
+          const tracks = await res.json() as LibraryTrack[];
+          return {
+            generated: new Date().toISOString(),
+            ledger_updated: new Date().toISOString(),
+            counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
+            sources: [],
+            runs: [],
+            tracks
+          };
+        }
+      } catch (e) {
+        console.warn('API library search error, falling back to static JSON', e);
+      }
+
+      const r = await fetch('/data/music-library.json', { cache: 'no-cache' });
       if (!r.ok) throw new Error(`Library file returned ${r.status}`);
       return r.json() as Promise<LibraryFile>;
+    })().catch((err) => {
+      cache = null;
+      throw err;
     });
-    cache.catch(() => { cache = null; });
   }
   return cache;
 }
 
-/** Saved sets live on this device (localStorage), keyed here so Home and Set builder agree. */
 export const SAVED_SETS_KEY = 'sn-music-library-sets';
 
-/** One track in a saved set, as the artifact stored it (pipeline `sync-sets` reads these). */
 export interface SavedSetTrack {
   id: string;
-  /** Target energy for the slot */
   tgt: number;
   a?: string; t?: string; m?: string | null; e?: number | null; k?: string | null; bpm?: number | null;
   tidal?: string | null;
-  /** Key move label from the previous slot */
   move?: string | null;
 }
 
-/**
- * Same shape as the Naarm Set Builder's `sets` documents, so a set saved here can be
- * exported to musicLibrary/inbox/artifact_sets.json and picked up by the weekly run.
- */
 export interface SavedSet {
   id: string;
   name: string;
@@ -101,12 +118,36 @@ export interface SavedSet {
   minutes: number;
   mix: Record<string, number>;
   pool: string;
-  /** Send to TIDAL on the weekly run */
   tidal: boolean;
   seed: number;
   tracks: SavedSetTrack[];
   updated: string;
   created: string;
+}
+
+export async function readSavedSetsAsync(): Promise<SavedSet[]> {
+  try {
+    const res = await fetch('/api/v1/library/sets');
+    if (res.ok) {
+      return await res.json() as SavedSet[];
+    }
+  } catch (e) {
+    console.warn('API sets read failed, falling back to local storage', e);
+  }
+  return readSavedSets();
+}
+
+export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<void> {
+  try {
+    const res = await fetch('/api/v1/library/sets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sets),
+    });
+  } catch (e) {
+    console.warn('API sets write failed, falling back to local storage', e);
+  }
+  writeSavedSets(sets);
 }
 
 export function readSavedSets(): SavedSet[] {

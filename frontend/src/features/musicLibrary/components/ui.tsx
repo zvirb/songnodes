@@ -382,7 +382,9 @@ export const Banner: React.FC<{ status: 'info' | 'warn' | 'ok'; title: string; c
   </div>
 );
 
+
 /* ------------------------------------------------------------------ TrackCell */
+
 
 const EXT: [keyof LibraryTrack, string][] = [['tidal', 'TIDAL'], ['dz', 'Deezer'], ['bp', 'Beatport']];
 
@@ -399,6 +401,12 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
     <div className="sn-track-cell">
       <span className="sn-track-cell__title">
         <span className="sn-track-cell__name" title={name}><span className="sn-track-cell__artist">{t.a} –</span> {t.t}</span>
+        {t.mbid && (
+          <span className="sn-tag sn-category-tag" style={{ marginLeft: "0.5rem" }} title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'})
+dump date: ${t.mbdump || 'N/A'}`}>
+            MB Match
+          </span>
+        )}
       </span>
       <span className="sn-track-cell__meta">
         {meta.map((m, i) => (
@@ -413,6 +421,30 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
           </span>
         ) : null}
       </span>
+    </div>
+  );
+};
+
+
+
+
+/* ------------------------------------------------------------------ CoveragePanel */
+export const CoveragePanel: React.FC<{ t: LibraryTrack }> = ({ t }) => {
+  const fields = ['a', 't', 'm', 'd', 'bpm', 'k', 'e', 'p', 'rot', 'g', 'lbl'].filter(k => t[k as keyof LibraryTrack] !== null && t[k as keyof LibraryTrack] !== undefined && t[k as keyof LibraryTrack] !== '');
+  const filledCount = fields.length;
+  const totalCount = 11;
+  const sourceCount = t.src ? t.src.length : 0;
+
+  return (
+    <div className="sn-coverage-panel sn-panel sn-panel--sm sn-u-mt-sm" style={{ padding: "0.5rem" }}>
+      <div className="sn-panel__header"><h4 className="sn-panel__title" style={{ fontSize: "0.875rem" }}>Data Coverage</h4></div>
+      <div className="sn-panel__body">
+        <ul className="sn-stats-list" style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "0.75rem", color: "var(--text-2)" }}>
+          <li><strong>{filledCount} / {totalCount}</strong> core fields filled</li>
+          <li><strong>{sourceCount}</strong> known sources {t.src && t.src.length > 0 ? `(${t.src.join(', ')})` : ''}</li>
+          {t.mbid ? <li><strong>MusicBrainz</strong> match via {t.mbconf} confidence</li> : null}
+        </ul>
+      </div>
     </div>
   );
 };

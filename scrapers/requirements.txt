@@ -67,4 +67,4 @@ tidalapi>=0.8.11
 # Testing (optional)
 pytest>=9.1.1
 pytest-asyncio>=1.4.0
-twisted==26.4.0
+twisted==26.10.0rc1
