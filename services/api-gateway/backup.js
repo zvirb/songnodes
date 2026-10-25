@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const fs = require('fs').promises;
 const multer = require('multer');
 
@@ -23,12 +23,21 @@ router.post('/backup', async (req, res) => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFile = `/tmp/musicdb_backup_${timestamp}.sql`;
 
-    // Create pg_dump command with environment variables
-    const pgDumpCmd = `PGPASSWORD="${DB_PASSWORD}" pg_dump -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -F c -b -v -f ${backupFile}`;
+    const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
+    const pgDumpArgs = [
+      '-h', DB_HOST,
+      '-p', String(DB_PORT),
+      '-U', DB_USER,
+      '-d', DB_NAME,
+      '-F', 'c',
+      '-b',
+      '-v',
+      '-f', backupFile
+    ];
 
-    // Execute backup
+    // Execute backup using execFile to prevent command injection
     await new Promise((resolve, reject) => {
-      exec(pgDumpCmd, { maxBuffer: 1024 * 1024 * 100 }, (error, stdout, stderr) => {
+      execFile('pg_dump', pgDumpArgs, { env, maxBuffer: 1024 * 1024 * 100 }, (error, stdout, stderr) => {
         if (error) {
           console.error('Backup error:', error);
           console.error('Stderr:', stderr);
@@ -71,12 +80,21 @@ router.post('/restore', upload.single('backup'), async (req, res) => {
     }
 
     const backupFile = req.file.path;
+    const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
 
-    // First, drop and recreate the database
-    const dropCmd = `PGPASSWORD="${DB_PASSWORD}" psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d postgres -c "DROP DATABASE IF EXISTS ${DB_NAME}; CREATE DATABASE ${DB_NAME};"`;
+    // First, drop and recreate the database using execFile
+    const safeDbIdentifier = DB_NAME.replace(/"/g, '""');
+    const dropSql = `DROP DATABASE IF EXISTS "${safeDbIdentifier}"; CREATE DATABASE "${safeDbIdentifier}";`;
+    const dropArgs = [
+      '-h', DB_HOST,
+      '-p', String(DB_PORT),
+      '-U', DB_USER,
+      '-d', 'postgres',
+      '-c', dropSql
+    ];
 
     await new Promise((resolve, reject) => {
-      exec(dropCmd, (error, stdout, stderr) => {
+      execFile('psql', dropArgs, { env }, (error, stdout, stderr) => {
         if (error && !stderr.includes('does not exist')) {
           console.error('Drop/create error:', error);
           reject(error);
@@ -86,11 +104,17 @@ router.post('/restore', upload.single('backup'), async (req, res) => {
       });
     });
 
-    // Restore from backup
-    const restoreCmd = `PGPASSWORD="${DB_PASSWORD}" pg_restore -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -v ${backupFile}`;
+    // Restore from backup using execFile
+    const restoreArgs = [
+      '-h', DB_HOST,
+      '-p', String(DB_PORT),
+      '-U', DB_USER,
+      '-d', DB_NAME,
+      '-v', backupFile
+    ];
 
     await new Promise((resolve, reject) => {
-      exec(restoreCmd, { maxBuffer: 1024 * 1024 * 100 }, (error, stdout, stderr) => {
+      execFile('pg_restore', restoreArgs, { env, maxBuffer: 1024 * 1024 * 100 }, (error, stdout, stderr) => {
         if (error) {
           // pg_restore often returns warnings as errors, check if critical
           if (stderr && stderr.includes('ERROR')) {
@@ -135,11 +159,21 @@ router.post('/restore', upload.single('backup'), async (req, res) => {
 // Get backup status/info
 router.get('/status', async (req, res) => {
   try {
+    const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
+    const safeDbNameLiteral = DB_NAME.replace(/'/g, "''");
+
     // Check database connection and size
-    const sizeCmd = `PGPASSWORD="${DB_PASSWORD}" psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -t -c "SELECT pg_size_pretty(pg_database_size('${DB_NAME}'));"`;
+    const sizeArgs = [
+      '-h', DB_HOST,
+      '-p', String(DB_PORT),
+      '-U', DB_USER,
+      '-d', DB_NAME,
+      '-t',
+      '-c', `SELECT pg_size_pretty(pg_database_size('${safeDbNameLiteral}'));`
+    ];
 
     const dbSize = await new Promise((resolve, reject) => {
-      exec(sizeCmd, (error, stdout, _stderr) => {
+      execFile('psql', sizeArgs, { env }, (error, stdout, _stderr) => {
         if (error) {
           reject(error);
         } else {
@@ -149,14 +183,21 @@ router.get('/status', async (req, res) => {
     });
 
     // Get table count
-    const tableCountCmd = `PGPASSWORD="${DB_PASSWORD}" psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';"`;
+    const tableCountArgs = [
+      '-h', DB_HOST,
+      '-p', String(DB_PORT),
+      '-U', DB_USER,
+      '-d', DB_NAME,
+      '-t',
+      '-c', "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';"
+    ];
 
     const tableCount = await new Promise((resolve, reject) => {
-      exec(tableCountCmd, (error, stdout, _stderr) => {
+      execFile('psql', tableCountArgs, { env }, (error, stdout, _stderr) => {
         if (error) {
           reject(error);
         } else {
-          resolve(parseInt(stdout.trim()));
+          resolve(parseInt(stdout.trim(), 10));
         }
       });
     });
