@@ -483,3 +483,14 @@ Started working on Python 3.12 upgrade audit.
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:BE1 END -->
+
+<!-- SLOT:REF0 BEGIN -->
+**[2026-10-25] ref_mb schema and DB preparation (Jules)**:
+- Replaced schema migration 100 with NO-OPs since ref_mb will use a separate DB.
+- Recorded deployment decision to docs/integration/ref_mb/DECISION.md.
+- Added connection settings and pass-through variables in compose.dev.yaml.
+- Created docs/integration/ref_mb/SETTINGS.md.
+- Generated tests, Pytest fixture with mock data, and DDL for ref_mb schema.
+- Added license documentation in docs/licensing/MUSICBRAINZ.md and README.md.
+- Superseded legacy MBID schema migration 001.
+<!-- SLOT:REF0 END -->
