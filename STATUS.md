@@ -5,7 +5,13 @@
 Started at Markus's request. Scope: preserve the verified local frontend, search,
 Compose and startup-script changes, commit them on a feature branch (not `main`), and
 push/sync them using the repository's PR workflow. Exclude untracked test snapshots.
-Next: create the branch, commit the tracked changes and publish the branch/PR.
+
+Committed the nine tracked files as `0573e79` (`fix(app): restore pages and sync local stack`) on
+`fix/local-stack-and-page-wiring`; pushed the branch to `origin`. The two untracked
+desktop snapshot directories were not included. Opened PR #90 to `main` using the
+repository template and corrected the pending-review checkbox. Branch is synced; GitHub
+Build, CodeQL, Semgrep, Trivy and design-system conformance checks are pending. No
+unresolved local sync issue. Next: review CI and approvals on PR #90 before merging.
 
 ## Current task: link the Pipeline and Camelot pages
 
