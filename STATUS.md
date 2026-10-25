@@ -488,6 +488,16 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Superseded legacy MBID schema migration 001.
 <!-- SLOT:REF0 END -->
 
+<!-- SLOT:SEC_SENTINEL BEGIN -->
+### SEC: Tidal OAuth Secret Exposure Remediation (2026-10-25)
+- Start: 2026-10-25
+- End: 2026-10-25
+- Removed mandatory client_secret / client_id query parameters from Tidal token refresh and device code initialization endpoints in `services/rest_api/routers/music_auth.py`.
+- Configured endpoints to default to server-side `TIDAL_CLIENT_ID` and `TIDAL_CLIENT_SECRET` environment variables to prevent sensitive credentials from leaking in HTTP request query parameters and server logs.
+- Added `/tidal/refresh` route alias.
+- Checks: `python3 -m py_compile` passed, code review passed.
+<!-- SLOT:SEC_SENTINEL END -->
+
 <!-- SLOT:QA1 BEGIN -->
 ### QA1: Add an ESLint 9 flat config to the frontend
 - Start: _not started_

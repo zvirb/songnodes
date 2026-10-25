@@ -913,14 +913,27 @@ async def search_spotify_tracks(
 # ===========================================
 
 @router.post("/tidal/device/init", response_model=TidalDeviceCodeResponse)
-async def init_tidal_device_flow(client_id: str = Query(...), client_secret: str = Query(...)):
+async def init_tidal_device_flow(
+    client_id: Optional[str] = Query(None, description="Optional Client ID (defaults to TIDAL_CLIENT_ID env var)"),
+    client_secret: Optional[str] = Query(None, description="Optional Client secret (defaults to TIDAL_CLIENT_SECRET env var)")
+):
     """
     Initiate Tidal Device Code flow - perfect for localhost development
     No redirect URI needed!
 
-    Returns a user code and verification URL for the user to visit
+    SECURITY: Defaults to backend environment variables (TIDAL_CLIENT_ID, TIDAL_CLIENT_SECRET)
+    to avoid exposing client secrets in query parameters.
     """
     try:
+        cid = client_id or TIDAL_CLIENT_ID
+        csecret = client_secret or TIDAL_CLIENT_SECRET
+
+        if not cid or not csecret:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Tidal OAuth credentials not configured. Set TIDAL_CLIENT_ID and TIDAL_CLIENT_SECRET environment variables."
+            )
+
         device_url = "https://auth.tidal.com/v1/oauth2/device_authorization"
 
         scopes = [
@@ -933,7 +946,7 @@ async def init_tidal_device_flow(client_id: str = Query(...), client_secret: str
         ]
 
         data = {
-            'client_id': client_id,
+            'client_id': cid,
             'scope': ' '.join(scopes)
         }
 
@@ -952,8 +965,8 @@ async def init_tidal_device_flow(client_id: str = Query(...), client_secret: str
                     device_code = result['device_code']
                     r = await get_redis()
                     oauth_data = {
-                        'client_id': client_id,
-                        'client_secret': client_secret,
+                        'client_id': cid,
+                        'client_secret': csecret,
                         'created_at': time.time(),
                         'service': 'tidal',
                         'flow_type': 'device_code'
@@ -1215,21 +1228,34 @@ async def tidal_oauth_callback(
         raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
 
 @router.post("/tidal/oauth/refresh")
+@router.post("/tidal/refresh")
 async def refresh_tidal_token(
     refresh_token: str = Query(..., description="Refresh token"),
-    client_id: str = Query(..., description="Client ID"),
-    client_secret: str = Query(..., description="Client secret")
+    client_id: Optional[str] = Query(None, description="Optional Client ID (defaults to TIDAL_CLIENT_ID env var)"),
+    client_secret: Optional[str] = Query(None, description="Optional Client secret (defaults to TIDAL_CLIENT_SECRET env var)")
 ):
     """
     Refresh Tidal access token using refresh token
+
+    SECURITY: Credentials loaded from backend environment variables by default.
+    Client secret is NOT required in query params to prevent secret exposure in server logs.
     """
     try:
+        cid = client_id or TIDAL_CLIENT_ID
+        csecret = client_secret or TIDAL_CLIENT_SECRET
+
+        if not cid or not csecret:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Tidal credentials not configured. Set TIDAL_CLIENT_ID and TIDAL_CLIENT_SECRET environment variables."
+            )
+
         token_url = "https://auth.tidal.com/v1/oauth2/token"
         token_data = {
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token,
-            'client_id': client_id,
-            'client_secret': client_secret
+            'client_id': cid,
+            'client_secret': csecret
         }
 
         async with aiohttp.ClientSession() as session:
