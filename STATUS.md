@@ -258,3 +258,15 @@ Started working on security updates from Dependabot branches:
 - Verified `npm audit --omit=dev` finds 0 vulnerabilities.
 - Documented remaining `pip-audit` issues in `docs/security/dependency-updates.md` (which are deferred due to dependency resolution conflicts on `starlette` making it a breaking change).
 - Encountered issues executing python tests via `pytest` because `httpx` is missing in the `pipx` container, indicating dependencies need to be installed in the isolated environment or a different testing strategy is expected.
+
+<!-- SLOT:FE12 BEGIN -->
+### FE12: Pipeline telemetry (2025-XX-XX)
+- Created `usePipelineTelemetry` polling hook mapping live jobs and outbox endpoints.
+- Replaced mock data in `ScraperProgressPage.tsx` with live data mapping.
+- Handled empty and error states correctly.
+- Added a "Retry" button for dead jobs with error handling.
+- Implemented dev seed script `scripts/dev/seed_pipeline_jobs.py` using domain logic.
+- Generated docs in `docs/pipeline-telemetry.md`.
+- Handback: Page operates at `/pipeline` endpoint. Fixtures created dynamically or available in `fixtures/`. Seed script requires `--yes-local-dev`.
+- Checks: `test:unit` and `type-check` pass. `sync-design-system.sh --check` passes. Visual tests and ESLint 9 configuration are omitted.
+<!-- SLOT:FE12 END -->
