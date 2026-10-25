@@ -9,7 +9,7 @@
  * Styling binds strictly to tokens.css and bundle.css without inline style overrides.
  */
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { MoreHorizontal, CircleCheck, X, Trash2, AlertTriangle, Search } from 'lucide-react';
+import { MoreHorizontal, CircleCheck, X, Trash2, AlertTriangle, Search, Lock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { EnergyBar, SN } from '../../lib/songnodes';
 import { displayEnergy } from '../../utils/trackMetadata';
@@ -90,6 +90,60 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   );
 });
 Button.displayName = 'Button';
+
+export interface TextLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  href: string;
+  module?: ModuleKey;
+  external?: boolean;
+  onTonal?: boolean;
+  path?: boolean;
+  breakAnywhere?: boolean;
+  current?: boolean;
+  children: React.ReactNode;
+}
+
+export const TextLink = React.forwardRef<HTMLAnchorElement, TextLinkProps>(({
+  href,
+  module,
+  external,
+  onTonal,
+  path,
+  breakAnywhere,
+  current,
+  className = '',
+  target,
+  rel,
+  children,
+  ...props
+}, ref) => {
+  const classes = [
+    'sn-link',
+    module && `sn-m-${module}`,
+    external && 'sn-link--ext',
+    onTonal && 'sn-text-link--on-tonal',
+    path && 'sn-text-link--path',
+    breakAnywhere && 'sn-text-link--break',
+    className,
+  ].filter(Boolean).join(' ');
+
+  return (
+    <a
+      ref={ref}
+      href={href}
+      className={classes}
+      target={external ? '_blank' : target}
+      rel={external ? 'noopener noreferrer' : rel}
+      aria-current={current ? 'page' : undefined}
+      {...props}
+    >
+      {children}
+      {external ? (
+        <span className="sn-sr">, opens in a new tab</span>
+      ) : null}
+    </a>
+  );
+});
+TextLink.displayName = 'TextLink';
 
 /* ------------------------------------------------------------------ */
 /* Badges & Status Pills                                              */
@@ -603,6 +657,67 @@ export const Checkbox = React.forwardRef<HTMLLabelElement, CheckboxProps>(({
   );
 });
 Checkbox.displayName = 'Checkbox';
+
+export interface SwitchProps {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void | Promise<void>;
+  disabledReason?: string;
+}
+
+export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(({
+  label,
+  description,
+  checked,
+  onChange,
+  disabledReason,
+}, ref) => {
+  const uid = useId().replace(/:/g, '');
+  const labelId = `sw-${uid}-l`;
+  const descriptionId = description ? `sw-${uid}-d` : undefined;
+  const reasonId = disabledReason ? `sw-${uid}-r` : undefined;
+  const describedBy = [descriptionId, reasonId].filter(Boolean).join(' ') || undefined;
+  const isDisabled = !!disabledReason;
+
+  const toggle = () => {
+    if (!isDisabled) onChange(!checked);
+  };
+
+  return (
+    <div className="sn-switch">
+      <div className="sn-switch__text" onClick={toggle}>
+        <span className="sn-switch__label" id={labelId}>{label}</span>
+        {description ? (
+          <span className="sn-switch__desc" id={descriptionId}>{description}</span>
+        ) : null}
+        {disabledReason ? (
+          <span className="sn-switch__desc" id={reasonId}>
+            <Lock {...ICON} size={14} />
+            {disabledReason}
+          </span>
+        ) : null}
+      </div>
+      <button
+        ref={ref}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-disabled={isDisabled || undefined}
+        aria-labelledby={labelId}
+        aria-describedby={describedBy}
+        className="sn-switch__control"
+        onClick={toggle}
+      >
+        <span className="sn-switch__state" aria-hidden="true">{checked ? 'On' : 'Off'}</span>
+        <span className="sn-switch__track" aria-hidden="true">
+          <span className="sn-switch__thumb" />
+        </span>
+      </button>
+    </div>
+  );
+});
+Switch.displayName = 'Switch';
 
 /* ------------------------------------------------------------------ */
 /* Typography & Section Headings                                      */
