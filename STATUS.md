@@ -487,3 +487,39 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Added license documentation in docs/licensing/MUSICBRAINZ.md and README.md.
 - Superseded legacy MBID schema migration 001.
 <!-- SLOT:REF0 END -->
+
+<!-- SLOT:QA1 BEGIN -->
+### QA1: Add an ESLint 9 flat config to the frontend
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA1 END -->
+
+<!-- SLOT:QA2 BEGIN -->
+### QA2: Fix frontend lockfile so npm ci works on Linux
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA2 END -->
+
+<!-- SLOT:QA3 BEGIN -->
+### QA3: Make graph-visualization-api tests collect and run
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA3 END -->
+
+<!-- SLOT:QA4 BEGIN -->
+### QA4: Run services/common/refmb tests from any directory and in CI
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA4 END -->
+
+<!-- SLOT:QA5 BEGIN -->
+### QA5: Make sync-design-system.sh work on Windows
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA5 END -->
+
+<!-- SLOT:QA6 BEGIN -->
+### QA6: Stabilise the dev-worker end-to-end integration test
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA6 END -->
