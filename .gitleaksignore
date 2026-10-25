@@ -1,0 +1,15 @@
+[allowlist]
+description = "Ignore test fixtures and documentation examples identified as false positive secrets"
+
+# Ignore synthetic passwords and test dummy keys where they naturally occur
+# This rule precisely targets only the dummy data, allowing future secrets to be caught.
+[[rules]]
+id = "ignore-docs-and-test-passwords"
+description = "Ignore synthetic password in test fixtures and API documentation"
+regex = '''(?i)(securePassword123|test_password|your_password|musicdb_secure_pass|7D82_xqNs55tGyk|8xTq8eBNbEZCWKg1ZrGpgsRQlU9GlNYNZVtG|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9|K8Vabm2sn4gtgqIfex7u|your-setlistfm-api-key)'''
+
+# Ignore SQL queries using "camelot_key" as it's a false positive for an API key token
+[[rules]]
+id = "ignore-camelot-key-sql"
+description = "Ignore s2.camelot_key SQL column which is falsely identified as an API key"
+regex = '''s2\.camelot_key'''
