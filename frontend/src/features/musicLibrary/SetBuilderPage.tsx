@@ -9,7 +9,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader, EmptyState } from '../../shell/PageParts';
 import { SN, SnIcon, KeyBadge, Bpm, CompatPill, type CompatLevel } from '../../lib/songnodes';
-import { loadLibrary, readSavedSets, writeSavedSets, type LibraryFile, type LibraryTrack, type SavedSet } from './data';
+import { loadLibrary, readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, type LibraryFile, type LibraryTrack, type SavedSet } from './data';
 import {
   MAX_MINUTES, MIN_MINUTES, PILLARS, POOLS, SHAPES, buildSlots, countPeaks, draftFromSaved, filtersFromParams, filtersToParams,
   genreRunBefore, mixTotal, mixedSecs, moveSlot, newSetId, normaliseMix, pillarLabel, poolTracks, removeSlot, retarget,
@@ -60,7 +60,7 @@ const SetBuilderPage: React.FC = () => {
   const setDraft = useCallback((u: Draft | ((d: Draft) => Draft)) => {
     setDraftState((d) => { const next = typeof u === 'function' ? (u as (d: Draft) => Draft)(d) : u; writeDraft(next); return next; });
   }, []);
-  const setSaved = useCallback((s: SavedSet[]) => { setSavedState(s); writeSavedSets(s); }, []);
+  const setSaved = useCallback((s: SavedSet[]) => { setSavedState(s); writeSavedSetsAsync(s); }, []);
 
   useEffect(() => {
     setLoadError(false);
@@ -551,6 +551,10 @@ const SetBuilderPage: React.FC = () => {
       />
       {liveNode}
       {region}
+      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+          <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
     </main>
   );
 };
