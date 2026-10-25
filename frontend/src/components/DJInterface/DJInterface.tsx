@@ -244,8 +244,8 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
       {isLoading && (
         <div className={styles.loadingContainer}>
           <div className={styles.spinner} />
-          <p style={{ fontSize: '16px', margin: 0 }}>Loading your music library...</p>
-          <p style={{ fontSize: '14px', margin: '8px 0 0 0', opacity: 0.7 }}>
+          <p className={styles.loadingText}>Loading your music library...</p>
+          <p className={styles.loadingSubtext}>
             Found {tracks.length} tracks so far
           </p>
         </div>
