@@ -396,8 +396,9 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP9 BEGIN -->
 ### WP9: Server-side search and the Library / Set-builder pages on the API
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25
+Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:WP9 END -->
 
 <!-- SLOT:WP4 BEGIN -->
