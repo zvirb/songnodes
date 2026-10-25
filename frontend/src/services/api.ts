@@ -1,4 +1,6 @@
 import { graphNodeFromApi } from '../utils/trackMetadata';
+import { sanitizeInput, sanitizeObject } from '../lib/utils';
+import { API_BASE_URL } from '../lib/apiBase';
 import {
   GraphData,
   GraphApiResponse,
@@ -8,6 +10,77 @@ import {
   Track,
   DEFAULT_CONFIG
 } from '../types';
+
+/**
+ * Check if a URL points to an external third-party domain or external provider/CDN.
+ */
+function isExternalUrl(targetUrl: string): boolean {
+  if (targetUrl.startsWith('/') && !targetUrl.startsWith('//')) {
+    return false;
+  }
+  try {
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+    const parsed = new URL(targetUrl, currentOrigin);
+    if (parsed.origin === currentOrigin) {
+      return false;
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]') {
+      return false;
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Strip sensitive auth/cookie/token headers when sending requests to third-party domains or CDNs.
+ */
+function stripSensitiveHeaders(targetUrl: string, headers: Record<string, string>): Record<string, string> {
+  if (!isExternalUrl(targetUrl)) {
+    return headers;
+  }
+  const sanitized = { ...headers };
+  const sensitiveKeys = ['authorization', 'x-api-key', 'api-key', 'x-auth-token', 'cookie', 'set-cookie'];
+  Object.keys(sanitized).forEach(key => {
+    if (sensitiveKeys.includes(key.toLowerCase())) {
+      delete sanitized[key];
+    }
+  });
+  return sanitized;
+}
+
+/**
+ * Sanitize error messages to mask raw stack traces, file paths, and environment variable leaks.
+ */
+function sanitizeErrorMessage(error: unknown): string {
+  if (!error) return 'An unexpected error occurred';
+  if (error instanceof Error && error.name === 'AbortError') {
+    return 'Request timed out';
+  }
+
+  let raw = typeof error === 'string' ? error : (error instanceof Error ? error.message : String(error));
+
+  // Mask sensitive credentials or tokens
+  raw = raw.replace(/(api[_-]?key|token|secret|password|auth|bearer)\s*[:=]\s*\S+/gi, '$1=[REDACTED]');
+
+  // Strip source paths and stack traces
+  raw = raw.replace(/(\/|\w:\\)[^\s:]+:\d+:\d+/g, '[source]');
+  raw = raw.replace(/at\s+.*:\d+:\d+/g, '');
+  raw = raw.replace(/VITE_[A-Z0-9_]+/g, '[ENV_VAR]');
+
+  if (
+    raw.includes('SyntaxError') ||
+    raw.includes('TypeError') ||
+    raw.includes('ReferenceError') ||
+    raw.length > 250
+  ) {
+    return 'An error occurred while processing the request';
+  }
+
+  return raw.trim() || 'An error occurred';
+}
 
 // Base API configuration
 class ApiClient {
@@ -49,31 +122,30 @@ class ApiClient {
 
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      // Debug logging disabled - too verbose
-      // console.log(`[API] ${options.method || 'GET'} ${url} (${requestId})`);
+      const rawHeaders = (options.headers as Record<string, string>) || {};
+      const safeHeaders = stripSensitiveHeaders(url, {
+        'Content-Type': 'application/json',
+        'X-Request-ID': requestId,
+        ...rawHeaders,
+      });
 
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Request-ID': requestId,
-          ...options.headers,
-        },
+        headers: safeHeaders,
       });
 
       const responseTime = Date.now() - startTime;
-      // Debug logging disabled - too verbose
-      // console.log(`[API] Response ${response.status} in ${responseTime}ms (${requestId})`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      const sanitizedData = sanitizeObject<T>(data);
 
       return {
-        data,
+        data: sanitizedData,
         status: 'success',
         timestamp: Date.now(),
         requestId,
@@ -81,21 +153,13 @@ class ApiClient {
 
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      console.error(`[API] Error in ${responseTime}ms (${requestId}):`, error);
-
-      let message = 'Unknown error occurred';
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          message = 'Request timed out';
-        } else {
-          message = error.message;
-        }
-      }
+      const safeMessage = sanitizeErrorMessage(error);
+      console.error(`[API] Error in ${responseTime}ms (${requestId}): ${safeMessage}`);
 
       return {
         data: {} as T,
         status: 'error',
-        message,
+        message: safeMessage,
         timestamp: Date.now(),
         requestId,
       };
@@ -109,13 +173,14 @@ class ApiClient {
 
     // Handle params manually to avoid URL constructor issues with relative baseUrl
     if (params) {
+      const safeParams = sanitizeObject(params);
       const searchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
+      Object.entries(safeParams).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (Array.isArray(value)) {
-            value.forEach(v => searchParams.append(key, v.toString()));
+            value.forEach(v => searchParams.append(key, String(v)));
           } else {
-            searchParams.set(key, value.toString());
+            searchParams.set(key, String(value));
           }
         }
       });
@@ -142,17 +207,19 @@ class ApiClient {
 
   // POST request
   async post<T>(endpoint: string, data?: any, timeoutMs?: number): Promise<ApiResponse<T>> {
+    const safeData = data ? sanitizeObject(data) : undefined;
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: safeData ? JSON.stringify(safeData) : undefined,
     }, timeoutMs);
   }
 
   // PUT request
   async put<T>(endpoint: string, data?: any, timeoutMs?: number): Promise<ApiResponse<T>> {
+    const safeData = data ? sanitizeObject(data) : undefined;
     return this.request<T>(endpoint, {
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: safeData ? JSON.stringify(safeData) : undefined,
     }, timeoutMs);
   }
 
@@ -213,7 +280,7 @@ export const graphApi = {
       // Debug: Edge filtering info (disabled - too verbose)
       // console.log(`Filtered ${edges.length} edges from ${response.data.edges?.length || 0} total for ${nodes.length} nodes`);
 
-      const graphData: GraphData = { nodes, edges };
+      const graphData: GraphData = sanitizeObject({ nodes, edges });
 
       return {
         data: graphData,
@@ -222,21 +289,22 @@ export const graphApi = {
         metadata: {
           totalNodes: graphData.nodes.length,
           totalEdges: graphData.edges.length,
-          filters,
+          filters: filters ? sanitizeObject(filters) : undefined,
           processingTime: 0,
         },
       };
     } catch (error) {
-      console.error('Failed to fetch graph data:', error);
+      const safeMsg = sanitizeErrorMessage(error);
+      console.error('Failed to fetch graph data:', safeMsg);
       return {
         data: { nodes: [], edges: [] },
         status: 'error',
-        message: 'Failed to fetch graph data',
+        message: safeMsg,
         timestamp: Date.now(),
         metadata: {
           totalNodes: 0,
           totalEdges: 0,
-          filters,
+          filters: filters ? sanitizeObject(filters) : undefined,
           processingTime: 0,
         },
       };
@@ -302,6 +370,9 @@ export const searchApi = {
   // 2. Backend would search entire DB (~31k tracks) vs loaded nodes (~5k)
   // 3. Camera centering requires the track to exist in the loaded graph data
   async searchTracks(query: string, filters?: SearchFilters): Promise<TrackSearchResponse> {
+    const safeQuery = sanitizeInput(query);
+    const safeFilters = filters ? sanitizeObject(filters) : undefined;
+
     const response = await apiClient.post<Array<{
       track: Track;
       score: number;
@@ -311,19 +382,19 @@ export const searchApi = {
         indices: number[][];
       }>;
     }>>('/v1/search/tracks', {
-      query,
-      filters,
+      query: safeQuery,
+      filters: safeFilters,
     });
 
     return {
-      data: response.data || [],
+      data: sanitizeObject(response.data || []),
       status: response.status,
       timestamp: Date.now(),
       metadata: {
-        query,
+        query: safeQuery,
         totalResults: response.data?.length || 0,
         searchTime: 0,
-        filters,
+        filters: safeFilters,
       },
     };
   },
@@ -517,32 +588,44 @@ export const healthApi = {
 
 // Create simple HTTP client for target tracks API
 const createTargetTracksClient = () => {
-  const baseURL = `${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')}/api/v1`;
+  const baseURL = `${API_BASE_URL || ''}/api/v1`;
 
   const request = async (method: string, url: string, data?: any) => {
-    const response = await fetch(`${baseURL}${url}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: data ? JSON.stringify(data) : undefined,
+    const targetUrl = `${baseURL}${url}`;
+    const safeData = data ? sanitizeObject(data) : undefined;
+    const safeHeaders = stripSensitiveHeaders(targetUrl, {
+      'Content-Type': 'application/json',
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    try {
+      const response = await fetch(targetUrl, {
+        method,
+        headers: safeHeaders,
+        body: safeData ? JSON.stringify(safeData) : undefined,
+      });
 
-    return { data: response.status === 204 ? null : await response.json() };
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const rawData = response.status === 204 ? null : await response.json();
+      return { data: rawData ? sanitizeObject(rawData) : null };
+    } catch (error) {
+      const safeMsg = sanitizeErrorMessage(error);
+      console.error(`[TargetTracks API Error]: ${safeMsg}`);
+      throw new Error(safeMsg);
+    }
   };
 
   return {
     get: (url: string, params?: Record<string, any>) => {
       let fullUrl = url;
       if (params) {
+        const safeParams = sanitizeObject(params);
         const searchParams = new URLSearchParams();
-        Object.entries(params).forEach(([key, value]) => {
+        Object.entries(safeParams).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
-            searchParams.set(key, value.toString());
+            searchParams.set(key, String(value));
           }
         });
         const queryString = searchParams.toString();
