@@ -14,8 +14,7 @@ Handles both targeted and URL-based scraping modes
 
 LEGACY: This file is not actively used. See Scrapy spiders in spiders/ directory.
 """
-from fastapi import FastAPI
-from utils import build_scraper_env, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter, Histogram
 import subprocess
@@ -25,6 +24,8 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 import time
+import re
+from urllib.parse import urlparse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +59,29 @@ class ScrapeRequest(BaseModel):
     task_id: Optional[str] = None
     target_track: Optional[Dict[str, Any]] = None
 
+ALLOWED_1001TL_HOSTS = {"1001tracklists.com", "www.1001tracklists.com"}
+SAFE_QUERY_RE = re.compile(r"^[\w\s\-\.,'&()/+:!?]{1,200}$")
+
+def _validate_start_url(raw_url: str) -> str:
+    if not raw_url or any(ch in raw_url for ch in ("\n", "\r", "\x00")):
+        raise HTTPException(status_code=400, detail="Invalid URL")
+
+    parsed = urlparse(raw_url.strip())
+    if parsed.scheme not in {"http", "https"}:
+        raise HTTPException(status_code=400, detail="Unsupported URL scheme")
+
+    host = (parsed.hostname or "").lower()
+    if host not in ALLOWED_1001TL_HOSTS:
+        raise HTTPException(status_code=400, detail="URL host is not allowed")
+
+    return raw_url.strip()
+
+def _validate_search_query(query: str) -> str:
+    q = (query or "").strip()
+    if not SAFE_QUERY_RE.fullmatch(q):
+        raise HTTPException(status_code=400, detail="Invalid search query")
+    return q
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "scraper": "1001tracklists"}
@@ -90,10 +114,11 @@ async def scrape_url(request: ScrapeRequest):
 
         # Determine mode based on URL presence
         if request.url:
-            logger.info(f"URL provided: {request.url}")
+            safe_url = _validate_start_url(request.url)
+            logger.info(f"URL provided: {safe_url}")
             # If it's a search URL, extract the query and use targeted mode
             # If it's a tracklist URL, pass it as start_urls
-            if '/search' in request.url or 'main_search' in request.url:
+            if '/search' in safe_url or 'main_search' in safe_url:
                 logger.info("Search URL detected - using targeted mode to scrape search results")
                 cmd.extend(["-a", "search_mode=targeted"])
                 # Extract search query from URL if possible
@@ -102,16 +127,17 @@ async def scrape_url(request: ScrapeRequest):
                 params = urllib.parse.parse_qs(parsed.query)
                 search_query = params.get('main_search', params.get('q', ['']))[0]
                 if search_query:
-                    logger.info(f"Search query extracted: {search_query}")
-                    cmd.extend(["-a", f"search_query={search_query}"])
-            elif '/tracklist/' in request.url:
+                    safe_query = _validate_search_query(search_query)
+                    logger.info(f"Search query extracted: {safe_query}")
+                    cmd.extend(["-a", f"search_query={safe_query}"])
+            elif '/tracklist/' in safe_url:
                 logger.info("Direct tracklist URL - using start_urls parameter")
-                cmd.extend(["-a", f"start_urls={request.url}"])
+                cmd.extend(["-a", f"start_urls={safe_url}"])
                 cmd.extend(["-a", "search_mode=targeted"])
             else:
                 # For DJ profile URLs or other pages, use discovery on that specific page
                 logger.info("Using targeted mode with custom start URL")
-                cmd.extend(["-a", f"start_urls={request.url}"])
+                cmd.extend(["-a", f"start_urls={safe_url}"])
                 cmd.extend(["-a", "search_mode=discovery"])
         else:
             # Run in targeted mode (spider's default behavior)
@@ -134,8 +160,13 @@ async def scrape_url(request: ScrapeRequest):
         timeout_seconds = int(os.getenv('SCRAPER_TIMEOUT', default_timeout))
 
         # Run the spider
-        env = build_scraper_env(os.environ)
-        result = subprocess.run(cmd, env=env, capture_output=True, text=True, cwd="/app", timeout=timeout_seconds)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd="/app",
+            timeout=timeout_seconds
+        )
 
         # Log output for debugging
         if result.stdout:

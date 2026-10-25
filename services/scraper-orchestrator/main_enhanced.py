@@ -17,7 +17,6 @@ import redis
 
 from automated_scheduler import AutomatedScrapingScheduler
 from robots_parser import RobotsChecker
-from utils import build_scraper_env
 
 # Configure logging
 logging.basicConfig(
@@ -347,27 +346,10 @@ async def get_scraper_history(scraper_name: str, limit: int = 100):
         key = f"scraper:history:{scraper_name}"
         history = redis_client.lrange(key, 0, limit - 1)
 
-        import json
-        import re
-        if not re.match(r"^[a-zA-Z0-9_-]+$", scraper_name):
-            raise HTTPException(status_code=400, detail="Invalid scraper name")
-
-        parsed_history = []
-        for h in history:
-            h_str = h.decode('utf-8') if isinstance(h, bytes) else str(h)
-            try:
-                parsed_history.append(json.loads(h_str))
-            except json.JSONDecodeError:
-                h_str_fixed = h_str.replace("'", '"')
-                try:
-                    parsed_history.append(json.loads(h_str_fixed))
-                except json.JSONDecodeError:
-                    pass
-
         return {
             "scraper": scraper_name,
-            "history": parsed_history,
-            "count": len(parsed_history)
+            "history": [eval(h) for h in history],  # Convert JSON strings back to dicts
+            "count": len(history)
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -464,7 +446,7 @@ async def import_setlist_data(background_tasks: BackgroundTasks):
         import subprocess
         import os
 
-        script_path = os.path.join(os.getenv('SCRAPERS_DIR', '/app/scrapers'), 'import_setlist_data.py')
+        script_path = "/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers/import_setlist_data.py"
 
         # Ensure the script exists
         if not os.path.exists(script_path):
@@ -474,8 +456,13 @@ async def import_setlist_data(background_tasks: BackgroundTasks):
         def run_import():
             try:
                 logger.info("Starting setlist data import script")
-                env = build_scraper_env(os.environ)
-                result = subprocess.run(["python", script_path], cwd=os.getenv('SCRAPERS_DIR', '/app/scrapers'), env=env, capture_output=True, text=True, timeout=300)
+                result = subprocess.run(
+                    ["python", script_path],
+                    cwd="/mnt/7ac3bfed-9d8e-4829-b134-b5e98ff7c013/programming/songnodes/scrapers",
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5 minute timeout
+                )
 
                 if result.returncode == 0:
                     logger.info("Setlist import completed successfully")

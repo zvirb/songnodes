@@ -28,8 +28,7 @@ import time
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI
-from utils import build_scraper_env, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
@@ -137,15 +136,11 @@ async def _run_spider(cmd: list[str], timeout: int = 900) -> Dict[str, Any]:
     """Execute the scrapy command asynchronously."""
     logger.info("Executing command: %s", " ".join(shlex.quote(c) for c in cmd))
 
-    import os
-    env = build_scraper_env(os.environ)
     process = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         cwd="/app",
-        env=env,
-        limit=1024*1024 # 1MB output limit per stream
     )
 
     try:
