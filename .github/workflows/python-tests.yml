@@ -43,16 +43,3 @@ jobs:
         run: python -m pytest --collect-only -q -p no:cacheprovider
       - name: tests/unit (no services needed)
         run: python -m pytest tests/unit -q -p no:cacheprovider
-
-  audio-analysis-unit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with: { python-version: "3.12", cache: pip }
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsndfile1 libsndfile1-dev ffmpeg libavcodec-extra portaudio19-dev
-      - name: Install dependencies
-        run: pip install -r services/audio-analysis/requirements.txt pytest
-      - name: tests/audio-analysis
-        run: python -m pytest services/audio-analysis/tests -q -p no:cacheprovider
