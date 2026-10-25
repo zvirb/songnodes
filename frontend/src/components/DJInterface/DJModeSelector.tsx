@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { Play, ListChecks } from 'lucide-react';
 import type { DJModeSelectorProps } from './types';
 import styles from './DJInterface.module.css';
 
@@ -18,54 +19,40 @@ import styles from './DJInterface.module.css';
  * clear visual indication of the active mode.
  *
  * Accessibility:
- * - aria-pressed indicates active mode
- * - aria-label describes each button's purpose
+ * - role="radiogroup" and role="radio"
+ * - aria-checked indicates active mode
  * - Keyboard navigation supported (Tab, Space, Enter)
  *
  * @param props - DJModeSelectorProps
  * @returns React component
- *
- * @example
- * ```tsx
- * <DJModeSelector
- *   mode="play"
- *   onModeChange={(mode) => console.log('Mode:', mode)}
- * />
- * ```
  */
 export function DJModeSelector({ mode, onModeChange }: DJModeSelectorProps): React.ReactElement {
-  const handlePlayClick = () => {
-    if (mode !== 'play') {
-      onModeChange('play');
-    }
-  };
-
-  const handlePlanClick = () => {
-    if (mode !== 'plan') {
-      onModeChange('plan');
-    }
-  };
-
   return (
-    <div className={styles.modeSelector}>
+    <div className={styles.modeSelector} role="radiogroup" aria-label="Interface Mode">
       <button
-        onClick={handlePlayClick}
+        type="button"
+        role="radio"
+        onClick={() => mode !== 'play' && onModeChange('play')}
         aria-label="Switch to PLAY mode"
-        aria-pressed={mode === 'play'}
+        aria-checked={mode === 'play'}
         className={`${styles.modeButton} ${mode === 'play' ? styles.modeButtonActive : ''}`}
         data-mode="play"
       >
-        ▶️ PLAY
+        <Play size={16} strokeWidth={2} aria-hidden="true" />
+        <span>PLAY</span>
       </button>
 
       <button
-        onClick={handlePlanClick}
+        type="button"
+        role="radio"
+        onClick={() => mode !== 'plan' && onModeChange('plan')}
         aria-label="Switch to PLAN mode"
-        aria-pressed={mode === 'plan'}
+        aria-checked={mode === 'plan'}
         className={`${styles.modeButton} ${mode === 'plan' ? styles.modeButtonActive : ''}`}
         data-mode="plan"
       >
-        📋 PLAN
+        <ListChecks size={16} strokeWidth={2} aria-hidden="true" />
+        <span>PLAN</span>
       </button>
     </div>
   );
