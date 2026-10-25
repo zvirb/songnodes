@@ -1,0 +1,15 @@
+{
+  "schema_sequence": 1,
+  "timestamp": "2026-10-25T04:19:03.786175+00:00",
+  "files": [
+    "artist.tsv.gz",
+    "artist_alias.tsv.gz",
+    "recording.tsv.gz",
+    "isrc.tsv.gz",
+    "label.tsv.gz",
+    "tag.tsv.gz",
+    "url.tsv.gz",
+    "l_artist_url.tsv.gz",
+    "artist_gid_redirect.tsv.gz"
+  ]
+}
