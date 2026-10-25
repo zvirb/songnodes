@@ -1,5 +1,13 @@
 # Implementation status
 
+## Current task: merge PR #90 to main
+
+Started at Markus's request. Scope: verify PR #90 checks, review status and merge
+state; then fast-forward local `main` and update the development frontend. All GitHub
+checks passed and GitHub marked the PR mergeable (`CLEAN`). There were no reviewer
+approvals; Markus explicitly directed proceeding without one. Next: sync this update,
+wait for its checks, then squash-merge and update local `main`.
+
 ## Current task: commit and sync verified local fixes
 
 Started at Markus's request. Scope: preserve the verified local frontend, search,
