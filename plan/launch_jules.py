@@ -16,9 +16,9 @@ sys.path.insert(0, str(ROOT))
 from build_rs_prompts import WAVES  # noqa: E402
 
 # replaced by the restructure (plan/RESTRUCTURE.md, section 4); never send these
-RETIRED = {"WP2", "WP4", "WP5", "BE1", "FE1", "FE3", "FE4", "FE11", "FEW", "SEC6"}
+RETIRED = {"WP2", "WP4", "WP5", "BE1", "FE1", "FE3", "FE4", "FE11", "FEW", "SEC6", "QA1", "QA2"}  # QA1, QA2 done in #155
 # sent only when named in --only, after the packages it depends on are merged
-HOLD = {"DS16"}
+HOLD = {"DS16", "U7"}  # U7: owner runs the Postgres migration before its PR is merged
 
 
 def sh(*a):
@@ -37,7 +37,7 @@ def main():
     if a.wave:
         if a.wave not in WAVES:
             sys.exit(f"unknown wave {a.wave}; waves: {', '.join(WAVES)}")
-        only |= set(WAVES[a.wave])
+        only |= set(WAVES[a.wave]) - HOLD
     if a.cli and not only:
         sys.exit("name a --wave or --only list; sending every package at once is not allowed")
     if only & RETIRED:

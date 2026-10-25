@@ -791,3 +791,177 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:SEC6B END -->
+
+<!-- SLOT:U1 BEGIN -->
+### U1: Upgrade services/rest_api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U1 END -->
+
+<!-- SLOT:U2 BEGIN -->
+### U2: Upgrade services/graph-visualization-api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U2 END -->
+
+<!-- SLOT:U3 BEGIN -->
+### U3: Upgrade services/worker to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U3 END -->
+
+<!-- SLOT:U4 BEGIN -->
+### U4: Upgrade scrapers to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U4 END -->
+
+<!-- SLOT:U5 BEGIN -->
+### U5: Upgrade Redis to 8.10 in the dev stack
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U5 END -->
+
+<!-- SLOT:U6 BEGIN -->
+### U6: Upgrade RabbitMQ to 4.3 in the dev stack
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U6 END -->
+
+<!-- SLOT:U7 BEGIN -->
+### U7: Prepare the Postgres 18 upgrade (owner runs it)
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U7 END -->
+
+<!-- SLOT:U8 BEGIN -->
+### U8: Pin every GitHub Action to its latest release
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U8 END -->
+
+<!-- SLOT:U9 BEGIN -->
+### U9: Upgrade services/api-gateway-internal to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U9 END -->
+
+<!-- SLOT:U10 BEGIN -->
+### U10: Upgrade services/audio-analysis to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U10 END -->
+
+<!-- SLOT:U11 BEGIN -->
+### U11: Upgrade services/browser-collector to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U11 END -->
+
+<!-- SLOT:U12 BEGIN -->
+### U12: Upgrade services/data-transformer to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U12 END -->
+
+<!-- SLOT:U13 BEGIN -->
+### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U13 END -->
+
+<!-- SLOT:U14 BEGIN -->
+### U14: Upgrade services/db-connection-pool to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U14 END -->
+
+<!-- SLOT:U15 BEGIN -->
+### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U15 END -->
+
+<!-- SLOT:U16 BEGIN -->
+### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U16 END -->
+
+<!-- SLOT:U17 BEGIN -->
+### U17: Upgrade services/graphql-api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U17 END -->
+
+<!-- SLOT:U18 BEGIN -->
+### U18: Upgrade services/metadata-enrichment to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U18 END -->
+
+<!-- SLOT:U20 BEGIN -->
+### U20: Upgrade services/scraper-orchestrator to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U20 END -->
+
+<!-- SLOT:U21 BEGIN -->
+### U21: Upgrade services/serato-integration to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U21 END -->
+
+<!-- SLOT:U22 BEGIN -->
+### U22: Upgrade services/websocket-api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U22 END -->
+
+<!-- SLOT:U23 BEGIN -->
+### U23: Upgrade services/streaming-integrations to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U23 END -->
+
+<!-- SLOT:U24 BEGIN -->
+### U24: Upgrade services/tidal-integration to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U24 END -->
+
+<!-- SLOT:U19 BEGIN -->
+### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U19 END -->
+
+<!-- SLOT:U25 BEGIN -->
+### U25: Upgrade shared/templates to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U25 END -->
+
+<!-- SLOT:U26 BEGIN -->
+### U26: Upgrade services/api-gateway to Node 26 and latest npm dependencies
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U26 END -->
+
+<!-- SLOT:U27 BEGIN -->
+### U27: Upgrade services/enhanced-visualization-service to Node 26 and latest npm dependencies
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U27 END -->
+
+<!-- SLOT:U28 BEGIN -->
+### U28: Upgrade services/health-monitor to Node 26 and latest npm dependencies
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U28 END -->
+
+<!-- SLOT:U29 BEGIN -->
+### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U29 END -->

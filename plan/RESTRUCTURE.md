@@ -52,8 +52,8 @@ Target structure (reached one package at a time):
 
 | Wave | Packages (one job each) | Waits on |
 |---|---|---|
-| 1, recover and guard | QA2 lockfile, QA5 sync script, G1 scope guard, G2 route registry, G3 router registry, R1 restore track bridge, R2 restore route finder, R3 restore graph projection, C1 one resolver, C2 root scripts, S1 search service, L1 library model, E2 web call log, SB1 set exporters | nothing |
-| 2, wire pages, next layer | QA1 lint config, QA4 refmb tests, QA6 worker test, P1 /paths, P2 one Camelot page, P3 AI setlists route, FE9 add to targets, S2 search proxy without mocks, L2 importer, L4 saved sets API, E1 local MB provider, SB2 export dialog, SEC6A AI proxy route | wave 1 merged; each brief names its own dependency (QA4 also needs PR #121 merged or closed) |
+| 1, recover and guard | QA5 sync script, G1 scope guard, G2 route registry, G3 router registry, R1 restore track bridge, R2 restore route finder, R3 restore graph projection, C1 one resolver, C2 root scripts, S1 search service, L1 library model, E2 web call log, SB1 set exporters | nothing |
+| 2, wire pages, next layer | QA4 refmb tests, QA6 worker test, P1 /paths, P2 one Camelot page, P3 AI setlists route, FE9 add to targets, S2 search proxy without mocks, L2 importer, L4 saved sets API, E1 local MB provider, SB2 export dialog, SEC6A AI proxy route | wave 1 merged; each brief names its own dependency (QA4 also needs PR #121 merged or closed) |
 | 3 | QA3 graph API tests, S3 search UI errors, L3 ingest API, L5 reconciliation, E3 replay report, SB3 reorder, SEC5 REST token auth, SEC6B AI proxy client | wave 2 |
 | 4, design system per page | DS1 to DS15, then DS16 (held) | wave 3. **First rerun `plan/build_ds_prompts.py` with its ENTRIES updated for the G2 registry and P2**, so ownership matches the new files. |
 
@@ -70,3 +70,32 @@ Briefs are generated: `python plan/build_rs_prompts.py` writes every R/G/C/S/L/E
 5. A CI breakage outside every open package gets its own one-job QA package. "Fix CI" PRs that touch many areas are not merged.
 6. Merge at most about 10 PRs per sitting and stop at 2 hours, or sooner if you notice yourself skimming diffs.
 7. After each sitting, run the deleted-work check (`git diff --diff-filter=D --name-only <sitting start>..main`) and compare it with the briefs' owned paths.
+
+## 6. Upgrades to the latest versions (26 Oct 2026)
+
+Test, lint and type-check tooling was upgraded directly in PR #155, not by Jules:
+- TypeScript 7.0.2.
+- Oxlint 1.89 with oxlint-tsgolint 7.0.2005, replacing ESLint, typescript-eslint and eslint-plugin-react (see `frontend/LINTING.md`).
+- Node 26 for CI and the frontend image.
+- Python 3.15 for the test jobs, and pip-audit 2.10.1 running on 3.14.
+- A lockfile that `npm ci` accepts on Linux.
+- Test pins at their latest versions.
+
+This retires QA1 and QA2.
+
+Everything else is one-job Jules packages built by `plan/build_upgrade_prompts.py`. That script looks up the latest versions when it runs and writes the chosen versions into each brief. Rerun it before sending, so the targets are current.
+
+| Wave | Packages | Notes |
+|---|---|---|
+| `up` (send with wave 1) | U1 rest_api, U2 graph-visualization-api, U3 worker, U4 scrapers (all Python 3.15), U5 Redis 8.10 | The running stack first. |
+| `up-legacy` (after `up` is merged) | U6 RabbitMQ 4.3; U9–U18, U20–U24 Python services not in compose (3.15); U19 nlp-processor (3.14, since spaCy needs Python <3.15); U25 base template; U26–U28 Node services (Node 26); U29 graph projection (Python 3.15 and neo4j 6, after R3) | Keeps every image building. |
+| `4` | U8 GitHub Actions pinned by SHA to their latest releases | After waves 1–3, which edit workflows. |
+| held | U7 Postgres 18.6 | Prepares a new volume, a migration script and a runbook. Send it with `--only U7`. Merge it only after the owner has run `scripts/upgrade-postgres-18.sh`. The old volume is never removed. |
+
+Version rules applied:
+- Python 3.15 everywhere it installs. Packages without a cp315 wheel (annoy, PyYAML, ruamel.yaml.clib) compile from source, so their build stage needs a compiler.
+- spaCy is the only package that blocks 3.15.
+- Node 26 is LTS from late October 2026; Node 24 is security-only.
+- The PostgreSQL, RabbitMQ and Redis versions are the latest stable releases.
+
+Major bumps are flagged in the briefs.

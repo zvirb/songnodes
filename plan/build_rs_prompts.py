@@ -13,8 +13,8 @@ ROOT = pathlib.Path(__file__).resolve().parent
 REPO = ROOT.parent
 AGENTS = ROOT / "agents"
 
-FE_CHECKS = ("`cd frontend && npm ci && npx tsc --noEmit -p . && npx vitest run src && npx vite build`. If `npm ci` fails on the "
-             "lockfile (QA2 not merged yet), use `npm install --no-package-lock` instead, say so, and never commit package-lock.json. "
+FE_CHECKS = ("`cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` (Node 26, TypeScript 7, "
+             "Oxlint; see frontend/LINTING.md). Lint must not get worse in files you touch. "
              "Report failures in files you do not own; do not fix them. Playwright cannot run in your sandbox; say so.")
 PY_CHECKS = "`python -m pytest` for the paths you own, from the repo root. Report failures in files you do not own; do not fix them."
 
@@ -369,10 +369,14 @@ P.append(("SEC6B", "ai_proxy_client", "AI proxy: frontend client and migration n
   FE_CHECKS))
 
 WAVES = {
-    "1": ["QA2", "QA5", "G1", "G2", "G3", "R1", "R2", "R3", "C1", "C2", "S1", "L1", "E2", "SB1"],
-    "2": ["QA1", "QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "L2", "L4", "E1", "SB2", "SEC6A"],
+    "1": ["QA5", "G1", "G2", "G3", "R1", "R2", "R3", "C1", "C2", "S1", "L1", "E2", "SB1"],
+    "2": ["QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "L2", "L4", "E1", "SB2", "SEC6A"],
     "3": ["QA3", "S3", "L3", "L5", "E3", "SB3", "SEC5", "SEC6B"],
-    "4": ["DS1", "DS2A", "DS2B", "DS3", "DS4", "DS5", "DS6", "DS8", "DS9", "DS10", "DS11", "DS12", "DS13", "DS14", "DS15"],
+    # runtime upgrades (plan/build_upgrade_prompts.py): "up" can go with wave 1; "up-legacy" after "up" is merged.
+    # U7 (Postgres 18) is held: send with --only U7. U8 (Actions pins) is in wave 4 because waves 1-3 edit workflows.
+    "up": ["U1", "U2", "U3", "U4", "U5"],
+    "up-legacy": ["U6", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16", "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29"],
+    "4": ["U8", "DS1", "DS2A", "DS2B", "DS3", "DS4", "DS5", "DS6", "DS8", "DS9", "DS10", "DS11", "DS12", "DS13", "DS14", "DS15"],
 }
 
 SLOT = "<!-- SLOT:{c} BEGIN -->\n### {c}: {t}\n- Start: _not started_\n- End: _not finished_\n<!-- SLOT:{c} END -->\n"
