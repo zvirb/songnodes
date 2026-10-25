@@ -9,3 +9,5 @@ faker==40.43.0
 prometheus-client==0.26.0
 redis==8.1.0
 aio-pika==10.1.1
+unidecode==1.4.0
+jsonschema==4.26.0

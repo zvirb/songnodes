@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: songnodes Library Ingest API
+  version: 1.0.0
+paths:
+  /api/v1/library/ingest:
+    post:
+      summary: Idempotent bulk ingest for music library data
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                run_meta:
+                  type: object
+                tracks:
+                  type: array
+                  items:
+                    type: object
+                appearances:
+                  type: array
+                  items:
+                    type: object
+                chart_positions:
+                  type: array
+                  items:
+                    type: object
+                rotation_history:
+                  type: array
+                  items:
+                    type: object
+                pending:
+                  type: array
+                  items:
+                    type: object
+                rejected:
+                  type: array
+                  items:
+                    type: object
+                beatport_check:
+                  type: array
+                  items:
+                    type: object
+                sources:
+                  type: array
+                  items:
+                    type: object
+                runs:
+                  type: array
+                  items:
+                    type: object
+                sets:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '202':
+          description: Accepted for processing via job queue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+        '409':
+          description: Conflict (same idempotency key, different body)

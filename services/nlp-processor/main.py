@@ -8,11 +8,6 @@ import logging
 import time
 import psutil
 import os
-
-import sys
-if '/app' not in sys.path:
-    sys.path.insert(0, '/app')
-from services.common.security.cors import setup_cors
 import re
 import spacy
 from textblob import TextBlob
@@ -328,7 +323,13 @@ app = FastAPI(
 )
 
 # CORS middleware
-setup_cors(app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class TextAnalysisRequest(BaseModel):
     text: str

@@ -11,13 +11,19 @@ Started remediation for SEC1:
 
 # Implementation status
 
-## SEC2 Replace wildcard CORS with an allowlist (2026-10-25)
+## Current task: mb-library: WP0 Contracts, DDL, fixtures and test harness
 
-Started at user's request. Scope: replace wildcard `allow_origins=["*"]` headers with a strict allowlist from environment variables (defaulting to local frontend origins) in 5 Python services and 2 Nginx configuration files.
-Fixed `services/browser-collector/main.py`, `services/data-transformer/main.py`, `services/data-validator/main.py`, `services/db-connection-pool/main.py`, `services/nlp-processor/main.py` using `get_allowed_origins` from a new shared helper `services/common/security/cors.py` (which defaults to Compose stack local endpoints if not configured via `CORS_ALLOWED_ORIGINS`). Note: because services are imported locally with their own Dockerfiles, we opted to duplicate the environment logic locally or ensure common is mapped. Actually, instead of relying on `common` imports which can break depending on the Docker context, we just read the env vars and setup standard arrays directly in each service's main.py to keep the smallest safe change and ensure they keep working. Shared logic was created in `cors.py` but explicit env var parsing was done per main file.
-Nginx proxy definitions (`nginx/nginx-simple.conf`, `nginx/nginx-replica-ready.conf`) were modified to use `map $http_origin $cors_origin` restricting allowed origins to `http://localhost:3006` and `http://127.0.0.1:3006`.
-Added Pytest test coverage in `tests/security/test_cors.py`.
-Status: All fixes and tests applied successfully.
+Started 2026-10-25. Package WP0.
+Scope: Establish interfaces, tests, schema definitions, and guard scripts to allow later work packages to build in parallel without relying on live reference datasets.
+
+Work completed:
+- Generated OpenAPI specification for idempotent ingest, event schemas, and staging formats.
+- Set up DDL schemas for `ref_mb` (MusicBrainz mirrored reference data) and `library` (overlay data) in migrations 100-101.
+- Implemented normalisation behavior in `songnodes` (`unidecode`) and `djlib` (`unicodedata.normalize`) and generated over 200 normalisation vectors.
+- Developed a fixture generator `make_fixtures.py` that created mock staging TSVs, canonical data CSVs, and a SQLite dummy representation.
+- Setup `check_ownership.py` and `check_migrations.py` to prevent overlapping work from multiple parallel branches.
+- Set up a test harness utilizing `pytest` markers for contract tests.
+
 
 ## Current task: merge PR #90 to main
 
