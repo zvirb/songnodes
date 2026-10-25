@@ -61,59 +61,57 @@ const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
   }, [value, onChange]);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-gray-300">{label}</label>
-        <span className="text-sm text-dj-accent font-mono">
-          {formatDisplayValue(value[0])} - {formatDisplayValue(value[1])}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)' }}>{label}</label>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--brand-strong)', fontFamily: 'var(--font-data)' }}>
+          {formatDisplayValue(value[0])} – {formatDisplayValue(value[1])}
         </span>
       </div>
 
-      <div className="relative">
-        {/* Background track */}
-        <div className="h-2 bg-dj-gray rounded-full relative">
-          {/* Active range */}
+      <div style={{ position: 'relative', height: '16px', display: 'flex', alignItems: 'center' }}>
+        <div style={{ position: 'relative', width: '100%', height: '4px', backgroundColor: 'var(--surface-3)', borderRadius: 'var(--radius-pill)' }}>
           <div
-            className="absolute h-full bg-dj-accent rounded-full"
             style={{
+              position: 'absolute',
+              height: '4px',
+              backgroundColor: 'var(--brand)',
+              borderRadius: 'var(--radius-pill)',
               left: `${((value[0] - min) / (max - min)) * 100}%`,
               width: `${((value[1] - value[0]) / (max - min)) * 100}%`
             }}
           />
         </div>
 
-        {/* Range inputs */}
         <input
           type="range"
           min={min}
           max={max}
           value={value[0]}
+          aria-label={`${label} minimum`}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={value[0]}
+          aria-valuetext={formatDisplayValue(value[0])}
           onChange={handleMinChange}
-          className="absolute top-0 w-full h-2 opacity-0 cursor-pointer"
-          style={{ zIndex: 2 }}
+          style={{ position: 'absolute', top: 0, width: '100%', height: '16px', opacity: 0, cursor: 'pointer', zIndex: 2 }}
         />
         <input
           type="range"
           min={min}
           max={max}
           value={value[1]}
+          aria-label={`${label} maximum`}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={value[1]}
+          aria-valuetext={formatDisplayValue(value[1])}
           onChange={handleMaxChange}
-          className="absolute top-0 w-full h-2 opacity-0 cursor-pointer"
-          style={{ zIndex: 3 }}
-        />
-
-        {/* Thumb indicators */}
-        <div
-          className="absolute w-4 h-4 bg-dj-accent rounded-full border-2 border-dj-dark -mt-1 cursor-pointer shadow-lg"
-          style={{ left: `calc(${((value[0] - min) / (max - min)) * 100}% - 8px)` }}
-        />
-        <div
-          className="absolute w-4 h-4 bg-dj-accent rounded-full border-2 border-dj-dark -mt-1 cursor-pointer shadow-lg"
-          style={{ left: `calc(${((value[1] - min) / (max - min)) * 100}% - 8px)` }}
+          style={{ position: 'absolute', top: 0, width: '100%', height: '16px', opacity: 0, cursor: 'pointer', zIndex: 3 }}
         />
       </div>
 
-      <div className="flex justify-between text-xs text-gray-500">
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
         <span>{formatDisplayValue(min)}</span>
         <span>{formatDisplayValue(max)}</span>
       </div>
@@ -144,12 +142,12 @@ const CamelotWheel: React.FC<CamelotWheelProps> = ({ selectedKeys, onChange }) =
   ];
 
   return (
-    <div className="relative w-48 h-48 mx-auto">
+    <div style={{ position: 'relative', width: '192px', height: '192px', margin: '0 auto' }}>
       {/* Outer ring */}
-      <div className="absolute inset-0 rounded-full border-2 border-dj-light-gray" />
+      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--line)' }} />
 
       {/* Inner ring */}
-      <div className="absolute inset-4 rounded-full border border-dj-gray" />
+      <div style={{ position: 'absolute', inset: '16px', borderRadius: '50%', border: '1px solid var(--line-strong)' }} />
 
       {/* Key buttons */}
       {wheelKeys.map((pair, index) => {
@@ -157,17 +155,36 @@ const CamelotWheel: React.FC<CamelotWheelProps> = ({ selectedKeys, onChange }) =
         const outerRadius = 90;
         const innerRadius = 60;
 
+        const isOuterSelected = selectedKeys.includes(pair[1]);
+        const isInnerSelected = selectedKeys.includes(pair[0]);
+
+        const outerKeyToken = `var(--key-${pair[1].toLowerCase()})`;
+        const innerKeyToken = `var(--key-${pair[0].toLowerCase()})`;
+
         return (
           <React.Fragment key={index}>
             {/* Outer key (B - Major) */}
             <button
+              type="button"
               onClick={() => toggleKey(pair[1])}
-              className={`absolute w-8 h-8 rounded-full text-xs font-bold transition-all duration-200 flex items-center justify-center ${
-                selectedKeys.includes(pair[1])
-                  ? 'bg-dj-accent text-black shadow-lg scale-110'
-                  : 'bg-dj-gray text-gray-300 hover:bg-dj-light-gray hover:text-white'
-              }`}
+              aria-pressed={isOuterSelected}
+              aria-label={`Key ${pair[1]}: ${CAMELOT_WHEEL[pair[1] as keyof typeof CAMELOT_WHEEL]}`}
               style={{
+                position: 'absolute',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: isOuterSelected ? outerKeyToken : 'var(--surface-2)',
+                color: isOuterSelected ? '#000000' : 'var(--fg-2)',
+                border: isOuterSelected ? '2px solid var(--fg)' : '1px solid var(--line)',
+                transform: isOuterSelected ? 'scale(1.15)' : 'scale(1)',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
                 left: `calc(50% + ${Math.cos(angle * Math.PI / 180) * outerRadius}px - 16px)`,
                 top: `calc(50% + ${Math.sin(angle * Math.PI / 180) * outerRadius}px - 16px)`
               }}
@@ -178,13 +195,26 @@ const CamelotWheel: React.FC<CamelotWheelProps> = ({ selectedKeys, onChange }) =
 
             {/* Inner key (A - Minor) */}
             <button
+              type="button"
               onClick={() => toggleKey(pair[0])}
-              className={`absolute w-7 h-7 rounded-full text-xs font-bold transition-all duration-200 flex items-center justify-center ${
-                selectedKeys.includes(pair[0])
-                  ? 'bg-dj-info text-white shadow-lg scale-110'
-                  : 'bg-dj-dark text-gray-400 hover:bg-dj-gray hover:text-white'
-              }`}
+              aria-pressed={isInnerSelected}
+              aria-label={`Key ${pair[0]}: ${CAMELOT_WHEEL[pair[0] as keyof typeof CAMELOT_WHEEL]}`}
               style={{
+                position: 'absolute',
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: isInnerSelected ? innerKeyToken : 'var(--surface-1)',
+                color: isInnerSelected ? '#ffffff' : 'var(--fg-3)',
+                border: isInnerSelected ? '2px solid var(--fg)' : '1px solid var(--line)',
+                transform: isInnerSelected ? 'scale(1.15)' : 'scale(1)',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
                 left: `calc(50% + ${Math.cos(angle * Math.PI / 180) * innerRadius}px - 14px)`,
                 top: `calc(50% + ${Math.sin(angle * Math.PI / 180) * innerRadius}px - 14px)`
               }}
@@ -197,7 +227,7 @@ const CamelotWheel: React.FC<CamelotWheelProps> = ({ selectedKeys, onChange }) =
       })}
 
       {/* Center indicator */}
-      <div className="absolute inset-1/2 w-2 h-2 -mt-1 -ml-1 bg-dj-accent rounded-full" />
+      <div style={{ position: 'absolute', left: '50%', top: '50%', width: '8px', height: '8px', transform: 'translate(-50%, -50%)', backgroundColor: 'var(--brand)', borderRadius: '50%' }} />
     </div>
   );
 };
@@ -455,29 +485,31 @@ export const FilterPanel: React.FC = () => {
   }, [currentFilters, bpmRange, energyRange, yearRange]);
 
   return (
-    <div className="h-full flex flex-col bg-dj-dark">
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg)' }}>
       {/* Header */}
-      <div className="p-4 border-b border-dj-light-gray">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+      <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', margin: 0 }}>
             <span>🎛️</span> Graph Filters
             {activeFilterCount > 0 && (
-              <span className="text-xs bg-dj-accent text-black px-2 py-1 rounded-full font-bold">
+              <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--brand)', color: 'var(--on-brand)', padding: '2px 8px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}>
                 {activeFilterCount}
               </span>
             )}
           </h2>
 
-          <div className="flex gap-2">
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
             <button
+              type="button"
               onClick={() => setShowPresets(!showPresets)}
-              className="text-xs text-gray-400 hover:text-dj-accent transition-colors px-2 py-1 bg-dj-gray rounded"
+              style={{ fontSize: '0.75rem', color: 'var(--fg-2)', backgroundColor: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', padding: 'var(--space-1) var(--space-2)', cursor: 'pointer' }}
             >
               Presets
             </button>
             <button
+              type="button"
               onClick={resetAllFilters}
-              className="text-xs text-gray-400 hover:text-dj-danger transition-colors px-2 py-1 bg-dj-gray rounded"
+              style={{ fontSize: '0.75rem', color: 'var(--status-bad)', backgroundColor: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', padding: 'var(--space-1) var(--space-2)', cursor: 'pointer' }}
             >
               Reset All
             </button>
@@ -485,16 +517,16 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Current filter status */}
-        <div className="text-xs text-gray-400 space-y-1">
-          <div className="flex justify-between">
+        <div style={{ fontSize: '0.75rem', color: 'var(--fg-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Showing:</span>
-            <span className="font-mono text-dj-accent">
+            <span style={{ fontFamily: 'var(--font-data)', color: 'var(--brand-strong)' }}>
               {graphData.nodes.length} / {originalGraphData?.nodes.length || graphData.nodes.length} nodes
             </span>
           </div>
-          <div className="flex justify-between">
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Edges:</span>
-            <span className="font-mono text-dj-info">
+            <span style={{ fontFamily: 'var(--font-data)', color: 'var(--fg-2)' }}>
               {graphData.edges.length} / {originalGraphData?.edges.length || graphData.edges.length}
             </span>
           </div>
@@ -502,40 +534,45 @@ export const FilterPanel: React.FC = () => {
 
         {/* Filter Presets */}
         {showPresets && (
-          <div className="space-y-2 p-3 bg-dj-gray rounded">
-            <div className="flex gap-2">
+          <div style={{ marginTop: 'var(--space-2)', padding: 'var(--space-3)', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-control)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <input
                 type="text"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
                 placeholder="Preset name..."
-                className="flex-1 px-2 py-1 bg-dj-dark border border-dj-light-gray rounded text-sm text-white"
+                aria-label="Preset name"
+                style={{ flex: 1, padding: 'var(--space-1) var(--space-2)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', color: 'var(--fg)', fontSize: '0.8125rem' }}
                 onKeyDown={(e) => e.key === 'Enter' && savePreset()}
               />
               <button
+                type="button"
                 onClick={savePreset}
                 disabled={!presetName.trim()}
-                className="px-3 py-1 bg-dj-accent text-black text-sm rounded font-semibold hover:bg-opacity-80 disabled:opacity-50"
+                className="sn-btn sn-btn--sm"
               >
                 Save
               </button>
             </div>
 
-            <div className="space-y-1 max-h-32 overflow-y-auto">
+            <div style={{ maxHeight: '128px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
               {filterPresets.map(preset => (
-                <div key={preset.id} className="flex items-center gap-2 p-2 bg-dj-dark rounded">
+                <div key={preset.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-1) var(--space-2)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-chip)' }}>
                   <button
+                    type="button"
                     onClick={() => loadPreset(preset)}
-                    className="flex-1 text-left text-sm text-white hover:text-dj-accent"
+                    style={{ flex: 1, textAlign: 'left', fontSize: '0.8125rem', color: 'var(--fg)', background: 'none', border: 'none', cursor: 'pointer' }}
                   >
                     {preset.name}
                   </button>
-                  <span className="text-xs text-gray-500">
+                  <span style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                     {preset.created.toLocaleDateString()}
                   </span>
                   <button
+                    type="button"
                     onClick={() => deletePreset(preset.id)}
-                    className="text-xs text-dj-danger hover:text-red-400 px-1"
+                    style={{ fontSize: '0.75rem', color: 'var(--status-bad)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    aria-label={`Delete preset ${preset.name}`}
                   >
                     ×
                   </button>
@@ -547,13 +584,15 @@ export const FilterPanel: React.FC = () => {
       </div>
 
       {/* Filter Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
         {/* BPM Range Filter */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <button
+            type="button"
             onClick={() => toggleExpanded('bpm')}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white"
+            aria-expanded={isExpanded.bpm}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           >
             <span>{isExpanded.bpm ? '▼' : '▶'}</span>
             <span>🥁 BPM Range</span>
@@ -572,22 +611,24 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Key Filter with Camelot Wheel */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <button
+            type="button"
             onClick={() => toggleExpanded('key')}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white"
+            aria-expanded={isExpanded.key}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           >
             <span>{isExpanded.key ? '▼' : '▶'}</span>
             <span>🎹 Musical Key</span>
             {currentFilters.keyRange && currentFilters.keyRange.length > 0 && (
-              <span className="text-xs bg-dj-info text-white px-2 py-0.5 rounded-full">
+              <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--surface-3)', color: 'var(--fg)', padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>
                 {currentFilters.keyRange.length}
               </span>
             )}
           </button>
 
           {isExpanded.key && (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <CamelotWheel
                 selectedKeys={currentFilters.keyRange || []}
                 onChange={(keys) => updateFilter('keyRange', keys)}
@@ -595,9 +636,9 @@ export const FilterPanel: React.FC = () => {
 
               {/* Key compatibility helper */}
               {currentFilters.keyRange && currentFilters.keyRange.length > 0 && (
-                <div className="text-xs text-gray-400 space-y-1">
-                  <p>Selected: {currentFilters.keyRange.join(', ')}</p>
-                  <p className="text-dj-info">💡 Compatible keys for harmonic mixing</p>
+                <div style={{ fontSize: '0.75rem', color: 'var(--fg-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                  <p style={{ margin: 0 }}>Selected: {currentFilters.keyRange.join(', ')}</p>
+                  <p style={{ margin: 0, color: 'var(--brand-strong)' }}>💡 Compatible keys for harmonic mixing</p>
                 </div>
               )}
             </div>
@@ -605,7 +646,7 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Genre Multi-Select Filter */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <MultiSelect
             options={genres}
             selectedValues={currentFilters.genre || []}
@@ -617,10 +658,12 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Year Range Filter */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <button
+            type="button"
             onClick={() => toggleExpanded('year')}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white"
+            aria-expanded={isExpanded.year}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           >
             <span>{isExpanded.year ? '▼' : '▶'}</span>
             <span>📅 Release Year</span>
@@ -638,10 +681,12 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Energy Level Filter */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <button
+            type="button"
             onClick={() => toggleExpanded('energy')}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white"
+            aria-expanded={isExpanded.energy}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           >
             <span>{isExpanded.energy ? '▼' : '▶'}</span>
             <span>⚡ Energy Level</span>
@@ -664,7 +709,7 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Artist Filter */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <MultiSelect
             options={artists}
             selectedValues={currentFilters.artist || []}
@@ -676,11 +721,11 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Label Filter */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <MultiSelect
             options={labels}
             selectedValues={(currentFilters as any).label || []}
-            onChange={(values) => updateFilter('artist', values)} // Using artist as placeholder since label not in SearchFilters
+            onChange={(values) => updateFilter('artist', values)}
             label="🏷️ Record Labels"
             searchable
             maxHeight="max-h-24"
@@ -688,39 +733,46 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Advanced Filters */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <button
+            type="button"
             onClick={() => toggleExpanded('advanced')}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white"
+            aria-expanded={isExpanded.advanced}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           >
             <span>{isExpanded.advanced ? '▼' : '▶'}</span>
             <span>⚙️ Advanced</span>
           </button>
 
           {isExpanded.advanced && (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               {/* Edge Weight Threshold */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-300">Edge Weight Threshold</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)' }}>
+                  Edge Weight Threshold: {((currentFilters as any).edgeThreshold || 0.1).toFixed(2)}
+                </label>
                 <input
                   type="range"
                   min="0"
                   max="1"
                   step="0.01"
                   value={(currentFilters as any).edgeThreshold || 0.1}
-                  onChange={(e) => updateFilter('minPopularity', parseFloat(e.target.value))} // Using minPopularity as placeholder
-                  className="w-full h-2 bg-dj-gray rounded-lg appearance-none cursor-pointer"
+                  aria-label="Edge Weight Threshold"
+                  aria-valuemin={0}
+                  aria-valuemax={1}
+                  aria-valuenow={(currentFilters as any).edgeThreshold || 0.1}
+                  onChange={(e) => updateFilter('minPopularity', parseFloat(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--brand)', cursor: 'pointer' }}
                 />
-                <div className="flex justify-between text-xs text-gray-500">
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                   <span>0.0</span>
-                  <span>{(currentFilters.minPopularity || 0).toFixed(2)}</span>
                   <span>1.0</span>
                 </div>
               </div>
 
               {/* Minimum Popularity */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-300">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)' }}>
                   Min Popularity: {currentFilters.minPopularity || 0}%
                 </label>
                 <input
@@ -728,18 +780,22 @@ export const FilterPanel: React.FC = () => {
                   min="0"
                   max="100"
                   value={currentFilters.minPopularity || 0}
+                  aria-label="Minimum popularity"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={currentFilters.minPopularity || 0}
                   onChange={(e) => updateFilter('minPopularity', parseInt(e.target.value))}
-                  className="w-full h-2 bg-dj-gray rounded-lg appearance-none cursor-pointer"
+                  style={{ width: '100%', accentColor: 'var(--brand)', cursor: 'pointer' }}
                 />
               </div>
 
               {/* Has Preview Toggle */}
-              <label className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.8125rem', color: 'var(--fg-2)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={currentFilters.hasPreview || false}
                   onChange={(e) => updateFilter('hasPreview', e.target.checked)}
-                  className="w-4 h-4 text-dj-accent bg-dj-gray border-dj-light-gray rounded focus:ring-dj-accent focus:ring-2"
+                  style={{ accentColor: 'var(--brand)' }}
                 />
                 <span>Has audio preview</span>
               </label>
@@ -748,18 +804,20 @@ export const FilterPanel: React.FC = () => {
         </div>
 
         {/* Apply Filters Button */}
-        <div className="pt-4 border-t border-dj-light-gray space-y-2">
+        <div style={{ paddingTop: 'var(--space-4)', borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <button
+            type="button"
             onClick={() => {
               applyFilters(currentFilters);
             }}
-            className="w-full py-3 bg-gradient-to-r from-dj-accent to-dj-info text-black font-bold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200"
+            className="sn-btn"
+            style={{ width: '100%', backgroundColor: 'var(--brand)', color: 'var(--on-brand)', fontWeight: 700 }}
           >
             Apply Filters ({activeFilterCount} active)
           </button>
 
           {/* Show current vs total counts */}
-          <div className="text-xs text-center text-gray-400">
+          <div style={{ fontSize: '0.75rem', textAlign: 'center', color: 'var(--fg-3)' }}>
             Showing {graphData.nodes.length} of {originalGraphData?.nodes.length || graphData.nodes.length} nodes, {graphData.edges.length} of {originalGraphData?.edges.length || graphData.edges.length} edges
           </div>
         </div>

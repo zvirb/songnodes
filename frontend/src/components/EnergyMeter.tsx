@@ -24,8 +24,15 @@ const TIER_WORD = { low: 'Low', building: 'Building', high: 'High' } as const;
 export const EnergyMeter: React.FC<EnergyMeterProps> = ({ level, showLabel = false }) => {
   const valid = level != null && Number.isFinite(level) && level >= 1 && level <= 10 ? Math.round(level) : null;
   const tier = valid != null ? SN.tier(valid) : null;
+  const labelText = valid != null ? `Energy level ${valid} of 10${tier ? `, ${TIER_WORD[tier]}` : ''}` : 'Energy level unknown';
+
   return (
-    <span className="energy-meter" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+    <span
+      className="energy-meter"
+      role="img"
+      aria-label={labelText}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
+    >
       <EnergyBar value={valid} />
       {showLabel && tier ? <span style={{ fontSize: '0.75rem', color: 'var(--fg-2)' }}>{TIER_WORD[tier]}</span> : null}
     </span>

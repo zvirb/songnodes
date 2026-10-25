@@ -289,31 +289,33 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
   }, [graphStats, bpmDistribution, keyDistribution, genreDistribution, mostConnectedTracks, performanceMetrics]);
 
   return (
-    <div className={`stats-panel ${className}`}>
+    <div className={`stats-panel ${className}`} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', backgroundColor: 'var(--bg)', color: 'var(--fg)', padding: 'var(--space-4)' }}>
       <div className="stats-header">
-        <h2 className="text-lg font-semibold text-white mb-4">Graph Statistics</h2>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--fg)', marginBottom: 'var(--space-4)', marginTop: 0 }}>Graph Statistics</h2>
 
         {/* Export Controls */}
-        <div className="export-controls mb-4 flex gap-2">
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
           <select
             value={exportFormat}
             onChange={(e) => setExportFormat(e.target.value as 'json' | 'csv')}
-            className="bg-gray-700 text-white text-sm px-2 py-1 rounded"
+            aria-label="Export format"
+            style={{ backgroundColor: 'var(--surface-2)', color: 'var(--fg)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', padding: 'var(--space-1) var(--space-2)', fontSize: '0.8125rem' }}
           >
             <option value="json">JSON</option>
             <option value="csv">CSV</option>
           </select>
           <button
+            type="button"
             onClick={() => exportData(exportFormat)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded transition-colors"
+            className="sn-btn sn-btn--sm"
           >
             Export
           </button>
         </div>
 
         {/* Chart Selection */}
-        <div className="chart-selector mb-4">
-          <div className="flex flex-wrap gap-1">
+        <div style={{ marginBottom: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-1)' }}>
             {[
               { key: 'overview', label: 'Overview' },
               { key: 'bpm', label: 'BPM' },
@@ -325,12 +327,18 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
             ].map(({ key, label }) => (
               <button
                 key={key}
+                type="button"
                 onClick={() => setSelectedChart(key)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${
-                  selectedChart === key
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: 'var(--space-1) var(--space-2)',
+                  borderRadius: 'var(--radius-chip)',
+                  border: '1px solid var(--line)',
+                  cursor: 'pointer',
+                  backgroundColor: selectedChart === key ? 'var(--brand)' : 'var(--surface-2)',
+                  color: selectedChart === key ? 'var(--on-brand)' : 'var(--fg-2)',
+                  fontWeight: selectedChart === key ? 700 : 400
+                }}
               >
                 {label}
               </button>
@@ -339,66 +347,66 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
         </div>
       </div>
 
-      <div className="stats-content flex-1 overflow-y-auto">
+      <div className="stats-content" style={{ flex: 1, overflowY: 'auto' }}>
         {selectedChart === 'overview' && (
           <div className="overview-stats">
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Nodes</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.nodeCount.toLocaleString()}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Nodes</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.25rem', fontWeight: 700, fontFamily: 'var(--font-data)' }}>{graphStats.nodeCount.toLocaleString()}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Edges</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.edgeCount.toLocaleString()}</div>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Edges</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.25rem', fontWeight: 700, fontFamily: 'var(--font-data)' }}>{graphStats.edgeCount.toLocaleString()}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Density</div>
-                <div className="stat-value text-white text-xl font-bold">{(graphStats.density * 100).toFixed(2)}%</div>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Density</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.25rem', fontWeight: 700, fontFamily: 'var(--font-data)' }}>{(graphStats.density * 100).toFixed(2)}%</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Avg Degree</div>
-                <div className="stat-value text-white text-xl font-bold">{graphStats.averageDegree.toFixed(1)}</div>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Avg Degree</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.25rem', fontWeight: 700, fontFamily: 'var(--font-data)' }}>{graphStats.averageDegree.toFixed(1)}</div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 mb-6">
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Connected Components</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.componentCount}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, minmax(0, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Connected Components</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontWeight: 600, fontFamily: 'var(--font-data)' }}>{graphStats.componentCount}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Largest Component</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.largestComponentSize} nodes</div>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Largest Component</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontWeight: 600, fontFamily: 'var(--font-data)' }}>{graphStats.largestComponentSize} nodes</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Avg Path Length</div>
-                <div className="stat-value text-white text-lg font-semibold">{graphStats.averagePathLength.toFixed(2)}</div>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Avg Path Length</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontWeight: 600, fontFamily: 'var(--font-data)' }}>{graphStats.averagePathLength.toFixed(2)}</div>
               </div>
-              <div className="stat-card bg-gray-800 p-3 rounded">
-                <div className="stat-label text-gray-400 text-xs">Clustering</div>
-                <div className="stat-value text-white text-lg font-semibold">{(graphStats.clustering * 100).toFixed(1)}%</div>
+              <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Clustering</div>
+                <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontWeight: 600, fontFamily: 'var(--font-data)' }}>{(graphStats.clustering * 100).toFixed(1)}%</div>
               </div>
             </div>
 
             {/* Performance Metrics */}
             <div className="performance-section">
-              <h3 className="text-sm font-semibold text-gray-300 mb-2">Performance</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">FPS</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.frameRate.toFixed(0)}</div>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-2)', marginBottom: 'var(--space-2)' }}>Performance</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+                <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)' }}>
+                  <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>FPS</div>
+                  <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontFamily: 'var(--font-data)' }}>{performanceMetrics.frameRate.toFixed(0)}</div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Render (ms)</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.renderTime.toFixed(1)}</div>
+                <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)' }}>
+                  <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Render (ms)</div>
+                  <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontFamily: 'var(--font-data)' }}>{performanceMetrics.renderTime.toFixed(1)}</div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Visible Nodes</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.visibleNodes}</div>
+                <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)' }}>
+                  <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Visible Nodes</div>
+                  <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontFamily: 'var(--font-data)' }}>{performanceMetrics.visibleNodes}</div>
                 </div>
-                <div className="stat-card bg-gray-800 p-2 rounded">
-                  <div className="stat-label text-gray-400 text-xs">Memory (MB)</div>
-                  <div className="stat-value text-white text-lg">{performanceMetrics.memoryUsage.toFixed(1)}</div>
+                <div style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)' }}>
+                  <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>Memory (MB)</div>
+                  <div style={{ color: 'var(--fg)', fontSize: '1.125rem', fontFamily: 'var(--font-data)' }}>{performanceMetrics.memoryUsage.toFixed(1)}</div>
                 </div>
               </div>
             </div>
@@ -431,17 +439,17 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
 
         {selectedChart === 'connections' && (
           <div className="connections-list">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Most Connected Tracks</h3>
-            <div className="space-y-2">
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-2)', marginBottom: 'var(--space-3)' }}>Most Connected Tracks</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {mostConnectedTracks.map((track) => (
-                <div key={track.id} className="bg-gray-800 p-3 rounded flex justify-between items-center">
+                <div key={track.id} style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div className="text-white text-sm font-medium">{track.name}</div>
-                    <div className="text-gray-400 text-xs">{track.artist}</div>
+                    <div style={{ color: 'var(--fg)', fontSize: '0.875rem', fontWeight: 500 }}>{track.name}</div>
+                    <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>{track.artist}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-blue-400 text-sm font-bold">{track.connections}</div>
-                    <div className="text-gray-500 text-xs">connections</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: 'var(--brand-strong)', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'var(--font-data)' }}>{track.connections}</div>
+                    <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>connections</div>
                   </div>
                 </div>
               ))}
@@ -451,31 +459,31 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ className = '' }) => {
 
         {selectedChart === 'bridges' && (
           <div className="bridges-list">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Bridge Tracks</h3>
-            <div className="text-xs text-gray-400 mb-3">
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-2)', marginBottom: 'var(--space-1)' }}>Bridge Tracks</h3>
+            <div style={{ fontSize: '0.75rem', color: 'var(--fg-3)', marginBottom: 'var(--space-3)' }}>
               Tracks that connect different parts of the graph
             </div>
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {graphStats.bridgeTracks.map((track) => (
-                <div key={track.id} className="bg-gray-800 p-3 rounded">
-                  <div className="flex justify-between items-start mb-1">
+                <div key={track.id} style={{ backgroundColor: 'var(--surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-control)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-1)' }}>
                     <div>
-                      <div className="text-white text-sm font-medium">{track.name}</div>
-                      <div className="text-gray-400 text-xs">{track.artist}</div>
+                      <div style={{ color: 'var(--fg)', fontSize: '0.875rem', fontWeight: 500 }}>{track.name}</div>
+                      <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>{track.artist}</div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-orange-400 text-sm font-bold">{track.bridgeScore.toFixed(2)}</div>
-                      <div className="text-gray-500 text-xs">bridge score</div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ color: 'var(--status-warn)', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'var(--font-data)' }}>{track.bridgeScore.toFixed(2)}</div>
+                      <div style={{ color: 'var(--fg-3)', fontSize: '0.75rem' }}>bridge score</div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)', fontSize: '0.75rem' }}>
                     <div>
-                      <span className="text-gray-400">Connections:</span>
-                      <span className="text-white ml-1">{track.connections}</span>
+                      <span style={{ color: 'var(--fg-3)' }}>Connections:</span>
+                      <span style={{ color: 'var(--fg)', marginLeft: 'var(--space-1)', fontFamily: 'var(--font-data)' }}>{track.connections}</span>
                     </div>
                     <div>
-                      <span className="text-gray-400">Paths:</span>
-                      <span className="text-white ml-1">{track.pathsThroughNode}</span>
+                      <span style={{ color: 'var(--fg-3)' }}>Paths:</span>
+                      <span style={{ color: 'var(--fg)', marginLeft: 'var(--space-1)', fontFamily: 'var(--font-data)' }}>{track.pathsThroughNode}</span>
                     </div>
                   </div>
                 </div>
