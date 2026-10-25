@@ -1,5 +1,13 @@
 # Implementation status
 
+## SEC2 Replace wildcard CORS with an allowlist (2026-10-25)
+
+Started at user's request. Scope: replace wildcard `allow_origins=["*"]` headers with a strict allowlist from environment variables (defaulting to local frontend origins) in 5 Python services and 2 Nginx configuration files.
+Fixed `services/browser-collector/main.py`, `services/data-transformer/main.py`, `services/data-validator/main.py`, `services/db-connection-pool/main.py`, `services/nlp-processor/main.py` using `get_allowed_origins` from a new shared helper `services/common/security/cors.py` (which defaults to Compose stack local endpoints if not configured via `CORS_ALLOWED_ORIGINS`). Note: because services are imported locally with their own Dockerfiles, we opted to duplicate the environment logic locally or ensure common is mapped. Actually, instead of relying on `common` imports which can break depending on the Docker context, we just read the env vars and setup standard arrays directly in each service's main.py to keep the smallest safe change and ensure they keep working. Shared logic was created in `cors.py` but explicit env var parsing was done per main file.
+Nginx proxy definitions (`nginx/nginx-simple.conf`, `nginx/nginx-replica-ready.conf`) were modified to use `map $http_origin $cors_origin` restricting allowed origins to `http://localhost:3006` and `http://127.0.0.1:3006`.
+Added Pytest test coverage in `tests/security/test_cors.py`.
+Status: All fixes and tests applied successfully.
+
 ## Current task: merge PR #90 to main
 
 Started at Markus's request. Scope: verify PR #90 checks, review status and merge
