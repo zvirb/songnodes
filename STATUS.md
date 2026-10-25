@@ -1,8 +1,13 @@
-# Current task: commit and sync screenshot ignore update — started 2026-10-25
+# Current task: commit and sync screenshot ignore update — completed 2026-10-25
 
-Scope: commit the screenshot-folder ignore change and its task record, then sync the
-work through the repository's required Git workflow. Next step: inspect the current
-diff, branch state, and pull request template before staging or publishing anything.
+Committed as `c25d0d9` (`fix(test): ignore local Playwright screenshot folders`) on
+`fix/ignore-local-playwright-snapshots`, pushed to `origin`, and opened PR #119 against
+`main` using the repository pull request template. No direct commit was made to `main`.
+Validation: `git check-ignore -v` matched sample images from both screenshot folders
+to their folder-level ignore rules; `git diff --check` passed. Unit and E2E tests were
+not run because the change is ignore configuration and task notes only.
+
+Next task: review and merge PR #119 after its required checks and approval.
 
 ## Previous task: simplify generated screenshot ignores — completed 2026-10-25
 
