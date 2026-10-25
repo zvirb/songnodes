@@ -1,3 +1,14 @@
+## SEC1 Remove eval and audit subprocess use — started 2026-10-25
+
+Started remediation for SEC1:
+- Removed `eval` usage in scraper history endpoint.
+- Hardened subprocess environments via an allowlist approach.
+- Implemented execution bounds (timeouts, command arguments as lists, no shell=True).
+- Added security regression tests.
+- Note: This change does not touch Beatport scrapers.
+- Checks ran: pytest AST checks and pure function unit tests.
+- Checks not ran: Full Playwright E2E suite due to environment constraints.
+
 # Implementation status
 
 ## Current task: merge PR #90 to main
@@ -791,3 +802,12 @@ check reported `data layer schema is complete`.
 Unresolved deployment issues: none observed. No live provider checks or
 scraping were run. Next task: once ready for real data, complete the documented
 credential-gated live provider checks before the first real scrape.
+
+## SEC1 Remove eval and audit subprocess use — completed 2026-10-25
+
+Completed remediation for SEC1:
+- `eval` replaced with safe JSON parsing and allowlist validation for `scraper_name`.
+- `subprocess.run` and `create_subprocess_exec` configured with explicit environment allowlist (`build_scraper_env`), timeouts, and output limits.
+- Regression tests added in `services/scraper-orchestrator/tests/security/test_eval_and_subprocess.py`.
+- Verified changes locally using `pytest`. Fastapi integration tests skipped when dependencies were unavailable, but AST parsing and unit tests successfully passed.
+- Note: This change does not touch Beatport scrapers.
