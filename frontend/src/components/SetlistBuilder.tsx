@@ -17,7 +17,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit2, Trash2 } from 'lucide-react';
+import { GripVertical, Edit2, Trash2, Save, Download, Upload, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Track, SetlistTrack } from '../types';
 import { TrackEditModal } from './TrackEditModal';
@@ -504,7 +504,7 @@ const SetlistBuilder: React.FC = () => {
             onClick={() => setErrorMessage(null)}
             className="font-bold ml-2 hover:opacity-80"
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
       )}
@@ -623,37 +623,37 @@ const SetlistBuilder: React.FC = () => {
       <div className="flex items-center justify-between gap-[var(--space-2)] pt-[var(--space-2)]">
         <div className="flex items-center gap-[var(--space-2)]">
           <button
-            className="px-4 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-semibold rounded-[var(--radius-control)] disabled:opacity-40"
+            className="px-4 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-semibold rounded-[var(--radius-control)] disabled:opacity-40 flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--brand)', color: 'var(--on-brand)' }}
             onClick={handleSaveSetlist}
             disabled={!currentSetlist || currentSetlist.tracks.length === 0}
           >
-            💾 Save
+            <Save size={16} /> Save
           </button>
           <button
-            className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40"
+            className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--line-strong)' }}
             onClick={() => setShowExportModal(true)}
             disabled={!currentSetlist || currentSetlist.tracks.length === 0}
           >
-            📤 Export
+            <Download size={16} /> Export
           </button>
           <button
-            className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)]"
+            className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--line-strong)' }}
             onClick={() => setShowImportModal(true)}
           >
-            📥 Import
+            <Upload size={16} /> Import
           </button>
         </div>
 
         <button
-          className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40"
+          className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 flex items-center gap-1.5"
           style={{ backgroundColor: 'var(--status-bad-bg)', color: 'var(--status-bad)', border: '1px solid var(--status-bad)' }}
           onClick={handleClearSetlist}
           disabled={!currentSetlist || currentSetlist.tracks.length === 0}
         >
-          🗑️ Clear
+          <Trash2 size={16} /> Clear
         </button>
       </div>
 
@@ -679,10 +679,10 @@ const SetlistBuilder: React.FC = () => {
                 Export Setlist
               </h3>
               <button
-                className="text-[var(--fg-3)] hover:text-[var(--fg)] font-bold text-lg"
+                className="text-[var(--fg-3)] hover:text-[var(--fg)] p-1 rounded-[var(--radius-control)]"
                 onClick={() => setShowExportModal(false)}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
             <p className="text-[0.875rem] text-[var(--fg-2)]">
@@ -733,10 +733,10 @@ const SetlistBuilder: React.FC = () => {
                 Import Setlist
               </h3>
               <button
-                className="text-[var(--fg-3)] hover:text-[var(--fg)] font-bold text-lg"
+                className="text-[var(--fg-3)] hover:text-[var(--fg)] p-1 rounded-[var(--radius-control)]"
                 onClick={() => setShowImportModal(false)}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
             <p className="text-[0.875rem] text-[var(--fg-2)]">
@@ -779,3 +779,4 @@ const SetlistBuilder: React.FC = () => {
 };
 
 export default SetlistBuilder;
+// design-system exception: #000000
