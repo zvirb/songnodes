@@ -265,6 +265,7 @@ Started working on security updates from Dependabot branches:
 - Replaced mock data in `ScraperProgressPage.tsx` with live data mapping.
 - Handled empty and error states correctly.
 - Added a "Retry" button for dead jobs with error handling.
+- Fixed CI conformance failure by removing `window.confirm` and `alert`, substituting them with `ConfirmDialog` and `showToast` from the design system.
 - Implemented dev seed script `scripts/dev/seed_pipeline_jobs.py` using domain logic.
 - Generated docs in `docs/pipeline-telemetry.md`.
 - Handback: Page operates at `/pipeline` endpoint. Fixtures created dynamically or available in `fixtures/`. Seed script requires `--yes-local-dev`.

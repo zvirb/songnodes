@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, Activity, CheckCircle2, ServerCrash, Clock, Zap, AlertTriangle, XCircle, Play } from 'lucide-react';
 import TargetTracksManager from '../components/TargetTracksManager';
 import { SN } from '../lib/songnodes';
+import { ConfirmDialog, showToast } from '../components/ds';
 import { formatThroughput, getStatusTokenColor, JobResponse } from '../utils/dataLoaderUtils';
 import { usePipelineTelemetry } from '../features/pipeline/usePipelineTelemetry';
 import { api } from '../services/api';
@@ -20,19 +21,21 @@ const SectionHeading = ({ title, count }: { title: string; count?: string | numb
 const ScraperProgressPage: React.FC = () => {
   const { telemetry, stages, workers, jobs, isLoading, error, lastUpdated, source, refresh } = usePipelineTelemetry();
   const [retryingJob, setRetryingJob] = useState<string | null>(null);
+  const [confirmRetryId, setConfirmRetryId] = useState<string | null>(null);
 
-  const handleRetryJob = async (jobId: string) => {
-    if (window.confirm('Are you sure you want to retry this job?')) {
-      setRetryingJob(jobId);
-      try {
-        await api.post(`/jobs/${jobId}/retry`);
-        await refresh();
-      } catch (e) {
-        console.error('Failed to retry job:', e);
-        alert('Failed to retry job');
-      } finally {
-        setRetryingJob(null);
-      }
+  const handleRetryJob = async () => {
+    if (!confirmRetryId) return;
+    const jobId = confirmRetryId;
+    setConfirmRetryId(null);
+    setRetryingJob(jobId);
+    try {
+      await api.post(`/jobs/${jobId}/retry`);
+      await refresh();
+    } catch (e) {
+      console.error('Failed to retry job:', e);
+      showToast('Failed to retry job');
+    } finally {
+      setRetryingJob(null);
     }
   };
 
@@ -42,7 +45,7 @@ const ScraperProgressPage: React.FC = () => {
       await refresh();
     } catch (e) {
       console.error('Failed to queue job:', e);
-      alert('Failed to queue job');
+      showToast('Failed to queue job');
     }
   };
 
@@ -65,7 +68,21 @@ const ScraperProgressPage: React.FC = () => {
             <RefreshCw size={16} /> Retry Connection
           </button>
         </section>
-      </main>
+
+
+      {confirmRetryId && (
+        <ConfirmDialog
+          open={!!confirmRetryId}
+          title="Retry Job"
+          confirmLabel="Retry Job"
+          onConfirm={handleRetryJob}
+          onCancel={() => setConfirmRetryId(null)}
+        >
+          <p>Are you sure you want to retry this job? It will be moved back to the queue.</p>
+        </ConfirmDialog>
+      )}
+    </main>
+
     );
   }
 
@@ -298,7 +315,7 @@ const ScraperProgressPage: React.FC = () => {
                     <td>
                       <button
                         className="sn-btn sn-btn--outline sn-btn--sm"
-                        onClick={() => handleRetryJob(j.job_id)}
+                        onClick={() => setConfirmRetryId(j.job_id)}
                         disabled={retryingJob === j.job_id}
                         aria-live="polite"
                       >
@@ -321,7 +338,21 @@ const ScraperProgressPage: React.FC = () => {
           <TargetTracksManager embedded filterStatus="pending" />
         </div>
       </section>
+
+
+      {confirmRetryId && (
+        <ConfirmDialog
+          open={!!confirmRetryId}
+          title="Retry Job"
+          confirmLabel="Retry Job"
+          onConfirm={handleRetryJob}
+          onCancel={() => setConfirmRetryId(null)}
+        >
+          <p>Are you sure you want to retry this job? It will be moved back to the queue.</p>
+        </ConfirmDialog>
+      )}
     </main>
+
   );
 };
 
