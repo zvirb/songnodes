@@ -12,7 +12,8 @@ import logging
 import asyncio
 from typing import Dict, List, Optional
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI
+from utils import build_scraper_env, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
@@ -237,10 +238,9 @@ async def run_migration():
             f'-f', migration_file
         ]
 
-        env = os.environ.copy()
+        env = build_scraper_env(os.environ)
         env['PGPASSWORD'] = db_password
-
-        result = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        result = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=60)
 
         if result.returncode == 0:
             return {
