@@ -6,7 +6,6 @@ frontend/src/components/DJInterface/DJInterface.tsx
 frontend/src/components/DJInterface/DJModeSelector.tsx
 frontend/src/components/DJInterface/panels/PlanModePanel.tsx
 frontend/src/components/DJInterface/panels/PlayModePanel.tsx
-frontend/src/components/EditTrackModal.tsx
 frontend/src/components/FilterPanel.tsx
 frontend/src/components/IntelligentBrowser.legacy.tsx
 frontend/src/components/OAuthCallback.tsx
@@ -16,7 +15,6 @@ frontend/src/components/SetlistBuilder.tsx
 frontend/src/components/SetlistBuilder/AnalyticsPanel.tsx
 frontend/src/components/SetlistBuilder/utils.ts
 frontend/src/components/SmartTooltip.tsx
-frontend/src/components/TrackEditModal.tsx
 frontend/src/components/TrackSearch.tsx
 frontend/src/examples/GraphVisualizationEnhanced.example.tsx
 frontend/src/examples/spatialIndexUsage.example.tsx
