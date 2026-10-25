@@ -403,6 +403,32 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
 };
 // Public API-key metadata; secret values are never returned by these endpoints.
+export type APIKeyStatus = 'unconfigured' | 'valid' | 'invalid';
+export type AIProvider = 'claude' | 'openai' | 'gemini';
+
+export interface AIProviderKey {
+  provider: AIProvider;
+  key: string | null;
+  maskedKey: string | null;
+  status: APIKeyStatus;
+  lastTestedAt?: string | null;
+  errorMessage?: string | null;
+}
+
+export interface AIProviderPreferences {
+  preferredProvider: AIProvider;
+  claudeApiKey?: AIProviderKey;
+  openaiApiKey?: AIProviderKey;
+  geminiApiKey?: AIProviderKey;
+}
+
+export interface AIKeyConfig {
+  preferredProvider: AIProvider;
+  claudeApiKey: AIProviderKey;
+  openaiApiKey: AIProviderKey;
+  geminiApiKey: AIProviderKey;
+}
+
 export interface APIKeyRequirement {
   service_name: string; key_name: string; display_name: string; description: string;
   required: boolean; documentation_url: string; display_order: number;
