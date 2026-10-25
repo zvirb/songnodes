@@ -363,3 +363,22 @@ Started working on security updates from Dependabot branches:
 - Handback: Page operates at `/pipeline` endpoint. Fixtures created dynamically or available in `fixtures/`. Seed script requires `--yes-local-dev`.
 - Checks: `test:unit` and `type-check` pass. `sync-design-system.sh --check` passes. Visual tests and ESLint 9 configuration are omitted.
 <!-- SLOT:FE12 END -->
+
+<!-- SLOT:BE2 BEGIN -->
+### BE2: Python 3.12 upgrade audit and the audio-analysis NumPy 2.5 build fix (2026-10-25)
+
+Started working on Python 3.12 upgrade audit.
+- Audited services for Python version support. `services/audio-analysis` is upgrading to 3.12 to support `numpy==2.5.4` which requires 3.12+.
+- Created `docs/python-versions.md` with a complete Python Version Support Matrix.
+- Fixed `services/audio-analysis` by updating the base image in `services/audio-analysis/Dockerfile` to `python:3.12-slim`.
+- Added tests for `audio-analysis` in `services/audio-analysis/tests/test_audio_features.py` which generates a mock sine wave and tests core features.
+- Added a new `audio-analysis-unit` job to `.github/workflows/python-tests.yml` to run tests on Python 3.12.
+- Updated `.github/dependabot.yml` to ignore `numpy>=2.5.0` for `services/nlp-processor` which stays on 3.11 for now.
+
+**Hand-back:**
+- Upgraded `services/audio-analysis` to `python:3.12-slim` since `numpy==2.5.4` strictly requires `>=3.12`. Dry-runs in 3.12 venv resolve correctly without issues.
+- `librosa==0.10.1` works as is with `numpy==2.5.4`.
+- We cannot execute Docker build `docker build -t audio-analysis-test services/audio-analysis` due to sandbox errors (mount errors on the overlay fs).
+- The REST API endpoint does not need to be modified as no changes to `services/metadata-enrichment` are required.
+- Run tests on real-data STFT audio tests using `docker build -t audio-analysis-test services/audio-analysis && docker run audio-analysis-test pytest tests/` on a laptop with docker engine enabled.
+<!-- SLOT:BE2 END -->
