@@ -16,7 +16,7 @@ const PAGES: [string, string, boolean][] = [
   ['library', '/library', false],
   ['sets', '/sets', true],
   ['settings', '/settings', true],
-  ['planned-module', '/pipeline', true],
+  ['pipeline', '/pipeline', true],
   ['not-found', '/no-such-page', true],
 ];
 const WIDTHS: [string, number, number][] = [['desktop', 1440, 900], ['phone', 390, 844]];

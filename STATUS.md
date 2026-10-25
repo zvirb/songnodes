@@ -1,3 +1,13 @@
+# Current task: run full tests, rebuild containers, and validate deployment — started 2026-10-25
+
+Scope: run the repository's applicable full test suites, diagnose and fix failures
+caused by the current checkout when feasible, rebuild/recreate the Compose
+application containers without resetting persistent data, then run post-deployment
+health and additional tests. Preserve unrelated worktree changes if any appear.
+
+Next step: inspect exact documented commands and stack prerequisites, then run the
+test suites and address any actionable failures before deployment.
+
 # Current task: commit and sync screenshot ignore update — completed 2026-10-25
 
 Committed as `c25d0d9` (`fix(test): ignore local Playwright screenshot folders`) on
