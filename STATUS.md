@@ -619,3 +619,165 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:DS9 END -->
+
+<!-- SLOT:R1 BEGIN -->
+### R1: Restore the unified track data bridge
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:R1 END -->
+
+<!-- SLOT:R2 BEGIN -->
+### R2: Restore the route finder page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:R2 END -->
+
+<!-- SLOT:R3 BEGIN -->
+### R3: Restore the graph projection consumer
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:R3 END -->
+
+<!-- SLOT:G1 BEGIN -->
+### G1: Scope guard: fail PRs that touch files outside their package
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:G1 END -->
+
+<!-- SLOT:G2 BEGIN -->
+### G2: Route registry: each page registers its own route
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:G2 END -->
+
+<!-- SLOT:G3 BEGIN -->
+### G3: REST API: routers register themselves
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:G3 END -->
+
+<!-- SLOT:C1 BEGIN -->
+### C1: One home for the local MusicBrainz resolver
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:C1 END -->
+
+<!-- SLOT:C2 BEGIN -->
+### C2: Remove one-off agent scripts from the repo root
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:C2 END -->
+
+<!-- SLOT:S1 BEGIN -->
+### S1: Track search on metadata-enrichment for TIDAL and Spotify
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:S1 END -->
+
+<!-- SLOT:L1 BEGIN -->
+### L1: Library overlay: models and views
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L1 END -->
+
+<!-- SLOT:E2 BEGIN -->
+### E2: Log every outbound enrichment call
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:E2 END -->
+
+<!-- SLOT:SB1 BEGIN -->
+### SB1: Set exporters: M3U8, Rekordbox XML and a TIDAL list
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB1 END -->
+
+<!-- SLOT:P1 BEGIN -->
+### P1: Route /paths to the route finder page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:P1 END -->
+
+<!-- SLOT:P2 BEGIN -->
+### P2: Harmony: one Camelot page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:P2 END -->
+
+<!-- SLOT:P3 BEGIN -->
+### P3: Sources: route the AI setlists page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:P3 END -->
+
+<!-- SLOT:S2 BEGIN -->
+### S2: REST music search: remove the mock results
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:S2 END -->
+
+<!-- SLOT:L2 BEGIN -->
+### L2: Library importer: SQLite into silver and the overlay
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L2 END -->
+
+<!-- SLOT:L4 BEGIN -->
+### L4: Saved sets endpoints
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L4 END -->
+
+<!-- SLOT:E1 BEGIN -->
+### E1: Local MusicBrainz provider in the enrichment waterfall
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:E1 END -->
+
+<!-- SLOT:SB2 BEGIN -->
+### SB2: Set builder: export dialog
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB2 END -->
+
+<!-- SLOT:SEC6A BEGIN -->
+### SEC6A: AI proxy route on the REST API
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SEC6A END -->
+
+<!-- SLOT:S3 BEGIN -->
+### S3: Music search UI: show the real error
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:S3 END -->
+
+<!-- SLOT:L3 BEGIN -->
+### L3: Library ingest endpoint on the job framework
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L3 END -->
+
+<!-- SLOT:L5 BEGIN -->
+### L5: Library reconciliation report
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L5 END -->
+
+<!-- SLOT:E3 BEGIN -->
+### E3: Enrichment replay and coverage report
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:E3 END -->
+
+<!-- SLOT:SB3 BEGIN -->
+### SB3: Set builder: reorder tracks
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB3 END -->
+
+<!-- SLOT:SEC6B BEGIN -->
+### SEC6B: AI proxy: frontend client and migration note
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SEC6B END -->
