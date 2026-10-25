@@ -24,7 +24,7 @@ The library table is frontend/src/features/musicLibrary/LibraryPage.tsx; the row
 Click the new button on a library row: the track appears in /sources/targets.
 
 ## Checks
-`cd frontend && npm ci && npx tsc --noEmit -p . && npx vitest run src && npx vite build`. If `npm ci` fails on the lockfile (QA2 not merged yet), use `npm install --no-package-lock` instead, say so, and never commit package-lock.json. Report failures in files you do not own; do not fix them. Playwright cannot run in your sandbox; say so.
+`cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` (Node 26, TypeScript 7, Oxlint; see frontend/LINTING.md). Lint must not get worse in files you touch. Report failures in files you do not own; do not fix them. Playwright cannot run in your sandbox; say so.
 
 ## Hand-back
 The one job done, files added/changed/deleted, checks run and not run, the reviewer check, follow-ups.
