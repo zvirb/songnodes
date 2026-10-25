@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "library.track.rotation_changed.v1",
+  "type": "object",
+  "properties": {
+    "aggregate_type": { "type": "string", "const": "library_track" },
+    "aggregate_id": { "type": "string" },
+    "event_type": { "type": "string", "const": "library.track.rotation_changed.v1" },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "new_rotation": { "type": "string" },
+        "previous_rotation": { "type": ["string", "null"] },
+        "changed_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["new_rotation", "changed_at"]
+    }
+  },
+  "required": ["aggregate_type", "aggregate_id", "event_type", "payload"]
+}
