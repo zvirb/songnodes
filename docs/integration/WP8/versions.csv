@@ -1,0 +1,2 @@
+version,date,kind,unit,path,checksum,status,decision_link,notes
+1.0.0,2026-10-25,code,graph_projection,services/common/datalayer/graph_projection.py,,ACTIVE,docs/integration/WP8/decisions/2026-10-25-WP8-graph.md,Initial Memgraph outbox consumer implementation

@@ -11,7 +11,7 @@ from uuid import UUID
 
 import httpx
 
-from . import backfill, enrichment, er, evidence, ingest, outbox, projection
+from . import backfill, enrichment, er, evidence, ingest, outbox, projection, graph_projection
 from .errors import CatalogError
 
 
@@ -167,3 +167,16 @@ async def er_shadow(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, An
     if summary['status'] == 'running':
         follow_ups.append(after('er_shadow', payload, {k: v for k, v in payload.items() if k not in ('job_id', 'restart')}, tag='er-next'))
     return {**summary, 'enqueue': follow_ups}
+
+@handler('graph_projection_consume')
+async def graph_projection_consume(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
+    return await outbox.drain(conn, graph_projection.CONSUMER, graph_projection.handle_event, int(payload.get('batch', 100)),
+                              max_batches=int(payload.get('max_batches', 50)))
+
+@handler('graph_projection_rebuild')
+async def graph_projection_rebuild(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
+    return await graph_projection.rebuild(conn)
+
+@handler('graph_projection_reconcile')
+async def graph_projection_reconcile(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
+    return await graph_projection.reconcile(conn, repair=bool(payload.get('repair')))

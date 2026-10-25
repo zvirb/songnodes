@@ -55,11 +55,22 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ''
       # OAuth sign-in for Spotify and TIDAL (routers/music_auth.py), from the host environment or an untracked .env.
+      MB_LOCAL_ENABLED: ${MB_LOCAL_ENABLED:-false}
+      MB_LOCAL_HOST: ${MB_LOCAL_HOST:-host.docker.internal}
+      MB_LOCAL_PORT: ${MB_LOCAL_PORT:-55433}
+      MB_LOCAL_DATABASE: ${MB_LOCAL_DATABASE:-ref_mb}
+      MB_LOCAL_SCHEMA: ${MB_LOCAL_SCHEMA:-ref_mb}
+      MB_LOCAL_USER: ${MB_LOCAL_USER:-ref_mb_reader}
+      MB_LOCAL_PASSWORD_FILE: ${MB_LOCAL_PASSWORD_FILE:-}
+      MB_LOCAL_PASSWORD: ${MB_LOCAL_PASSWORD:-}
+      MB_LOCAL_STATEMENT_TIMEOUT_MS: ${MB_LOCAL_STATEMENT_TIMEOUT_MS:-2000}
       TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID:-}
       TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET:-}
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
     ports: ['127.0.0.1:8082:8082']
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -87,6 +98,15 @@ services:
       CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
       UNIFIED_SCRAPER_URL: ${UNIFIED_SCRAPER_URL:-http://unified-scraper:8000}
       # Provider credentials are read from the host environment or an untracked .env file; none are committed.
+      MB_LOCAL_ENABLED: ${MB_LOCAL_ENABLED:-false}
+      MB_LOCAL_HOST: ${MB_LOCAL_HOST:-host.docker.internal}
+      MB_LOCAL_PORT: ${MB_LOCAL_PORT:-55433}
+      MB_LOCAL_DATABASE: ${MB_LOCAL_DATABASE:-ref_mb}
+      MB_LOCAL_SCHEMA: ${MB_LOCAL_SCHEMA:-ref_mb}
+      MB_LOCAL_USER: ${MB_LOCAL_USER:-ref_mb_reader}
+      MB_LOCAL_PASSWORD_FILE: ${MB_LOCAL_PASSWORD_FILE:-}
+      MB_LOCAL_PASSWORD: ${MB_LOCAL_PASSWORD:-}
+      MB_LOCAL_STATEMENT_TIMEOUT_MS: ${MB_LOCAL_STATEMENT_TIMEOUT_MS:-2000}
       TIDAL_CLIENT_ID: ${TIDAL_CLIENT_ID:-}
       TIDAL_CLIENT_SECRET: ${TIDAL_CLIENT_SECRET:-}
       TIDAL_COUNTRY_CODE: ${TIDAL_COUNTRY_CODE:-AU}
@@ -98,6 +118,9 @@ services:
       PROVIDER_GROUPS: ${PROVIDER_GROUPS:-}
       # 'none' keeps the dev stack and its tests from calling external providers; list names (e.g. tidal,deezer) to enable.
       ENRICHMENT_PROVIDERS: ${ENRICHMENT_PROVIDERS:-none}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     depends_on:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
