@@ -47,7 +47,7 @@ export interface PipelineBatchTelemetry {
   activeWorkers: number;
   itemsProcessed: number;
   itemsRemaining: number;
-  throughputRate: number; // items per second
+  throughputRate: number | null; // items per minute (null if < 2 points)
   errorCount: number;
   lastSyncIso: string;
 }
@@ -61,6 +61,29 @@ export interface ScraperWorkerHealth {
   successRate: number;
   jobsToday: number;
   activeTarget?: string;
+}
+
+export interface JobResponse {
+  job_id: string;
+  kind: string;
+  idempotency_key: string;
+  status: 'queued' | 'running' | 'succeeded' | 'dead';
+  attempts: number;
+  max_attempts: number;
+  run_after: string;
+  started_at: string | null;
+  finished_at: string | null;
+  last_error: string | null;
+  payload: Record<string, any>;
+  result: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OutboxStatusResponse {
+  consumers: Array<{ consumer: string; backlog: number; updated_at: string | null }>;
+  dead_letters: number;
+  projection: any;
 }
 
 /**
@@ -130,13 +153,14 @@ export const getDefaultMedallionStages = (
 };
 
 /**
- * Format throughput rates cleanly (e.g., "142.5 items/s")
+ * Format throughput rates cleanly
  */
-export const formatThroughput = (rate: number): string => {
+export const formatThroughput = (rate: number | null): string => {
+  if (rate === null) return '—';
   if (rate >= 1000) {
-    return `${(rate / 1000).toFixed(1)}k items/s`;
+    return `${(rate / 1000).toFixed(1)}k items/min`;
   }
-  return `${rate.toFixed(1)} items/s`;
+  return `${rate.toFixed(1)} items/min`;
 };
 
 /**

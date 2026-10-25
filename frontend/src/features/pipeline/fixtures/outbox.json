@@ -1,0 +1,7 @@
+{
+  "consumers": [
+    { "consumer": "silver_normalization", "backlog": 10, "updated_at": "2025-01-01T12:00:00Z" }
+  ],
+  "dead_letters": 0,
+  "projection": { "pending": 5 }
+}
