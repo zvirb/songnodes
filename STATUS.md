@@ -523,3 +523,99 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:QA6 END -->
+
+<!-- SLOT:DS10 BEGIN -->
+### DS10: Design system audit and fix: OAuth callback page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS10 END -->
+
+<!-- SLOT:DS11 BEGIN -->
+### DS11: Design system audit and fix: Unrouted components, legacy UI
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS11 END -->
+
+<!-- SLOT:DS12 BEGIN -->
+### DS12: Design system audit and fix: DJ interface, setlist builder and pathfinder components
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS12 END -->
+
+<!-- SLOT:DS13 BEGIN -->
+### DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS13 END -->
+
+<!-- SLOT:DS14 BEGIN -->
+### DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS14 END -->
+
+<!-- SLOT:DS15 BEGIN -->
+### DS15: Design system audit and fix: Global stylesheets and legacy CSS
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS15 END -->
+
+<!-- SLOT:DS16 BEGIN -->
+### DS16: Consolidate missing design-system tokens from all audits
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS16 END -->
+
+<!-- SLOT:DS1 BEGIN -->
+### DS1: Design system audit and fix: App shell, navigation drawer and home page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS1 END -->
+
+<!-- SLOT:DS2A BEGIN -->
+### DS2A: Design system audit and fix: Graph page, first half of its files
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS2A END -->
+
+<!-- SLOT:DS2B BEGIN -->
+### DS2B: Design system audit and fix: Graph page, second half of its files
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS2B END -->
+
+<!-- SLOT:DS3 BEGIN -->
+### DS3: Design system audit and fix: Library page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS3 END -->
+
+<!-- SLOT:DS4 BEGIN -->
+### DS4: Design system audit and fix: Set builder page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS4 END -->
+
+<!-- SLOT:DS5 BEGIN -->
+### DS5: Design system audit and fix: Paths, sources and not-found pages
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS5 END -->
+
+<!-- SLOT:DS6 BEGIN -->
+### DS6: Design system audit and fix: Harmony (Camelot) page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS6 END -->
+
+<!-- SLOT:DS8 BEGIN -->
+### DS8: Design system audit and fix: Pipeline page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS8 END -->
+
+<!-- SLOT:DS9 BEGIN -->
+### DS9: Design system audit and fix: Settings page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS9 END -->

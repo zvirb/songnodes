@@ -11,6 +11,8 @@ import argparse, pathlib, subprocess, sys, time
 ROOT = pathlib.Path(__file__).resolve().parent
 REPO = "zvirb/songnodes"
 RETIRED: set[str] = set()
+# sent only when named in --only, after the packages it depends on are merged
+HOLD = {"DS16"}
 
 
 def sh(*a):
@@ -34,7 +36,7 @@ def main():
     jobs = []
     for f in sorted((ROOT / "agents").glob("*.md")):
         code = f.name.split("_")[0]
-        if code in RETIRED or (only and code not in only):
+        if code in RETIRED or (only and code not in only) or (code in HOLD and code not in only):
             continue
         text = f.read_text(encoding="utf-8").replace("BASE_SHA", base)
         (out / f"{code}.txt").write_text(text, encoding="utf-8")
