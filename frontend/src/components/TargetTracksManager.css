@@ -1,24 +1,215 @@
-/* Target tracks tab. Tokens only. */
-.ttm { display: flex; flex-direction: column; gap: var(--space-3); }
-.ttm__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.ttm__count { margin: 0; font-size: 0.875rem; color: var(--fg-2); }
-.ttm__num { font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg); }
-.ttm__actions { display: flex; align-items: center; gap: var(--space-2); }
-.ttm__filters { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-.ttm__filters input[type="search"] { flex: 1 1 140px; min-width: 0; }
-.ttm__filters select { flex: 0 0 auto; }
-.ttm__bulk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--brand-soft); border-radius: var(--radius-control); font-size: 0.8125rem; }
-.ttm__selectall { align-self: flex-start; }
-.ttm__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.ttm__item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1) var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--line); }
-.ttm__item[aria-selected="true"] { background: var(--brand-soft); }
-.ttm__main { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
-.ttm__tags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.ttm__progress { display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem; color: var(--fg-2); }
-.ttm__progress input { width: 100%; accent-color: var(--brand); }
-.ttm__row-actions { grid-column: 2; display: flex; align-items: center; gap: var(--space-1); }
-.ttm__add { display: flex; gap: var(--space-2); }
-.ttm__add .sn-input { flex: 1 1 auto; min-width: 0; }
-.ttm__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.ttm__chip-x { display: inline-flex; align-items: center; padding: 0; margin-left: 2px; border: 0; background: none; color: inherit; cursor: pointer; }
-.ttm__json { font-family: var(--font-data); font-size: 0.8125rem; width: 100%; }
+/* Target tracks tab. Tokens and design system compliance. */
+.ttm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, var(--space-4, 16px));
+}
+
+.ttm__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+
+.ttm__count {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--fg-2);
+}
+
+.ttm__num,
+.ttm__mono {
+  font-family: var(--font-mono, var(--font-data, "JetBrains Mono", monospace));
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.ttm__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ttm__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  background-color: var(--color-surface-raised, var(--surface-2));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.ttm__filters input[type="search"] {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.ttm__filters select {
+  flex: 0 0 auto;
+}
+
+.ttm__bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--brand-soft);
+  border-radius: var(--radius-control);
+  font-size: 0.8125rem;
+}
+
+.ttm__selectall {
+  align-self: flex-start;
+}
+
+.ttm__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface-base, var(--surface-1));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.ttm__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.ttm__item:last-child {
+  border-bottom: none;
+}
+
+.ttm__item[aria-selected="true"] {
+  background: var(--brand-soft);
+}
+
+.ttm__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.ttm__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ttm__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.ttm__pill--high {
+  background-color: var(--status-bad-bg);
+  color: var(--color-status-danger, var(--status-bad));
+  border: 1px solid var(--status-bad);
+}
+
+.ttm__pill--medium {
+  background-color: var(--status-warn-bg);
+  color: var(--color-status-warning, var(--status-warn));
+  border: 1px solid var(--status-warn);
+}
+
+.ttm__pill--low {
+  background-color: var(--status-ok-bg);
+  color: var(--color-status-success, var(--status-ok));
+  border: 1px solid var(--status-ok);
+}
+
+.ttm__pill--off {
+  background-color: var(--status-info-bg);
+  color: var(--color-status-info, var(--status-info));
+  border: 1px solid var(--line);
+}
+
+.ttm__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--fg-2);
+  max-width: 320px;
+}
+
+.ttm__progress-track {
+  height: 6px;
+  width: 100%;
+  background-color: var(--progress-track, var(--surface-3));
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.ttm__progress-bar {
+  height: 100%;
+  background-color: var(--color-status-success, var(--status-ok));
+  border-radius: var(--radius-pill);
+  transition: width var(--duration-base) var(--ease-standard);
+}
+
+.ttm__progress input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-status-success, var(--status-ok));
+  cursor: pointer;
+}
+
+.ttm__row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ttm__add {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ttm__add .sn-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ttm__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.ttm__chip-x {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  margin-left: 2px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ttm__json {
+  font-family: var(--font-mono, var(--font-data, "JetBrains Mono", monospace));
+  font-size: 0.8125rem;
+  width: 100%;
+}
