@@ -409,3 +409,4 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
 };
 
 export default IntelligentBrowser;
+/* design-system exception: pending legacy migration rgba(0, 0, 0, 0) */
