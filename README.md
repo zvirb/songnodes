@@ -422,3 +422,5 @@ For issues or questions:
 ---
 
 **Note**: This project uses non-standard ports to avoid conflicts. See the [port reference](docs/deployment/deployment-guide.md#port-reference) for details.
+## Data Sources
+This application uses data from MusicBrainz, which is made available under the CC0 1.0 Universal Public Domain Dedication and the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported license.
