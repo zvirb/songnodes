@@ -351,6 +351,12 @@ Started working on security updates from Dependabot branches:
 - Documented remaining `pip-audit` issues in `docs/security/dependency-updates.md` (which are deferred due to dependency resolution conflicts on `starlette` making it a breaking change).
 - Encountered issues executing python tests via `pytest` because `httpx` is missing in the `pipx` container, indicating dependencies need to be installed in the isolated environment or a different testing strategy is expected.
 
+## Agent status slots
+
+One slot per work package. Each agent edits ONLY the lines between its own `SLOT:<CODE> BEGIN` / `END` markers
+(replace the placeholder; keep the markers). Do not edit another slot, reorder slots, or add text outside the markers.
+Write a dated start entry when you begin and a dated end entry when you finish (what was built, checks run / not run, PR link).
+
 <!-- SLOT:FE12 BEGIN -->
 ### FE12: Pipeline telemetry (2025-XX-XX)
 - Created `usePipelineTelemetry` polling hook mapping live jobs and outbox endpoints.
@@ -363,3 +369,99 @@ Started working on security updates from Dependabot branches:
 - Handback: Page operates at `/pipeline` endpoint. Fixtures created dynamically or available in `fixtures/`. Seed script requires `--yes-local-dev`.
 - Checks: `test:unit` and `type-check` pass. `sync-design-system.sh --check` passes. Visual tests and ESLint 9 configuration are omitted.
 <!-- SLOT:FE12 END -->
+
+<!-- SLOT:WP2 BEGIN -->
+### WP2: MusicBrainz reference ETL into refmb
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:WP2 END -->
+
+<!-- SLOT:WP3 BEGIN -->
+### WP3: Local MusicBrainz resolver: ISRC → exact lookup → fuzzy, plugged into the existing matching and providers
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:WP3 END -->
+
+<!-- SLOT:WP5 BEGIN -->
+### WP5: Library overlay model, importer, ingest job and saved-sets endpoints
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:WP5 END -->
+
+<!-- SLOT:WP8 BEGIN -->
+### WP8: Graph projection as an outbox consumer
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:WP8 END -->
+
+<!-- SLOT:WP9 BEGIN -->
+### WP9: Server-side search and the Library / Set-builder pages on the API
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:WP9 END -->
+
+<!-- SLOT:WP4 BEGIN -->
+### WP4: Local MusicBrainz provider at the front of the existing enrichment waterfall
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:WP4 END -->
+
+<!-- SLOT:FE1 BEGIN -->
+### FE1: Unified track data bridge
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FE1 END -->
+
+<!-- SLOT:FE3 BEGIN -->
+### FE3: Route finder page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FE3 END -->
+
+<!-- SLOT:FE4 BEGIN -->
+### FE4: Set Builder: crate export formats and reordering
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FE4 END -->
+
+<!-- SLOT:FE9 BEGIN -->
+### FE9: Add library tracks to Target Tracks
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FE9 END -->
+
+<!-- SLOT:FEW BEGIN -->
+### FEW: Route wiring and cleanup
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FEW END -->
+
+<!-- SLOT:FE11 BEGIN -->
+### FE11: Navigation audit: find and wire pages missing from navigation
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FE11 END -->
+
+<!-- SLOT:BE2 BEGIN -->
+### BE2: Python 3.12 upgrade audit and the audio-analysis NumPy 2.5 build fix
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:BE2 END -->
+
+<!-- SLOT:SEC5 BEGIN -->
+### SEC5: Opt-in token auth for write and admin API routes
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SEC5 END -->
+
+<!-- SLOT:SEC6 BEGIN -->
+### SEC6: Server-side AI provider proxy
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SEC6 END -->
+
+<!-- SLOT:BE1 BEGIN -->
+### BE1: Real TIDAL and Spotify track search
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:BE1 END -->
