@@ -1,5 +1,19 @@
 # Implementation status
 
+## Current task: mb-library: WP0 Contracts, DDL, fixtures and test harness
+
+Started 2026-10-25. Package WP0.
+Scope: Establish interfaces, tests, schema definitions, and guard scripts to allow later work packages to build in parallel without relying on live reference datasets.
+
+Work completed:
+- Generated OpenAPI specification for idempotent ingest, event schemas, and staging formats.
+- Set up DDL schemas for `ref_mb` (MusicBrainz mirrored reference data) and `library` (overlay data) in migrations 100-101.
+- Implemented normalisation behavior in `songnodes` (`unidecode`) and `djlib` (`unicodedata.normalize`) and generated over 200 normalisation vectors.
+- Developed a fixture generator `make_fixtures.py` that created mock staging TSVs, canonical data CSVs, and a SQLite dummy representation.
+- Setup `check_ownership.py` and `check_migrations.py` to prevent overlapping work from multiple parallel branches.
+- Set up a test harness utilizing `pytest` markers for contract tests.
+
+
 ## Current task: merge PR #90 to main
 
 Started at Markus's request. Scope: verify PR #90 checks, review status and merge

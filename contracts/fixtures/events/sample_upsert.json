@@ -1,0 +1,13 @@
+{
+  "aggregate_type": "library_track",
+  "aggregate_id": "1d191f64-f8cf-814a-dea7-e1ae7006a2c6",
+  "event_type": "library.track.upserted.v1",
+  "payload": {
+    "source_system": "dj_library",
+    "source_id": "h:abc123def456",
+    "norm_key": "artisttitle",
+    "attributes": {
+      "isrc": "USRC00000001"
+    }
+  }
+}

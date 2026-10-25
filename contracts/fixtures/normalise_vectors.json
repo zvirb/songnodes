@@ -1,0 +1,1002 @@
+[
+  {
+    "artist": "Daft Punk",
+    "title": "One More Time",
+    "expected": "daftpunkonemoretime"
+  },
+  {
+    "artist": "J\u00f6yce",
+    "title": "B\u00e5il\u00e5",
+    "expected": "joycebaila"
+  },
+  {
+    "artist": "Dom Dolla",
+    "title": "San Frandisco (Extended Mix)",
+    "expected": "domdollasanfrandiscoextendedmix"
+  },
+  {
+    "artist": "Dom Dolla ft. Nelly Furtado",
+    "title": "Eat Your Man",
+    "expected": "domdollaftnellyfurtadoeatyourman"
+  },
+  {
+    "artist": "Fisher x Chris Lake",
+    "title": "Deceiver",
+    "expected": "fisherxchrislakedeceiver"
+  },
+  {
+    "artist": "A & B",
+    "title": "C-D!",
+    "expected": "abcd"
+  },
+  {
+    "artist": " Beyonc\u00e9 ",
+    "title": " Halo ( Club Edit ) ",
+    "expected": "beyoncehaloclubedit"
+  },
+  {
+    "artist": "Artist",
+    "title": "Title with (brackets) and [brackets]",
+    "expected": "artisttitlewithbracketsandbrackets"
+  },
+  {
+    "artist": "Fred again..",
+    "title": "Marea (we've lost dancing)",
+    "expected": "fredagainmareawevelostdancing"
+  },
+  {
+    "artist": "Swedish House Mafia vs. Knife Party",
+    "title": "Antidote",
+    "expected": "swedishhousemafiavsknifepartyantidote"
+  },
+  {
+    "artist": "Artist 1 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 1 (Radio Edit) [feat. Singer]",
+    "expected": "artist1withaccentssymbolstitle1radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 2 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 2 (Radio Edit) [feat. Singer]",
+    "expected": "artist2withaccentssymbolstitle2radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 3 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 3 (Radio Edit) [feat. Singer]",
+    "expected": "artist3withaccentssymbolstitle3radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 4 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 4 (Radio Edit) [feat. Singer]",
+    "expected": "artist4withaccentssymbolstitle4radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 5 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 5 (Radio Edit) [feat. Singer]",
+    "expected": "artist5withaccentssymbolstitle5radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 6 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 6 (Radio Edit) [feat. Singer]",
+    "expected": "artist6withaccentssymbolstitle6radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 7 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 7 (Radio Edit) [feat. Singer]",
+    "expected": "artist7withaccentssymbolstitle7radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 8 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 8 (Radio Edit) [feat. Singer]",
+    "expected": "artist8withaccentssymbolstitle8radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 9 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 9 (Radio Edit) [feat. Singer]",
+    "expected": "artist9withaccentssymbolstitle9radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 10 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 10 (Radio Edit) [feat. Singer]",
+    "expected": "artist10withaccentssymbolstitle10radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 11 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 11 (Radio Edit) [feat. Singer]",
+    "expected": "artist11withaccentssymbolstitle11radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 12 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 12 (Radio Edit) [feat. Singer]",
+    "expected": "artist12withaccentssymbolstitle12radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 13 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 13 (Radio Edit) [feat. Singer]",
+    "expected": "artist13withaccentssymbolstitle13radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 14 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 14 (Radio Edit) [feat. Singer]",
+    "expected": "artist14withaccentssymbolstitle14radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 15 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 15 (Radio Edit) [feat. Singer]",
+    "expected": "artist15withaccentssymbolstitle15radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 16 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 16 (Radio Edit) [feat. Singer]",
+    "expected": "artist16withaccentssymbolstitle16radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 17 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 17 (Radio Edit) [feat. Singer]",
+    "expected": "artist17withaccentssymbolstitle17radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 18 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 18 (Radio Edit) [feat. Singer]",
+    "expected": "artist18withaccentssymbolstitle18radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 19 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 19 (Radio Edit) [feat. Singer]",
+    "expected": "artist19withaccentssymbolstitle19radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 20 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 20 (Radio Edit) [feat. Singer]",
+    "expected": "artist20withaccentssymbolstitle20radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 21 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 21 (Radio Edit) [feat. Singer]",
+    "expected": "artist21withaccentssymbolstitle21radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 22 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 22 (Radio Edit) [feat. Singer]",
+    "expected": "artist22withaccentssymbolstitle22radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 23 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 23 (Radio Edit) [feat. Singer]",
+    "expected": "artist23withaccentssymbolstitle23radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 24 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 24 (Radio Edit) [feat. Singer]",
+    "expected": "artist24withaccentssymbolstitle24radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 25 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 25 (Radio Edit) [feat. Singer]",
+    "expected": "artist25withaccentssymbolstitle25radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 26 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 26 (Radio Edit) [feat. Singer]",
+    "expected": "artist26withaccentssymbolstitle26radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 27 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 27 (Radio Edit) [feat. Singer]",
+    "expected": "artist27withaccentssymbolstitle27radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 28 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 28 (Radio Edit) [feat. Singer]",
+    "expected": "artist28withaccentssymbolstitle28radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 29 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 29 (Radio Edit) [feat. Singer]",
+    "expected": "artist29withaccentssymbolstitle29radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 30 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 30 (Radio Edit) [feat. Singer]",
+    "expected": "artist30withaccentssymbolstitle30radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 31 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 31 (Radio Edit) [feat. Singer]",
+    "expected": "artist31withaccentssymbolstitle31radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 32 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 32 (Radio Edit) [feat. Singer]",
+    "expected": "artist32withaccentssymbolstitle32radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 33 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 33 (Radio Edit) [feat. Singer]",
+    "expected": "artist33withaccentssymbolstitle33radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 34 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 34 (Radio Edit) [feat. Singer]",
+    "expected": "artist34withaccentssymbolstitle34radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 35 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 35 (Radio Edit) [feat. Singer]",
+    "expected": "artist35withaccentssymbolstitle35radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 36 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 36 (Radio Edit) [feat. Singer]",
+    "expected": "artist36withaccentssymbolstitle36radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 37 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 37 (Radio Edit) [feat. Singer]",
+    "expected": "artist37withaccentssymbolstitle37radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 38 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 38 (Radio Edit) [feat. Singer]",
+    "expected": "artist38withaccentssymbolstitle38radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 39 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 39 (Radio Edit) [feat. Singer]",
+    "expected": "artist39withaccentssymbolstitle39radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 40 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 40 (Radio Edit) [feat. Singer]",
+    "expected": "artist40withaccentssymbolstitle40radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 41 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 41 (Radio Edit) [feat. Singer]",
+    "expected": "artist41withaccentssymbolstitle41radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 42 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 42 (Radio Edit) [feat. Singer]",
+    "expected": "artist42withaccentssymbolstitle42radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 43 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 43 (Radio Edit) [feat. Singer]",
+    "expected": "artist43withaccentssymbolstitle43radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 44 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 44 (Radio Edit) [feat. Singer]",
+    "expected": "artist44withaccentssymbolstitle44radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 45 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 45 (Radio Edit) [feat. Singer]",
+    "expected": "artist45withaccentssymbolstitle45radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 46 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 46 (Radio Edit) [feat. Singer]",
+    "expected": "artist46withaccentssymbolstitle46radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 47 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 47 (Radio Edit) [feat. Singer]",
+    "expected": "artist47withaccentssymbolstitle47radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 48 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 48 (Radio Edit) [feat. Singer]",
+    "expected": "artist48withaccentssymbolstitle48radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 49 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 49 (Radio Edit) [feat. Singer]",
+    "expected": "artist49withaccentssymbolstitle49radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 50 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 50 (Radio Edit) [feat. Singer]",
+    "expected": "artist50withaccentssymbolstitle50radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 51 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 51 (Radio Edit) [feat. Singer]",
+    "expected": "artist51withaccentssymbolstitle51radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 52 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 52 (Radio Edit) [feat. Singer]",
+    "expected": "artist52withaccentssymbolstitle52radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 53 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 53 (Radio Edit) [feat. Singer]",
+    "expected": "artist53withaccentssymbolstitle53radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 54 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 54 (Radio Edit) [feat. Singer]",
+    "expected": "artist54withaccentssymbolstitle54radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 55 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 55 (Radio Edit) [feat. Singer]",
+    "expected": "artist55withaccentssymbolstitle55radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 56 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 56 (Radio Edit) [feat. Singer]",
+    "expected": "artist56withaccentssymbolstitle56radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 57 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 57 (Radio Edit) [feat. Singer]",
+    "expected": "artist57withaccentssymbolstitle57radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 58 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 58 (Radio Edit) [feat. Singer]",
+    "expected": "artist58withaccentssymbolstitle58radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 59 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 59 (Radio Edit) [feat. Singer]",
+    "expected": "artist59withaccentssymbolstitle59radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 60 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 60 (Radio Edit) [feat. Singer]",
+    "expected": "artist60withaccentssymbolstitle60radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 61 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 61 (Radio Edit) [feat. Singer]",
+    "expected": "artist61withaccentssymbolstitle61radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 62 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 62 (Radio Edit) [feat. Singer]",
+    "expected": "artist62withaccentssymbolstitle62radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 63 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 63 (Radio Edit) [feat. Singer]",
+    "expected": "artist63withaccentssymbolstitle63radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 64 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 64 (Radio Edit) [feat. Singer]",
+    "expected": "artist64withaccentssymbolstitle64radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 65 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 65 (Radio Edit) [feat. Singer]",
+    "expected": "artist65withaccentssymbolstitle65radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 66 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 66 (Radio Edit) [feat. Singer]",
+    "expected": "artist66withaccentssymbolstitle66radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 67 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 67 (Radio Edit) [feat. Singer]",
+    "expected": "artist67withaccentssymbolstitle67radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 68 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 68 (Radio Edit) [feat. Singer]",
+    "expected": "artist68withaccentssymbolstitle68radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 69 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 69 (Radio Edit) [feat. Singer]",
+    "expected": "artist69withaccentssymbolstitle69radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 70 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 70 (Radio Edit) [feat. Singer]",
+    "expected": "artist70withaccentssymbolstitle70radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 71 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 71 (Radio Edit) [feat. Singer]",
+    "expected": "artist71withaccentssymbolstitle71radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 72 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 72 (Radio Edit) [feat. Singer]",
+    "expected": "artist72withaccentssymbolstitle72radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 73 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 73 (Radio Edit) [feat. Singer]",
+    "expected": "artist73withaccentssymbolstitle73radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 74 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 74 (Radio Edit) [feat. Singer]",
+    "expected": "artist74withaccentssymbolstitle74radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 75 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 75 (Radio Edit) [feat. Singer]",
+    "expected": "artist75withaccentssymbolstitle75radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 76 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 76 (Radio Edit) [feat. Singer]",
+    "expected": "artist76withaccentssymbolstitle76radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 77 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 77 (Radio Edit) [feat. Singer]",
+    "expected": "artist77withaccentssymbolstitle77radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 78 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 78 (Radio Edit) [feat. Singer]",
+    "expected": "artist78withaccentssymbolstitle78radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 79 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 79 (Radio Edit) [feat. Singer]",
+    "expected": "artist79withaccentssymbolstitle79radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 80 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 80 (Radio Edit) [feat. Singer]",
+    "expected": "artist80withaccentssymbolstitle80radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 81 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 81 (Radio Edit) [feat. Singer]",
+    "expected": "artist81withaccentssymbolstitle81radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 82 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 82 (Radio Edit) [feat. Singer]",
+    "expected": "artist82withaccentssymbolstitle82radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 83 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 83 (Radio Edit) [feat. Singer]",
+    "expected": "artist83withaccentssymbolstitle83radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 84 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 84 (Radio Edit) [feat. Singer]",
+    "expected": "artist84withaccentssymbolstitle84radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 85 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 85 (Radio Edit) [feat. Singer]",
+    "expected": "artist85withaccentssymbolstitle85radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 86 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 86 (Radio Edit) [feat. Singer]",
+    "expected": "artist86withaccentssymbolstitle86radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 87 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 87 (Radio Edit) [feat. Singer]",
+    "expected": "artist87withaccentssymbolstitle87radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 88 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 88 (Radio Edit) [feat. Singer]",
+    "expected": "artist88withaccentssymbolstitle88radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 89 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 89 (Radio Edit) [feat. Singer]",
+    "expected": "artist89withaccentssymbolstitle89radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 90 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 90 (Radio Edit) [feat. Singer]",
+    "expected": "artist90withaccentssymbolstitle90radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 91 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 91 (Radio Edit) [feat. Singer]",
+    "expected": "artist91withaccentssymbolstitle91radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 92 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 92 (Radio Edit) [feat. Singer]",
+    "expected": "artist92withaccentssymbolstitle92radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 93 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 93 (Radio Edit) [feat. Singer]",
+    "expected": "artist93withaccentssymbolstitle93radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 94 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 94 (Radio Edit) [feat. Singer]",
+    "expected": "artist94withaccentssymbolstitle94radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 95 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 95 (Radio Edit) [feat. Singer]",
+    "expected": "artist95withaccentssymbolstitle95radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 96 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 96 (Radio Edit) [feat. Singer]",
+    "expected": "artist96withaccentssymbolstitle96radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 97 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 97 (Radio Edit) [feat. Singer]",
+    "expected": "artist97withaccentssymbolstitle97radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 98 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 98 (Radio Edit) [feat. Singer]",
+    "expected": "artist98withaccentssymbolstitle98radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 99 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 99 (Radio Edit) [feat. Singer]",
+    "expected": "artist99withaccentssymbolstitle99radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 100 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 100 (Radio Edit) [feat. Singer]",
+    "expected": "artist100withaccentssymbolstitle100radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 101 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 101 (Radio Edit) [feat. Singer]",
+    "expected": "artist101withaccentssymbolstitle101radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 102 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 102 (Radio Edit) [feat. Singer]",
+    "expected": "artist102withaccentssymbolstitle102radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 103 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 103 (Radio Edit) [feat. Singer]",
+    "expected": "artist103withaccentssymbolstitle103radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 104 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 104 (Radio Edit) [feat. Singer]",
+    "expected": "artist104withaccentssymbolstitle104radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 105 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 105 (Radio Edit) [feat. Singer]",
+    "expected": "artist105withaccentssymbolstitle105radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 106 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 106 (Radio Edit) [feat. Singer]",
+    "expected": "artist106withaccentssymbolstitle106radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 107 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 107 (Radio Edit) [feat. Singer]",
+    "expected": "artist107withaccentssymbolstitle107radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 108 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 108 (Radio Edit) [feat. Singer]",
+    "expected": "artist108withaccentssymbolstitle108radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 109 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 109 (Radio Edit) [feat. Singer]",
+    "expected": "artist109withaccentssymbolstitle109radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 110 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 110 (Radio Edit) [feat. Singer]",
+    "expected": "artist110withaccentssymbolstitle110radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 111 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 111 (Radio Edit) [feat. Singer]",
+    "expected": "artist111withaccentssymbolstitle111radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 112 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 112 (Radio Edit) [feat. Singer]",
+    "expected": "artist112withaccentssymbolstitle112radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 113 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 113 (Radio Edit) [feat. Singer]",
+    "expected": "artist113withaccentssymbolstitle113radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 114 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 114 (Radio Edit) [feat. Singer]",
+    "expected": "artist114withaccentssymbolstitle114radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 115 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 115 (Radio Edit) [feat. Singer]",
+    "expected": "artist115withaccentssymbolstitle115radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 116 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 116 (Radio Edit) [feat. Singer]",
+    "expected": "artist116withaccentssymbolstitle116radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 117 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 117 (Radio Edit) [feat. Singer]",
+    "expected": "artist117withaccentssymbolstitle117radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 118 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 118 (Radio Edit) [feat. Singer]",
+    "expected": "artist118withaccentssymbolstitle118radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 119 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 119 (Radio Edit) [feat. Singer]",
+    "expected": "artist119withaccentssymbolstitle119radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 120 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 120 (Radio Edit) [feat. Singer]",
+    "expected": "artist120withaccentssymbolstitle120radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 121 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 121 (Radio Edit) [feat. Singer]",
+    "expected": "artist121withaccentssymbolstitle121radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 122 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 122 (Radio Edit) [feat. Singer]",
+    "expected": "artist122withaccentssymbolstitle122radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 123 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 123 (Radio Edit) [feat. Singer]",
+    "expected": "artist123withaccentssymbolstitle123radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 124 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 124 (Radio Edit) [feat. Singer]",
+    "expected": "artist124withaccentssymbolstitle124radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 125 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 125 (Radio Edit) [feat. Singer]",
+    "expected": "artist125withaccentssymbolstitle125radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 126 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 126 (Radio Edit) [feat. Singer]",
+    "expected": "artist126withaccentssymbolstitle126radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 127 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 127 (Radio Edit) [feat. Singer]",
+    "expected": "artist127withaccentssymbolstitle127radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 128 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 128 (Radio Edit) [feat. Singer]",
+    "expected": "artist128withaccentssymbolstitle128radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 129 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 129 (Radio Edit) [feat. Singer]",
+    "expected": "artist129withaccentssymbolstitle129radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 130 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 130 (Radio Edit) [feat. Singer]",
+    "expected": "artist130withaccentssymbolstitle130radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 131 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 131 (Radio Edit) [feat. Singer]",
+    "expected": "artist131withaccentssymbolstitle131radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 132 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 132 (Radio Edit) [feat. Singer]",
+    "expected": "artist132withaccentssymbolstitle132radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 133 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 133 (Radio Edit) [feat. Singer]",
+    "expected": "artist133withaccentssymbolstitle133radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 134 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 134 (Radio Edit) [feat. Singer]",
+    "expected": "artist134withaccentssymbolstitle134radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 135 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 135 (Radio Edit) [feat. Singer]",
+    "expected": "artist135withaccentssymbolstitle135radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 136 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 136 (Radio Edit) [feat. Singer]",
+    "expected": "artist136withaccentssymbolstitle136radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 137 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 137 (Radio Edit) [feat. Singer]",
+    "expected": "artist137withaccentssymbolstitle137radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 138 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 138 (Radio Edit) [feat. Singer]",
+    "expected": "artist138withaccentssymbolstitle138radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 139 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 139 (Radio Edit) [feat. Singer]",
+    "expected": "artist139withaccentssymbolstitle139radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 140 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 140 (Radio Edit) [feat. Singer]",
+    "expected": "artist140withaccentssymbolstitle140radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 141 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 141 (Radio Edit) [feat. Singer]",
+    "expected": "artist141withaccentssymbolstitle141radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 142 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 142 (Radio Edit) [feat. Singer]",
+    "expected": "artist142withaccentssymbolstitle142radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 143 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 143 (Radio Edit) [feat. Singer]",
+    "expected": "artist143withaccentssymbolstitle143radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 144 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 144 (Radio Edit) [feat. Singer]",
+    "expected": "artist144withaccentssymbolstitle144radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 145 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 145 (Radio Edit) [feat. Singer]",
+    "expected": "artist145withaccentssymbolstitle145radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 146 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 146 (Radio Edit) [feat. Singer]",
+    "expected": "artist146withaccentssymbolstitle146radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 147 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 147 (Radio Edit) [feat. Singer]",
+    "expected": "artist147withaccentssymbolstitle147radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 148 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 148 (Radio Edit) [feat. Singer]",
+    "expected": "artist148withaccentssymbolstitle148radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 149 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 149 (Radio Edit) [feat. Singer]",
+    "expected": "artist149withaccentssymbolstitle149radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 150 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 150 (Radio Edit) [feat. Singer]",
+    "expected": "artist150withaccentssymbolstitle150radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 151 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 151 (Radio Edit) [feat. Singer]",
+    "expected": "artist151withaccentssymbolstitle151radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 152 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 152 (Radio Edit) [feat. Singer]",
+    "expected": "artist152withaccentssymbolstitle152radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 153 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 153 (Radio Edit) [feat. Singer]",
+    "expected": "artist153withaccentssymbolstitle153radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 154 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 154 (Radio Edit) [feat. Singer]",
+    "expected": "artist154withaccentssymbolstitle154radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 155 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 155 (Radio Edit) [feat. Singer]",
+    "expected": "artist155withaccentssymbolstitle155radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 156 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 156 (Radio Edit) [feat. Singer]",
+    "expected": "artist156withaccentssymbolstitle156radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 157 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 157 (Radio Edit) [feat. Singer]",
+    "expected": "artist157withaccentssymbolstitle157radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 158 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 158 (Radio Edit) [feat. Singer]",
+    "expected": "artist158withaccentssymbolstitle158radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 159 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 159 (Radio Edit) [feat. Singer]",
+    "expected": "artist159withaccentssymbolstitle159radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 160 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 160 (Radio Edit) [feat. Singer]",
+    "expected": "artist160withaccentssymbolstitle160radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 161 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 161 (Radio Edit) [feat. Singer]",
+    "expected": "artist161withaccentssymbolstitle161radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 162 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 162 (Radio Edit) [feat. Singer]",
+    "expected": "artist162withaccentssymbolstitle162radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 163 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 163 (Radio Edit) [feat. Singer]",
+    "expected": "artist163withaccentssymbolstitle163radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 164 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 164 (Radio Edit) [feat. Singer]",
+    "expected": "artist164withaccentssymbolstitle164radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 165 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 165 (Radio Edit) [feat. Singer]",
+    "expected": "artist165withaccentssymbolstitle165radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 166 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 166 (Radio Edit) [feat. Singer]",
+    "expected": "artist166withaccentssymbolstitle166radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 167 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 167 (Radio Edit) [feat. Singer]",
+    "expected": "artist167withaccentssymbolstitle167radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 168 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 168 (Radio Edit) [feat. Singer]",
+    "expected": "artist168withaccentssymbolstitle168radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 169 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 169 (Radio Edit) [feat. Singer]",
+    "expected": "artist169withaccentssymbolstitle169radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 170 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 170 (Radio Edit) [feat. Singer]",
+    "expected": "artist170withaccentssymbolstitle170radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 171 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 171 (Radio Edit) [feat. Singer]",
+    "expected": "artist171withaccentssymbolstitle171radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 172 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 172 (Radio Edit) [feat. Singer]",
+    "expected": "artist172withaccentssymbolstitle172radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 173 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 173 (Radio Edit) [feat. Singer]",
+    "expected": "artist173withaccentssymbolstitle173radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 174 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 174 (Radio Edit) [feat. Singer]",
+    "expected": "artist174withaccentssymbolstitle174radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 175 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 175 (Radio Edit) [feat. Singer]",
+    "expected": "artist175withaccentssymbolstitle175radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 176 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 176 (Radio Edit) [feat. Singer]",
+    "expected": "artist176withaccentssymbolstitle176radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 177 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 177 (Radio Edit) [feat. Singer]",
+    "expected": "artist177withaccentssymbolstitle177radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 178 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 178 (Radio Edit) [feat. Singer]",
+    "expected": "artist178withaccentssymbolstitle178radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 179 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 179 (Radio Edit) [feat. Singer]",
+    "expected": "artist179withaccentssymbolstitle179radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 180 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 180 (Radio Edit) [feat. Singer]",
+    "expected": "artist180withaccentssymbolstitle180radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 181 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 181 (Radio Edit) [feat. Singer]",
+    "expected": "artist181withaccentssymbolstitle181radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 182 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 182 (Radio Edit) [feat. Singer]",
+    "expected": "artist182withaccentssymbolstitle182radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 183 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 183 (Radio Edit) [feat. Singer]",
+    "expected": "artist183withaccentssymbolstitle183radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 184 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 184 (Radio Edit) [feat. Singer]",
+    "expected": "artist184withaccentssymbolstitle184radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 185 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 185 (Radio Edit) [feat. Singer]",
+    "expected": "artist185withaccentssymbolstitle185radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 186 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 186 (Radio Edit) [feat. Singer]",
+    "expected": "artist186withaccentssymbolstitle186radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 187 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 187 (Radio Edit) [feat. Singer]",
+    "expected": "artist187withaccentssymbolstitle187radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 188 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 188 (Radio Edit) [feat. Singer]",
+    "expected": "artist188withaccentssymbolstitle188radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 189 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 189 (Radio Edit) [feat. Singer]",
+    "expected": "artist189withaccentssymbolstitle189radioeditfeatsinger"
+  },
+  {
+    "artist": "Artist 190 with \u00e0cc\u00e8nts & symbols!",
+    "title": "Title 190 (Radio Edit) [feat. Singer]",
+    "expected": "artist190withaccentssymbolstitle190radioeditfeatsinger"
+  }
+]
