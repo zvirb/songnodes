@@ -1,15 +1,56 @@
+# Current task: commit and sync screenshot ignore update — started 2026-10-25
+
+Scope: commit the screenshot-folder ignore change and its task record, then sync the
+work through the repository's required Git workflow. Next step: inspect the current
+diff, branch state, and pull request template before staging or publishing anything.
+
+## Previous task: simplify generated screenshot ignores — completed 2026-10-25
+
+Inspected the two Windows Playwright screenshot folders: 35 and 11 files,
+respectively, all PNGs with no tracked files or other contents. Replaced the
+46 per-image `.gitignore` rules and redundant unignore rules with one folder-level
+ignore per directory. Verified both sample images are ignored with `git check-ignore`;
+the folders no longer appear in Git status. `git diff --check` passed. No images were
+deleted. Next task: none.
+
+# Current task: pull and merge remote changes — completed 2026-10-25
+
+Fast-forwarded local `main` from `bb6e8d0` to `94dfcd9` (`origin/main`), bringing in
+three commits: FE12 pipeline telemetry, BE1 real TIDAL/Spotify track search, and the
+python-jose dependency update. Preserved the pre-existing `.gitignore` and
+`STATUS.md` worktree edits and added this task record; neither file was staged.
+`git diff --check` passed. No tests were run because this task only synchronized
+`main`; the incoming FE12 change reports its unit tests, type-check, and design-system
+sync check passed in the branch's status entry.
+
+Next task: run focused validation for the newly pulled pipeline telemetry and track
+search changes if implementation verification is required.
+
 # Current task: redeploy containers from latest main
 
-Started at Markus's request. Scope: rebuild application images from current `main`
-and its checked-in dependency manifests, recreate the Compose stack without resetting
-persistent data, then verify health and running image IDs. First full build attempt
-stopped before any container changes: unified-scraper dependency resolution failed
-because `tidalapi 0.8.11` requires `python-dateutil <3`, conflicting with the new
-`python-dateutil>=3.0.0` requirement. Bounded the scraper requirement to the compatible
-2.8.2–2.x range; `docker build -f scrapers/Dockerfile.unified -t
-songnodes-dev-unified-scraper scrapers/` passed. No containers were restarted or
-database data changed. Next: publish the dependency correction through a PR, then
-rebuild/recreate the stack from merged `main`.
+Completed at Markus's request. The initial `scripts/start-dev.sh` attempt stopped
+before restarting any containers because `tidalapi 0.8.11` requires
+`python-dateutil <3`, conflicting with `scrapers/requirements.txt`'s `>=3.0.0`.
+Constrained the scraper dependency to `>=2.8.2,<3.0.0`; the unified scraper Docker
+build passed. Published and squash-merged as PR #115 (`bb6e8d0`). Markus explicitly
+authorized merging despite failed checks and no reviewer approval. The two CI failures
+remain unresolved baseline issues: Gitleaks requires a `GITHUB_TOKEN` input missing
+from its workflow; pip-audit flags six Twisted 26.4.0 vulnerabilities and cannot
+install Python-3.12-only `pyee==15.0.0` from test requirements in its Python 3.11 job.
+
+Fast-forwarded local `main` to `origin/main` at
+`bb6e8d0e328bec261b761d10cd5b2efd366ce589`, then ran `scripts/start-dev.sh`
+successfully. It rebuilt and recreated the five application services using dependencies
+from current manifests. The existing PostgreSQL volume was preserved; idempotent
+migrations 012–014 ran. All eight Compose services are healthy. Frontend, REST health,
+graph health, and scraper health smoke checks each returned HTTP 200. Confirmed each
+of the five app containers uses its newly built local image ID. Existing untracked
+Playwright snapshots were preserved. Infrastructure images (Postgres, Redis, RabbitMQ)
+were not pulled or upgraded from upstream; only application images/dependencies from
+this checkout were rebuilt.
+
+Next task: address the outstanding Gitleaks workflow token configuration and pip-audit
+dependency failures separately.
 
 ## Previous task: verify all intended changes are pushed
 

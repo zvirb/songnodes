@@ -254,6 +254,6 @@ gha-creds-*.json
 # Python test output (pytest junit, coverage, log)
 **/tests/reports/
 
-# Playwright screenshot baselines (made only in the Linux image: scripts/e2e-docker.sh)
-!frontend/tests/e2e/*-snapshots/
-!frontend/tests/e2e/*-snapshots/*.png
+# Local Windows Playwright screenshots (the checked baselines are generated in the Linux image)
+frontend/tests/e2e/accessibility-error-handling.desktop.spec.ts-snapshots/
+frontend/tests/e2e/basic-validation.desktop.spec.ts-snapshots/
