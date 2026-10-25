@@ -119,7 +119,7 @@ export const mapJobsToWorkers = (jobs: JobResponse[]): ScraperWorkerHealth[] => 
 
   // Group by (kind, source)
   jobs.forEach(job => {
-    const source = job.payload?.source || 'unknown';
+    const source = job.payload?.source ?? '';
     const key = `${job.kind}-${source}`;
 
     if (!workersMap.has(key)) {
@@ -142,7 +142,7 @@ export const mapJobsToWorkers = (jobs: JobResponse[]): ScraperWorkerHealth[] => 
 
     if (job.status === 'running') {
       worker.status = 'running';
-      worker.activeTarget = job.payload?.search_query || job.payload?.track_id || source;
+      worker.activeTarget = job.payload?.search_query || job.payload?.track_id || source || undefined;
     } else if (job.status === 'dead' && worker.status !== 'running') {
       worker.status = 'error';
     }
@@ -171,7 +171,7 @@ export const mapJobsToWorkers = (jobs: JobResponse[]): ScraperWorkerHealth[] => 
 
   return Array.from(workersMap.values()).map(w => ({
     id: `${w.kind}-${w.source}`,
-    name: `${w.source} Worker`,
+    name: w.source ? `${w.source} Worker` : '',
     kind: w.kind,
     status: w.status,
     lastSuccessAt: w.lastSuccessAt,

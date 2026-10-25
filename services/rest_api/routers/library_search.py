@@ -83,14 +83,18 @@ async def library_search(
                pt.metadata_review as rev,
                FALSE as ovr,
                FALSE as local,
-               evi.evidence->>'mbid' as mbid,
-               evi.evidence->>'confidence' as mbconf,
-               evi.evidence->>'dump_date' as mbdump,
-               evi.evidence->>'source_url' as source_url
+               evi.value #>> '{}' as mbid,
+               evi.confidence::text as mbconf,
+               evi.raw->>'dump_date' as mbdump,
+               evi.raw->>'source_url' as source_url
         FROM projection_tracks pt
         JOIN library.tracks lt ON lt.id = pt.track_id
         LEFT JOIN silver_enriched_artists sa ON sa.canonical_name = pt.artist_name
-        LEFT JOIN silver_track_metadata_evidence evi ON evi.track_id = pt.track_id AND evi.field = 'mbid'
+        LEFT JOIN LATERAL (
+            SELECT e.value, e.confidence, e.raw FROM silver_track_metadata_evidence e
+            WHERE e.track_id = pt.track_id AND e.field = 'musicbrainz_id'
+            ORDER BY e.confidence DESC NULLS LAST, e.id DESC LIMIT 1
+        ) evi ON TRUE
     """)
 
     where_clauses = []
@@ -102,9 +106,8 @@ async def library_search(
             (pt.track_title ILIKE ${idx}
              OR pt.artist_name ILIKE ${idx}
              OR pt.mix_name ILIKE ${idx}
-             OR array_to_string(sa.aliases, ' ') ILIKE ${idx}
+             OR immutable_array_to_string(sa.aliases, ' ') ILIKE ${idx}
              OR to_tsvector('english', pt.track_title || ' ' || pt.artist_name) @@ plainto_tsquery('english', ${idx}))
-             OR array_to_string(sa.aliases, ' ') ILIKE ${idx})
         """)
 
     if rotation is not None:

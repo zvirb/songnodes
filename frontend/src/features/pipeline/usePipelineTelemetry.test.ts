@@ -47,10 +47,11 @@ describe('usePipelineTelemetry mappers', () => {
       { status: 'succeeded', kind: 'scrape', payload: { source: '1001tracklists' }, finished_at: now.toISOString() } as any,
       { status: 'dead', kind: 'scrape', payload: { source: '1001tracklists' } } as any,
       { status: 'running', kind: 'enrich', payload: { source: 'spotify' }, search_query: 'test' } as any,
+      { status: 'running', kind: 'projection_consume', payload: {} } as any,
     ];
 
     const workers = mapJobsToWorkers(jobs);
-    expect(workers.length).toBe(2);
+    expect(workers.length).toBe(3);
 
     const w1 = workers.find(w => w.name === '1001tracklists Worker');
     expect(w1).toBeDefined();
@@ -59,6 +60,10 @@ describe('usePipelineTelemetry mappers', () => {
     const w2 = workers.find(w => w.name === 'spotify Worker');
     expect(w2).toBeDefined();
     expect(w2!.status).toBe('running');
+
+    const noSourceWorker = workers.find(w => w.kind === 'projection_consume');
+    expect(noSourceWorker?.name).toBe('');
+    expect(noSourceWorker?.activeTarget).toBeUndefined();
   });
 });
 

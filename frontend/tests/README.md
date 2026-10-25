@@ -41,7 +41,7 @@ Without `PLAYWRIGHT_BASE_URL`, Playwright starts Vite on port 3006.
 
 ## Visual baselines
 
-`visual.spec.ts` checks Home, Library, Set builder, Settings, a planned module page,
+`visual.spec.ts` checks Home, Library, Set builder, Settings, the pipeline telemetry page,
 the not-found page and the open NavDrawer, in dark and light, at 1440 and 390 px, in
 chromium. Baselines (`visual.spec.ts-snapshots/*-chromium-linux.png`) are made only
 in the Linux image:
