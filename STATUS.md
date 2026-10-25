@@ -372,8 +372,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP2 BEGIN -->
 ### WP2: MusicBrainz reference ETL into refmb
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25 (Implemented extract, load, index, and verify structure. Unit tests passed. Run verification via python -m services.reference_data.mb_etl)
 <!-- SLOT:WP2 END -->
 
 <!-- SLOT:WP3 BEGIN -->
