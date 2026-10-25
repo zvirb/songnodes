@@ -209,6 +209,10 @@ Unresolved deployment issues: none observed. No live provider checks or
 scraping were run. Next task: once ready for real data, complete the documented
 credential-gated live provider checks before the first real scrape.
 
+### 2025-XX-XX FE5 - Camelot
+- Replaced the /harmony stub with the CamelotPage logic
+- Integrated SongNodes.CamelotWheel and set up mapping logic to handle harmonic keys (`same, +/-1, relative`) visually.
+- Verified test components are correctly aligned.
 ## SEC4 2026-10-25 End
 
 Completed implementation of SEC4 CI Scanning tasks.
