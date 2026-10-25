@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SetlistTrack } from '../types';
+import { Dialog } from './ds';
+import { SN } from '../lib/songnodes';
 
 interface TrackEditModalProps {
   track: SetlistTrack | null;
@@ -102,152 +104,147 @@ export const TrackEditModal: React.FC<TrackEditModalProps> = ({ track, onClose, 
     onClose();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-    } else if (e.key === 'Enter' && e.ctrlKey) {
-      handleSave();
-    }
-  };
-
   if (!track) return null;
 
+  const durationSec = track.track.duration && track.track.duration > 0 ? track.track.duration : null;
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
-        <div className="modal-header">
-          <h3>Edit Track Cues & Transitions</h3>
-          <button className="modal-close" onClick={onClose}>✕</button>
+    <Dialog
+      open={!!track}
+      title="Edit cues & transitions"
+      sub={`${track.track.artist} – ${track.track.name}`}
+      size="m"
+      onClose={onClose}
+      onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+      footer={
+        <>
+          <button type="button" className="sn-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="sn-btn sn-btn--primary">
+            Save changes
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        {durationSec ? (
+          <div className="sn-track-cell" style={{ padding: 'var(--space-2) var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-control)' }}>
+            <span className="sn-track-cell__title">
+              <span className="sn-track-cell__name">
+                <span className="sn-track-cell__artist">{track.track.artist} –</span> {track.track.name}
+              </span>
+            </span>
+            <span className="sn-track-cell__meta">
+              <span>Track length: {SN.format.duration(durationSec)}</span>
+            </span>
+          </div>
+        ) : null}
+
+        <div className="sn-field">
+          <label htmlFor="tem-notes">Transition notes</label>
+          <textarea
+            id="tem-notes"
+            className="sn-input"
+            placeholder="Add notes about how to transition to the next track..."
+            value={transitionNotes}
+            onChange={(e) => setTransitionNotes(e.target.value)}
+            rows={3}
+            style={{ resize: 'vertical' }}
+          />
+          <span className="sn-field__help">Tips for mixing, energy flow, or special techniques</span>
         </div>
 
-        <div className="modal-content">
-          <div className="track-info-summary" style={{ marginBottom: '20px', padding: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{track.track.name}</div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{track.track.artist}</div>
-            {track.track.duration && (
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                Duration: {Math.floor(track.track.duration / 60)}:{String(track.track.duration % 60).padStart(2, '0')}
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+          <div className="sn-field">
+            <label htmlFor="tem-keyshift">Key shift (semitones)</label>
+            <input
+              id="tem-keyshift"
+              type="number"
+              className="sn-input"
+              placeholder="0"
+              value={keyShift}
+              onChange={(e) => setKeyShift(e.target.value)}
+              step="1"
+              min="-12"
+              max="12"
+              aria-invalid={!!errors.keyShift}
+              aria-describedby={errors.keyShift ? "tem-keyshift-err" : "tem-keyshift-help"}
+            />
+            {errors.keyShift ? (
+              <span className="sn-field__error" id="tem-keyshift-err">✕ {errors.keyShift}</span>
+            ) : (
+              <span className="sn-field__help" id="tem-keyshift-help">-12 to +12 semitones</span>
             )}
           </div>
 
-          <div className="input-group" style={{ marginBottom: '16px' }}>
-            <label className="input-label">Transition Notes</label>
-            <textarea
-              className="input"
-              placeholder="Add notes about how to transition to the next track..."
-              value={transitionNotes}
-              onChange={(e) => setTransitionNotes(e.target.value)}
-              rows={3}
-              style={{ resize: 'vertical' }}
+          <div className="sn-field">
+            <label htmlFor="tem-tempo">Tempo change (%)</label>
+            <input
+              id="tem-tempo"
+              type="number"
+              className="sn-input"
+              placeholder="0"
+              value={tempoChange}
+              onChange={(e) => setTempoChange(e.target.value)}
+              step="0.1"
+              min="-50"
+              max="50"
+              aria-invalid={!!errors.tempoChange}
+              aria-describedby={errors.tempoChange ? "tem-tempo-err" : "tem-tempo-help"}
             />
-            <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-              Tips for mixing, energy flow, or special techniques
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-            <div className="input-group">
-              <label className="input-label">Key Shift (semitones)</label>
-              <input
-                type="number"
-                className="input"
-                placeholder="0"
-                value={keyShift}
-                onChange={(e) => setKeyShift(e.target.value)}
-                step="1"
-                min="-12"
-                max="12"
-              />
-              {errors.keyShift && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.keyShift}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                -12 to +12 semitones
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label className="input-label">Tempo Change (%)</label>
-              <input
-                type="number"
-                className="input"
-                placeholder="0"
-                value={tempoChange}
-                onChange={(e) => setTempoChange(e.target.value)}
-                step="0.1"
-                min="-50"
-                max="50"
-              />
-              {errors.tempoChange && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.tempoChange}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                -50% to +50%
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div className="input-group">
-              <label className="input-label">Mix Cue In (seconds)</label>
-              <input
-                type="number"
-                className="input"
-                placeholder="0"
-                value={mixCueIn}
-                onChange={(e) => setMixCueIn(e.target.value)}
-                step="0.1"
-                min="0"
-              />
-              {errors.mixCueIn && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.mixCueIn}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                Start point for mixing
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label className="input-label">Mix Cue Out (seconds)</label>
-              <input
-                type="number"
-                className="input"
-                placeholder={track.track.duration ? String(track.track.duration) : '0'}
-                value={mixCueOut}
-                onChange={(e) => setMixCueOut(e.target.value)}
-                step="0.1"
-                min="0"
-              />
-              {errors.mixCueOut && (
-                <div style={{ fontSize: '11px', color: 'var(--color-accent-secondary)', marginTop: '4px' }}>
-                  {errors.mixCueOut}
-                </div>
-              )}
-              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                End point for mixing
-              </div>
-            </div>
+            {errors.tempoChange ? (
+              <span className="sn-field__error" id="tem-tempo-err">✕ {errors.tempoChange}</span>
+            ) : (
+              <span className="sn-field__help" id="tem-tempo-help">-50% to +50%</span>
+            )}
           </div>
         </div>
 
-        <div className="modal-actions">
-          <button className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave}>
-            Save Changes
-          </button>
-        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+          <div className="sn-field">
+            <label htmlFor="tem-cuein">Mix cue in (seconds)</label>
+            <input
+              id="tem-cuein"
+              type="number"
+              className="sn-input"
+              placeholder="0"
+              value={mixCueIn}
+              onChange={(e) => setMixCueIn(e.target.value)}
+              step="0.1"
+              min="0"
+              aria-invalid={!!errors.mixCueIn}
+              aria-describedby={errors.mixCueIn ? "tem-cuein-err" : "tem-cuein-help"}
+            />
+            {errors.mixCueIn ? (
+              <span className="sn-field__error" id="tem-cuein-err">✕ {errors.mixCueIn}</span>
+            ) : (
+              <span className="sn-field__help" id="tem-cuein-help">Start point for mixing</span>
+            )}
+          </div>
 
-        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', textAlign: 'center', marginTop: '8px' }}>
-          Press <kbd>Esc</kbd> to cancel or <kbd>Ctrl+Enter</kbd> to save
+          <div className="sn-field">
+            <label htmlFor="tem-cueout">Mix cue out (seconds)</label>
+            <input
+              id="tem-cueout"
+              type="number"
+              className="sn-input"
+              placeholder={track.track.duration ? String(track.track.duration) : '0'}
+              value={mixCueOut}
+              onChange={(e) => setMixCueOut(e.target.value)}
+              step="0.1"
+              min="0"
+              aria-invalid={!!errors.mixCueOut}
+              aria-describedby={errors.mixCueOut ? "tem-cueout-err" : "tem-cueout-help"}
+            />
+            {errors.mixCueOut ? (
+              <span className="sn-field__error" id="tem-cueout-err">✕ {errors.mixCueOut}</span>
+            ) : (
+              <span className="sn-field__help" id="tem-cueout-help">End point for mixing</span>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Save, AlertCircle, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { Track, GraphNode } from '../types';
 import { API_BASE_URL } from '../lib/apiBase';
+import { Dialog } from './ds';
 
 interface EditTrackModalProps {
   node?: GraphNode;
@@ -73,8 +73,6 @@ export const EditTrackModal: React.FC<EditTrackModalProps> = ({
         throw new Error(errorData.detail || `Failed to update track: ${response.statusText}`);
       }
 
-      const updatedTrack = await response.json();
-
       // Show success message
       setSuccess(true);
 
@@ -111,412 +109,133 @@ export const EditTrackModal: React.FC<EditTrackModalProps> = ({
     setError(null);
   };
 
-  // Close on escape key - MUST be before conditional return (Rules of Hooks)
-  useEffect(() => {
-    if (!initialTrack) return; // Don't attach listeners if no track
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, initialTrack]);
-
-  // CRITICAL FIX: Return null AFTER hooks to follow Rules of Hooks
-  // This prevents portal rendering when there's no track
   if (!initialTrack) {
     return null;
   }
 
-  return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10001,
-        animation: 'fadeIn 0.2s ease-out'
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: 'rgba(30, 30, 40, 0.98)',
-          border: '1px solid rgba(126, 211, 33, 0.3)',
-          borderRadius: '12px',
-          padding: '24px',
-          width: '90%',
-          maxWidth: '500px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-          animation: 'slideIn 0.2s ease-out'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px'
-        }}>
-          <h2 style={{
-            margin: 0,
-            color: '#7ED321',
-            fontSize: '20px',
-            fontWeight: 600
-          }}>
-            Edit Track
-          </h2>
+  return (
+    <Dialog
+      open={!!initialTrack}
+      title="Edit track metadata"
+      sub={`${initialTrack.artist || 'Artist'} – ${initialTrack.name || initialTrack.title || 'Track'}`}
+      size="s"
+      onClose={onClose}
+      onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+      footer={
+        <>
           <button
-            onClick={onClose}
-            style={{
-              padding: '8px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: 'rgba(255, 255, 255, 0.6)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: '4px',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-              e.currentTarget.style.color = '#fff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
-            }}
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Artist Name */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              Artist Name *
-            </label>
-            <input
-              type="text"
-              value={formData.artist}
-              onChange={(e) => handleChange('artist', e.target.value)}
-              placeholder="Enter artist name"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(126, 211, 33, 0.3)',
-                borderRadius: '6px',
-                color: '#fff',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(126, 211, 33, 0.6)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(126, 211, 33, 0.3)';
-              }}
-            />
-          </div>
-
-          {/* Track Title */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              Track Title *
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => handleChange('title', e.target.value)}
-              placeholder="Enter track title"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(126, 211, 33, 0.3)',
-                borderRadius: '6px',
-                color: '#fff',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(126, 211, 33, 0.6)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(126, 211, 33, 0.3)';
-              }}
-            />
-          </div>
-
-          {/* BPM */}
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '14px',
-                fontWeight: 500
-              }}>
-                BPM
-              </label>
-              <input
-                type="number"
-                value={formData.bpm}
-                onChange={(e) => handleChange('bpm', e.target.value)}
-                placeholder="120"
-                min="20"
-                max="300"
-                step="0.1"
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                  border: '1px solid rgba(126, 211, 33, 0.3)',
-                  borderRadius: '6px',
-                  color: '#fff',
-                  fontSize: '14px',
-                  outline: 'none'
-                }}
-              />
-            </div>
-
-            {/* Key */}
-            <div style={{ flex: 1 }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '14px',
-                fontWeight: 500
-              }}>
-                Key
-              </label>
-              <input
-                type="text"
-                value={formData.key}
-                onChange={(e) => handleChange('key', e.target.value)}
-                placeholder="A Minor"
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                  border: '1px solid rgba(126, 211, 33, 0.3)',
-                  borderRadius: '6px',
-                  color: '#fff',
-                  fontSize: '14px',
-                  outline: 'none'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Genre */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              Genre
-            </label>
-            <input
-              type="text"
-              value={formData.genre}
-              onChange={(e) => handleChange('genre', e.target.value)}
-              placeholder="House, Techno, etc."
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(126, 211, 33, 0.3)',
-                borderRadius: '6px',
-                color: '#fff',
-                fontSize: '14px',
-                outline: 'none'
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div style={{
-            marginTop: '16px',
-            padding: '12px',
-            backgroundColor: 'rgba(231, 76, 60, 0.2)',
-            border: '1px solid rgba(231, 76, 60, 0.4)',
-            borderRadius: '6px',
-            color: '#E74C3C',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '13px'
-          }}>
-            <AlertCircle size={16} />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Success Message */}
-        {success && (
-          <div style={{
-            marginTop: '16px',
-            padding: '12px',
-            backgroundColor: 'rgba(126, 211, 33, 0.2)',
-            border: '1px solid rgba(126, 211, 33, 0.4)',
-            borderRadius: '6px',
-            color: '#7ED321',
-            fontSize: '13px',
-            textAlign: 'center'
-          }}>
-            ✓ Track updated successfully!
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div style={{
-          marginTop: '24px',
-          display: 'flex',
-          gap: '12px',
-          justifyContent: 'flex-end'
-        }}>
-          <button
+            type="button"
+            className="sn-btn"
             onClick={onClose}
             disabled={saving}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.5 : 1,
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              if (!saving) {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-            }}
           >
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            type="submit"
+            className="sn-btn sn-btn--primary"
             disabled={!isValid || saving || success}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: (!isValid || saving || success) ? 'rgba(126, 211, 33, 0.3)' : 'rgba(126, 211, 33, 0.4)',
-              border: '1px solid rgba(126, 211, 33, 0.6)',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: (!isValid || saving || success) ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              if (isValid && !saving && !success) {
-                e.currentTarget.style.backgroundColor = 'rgba(126, 211, 33, 0.5)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (isValid && !saving && !success) {
-                e.currentTarget.style.backgroundColor = 'rgba(126, 211, 33, 0.4)';
-              }
-            }}
+            aria-busy={saving || undefined}
           >
             {saving ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                Saving...
+                <Loader2 size={16} strokeWidth={2} className="animate-spin" aria-hidden="true" />
+                Saving…
               </>
             ) : success ? (
               '✓ Saved'
             ) : (
               <>
-                <Save size={16} />
-                Save Changes
+                <Save size={16} strokeWidth={2} aria-hidden="true" />
+                Save changes
               </>
             )}
           </button>
+        </>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        {error && (
+          <p className="sn-inline-message sn-inline-message--boxed" data-status="bad" role="alert">
+            {error}
+          </p>
+        )}
+
+        {success && (
+          <p className="sn-inline-message sn-inline-message--boxed" data-status="ok" role="status">
+            ✓ Track updated successfully!
+          </p>
+        )}
+
+        <div className="sn-field">
+          <label htmlFor="etm-artist">Artist name</label>
+          <input
+            id="etm-artist"
+            type="text"
+            className="sn-input"
+            value={formData.artist}
+            onChange={(e) => handleChange('artist', e.target.value)}
+            placeholder="Enter artist name"
+            required
+            aria-required="true"
+          />
         </div>
 
-        <style>{`
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-            }
-            to {
-              opacity: 1;
-            }
-          }
+        <div className="sn-field">
+          <label htmlFor="etm-title">Track title</label>
+          <input
+            id="etm-title"
+            type="text"
+            className="sn-input"
+            value={formData.title}
+            onChange={(e) => handleChange('title', e.target.value)}
+            placeholder="Enter track title"
+            required
+            aria-required="true"
+          />
+        </div>
 
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: translateY(-20px) scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+          <div className="sn-field">
+            <label htmlFor="etm-bpm">BPM</label>
+            <input
+              id="etm-bpm"
+              type="number"
+              className="sn-input"
+              value={formData.bpm}
+              onChange={(e) => handleChange('bpm', e.target.value)}
+              placeholder="120"
+              min="20"
+              max="300"
+              step="0.1"
+            />
+          </div>
 
-          @keyframes spin {
-            from {
-              transform: rotate(0deg);
-            }
-            to {
-              transform: rotate(360deg);
-            }
-          }
+          <div className="sn-field">
+            <label htmlFor="etm-key">Key</label>
+            <input
+              id="etm-key"
+              type="text"
+              className="sn-input"
+              value={formData.key}
+              onChange={(e) => handleChange('key', e.target.value)}
+              placeholder="e.g. 8A or A Minor"
+            />
+          </div>
+        </div>
 
-          .animate-spin {
-            animation: spin 1s linear infinite;
-          }
-        `}</style>
+        <div className="sn-field">
+          <label htmlFor="etm-genre">Genre</label>
+          <input
+            id="etm-genre"
+            type="text"
+            className="sn-input"
+            value={formData.genre}
+            onChange={(e) => handleChange('genre', e.target.value)}
+            placeholder="e.g. House, Techno"
+          />
+        </div>
       </div>
-    </div>,
-    document.body
+    </Dialog>
   );
 };

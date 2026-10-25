@@ -10,7 +10,7 @@ import { useGraphNodes, useGraphEdges } from '../store/useStore';
  * TrackDetailsModal - Detailed track inspection interface
  * Shows track metadata, relationships, and edges with option to set as currently playing
  *
- * FIX: Uses edges from Zustand store instead of making API calls
+ * Uses edges from Zustand store instead of making API calls
  */
 
 interface TrackDetailsModalProps {
@@ -43,9 +43,11 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
   onSetAsCurrentlyPlaying,
   currentlyPlayingTrack
 }) => {
-  // FIX: Get edges and nodes from Zustand store instead of API
+  // Get edges and nodes from Zustand store
   const graphNodes = useGraphNodes();
   const graphEdges = useGraphEdges();
+  const sheetRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   // Compute connected tracks from store data
   const edges = useMemo(() => {
@@ -90,13 +92,48 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
     return trackEdges;
   }, [track, isOpen, graphEdges, graphNodes]);
 
-  const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (!isOpen) return;
+
+    // Save previous active element to restore focus on close
+    const previousFocus = document.activeElement as HTMLElement | null;
     titleRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+
+      // Simple focus trap
+      if (e.key === 'Tab' && sheetRef.current) {
+        const focusables = Array.from(
+          sheetRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter(el => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+
+        if (focusables.length > 0) {
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      previousFocus?.focus();
+    };
   }, [isOpen, track?.id, onClose]);
 
   if (!isOpen || !track) return null;
@@ -112,7 +149,13 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
   } as Record<string, string>)[type] ?? type;
 
   return (
-    <aside className="sn-side-sheet sn-side-sheet--overlay track-details-modal" aria-labelledby="tdm-title" role="complementary">
+    <aside
+      ref={sheetRef}
+      className="sn-side-sheet sn-side-sheet--overlay track-details-modal"
+      aria-labelledby="tdm-title"
+      aria-modal="true"
+      role="dialog"
+    >
       <span className="sn-side-sheet__handle" aria-hidden="true" />
       <div className="sn-side-sheet__head">
         <h2 className="sn-title title-s sn-side-sheet__title" id="tdm-title" tabIndex={-1} ref={titleRef}>
@@ -125,7 +168,7 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
 
       <div className="sn-side-sheet__body">
         {isCurrentlyPlaying && (
-          <span className="sn-track-cell__now" style={{ color: 'var(--now)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+          <span className="sn-track-cell__now" style={{ color: 'var(--now)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)', marginBottom: 'var(--space-3)' }}>
             <AudioWaveform size={16} strokeWidth={2} aria-hidden="true" />
             Now playing
           </span>
