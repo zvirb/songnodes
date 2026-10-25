@@ -157,6 +157,7 @@ GIT_WORKFLOW_*.md
 README_COMPLIANCE_COMPLETE.md
 
 # Test and validation scripts (generated)
+!services/common/refmb/test_refmb.py
 test_*.py
 !tests/integration/test_dev_workflows.py
 !tests/integration/test_dev_catalog_reads.py
@@ -257,3 +258,4 @@ gha-creds-*.json
 # Local Windows Playwright screenshots (the checked baselines are generated in the Linux image)
 frontend/tests/e2e/accessibility-error-handling.desktop.spec.ts-snapshots/
 frontend/tests/e2e/basic-validation.desktop.spec.ts-snapshots/
+tmp_venv/

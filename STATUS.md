@@ -370,10 +370,28 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 - Checks: `test:unit` and `type-check` pass. `sync-design-system.sh --check` passes. Visual tests and ESLint 9 configuration are omitted.
 <!-- SLOT:FE12 END -->
 
+<!-- SLOT:BE2 BEGIN -->
+### BE2: Python 3.12 upgrade audit and the audio-analysis NumPy 2.5 build fix (2026-10-25)
+
+Started working on Python 3.12 upgrade audit.
+- Audited services for Python version support. `services/audio-analysis` is upgrading to 3.12 to support `numpy==2.5.4` which requires 3.12+.
+- Created `docs/python-versions.md` with a complete Python Version Support Matrix.
+- Fixed `services/audio-analysis` by updating the base image in `services/audio-analysis/Dockerfile` to `python:3.12-slim`.
+- Added tests for `audio-analysis` in `services/audio-analysis/tests/test_audio_features.py` which generates a mock sine wave and tests core features.
+- Added a new `audio-analysis-unit` job to `.github/workflows/python-tests.yml` to run tests on Python 3.12.
+- Updated `.github/dependabot.yml` to ignore `numpy>=2.5.0` for `services/nlp-processor` which stays on 3.11 for now.
+
+**Hand-back:**
+- Upgraded `services/audio-analysis` to `python:3.12-slim` since `numpy==2.5.4` strictly requires `>=3.12`. Dry-runs in 3.12 venv resolve correctly without issues.
+- `librosa==0.10.1` works as is with `numpy==2.5.4`.
+- We cannot execute Docker build `docker build -t audio-analysis-test services/audio-analysis` due to sandbox errors (mount errors on the overlay fs).
+- The REST API endpoint does not need to be modified as no changes to `services/metadata-enrichment` are required.
+- Run tests on real-data STFT audio tests using `docker build -t audio-analysis-test services/audio-analysis && docker run audio-analysis-test pytest tests/` on a laptop with docker engine enabled.
+<!-- SLOT:BE2 END -->
 <!-- SLOT:WP2 BEGIN -->
 ### WP2: MusicBrainz reference ETL into refmb
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25 (Implemented extract, load, index, and verify structure. Unit tests passed. Run verification via python -m services.reference_data.mb_etl)
 <!-- SLOT:WP2 END -->
 
 <!-- SLOT:WP3 BEGIN -->
@@ -465,3 +483,14 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:BE1 END -->
+
+<!-- SLOT:REF0 BEGIN -->
+**[2026-10-25] ref_mb schema and DB preparation (Jules)**:
+- Replaced schema migration 100 with NO-OPs since ref_mb will use a separate DB.
+- Recorded deployment decision to docs/integration/ref_mb/DECISION.md.
+- Added connection settings and pass-through variables in compose.dev.yaml.
+- Created docs/integration/ref_mb/SETTINGS.md.
+- Generated tests, Pytest fixture with mock data, and DDL for ref_mb schema.
+- Added license documentation in docs/licensing/MUSICBRAINZ.md and README.md.
+- Superseded legacy MBID schema migration 001.
+<!-- SLOT:REF0 END -->

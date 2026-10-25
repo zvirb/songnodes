@@ -1,3 +1,7 @@
+-- SUPERSEDED: Do not apply. The musicbrainz_id column in this legacy script enforces a UNIQUE constraint.
+-- The live `silver_enriched_tracks.musicbrainz_id` column (from migration 014) is non-unique to accommodate
+-- legitimate many-tracks-to-one-recording mappings and MusicBrainz merges.
+
 -- Migration 001: Add MusicBrainz IDs and Camelot Keys (Framework Compliance)
 -- ============================================================================
 --
