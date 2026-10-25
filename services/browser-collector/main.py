@@ -5,11 +5,6 @@ Main service integrating human-like browser navigation with Ollama LLM extractio
 import asyncio
 import json
 import os
-
-import sys
-if '/app' not in sys.path:
-    sys.path.insert(0, '/app')
-from services.common.security.cors import setup_cors
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -350,7 +345,13 @@ app = FastAPI(
 )
 
 # CORS
-setup_cors(app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

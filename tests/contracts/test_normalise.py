@@ -1,6 +1,11 @@
 import json
 import os
 import pytest
+import sys
+
+# Ensure modules in root can be imported correctly without relying on PYTHONPATH trickery during CI
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 from contracts.normalise import combined_lookup as songnodes_lookup
 from pipeline.djlib.normalise import combined_lookup as stdlib_lookup
 

@@ -1,6 +1,8 @@
 import json
 import os
-from djlib.normalise import combined_lookup
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from pipeline.djlib.normalise import combined_lookup
 
 def test_normalise_vectors():
     fixtures_path = os.path.join(os.path.dirname(__file__), '..', 'contracts', 'fixtures', 'normalise_vectors.json')

@@ -1,8 +1,11 @@
 import json
 import os
 import pytest
+import sys
 from jsonschema import validate
 import yaml
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 @pytest.mark.contract
 def test_event_schemas_valid():

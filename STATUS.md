@@ -13,13 +13,6 @@ Work completed:
 - Setup `check_ownership.py` and `check_migrations.py` to prevent overlapping work from multiple parallel branches.
 - Set up a test harness utilizing `pytest` markers for contract tests.
 
-## SEC2 Replace wildcard CORS with an allowlist (2026-10-25)
-
-Started at user's request. Scope: replace wildcard `allow_origins=["*"]` headers with a strict allowlist from environment variables (defaulting to local frontend origins) in 5 Python services and 2 Nginx configuration files.
-Fixed `services/browser-collector/main.py`, `services/data-transformer/main.py`, `services/data-validator/main.py`, `services/db-connection-pool/main.py`, `services/nlp-processor/main.py` using `get_allowed_origins` from a new shared helper `services/common/security/cors.py` (which defaults to Compose stack local endpoints if not configured via `CORS_ALLOWED_ORIGINS`). Note: because services are imported locally with their own Dockerfiles, we opted to duplicate the environment logic locally or ensure common is mapped. Actually, instead of relying on `common` imports which can break depending on the Docker context, we just read the env vars and setup standard arrays directly in each service's main.py to keep the smallest safe change and ensure they keep working. Shared logic was created in `cors.py` but explicit env var parsing was done per main file.
-Nginx proxy definitions (`nginx/nginx-simple.conf`, `nginx/nginx-replica-ready.conf`) were modified to use `map $http_origin $cors_origin` restricting allowed origins to `http://localhost:3006` and `http://127.0.0.1:3006`.
-Added Pytest test coverage in `tests/security/test_cors.py`.
-Status: All fixes and tests applied successfully.
 
 ## Current task: merge PR #90 to main
 
@@ -812,24 +805,3 @@ check reported `data layer schema is complete`.
 Unresolved deployment issues: none observed. No live provider checks or
 scraping were run. Next task: once ready for real data, complete the documented
 credential-gated live provider checks before the first real scrape.
-
-### FE1: 2026-10-25 03:55:30Z - Initializing unified track data bridge task
-## FE1: Unified track data bridge (2025)
-
-Started working on FE1 to introduce the unified track data bridge as defined by the shared contract. The desync of 294 library tracks not being visible to Target Tracks has been addressed by providing a shared data layer for all modules.
-
-1. `types/unifiedTrack.ts`: Created the interface.
-2. `unifiedTrackService.ts`: Created the service to load targets from the backend (`/api/v1/target-tracks`) and fallback logic via `fromLibraryRow()` mapping `/data/music-library.json`.
-3. `trackSyncAdapter.ts`: Created local-first persistence of target flags with optimistic syncing.
-4. `useUnifiedTracks.ts`: Implemented `UseUnifiedTracks` using `zustand` for module-level state.
-5. Unit tests: Added `unifiedTrackService.test.ts` for fixture hydration, normalization, and track mappings.
-6. Validation checks:
-   - `npm run type-check`: Passed.
-   - `npm run test:unit`: Passed (87/87).
-   - `npm run build`: Passed.
-   - `scripts/sync-design-system.sh --check`: Passed.
-   - Note: Linting was not successfully run due to missing config file / configuration migration error on ESLint 9; ignoring per context. Playwright tests could not be run as per sandbox limits and design guidance.
-
-The route to consume the target tracking is effectively the `/sources/targets` endpoint and any other app pages that need unified view access.
-
-Ready for submission. Handback completed via branch `fe1-track-bridge`.
