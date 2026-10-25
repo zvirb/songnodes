@@ -1,8 +1,8 @@
-/* Target tracks tab. Tokens and design system compliance. */
+/* Target tracks tab. Design system tokens only. */
 .ttm {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md, var(--space-4, 16px));
+  gap: var(--space-4);
 }
 
 .ttm__head {
@@ -21,7 +21,7 @@
 
 .ttm__num,
 .ttm__mono {
-  font-family: var(--font-mono, var(--font-data, "JetBrains Mono", monospace));
+  font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
   color: var(--fg);
 }
@@ -38,7 +38,7 @@
   gap: var(--space-2);
   align-items: center;
   padding: var(--space-3);
-  background-color: var(--color-surface-raised, var(--surface-2));
+  background-color: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
 }
@@ -73,7 +73,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface-base, var(--surface-1));
+  background-color: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -114,7 +114,7 @@
 .ttm__pill {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: var(--space-0\.5) var(--space-2);
   border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 600;
@@ -123,55 +123,55 @@
 
 .ttm__pill--high {
   background-color: var(--status-bad-bg);
-  color: var(--color-status-danger, var(--status-bad));
+  color: var(--status-bad);
   border: 1px solid var(--status-bad);
 }
 
 .ttm__pill--medium {
   background-color: var(--status-warn-bg);
-  color: var(--color-status-warning, var(--status-warn));
+  color: var(--status-warn);
   border: 1px solid var(--status-warn);
 }
 
 .ttm__pill--low {
   background-color: var(--status-ok-bg);
-  color: var(--color-status-success, var(--status-ok));
+  color: var(--status-ok);
   border: 1px solid var(--status-ok);
 }
 
 .ttm__pill--off {
   background-color: var(--status-info-bg);
-  color: var(--color-status-info, var(--status-info));
+  color: var(--status-info);
   border: 1px solid var(--line);
 }
 
 .ttm__progress {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   font-size: 0.75rem;
   color: var(--fg-2);
   max-width: 320px;
 }
 
 .ttm__progress-track {
-  height: 6px;
+  height: var(--space-1);
   width: 100%;
-  background-color: var(--progress-track, var(--surface-3));
+  background-color: var(--progress-track);
   border-radius: var(--radius-pill);
   overflow: hidden;
 }
 
 .ttm__progress-bar {
   height: 100%;
-  background-color: var(--color-status-success, var(--status-ok));
+  background-color: var(--progress-fill);
   border-radius: var(--radius-pill);
   transition: width var(--duration-base) var(--ease-standard);
 }
 
 .ttm__progress input[type="range"] {
   width: 100%;
-  accent-color: var(--color-status-success, var(--status-ok));
+  accent-color: var(--brand);
   cursor: pointer;
 }
 
@@ -201,7 +201,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0;
-  margin-left: 2px;
+  margin-left: var(--space-0\.5);
   border: 0;
   background: none;
   color: inherit;
@@ -209,7 +209,7 @@
 }
 
 .ttm__json {
-  font-family: var(--font-mono, var(--font-data, "JetBrains Mono", monospace));
+  font-family: var(--font-data);
   font-size: 0.8125rem;
   width: 100%;
 }

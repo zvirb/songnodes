@@ -199,11 +199,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
     migrateLegacyTokens();
   }, [musicCredentials.tidal?.accessToken, musicCredentials.spotify?.accessToken, credentials]);
 
-  // Handle credential updates
-  const updateCredentials = (service: keyof MusicServiceCredentials, updates: any) => {
-    credentials.updateCredentials(service, updates);
-  };
-
   // Save credentials to localStorage
   const handleSave = () => {
     setSaveStatus('saving');
@@ -225,76 +220,59 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
     showToast('Saved credentials cleared');
   };
 
-  // Test connection function
-  const testConnection = async (service: keyof MusicServiceCredentials) => {
+  const connectTidal = async () => {
     try {
-      const isConnected = await credentials.testConnection(service);
-      const name = service === 'tidal' ? 'TIDAL' : 'Spotify';
-      if (isConnected) {
-        setConnectError(null);
-        showToast(`${name} connection works`);
-      } else {
-        setConnectError(`${name} didn’t accept the saved credentials. Connect again.`);
+      general.setLoading(true);
+      const REDIRECT_URI = oauthRedirectUri('/oauth/callback');
+
+      const initResponse = await fetch(
+        `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/init`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ redirect_uri: REDIRECT_URI })
+        }
+      );
+
+      if (!initResponse.ok) {
+        const error = await initResponse.json().catch(() => ({ detail: 'Failed to initialize' }));
+        throw new Error(error.detail || 'Failed to initialize OAuth');
       }
-    } catch (error) {
-      setConnectError(`Couldn’t test the ${service} connection: ${error}`);
+
+      const authData = await initResponse.json();
+      window.location.href = authData.authorization_url;
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setConnectError(`Couldn’t start the TIDAL connection: ${errorMessage}`);
+      general.setLoading(false);
     }
   };
 
-  const connectTidal = async () => {
-                    try {
-                      general.setLoading(true);
-                      const REDIRECT_URI = oauthRedirectUri('/oauth/callback');
-
-                      const initResponse = await fetch(
-                        `${API_BASE_URL}/api/v1/music-auth/tidal/oauth/init`,
-                        {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ redirect_uri: REDIRECT_URI })
-                        }
-                      );
-
-                      if (!initResponse.ok) {
-                        const error = await initResponse.json().catch(() => ({ detail: 'Failed to initialize' }));
-                        throw new Error(error.detail || 'Failed to initialize OAuth');
-                      }
-
-                      const authData = await initResponse.json();
-                      window.location.href = authData.authorization_url;
-
-                    } catch (err) {
-                      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-                      setConnectError(`Couldn’t start the TIDAL connection: ${errorMessage}`);
-                      general.setLoading(false);
-                    }
-                  };
-
   const connectSpotify = () => {
-                    console.log('[SettingsPanel] Spotify button clicked');
-                    console.log('[SettingsPanel] Current Spotify credentials:', {
-                      hasAccessToken: !!musicCredentials.spotify?.accessToken,
-                      isConnected: musicCredentials.spotify?.isConnected,
-                      expiresAt: musicCredentials.spotify?.expiresAt,
-                      isExpired: isTokenExpired(musicCredentials.spotify?.expiresAt),
-                      isSpotifyConnected
-                    });
+    const state = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+    sessionStorage.setItem('spotify_auth_state', state);
 
-                    // Already connected: the button reads "Reconnect Spotify", so pressing it is the choice
+    const redirectUri = oauthRedirectUri('/callback/spotify');
+    const authorizeUrl = `${API_BASE_URL}/api/v1/music-auth/spotify/authorize?` + new URLSearchParams({
+      redirect_uri: redirectUri,
+      state: state
+    });
 
-                    const state = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-                      .map(b => b.toString(16).padStart(2, '0')).join('');
-                    sessionStorage.setItem('spotify_auth_state', state);
+    window.location.href = authorizeUrl;
+  };
 
-                    const redirectUri = oauthRedirectUri('/callback/spotify');
-                    const authorizeUrl = `${API_BASE_URL}/api/v1/music-auth/spotify/authorize?` + new URLSearchParams({
-                      redirect_uri: redirectUri,
-                      state: state
-                    });
-
-                    console.log('[SettingsPanel] Redirecting to Spotify OAuth:', authorizeUrl);
-                    window.location.href = authorizeUrl;
-                  };
+  const renderServiceStatusPill = (service: 'tidal' | 'spotify') => {
+    const creds = musicCredentials[service];
+    if (creds?.accessToken && creds?.isConnected && !isTokenExpired(creds.expiresAt)) {
+      return <StatusPill raw="ok" label="Connected" />;
+    }
+    if (creds?.accessToken && isTokenExpired(creds.expiresAt)) {
+      return <StatusPill raw="warn" label="Expired" />;
+    }
+    return <StatusPill raw="not_configured" label="Not connected" />;
+  };
 
   return (
     <>
@@ -325,7 +303,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           <li className="stp__service">
             <div className="stp__service-main">
               <span className="stp__service-name">TIDAL</span>
-              {isTidalConnected ? <StatusPill raw="ok" label="Connected" /> : <StatusPill raw="not_configured" label="Not connected" />}
+              {renderServiceStatusPill('tidal')}
             </div>
             <button type="button" className={`sn-btn sn-btn--sm${isTidalConnected ? '' : ' sn-service-status__btn--tidal'}`} onClick={connectTidal} disabled={isLoading}>
               {isTidalConnected ? 'Reconnect TIDAL' : 'Connect TIDAL'}
@@ -334,7 +312,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
           <li className="stp__service">
             <div className="stp__service-main">
               <span className="stp__service-name">Spotify</span>
-              {isSpotifyConnected ? <StatusPill raw="ok" label="Connected" /> : <StatusPill raw="not_configured" label="Not connected" />}
+              {renderServiceStatusPill('spotify')}
             </div>
             <button type="button" className={`sn-btn sn-btn--sm${isSpotifyConnected ? '' : ' sn-service-status__btn--spotify'}`} onClick={connectSpotify}>
               {isSpotifyConnected ? 'Reconnect Spotify' : 'Connect Spotify'}

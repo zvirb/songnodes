@@ -32,8 +32,8 @@ const WaveformDisplay: React.FC<{
     if (data.length === 0) return;
 
     const styles = getComputedStyle(canvas);
-    const fg3 = styles.getPropertyValue('--fg-3').trim() || '#a3a3a3';
-    const nowColor = styles.getPropertyValue('--now').trim() || '#f7c04a';
+    const fg3 = styles.getPropertyValue('--fg-3').trim();
+    const nowColor = styles.getPropertyValue('--now').trim();
 
     const barWidth = canvas.width / data.length;
 

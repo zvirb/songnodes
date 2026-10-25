@@ -1,11 +1,6 @@
 # Files under frontend/src not yet moved onto the design system (design-system/19-songnodes-migration.md).
 # The conformance job in .github/workflows/design-system.yml scans every other file in frontend/src.
 # Remove a line when its file is migrated or deleted; never add one.
-frontend/src/components/DJInterface/DJInterface.module.css
-frontend/src/components/DJInterface/DJInterface.tsx
-frontend/src/components/DJInterface/DJModeSelector.tsx
-frontend/src/components/DJInterface/panels/PlanModePanel.tsx
-frontend/src/components/DJInterface/panels/PlayModePanel.tsx
 frontend/src/components/FilterPanel.tsx
 frontend/src/components/IntelligentBrowser.legacy.tsx
 frontend/src/components/OAuthCallback.tsx
@@ -24,7 +19,6 @@ frontend/src/styles/global.css
 frontend/src/styles/globals.css
 frontend/src/styles/tokens.css
 frontend/src/utils/attributions.test.ts
-frontend/src/utils/camelotData.ts
 frontend/src/utils/energyUtils.ts
 frontend/src/utils/graphHelpers.ts
 frontend/src/utils/harmonicUtils.ts
