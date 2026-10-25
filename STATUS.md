@@ -791,3 +791,13 @@ check reported `data layer schema is complete`.
 Unresolved deployment issues: none observed. No live provider checks or
 scraping were run. Next task: once ready for real data, complete the documented
 credential-gated live provider checks before the first real scrape.
+
+## SEC3 Apply pending dependency security updates (2026-10-25)
+
+Started working on security updates from Dependabot branches:
+- Applied `js-yaml` bump in `frontend/package.json` to ^4.1.1
+- Applied `filelock` bump in `tests/requirements.txt` to 4.2.1
+- Applied `pip` group updates in `services/data-transformer/requirements.txt` and synced them to the remaining python services.
+- Verified `npm audit --omit=dev` finds 0 vulnerabilities.
+- Documented remaining `pip-audit` issues in `docs/security/dependency-updates.md` (which are deferred due to dependency resolution conflicts on `starlette` making it a breaking change).
+- Encountered issues executing python tests via `pytest` because `httpx` is missing in the `pipx` container, indicating dependencies need to be installed in the isolated environment or a different testing strategy is expected.
