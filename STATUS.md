@@ -378,8 +378,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP3 BEGIN -->
 ### WP3: Local MusicBrainz resolver: ISRC → exact lookup → fuzzy, plugged into the existing matching and providers
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25
 <!-- SLOT:WP3 END -->
 
 <!-- SLOT:WP5 BEGIN -->

@@ -1,0 +1,2 @@
+version,date,kind,unit,path,checksum,status,decision_link,notes
+v1,2026-10-25,code,wp3-resolver,services/reference_data/resolver,,ACTIVE,docs/integration/WP3/decisions/2026-10-25-WP3-resolver.md,Initial resolver logic
