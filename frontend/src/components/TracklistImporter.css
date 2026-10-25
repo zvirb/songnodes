@@ -1,10 +1,176 @@
-/* Import tracklist dialog. Tokens only. */
-.tli__text { width: 100%; min-height: 10rem; font-family: var(--font-data); font-size: 0.8125rem; resize: vertical; }
-.tli__row { display: flex; align-items: center; gap: var(--space-3); }
-.tli__count { font-size: 0.8125rem; color: var(--fg-2); }
-.tli__label { margin: 0 0 var(--space-2); font: 600 0.75rem/1.3 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
-.tli__list { list-style: none; margin: 0; padding: 0; max-height: 18rem; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-control); }
-.tli__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); }
-.tli__item:last-child { border-bottom: 0; }
-.tli__num { flex: none; min-width: 2ch; font: 400 0.8125rem/1 var(--font-data); color: var(--fg-3); text-align: right; }
-.tli__orig { font-family: var(--font-data); font-size: 0.6875rem; color: var(--fg-3); }
+/* Import tracklist dialog styling using Design System tokens */
+
+.tli__container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* FileDrop zone tokens */
+.tli__dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--sunk);
+  border: 2px dashed var(--line-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+
+.tli__dropzone:hover,
+.tli__dropzone--active {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.tli__dropzone-icon {
+  color: var(--fg-2);
+}
+
+.tli__dropzone-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.tli__dropzone-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--fg);
+}
+
+.tli__dropzone-hint {
+  font-size: 0.75rem;
+  color: var(--fg-3);
+}
+
+.tli__file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: 0.8125rem;
+  color: var(--fg);
+  align-self: start;
+}
+
+.tli__file-name {
+  font-weight: 600;
+}
+
+.tli__file-size {
+  color: var(--fg-3);
+  font-family: var(--font-data);
+}
+
+/* Form fields & textarea */
+.tli__text {
+  width: 100%;
+  min-height: 8rem;
+  font-family: var(--font-data);
+  font-size: 0.8125rem;
+  resize: vertical;
+}
+
+.tli__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tli__count {
+  font-size: 0.8125rem;
+  color: var(--fg-2);
+}
+
+/* Parse & Import Progress Indicators */
+.tli__progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.tli__progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--fg-2);
+}
+
+.tli__progress-label {
+  font-weight: 600;
+}
+
+.tli__progress-value {
+  font-family: var(--font-data);
+}
+
+.tli__progress-track {
+  width: 100%;
+  height: 6px;
+  background: var(--progress-track);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.tli__progress-fill {
+  height: 100%;
+  background: var(--progress-fill);
+  border-radius: var(--radius-pill);
+  transition: width var(--duration-fast) var(--ease-standard);
+}
+
+/* Parsed list */
+.tli__label {
+  margin: 0 0 var(--space-2);
+  font: 600 0.75rem/1.3 var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.tli__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 16rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.tli__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.tli__item:last-child {
+  border-bottom: 0;
+}
+
+.tli__num {
+  flex: none;
+  min-width: 2ch;
+  font: 400 0.8125rem/1 var(--font-data);
+  color: var(--fg-3);
+  text-align: right;
+}
+
+.tli__orig {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  color: var(--fg-3);
+}

@@ -1,7 +1,6 @@
 /**
  * IntelligentBrowser - Main Component
- * Modular, accessible track recommendation interface
- * Score: 9/10 - Modern React patterns with full accessibility
+ * Modular, accessible track recommendation interface adhering strictly to Design System.
  */
 
 import React, { useRef, useMemo } from 'react';
@@ -53,19 +52,15 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
   const { announcement, announce } = useAnnouncer();
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Debounce search for performance
   const debouncedSearch = useDebouncedValue(state.searchQuery, 300);
 
-  // Calculate recommendations with graph edges
   const allRecommendations = useMemo(() => {
     return calculateRecommendations(currentTrack, allTracks, graphEdges);
   }, [currentTrack, allTracks, graphEdges]);
 
-  // Apply search and sort
   const recommendations = useMemo(() => {
     let filtered = filterBySearch(allRecommendations, debouncedSearch);
 
-    // Apply sorting
     switch (state.sortBy) {
       case 'energy':
         filtered = filtered.sort((a, b) => {
@@ -85,24 +80,20 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
 
       case 'score':
       default:
-        // Already sorted by score in calculateRecommendations
         break;
     }
 
     return filtered.slice(0, finalConfig.maxRecommendations);
   }, [allRecommendations, debouncedSearch, state.sortBy, currentTrack, finalConfig.maxRecommendations]);
 
-  // Virtualization for large lists
-  const virtualizer = useVirtualization(recommendations, parentRef, 80);
+  const virtualizer = useVirtualization(recommendations, parentRef, 64);
 
-  // Handle track selection
   const handleSelect = (track: Track, multi: boolean = false) => {
     dispatch({ type: 'SELECT_TRACK', payload: { trackId: track.id, multi } });
     onTrackSelect(track);
     announce(`Selected ${track.name} by ${track.artist}`);
   };
 
-  // Handle focus changes
   const handleFocusChange = (trackId: string | null) => {
     dispatch({ type: 'FOCUS_TRACK', payload: trackId });
     if (trackId) {
@@ -113,7 +104,6 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
     }
   };
 
-  // Keyboard navigation
   useKeyboardNavigation(
     recommendations,
     state.focusedTrackId,
@@ -128,13 +118,11 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
       aria-label="Up next"
       aria-describedby="browser-instructions"
     >
-      {/* Screen reader instructions */}
       <div id="browser-instructions" className="sn-sr">
         Navigate with arrow keys. Press Enter to select a track.
-        Press / to search. Press Escape to clear focus.
+        Press Escape to clear focus.
       </div>
 
-      {/* Live region for announcements */}
       <div
         role="status"
         aria-live="polite"
@@ -144,7 +132,6 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         {announcement}
       </div>
 
-      {/* Skip button (visible on focus only) */}
       <button
         type="button"
         className="sn-skip"
@@ -157,29 +144,24 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         Skip to track recommendations
       </button>
 
-      {/* Current Track Display */}
       <CurrentTrack track={currentTrack} />
 
-      {currentTrack && (
+      {currentTrack ? (
         <>
-      {/* Search Bar */}
-      <SearchBar
-        value={state.searchQuery}
-        onChange={(value) => dispatch({ type: 'SEARCH', payload: value })}
-        resultCount={recommendations.length}
-      />
+          <SearchBar
+            value={state.searchQuery}
+            onChange={(value) => dispatch({ type: 'SEARCH', payload: value })}
+            resultCount={recommendations.length}
+          />
 
-      {/* Filter Tabs */}
-      <FilterTabs
-        sortBy={state.sortBy}
-        onSortChange={(sortBy) => dispatch({ type: 'SORT', payload: sortBy })}
-        resultCount={recommendations.length}
-      />
-
+          <FilterTabs
+            sortBy={state.sortBy}
+            onSortChange={(sortBy) => dispatch({ type: 'SORT', payload: sortBy })}
+            resultCount={recommendations.length}
+          />
         </>
-      )}
+      ) : null}
 
-      {/* Recommendations List */}
       <div
         ref={parentRef}
         id="recommendations-list"
@@ -196,7 +178,15 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
               icon={SearchX}
               title="No suggestions match this search"
               meta={<span className="sn-tag">{state.searchQuery}</span>}
-              actions={<button type="button" className="sn-btn" onClick={() => dispatch({ type: 'SEARCH', payload: '' })}>Clear search</button>}
+              actions={
+                <button
+                  type="button"
+                  className="sn-btn"
+                  onClick={() => dispatch({ type: 'SEARCH', payload: '' })}
+                >
+                  Clear search
+                </button>
+              }
             >
               None of the {allRecommendations.length} suggestions match.
             </EmptyPanel>
@@ -240,7 +230,6 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
         )}
       </div>
 
-      {/* Keyboard shortcuts help */}
       <details className={styles.help}>
         <summary>Keyboard shortcuts</summary>
         <dl className={styles.helpList}>
@@ -253,11 +242,8 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
           <dt><kbd>Ctrl/Cmd + Click</kbd></dt>
           <dd>Multi-select</dd>
 
-          <dt><kbd>/</kbd></dt>
-          <dd>Focus search</dd>
-
           <dt><kbd>Escape</kbd></dt>
-          <dd>Clear focus</dd>
+          <dd>Clear focus or search</dd>
 
           <dt><kbd>Home / End</kbd></dt>
           <dd>First or last track</dd>

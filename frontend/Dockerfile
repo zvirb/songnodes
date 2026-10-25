@@ -1,12 +1,13 @@
-FROM node:20-alpine as builder
+# Build stage
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies using clean install and clear cache
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -17,15 +18,22 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Copy built assets
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Remove default nginx static assets and clean package caches
+RUN rm -rf /usr/share/nginx/html/* /var/cache/apk/* /tmp/*
 
-# Copy nginx configuration - 2025 best practices for cache control
+# Copy built assets from builder stage
+COPY --chown=nginx:nginx --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration for non-root execution on unprivileged port 8080
 RUN echo 'server { \
-    listen 80; \
+    listen 8080; \
     server_name localhost; \
     root /usr/share/nginx/html; \
     index index.html; \
+    \
+    # Docker's embedded DNS: upstream names are looked up per request (cached 10 s), \
+    # so a recreated rest-api or graph-api with a new address is found without a restart \
+    resolver 127.0.0.11 valid=10s ipv6=off; \
     \
     # Long-term cache for hashed assets (JS, CSS with [hash] in filename) \
     # These have content hashes, so new versions get new URLs \
@@ -69,10 +77,10 @@ RUN echo 'server { \
         etag off; \
     } \
     \
-    # API proxy routing - Kubernetes ConfigMap will override this with correct service names \
-    # This is a fallback config for non-k8s deployments \
+    # API proxy routing to the Compose services; a variable makes nginx resolve the name at request time \
     location ~ ^/api/(graph|v1/visualization|user-setlists) { \
-        proxy_pass http://graph-visualization:8084; \
+        set $graph_api http://graph-visualization:8084; \
+        proxy_pass $graph_api; \
         proxy_http_version 1.1; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
@@ -83,7 +91,8 @@ RUN echo 'server { \
     } \
     \
     location /api/ { \
-        proxy_pass http://rest-api:8082; \
+        set $rest_api http://rest-api:8082; \
+        proxy_pass $rest_api; \
         proxy_http_version 1.1; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
@@ -92,6 +101,12 @@ RUN echo 'server { \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+# Set directory permissions for unprivileged nginx execution
+RUN touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /usr/share/nginx/html
+
+USER nginx
+
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

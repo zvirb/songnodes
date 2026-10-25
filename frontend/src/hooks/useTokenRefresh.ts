@@ -36,6 +36,64 @@ const REFRESH_BUFFER_MS = 5 * 60 * 1000;
 // Check for expiration every 60 seconds
 const CHECK_INTERVAL_MS = 60 * 1000;
 
+/**
+ * Helper for cross-tab mutual-exclusion locking
+ */
+const withCrossTabLock = async <T>(lockName: string, action: () => Promise<T>): Promise<T> => {
+  // 1. Web Locks API (Standard in modern browsers)
+  if (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') {
+    return navigator.locks.request(lockName, { mode: 'exclusive' }, async () => {
+      return await action();
+    });
+  }
+
+  // 2. Storage-based mutex lock fallback for older environments / test runners
+  const lockKey = `mutex_lock_${lockName}`;
+  const lockTimeoutMs = 10000; // 10s maximum lock hold duration
+  const lockId = Math.random().toString(36).substring(2);
+
+  const acquireLock = (): boolean => {
+    const now = Date.now();
+    const existing = localStorage.getItem(lockKey);
+    if (existing) {
+      try {
+        const { id, expiresAt } = JSON.parse(existing);
+        if (id !== lockId && now < expiresAt) {
+          return false; // Held by another tab
+        }
+      } catch (e) {
+        // Corrupted lock entry, overwrite
+      }
+    }
+    localStorage.setItem(lockKey, JSON.stringify({ id: lockId, expiresAt: now + lockTimeoutMs }));
+    return true;
+  };
+
+  const start = Date.now();
+  while (!acquireLock()) {
+    if (Date.now() - start > 12000) {
+      throw new Error(`Timeout acquiring cross-tab lock for ${lockName}`);
+    }
+    await new Promise(res => setTimeout(res, 100));
+  }
+
+  try {
+    return await action();
+  } finally {
+    const existing = localStorage.getItem(lockKey);
+    if (existing) {
+      try {
+        const { id } = JSON.parse(existing);
+        if (id === lockId) {
+          localStorage.removeItem(lockKey);
+        }
+      } catch (e) {
+        localStorage.removeItem(lockKey);
+      }
+    }
+  }
+};
+
 export const useTokenRefresh = (): UseTokenRefreshReturn => {
   const { musicCredentials, credentials } = useStore();
   const [state, setState] = useState<TokenRefreshState>({
@@ -80,70 +138,93 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
     console.log(`[useTokenRefresh] ♻️ Refreshing ${service} access token...`);
     setState(prev => ({ ...prev, isRefreshing: true, error: null }));
 
-    // Create and store the refresh promise
+    // Create and store the refresh promise wrapped in cross-tab mutual exclusion
     const refreshPromise = (async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/music-auth/${service}/refresh?refresh_token=${encodeURIComponent(serviceData.refreshToken!)}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+        await withCrossTabLock(`token_refresh_${service}`, async () => {
+          // SECURITY: Re-verify credentials inside lock to prevent multi-tab refresh storms
+          const currentStoreState = useStore.getState();
+          const currentData = currentStoreState.musicCredentials[service];
+
+          if (!currentData?.refreshToken) {
+            console.warn(`[useTokenRefresh] No refresh token available for ${service}`);
+            return;
           }
-        );
 
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-          throw new Error(error.detail || `HTTP ${response.status}`);
-        }
+          // If another tab already refreshed the token while we waited for lock, skip network call
+          if (!needsRefresh(currentData.expiresAt)) {
+            console.log(`[useTokenRefresh] ${service} token was refreshed by another tab/session, skipping network request`);
+            return;
+          }
 
-        const data = await response.json();
+          console.log(`[useTokenRefresh] ♻️ Refreshing ${service} access token under lock...`);
+          setState(prev => ({ ...prev, isRefreshing: true, error: null }));
 
-        if (!data.success || !data.access_token) {
-          throw new Error('Invalid token response');
-        }
+          const response = await fetch(
+            `${API_BASE_URL}/api/v1/music-auth/${service}/refresh?refresh_token=${encodeURIComponent(currentData.refreshToken!)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
 
-        // Calculate new expiration time
-        const newExpiresAt = Date.now() + (data.expires_in * 1000);
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            throw new Error(error.detail || `HTTP ${response.status}`);
+          }
 
-        // Update credentials in store (auto-persists to localStorage)
-        credentials.updateCredentials(service, {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token || serviceData.refreshToken, // Some services rotate refresh tokens
-          expiresAt: newExpiresAt,
-          tokenType: data.token_type,
-          isConnected: true,
-          lastValidated: Date.now()
-        });
+          const data = await response.json();
 
-        // Also store in database for backend enrichment service
-        try {
-          await fetch(`${API_BASE_URL}/api/v1/music-auth/store-token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              service,
-              access_token: data.access_token,
-              refresh_token: data.refresh_token || serviceData.refreshToken,
-              expires_in: data.expires_in,
-              token_type: data.token_type,
-              scope: data.scope
-            })
+          if (!data.success || !data.access_token) {
+            throw new Error('Invalid token response from server');
+          }
+
+          // Explicit expiration calculation & validation
+          const expiresInSeconds = Number(data.expires_in) || 3600;
+          const newExpiresAt = Date.now() + (expiresInSeconds * 1000);
+
+          if (newExpiresAt <= Date.now()) {
+            throw new Error('Refreshed token has already expired');
+          }
+
+          // Update credentials in store with explicit expiration validation
+          currentStoreState.credentials.updateCredentials(service, {
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token || currentData.refreshToken,
+            expiresAt: newExpiresAt,
+            tokenType: data.token_type || 'Bearer',
+            isConnected: true,
+            lastValidated: Date.now()
           });
-          console.log(`[useTokenRefresh] ✅ ${service} token refreshed and stored in database`);
-        } catch (dbError) {
-          console.warn(`[useTokenRefresh] Failed to store ${service} token in database:`, dbError);
-          // Don't fail the whole refresh if database storage fails
-        }
 
-        setState(prev => ({
-          ...prev,
-          isRefreshing: false,
-          lastRefresh: Date.now(),
-          error: null
-        }));
+          // Store in database for backend enrichment service
+          try {
+            await fetch(`${API_BASE_URL}/api/v1/music-auth/store-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                service,
+                access_token: data.access_token,
+                refresh_token: data.refresh_token || currentData.refreshToken,
+                expires_in: expiresInSeconds,
+                token_type: data.token_type,
+                scope: data.scope
+              })
+            });
+            console.log(`[useTokenRefresh] ✅ ${service} token refreshed and stored in database`);
+          } catch (dbError) {
+            console.warn(`[useTokenRefresh] Failed to store ${service} token in database:`, dbError);
+          }
 
-        console.log(`[useTokenRefresh] ✅ ${service} token refreshed successfully`);
+          setState(prev => ({
+            ...prev,
+            isRefreshing: false,
+            lastRefresh: Date.now(),
+            error: null
+          }));
 
+          console.log(`[useTokenRefresh] ✅ ${service} token refreshed successfully`);
+        });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error(`[useTokenRefresh] ❌ Failed to refresh ${service} token:`, errorMessage);
@@ -154,20 +235,27 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
           error: errorMessage
         }));
 
-        // If refresh token is invalid, mark service as disconnected
-        if (errorMessage.includes('invalid_grant') || errorMessage.includes('Invalid refresh token')) {
-          console.warn(`[useTokenRefresh] ${service} refresh token is invalid, marking as disconnected`);
-          credentials.updateCredentials(service, {
-            ...serviceData,
+        // If refresh token is invalid or expired, purge invalid tokens and mark as disconnected
+        if (
+          errorMessage.includes('invalid_grant') ||
+          errorMessage.includes('Invalid refresh token') ||
+          errorMessage.includes('expired') ||
+          errorMessage.includes('401')
+        ) {
+          console.warn(`[useTokenRefresh] ${service} refresh token is invalid/expired, clearing credentials`);
+          const currentStoreState = useStore.getState();
+          const currentData = currentStoreState.musicCredentials[service];
+          currentStoreState.credentials.updateCredentials(service, {
+            ...currentData,
             isConnected: false,
             accessToken: undefined,
-            refreshToken: undefined
+            refreshToken: undefined,
+            expiresAt: undefined
           });
         }
 
         throw error;
       } finally {
-        // Remove from in-progress map
         refreshInProgress.current.delete(service);
       }
     })();

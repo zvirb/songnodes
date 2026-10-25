@@ -36,38 +36,68 @@ export const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
   const leftPercentage = ((value[0] - min) / (max - min)) * 100;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-gray-300">{label}</label>
-        <span className="text-sm text-blue-400 font-mono">
-          {formatDisplayValue(value[0])} - {formatDisplayValue(value[1])}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg-2)' }}>{label}</label>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--brand-strong)', fontFamily: 'var(--font-data)' }}>
+          {formatDisplayValue(value[0])} – {formatDisplayValue(value[1])}
         </span>
       </div>
-      <div className="relative h-4 flex items-center">
-        <div className="relative w-full h-1 bg-gray-700 rounded-full">
+      <div style={{ position: 'relative', height: '16px', display: 'flex', alignItems: 'center' }}>
+        <div style={{ position: 'relative', width: '100%', height: '4px', backgroundColor: 'var(--surface-3)', borderRadius: 'var(--radius-pill)' }}>
           <div
-            className="absolute h-1 bg-blue-500 rounded-full"
-            style={{ left: `${leftPercentage}%`, width: `${rangePercentage}%` }}
+            style={{
+              position: 'absolute',
+              height: '4px',
+              backgroundColor: 'var(--brand)',
+              borderRadius: 'var(--radius-pill)',
+              left: `${leftPercentage}%`,
+              width: `${rangePercentage}%`
+            }}
           />
           <input
             type="range"
             min={min}
             max={max}
             value={value[0]}
+            aria-label={`${label} minimum`}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            aria-valuenow={value[0]}
+            aria-valuetext={formatDisplayValue(value[0])}
             onChange={handleMinChange}
-            className="absolute w-full h-1 opacity-0 cursor-pointer"
+            style={{
+              position: 'absolute',
+              width: '100%',
+              height: '4px',
+              opacity: 0,
+              cursor: 'pointer',
+              zIndex: 2
+            }}
           />
           <input
             type="range"
             min={min}
             max={max}
             value={value[1]}
+            aria-label={`${label} maximum`}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            aria-valuenow={value[1]}
+            aria-valuetext={formatDisplayValue(value[1])}
             onChange={handleMaxChange}
-            className="absolute w-full h-1 opacity-0 cursor-pointer"
+            style={{
+              position: 'absolute',
+              width: '100%',
+              height: '4px',
+              opacity: 0,
+              cursor: 'pointer',
+              zIndex: 3
+            }}
           />
         </div>
       </div>
-      <div className="flex justify-between text-xs text-gray-500">
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
         <span>{formatDisplayValue(min)}</span>
         <span>{formatDisplayValue(max)}</span>
       </div>

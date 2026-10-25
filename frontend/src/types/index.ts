@@ -412,3 +412,28 @@ export interface APIKey {
   description: string | null; is_valid: boolean | null; last_tested_at: string | null;
   test_error: string | null; created_at: string; updated_at: string;
 }
+
+// AI Provider API Key configuration types
+export type AIProvider = 'claude' | 'openai' | 'gemini';
+export type AIKeyStatus = 'unconfigured' | 'valid' | 'invalid';
+
+export interface AIKeyConfig {
+  claudeApiKey?: string;
+  openaiApiKey?: string;
+  geminiApiKey?: string;
+  preferredProvider?: AIProvider;
+  claudeStatus?: AIKeyStatus;
+  openaiStatus?: AIKeyStatus;
+  geminiStatus?: AIKeyStatus;
+  lastTestedAt?: {
+    claude?: string;
+    openai?: string;
+    gemini?: string;
+  };
+}
+
+export interface AIKeyValidationResult {
+  ok: boolean;
+  message?: string;
+  testedAt: string;
+}

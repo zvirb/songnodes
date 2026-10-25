@@ -1,6 +1,6 @@
 /**
  * CurrentTrack Component
- * The track playing now, with BPM, key, energy and length (design-system formats).
+ * Displays the currently loaded track with BPM, Key, Energy, and Duration.
  */
 
 import React from 'react';
@@ -23,7 +23,6 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
     );
   }
 
-  // trackFromNode (utils/trackMetadata) stores duration in seconds
   const seconds = track.duration != null && track.duration > 0 ? track.duration : null;
 
   return (
@@ -51,9 +50,11 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
         </div>
         <div className={styles.metric}>
           <span className={styles.metricLabel}>Length</span>
-          {seconds != null
-            ? <span className={styles.metricValue}>{SN.format.duration(seconds)}</span>
-            : <span className="sn-none" title="Length not set">–</span>}
+          {seconds != null ? (
+            <span className={styles.metricValue}>{SN.format.duration(seconds)}</span>
+          ) : (
+            <span className="sn-none" title="Length not set">–</span>
+          )}
         </div>
       </div>
     </section>

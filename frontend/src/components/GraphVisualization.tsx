@@ -646,8 +646,24 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     return (COLOR_SCHEMES.genre as any)[lowerGenre] || COLOR_SCHEMES.genre.default;
   }, []);
 
-  // Neutral fill: every node alike; only state rings carry colour (GraphStyles, Colour by: Neutral)
-  const getNodeColor = useCallback((_node: EnhancedGraphNode): number => COLOR_SCHEMES.node.default, []);
+  // Dynamic fill based on viewState.colorBy (GraphStyles / 18-music-domain.md)
+  const getNodeColor = useCallback((node: EnhancedGraphNode): number => {
+    const mode = viewState.colorBy;
+    const c = graphColours();
+
+    if (mode === 'key') {
+      const key = node.key || node.camelotKey || node.camelot_key || node.metadata?.key || node.metadata?.camelot_key || node.track?.key || node.track?.camelotKey;
+      if (key) return c.key(String(key));
+    } else if (mode === 'energy') {
+      const energy = node.energy ?? node.metadata?.energy ?? node.track?.energy;
+      if (typeof energy === 'number' && !isNaN(energy)) return c.energy(energy);
+    } else if (mode === 'genre') {
+      const genre = node.genre || node.metadata?.genre || node.metadata?.category || node.track?.genre;
+      if (genre) return getGenreColor(genre);
+    }
+
+    return COLOR_SCHEMES.node.default;
+  }, [viewState.colorBy, getGenreColor]);
 
   // State ring, highest priority first: now playing, selected, path, hovered
   const getNodeRing = useCallback((node: EnhancedGraphNode): NodeRing | null => {

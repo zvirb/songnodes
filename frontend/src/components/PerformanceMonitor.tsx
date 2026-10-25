@@ -43,37 +43,47 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ classNam
   }, [updateMetrics]);
 
   const getFPSColor = (fps: number) => {
-    if (fps >= 50) return 'text-green-400';
-    if (fps >= 30) return 'text-yellow-400';
-    return 'text-red-400';
+    if (fps >= 50) return 'var(--status-ok)';
+    if (fps >= 30) return 'var(--status-warn)';
+    return 'var(--status-bad)';
   };
 
   return (
-    <div className={clsx('bg-dj-dark/90 backdrop-blur rounded p-3 text-xs', className)}>
-      <div className="font-semibold text-gray-400 mb-1">Performance</div>
-      <div className="space-y-1">
-        <div className="flex justify-between">
-          <span className="text-gray-500">FPS:</span>
-          <span className={getFPSColor(fps)}>{fps}</span>
+    <div
+      className={clsx(className)}
+      style={{
+        backgroundColor: 'var(--surface-1)',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--radius-control)',
+        padding: 'var(--space-3)',
+        fontSize: '0.75rem',
+        color: 'var(--fg-2)'
+      }}
+    >
+      <div style={{ fontWeight: 600, color: 'var(--fg-3)', marginBottom: 'var(--space-1)' }}>Performance</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'var(--fg-3)' }}>FPS:</span>
+          <span style={{ color: getFPSColor(fps), fontWeight: 600 }}>{fps}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-500">Nodes:</span>
-          <span className="text-white">{metrics.nodeCount}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'var(--fg-3)' }}>Nodes:</span>
+          <span style={{ color: 'var(--fg)', fontFamily: 'var(--font-data)' }}>{metrics.nodeCount}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-500">Edges:</span>
-          <span className="text-white">{metrics.edgeCount}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'var(--fg-3)' }}>Edges:</span>
+          <span style={{ color: 'var(--fg)', fontFamily: 'var(--font-data)' }}>{metrics.edgeCount}</span>
         </div>
         {metrics.renderTime > 0 && (
-          <div className="flex justify-between">
-            <span className="text-gray-500">Render:</span>
-            <span className="text-white">{metrics.renderTime.toFixed(1)}ms</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'var(--fg-3)' }}>Render:</span>
+            <span style={{ color: 'var(--fg)', fontFamily: 'var(--font-data)' }}>{metrics.renderTime.toFixed(1)}ms</span>
           </div>
         )}
         {metrics.memoryUsage && (
-          <div className="flex justify-between">
-            <span className="text-gray-500">Memory:</span>
-            <span className="text-white">{metrics.memoryUsage}%</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'var(--fg-3)' }}>Memory:</span>
+            <span style={{ color: 'var(--fg)', fontFamily: 'var(--font-data)' }}>{metrics.memoryUsage}%</span>
           </div>
         )}
       </div>

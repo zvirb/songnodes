@@ -8,6 +8,9 @@
  */
 
 import React, { useMemo } from 'react';
+import {
+  Search, X, Library, SearchX, BarChart2, Disc, Route, Radio, Headphones, Target,
+} from 'lucide-react';
 import GraphVisualization from '../../GraphVisualization';
 import MobileTrackExplorer from '../../MobileTrackExplorer';
 import { PathfinderPanel } from '../../PathfinderPanel';
@@ -17,6 +20,8 @@ import { TidalPlaylistManager } from '../../TidalPlaylistManager';
 import { SpotifyPlaylistManager } from '../../SpotifyPlaylistManager';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { searchTracks } from '../utils/trackTransformers';
+import { Bpm, KeyBadge } from '../../../lib/songnodes';
+import { TrackEnergy } from '../../ds';
 import type { PlanModePanelProps } from '../types';
 import styles from '../DJInterface.module.css';
 
@@ -41,11 +46,9 @@ import styles from '../DJInterface.module.css';
  */
 export function PlanModePanel({
   tracks,
-  selectedTrack,
   nowPlaying,
   onTrackSelect,
   onTrackRightClick,
-  graphEdges,
   librarySearchQuery,
   onSearchQueryChange,
   rightPanelTab,
@@ -62,101 +65,157 @@ export function PlanModePanel({
     <div className={styles.planModeLayout}>
       {/* Left: Library Browser */}
       <div className={styles.libraryPanel}>
-        <h3 className={styles.libraryHeader}>Library</h3>
+        <h2 className={styles.libraryHeader}>Library</h2>
 
         {/* Search Input */}
-        <div style={{ position: 'relative', marginBottom: '12px' }}>
+        <div style={{ position: 'relative', marginBottom: 'var(--space-2)' }}>
           <input
-            type="text"
-            placeholder="🔍 Search tracks, artists, BPM, key..."
+            type="search"
+            placeholder="Search tracks, artists, BPM, key..."
             value={librarySearchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             className={styles.searchInput}
             aria-label="Search library"
           />
+          <Search
+            size={16}
+            strokeWidth={2}
+            style={{
+              position: 'absolute',
+              left: 'var(--space-2)',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--fg-3)',
+              pointerEvents: 'none'
+            }}
+            aria-hidden="true"
+          />
           {librarySearchQuery && (
             <button
+              type="button"
               onClick={() => onSearchQueryChange('')}
               style={{
                 position: 'absolute',
-                right: '8px',
+                right: 'var(--space-2)',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 backgroundColor: 'transparent',
                 border: 'none',
-                color: '#8E8E93',
+                color: 'var(--fg-3)',
                 cursor: 'pointer',
-                padding: '4px',
-                fontSize: '16px'
+                padding: 'var(--space-1)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
               aria-label="Clear search"
             >
-              ✕
+              <X size={16} strokeWidth={2} aria-hidden="true" />
             </button>
           )}
         </div>
 
         {/* Results Counter */}
         {librarySearchQuery && (
-          <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '8px' }}>
-            {filteredTracks.length} of {tracks.length} tracks
+          <div style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '0.75rem',
+            color: 'var(--fg-3)',
+            marginBottom: 'var(--space-2)'
+          }}>
+            <span style={{ fontFamily: 'var(--font-data)', fontVariantNumeric: 'tabular-nums' }}>
+              {filteredTracks.length}
+            </span> of <span style={{ fontFamily: 'var(--font-data)', fontVariantNumeric: 'tabular-nums' }}>
+              {tracks.length}
+            </span> tracks
           </div>
         )}
 
         {/* Track List */}
         <div className={styles.trackList}>
           {filteredTracks.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#8E8E93', padding: '60px 20px' }}>
+            <div style={{
+              textAlign: 'center',
+              color: 'var(--fg-3)',
+              padding: 'var(--space-8) var(--space-4)',
+              fontFamily: 'var(--font-body)'
+            }}>
               {librarySearchQuery ? (
                 <>
-                  <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🔍</div>
-                  <div style={{ fontWeight: 600, marginBottom: '8px' }}>No tracks found</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7 }}>Try a different search term</div>
+                  <SearchX size={36} strokeWidth={1.5} style={{ margin: '0 auto var(--space-3)', color: 'var(--fg-3)' }} aria-hidden="true" />
+                  <div style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 'var(--space-1)' }}>No tracks found</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>Try a different search term</div>
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📚</div>
-                  <div>No tracks in library</div>
+                  <Library size={36} strokeWidth={1.5} style={{ margin: '0 auto var(--space-3)', color: 'var(--fg-3)' }} aria-hidden="true" />
+                  <div style={{ fontWeight: 600, color: 'var(--fg)' }}>No tracks in library</div>
                 </>
               )}
             </div>
           ) : (
-            filteredTracks.map(track => (
-              <button
-                key={track.id}
-                onClick={() => onTrackSelect(track)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  if (onTrackRightClick) {
-                    onTrackRightClick(track, { x: e.clientX, y: e.clientY });
-                  }
-                }}
-                style={{
-                  padding: '8px 10px',
-                  backgroundColor: nowPlaying?.id === track.id ? 'rgba(126,211,33,0.2)' : 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '6px',
-                  color: '#F8F8F8',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  minHeight: '52px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  width: '100%'
-                }}
-              >
-                <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {track.name}
-                </div>
-                <div style={{ fontSize: '11px', color: '#8E8E93', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {track.artist}
-                  {track.bpm && <> • {track.bpm} BPM</>}
-                  {track.key && <> • {track.key}</>}
-                </div>
-              </button>
-            ))
+            filteredTracks.map(track => {
+              const isNowPlaying = nowPlaying?.id === track.id;
+              return (
+                <button
+                  key={track.id}
+                  type="button"
+                  onClick={() => onTrackSelect(track)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (onTrackRightClick) {
+                      onTrackRightClick(track, { x: e.clientX, y: e.clientY });
+                    }
+                  }}
+                  style={{
+                    padding: 'var(--space-2) var(--space-3)',
+                    backgroundColor: isNowPlaying ? 'var(--surface-2)' : 'transparent',
+                    border: '1px solid var(--line)',
+                    boxShadow: isNowPlaying ? 'inset 3px 0 0 var(--now)' : 'none',
+                    borderRadius: 'var(--radius-control)',
+                    color: 'var(--fg)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'background var(--duration-fast) var(--ease-standard)',
+                    minHeight: '52px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    width: '100%'
+                  }}
+                >
+                  <div style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    lineHeight: 1.3,
+                    marginBottom: '2px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {track.name}
+                  </div>
+                  <div style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.75rem',
+                    color: 'var(--fg-2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-2)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                      {track.artist}
+                    </span>
+                    {track.bpm ? <Bpm value={track.bpm} /> : null}
+                    {track.key || track.camelotKey ? <KeyBadge value={track.camelotKey || track.key} /> : null}
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
@@ -176,42 +235,66 @@ export function PlanModePanel({
       {/* Right: Tabbed Analysis Panel */}
       <div className={styles.rightPanel}>
         {/* Tab Header */}
-        <div className={styles.tabHeader}>
+        <div className={styles.tabHeader} role="tablist" aria-label="Plan tools">
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'analysis'}
             onClick={() => onRightPanelTabChange('analysis')}
             className={`${styles.tabButton} ${rightPanelTab === 'analysis' ? styles.tabButtonActive : ''}`}
           >
+            <BarChart2 size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
             Track Analysis
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'keymood'}
             onClick={() => onRightPanelTabChange('keymood')}
             className={`${styles.tabButton} ${rightPanelTab === 'keymood' ? styles.tabButtonActive : ''}`}
           >
-            🎭 Key & Mood
+            <Disc size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            Key & Mood
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'pathfinder'}
             onClick={() => onRightPanelTabChange('pathfinder')}
             className={`${styles.tabButton} ${rightPanelTab === 'pathfinder' ? styles.tabButtonActive : ''}`}
           >
-            🗺️ Pathfinder
+            <Route size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            Pathfinder
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'tidal'}
             onClick={() => onRightPanelTabChange('tidal')}
             className={`${styles.tabButton} ${rightPanelTab === 'tidal' ? styles.tabButtonActive : ''}`}
           >
-            🎵 Tidal
+            <Radio size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            Tidal
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'spotify'}
             onClick={() => onRightPanelTabChange('spotify')}
             className={`${styles.tabButton} ${rightPanelTab === 'spotify' ? styles.tabButtonActive : ''}`}
           >
-            🎧 Spotify
+            <Headphones size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            Spotify
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={rightPanelTab === 'targets'}
             onClick={() => onRightPanelTabChange('targets')}
             className={`${styles.tabButton} ${rightPanelTab === 'targets' ? styles.tabButtonActive : ''}`}
           >
-            🎯 Targets
+            <Target size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            Targets
           </button>
         </div>
 
@@ -219,31 +302,105 @@ export function PlanModePanel({
         <div className={styles.tabContent}>
           {rightPanelTab === 'analysis' && (
             <>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Track Analysis</h3>
+              <h3 style={{
+                margin: '0 0 var(--space-4) 0',
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.125rem',
+                fontWeight: 700,
+                color: 'var(--fg)'
+              }}>
+                Track Analysis
+              </h3>
               {nowPlaying ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                   <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#F8F8F8' }}>
+                    <h4 style={{
+                      margin: '0 0 var(--space-1) 0',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '1.125rem',
+                      fontWeight: 700,
+                      color: 'var(--fg)'
+                    }}>
                       {nowPlaying.name}
                     </h4>
-                    <p style={{ margin: 0, fontSize: '14px', color: '#8E8E93' }}>
+                    <p style={{
+                      margin: 0,
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '0.875rem',
+                      color: 'var(--fg-2)'
+                    }}>
                       {nowPlaying.artist}
                     </p>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>BPM</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.bpm || '---'}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                    <div style={{
+                      padding: 'var(--space-3)',
+                      backgroundColor: 'var(--surface-2)',
+                      borderRadius: 'var(--radius-control)',
+                      border: '1px solid var(--line)'
+                    }}>
+                      <div style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.6875rem',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--fg-3)',
+                        marginBottom: 'var(--space-1)'
+                      }}>
+                        BPM
+                      </div>
+                      <Bpm value={nowPlaying.bpm} />
                     </div>
-                    <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '11px', color: '#8E8E93', marginBottom: '4px' }}>KEY</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700 }}>{nowPlaying.key || '---'}</div>
+
+                    <div style={{
+                      padding: 'var(--space-3)',
+                      backgroundColor: 'var(--surface-2)',
+                      borderRadius: 'var(--radius-control)',
+                      border: '1px solid var(--line)'
+                    }}>
+                      <div style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.6875rem',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--fg-3)',
+                        marginBottom: 'var(--space-1)'
+                      }}>
+                        KEY
+                      </div>
+                      <KeyBadge value={nowPlaying.camelotKey || nowPlaying.key} withName />
                     </div>
+                  </div>
+
+                  <div style={{
+                    padding: 'var(--space-3)',
+                    backgroundColor: 'var(--surface-2)',
+                    borderRadius: 'var(--radius-control)',
+                    border: '1px solid var(--line)'
+                  }}>
+                    <div style={{
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      color: 'var(--fg-3)',
+                      marginBottom: 'var(--space-1)'
+                    }}>
+                      ENERGY
+                    </div>
+                    <TrackEnergy energy={nowPlaying.energy} scale={(nowPlaying as { energy_scale?: string }).energy_scale} />
                   </div>
                 </div>
               ) : (
-                <p style={{ color: '#8E8E93', fontSize: '14px' }}>
+                <p style={{
+                  fontFamily: 'var(--font-body)',
+                  color: 'var(--fg-3)',
+                  fontSize: '0.875rem'
+                }}>
                   Select a track to view analysis
                 </p>
               )}

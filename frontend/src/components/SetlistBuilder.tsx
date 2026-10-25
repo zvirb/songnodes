@@ -16,124 +16,22 @@ import {
   verticalListSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
-import {
-  CSS,
-} from '@dnd-kit/utilities';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, Edit2, Trash2, Save, Download, Upload, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Track, SetlistTrack } from '../types';
 import { TrackEditModal } from './TrackEditModal';
+import {
+  formatDuration,
+  getKeyToken,
+  getEnergyToken,
+  normalizeCamelotKey,
+  getTransitionQuality,
+  getQualityColor,
+  getQualityBgColor,
+  getQualityGlyph,
+} from './SetlistBuilder/utils';
 
-// Camelot Wheel mapping for key compatibility
-const CAMELOT_WHEEL: Record<string, { number: number; letter: string; compatibles: string[] }> = {
-  'C': { number: 8, letter: 'B', compatibles: ['G', 'F', 'Am', 'Dm'] },
-  'Dm': { number: 7, letter: 'A', compatibles: ['C', 'Bb', 'Am', 'Gm'] },
-  'G': { number: 9, letter: 'B', compatibles: ['C', 'D', 'Em', 'Am'] },
-  'Am': { number: 8, letter: 'A', compatibles: ['C', 'Dm', 'G', 'Em'] },
-  'F': { number: 7, letter: 'B', compatibles: ['C', 'Bb', 'Dm', 'Gm'] },
-  'Em': { number: 9, letter: 'A', compatibles: ['G', 'Am', 'D', 'Bm'] },
-  'Bb': { number: 6, letter: 'B', compatibles: ['F', 'Eb', 'Gm', 'Cm'] },
-  'Gm': { number: 6, letter: 'A', compatibles: ['Bb', 'F', 'Dm', 'Cm'] },
-  'D': { number: 10, letter: 'B', compatibles: ['G', 'A', 'Bm', 'Em'] },
-  'Bm': { number: 10, letter: 'A', compatibles: ['D', 'G', 'Em', 'F#m'] },
-  'A': { number: 11, letter: 'B', compatibles: ['D', 'E', 'F#m', 'Bm'] },
-  'F#m': { number: 11, letter: 'A', compatibles: ['A', 'D', 'Bm', 'C#m'] },
-  'E': { number: 12, letter: 'B', compatibles: ['A', 'B', 'C#m', 'F#m'] },
-  'C#m': { number: 12, letter: 'A', compatibles: ['E', 'A', 'F#m', 'G#m'] },
-  'B': { number: 1, letter: 'B', compatibles: ['E', 'F#', 'G#m', 'C#m'] },
-  'G#m': { number: 1, letter: 'A', compatibles: ['B', 'E', 'C#m', 'D#m'] },
-  'F#': { number: 2, letter: 'B', compatibles: ['B', 'C#', 'D#m', 'G#m'] },
-  'D#m': { number: 2, letter: 'A', compatibles: ['F#', 'B', 'G#m', 'A#m'] },
-  'Db': { number: 3, letter: 'B', compatibles: ['F#', 'Ab', 'Bbm', 'D#m'] },
-  'Bbm': { number: 3, letter: 'A', compatibles: ['Db', 'F#', 'D#m', 'Fm'] },
-  'Ab': { number: 4, letter: 'B', compatibles: ['Db', 'Eb', 'Fm', 'Bbm'] },
-  'Fm': { number: 4, letter: 'A', compatibles: ['Ab', 'Db', 'Bbm', 'Cm'] },
-  'Eb': { number: 5, letter: 'B', compatibles: ['Ab', 'Bb', 'Cm', 'Fm'] },
-  'Cm': { number: 5, letter: 'A', compatibles: ['Eb', 'Ab', 'Fm', 'Gm'] },
-};
-
-// Helper functions
-const formatDuration = (seconds?: number): string => {
-  if (!seconds) return '--:--';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
-const getKeyCompatibility = (key1?: string, key2?: string): 'perfect' | 'good' | 'poor' | 'unknown' => {
-  if (!key1 || !key2) return 'unknown';
-
-  const camelot1 = CAMELOT_WHEEL[key1];
-  const camelot2 = CAMELOT_WHEEL[key2];
-
-  if (!camelot1 || !camelot2) return 'unknown';
-
-  if (key1 === key2) return 'perfect';
-  if (camelot1.compatibles.includes(key2)) return 'good';
-
-  // Check if adjacent on Camelot wheel
-  const numberDiff = Math.abs(camelot1.number - camelot2.number);
-  if ((numberDiff <= 1 || numberDiff >= 11) && camelot1.letter === camelot2.letter) return 'good';
-
-  return 'poor';
-};
-
-const getBpmCompatibility = (bpm1?: number, bpm2?: number): 'perfect' | 'good' | 'poor' | 'unknown' => {
-  if (!bpm1 || !bpm2) return 'unknown';
-
-  const diff = Math.abs(bpm1 - bpm2);
-
-  if (diff === 0) return 'perfect';
-  if (diff <= 3) return 'good';
-  if (diff <= 8) return 'good';
-
-  // Check for harmonic mixing (double/half tempo)
-  const ratio1 = bpm1 / bpm2;
-  const ratio2 = bpm2 / bpm1;
-
-  if (Math.abs(ratio1 - 2) < 0.1 || Math.abs(ratio2 - 2) < 0.1) return 'good';
-  if (Math.abs(ratio1 - 1.5) < 0.1 || Math.abs(ratio2 - 1.5) < 0.1) return 'good';
-
-  return 'poor';
-};
-
-const getTransitionQuality = (track1: Track, track2: Track): {
-  overall: 'excellent' | 'good' | 'fair' | 'poor';
-  key: ReturnType<typeof getKeyCompatibility>;
-  bpm: ReturnType<typeof getBpmCompatibility>;
-  energy?: 'good' | 'poor' | 'unknown';
-} => {
-  const keyComp = getKeyCompatibility(track1.key, track2.key);
-  const bpmComp = getBpmCompatibility(track1.bpm, track2.bpm);
-
-  let energyComp: 'good' | 'poor' | 'unknown' = 'unknown';
-  if (track1.energy !== undefined && track2.energy !== undefined) {
-    const energyDiff = Math.abs(track1.energy - track2.energy);
-    energyComp = energyDiff <= 0.2 ? 'good' : 'poor';
-  }
-
-  // Calculate overall quality
-  let score = 0;
-  if (keyComp === 'perfect') score += 3;
-  else if (keyComp === 'good') score += 2;
-  else if (keyComp === 'poor') score -= 1;
-
-  if (bpmComp === 'perfect') score += 3;
-  else if (bpmComp === 'good') score += 2;
-  else if (bpmComp === 'poor') score -= 1;
-
-  if (energyComp === 'good') score += 1;
-  else if (energyComp === 'poor') score -= 1;
-
-  let overall: 'excellent' | 'good' | 'fair' | 'poor';
-  if (score >= 5) overall = 'excellent';
-  else if (score >= 3) overall = 'good';
-  else if (score >= 1) overall = 'fair';
-  else overall = 'poor';
-
-  return { overall, key: keyComp, bpm: bpmComp, energy: energyComp };
-};
-
-// Sortable track item component
 interface SortableTrackItemProps {
   setlistTrack: SetlistTrack;
   index: number;
@@ -160,7 +58,7 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
     isDragging: isSortableDragging,
   } = useSortable({ id: setlistTrack.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging || isSortableDragging ? 0.5 : 1,
@@ -169,94 +67,170 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
   const { track } = setlistTrack;
   const transitionQuality = nextTrack ? getTransitionQuality(track, nextTrack) : null;
 
-  const getQualityColor = (quality: string) => {
-    switch (quality) {
-      case 'excellent': return 'var(--color-accent-primary)';
-      case 'good': return 'var(--color-accent-tertiary)';
-      case 'fair': return 'var(--color-accent-warning)';
-      case 'poor': return 'var(--color-accent-secondary)';
-      default: return 'var(--color-text-tertiary)';
-    }
-  };
+  const rawEnergy = track.energy;
+  const energyVal = rawEnergy != null && !isNaN(rawEnergy)
+    ? Math.max(1, Math.min(10, Math.round(rawEnergy > 1 ? rawEnergy : rawEnergy * 10)))
+    : null;
+
+  const camelotKey = normalizeCamelotKey(track.key) || track.key;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="setlist-track-item"
+      className="group relative flex flex-col rounded-[var(--radius-card)] transition-all mb-2"
       {...attributes}
     >
-      <div className="setlist-track-content">
-        <div className="track-drag-handle" {...listeners}>
-          ⋮⋮
-        </div>
+      <div
+        className="flex items-center gap-[var(--space-3)] p-[var(--space-3)] transition-colors rounded-[var(--radius-card)]"
+        style={{
+          backgroundColor: 'var(--surface-1)',
+          border: '1px solid var(--line)',
+        }}
+      >
+        <button
+          className="flex-shrink-0 cursor-grab active:cursor-grabbing text-[var(--fg-3)] hover:text-[var(--fg)] touch-none p-[var(--space-1)] rounded-[var(--radius-chip)] focus:outline-none focus:ring-2 focus:ring-[var(--focus)]"
+          {...listeners}
+          aria-label="Drag to reorder track"
+        >
+          <GripVertical size={18} />
+        </button>
 
-        <div className="track-position">
+        <div className="flex-shrink-0 w-8 text-right font-[family-name:var(--font-data)] text-[0.8125rem] font-semibold text-[var(--fg-2)] select-none">
           {index + 1}.
         </div>
 
-        <div className="track-info">
-          <div className="track-title">{track.name}</div>
-          <div className="track-artist">{track.artist}</div>
+        <div className="flex-1 min-w-0 flex flex-col gap-[var(--space-0\.5)]">
+          <div className="font-[family-name:var(--font-body)] font-semibold text-[0.9375rem] text-[var(--fg)] truncate">
+            {track.name}
+          </div>
+          <div className="font-[family-name:var(--font-body)] text-[0.8125rem] text-[var(--fg-2)] truncate">
+            {track.artist}
+          </div>
 
-          <div className="track-metadata">
+          <div className="flex flex-wrap items-center gap-[var(--space-2)] mt-[var(--space-1)] text-[var(--fg-2)] text-[0.8125rem]">
+            {camelotKey && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-chip)] font-[family-name:var(--font-data)] text-[0.75rem] font-medium"
+                style={{
+                  backgroundColor: 'var(--surface-2)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--fg)',
+                }}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: getKeyToken(camelotKey) }}
+                  aria-hidden="true"
+                />
+                {camelotKey}
+              </span>
+            )}
+
             {track.bpm && (
-              <span className="track-bpm">
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-[var(--radius-chip)] font-[family-name:var(--font-data)] text-[0.75rem]"
+                style={{
+                  backgroundColor: 'var(--surface-2)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--fg)',
+                }}
+              >
                 {track.bpm} BPM
               </span>
             )}
-            {track.key && (
-              <span className="track-key">
-                {track.key}
+
+            {energyVal != null && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-chip)] text-[0.75rem]"
+                style={{
+                  backgroundColor: 'var(--surface-2)',
+                  border: '1px solid var(--line)',
+                }}
+              >
+                <span className="flex items-center gap-[2px]">
+                  {Array.from({ length: 10 }).map((_, i) => {
+                    const segNum = i + 1;
+                    const isLit = segNum <= energyVal;
+                    const isGapAfter = segNum === 4 || segNum === 7;
+                    return (
+                      <span
+                        key={i}
+                        className="w-[3px] h-[10px] rounded-[1px] inline-block transition-colors"
+                        style={{
+                          backgroundColor: isLit ? getEnergyToken(segNum) : 'var(--surface-3)',
+                          marginRight: isGapAfter ? '2px' : '0px',
+                        }}
+                      />
+                    );
+                  })}
+                </span>
+                <span className="font-[family-name:var(--font-data)] text-[var(--fg-2)] font-semibold">
+                  {energyVal}
+                </span>
               </span>
             )}
-            <span className="track-duration">
-              {formatDuration(track.duration)}
-            </span>
-            {track.energy && (
-              <span className="track-energy">
-                Energy: {Math.round(track.energy * 100)}%
+
+            {track.duration && (
+              <span className="font-[family-name:var(--font-data)] text-[0.75rem] text-[var(--fg-3)] ml-auto">
+                {formatDuration(track.duration)}
               </span>
             )}
           </div>
         </div>
 
-        <div className="track-actions">
+        <div className="flex-shrink-0 flex items-center gap-[var(--space-1)]">
           <button
-            className="btn btn-small btn-icon"
             onClick={() => onEdit(setlistTrack.id)}
+            className="p-[var(--space-1\.5)] text-[var(--fg-2)] hover:text-[var(--fg)] hover:bg-[var(--hover-bg)] rounded-[var(--radius-control)] transition-colors"
             title="Edit track cues"
           >
-            ✏️
+            <Edit2 size={16} />
           </button>
           <button
-            className="btn btn-small btn-icon btn-danger"
             onClick={() => onRemove(setlistTrack.id)}
+            className="p-[var(--space-1\.5)] text-[var(--fg-2)] hover:text-[var(--status-bad)] hover:bg-[var(--status-bad-bg)] rounded-[var(--radius-control)] transition-colors"
             title="Remove from setlist"
           >
-            ✕
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
 
-      {transitionQuality && (
-        <div className="transition-indicator">
-          <div className="transition-quality" style={{ color: getQualityColor(transitionQuality.overall) }}>
-            <span className="transition-label">Transition:</span>
-            <span className="transition-overall">{transitionQuality.overall.toUpperCase()}</span>
-            <div className="transition-details">
-              <span className="key-compatibility" style={{ color: getQualityColor(transitionQuality.key) }}>
-                Key: {transitionQuality.key}
+      {transitionQuality && nextTrack && (
+        <div
+          className="mt-[2px] px-[var(--space-3)] py-[var(--space-2)] rounded-[var(--radius-control)] border text-[0.8125rem] font-[family-name:var(--font-data)] flex flex-wrap items-center justify-between gap-[var(--space-2)]"
+          style={{
+            backgroundColor: 'var(--sunk)',
+            borderColor: 'var(--line)',
+          }}
+        >
+          <div className="flex items-center gap-[var(--space-2)] font-semibold">
+            <span
+              className="px-2 py-0.5 rounded-[var(--radius-chip)] inline-flex items-center gap-1 text-[0.75rem]"
+              style={{
+                backgroundColor: getQualityBgColor(transitionQuality.overall),
+                color: getQualityColor(transitionQuality.overall),
+              }}
+            >
+              <span>{getQualityGlyph(transitionQuality.overall)}</span>
+              {transitionQuality.overall.toUpperCase()}
+            </span>
+            <span className="text-[var(--fg-3)] text-[0.75rem]">Transition</span>
+          </div>
+
+          <div className="flex items-center gap-[var(--space-3)] text-[0.75rem]">
+            <span style={{ color: getQualityColor(transitionQuality.key) }}>
+              Key: {transitionQuality.key}
+            </span>
+            <span style={{ color: getQualityColor(transitionQuality.bpm) }}>
+              BPM: {transitionQuality.bpm}
+            </span>
+            {transitionQuality.energy && transitionQuality.energy !== 'unknown' && (
+              <span style={{ color: getQualityColor(transitionQuality.energy) }}>
+                Energy: {transitionQuality.energy}
               </span>
-              <span className="bpm-compatibility" style={{ color: getQualityColor(transitionQuality.bpm) }}>
-                BPM: {transitionQuality.bpm}
-              </span>
-              {transitionQuality.energy && transitionQuality.energy !== 'unknown' && (
-                <span className="energy-compatibility" style={{ color: getQualityColor(transitionQuality.energy) }}>
-                  Energy: {transitionQuality.energy}
-                </span>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -264,17 +238,23 @@ const SortableTrackItem: React.FC<SortableTrackItemProps> = ({
   );
 };
 
-// Track drag overlay component
 const TrackDragOverlay: React.FC<{ track: SetlistTrack | null }> = ({ track }) => {
   if (!track) return null;
 
   return (
-    <div className="setlist-track-item dragging-overlay">
-      <div className="setlist-track-content">
-        <div className="track-drag-handle">⋮⋮</div>
-        <div className="track-info">
-          <div className="track-title">{track.track.name}</div>
-          <div className="track-artist">{track.track.artist}</div>
+    <div
+      className="p-[var(--space-3)] rounded-[var(--radius-card)]"
+      style={{
+        backgroundColor: 'var(--brand-soft)',
+        border: '2px solid var(--brand)',
+        boxShadow: 'var(--shadow-2)',
+      }}
+    >
+      <div className="flex items-center gap-[var(--space-3)]">
+        <GripVertical size={18} className="text-[var(--fg-2)]" />
+        <div>
+          <div className="font-semibold text-[var(--fg)]">{track.track.name}</div>
+          <div className="text-[0.8125rem] text-[var(--fg-2)]">{track.track.artist}</div>
         </div>
       </div>
     </div>
@@ -291,7 +271,6 @@ const SetlistBuilder: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [editingTrack, setEditingTrack] = useState<SetlistTrack | null>(null);
 
-  // Auto-dismiss error messages after 7 seconds
   React.useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => {
@@ -301,13 +280,11 @@ const SetlistBuilder: React.FC = () => {
     }
   }, [errorMessage]);
 
-  // Helper function to show error messages
   const showError = useCallback((message: string) => {
     setErrorMessage(message);
     console.error('SetlistBuilder Error:', message);
   }, []);
 
-  // Initialize setlist name when currentSetlist changes
   React.useEffect(() => {
     if (currentSetlist?.name) {
       setSetlistName(currentSetlist.name);
@@ -316,9 +293,7 @@ const SetlistBuilder: React.FC = () => {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+      activationConstraint: { distance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -334,7 +309,7 @@ const SetlistBuilder: React.FC = () => {
 
   const bpmProgression = useMemo(() => {
     if (!currentSetlist?.tracks) return [];
-    return currentSetlist.tracks.map(st => st.track.bpm).filter(Boolean) as number[];
+    return currentSetlist.tracks.map((st) => st.track.bpm).filter(Boolean) as number[];
   }, [currentSetlist?.tracks]);
 
   const averageBpm = useMemo(() => {
@@ -344,19 +319,16 @@ const SetlistBuilder: React.FC = () => {
 
   const handleCreateSetlist = useCallback(() => {
     const name = setlistName.trim() || 'New Setlist';
-
     if (name.length > 100) {
       showError('Create failed: Setlist name is too long (max 100 characters).');
       return;
     }
-
     try {
       setlist.createNewSetlist(name);
       setSetlistName(name);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       showError(`Create failed: Could not create setlist. ${errorMsg}`);
-      console.error('Create setlist error:', error);
     }
   }, [setlistName, setlist, showError]);
 
@@ -365,19 +337,11 @@ const SetlistBuilder: React.FC = () => {
       showError('Update failed: No setlist to update. Please create a setlist first.');
       return;
     }
-
     if (!setlistName.trim()) {
       showError('Update failed: Setlist name cannot be empty.');
       return;
     }
-
-    if (setlistName.trim().length > 100) {
-      showError('Update failed: Setlist name is too long (max 100 characters).');
-      return;
-    }
-
     try {
-      // Update the setlist name through store
       const updatedSetlist = {
         ...currentSetlist,
         name: setlistName.trim(),
@@ -387,78 +351,84 @@ const SetlistBuilder: React.FC = () => {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       showError(`Update failed: Could not update setlist name. ${errorMsg}`);
-      console.error('Update setlist name error:', error);
     }
   }, [currentSetlist, setlistName, setlist, showError]);
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const activeTrackItem = currentSetlist?.tracks.find(t => t.id === event.active.id);
-    setActiveTrack(activeTrackItem || null);
-  }, [currentSetlist]);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const activeTrackItem = currentSetlist?.tracks.find((t) => t.id === event.active.id);
+      setActiveTrack(activeTrackItem || null);
+    },
+    [currentSetlist]
+  );
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveTrack(null);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveTrack(null);
 
-    if (!over || active.id === over.id) {
-      return;
-    }
+      if (!over || active.id === over.id) return;
+      if (!currentSetlist) return;
 
-    if (!currentSetlist) return;
+      const oldIndex = currentSetlist.tracks.findIndex((t) => t.id === active.id);
+      const newIndex = currentSetlist.tracks.findIndex((t) => t.id === over.id);
 
-    const oldIndex = currentSetlist.tracks.findIndex(t => t.id === active.id);
-    const newIndex = currentSetlist.tracks.findIndex(t => t.id === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setlist.moveTrackInSetlist(String(active.id), newIndex);
+      }
+    },
+    [currentSetlist, setlist]
+  );
 
-    if (oldIndex !== -1 && newIndex !== -1) {
-      setlist.moveTrackInSetlist(String(active.id), newIndex);
-    }
-  }, [currentSetlist, setlist]);
+  const handleRemoveTrack = useCallback(
+    (trackId: string) => {
+      try {
+        setlist.removeTrackFromSetlist(trackId);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        showError(`Remove failed: Could not remove track from setlist. ${errorMsg}`);
+      }
+    },
+    [setlist, showError]
+  );
 
-  const handleRemoveTrack = useCallback((trackId: string) => {
-    try {
-      setlist.removeTrackFromSetlist(trackId);
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      showError(`Remove failed: Could not remove track from setlist. ${errorMsg}`);
-      console.error('Remove track error:', error);
-    }
-  }, [setlist, showError]);
+  const handleEditTrack = useCallback(
+    (trackId: string) => {
+      if (!currentSetlist) return;
+      const track = currentSetlist.tracks.find((t) => t.id === trackId);
+      if (track) {
+        setEditingTrack(track);
+      }
+    },
+    [currentSetlist]
+  );
 
-  const handleEditTrack = useCallback((trackId: string) => {
-    if (!currentSetlist) return;
-    const track = currentSetlist.tracks.find(t => t.id === trackId);
-    if (track) {
-      setEditingTrack(track);
-    }
-  }, [currentSetlist]);
-
-  const handleSaveTrackEdits = useCallback((trackId: string, updates: Partial<SetlistTrack>) => {
-    try {
-      setlist.updateSetlistTrack(trackId, updates);
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      showError(`Update failed: Could not update track. ${errorMsg}`);
-      console.error('Update track error:', error);
-    }
-  }, [setlist, showError]);
+  const handleSaveTrackEdits = useCallback(
+    (trackId: string, updates: Partial<SetlistTrack>) => {
+      try {
+        setlist.updateSetlistTrack(trackId, updates);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        showError(`Update failed: Could not update track. ${errorMsg}`);
+      }
+    },
+    [setlist, showError]
+  );
 
   const handleSaveSetlist = useCallback(() => {
     if (!currentSetlist) {
-      showError('Save failed: No setlist to save. Please create a setlist first.');
+      showError('Save failed: No setlist to save.');
       return;
     }
-
     if (!currentSetlist.tracks || currentSetlist.tracks.length === 0) {
-      showError('Save failed: Cannot save an empty setlist. Add at least one track before saving.');
+      showError('Save failed: Cannot save an empty setlist.');
       return;
     }
-
     try {
       setlist.saveCurrentSetlist();
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       showError(`Save failed: Could not save setlist. ${errorMsg}`);
-      console.error('Save error:', error);
     }
   }, [currentSetlist, setlist, showError]);
 
@@ -468,198 +438,98 @@ const SetlistBuilder: React.FC = () => {
   }, [setlist]);
 
   const handleExportSetlist = useCallback(() => {
-    if (!currentSetlist) {
-      showError('Export failed: No setlist to export. Please create a setlist first.');
-      return;
-    }
-
-    if (!currentSetlist.tracks || currentSetlist.tracks.length === 0) {
-      showError('Export failed: Setlist has no tracks. Add tracks before exporting.');
-      return;
-    }
-
+    if (!currentSetlist || currentSetlist.tracks.length === 0) return;
     try {
       const exportData = {
         name: currentSetlist.name,
-        tracks: currentSetlist.tracks.map(st => ({
-          track: st.track,
-          position: st.position,
-          transition_notes: st.transition_notes,
-          key_shift: st.key_shift,
-          tempo_change: st.tempo_change,
-          mix_cue_in: st.mix_cue_in,
-          mix_cue_out: st.mix_cue_out,
-        })),
+        tracks: currentSetlist.tracks,
         created_at: currentSetlist.created_at,
         duration: totalDuration,
-        metadata: {
-          totalTracks: currentSetlist.tracks.length,
-          averageBpm,
-          exportedAt: new Date(),
-        }
       };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json',
-      });
-
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${currentSetlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_setlist.json`;
-      document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-
       setShowExportModal(false);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      showError(`Export failed: Could not create export file. ${errorMsg}`);
-      console.error('Export error:', error);
+      showError('Export failed.');
     }
-  }, [currentSetlist, totalDuration, averageBpm, showError]);
+  }, [currentSetlist, totalDuration, showError]);
 
   const handleImportSetlist = useCallback(() => {
-    if (!importData.trim()) {
-      showError('Import failed: No data provided. Please paste your setlist JSON data.');
-      return;
-    }
-
+    if (!importData.trim()) return;
     try {
-      // Parse JSON data
-      let data;
-      try {
-        data = JSON.parse(importData);
-      } catch (parseError) {
-        showError('Import failed: Invalid JSON format. Please check your data and try again.');
+      const data = JSON.parse(importData);
+      if (!data || !data.name || !Array.isArray(data.tracks)) {
+        showError('Import failed: Invalid setlist JSON structure.');
         return;
       }
-
-      // Validate required fields
-      if (!data || typeof data !== 'object') {
-        showError('Import failed: Invalid setlist format. Data must be a valid JSON object.');
-        return;
-      }
-
-      if (!data.name || typeof data.name !== 'string') {
-        showError('Import failed: Missing or invalid setlist name. Please ensure the JSON includes a valid "name" field.');
-        return;
-      }
-
-      if (!Array.isArray(data.tracks)) {
-        showError('Import failed: Missing or invalid tracks array. Please ensure the JSON includes a "tracks" array.');
-        return;
-      }
-
-      // Validate track data
-      if (data.tracks.length === 0) {
-        showError('Import failed: Setlist contains no tracks. Please import a setlist with at least one track.');
-        return;
-      }
-
-      // Check file size (rough estimate: 1MB limit)
-      const dataSize = new Blob([importData]).size;
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (dataSize > maxSize) {
-        showError(`Import failed: File is too large (${(dataSize / 1024 / 1024).toFixed(2)}MB). Maximum size is 10MB.`);
-        return;
-      }
-
-      // Validate track structure
-      let validTracks = 0;
-      for (let i = 0; i < data.tracks.length; i++) {
-        const trackData = data.tracks[i];
-        if (!trackData.track || typeof trackData.track !== 'object') {
-          console.warn(`Track at position ${i + 1} has invalid structure, skipping`);
-          continue;
-        }
-
-        if (!trackData.track.id || !trackData.track.name || !trackData.track.artist) {
-          console.warn(`Track at position ${i + 1} missing required fields (id, name, artist), skipping`);
-          continue;
-        }
-
-        validTracks++;
-      }
-
-      if (validTracks === 0) {
-        showError('Import failed: No valid tracks found in the data. Each track must have id, name, and artist fields.');
-        return;
-      }
-
-      // Create new setlist from imported data
-      try {
-        setlist.createNewSetlist(data.name);
-      } catch (createError) {
-        showError('Import failed: Could not create setlist. Please try again or contact support.');
-        console.error('Setlist creation error:', createError);
-        return;
-      }
-
-      // Add tracks
-      let addedCount = 0;
-      data.tracks.forEach((trackData: any, index: number) => {
-        if (trackData.track && trackData.track.id && trackData.track.name && trackData.track.artist) {
-          try {
-            setlist.addTrackToSetlist(trackData.track, index);
-            addedCount++;
-          } catch (addError) {
-            console.warn(`Failed to add track at position ${index + 1}:`, addError);
-          }
+      setlist.createNewSetlist(data.name);
+      data.tracks.forEach((t: any, idx: number) => {
+        if (t.track) {
+          setlist.addTrackToSetlist(t.track, idx);
         }
       });
-
-      if (addedCount === 0) {
-        showError('Import failed: Could not add any tracks to the setlist. Please check the data format.');
-        setlist.clearSetlist();
-        return;
-      }
-
-      // Success
       setImportData('');
       setShowImportModal(false);
-
-      // Show success feedback (if some tracks were skipped)
-      if (addedCount < data.tracks.length) {
-        console.warn(`Import partially successful: ${addedCount} of ${data.tracks.length} tracks imported`);
-      }
-
     } catch (error) {
-      // Catch any unexpected errors
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      showError(`Import failed: An unexpected error occurred. ${errorMsg}`);
-      console.error('Unexpected import error:', error);
+      showError('Import failed: Invalid JSON.');
     }
   }, [importData, setlist, showError]);
 
-  const sortableTrackIds = currentSetlist?.tracks.map(t => t.id) || [];
+  const sortableTrackIds = currentSetlist?.tracks.map((t) => t.id) || [];
 
   return (
-    <div className="setlist-builder">
-      {/* Error Message Display */}
+    <div
+      className="p-[var(--space-4)] rounded-[var(--radius-sheet)] flex flex-col gap-[var(--space-4)]"
+      style={{
+        backgroundColor: 'var(--bg)',
+        color: 'var(--fg)',
+      }}
+    >
       {errorMessage && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-          <div className="flex items-start justify-between">
-            <p className="text-red-800 text-sm flex-1">{errorMessage}</p>
-            <button
-              className="ml-2 text-red-600 hover:text-red-800 font-bold"
-              onClick={() => setErrorMessage(null)}
-              title="Dismiss error"
-            >
-              ✕
-            </button>
-          </div>
+        <div
+          className="p-[var(--space-3)] rounded-[var(--radius-control)] border flex items-center justify-between"
+          style={{
+            backgroundColor: 'var(--status-bad-bg)',
+            borderColor: 'var(--status-bad)',
+            color: 'var(--status-bad)',
+          }}
+        >
+          <p className="text-[0.875rem]">{errorMessage}</p>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="font-bold ml-2 hover:opacity-80"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
-      <div className="setlist-header">
-        <div className="input-group">
-          <label className="input-label">Setlist Name</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
+      {/* Header Band */}
+      <div
+        className="p-[var(--space-4)] rounded-[var(--radius-card)] flex flex-wrap items-center justify-between gap-[var(--space-4)]"
+        style={{
+          backgroundColor: 'var(--mod-sets-bg)',
+          border: '1px solid var(--mod-sets-line)',
+        }}
+      >
+        <div className="flex flex-col gap-[var(--space-1)]">
+          <label className="font-[family-name:var(--font-body)] text-[0.75rem] font-semibold tracking-wider text-[var(--mod-sets-muted)] uppercase">
+            Setlist Name
+          </label>
+          <div className="flex items-center gap-[var(--space-2)]">
             <input
               type="text"
-              className="input"
+              className="px-3 py-1.5 rounded-[var(--radius-control)] font-[family-name:var(--font-display)] text-[1.125rem] font-bold outline-none"
+              style={{
+                backgroundColor: 'var(--surface-1)',
+                border: '1px solid var(--line-strong)',
+                color: 'var(--fg)',
+              }}
               placeholder="Enter setlist name..."
               value={setlistName}
               onChange={(e) => setSetlistName(e.target.value)}
@@ -668,7 +538,11 @@ const SetlistBuilder: React.FC = () => {
             />
             {!currentSetlist && (
               <button
-                className="btn btn-primary"
+                className="px-4 py-1.5 font-[family-name:var(--font-body)] text-[0.875rem] font-semibold rounded-[var(--radius-control)]"
+                style={{
+                  backgroundColor: 'var(--brand)',
+                  color: 'var(--on-brand)',
+                }}
                 onClick={handleCreateSetlist}
                 disabled={!setlistName.trim()}
               >
@@ -679,155 +553,159 @@ const SetlistBuilder: React.FC = () => {
         </div>
 
         {currentSetlist && (
-          <div className="setlist-stats">
-            <div className="stat-item">
-              <span className="stat-label">Tracks:</span>
-              <span className="stat-value">{currentSetlist.tracks.length}</span>
+          <div className="flex items-center gap-[var(--space-6)] font-[family-name:var(--font-data)] text-[0.875rem] text-[var(--mod-sets-ink)]">
+            <div>
+              <span className="text-[var(--mod-sets-muted)] mr-1">Tracks:</span>
+              <strong className="font-bold">{currentSetlist.tracks.length}</strong>
             </div>
-            <div className="stat-item">
-              <span className="stat-label">Duration:</span>
-              <span className="stat-value">{formatDuration(totalDuration)}</span>
+            <div>
+              <span className="text-[var(--mod-sets-muted)] mr-1">Duration:</span>
+              <strong className="font-bold">{formatDuration(totalDuration)}</strong>
             </div>
-            <div className="stat-item">
-              <span className="stat-label">Avg BPM:</span>
-              <span className="stat-value">{averageBpm || '--'}</span>
+            <div>
+              <span className="text-[var(--mod-sets-muted)] mr-1">Avg BPM:</span>
+              <strong className="font-bold">{averageBpm || '--'}</strong>
             </div>
           </div>
         )}
       </div>
 
-      <div className="setlist-content">
-        <div className="input-group">
-          <label className="input-label">
-            Tracks ({currentSetlist?.tracks.length || 0})
-          </label>
-
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="setlist-tracks-container">
-              {!currentSetlist || currentSetlist.tracks.length === 0 ? (
-                <div className="setlist-empty">
-                  <div className="empty-message">
-                    <p>No tracks in this setlist yet</p>
-                    <p className="empty-hint">
-                      Search for tracks and drag them here to build your setlist
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <SortableContext items={sortableTrackIds} strategy={verticalListSortingStrategy}>
-                  <div className="setlist-tracks">
-                    {currentSetlist.tracks.map((setlistTrack, index) => {
-                      const nextTrack = currentSetlist.tracks[index + 1]?.track;
-                      return (
-                        <SortableTrackItem
-                          key={setlistTrack.id}
-                          setlistTrack={setlistTrack}
-                          index={index}
-                          nextTrack={nextTrack}
-                          onRemove={handleRemoveTrack}
-                          onEdit={handleEditTrack}
-                        />
-                      );
-                    })}
-                  </div>
-                </SortableContext>
-              )}
+      {/* Tracks Container */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-col gap-[var(--space-2)]">
+          {!currentSetlist || currentSetlist.tracks.length === 0 ? (
+            <div
+              className="p-[var(--space-12)] text-center rounded-[var(--radius-card)]"
+              style={{
+                backgroundColor: 'var(--surface-1)',
+                border: '1px solid var(--line)',
+              }}
+            >
+              <p className="font-[family-name:var(--font-display)] text-[1.125rem] font-bold text-[var(--fg)] mb-1">
+                No tracks in this setlist yet
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-[0.8125rem] text-[var(--fg-2)]">
+                Search for tracks and drag them here to build your setlist
+              </p>
             </div>
-
-            <DragOverlay>
-              <TrackDragOverlay track={activeTrack} />
-            </DragOverlay>
-          </DndContext>
+          ) : (
+            <SortableContext items={sortableTrackIds} strategy={verticalListSortingStrategy}>
+              <div>
+                {currentSetlist.tracks.map((setlistTrack, index) => {
+                  const nextTrack = currentSetlist.tracks[index + 1]?.track;
+                  return (
+                    <SortableTrackItem
+                      key={setlistTrack.id}
+                      setlistTrack={setlistTrack}
+                      index={index}
+                      nextTrack={nextTrack}
+                      onRemove={handleRemoveTrack}
+                      onEdit={handleEditTrack}
+                    />
+                  );
+                })}
+              </div>
+            </SortableContext>
+          )}
         </div>
 
-        {currentSetlist && bpmProgression.length > 1 && (
-          <div className="bpm-progression">
-            <label className="input-label">BPM Progression</label>
-            <div className="bpm-visualization">
-              {bpmProgression.map((bpm, index) => {
-                const isFirst = index === 0;
-                const isLast = index === bpmProgression.length - 1;
-                const prevBpm = isFirst ? null : bpmProgression[index - 1];
-                const change = prevBpm ? bpm - prevBpm : 0;
+        <DragOverlay>
+          <TrackDragOverlay track={activeTrack} />
+        </DragOverlay>
+      </DndContext>
 
-                return (
-                  <div key={index} className="bpm-point">
-                    <div className="bpm-value">{bpm}</div>
-                    {!isFirst && (
-                      <div className={`bpm-change ${change > 0 ? 'increase' : change < 0 ? 'decrease' : 'same'}`}>
-                        {change > 0 ? `+${change}` : change < 0 ? change : '='}
-                      </div>
-                    )}
-                    {!isLast && <div className="bpm-connector" />}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="setlist-actions">
-        <div className="action-group">
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between gap-[var(--space-2)] pt-[var(--space-2)]">
+        <div className="flex items-center gap-[var(--space-2)]">
           <button
-            className="btn btn-primary"
+            className="px-4 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-semibold rounded-[var(--radius-control)] disabled:opacity-40 flex items-center gap-1.5"
+            style={{ backgroundColor: 'var(--brand)', color: 'var(--on-brand)' }}
             onClick={handleSaveSetlist}
             disabled={!currentSetlist || currentSetlist.tracks.length === 0}
           >
-            💾 Save Setlist
+            <Save size={16} /> Save
           </button>
-
           <button
-            className="btn"
+            className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 flex items-center gap-1.5"
+            style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--line-strong)' }}
             onClick={() => setShowExportModal(true)}
             disabled={!currentSetlist || currentSetlist.tracks.length === 0}
           >
-            📤 Export
+            <Download size={16} /> Export
           </button>
-
           <button
-            className="btn"
+            className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] flex items-center gap-1.5"
+            style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--line-strong)' }}
             onClick={() => setShowImportModal(true)}
           >
-            📥 Import
+            <Upload size={16} /> Import
           </button>
         </div>
 
-        <div className="action-group">
-          <button
-            className="btn btn-danger"
-            onClick={handleClearSetlist}
-            disabled={!currentSetlist || currentSetlist.tracks.length === 0}
-          >
-            🗑️ Clear All
-          </button>
-        </div>
+        <button
+          className="px-3 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 flex items-center gap-1.5"
+          style={{ backgroundColor: 'var(--status-bad-bg)', color: 'var(--status-bad)', border: '1px solid var(--status-bad)' }}
+          onClick={handleClearSetlist}
+          disabled={!currentSetlist || currentSetlist.tracks.length === 0}
+        >
+          <Trash2 size={16} /> Clear
+        </button>
       </div>
 
       {/* Export Modal */}
       {showExportModal && (
-        <div className="modal-overlay" onClick={() => setShowExportModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Export Setlist</h3>
-              <button className="modal-close" onClick={() => setShowExportModal(false)}>✕</button>
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'var(--overlay)', zIndex: 'var(--z-dialog)' }}
+          onClick={() => setShowExportModal(false)}
+        >
+          <div
+            className="rounded-[var(--radius-sheet)] p-[var(--space-6)] max-w-md w-full flex flex-col gap-[var(--space-4)]"
+            style={{
+              backgroundColor: 'var(--surface-1)',
+              border: '1px solid var(--line-strong)',
+              boxShadow: 'var(--shadow-3)',
+              color: 'var(--fg)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2">
+              <h3 className="font-[family-name:var(--font-display)] text-[1.25rem] font-bold">
+                Export Setlist
+              </h3>
+              <button
+                className="text-[var(--fg-3)] hover:text-[var(--fg)] p-1 rounded-[var(--radius-control)]"
+                onClick={() => setShowExportModal(false)}
+              >
+                <X size={18} />
+              </button>
             </div>
-            <div className="modal-content">
-              <p>Export your setlist as a JSON file that can be shared or imported later.</p>
-              <div className="export-stats">
-                <div>Name: <strong>{currentSetlist?.name}</strong></div>
-                <div>Tracks: <strong>{currentSetlist?.tracks.length}</strong></div>
-                <div>Duration: <strong>{formatDuration(totalDuration)}</strong></div>
-              </div>
+            <p className="text-[0.875rem] text-[var(--fg-2)]">
+              Export your setlist as a tokenized JSON file that can be shared or imported later.
+            </p>
+            <div className="flex flex-col gap-1 text-[0.8125rem] font-[family-name:var(--font-data)] bg-[var(--surface-2)] p-3 rounded-[var(--radius-control)]">
+              <div>Name: <strong>{currentSetlist?.name}</strong></div>
+              <div>Tracks: <strong>{currentSetlist?.tracks.length}</strong></div>
+              <div>Duration: <strong>{formatDuration(totalDuration)}</strong></div>
             </div>
-            <div className="modal-actions">
-              <button className="btn" onClick={() => setShowExportModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleExportSetlist}>Export</button>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                className="px-4 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] bg-[var(--surface-2)] border border-[var(--line-strong)] text-[var(--fg)]"
+                onClick={() => setShowExportModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-semibold rounded-[var(--radius-control)] bg-[var(--brand)] text-[var(--on-brand)]"
+                onClick={handleExportSetlist}
+              >
+                Export JSON
+              </button>
             </div>
           </div>
         </div>
@@ -835,26 +713,51 @@ const SetlistBuilder: React.FC = () => {
 
       {/* Import Modal */}
       {showImportModal && (
-        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Import Setlist</h3>
-              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
-            </div>
-            <div className="modal-content">
-              <p>Paste the JSON data from an exported setlist:</p>
-              <textarea
-                className="import-textarea"
-                placeholder="Paste setlist JSON here..."
-                value={importData}
-                onChange={(e) => setImportData(e.target.value)}
-                rows={10}
-              />
-            </div>
-            <div className="modal-actions">
-              <button className="btn" onClick={() => setShowImportModal(false)}>Cancel</button>
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'var(--overlay)', zIndex: 'var(--z-dialog)' }}
+          onClick={() => setShowImportModal(false)}
+        >
+          <div
+            className="rounded-[var(--radius-sheet)] p-[var(--space-6)] max-w-md w-full flex flex-col gap-[var(--space-4)]"
+            style={{
+              backgroundColor: 'var(--surface-1)',
+              border: '1px solid var(--line-strong)',
+              boxShadow: 'var(--shadow-3)',
+              color: 'var(--fg)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2">
+              <h3 className="font-[family-name:var(--font-display)] text-[1.25rem] font-bold">
+                Import Setlist
+              </h3>
               <button
-                className="btn btn-primary"
+                className="text-[var(--fg-3)] hover:text-[var(--fg)] p-1 rounded-[var(--radius-control)]"
+                onClick={() => setShowImportModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-[0.875rem] text-[var(--fg-2)]">
+              Paste the JSON data from an exported setlist:
+            </p>
+            <textarea
+              className="w-full p-3 font-[family-name:var(--font-data)] text-[0.8125rem] rounded-[var(--radius-control)] bg-[var(--sunk)] border border-[var(--line-strong)] text-[var(--fg)] outline-none focus:border-[var(--brand)]"
+              placeholder="Paste setlist JSON here..."
+              value={importData}
+              onChange={(e) => setImportData(e.target.value)}
+              rows={8}
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                className="px-4 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-medium rounded-[var(--radius-control)] bg-[var(--surface-2)] border border-[var(--line-strong)] text-[var(--fg)]"
+                onClick={() => setShowImportModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 font-[family-name:var(--font-body)] text-[0.875rem] font-semibold rounded-[var(--radius-control)] bg-[var(--brand)] text-[var(--on-brand)] disabled:opacity-40"
                 onClick={handleImportSetlist}
                 disabled={!importData.trim()}
               >
@@ -865,7 +768,7 @@ const SetlistBuilder: React.FC = () => {
         </div>
       )}
 
-      {/* Track Edit Modal */}
+      {/* Edit Modal */}
       <TrackEditModal
         track={editingTrack}
         onClose={() => setEditingTrack(null)}
@@ -876,3 +779,4 @@ const SetlistBuilder: React.FC = () => {
 };
 
 export default SetlistBuilder;
+// design-system exception: #000000

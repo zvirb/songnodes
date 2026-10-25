@@ -75,6 +75,17 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.services.websocketApi.service.ports.http.port }}
+    # Egress rule for external OAuth / API endpoints over HTTPS
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -363,9 +374,15 @@ spec:
           port: {{ .Values.rabbitmq.service.ports.amqp }}
         - protocol: TCP
           port: {{ .Values.rabbitmq.service.ports.management }}
-    # Allow internet (HTTPS/HTTP)
-    # Note: No 'to' selector = allows ALL destinations including external IPs
-    - ports:
+    # Allow external internet egress (non-cluster IPs)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
         - protocol: TCP
           port: 443
         - protocol: TCP
@@ -409,9 +426,15 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.redis.service.port }}
-    # Allow internet for external APIs (Spotify, MusicBrainz, etc.)
-    # Note: No 'to' selector = allows ALL destinations including external IPs
-    - ports:
+    # Allow external internet egress for external APIs (Spotify, MusicBrainz, etc.)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
         - protocol: TCP
           port: 443
         - protocol: TCP
@@ -522,9 +545,15 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.services.metadataEnrichment.service.ports.http.port }}
-    # Allow internet (HTTPS/HTTP)
-    # Note: No 'to' selector = allows ALL destinations including external IPs
-    - ports:
+    # Allow external internet egress
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
         - protocol: TCP
           port: 80
         - protocol: TCP

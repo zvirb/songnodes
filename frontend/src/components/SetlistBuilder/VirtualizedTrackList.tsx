@@ -1,6 +1,6 @@
 /**
  * VirtualizedTrackList Component
- * Uses TanStack Virtual for efficient rendering of large lists
+ * Uses TanStack Virtual for efficient rendering of large lists and Design System tokens
  */
 
 import React, { useRef, useMemo, useState } from 'react';
@@ -35,16 +35,22 @@ interface VirtualizedTrackListProps {
 }
 
 const VIRTUALIZATION_THRESHOLD = 50;
-const ITEM_HEIGHT = 120; // Estimated height per item
+const ITEM_HEIGHT = 112; // Standard row height including gap/transition strip
 
 const EmptyState: React.FC = () => (
-  <div className="flex flex-col items-center justify-center p-12 text-center">
-    <Music size={64} className="text-gray-300 dark:text-gray-600 mb-4" />
-    <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+  <div
+    className="flex flex-col items-center justify-center p-[var(--space-12)] text-center rounded-[var(--radius-card)]"
+    style={{
+      backgroundColor: 'var(--surface-1)',
+      border: '1px border var(--line)',
+    }}
+  >
+    <Music size={48} className="text-[var(--fg-3)] mb-[var(--space-4)]" />
+    <h3 className="font-[family-name:var(--font-display)] text-[1.125rem] font-bold text-[var(--fg)] mb-[var(--space-2)]">
       No tracks in this setlist yet
     </h3>
-    <p className="text-sm text-gray-500 dark:text-gray-400">
-      Search for tracks and drag them here to build your setlist
+    <p className="font-[family-name:var(--font-body)] text-[0.8125rem] text-[var(--fg-2)] max-w-[40ch]">
+      Search for tracks or select from your crate to add them to your running order.
     </p>
   </div>
 );
@@ -70,7 +76,6 @@ export const VirtualizedTrackList: React.FC<VirtualizedTrackListProps> = ({
     })
   );
 
-  // Only virtualize if list is large enough
   const shouldVirtualize = tracks.length > VIRTUALIZATION_THRESHOLD;
 
   const virtualizer = useVirtualizer({
@@ -93,18 +98,18 @@ export const VirtualizedTrackList: React.FC<VirtualizedTrackListProps> = ({
       return;
     }
 
-    const oldIndex = tracks.findIndex(t => t.id === active.id);
-    const newIndex = tracks.findIndex(t => t.id === over.id);
+    const oldIndex = tracks.findIndex((t) => t.id === active.id);
+    const newIndex = tracks.findIndex((t) => t.id === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
       onReorder(oldIndex, newIndex);
     }
   };
 
-  const sortableIds = useMemo(() => tracks.map(t => t.id), [tracks]);
+  const sortableIds = useMemo(() => tracks.map((t) => t.id), [tracks]);
 
   const activeTrack = useMemo(
-    () => tracks.find(t => t.id === activeId),
+    () => tracks.find((t) => t.id === activeId),
     [tracks, activeId]
   );
 
@@ -122,8 +127,8 @@ export const VirtualizedTrackList: React.FC<VirtualizedTrackListProps> = ({
       <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
         <div
           ref={parentRef}
-          className="overflow-auto"
-          style={{ height: '600px' }}
+          className="overflow-auto pr-1"
+          style={{ maxHeight: '640px' }}
           role="list"
           aria-label="Setlist tracks"
         >
@@ -135,7 +140,7 @@ export const VirtualizedTrackList: React.FC<VirtualizedTrackListProps> = ({
                 position: 'relative',
               }}
             >
-              {virtualizer.getVirtualItems().map(virtualItem => {
+              {virtualizer.getVirtualItems().map((virtualItem) => {
                 const track = tracks[virtualItem.index];
                 const nextTrack = tracks[virtualItem.index + 1]?.track;
                 const transitionQuality = nextTrack
@@ -153,7 +158,7 @@ export const VirtualizedTrackList: React.FC<VirtualizedTrackListProps> = ({
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                   >
-                    <div className="pb-2">
+                    <div className="pb-[var(--space-2)]">
                       <TrackListItem
                         setlistTrack={track}
                         index={virtualItem.index}
@@ -169,7 +174,7 @@ export const VirtualizedTrackList: React.FC<VirtualizedTrackListProps> = ({
               })}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-[var(--space-2)]">
               {tracks.map((track, index) => {
                 const nextTrack = tracks[index + 1]?.track;
                 const transitionQuality = nextTrack
@@ -196,12 +201,20 @@ export const VirtualizedTrackList: React.FC<VirtualizedTrackListProps> = ({
 
       <DragOverlay>
         {activeTrack ? (
-          <div className="opacity-80 shadow-lg">
+          <div
+            className="rounded-[var(--radius-card)]"
+            style={{
+              boxShadow: 'var(--shadow-2)',
+              border: '2px solid var(--brand)',
+              backgroundColor: 'var(--brand-soft)',
+            }}
+          >
             <TrackListItem
               setlistTrack={activeTrack}
-              index={tracks.findIndex(t => t.id === activeId)}
+              index={tracks.findIndex((t) => t.id === activeId)}
               onRemove={() => {}}
               onEdit={() => {}}
+              isDragging={false}
             />
           </div>
         ) : null}

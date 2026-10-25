@@ -299,3 +299,70 @@ export function calculateContrastRatio(color1: string, color2: string): number {
 
   return (brightest + 0.05) / (darkest + 0.05);
 }
+
+/**
+ * Sanitize string input to neutralize DOM-based XSS vectors.
+ * Strips dangerous URI schemes (e.g., javascript:, data:) and escapes HTML entity characters.
+ *
+ * @param input - String input to sanitize
+ * @returns Sanitized string
+ */
+export function sanitizeInput(input: string): string {
+  if (typeof input !== 'string') {
+    return '';
+  }
+
+  // Remove null bytes and control characters
+  let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+  // Strip dangerous pseudo-protocols like javascript:, data: (non-image), vbscript:
+  const normalizedScheme = sanitized.replace(/[\s\x00-\x1F]/g, '').toLowerCase();
+  if (
+    normalizedScheme.startsWith('javascript:') ||
+    normalizedScheme.startsWith('vbscript:') ||
+    (normalizedScheme.startsWith('data:') && !normalizedScheme.startsWith('data:image/'))
+  ) {
+    return 'about:blank';
+  }
+
+  // Escape HTML entity characters to prevent DOM-based XSS
+  return sanitized
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+/**
+ * Recursively sanitize string fields in an object, array, or primitive to prevent DOM-based XSS.
+ *
+ * @param data - Data structure or value to sanitize
+ * @param visited - Set tracking visited objects to prevent circular reference loops
+ * @returns Sanitized copy of the data
+ */
+export function sanitizeObject<T>(data: T, visited = new WeakSet<object>()): T {
+  if (typeof data === 'string') {
+    return sanitizeInput(data) as unknown as T;
+  }
+
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+
+  if (visited.has(data as object)) {
+    return data;
+  }
+  visited.add(data as object);
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeObject(item, visited)) as unknown as T;
+  }
+
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    result[key] = sanitizeObject(value, visited);
+  }
+
+  return result as T;
+}

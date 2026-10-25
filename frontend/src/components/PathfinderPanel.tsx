@@ -281,9 +281,9 @@ export const PathfinderPanel: React.FC = () => {
                       <span className="sn-track-cell__meta">
                         <KeyBadge value={segment.track.camelot_key} />
                         {segment.track.duration_ms ? <><span className="sn-track-cell__sep" aria-hidden="true">·</span><span className="sn-track-cell__dur">{SN.format.duration(segment.track.duration_ms / 1000)}</span></> : null}
-                        {isWaypoint && <span className="sn-tag">Waypoint</span>}
+                        {isWaypoint && <span className="sn-pill" data-status="info">Waypoint</span>}
                         {segment.key_compatible && index > 0 && <CompatibilityBadge level="compatible" label="key fits" outline />}
-                        {segment.is_synthetic_edge && index > 0 && <span className="sn-tag">Key link</span>}
+                        {segment.is_synthetic_edge && index > 0 && <span className="sn-pill" data-status="info">Key link</span>}
                       </span>
                     </div>
                   </li>

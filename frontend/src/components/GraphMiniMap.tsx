@@ -405,11 +405,11 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
       ref={containerRef}
       style={{
         position: 'absolute',
-        bottom: '20px',
-        right: '20px',
+        bottom: 'var(--space-5)',
+        right: 'var(--space-5)',
         backgroundColor: 'var(--surface-1)',
-        padding: '12px',
-        borderRadius: '8px',
+        padding: 'var(--space-3)',
+        borderRadius: 'var(--radius-control)',
         boxShadow: 'var(--shadow-2)',
         zIndex: 'var(--z-drawer)',
         border: '1px solid var(--line)',
@@ -419,15 +419,15 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
       <h4 style={{
         color: 'var(--fg)',
         fontSize: '0.75rem',
-        marginBottom: '8px',
+        marginBottom: 'var(--space-2)',
         fontWeight: 600,
         textTransform: 'uppercase',
-        letterSpacing: '0.5px'
+        letterSpacing: '0.05em'
       }}>
         Mini-map
         {simulationState.isSettled && (
           <span style={{
-            marginLeft: '6px',
+            marginLeft: 'var(--space-1)',
             fontSize: '0.6875rem',
             color: 'var(--brand)',
             opacity: 0.7
@@ -442,7 +442,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
         height={MINI_MAP_SIZE}
         style={{
           border: '1px solid var(--line-strong)',
-          borderRadius: '4px',
+          borderRadius: 'var(--radius-chip)',
           display: 'block',
           cursor: 'default'
         }}
@@ -450,7 +450,7 @@ export const GraphMiniMap: React.FC<GraphMiniMapProps> = ({ mainGraphWidth, main
       <p style={{
         fontSize: '0.6875rem',
         color: 'var(--fg-2)',
-        marginTop: '6px',
+        marginTop: 'var(--space-1.5, 6px)',
         textAlign: 'center'
       }}>
         {simulationState.isSettled ? 'Static View' : `Dynamic (α: ${simulationState.alpha.toFixed(3)})`}

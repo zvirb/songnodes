@@ -1,10 +1,12 @@
 /**
  * TrackItem Component
- * One suggestion: design-system TrackCell, key verdict (CompatibilityBadge via
- * SN.compat) and the score band.
+ * Standardized track item row according to TrackCell specs:
+ * Album artwork thumb / fallback, artist - title, key pill, BPM tag,
+ * duration, genre chips, and compatibility badges.
  */
 
 import React, { useRef } from 'react';
+import { Disc } from 'lucide-react';
 import type { TrackRecommendation, Track } from './types';
 import { scoreBand, formatDuration } from './utils';
 import { CompatibilityBadge, KeyCompat } from '../ds';
@@ -16,7 +18,7 @@ interface TrackItemProps {
   isSelected: boolean;
   isFocused: boolean;
   showReasons: boolean;
-  onSelect: (track: Track) => void;
+  onSelect: (track: Track, multi?: boolean) => void;
   onPreview?: (track: Track) => void;
   style?: React.CSSProperties;
 }
@@ -44,7 +46,7 @@ export const TrackItem = React.memo<TrackItemProps>(({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onSelect(track);
+      onSelect(track, e.ctrlKey || e.metaKey);
     }
   };
 
@@ -55,7 +57,7 @@ export const TrackItem = React.memo<TrackItemProps>(({
     <div
       ref={itemRef}
       className={`${styles.row} ${isFocused ? styles.focused : ''}`}
-      onClick={() => onSelect(track)}
+      onClick={(e) => onSelect(track, e.ctrlKey || e.metaKey)}
       onKeyDown={handleKeyDown}
       role="option"
       aria-selected={isSelected}
@@ -63,18 +65,33 @@ export const TrackItem = React.memo<TrackItemProps>(({
       tabIndex={isFocused ? 0 : -1}
       style={style}
     >
-      <div className={`sn-track-cell ${styles.rowMain}`}>
-        <span className="sn-track-cell__title">
-          <span className="sn-track-cell__name" title={`${track.artist} – ${track.name}`}>
-            <span className="sn-track-cell__artist">{track.artist} –</span> {track.name}
+      <div className={styles.rowMain}>
+        <div className={styles.rowTitleRow}>
+          <div className={styles.artworkThumb} aria-hidden="true">
+            {(track as { artwork_url?: string }).artwork_url ? (
+              <img
+                src={(track as { artwork_url?: string }).artwork_url}
+                alt=""
+                className={styles.artworkImg}
+              />
+            ) : (
+              <Disc size={18} strokeWidth={1.5} />
+            )}
+          </div>
+          <span className={styles.trackTitleText} title={`${track.artist} – ${track.name}`}>
+            <span className={styles.trackArtistText}>{track.artist} –</span> {track.name}
           </span>
-        </span>
-        <span className="sn-track-cell__meta">
+        </div>
+
+        <div className={styles.rowMetaRow}>
+          {track.bpm ? <span className={styles.bpmTag}>{track.bpm} BPM</span> : null}
+          {track.key ? <span className={styles.keyPill}>{track.key}</span> : null}
+          {length !== '–' ? <span className={styles.durationTag}>{length}</span> : null}
+          {track.genre ? <span className={styles.genreChip}>{track.genre}</span> : null}
           {topReason ? <span className="sn-track-cell__mix">{topReason}</span> : null}
-          {topReason && length !== '–' ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}
-          {length !== '–' ? <span className="sn-track-cell__dur">{length}</span> : null}
-        </span>
+        </div>
       </div>
+
       <div className={styles.rowBadges}>
         <CompatibilityBadge level={band.level} label={band.label} />
         <KeyCompat from={currentTrack?.key} to={track.key} outline />
@@ -82,7 +99,6 @@ export const TrackItem = React.memo<TrackItemProps>(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Optimize re-renders by comparing only relevant props
   return (
     prevProps.recommendation.track.id === nextProps.recommendation.track.id &&
     prevProps.recommendation.score === nextProps.recommendation.score &&

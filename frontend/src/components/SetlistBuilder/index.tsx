@@ -1,26 +1,10 @@
 /**
  * SetlistBuilder - Main Component
- * Optimized DJ setlist builder with undo/redo, virtualization, and analytics
- *
- * Features:
- * - Undo/Redo with Immer (Cmd+Z / Cmd+Shift+Z)
- * - Virtualized lists with TanStack Virtual (>50 items)
- * - Auto-save with debouncing (2s)
- * - Real-time analytics with Recharts
- * - Drag & drop reordering with @dnd-kit
- * - Keyboard shortcuts and accessibility
- * - Mobile-optimized touch gestures
- *
- * Performance:
- * - React.memo on all child components
- * - useMemo for expensive calculations
- * - useCallback for stable event handlers
- * - <500 lines total across all files
- * - Target score: 9/10
+ * Standardized setlist builder with undo/redo, virtualization, and analytics using Design System tokens
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Save, Undo2, Redo2, Download, Upload, Trash2, HelpCircle } from 'lucide-react';
+import { Save, Undo2, Redo2, Download, Upload, Trash2, HelpCircle, BarChart2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSetlistState } from './useSetlistState';
 import { useAutoSave } from './useAutoSave';
@@ -61,15 +45,17 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
   const [showHelp, setShowHelp] = useState(false);
 
   // Auto-save functionality
-  const saveFunction = useCallback(async (data: Setlist) => {
-    if (onSave) {
-      await onSave(data);
-      toast.success('Setlist saved successfully');
-    } else {
-      // Fallback to localStorage
-      localStorage.setItem('setlist-autosave', JSON.stringify(data));
-    }
-  }, [onSave]);
+  const saveFunction = useCallback(
+    async (data: Setlist) => {
+      if (onSave) {
+        await onSave(data);
+        toast.success('Setlist saved successfully');
+      } else {
+        localStorage.setItem('setlist-autosave', JSON.stringify(data));
+      }
+    },
+    [onSave]
+  );
 
   const { saveStatus, forceSave } = useAutoSave(setlist, saveFunction);
 
@@ -84,15 +70,13 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
   // Keyboard shortcuts help
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + S to save
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
         forceSave();
       }
-      // Cmd/Ctrl + / to show help
       if ((e.metaKey || e.ctrlKey) && e.key === '/') {
         e.preventDefault();
-        setShowHelp(prev => !prev);
+        setShowHelp((prev) => !prev);
       }
     };
 
@@ -100,212 +84,285 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [forceSave]);
 
-  const handleReorder = useCallback((from: number, to: number) => {
-    moveTrack(from, to);
-    toast.success('Track moved');
-  }, [moveTrack]);
+  const handleReorder = useCallback(
+    (from: number, to: number) => {
+      moveTrack(from, to);
+      toast.success('Track moved');
+    },
+    [moveTrack]
+  );
 
-  const handleRemove = useCallback((trackId: string) => {
-    removeTrack(trackId);
-    toast.success('Track removed from setlist');
-  }, [removeTrack]);
+  const handleRemove = useCallback(
+    (trackId: string) => {
+      removeTrack(trackId);
+      toast.success('Track removed from setlist');
+    },
+    [removeTrack]
+  );
 
-  const handleEdit = useCallback((trackId: string) => {
-    if (!setlist) return;
-    const track = setlist.tracks.find(t => t.id === trackId);
-    if (track) {
-      setEditingTrack(track);
-    }
-  }, [setlist]);
+  const handleEdit = useCallback(
+    (trackId: string) => {
+      if (!setlist) return;
+      const track = setlist.tracks.find((t) => t.id === trackId);
+      if (track) {
+        setEditingTrack(track);
+      }
+    },
+    [setlist]
+  );
 
-  const handleSaveEdit = useCallback((trackId: string, updates: Partial<SetlistTrack>) => {
-    updateTrack(trackId, updates);
-    setEditingTrack(null);
-    toast.success('Track updated');
-  }, [updateTrack]);
+  const handleSaveEdit = useCallback(
+    (trackId: string, updates: Partial<SetlistTrack>) => {
+      updateTrack(trackId, updates);
+      setEditingTrack(null);
+      toast.success('Track updated');
+    },
+    [updateTrack]
+  );
 
-  const handleExport = useCallback((format: ExportFormat) => {
-    if (!setlist || setlist.tracks.length === 0) {
-      toast.error('No tracks to export');
-      return;
-    }
-
-    try {
-      let exportData: string;
-      let filename: string;
-      let mimeType: string;
-
-      switch (format) {
-        case 'json':
-          exportData = JSON.stringify(setlist, null, 2);
-          filename = `${setlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-          mimeType = 'application/json';
-          break;
-
-        case 'csv':
-          const csvRows = [
-            ['Position', 'Artist', 'Track', 'BPM', 'Key', 'Duration'].join(','),
-            ...setlist.tracks.map((t, i) =>
-              [
-                i + 1,
-                `"${t.track.artist}"`,
-                `"${t.track.name}"`,
-                t.track.bpm || '',
-                t.track.key || '',
-                formatDuration(t.track.duration),
-              ].join(',')
-            ),
-          ];
-          exportData = csvRows.join('\n');
-          filename = `${setlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
-          mimeType = 'text/csv';
-          break;
-
-        case 'm3u':
-          const m3uLines = [
-            '#EXTM3U',
-            ...setlist.tracks.map(t =>
-              `#EXTINF:${Math.floor(t.track.duration || 0)},${t.track.artist} - ${t.track.name}\n# (not a file path)`
-            ),
-          ];
-          exportData = m3uLines.join('\n');
-          filename = `${setlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.m3u`;
-          mimeType = 'audio/x-mpegurl';
-          break;
-
-        case 'clipboard':
-          const clipboardText = setlist.tracks
-            .map((t, i) => `${i + 1}. ${t.track.artist} - ${t.track.name}`)
-            .join('\n');
-          navigator.clipboard.writeText(clipboardText);
-          toast.success('Setlist copied to clipboard');
-          return;
-
-        default:
-          toast.error(`Export to ${format} not yet implemented`);
-          return;
+  const handleExport = useCallback(
+    (format: ExportFormat) => {
+      if (!setlist || setlist.tracks.length === 0) {
+        toast.error('No tracks to export');
+        return;
       }
 
-      // Create download
-      const blob = new Blob([exportData], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      try {
+        let exportData: string;
+        let filename: string;
+        let mimeType: string;
 
-      toast.success(`Exported as ${format.toUpperCase()}`);
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export setlist');
-    }
-  }, [setlist]);
+        switch (format) {
+          case 'json':
+            exportData = JSON.stringify(setlist, null, 2);
+            filename = `${setlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+            mimeType = 'application/json';
+            break;
+
+          case 'csv':
+            const csvRows = [
+              ['Position', 'Artist', 'Track', 'BPM', 'Key', 'Duration'].join(','),
+              ...setlist.tracks.map((t, i) =>
+                [
+                  i + 1,
+                  `"${t.track.artist}"`,
+                  `"${t.track.name}"`,
+                  t.track.bpm || '',
+                  t.track.key || '',
+                  formatDuration(t.track.duration),
+                ].join(',')
+              ),
+            ];
+            exportData = csvRows.join('\n');
+            filename = `${setlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+            mimeType = 'text/csv';
+            break;
+
+          case 'm3u':
+            const m3uLines = [
+              '#EXTM3U',
+              ...setlist.tracks.map(
+                (t) =>
+                  `#EXTINF:${Math.floor(t.track.duration || 0)},${t.track.artist} - ${t.track.name}\n# (not a file path)`
+              ),
+            ];
+            exportData = m3uLines.join('\n');
+            filename = `${setlist.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.m3u`;
+            mimeType = 'audio/x-mpegurl';
+            break;
+
+          case 'clipboard':
+            const clipboardText = setlist.tracks
+              .map((t, i) => `${i + 1}. ${t.track.artist} - ${t.track.name}`)
+              .join('\n');
+            navigator.clipboard.writeText(clipboardText);
+            toast.success('Setlist copied to clipboard');
+            return;
+
+          default:
+            toast.error(`Export to ${format} not yet implemented`);
+            return;
+        }
+
+        const blob = new Blob([exportData], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast.success(`Exported as ${format.toUpperCase()}`);
+      } catch (error) {
+        console.error('Export error:', error);
+        toast.error('Failed to export setlist');
+      }
+    },
+    [setlist]
+  );
 
   const totalDuration = setlist?.tracks.reduce((sum, t) => sum + (t.track.duration || 0), 0) || 0;
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
-      {/* Header */}
-      <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              value={setlistName}
-              onChange={(e) => setSetlistName(e.target.value)}
-              className="text-2xl font-bold bg-transparent border-none outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 -ml-2"
-              placeholder="Setlist name..."
-              aria-label="Setlist name"
-            />
-            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {setlist?.tracks.length || 0} tracks • {formatDuration(totalDuration)} • {saveStatus.status === 'saving' ? 'Saving...' : saveStatus.status === 'saved' ? 'Saved' : 'Auto-save enabled'}
+    <div
+      className={`flex flex-col h-full rounded-[var(--radius-sheet)] overflow-hidden ${className}`}
+      style={{
+        backgroundColor: 'var(--bg)',
+        color: 'var(--fg)',
+      }}
+    >
+      {/* Header Band */}
+      <div
+        className="flex-shrink-0 p-[var(--space-4)] border-b transition-colors"
+        style={{
+          backgroundColor: 'var(--mod-sets-bg)',
+          borderColor: 'var(--mod-sets-line)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-[var(--space-3)]">
+          <div className="flex-1 flex flex-col gap-[var(--space-1)]">
+            <div className="flex items-center gap-[var(--space-2)]">
+              <span className="font-[family-name:var(--font-display)] text-[1rem] font-normal text-[var(--mod-sets-muted)]">
+                Set builder:
+              </span>
+              <input
+                type="text"
+                value={setlistName}
+                onChange={(e) => setSetlistName(e.target.value)}
+                className="font-[family-name:var(--font-display)] text-[1.375rem] font-bold bg-transparent border-b border-transparent focus:border-[var(--brand)] outline-none px-1 text-[var(--mod-sets-ink)]"
+                placeholder="Setlist name..."
+                aria-label="Setlist name"
+              />
+            </div>
+            <div className="font-[family-name:var(--font-body)] text-[0.8125rem] text-[var(--mod-sets-muted)] flex items-center gap-[var(--space-3)]">
+              <span>{setlist?.tracks.length || 0} tracks</span>
+              <span>•</span>
+              <span className="font-[family-name:var(--font-data)]">{formatDuration(totalDuration)}</span>
+              <span>•</span>
+              <span className="text-[0.75rem]">
+                {saveStatus.status === 'saving'
+                  ? 'Saving…'
+                  : saveStatus.status === 'saved'
+                  ? 'Saved'
+                  : 'Auto-save ready'}
+              </span>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-[var(--space-2)]">
             <button
               onClick={() => undo()}
               disabled={!canUndo}
-              className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-[var(--space-2)] rounded-[var(--radius-control)] hover:bg-[var(--hover-bg)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--mod-sets-ink)] transition-colors"
               aria-label="Undo (Cmd+Z)"
               title="Undo (Cmd+Z)"
             >
-              <Undo2 size={20} />
+              <Undo2 size={18} />
             </button>
             <button
               onClick={() => redo()}
               disabled={!canRedo}
-              className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-[var(--space-2)] rounded-[var(--radius-control)] hover:bg-[var(--hover-bg)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--mod-sets-ink)] transition-colors"
               aria-label="Redo (Cmd+Shift+Z)"
               title="Redo (Cmd+Shift+Z)"
             >
-              <Redo2 size={20} />
+              <Redo2 size={18} />
             </button>
             <button
               onClick={() => setShowHelp(true)}
-              className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-[var(--space-2)] rounded-[var(--radius-control)] hover:bg-[var(--hover-bg)] text-[var(--mod-sets-ink)] transition-colors"
               aria-label="Help (Cmd+/)"
               title="Help (Cmd+/)"
             >
-              <HelpCircle size={20} />
+              <HelpCircle size={18} />
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Action Controls Bar */}
+        <div className="flex flex-wrap items-center gap-[var(--space-2)]">
           <button
             onClick={() => handleExport('json')}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-1.5 font-[family-name:var(--font-body)] text-[0.8125rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+            style={{
+              backgroundColor: 'var(--mod-sets-raised)',
+              color: 'var(--mod-sets-ink)',
+              border: '1px solid var(--mod-sets-line)',
+            }}
           >
-            <Download size={16} />
+            <Download size={14} />
             Export JSON
           </button>
+
           <button
             onClick={() => handleExport('csv')}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-1.5 font-[family-name:var(--font-body)] text-[0.8125rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+            style={{
+              backgroundColor: 'var(--mod-sets-raised)',
+              color: 'var(--mod-sets-ink)',
+              border: '1px solid var(--mod-sets-line)',
+            }}
           >
-            <Download size={16} />
+            <Download size={14} />
             Export CSV
           </button>
+
           <button
             onClick={() => handleExport('clipboard')}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-1.5 font-[family-name:var(--font-body)] text-[0.8125rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+            style={{
+              backgroundColor: 'var(--mod-sets-raised)',
+              color: 'var(--mod-sets-ink)',
+              border: '1px solid var(--mod-sets-line)',
+            }}
           >
-            <Upload size={16} />
-            Copy to Clipboard
+            <Upload size={14} />
+            Copy List
           </button>
+
           <button
             onClick={() => setShowAnalytics(!showAnalytics)}
             disabled={!setlist || setlist.tracks.length < 2}
-            className="px-3 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 font-[family-name:var(--font-body)] text-[0.8125rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+            style={{
+              backgroundColor: showAnalytics ? 'var(--brand)' : 'var(--mod-sets-raised)',
+              color: showAnalytics ? 'var(--on-brand)' : 'var(--mod-sets-ink)',
+              border: '1px solid var(--mod-sets-line)',
+            }}
           >
-            {showAnalytics ? 'Hide' : 'Show'} Analytics
+            <BarChart2 size={14} />
+            {showAnalytics ? 'Hide Analytics' : 'Analytics'}
           </button>
+
           <button
             onClick={clearSetlist}
             disabled={!setlist || setlist.tracks.length === 0}
-            className="px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-1.5 font-[family-name:var(--font-body)] text-[0.8125rem] font-medium rounded-[var(--radius-control)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors ml-auto"
+            style={{
+              backgroundColor: 'var(--status-bad-bg)',
+              color: 'var(--status-bad)',
+              border: '1px solid var(--status-bad)',
+            }}
           >
-            <Trash2 size={16} />
-            Clear All
+            <Trash2 size={14} />
+            Clear Set
           </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden p-[var(--space-4)]">
         {showAnalytics && setlist && setlist.tracks.length >= 2 ? (
-          <div className="h-full overflow-auto p-4">
+          <div className="h-full overflow-auto pr-1">
             <AnalyticsPanel setlist={setlist} />
           </div>
         ) : (
-          <div className="h-full p-4">
+          <div className="h-full">
             <VirtualizedTrackList
               tracks={setlist?.tracks || []}
               onReorder={handleReorder}
@@ -327,35 +384,59 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
 
       {showHelp && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{
+            backgroundColor: 'var(--overlay)',
+            zIndex: 'var(--z-dialog)',
+          }}
           onClick={() => setShowHelp(false)}
         >
           <div
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md"
+            className="rounded-[var(--radius-sheet)] p-[var(--space-6)] max-w-md w-full flex flex-col gap-[var(--space-4)]"
+            style={{
+              backgroundColor: 'var(--surface-1)',
+              border: '1px solid var(--line-strong)',
+              boxShadow: 'var(--shadow-3)',
+              color: 'var(--fg)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold mb-4">Keyboard Shortcuts</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Undo</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+Z</kbd>
+            <h3 className="font-[family-name:var(--font-display)] text-[1.375rem] font-bold text-[var(--fg)]">
+              Keyboard Shortcuts
+            </h3>
+            <div className="flex flex-col gap-[var(--space-2)] text-[0.8125rem] font-[family-name:var(--font-body)]">
+              <div className="flex justify-between items-center py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--fg-2)]">Undo action</span>
+                <kbd className="px-2 py-0.5 font-[family-name:var(--font-data)] bg-[var(--surface-2)] border border-[var(--line)] rounded-[var(--radius-chip)] text-[var(--fg)]">
+                  Cmd+Z
+                </kbd>
               </div>
-              <div className="flex justify-between">
-                <span>Redo</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+Shift+Z</kbd>
+              <div className="flex justify-between items-center py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--fg-2)]">Redo action</span>
+                <kbd className="px-2 py-0.5 font-[family-name:var(--font-data)] bg-[var(--surface-2)] border border-[var(--line)] rounded-[var(--radius-chip)] text-[var(--fg)]">
+                  Cmd+Shift+Z
+                </kbd>
               </div>
-              <div className="flex justify-between">
-                <span>Save</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+S</kbd>
+              <div className="flex justify-between items-center py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--fg-2)]">Save setlist</span>
+                <kbd className="px-2 py-0.5 font-[family-name:var(--font-data)] bg-[var(--surface-2)] border border-[var(--line)] rounded-[var(--radius-chip)] text-[var(--fg)]">
+                  Cmd+S
+                </kbd>
               </div>
-              <div className="flex justify-between">
-                <span>Help</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Cmd+/</kbd>
+              <div className="flex justify-between items-center py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--fg-2)]">Toggle help</span>
+                <kbd className="px-2 py-0.5 font-[family-name:var(--font-data)] bg-[var(--surface-2)] border border-[var(--line)] rounded-[var(--radius-chip)] text-[var(--fg)]">
+                  Cmd+/
+                </kbd>
               </div>
             </div>
             <button
               onClick={() => setShowHelp(false)}
-              className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="mt-[var(--space-2)] w-full py-2 font-[family-name:var(--font-body)] text-[0.9375rem] font-semibold rounded-[var(--radius-control)] transition-colors"
+              style={{
+                backgroundColor: 'var(--brand)',
+                color: 'var(--on-brand)',
+              }}
             >
               Close
             </button>
@@ -368,5 +449,4 @@ export const SetlistBuilder: React.FC<SetlistBuilderProps> = ({
 
 export default SetlistBuilder;
 
-// Re-export types for convenience
 export type { Setlist, SetlistTrack, Track, TransitionQuality, SetlistAnalytics } from './types';

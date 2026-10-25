@@ -4,14 +4,6 @@
  * Dual-mode graph exploration interface for track discovery and playlist management.
  * Orchestrates sub-components for PLAN (preparation) and PLAY (performance) modes.
  *
- * Architecture Quality: 9/10
- * - Modular component architecture
- * - Custom hooks for state management
- * - Pure utility functions extracted
- * - Design token integration
- * - Comprehensive accessibility
- * - Performance optimizations
- *
  * @module DJInterface
  */
 
@@ -19,8 +11,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { TrackDetailsModal } from '../TrackDetailsModal';
 import { ContextMenu } from '../ContextMenu';
 import { SettingsPanel } from '../SettingsPanel';
-import { TidalPlaylistManager } from '../TidalPlaylistManager';
-import { SpotifyPlaylistManager } from '../SpotifyPlaylistManager';
 import GraphFilterPanel from '../GraphFilterPanel';
 import { ArtistAttributionManager } from '../ArtistAttributionManager';
 import { TracklistImporter } from '../TracklistImporter';
@@ -59,18 +49,13 @@ import styles from './DJInterface.module.css';
  *
  * @param props - DJInterfaceProps
  * @returns React component
- *
- * @example
- * ```tsx
- * <DJInterface initialMode="play" />
- * ```
  */
 export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.ReactElement {
   // ============================================
   // STATE MANAGEMENT (Custom Hooks)
   // ============================================
 
-  const { mode, toggleMode } = useDJMode(initialMode);
+  const { mode, setToPlan, setToPlay } = useDJMode(initialMode);
   const onboarding = useOnboarding();
 
   // Load graph data from store
@@ -87,7 +72,6 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
     tracks,
     selectedTrack,
     nowPlaying,
-    selectTrack,
     playTrack,
   } = useTrackManagement(graphData?.nodes || []);
 
@@ -229,7 +213,7 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
       {/* Header Bar */}
       <DJHeader
         mode={mode}
-        onModeChange={(newMode) => newMode === 'plan' ? toggleMode() : toggleMode()}
+        onModeChange={(newMode) => newMode === 'plan' ? setToPlan() : setToPlay()}
         trackCount={tracks.length}
         connectionCount={graphData?.edges?.length || 0}
         onOpenArtistAttribution={() => setShowArtistAttribution(true)}
@@ -244,9 +228,11 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
       {isLoading && (
         <div className={styles.loadingContainer}>
           <div className={styles.spinner} />
-          <p style={{ fontSize: '16px', margin: 0 }}>Loading your music library...</p>
-          <p style={{ fontSize: '14px', margin: '8px 0 0 0', opacity: 0.7 }}>
-            Found {tracks.length} tracks so far
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--fg)' }}>
+            Loading your music library...
+          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', margin: 'var(--space-2) 0 0 0', color: 'var(--fg-3)' }}>
+            Found <strong style={{ fontFamily: 'var(--font-data)', color: 'var(--fg)' }}>{tracks.length}</strong> tracks so far
           </p>
         </div>
       )}
@@ -254,10 +240,10 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
       {/* Error State */}
       {error && !isLoading && (
         <div className={styles.errorContainer}>
-          <div className={styles.errorIcon}>⚠️</div>
           <h2 className={styles.errorTitle}>Failed to Load Music Library</h2>
           <p className={styles.errorMessage}>{error}</p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className={styles.headerButton}
           >

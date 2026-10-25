@@ -62,29 +62,75 @@ export function PlayModePanel({
             {/* Graph Legend Overlay */}
             <div style={{
               position: 'absolute',
-              bottom: '20px',
-              left: '20px',
-              padding: '12px',
-              backgroundColor: 'rgba(0,0,0,0.8)',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)'
+              bottom: 'var(--space-4)',
+              left: 'var(--space-4)',
+              padding: 'var(--space-3)',
+              backgroundColor: 'var(--surface-1)',
+              borderRadius: 'var(--radius-control)',
+              border: '1px solid var(--line-strong)',
+              boxShadow: 'var(--shadow-2)',
+              zIndex: 'var(--z-sticky)',
+              maxWidth: '260px'
             }}>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#8E8E93' }}>
-                Node Colors
+              <h4 style={{
+                margin: '0 0 var(--space-2) 0',
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.6875rem',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--fg-3)'
+              }}>
+                Node Legend
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#7ED321', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Perfect Match</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1.5, 6px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: 'var(--status-ok)',
+                    borderRadius: 'var(--radius-pill)',
+                    flexShrink: 0
+                  }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--fg)' }}>
+                    Perfect Match
+                  </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#F5A623', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Compatible</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: 'var(--status-fair)',
+                    borderRadius: 'var(--radius-pill)',
+                    flexShrink: 0
+                  }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--fg)' }}>
+                    Compatible
+                  </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', backgroundColor: '#4A90E2', borderRadius: '50%' }} />
-                  <span style={{ fontSize: '11px', color: '#F8F8F8' }}>Default</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: 'var(--brand)',
+                    borderRadius: 'var(--radius-pill)',
+                    flexShrink: 0
+                  }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--fg)' }}>
+                    Selected
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: 'var(--now)',
+                    borderRadius: 'var(--radius-pill)',
+                    flexShrink: 0
+                  }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--fg)' }}>
+                    Now Playing
+                  </span>
                 </div>
               </div>
             </div>

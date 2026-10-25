@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from 'react';
-
-/**
- * APIKeyManager - Secure API Key Management Interface
- * Manages API keys for scraper and enrichment services
- *
- * Features:
- * - Encrypted storage via backend
- * - Show/hide sensitive values (SecretField specs)
- * - Copy to clipboard with status feedback
- * - Test connection functionality
- * - Service-specific validation
- * - Visual status indicators
- */
-
-import type { APIKey, APIKeyRequirement } from '../types';
-import { Eye, EyeOff, ExternalLink, KeyRound, Copy, Check } from 'lucide-react';
+import type { APIKey, APIKeyRequirement, AIProvider, AIKeyConfig } from '../types';
+import { Eye, EyeOff, ExternalLink, KeyRound } from 'lucide-react';
 import { SN, StatusPill } from '../lib/songnodes';
-import { Dialog, ConfirmDialog, Tabs, TabPanel, EmptyPanel, LoadingPanel, showToast } from './ds';
+import { Dialog, ConfirmDialog, Tabs, TabPanel, EmptyPanel, LoadingPanel, showToast, SegmentedControl } from './ds';
 import './APIKeyManager.css';
 import { API_BASE_URL } from '../lib/apiBase';
+import {
+  getAIKeyConfig,
+  saveAIKey,
+  clearAIKey,
+  validateAIKey,
+  getMaskedKey,
+  setPreferredAIProvider,
+} from '../services/apiKeyService';
 
 interface APIKeyManagerProps {
   isOpen: boolean;
@@ -31,30 +25,216 @@ interface ServiceKeys {
   };
 }
 
-const CopyButton: React.FC<{ text: string; label?: string; size?: 'sm' | 'md' }> = ({ text, label = 'Copy', size = 'sm' }) => {
-  const [copied, setCopied] = useState(false);
+export interface SecretFieldProps {
+  label: string;
+  savedMask: string | null;
+  onSave: (key: string) => Promise<void>;
+  onTest?: (key?: string) => Promise<{ ok: boolean; message?: string; testedAt: string }>;
+  onClear?: () => Promise<void>;
+  lastTest?: { ok: boolean; message?: string; testedAt: string };
+  status?: 'unconfigured' | 'valid' | 'invalid';
+  getKeyUrl?: string;
+  getKeyLabel?: string;
+  placeholder?: string;
+  description?: string;
+}
 
-  const handleCopy = async () => {
+export const SecretField: React.FC<SecretFieldProps> = ({
+  label,
+  savedMask,
+  onSave,
+  onTest,
+  onClear,
+  lastTest,
+  status,
+  getKeyUrl,
+  getKeyLabel = 'Get an API key',
+  placeholder = 'Paste key here…',
+  description,
+}) => {
+  const [value, setValue] = useState('');
+  const [revealed, setRevealed] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [localTestResult, setLocalTestResult] = useState<{ ok: boolean; message?: string; testedAt: string } | null>(
+    lastTest || null
+  );
+
+  useEffect(() => {
+    if (lastTest) {
+      setLocalTestResult(lastTest);
+    }
+  }, [lastTest]);
+
+  const showSavedRow = !!savedMask && !isEditing;
+
+  const handleSave = async () => {
+    if (!value.trim()) {
+      setErrorMsg('Please enter a key.');
+      return;
+    }
+    setErrorMsg(null);
+    setIsSaving(true);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
+      await onSave(value);
+      setValue('');
+      setIsEditing(false);
+      setRevealed(false);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to save key.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    if (!onTest) return;
+    setErrorMsg(null);
+    setIsTesting(true);
+    try {
+      const res = await onTest();
+      setLocalTestResult(res);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Test failed.');
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleClear = async () => {
+    if (!onClear) return;
+    setErrorMsg(null);
+    setIsClearing(true);
+    try {
+      await onClear();
+      setValue('');
+      setIsEditing(false);
+      setLocalTestResult(null);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to clear key.');
+    } finally {
+      setIsClearing(false);
     }
   };
 
   return (
-    <button
-      type="button"
-      className={`sn-btn ${size === 'sm' ? 'sn-btn--sm' : ''} sn-btn--quiet`}
-      onClick={handleCopy}
-      aria-label={copied ? 'Copied to clipboard' : `Copy ${label}`}
-      title={copied ? 'Copied' : `Copy ${label}`}
-    >
-      {copied ? <Check size={16} strokeWidth={2} aria-hidden="true" /> : <Copy size={16} strokeWidth={2} aria-hidden="true" />}
-      <span>{copied ? 'Copied' : label}</span>
-    </button>
+    <div className="sn-secret-field">
+      <div className="sn-secret-field__head">
+        <label className="sn-secret-field__label">{label}</label>
+        {getKeyUrl && (
+          <a
+            className="sn-link sn-link--ext"
+            href={getKeyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {getKeyLabel} <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
+          </a>
+        )}
+      </div>
+
+      {description && <p className="akm__desc">{description}</p>}
+
+      {showSavedRow ? (
+        <div className="sn-secret-field__row">
+          <div className="sn-secret-field__saved">
+            <KeyRound size={16} className="sn-icon" aria-hidden="true" />
+            <code>{savedMask}</code>
+          </div>
+          {onTest && (
+            <button
+              type="button"
+              className="sn-btn sn-btn--sm"
+              onClick={handleTest}
+              disabled={isTesting}
+              aria-busy={isTesting || undefined}
+            >
+              {isTesting ? 'Testing…' : 'Test key'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="sn-btn sn-btn--sm sn-btn--quiet"
+            onClick={() => setIsEditing(true)}
+          >
+            Change
+          </button>
+          {onClear && (
+            <button
+              type="button"
+              className="sn-btn sn-btn--sm sn-btn--danger-quiet"
+              onClick={handleClear}
+              disabled={isClearing}
+            >
+              {isClearing ? 'Clearing…' : 'Clear'}
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="sn-secret-field__row">
+          <div className="sn-secret-field__box">
+            <input
+              className="sn-input"
+              type={revealed ? 'text' : 'password'}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={placeholder}
+              autoComplete="off"
+              aria-label={label}
+            />
+            <button
+              type="button"
+              className="sn-secret-field__reveal"
+              onClick={() => setRevealed(!revealed)}
+              aria-label={revealed ? `Hide ${label}` : `Show ${label}`}
+              title={revealed ? 'Hide' : 'Show'}
+            >
+              {revealed ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+            </button>
+          </div>
+          <button
+            type="button"
+            className="sn-btn sn-btn--sm"
+            onClick={handleSave}
+            disabled={isSaving}
+            aria-busy={isSaving || undefined}
+          >
+            {isSaving ? 'Saving…' : 'Save'}
+          </button>
+          {savedMask && (
+            <button
+              type="button"
+              className="sn-btn sn-btn--sm sn-btn--quiet"
+              onClick={() => {
+                setIsEditing(false);
+                setValue('');
+                setErrorMsg(null);
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+
+      {errorMsg && <p className="sn-field__error">{errorMsg}</p>}
+
+      <div className="sn-secret-field__status">
+        {status === 'valid' && <StatusPill raw="ok" label="Valid" />}
+        {status === 'invalid' && <StatusPill raw="failed" label="Invalid" />}
+        {(status === 'unconfigured' || (!status && !savedMask)) && <StatusPill raw="untested" label="Not configured" />}
+
+        {localTestResult && (
+          <span className="sn-secret-field__stamp">
+            {localTestResult.message}{' '}
+            {localTestResult.testedAt && `(${SN.format.dateTime(localTestResult.testedAt)})`}
+          </span>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -67,16 +247,17 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
   const [testing, setTesting] = useState<{ [key: string]: boolean }>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [activeService, setActiveService] = useState<string>('');
+  const [activeService, setActiveService] = useState<string>('ai-providers');
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ service: string; key: string; label: string } | null>(null);
-
+  const [aiConfig, setAiConfig] = useState<AIKeyConfig>(() => getAIKeyConfig());
 
   // Fetch requirements and existing keys on mount
   useEffect(() => {
     if (isOpen) {
       fetchRequirements();
       fetchExistingKeys();
+      setAiConfig(getAIKeyConfig());
     }
   }, [isOpen]);
 
@@ -86,11 +267,6 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
       if (response.ok) {
         const data = await response.json();
         setRequirements(data);
-
-        // Set first service as active
-        if (data.length > 0 && !activeService) {
-          setActiveService(data[0].service_name);
-        }
       }
     } catch (error) {
       console.error('Failed to fetch API key requirements:', error);
@@ -246,7 +422,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
     setKeyValues((prev) => ({
       ...prev,
       [serviceName]: {
-        ...prev[serviceName] || {},
+        ...(prev[serviceName] || {}),
         [keyName]: value,
       },
     }));
@@ -258,13 +434,45 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
 
   const uniqueServices = [...new Set(requirements.map((req) => req.service_name))];
 
-  const tabs = uniqueServices.map((service) => ({ id: service, label: service.charAt(0).toUpperCase() + service.slice(1) }));
+  const tabs = [
+    { id: 'ai-providers', label: 'AI Providers' },
+    ...uniqueServices.map((service) => ({
+      id: service,
+      label: service.charAt(0).toUpperCase() + service.slice(1),
+    })),
+  ];
+
+  const handleSaveAIKey = async (provider: AIProvider, key: string) => {
+    const updated = await saveAIKey(provider, key);
+    setAiConfig(updated);
+    showToast(`${provider.toUpperCase()} API key saved`);
+  };
+
+  const handleClearAIKey = async (provider: AIProvider) => {
+    const updated = await clearAIKey(provider);
+    setAiConfig(updated);
+    showToast(`${provider.toUpperCase()} API key removed`);
+  };
+
+  const handleTestAIKey = async (provider: AIProvider) => {
+    const res = await validateAIKey(provider);
+    setAiConfig(getAIKeyConfig());
+    if (res.ok) showToast(`${provider.toUpperCase()} API key is valid`);
+    return res;
+  };
+
+  const handlePreferredProviderChange = (provider: AIProvider) => {
+    const updated = setPreferredAIProvider(provider);
+    setAiConfig(updated);
+    showToast(`Preferred AI Provider set to ${provider.toUpperCase()}`);
+  };
+
   return (
     <>
       <Dialog
         open={isOpen}
         title="API keys"
-        sub="Keys for the scraper and enrichment services. Stored encrypted on the server (pgcrypto); never sent back in full."
+        sub="Manage keys for AI assistant providers and scraper/enrichment services. AI keys are stored locally and validated securely."
         size="l"
         onClose={onClose}
         footer={
@@ -283,95 +491,161 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
           </p>
         )}
 
-        {tabs.length === 0 ? (
-          loading ? <LoadingPanel message="Loading API keys…" rows={3} /> : (
-            <EmptyPanel compact icon={KeyRound} title="No key requirements">
-              The API didn’t list any services that need keys. It may be offline.
-            </EmptyPanel>
-          )
-        ) : (
-          <>
-            <Tabs label="Services" idBase="akm" tabs={tabs} value={activeService} onChange={setActiveService} />
-            <TabPanel idBase="akm" id={activeService}>
-              {loading ? (
-                <LoadingPanel message="Loading API keys…" rows={3} />
-              ) : (
-                <div className="akm">
-                  {getServiceRequirements(activeService).map((req) => {
-                    const existing = getExistingKey(activeService, req.key_name);
-                    const inputKey = `${activeService}:${req.key_name}`;
-                    const isShowingKey = !!showKeys[inputKey];
-                    const isTesting = !!testing[inputKey];
-                    return (
-                      <section key={inputKey} className="akm__key" aria-labelledby={`akm-${inputKey}`}>
-                        <div className="akm__head">
-                          <h3 className="akm__name" id={`akm-${inputKey}`}>{req.display_name}</h3>
-                          {req.required && <span className="sn-tag">Required</span>}
-                          {existing?.is_valid === true && <StatusPill raw="ok" label="Works" />}
-                          {existing?.is_valid === false && <StatusPill raw="failed" label="Rejected" />}
-                          {existing && existing.is_valid == null && <StatusPill raw="untested" label="Not tested" />}
-                        </div>
-                        <p className="akm__desc">{req.description}</p>
-                        <a className="sn-link sn-link--ext" href={req.documentation_url} target="_blank" rel="noopener noreferrer">
-                          Get a key <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
-                        </a>
+        <Tabs label="Services" idBase="akm" tabs={tabs} value={activeService} onChange={setActiveService} />
 
-                        {existing ? (
-                          <>
-                            <div className="akm__row">
-                              <code className="akm__masked">{existing.masked_value}</code>
-                              <CopyButton text={existing.masked_value} label="Copy" size="sm" />
-                              <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleTestKey(activeService, req.key_name)} disabled={isTesting} aria-busy={isTesting || undefined}>
-                                {isTesting ? <span className="sn-spinner" aria-hidden="true" /> : null}
-                                {isTesting ? 'Testing…' : 'Test key'}
-                              </button>
-                              <button type="button" className="sn-btn sn-btn--sm sn-btn--danger-quiet" onClick={() => setPendingDelete({ service: activeService, key: req.key_name, label: req.display_name })}>
-                                Delete key…
-                              </button>
-                            </div>
-                            {existing.last_tested_at && (
-                              <p className="akm__meta">
-                                Tested {SN.format.dateTime(existing.last_tested_at)}
-                                {existing.test_error ? <span className="sn-field__error">{existing.test_error}</span> : null}
-                              </p>
-                            )}
-                          </>
-                        ) : (
+        <TabPanel idBase="akm" id="ai-providers">
+          <div className="akm">
+            <div className="akm__key">
+              <div className="akm__head">
+                <h3 className="akm__name">Preferred AI Provider</h3>
+              </div>
+              <p className="akm__desc">Select which AI model provider to use for track analysis and recommendations.</p>
+              <SegmentedControl
+                label="Preferred AI Provider"
+                options={[
+                  { value: 'claude', label: 'Anthropic (Claude)' },
+                  { value: 'openai', label: 'OpenAI' },
+                  { value: 'gemini', label: 'Google (Gemini)' },
+                ]}
+                value={aiConfig.preferredProvider || 'claude'}
+                onChange={(val) => handlePreferredProviderChange(val as AIProvider)}
+              />
+            </div>
+
+            <section className="akm__key">
+              <SecretField
+                label="Anthropic (Claude) API Key"
+                savedMask={getMaskedKey(aiConfig.claudeApiKey)}
+                status={aiConfig.claudeStatus || 'unconfigured'}
+                onSave={(key) => handleSaveAIKey('claude', key)}
+                onTest={() => handleTestAIKey('claude')}
+                onClear={() => handleClearAIKey('claude')}
+                lastTest={
+                  aiConfig.lastTestedAt?.claude
+                    ? { ok: aiConfig.claudeStatus === 'valid', testedAt: aiConfig.lastTestedAt.claude }
+                    : undefined
+                }
+                getKeyUrl="https://console.anthropic.com/settings/keys"
+                getKeyLabel="Get Anthropic key"
+                placeholder="sk-ant-..."
+                description="Powers Claude AI models for music structure analysis and setlist planning."
+              />
+            </section>
+
+            <section className="akm__key">
+              <SecretField
+                label="OpenAI API Key"
+                savedMask={getMaskedKey(aiConfig.openaiApiKey)}
+                status={aiConfig.openaiStatus || 'unconfigured'}
+                onSave={(key) => handleSaveAIKey('openai', key)}
+                onTest={() => handleTestAIKey('openai')}
+                onClear={() => handleClearAIKey('openai')}
+                lastTest={
+                  aiConfig.lastTestedAt?.openai
+                    ? { ok: aiConfig.openaiStatus === 'valid', testedAt: aiConfig.lastTestedAt.openai }
+                    : undefined
+                }
+                getKeyUrl="https://platform.openai.com/api-keys"
+                getKeyLabel="Get OpenAI key"
+                placeholder="sk-..."
+                description="Powers GPT models for metadata generation and audio feature extraction."
+              />
+            </section>
+
+            <section className="akm__key">
+              <SecretField
+                label="Google (Gemini) API Key"
+                savedMask={getMaskedKey(aiConfig.geminiApiKey)}
+                status={aiConfig.geminiStatus || 'unconfigured'}
+                onSave={(key) => handleSaveAIKey('gemini', key)}
+                onTest={() => handleTestAIKey('gemini')}
+                onClear={() => handleClearAIKey('gemini')}
+                lastTest={
+                  aiConfig.lastTestedAt?.gemini
+                    ? { ok: aiConfig.geminiStatus === 'valid', testedAt: aiConfig.lastTestedAt.gemini }
+                    : undefined
+                }
+                getKeyUrl="https://aistudio.google.com/app/apikey"
+                getKeyLabel="Get Gemini key"
+                placeholder="AIza..."
+                description="Powers Gemini models for multimodal music reasoning and playlist flow optimization."
+              />
+            </section>
+          </div>
+        </TabPanel>
+
+        {uniqueServices.map((service) => (
+          <TabPanel key={service} idBase="akm" id={service}>
+            {loading ? (
+              <LoadingPanel message="Loading API keys…" rows={3} />
+            ) : (
+              <div className="akm">
+                {getServiceRequirements(service).map((req) => {
+                  const existing = getExistingKey(service, req.key_name);
+                  const inputKey = `${service}:${req.key_name}`;
+                  const isShowingKey = showKeys[inputKey];
+                  const isTesting = testing[inputKey];
+                  return (
+                    <section key={inputKey} className="akm__key" aria-labelledby={`akm-${inputKey}`}>
+                      <div className="akm__head">
+                        <h3 className="akm__name" id={`akm-${inputKey}`}>{req.display_name}</h3>
+                        {req.required && <span className="sn-tag">Required</span>}
+                        {existing?.is_valid === true && <StatusPill raw="ok" label="Works" />}
+                        {existing?.is_valid === false && <StatusPill raw="failed" label="Rejected" />}
+                        {existing && existing.is_valid == null && <StatusPill raw="untested" label="Not tested" />}
+                      </div>
+                      <p className="akm__desc">{req.description}</p>
+                      <a className="sn-link sn-link--ext" href={req.documentation_url} target="_blank" rel="noopener noreferrer">
+                        Get a key <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
+                      </a>
+
+                      {existing ? (
+                        <>
                           <div className="akm__row">
-                            <div className="akm__secret">
-                              <input
-                                className="sn-input"
-                                type={isShowingKey ? 'text' : 'password'}
-                                aria-label={req.display_name}
-                                value={keyValues[activeService]?.[req.key_name] || ''}
-                                onChange={(e) => updateKeyValue(activeService, req.key_name, e.target.value)}
-                                placeholder={`Paste the ${req.display_name}`}
-                                autoComplete="off"
-                              />
-                              <button
-                                type="button"
-                                className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm akm__eye"
-                                onClick={() => toggleShowKey(inputKey)}
-                                aria-pressed={isShowingKey}
-                                aria-label={isShowingKey ? `Hide ${req.display_name}` : `Show ${req.display_name}`}
-                                title={isShowingKey ? 'Hide' : 'Show'}
-                              >
-                                {isShowingKey ? <EyeOff size={16} strokeWidth={2} aria-hidden="true" /> : <Eye size={16} strokeWidth={2} aria-hidden="true" />}
-                              </button>
-                            </div>
-                            <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleSaveKey(activeService, req.key_name)} disabled={saveStatus === 'saving'} aria-busy={saveStatus === 'saving' || undefined}>
-                              {saveStatus === 'saving' ? 'Saving…' : 'Save key'}
+                            <code className="akm__masked">{existing.masked_value}</code>
+                            <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleTestKey(service, req.key_name)} disabled={isTesting} aria-busy={isTesting || undefined}>
+                              {isTesting ? <span className="sn-spinner" aria-hidden="true" /> : null}
+                              {isTesting ? 'Testing…' : 'Test key'}
+                            </button>
+                            <button type="button" className="sn-btn sn-btn--sm sn-btn--danger-quiet" onClick={() => setPendingDelete({ service, key: req.key_name, label: req.display_name })}>
+                              Delete key…
                             </button>
                           </div>
-                        )}
-                      </section>
-                    );
-                  })}
-                </div>
-              )}
-            </TabPanel>
-          </>
-        )}
+                          {existing.last_tested_at && (
+                            <p className="akm__meta">
+                              Tested {SN.format.dateTime(existing.last_tested_at)}
+                              {existing.test_error ? <span className="sn-field__error">{existing.test_error}</span> : null}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="akm__row">
+                          <div className="akm__secret">
+                            <input
+                              className="sn-input"
+                              type={isShowingKey ? 'text' : 'password'}
+                              aria-label={req.display_name}
+                              value={keyValues[service]?.[req.key_name] || ''}
+                              onChange={(e) => updateKeyValue(service, req.key_name, e.target.value)}
+                              placeholder={`Paste the ${req.display_name}`}
+                              autoComplete="off"
+                            />
+                            <button type="button" className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm akm__eye" onClick={() => toggleShowKey(inputKey)} aria-label={isShowingKey ? `Hide ${req.display_name}` : `Show ${req.display_name}`} title={isShowingKey ? 'Hide' : 'Show'}>
+                              {isShowingKey ? <EyeOff size={16} strokeWidth={2} aria-hidden="true" /> : <Eye size={16} strokeWidth={2} aria-hidden="true" />}
+                            </button>
+                          </div>
+                          <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleSaveKey(service, req.key_name)} disabled={saveStatus === 'saving'} aria-busy={saveStatus === 'saving' || undefined}>
+                            {saveStatus === 'saving' ? 'Saving…' : 'Save key'}
+                          </button>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </TabPanel>
+        ))}
       </Dialog>
 
       <ConfirmDialog
