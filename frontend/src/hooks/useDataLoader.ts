@@ -2,29 +2,7 @@ import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { GraphNode, GraphEdge } from '../types';
 import { graphNodeFromApi } from '../utils/trackMetadata';
-
-/**
- * Helper function to check if a node has valid artist attribution
- * Tracks without proper artists should not be displayed
- */
-const hasValidArtist = (node: any): boolean => {
-  const metadata = node.metadata || {};
-  const artist = node.artist || metadata.artist;
-
-  if (!artist) return false;
-
-  const normalizedArtist = artist.toString().toLowerCase().trim();
-
-  // Exact matches - invalid artist values
-  const invalidArtists = ['unknown', 'unknown artist', 'various artists', 'various', 'va', ''];
-  if (invalidArtists.includes(normalizedArtist)) return false;
-
-  // Prefix matches - catch "VA @...", "Unknown Artist, ...", etc.
-  const invalidPrefixes = ['va @', 'various artists @', 'unknown artist,', 'unknown artist @'];
-  if (invalidPrefixes.some(prefix => normalizedArtist.startsWith(prefix))) return false;
-
-  return true;
-};
+import { hasValidArtist } from '../utils/dataLoaderUtils';
 
 export const useDataLoader = () => {
   const setGraphData = useStore(state => state.graph.setGraphData);
@@ -83,17 +61,7 @@ export const useDataLoader = () => {
           connectedNodeIds.add(edge.target);
         });
 
-        const nodesBeforeConnectivityFilter = nodes.length;
         const connectedNodes = nodes.filter(node => connectedNodeIds.has(node.id));
-        const isolatedNodeCount = nodesBeforeConnectivityFilter - connectedNodes.length;
-
-        const totalNodesReceived = (nodesData.nodes || []).length;
-        const filteredOutCount = totalNodesReceived - connectedNodes.length;
-
-        // DEBUG: Graph ready logging disabled (too noisy)
-        // if (process.env.NODE_ENV === 'development') {
-        //   console.log(`Graph ready: ${connectedNodes.length} nodes, ${edges.length} edges (filtered ${filteredOutCount} nodes)`);
-        // }
 
         setGraphData({ nodes: connectedNodes, edges });
         applyFilters({});
@@ -134,8 +102,6 @@ export const useDataLoader = () => {
           setGraphData({ nodes: connectedNodes, edges });
           applyFilters({});
           setLoading(false);
-          // DEBUG: Fallback loaded logging disabled (too noisy)
-          // console.log(`Fallback loaded: ${connectedNodes.length} connected nodes, ${edges.length} edges (${nodes.length - connectedNodes.length} isolated filtered)`);
         } catch (fallbackError) {
           console.error('Failed to load from fallback:', fallbackError);
           setLoading(false);

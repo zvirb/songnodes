@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import MusicServiceSearch from './MusicServiceSearch';
 import { Plus, Upload, Download, Archive, ArchiveRestore, Search, Pencil, Trash2, Target, X, SearchX, ServerCrash } from 'lucide-react';
@@ -6,7 +6,7 @@ import { SN } from '../lib/songnodes';
 import { SegmentedControl, OverflowMenu, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast } from './ds';
 import './TargetTracksManager.css';
 
-interface TargetTrack {
+export interface TargetTrack {
   track_id?: string;
   title: string;
   artist: string;
@@ -21,7 +21,12 @@ interface TargetTrack {
   completion_percentage?: number;
 }
 
-const TargetTracksManager: React.FC = () => {
+interface TargetTracksManagerProps {
+  embedded?: boolean;
+  filterStatus?: 'all' | 'pending' | 'failed' | 'active';
+}
+
+const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = false, filterStatus = 'all' }) => {
   const [tracks, setTracks] = useState<TargetTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,8 +55,6 @@ const TargetTracksManager: React.FC = () => {
   const [newGenre, setNewGenre] = useState('');
   const [newSearchTerm, setNewSearchTerm] = useState('');
 
-  const modalRef = useRef<HTMLDivElement>(null);
-
   // Load target tracks
   useEffect(() => {
     loadTracks();
@@ -61,20 +64,17 @@ const TargetTracksManager: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('/target-tracks');
-      // FIX: Ensure we always set an array, even if API returns undefined
       setTracks(Array.isArray(response.data) ? response.data : []);
       setLoadFailed(false);
     } catch (error) {
       setLoadFailed(true);
       console.error('Error loading tracks:', error);
-      // FIX: Set empty array on error to prevent undefined state
       setTracks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  /** Success → Toast (past tense); errors stay visible inline until the next action. */
   const showNotification = (type: 'success' | 'error', message: string) => {
     if (type === 'success') {
       setNotification(null);
@@ -154,7 +154,6 @@ const TargetTracksManager: React.FC = () => {
 
   const handleUpdateCompletion = async (trackId: string, completion_percentage: number) => {
     try {
-      // Optimistically update the UI
       setTracks(prevTracks =>
         prevTracks.map(t =>
           t.track_id === trackId ? { ...t, completion_percentage } : t
@@ -352,11 +351,15 @@ const TargetTracksManager: React.FC = () => {
     });
   };
 
-  // Filter tracks based on search and priority
+  // Filter tracks based on search, priority, and embedding mode
   const filteredTracks = tracks?.filter(track => {
     if (!showArchived && track.archived) {
       return false;
     }
+
+    if (filterStatus === 'pending' && track.completion_percentage === 100) return false;
+    if (filterStatus === 'failed' && track.is_active) return false;
+    if (filterStatus === 'active' && !track.is_active) return false;
 
     const query = searchQuery.toLowerCase();
     const title = track.title?.toLowerCase() || '';
@@ -382,15 +385,21 @@ const TargetTracksManager: React.FC = () => {
     setPendingDelete(null);
   };
 
-  const priorityPill = (priority: string) => {
-    const st = SN.status(priority, 'priority');
-    return <span className="sn-pill sn-pill--outline" data-status={st.status}>{st.label}</span>;
+  const priorityPill = (priority: 'high' | 'medium' | 'low') => {
+    const label = priority === 'high' ? 'High priority' : priority === 'medium' ? 'Medium priority' : 'Low priority';
+    return (
+      <span className={`ttm__pill ttm__pill--${priority}`}>
+        {label}
+      </span>
+    );
   };
 
   return (
-    <div className="ttm">
+    <div className={`ttm ${embedded ? 'ttm--embedded' : ''}`}>
       <div className="ttm__head">
-        <p className="ttm__count"><span className="ttm__num">{SN.format.count(tracks.length)}</span> target {tracks.length === 1 ? 'track' : 'tracks'}</p>
+        <p className="ttm__count">
+          <span className="ttm__num">{SN.format.count(filteredTracks.length)}</span> target {filteredTracks.length === 1 ? 'track' : 'tracks'}
+        </p>
         <div className="ttm__actions">
           <button type="button" className="sn-btn sn-btn--sm" onClick={handleAddTrack}>
             <Plus size={16} strokeWidth={2} aria-hidden="true" />
@@ -411,17 +420,19 @@ const TargetTracksManager: React.FC = () => {
         </div>
       </div>
 
-      <SegmentedControl<'manage' | 'search'>
-        label="Target tracks view"
-        size="sm"
-        block
-        value={activeTab}
-        onChange={setActiveTab}
-        options={[
-          { value: 'manage', label: 'Your targets', icon: Target },
-          { value: 'search', label: 'Find in services', icon: Search },
-        ]}
-      />
+      {!embedded && (
+        <SegmentedControl<'manage' | 'search'>
+          label="Target tracks view"
+          size="sm"
+          block
+          value={activeTab}
+          onChange={setActiveTab}
+          options={[
+            { value: 'manage', label: 'Your targets', icon: Target },
+            { value: 'search', label: 'Find in services', icon: Search },
+          ]}
+        />
+      )}
 
       {notification?.type === 'error' && (
         <p className="sn-inline-message sn-inline-message--boxed" data-status="bad" role="alert">{notification.message}</p>
@@ -445,9 +456,9 @@ const TargetTracksManager: React.FC = () => {
               onChange={(e) => setSelectedPriority(e.target.value as any)}
             >
               <option value="all">All priorities</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
+              <option value="high">High priority</option>
+              <option value="medium">Medium priority</option>
+              <option value="low">Low priority</option>
             </select>
             <label className="sn-checkbox">
               <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
@@ -457,7 +468,7 @@ const TargetTracksManager: React.FC = () => {
 
           {selectedTracks.size > 0 ? (
             <div className="ttm__bulk" role="region" aria-label="Selected target tracks">
-              <span role="status">{selectedTracks.size} selected</span>
+              <span role="status" className="ttm__mono"><strong className="ttm__num">{selectedTracks.size}</strong> selected</span>
               <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleBulkActivate(true)}>Turn on</button>
               <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleBulkActivate(false)}>Turn off</button>
               <button type="button" className="sn-btn sn-btn--sm sn-btn--danger-quiet" onClick={() => setPendingDelete({ ids: Array.from(selectedTracks), label: `${selectedTracks.size} target tracks`, bulk: true })}>
@@ -468,7 +479,7 @@ const TargetTracksManager: React.FC = () => {
             </div>
           ) : filteredTracks.length > 1 ? (
             <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet ttm__selectall" onClick={selectAllTracks}>
-              Select all {filteredTracks.length} tracks
+              Select all <span className="ttm__num">{filteredTracks.length}</span> tracks
             </button>
           ) : null}
 
@@ -510,6 +521,7 @@ const TargetTracksManager: React.FC = () => {
               {filteredTracks.map((track) => {
                 const id = track.track_id!;
                 const name = `${track.artist} – ${track.title}`;
+                const completion = track.completion_percentage || 0;
                 return (
                   <li key={id} className="ttm__item" aria-selected={selectedTracks.has(id)}>
                     <label className="sn-checkbox sn-checkbox--bare">
@@ -523,31 +535,43 @@ const TargetTracksManager: React.FC = () => {
                           </span>
                         </span>
                         <span className="sn-track-cell__meta">
-                          <span>{SN.format.count(track.playlists_found || 0)} playlists</span>
+                          <span className="ttm__mono"><strong className="ttm__num">{SN.format.count(track.playlists_found || 0)}</strong> playlists</span>
                           <span className="sn-track-cell__sep" aria-hidden="true">·</span>
-                          <span>{SN.format.count(track.adjacencies_found || 0)} transitions</span>
+                          <span className="ttm__mono"><strong className="ttm__num">{SN.format.count(track.adjacencies_found || 0)}</strong> transitions</span>
                           {track.last_searched ? (
                             <>
                               <span className="sn-track-cell__sep" aria-hidden="true">·</span>
-                              <span>Searched {SN.format.date(track.last_searched)}</span>
+                              <span>Searched <time className="ttm__mono">{SN.format.date(track.last_searched)}</time></span>
+                            </>
+                          ) : null}
+                          {track.track_id ? (
+                            <>
+                              <span className="sn-track-cell__sep" aria-hidden="true">·</span>
+                              <span className="ttm__mono" style={{ fontSize: '0.6875rem', color: 'var(--fg-3)' }}>ID: {track.track_id}</span>
                             </>
                           ) : null}
                         </span>
                       </div>
                       <div className="ttm__tags">
                         {priorityPill(track.priority)}
-                        {!track.is_active && <span className="sn-pill sn-pill--outline" data-status="idle">Off</span>}
+                        {!track.is_active && <span className="ttm__pill ttm__pill--off">Disabled</span>}
                         {track.archived && <span className="sn-tag">Archived</span>}
                         {track.genres?.map((genre, idx) => <span key={idx} className="sn-tag">{genre}</span>)}
                       </div>
                       <div className="ttm__progress">
-                        <label htmlFor={`ttm-done-${id}`}>Done: <span className="ttm__num">{track.completion_percentage || 0}%</span></label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label htmlFor={`ttm-done-${id}`}>Progress:</label>
+                          <span className="ttm__mono" style={{ fontWeight: 600 }}>{completion}%</span>
+                        </div>
+                        <div className="ttm__progress-track">
+                          <div className="ttm__progress-bar" style={{ width: `${completion}%` }} />
+                        </div>
                         <input
                           id={`ttm-done-${id}`}
                           type="range"
                           min="0"
                           max="100"
-                          value={track.completion_percentage || 0}
+                          value={completion}
                           onChange={(e) => handleUpdateCompletion(id, parseInt(e.target.value))}
                         />
                       </div>
@@ -581,7 +605,7 @@ const TargetTracksManager: React.FC = () => {
         </>
       )}
 
-      {activeTab === 'search' && (
+      {activeTab === 'search' && !embedded && (
         <MusicServiceSearch onAddToTargets={handleAddFromMusicService} />
       )}
 
@@ -608,9 +632,9 @@ const TargetTracksManager: React.FC = () => {
         <div className="sn-field">
           <label htmlFor="ttm-priority">Priority</label>
           <select id="ttm-priority" className="sn-input" value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'high' | 'medium' | 'low' })}>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+            <option value="high">High priority</option>
+            <option value="medium">Medium priority</option>
+            <option value="low">Low priority</option>
           </select>
         </div>
         <div className="sn-field">

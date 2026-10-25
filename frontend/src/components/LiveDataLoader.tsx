@@ -1,40 +1,15 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { GraphData, GraphNode, GraphEdge, Track, PerformanceMetrics } from '../types';
+import { GraphData, GraphNode, GraphEdge, PerformanceMetrics } from '../types';
+import { hasValidArtist } from '../utils/dataLoaderUtils';
 import {
   Wifi,
   WifiOff,
   RefreshCw,
   AlertTriangle,
-  CheckCircle,
   Clock,
-  Activity,
-  Zap,
   Database
 } from 'lucide-react';
-
-/**
- * Helper function to check if a node has valid artist attribution
- * Tracks without proper artists should not be displayed
- */
-const hasValidArtist = (node: any): boolean => {
-  const metadata = node.metadata || {};
-  const artist = node.artist || metadata.artist;
-
-  if (!artist) return false;
-
-  const normalizedArtist = artist.toString().toLowerCase().trim();
-
-  // Exact matches - invalid artist values
-  const invalidArtists = ['unknown', 'unknown artist', 'various artists', 'various', 'va', ''];
-  if (invalidArtists.includes(normalizedArtist)) return false;
-
-  // Prefix matches - catch "VA @...", "Unknown Artist, ...", etc.
-  const invalidPrefixes = ['va @', 'various artists @', 'unknown artist,', 'unknown artist @'];
-  if (invalidPrefixes.some(prefix => normalizedArtist.startsWith(prefix))) return false;
-
-  return true;
-};
 
 interface LiveDataLoaderProps {
   autoStart?: boolean;
@@ -56,7 +31,7 @@ interface ConnectionStatus {
 }
 
 interface DataUpdateEvent {
-  type: 'graph' | 'nodes' | 'edges' | 'tracks' | 'performance' | 'scraper';
+  type: 'graph' | 'nodes' | 'edges' | 'tracks' | 'performance' | 'scraper' | 'telemetry' | 'pipeline_update';
   data: any;
   timestamp: number;
   source: 'api' | 'websocket' | 'cache';
@@ -87,7 +62,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
   const setError = useStore(state => state.general.setError);
   const setLoading = useStore(state => state.general.setLoading);
 
-  // NEW: Watch for authentication changes
+  // Watch for authentication changes
   const musicCredentials = useStore(state => state.musicCredentials);
 
   // Refs for cleanup
@@ -95,7 +70,6 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
   const websocketRef = useRef<WebSocket | undefined>(undefined);
   const retryTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  // CRITICAL: Add ref to avoid closure issues with WebSocket retry logic
   const statusRef = useRef<ConnectionStatus>({
     connected: false,
     lastUpdate: 0,
@@ -103,6 +77,57 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
     latency: 0
   });
   const performanceTrackerRef = useRef<number | undefined>(undefined);
+
+  // Add update to recent updates list
+  const addRecentUpdate = useCallback((update: DataUpdateEvent) => {
+    setRecentUpdates(prev => {
+      const newUpdates = [update, ...prev.slice(0, 9)];
+      return newUpdates;
+    });
+  }, []);
+
+  // Handle WebSocket messages
+  const handleWebSocketMessage = useCallback((message: any) => {
+    const updateEvent: DataUpdateEvent = {
+      type: message.type,
+      data: message.data,
+      timestamp: Date.now(),
+      source: 'websocket'
+    };
+
+    addRecentUpdate(updateEvent);
+
+    switch (message.type) {
+      case 'graph_update':
+        if (message.data?.nodes && message.data?.edges) {
+          setGraphData(message.data);
+          if (onDataUpdate) {
+            onDataUpdate('graph', message.data);
+          }
+        }
+        break;
+
+      case 'scraper_status':
+      case 'telemetry':
+      case 'pipeline_update':
+        if (onDataUpdate) {
+          onDataUpdate(message.type, message.data);
+        }
+        break;
+
+      case 'performance_update':
+        if (enablePerformanceTracking) {
+          updatePerformanceMetrics(message.data);
+          if (onDataUpdate) {
+            onDataUpdate('performance', message.data);
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+  }, [setGraphData, updatePerformanceMetrics, enablePerformanceTracking, onDataUpdate, addRecentUpdate]);
 
   // WebSocket connection management
   const connectWebSocket = useCallback(() => {
@@ -123,14 +148,14 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
             retryCount: 0,
             error: undefined
           };
-          statusRef.current = newStatus; // Update ref to avoid closure issues
+          statusRef.current = newStatus;
           return newStatus;
         });
 
         // Send subscription message
         ws.send(JSON.stringify({
           type: 'subscribe',
-          topics: ['graph_updates', 'node_changes', 'scraper_status', 'performance']
+          topics: ['graph_updates', 'node_changes', 'scraper_status', 'telemetry', 'pipeline_update', 'performance']
         }));
       };
 
@@ -147,7 +172,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
               lastUpdate: Date.now(),
               latency: Math.round(latency)
             };
-            statusRef.current = newStatus; // Update ref to keep it in sync
+            statusRef.current = newStatus;
             return newStatus;
           });
 
@@ -163,21 +188,19 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
             ...prev,
             connected: false
           };
-          statusRef.current = newStatus; // Update ref to avoid closure issues
+          statusRef.current = newStatus;
           return newStatus;
         });
 
-        // Attempt to reconnect if not intentional close
-        // CRITICAL FIX: Use ref instead of state to avoid stale closure
         if (event.code !== 1000 && statusRef.current.retryCount < maxRetries) {
-          const delay = Math.pow(2, statusRef.current.retryCount) * 1000; // Exponential backoff using ref
+          const delay = Math.pow(2, statusRef.current.retryCount) * 1000;
           retryTimeoutRef.current = setTimeout(() => {
             setStatus(prev => {
               const newStatus = {
                 ...prev,
                 retryCount: prev.retryCount + 1
               };
-              statusRef.current = newStatus; // Update ref
+              statusRef.current = newStatus;
               return newStatus;
             });
             connectWebSocket();
@@ -194,7 +217,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
             connected: false,
             error: errorMessage
           };
-          statusRef.current = newStatus; // Update ref to avoid closure issues
+          statusRef.current = newStatus;
           return newStatus;
         });
 
@@ -206,60 +229,7 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
     } catch (error) {
       console.error('Failed to create WebSocket:', error);
     }
-  }, [enableWebSocket, maxRetries, onError]); // FIXED: Removed status.retryCount - using statusRef instead
-
-  // Handle WebSocket messages
-  const handleWebSocketMessage = useCallback((message: any) => {
-    const updateEvent: DataUpdateEvent = {
-      type: message.type,
-      data: message.data,
-      timestamp: Date.now(),
-      source: 'websocket'
-    };
-
-    addRecentUpdate(updateEvent);
-
-    switch (message.type) {
-      case 'graph_update':
-        if (message.data.nodes && message.data.edges) {
-          setGraphData(message.data);
-          if (onDataUpdate) {
-            onDataUpdate('graph', message.data);
-          }
-        }
-        break;
-
-      case 'node_update':
-        // Update specific nodes
-        break;
-
-      case 'scraper_status':
-        break;
-
-      case 'performance_update':
-        if (enablePerformanceTracking) {
-          updatePerformanceMetrics(message.data);
-          if (onDataUpdate) {
-            onDataUpdate('performance', message.data);
-          }
-        }
-        break;
-
-      case 'new_tracks':
-        // Could trigger a refresh or show notification
-        break;
-
-      default:
-    }
-  }, [setGraphData, updatePerformanceMetrics, enablePerformanceTracking, onDataUpdate]);
-
-  // Add update to recent updates list
-  const addRecentUpdate = useCallback((update: DataUpdateEvent) => {
-    setRecentUpdates(prev => {
-      const newUpdates = [update, ...prev.slice(0, 9)]; // Keep last 10 updates
-      return newUpdates;
-    });
-  }, []);
+  }, [enableWebSocket, maxRetries, onError, handleWebSocketMessage]);
 
   // Fetch data from API
   const fetchGraphData = useCallback(async () => {
@@ -268,22 +238,18 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       setLoading(true);
       const startTime = performance.now();
 
-      // NEW: Build authentication headers if credentials available
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
 
-      // Add Tidal auth if available
       if (musicCredentials.tidal?.accessToken && musicCredentials.tidal?.isConnected) {
         headers['X-Tidal-Access-Token'] = musicCredentials.tidal.accessToken;
       }
 
-      // Add Spotify auth if available
       if (musicCredentials.spotify?.accessToken && musicCredentials.spotify?.isConnected) {
         headers['X-Spotify-Access-Token'] = musicCredentials.spotify.accessToken;
       }
 
-      // Parallel fetch of nodes and edges with auth headers
       const [nodesResponse, edgesResponse] = await Promise.all([
         fetch('/api/graph/nodes?limit=1000', { headers }),
         fetch('/api/graph/edges?limit=10000', { headers })
@@ -298,22 +264,13 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         edgesResponse.json()
       ]);
 
-      // Transform and validate data
-      // FILTER: Exclude tracks without valid artist attribution
-      const allNodesCount = (nodesData.nodes || []).length;
       const validNodesData = (nodesData.nodes || []).filter((node: any) => hasValidArtist(node));
-      const filteredCount = allNodesCount - validNodesData.length;
-
-      // NEW: Log warning if nodes were filtered out
-      if (filteredCount > 0) {
-        console.warn(`Filtered out ${filteredCount} nodes due to missing/invalid artist attribution (${allNodesCount} total → ${validNodesData.length} valid)`);
-      }
 
       const nodes: GraphNode[] = validNodesData.map((node: any) => ({
         id: node.id,
-        title: node.title || node.metadata?.title || 'ERROR: No Track Title (WebSocket)',
-        artist: node.artist || node.metadata?.artist || 'ERROR: No Artist (WebSocket)',
-        label: node.metadata?.label || node.title || 'ERROR: No Label (WebSocket)',
+        title: node.title || node.metadata?.title || 'Unknown Title',
+        artist: node.artist || node.metadata?.artist || 'Unknown Artist',
+        label: node.metadata?.label || node.title || 'Unknown Label',
         bpm: node.metadata?.bpm,
         key: node.metadata?.key,
         genre: node.metadata?.genre || 'Electronic',
@@ -341,10 +298,8 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       const graphData: GraphData = { nodes, edges };
       const latency = performance.now() - startTime;
 
-      // Update store
       setGraphData(graphData);
 
-      // Update status
       setStatus(prev => ({
         ...prev,
         lastUpdate: Date.now(),
@@ -352,7 +307,6 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         error: undefined
       }));
 
-      // Add to recent updates
       const updateEvent: DataUpdateEvent = {
         type: 'graph',
         data: graphData,
@@ -365,11 +319,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         onDataUpdate('graph', graphData);
       }
 
-      console.log(`Graph data loaded successfully (${latency.toFixed(0)}ms)`);
-
     } catch (error) {
       const errorMessage = `Failed to load data: ${error}`;
-      console.error('', errorMessage);
+      console.error(errorMessage);
 
       setStatus(prev => ({
         ...prev,
@@ -396,8 +348,8 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       const memory = (performance as any).memory;
 
       const metrics: PerformanceMetrics = {
-        frameRate: 60, // Will be updated by animation loop
-        renderTime: 16.67, // 60fps target
+        frameRate: 60,
+        renderTime: 16.67,
         nodeCount: useStore.getState().graphData.nodes.length,
         edgeCount: useStore.getState().graphData.edges.length,
         visibleNodes: useStore.getState().graphData.nodes.length,
@@ -425,12 +377,10 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       connectWebSocket();
       startPerformanceTracking();
 
-      // Set up periodic refresh
       intervalRef.current = setInterval(fetchGraphData, updateInterval);
     }
 
     return () => {
-      // Cleanup
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -446,48 +396,24 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
     };
   }, [autoStart, fetchGraphData, connectWebSocket, startPerformanceTracking, updateInterval]);
 
-  // NEW: Watch for authentication changes and reload graph data
-  useEffect(() => {
-    // Skip initial mount (already loaded by autoStart)
-    if (!autoStart) return;
-
-    // Check if either service is connected
-    const tidalConnected = musicCredentials.tidal?.isConnected ?? false;
-    const spotifyConnected = musicCredentials.spotify?.isConnected ?? false;
-    const hasAuth = tidalConnected || spotifyConnected;
-
-    // Only reload if we have authentication
-    if (hasAuth) {
-      console.log('Authentication status changed, reloading graph data with credentials...');
-      fetchGraphData();
-    }
-  }, [
-    musicCredentials.tidal?.isConnected,
-    musicCredentials.spotify?.isConnected,
-    musicCredentials.tidal?.accessToken,
-    musicCredentials.spotify?.accessToken,
-    autoStart,
-    fetchGraphData
-  ]);
-
-  // Don't render status if disabled
   if (!showStatus) return null;
 
   return (
     <div
       style={{
         position: 'fixed',
-        top: '20px',
-        right: '20px',
+        top: 'var(--space-4)',
+        right: 'var(--space-4)',
         zIndex: 'var(--z-drawer)',
         backgroundColor: 'var(--surface-1)',
         border: '1px solid var(--line)',
-        borderRadius: '12px',
-        padding: '16px',
+        borderRadius: 'var(--radius-card)',
+        padding: 'var(--space-4)',
         minWidth: '280px',
         backdropFilter: 'blur(20px)',
-        color: 'white',
-        fontSize: '0.8125rem'
+        color: 'var(--fg)',
+        fontSize: 'var(--body-s)',
+        boxShadow: 'var(--shadow-2)'
       }}
     >
       {/* Header */}
@@ -495,33 +421,35 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '12px'
+        marginBottom: 'var(--space-3)'
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: 'var(--space-2)',
           fontSize: '0.875rem',
           fontWeight: '600'
         }}>
           <Database size={16} />
-          Live Data
+          <span>Live Data Loader</span>
         </div>
 
         <button
+          type="button"
           onClick={refresh}
           disabled={isLoading}
           style={{
             background: 'transparent',
-            border: '1px solid var(--line-strong)',
-            borderRadius: '6px',
-            color: 'white',
+            border: '1px solid var(--line)',
+            borderRadius: 'var(--radius-control)',
+            color: 'var(--fg)',
             cursor: isLoading ? 'not-allowed' : 'pointer',
-            padding: '6px',
+            padding: 'var(--space-1)',
             opacity: isLoading ? 0.5 : 1
           }}
+          aria-label="Refresh live data"
         >
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={isLoading ? 'sn-spinner' : ''} />
         </button>
       </div>
 
@@ -529,18 +457,18 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        marginBottom: '12px',
-        padding: '8px',
+        gap: 'var(--space-2)',
+        marginBottom: 'var(--space-3)',
+        padding: 'var(--space-2)',
         backgroundColor: 'var(--surface-2)',
-        borderRadius: '6px'
+        borderRadius: 'var(--radius-control)'
       }}>
         {status.connected ? (
           <>
             <Wifi size={16} color="var(--status-ok)" />
-            <span style={{ color: 'var(--status-ok)' }}>Connected</span>
+            <span style={{ color: 'var(--status-ok)', fontWeight: 600 }}>Connected</span>
             {status.latency > 0 && (
-              <span style={{ color: 'var(--fg-2)' }}>
+              <span className="sn-mono" style={{ color: 'var(--fg-2)', fontSize: '0.75rem', fontFamily: 'var(--font-data)' }}>
                 ({status.latency}ms)
               </span>
             )}
@@ -548,9 +476,9 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         ) : (
           <>
             <WifiOff size={16} color="var(--status-bad)" />
-            <span style={{ color: 'var(--status-bad)' }}>Disconnected</span>
+            <span style={{ color: 'var(--status-bad)', fontWeight: 600 }}>Disconnected</span>
             {status.retryCount > 0 && (
-              <span style={{ color: 'var(--fg-2)' }}>
+              <span className="sn-mono" style={{ color: 'var(--fg-2)', fontSize: '0.75rem', fontFamily: 'var(--font-data)' }}>
                 (Retry {status.retryCount}/{maxRetries})
               </span>
             )}
@@ -563,12 +491,12 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-          padding: '8px',
+          gap: 'var(--space-2)',
+          marginBottom: 'var(--space-3)',
+          padding: 'var(--space-2)',
           backgroundColor: 'var(--status-bad-bg)',
           border: '1px solid var(--status-bad)',
-          borderRadius: '6px',
+          borderRadius: 'var(--radius-control)',
           color: 'var(--status-bad)'
         }}>
           <AlertTriangle size={14} />
@@ -581,53 +509,57 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-          color: 'var(--fg-2)'
+          gap: 'var(--space-2)',
+          marginBottom: 'var(--space-3)',
+          color: 'var(--fg-2)',
+          fontSize: '0.75rem'
         }}>
           <Clock size={14} />
           <span>
-            Last update: {new Date(status.lastUpdate).toLocaleTimeString()}
+            Last sync:{' '}
+            <time className="sn-mono" style={{ fontFamily: 'var(--font-data)' }}>
+              {new Date(status.lastUpdate).toLocaleTimeString()}
+            </time>
           </span>
         </div>
       )}
 
       {/* Recent Updates */}
       {recentUpdates.length > 0 && (
-        <div style={{ marginTop: '12px' }}>
+        <div style={{ marginTop: 'var(--space-3)' }}>
           <div style={{
             fontSize: '0.75rem',
             fontWeight: '600',
-            color: 'var(--fg-2)',
-            marginBottom: '8px'
+            color: 'var(--fg-3)',
+            marginBottom: 'var(--space-1)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
           }}>
-            Recent Updates
+            Recent Streams
           </div>
           <div style={{
-            maxHeight: '120px',
+            maxHeight: '110px',
             overflowY: 'auto',
             display: 'grid',
-            gap: '4px'
+            gap: 'var(--space-1)'
           }}>
-            {recentUpdates.slice(0, 5).map((update, index) => (
+            {recentUpdates.slice(0, 4).map((update, index) => (
               <div
                 key={index}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '6px 8px',
+                  padding: 'var(--space-1) var(--space-2)',
                   backgroundColor: 'var(--surface-2)',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-chip)',
                   fontSize: '0.6875rem'
                 }}
               >
-                <span style={{
-                  color: update.source === 'websocket' ? 'var(--fg-2)' : 'var(--fg-2)'
-                }}>
+                <span style={{ color: 'var(--fg)', fontWeight: 500 }}>
                   {update.type}
                 </span>
-                <span style={{ color: 'var(--fg-2)' }}>
+                <span className="sn-mono" style={{ color: 'var(--fg-3)', fontFamily: 'var(--font-data)' }}>
                   {new Date(update.timestamp).toLocaleTimeString()}
                 </span>
               </div>
@@ -637,41 +569,4 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       )}
     </div>
   );
-};
-
-// Hook for using LiveDataLoader functionality
-export const useLiveDataLoader = (options?: Partial<LiveDataLoaderProps>) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<number>(0);
-
-  const loaderRef = useRef<{
-    refresh: () => void;
-  } | null>(null);
-
-  const refresh = useCallback(() => {
-    if (loaderRef.current) {
-      loaderRef.current.refresh();
-    }
-  }, []);
-
-  return {
-    isLoading,
-    lastUpdate,
-    refresh,
-    LiveDataLoader: (props: Partial<LiveDataLoaderProps>) => (
-      <LiveDataLoader
-        {...options}
-        {...props}
-        onDataUpdate={(type, data) => {
-          setLastUpdate(Date.now());
-          if (options?.onDataUpdate) {
-            options.onDataUpdate(type, data);
-          }
-          if (props.onDataUpdate) {
-            props.onDataUpdate(type, data);
-          }
-        }}
-      />
-    )
-  };
 };
