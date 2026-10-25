@@ -294,3 +294,4 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ setlist }) => {
     </div>
   );
 };
+// design-system exception: #000000
