@@ -390,8 +390,8 @@ Started working on Python 3.12 upgrade audit.
 <!-- SLOT:BE2 END -->
 <!-- SLOT:WP2 BEGIN -->
 ### WP2: MusicBrainz reference ETL into refmb
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25 (Implemented extract, load, index, and verify structure. Unit tests passed. Run verification via python -m services.reference_data.mb_etl)
 <!-- SLOT:WP2 END -->
 
 <!-- SLOT:WP3 BEGIN -->
