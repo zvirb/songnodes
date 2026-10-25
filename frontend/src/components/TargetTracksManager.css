@@ -14,11 +14,11 @@
 .ttm__item[aria-selected="true"] { background: var(--brand-soft); }
 .ttm__main { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .ttm__tags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.ttm__progress { display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem; color: var(--fg-2); }
+.ttm__progress { display: flex; flex-direction: column; gap: var(--space-0\.5); font-size: 0.75rem; color: var(--fg-2); }
 .ttm__progress input { width: 100%; accent-color: var(--brand); }
 .ttm__row-actions { grid-column: 2; display: flex; align-items: center; gap: var(--space-1); }
 .ttm__add { display: flex; gap: var(--space-2); }
 .ttm__add .sn-input { flex: 1 1 auto; min-width: 0; }
 .ttm__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.ttm__chip-x { display: inline-flex; align-items: center; padding: 0; margin-left: 2px; border: 0; background: none; color: inherit; cursor: pointer; }
+.ttm__chip-x { display: inline-flex; align-items: center; padding: 0; margin-left: var(--space-0\.5); border: 0; background: none; color: inherit; cursor: pointer; }
 .ttm__json { font-family: var(--font-data); font-size: 0.8125rem; width: 100%; }

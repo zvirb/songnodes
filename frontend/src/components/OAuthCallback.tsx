@@ -222,49 +222,49 @@ const OAuthCallback: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'center',
       height: '100vh',
-      backgroundColor: '#1a1a1a',
-      color: '#ffffff',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      padding: '20px'
+      backgroundColor: 'var(--bg)',
+      color: 'var(--fg)',
+      fontFamily: 'var(--font-body)',
+      padding: 'var(--space-5)'
     }}>
       <div style={{
         textAlign: 'center',
         maxWidth: '500px',
-        padding: '40px',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.1)'
+        padding: 'var(--space-10)',
+        backgroundColor: 'var(--surface-1)',
+        borderRadius: 'var(--radius-card)',
+        border: '1px solid var(--line)'
       }}>
         {/* Status Icon */}
-        <div style={{ fontSize: '64px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-5)' }}>
           {status === 'processing' && '⏳'}
           {status === 'success' && '✅'}
           {status === 'error' && '❌'}
         </div>
 
         {/* Title */}
-        <h1 style={{ margin: '0 0 16px 0', fontSize: '24px' }}>
+        <h1 style={{ margin: '0 0 var(--space-4) 0', fontSize: '1.375rem', fontFamily: 'var(--font-display)' }}>
           {status === 'processing' && `Authenticating with ${service.charAt(0).toUpperCase() + service.slice(1)}`}
           {status === 'success' && 'Authentication Successful!'}
           {status === 'error' && 'Authentication Failed'}
         </h1>
 
         {/* Message */}
-        <p style={{ margin: 0, fontSize: '16px', color: '#8E8E93', lineHeight: 1.5 }}>
+        <p style={{ margin: 0, fontSize: '0.9375rem', color: 'var(--fg-3)', lineHeight: 1.5 }}>
           {message}
         </p>
 
         {/* Loading Spinner */}
         {status === 'processing' && (
           <div style={{
-            marginTop: '24px',
-            width: '40px',
-            height: '40px',
-            border: '4px solid rgba(255,255,255,0.1)',
-            borderTop: '4px solid #1DB954',
-            borderRadius: '50%',
+            marginTop: 'var(--space-6)',
+            width: 'var(--control-md)',
+            height: 'var(--control-md)',
+            border: '4px solid var(--line)',
+            borderTop: '4px solid var(--status-ok)',
+            borderRadius: 'var(--radius-pill)',
             animation: 'spin 1s linear infinite',
-            margin: '24px auto 0'
+            margin: 'var(--space-6) auto 0'
           }} />
         )}
 
@@ -273,13 +273,13 @@ const OAuthCallback: React.FC = () => {
           <button
             onClick={() => window.opener ? window.close() : window.location.href = '/'}
             style={{
-              marginTop: '24px',
-              padding: '10px 20px',
-              backgroundColor: '#4A90E2',
+              marginTop: 'var(--space-6)',
+              padding: 'var(--space-2) var(--space-5)',
+              backgroundColor: 'var(--brand)',
               border: 'none',
-              borderRadius: '6px',
-              color: '#ffffff',
-              fontSize: '14px',
+              borderRadius: 'var(--radius-control)',
+              color: 'var(--on-brand)',
+              fontSize: '0.875rem',
               cursor: 'pointer'
             }}
           >

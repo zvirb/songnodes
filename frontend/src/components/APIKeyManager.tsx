@@ -6,14 +6,15 @@ import React, { useState, useEffect } from 'react';
  *
  * Features:
  * - Encrypted storage via backend
- * - Show/hide sensitive values
+ * - Show/hide sensitive values (SecretField specs)
+ * - Copy to clipboard with status feedback
  * - Test connection functionality
  * - Service-specific validation
  * - Visual status indicators
  */
 
 import type { APIKey, APIKeyRequirement } from '../types';
-import { Eye, EyeOff, ExternalLink, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, ExternalLink, KeyRound, Copy, Check } from 'lucide-react';
 import { SN, StatusPill } from '../lib/songnodes';
 import { Dialog, ConfirmDialog, Tabs, TabPanel, EmptyPanel, LoadingPanel, showToast } from './ds';
 import './APIKeyManager.css';
@@ -29,6 +30,33 @@ interface ServiceKeys {
     [keyName: string]: string;
   };
 }
+
+const CopyButton: React.FC<{ text: string; label?: string; size?: 'sm' | 'md' }> = ({ text, label = 'Copy', size = 'sm' }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className={`sn-btn ${size === 'sm' ? 'sn-btn--sm' : ''} sn-btn--quiet`}
+      onClick={handleCopy}
+      aria-label={copied ? 'Copied to clipboard' : `Copy ${label}`}
+      title={copied ? 'Copied' : `Copy ${label}`}
+    >
+      {copied ? <Check size={16} strokeWidth={2} aria-hidden="true" /> : <Copy size={16} strokeWidth={2} aria-hidden="true" />}
+      <span>{copied ? 'Copied' : label}</span>
+    </button>
+  );
+};
 
 export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose }) => {
   const [requirements, setRequirements] = useState<APIKeyRequirement[]>([]);
@@ -272,8 +300,8 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                   {getServiceRequirements(activeService).map((req) => {
                     const existing = getExistingKey(activeService, req.key_name);
                     const inputKey = `${activeService}:${req.key_name}`;
-                    const isShowingKey = showKeys[inputKey];
-                    const isTesting = testing[inputKey];
+                    const isShowingKey = !!showKeys[inputKey];
+                    const isTesting = !!testing[inputKey];
                     return (
                       <section key={inputKey} className="akm__key" aria-labelledby={`akm-${inputKey}`}>
                         <div className="akm__head">
@@ -292,6 +320,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                           <>
                             <div className="akm__row">
                               <code className="akm__masked">{existing.masked_value}</code>
+                              <CopyButton text={existing.masked_value} label="Copy" size="sm" />
                               <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleTestKey(activeService, req.key_name)} disabled={isTesting} aria-busy={isTesting || undefined}>
                                 {isTesting ? <span className="sn-spinner" aria-hidden="true" /> : null}
                                 {isTesting ? 'Testing…' : 'Test key'}
@@ -319,7 +348,14 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                                 placeholder={`Paste the ${req.display_name}`}
                                 autoComplete="off"
                               />
-                              <button type="button" className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm akm__eye" onClick={() => toggleShowKey(inputKey)} aria-label={isShowingKey ? `Hide ${req.display_name}` : `Show ${req.display_name}`} title={isShowingKey ? 'Hide' : 'Show'}>
+                              <button
+                                type="button"
+                                className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm akm__eye"
+                                onClick={() => toggleShowKey(inputKey)}
+                                aria-pressed={isShowingKey}
+                                aria-label={isShowingKey ? `Hide ${req.display_name}` : `Show ${req.display_name}`}
+                                title={isShowingKey ? 'Hide' : 'Show'}
+                              >
                                 {isShowingKey ? <EyeOff size={16} strokeWidth={2} aria-hidden="true" /> : <Eye size={16} strokeWidth={2} aria-hidden="true" />}
                               </button>
                             </div>
