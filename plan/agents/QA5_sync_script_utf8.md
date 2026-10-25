@@ -5,7 +5,8 @@ Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md. N
 ## Problem
 `bash scripts/sync-design-system.sh --check` on Windows crashes with UnicodeDecodeError (cp1252 cannot decode byte 0x8f) because the embedded python reads files with the default locale encoding. With PYTHONUTF8=1 it passes ("design-system 1.1.1: frontend copy in sync").
 ## Owned paths
-scripts/sync-design-system.sh and any python helper it calls. Do NOT touch design-system/ or frontend/src/styles/design-system/.
+- scripts/sync-design-system.sh (and any python helper it calls; never design-system/ or frontend/src/styles/design-system/)
+
 ## Do
 - Open every file with encoding="utf-8" (and write with newline handling that does not change bytes), or export PYTHONUTF8=1 inside the script. Check python3 vs python availability on Windows Git Bash.
 - Confirm --check still fails when the synced copy drifts (show a test with a temporary change, then revert).
