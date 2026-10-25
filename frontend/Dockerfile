@@ -1,12 +1,13 @@
-FROM node:20-alpine as builder
+# Build stage
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies using clean install and clear cache
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -17,12 +18,15 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Copy built assets
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Remove default nginx static assets and clean package caches
+RUN rm -rf /usr/share/nginx/html/* /var/cache/apk/* /tmp/*
 
-# Copy nginx configuration - 2025 best practices for cache control
+# Copy built assets from builder stage
+COPY --chown=nginx:nginx --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration for non-root execution on unprivileged port 8080
 RUN echo 'server { \
-    listen 80; \
+    listen 8080; \
     server_name localhost; \
     root /usr/share/nginx/html; \
     index index.html; \
@@ -92,6 +96,12 @@ RUN echo 'server { \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+# Set directory permissions for unprivileged nginx execution
+RUN touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /usr/share/nginx/html
+
+USER nginx
+
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

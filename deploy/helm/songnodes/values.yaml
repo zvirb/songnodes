@@ -61,19 +61,19 @@ secrets:
     app.kubernetes.io/component: secrets
   annotations: {}
   stringData:
-    POSTGRES_PASSWORD: CHANGE_ME_musicdb_secure_pass_2024
-    REDIS_PASSWORD: CHANGE_ME_redis_secure_pass_2024
-    RABBITMQ_PASS: CHANGE_ME_rabbitmq_secure_pass_2024
-    DATABASE_URL: postgresql+asyncpg://musicdb_user:CHANGE_ME_musicdb_secure_pass_2024@postgres-0.postgres-service.songnodes.svc.cluster.local:5432/musicdb
-    SPOTIFY_CLIENT_ID: CHANGE_ME
-    SPOTIFY_CLIENT_SECRET: CHANGE_ME
-    TIDAL_CLIENT_ID: CHANGE_ME
-    TIDAL_CLIENT_SECRET: CHANGE_ME
-    TIDAL_API_TOKEN: CHANGE_ME
-    LASTFM_API_KEY: CHANGE_ME
-    YOUTUBE_API_KEY: CHANGE_ME
-    DISCOGS_API_TOKEN: CHANGE_ME
-    ANTHROPIC_API_KEY: CHANGE_ME
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    RABBITMQ_PASS: ""
+    DATABASE_URL: ""
+    SPOTIFY_CLIENT_ID: ""
+    SPOTIFY_CLIENT_SECRET: ""
+    TIDAL_CLIENT_ID: ""
+    TIDAL_CLIENT_SECRET: ""
+    TIDAL_API_TOKEN: ""
+    LASTFM_API_KEY: ""
+    YOUTUBE_API_KEY: ""
+    DISCOGS_API_TOKEN: ""
+    ANTHROPIC_API_KEY: ""
     PROXY_USERNAME: ""
     PROXY_PASSWORD: ""
 
@@ -607,8 +607,7 @@ services:
             echo "postgres-0.postgres-service.songnodes.svc.cluster.local:5432 - accepting connections"
 
   # Data-layer worker: Celery tasks draining the durable ingestion_jobs queue (ingest, enrich, project, scrape dispatch).
-  # No HTTP port, so no Service is created. Provider credentials come from the songnodes secret; a provider whose
-  # credential is still a CHANGE_ME placeholder is simply not used. ENRICHMENT_PROVIDERS is the explicit allow-list.
+  # Provider credentials come from the songnodes secret. ENRICHMENT_PROVIDERS is the explicit allow-list.
   worker:
     enabled: true
     name: worker
@@ -1026,11 +1025,11 @@ services:
       type: NodePort
       ports:
         http:
-          port: 80
-          targetPort: 80
+          port: 8080
+          targetPort: 8080
           nodePort: 30006
     containerPorts:
-      http: 80
+      http: 8080
     env:
       static:
         # Use empty values to force relative URLs (nginx proxy handles routing)
@@ -1043,7 +1042,7 @@ services:
       data:
         nginx.conf: |
           server {
-              listen 80;
+              listen 8080;
               server_name _;
               root /usr/share/nginx/html;
               index index.html;
@@ -1158,7 +1157,7 @@ autoscaling:
               periodSeconds: 60
           selectPolicy: Min
         scaleUp:
-          stabilizationWindowSeconds: 60
+          stabilizationWindowSeconds: 300
           policies:
             - type: Percent
               value: 100
@@ -1295,6 +1294,10 @@ networkPolicy:
     app.kubernetes.io/name: prometheus
   grafanaSelector:
     app.kubernetes.io/name: grafana
+  allowedExternalOAuthHosts:
+    - accounts.spotify.com
+    - auth.tidal.com
+    - api.discogs.com
 
 cronjobs:
   silverToGold:
