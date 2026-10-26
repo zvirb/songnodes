@@ -672,6 +672,15 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - End: 2026-10-26
 <!-- SLOT:G3 END -->
 
+<!-- SLOT:G4 BEGIN -->
+### G4: Extract design-system conformance check to a cross-platform Python script and pre-commit hook
+- Start: 2026-10-26
+- Built: Extracted design system conformance check to cross-platform `scripts/check_design_system.py`, updated `.github/workflows/design-system.yml`, added `check:design-system` script in `frontend/package.json`, added `.githooks/pre-commit`, and added unit tests in `tests/test_check_design_system.py`.
+- Checks run: `pytest tests/test_check_design_system.py`, `python scripts/check_design_system.py --check`, `bash scripts/sync-design-system.sh --check`, `npm --prefix frontend run check:design-system`.
+- Checks not run: Full E2E Playwright suite due to environment constraints.
+- End: 2026-10-26
+<!-- SLOT:G4 END -->
+
 <!-- SLOT:C1 BEGIN -->
 ### C1: One home for the local MusicBrainz resolver
 - Start: 2026-10-26
