@@ -1093,8 +1093,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX2 BEGIN -->
 ### UX2: Favorite queries: starred queries and filter preset storage
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Implemented `FavoriteItem<T>` interface and pure typed favorite queries utilities (`getFavorites`, `saveFavorite`, `removeFavorite`, `isFavorite`) inside `favoriteQueries.ts` and their tests in `favoriteQueries.test.ts`. Added handling for invalid JSON payload and duplication update.
+- Checks run: `vitest run src/utils/favoriteQueries.test.ts`, `tsc --noEmit`, `oxlint src`, `vitest run src`, `vite build`, design system check.
+- Checks not run: Playwright E2E suite cannot run in the sandbox.
+- End: 2026-10-26
 <!-- SLOT:UX2 END -->
 
 <!-- SLOT:UX3 BEGIN -->
