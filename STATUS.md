@@ -1068,8 +1068,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX1 BEGIN -->
 ### UX1: Search history: recent queries storage
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Implemented pure typed recent searches utility `recentSearches.ts` and tests `recentSearches.test.ts`.
+- Checks run: `vitest run src/utils/recentSearches.test.ts`, `tsc --noEmit`, `oxlint src`, `vitest run src`, `vite build`, design system check.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- End: 2026-10-26
 <!-- SLOT:UX1 END -->
 
 <!-- SLOT:UX2 BEGIN -->
