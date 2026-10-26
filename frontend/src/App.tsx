@@ -3,17 +3,10 @@
  * Every page is reached from the NavDrawer; there is no visible nav bar or site tabs.
  */
 import React from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AppShell } from './shell/AppShell';
-import HomePage from './pages/HomePage';
-import { NotFoundPage, PlannedModulePage, SourcesPage } from './pages/ModulePages';
+import { getAppRoutes } from './routes/registry';
 
-const GraphPage = React.lazy(() => import('./pages/GraphPage'));
-const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
-const CamelotPage = React.lazy(() => import('./pages/CamelotPage'));
-const ScraperProgressPage = React.lazy(() => import('./pages/ScraperProgressPage'));
-const LibraryPage = React.lazy(() => import('./features/musicLibrary/LibraryPage'));
-const SetBuilderPage = React.lazy(() => import('./features/musicLibrary/SetBuilderPage'));
 const OAuthCallback = React.lazy(() => import('./components/OAuthCallback'));
 
 const PageLoading: React.FC = () => (
@@ -25,29 +18,35 @@ const PageLoading: React.FC = () => (
   </main>
 );
 
-const App: React.FC = () => (
-  <BrowserRouter>
-    <React.Suspense fallback={<PageLoading />}>
-      <Routes>
-        {/* Service sign-in returns: no shell, the window may be a pop-up (AuthCallbackPage). */}
-        <Route path="/callback/spotify" element={<OAuthCallback />} />
-        <Route path="/oauth/callback" element={<OAuthCallback />} />
-        <Route element={<AppShell />}>
-          <Route index element={<HomePage />} />
-          <Route path="graph" element={<GraphPage />} />
-          <Route path="library" element={<LibraryPage />} />
-          <Route path="sets" element={<SetBuilderPage />} />
-          <Route path="paths" element={<PlannedModulePage mod="paths" />} />
-          <Route path="harmony" element={<CamelotPage />} />
-          <Route path="sources" element={<Navigate to="/sources/targets" replace />} />
-          <Route path="sources/targets" element={<SourcesPage />} />
-          <Route path="pipeline" element={<ScraperProgressPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </React.Suspense>
-  </BrowserRouter>
-);
+const App: React.FC = () => {
+  const routes = getAppRoutes();
+
+  return (
+    <BrowserRouter>
+      <React.Suspense fallback={<PageLoading />}>
+        <Routes>
+          {/* Service sign-in returns: no shell, the window may be a pop-up (AuthCallbackPage). */}
+          <Route path="/callback/spotify" element={<OAuthCallback />} />
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
+          <Route element={<AppShell />}>
+            {routes.map((route, i) => {
+              if (route.path === '/') {
+                return <Route key="index" index element={route.element} />;
+              }
+              // Strip leading slash if any because it's a child route,
+              // though react-router v6 supports absolute paths in nested routes as well.
+              // We'll pass it exactly. If path is "*", it works fine.
+              let childPath = route.path;
+              if (childPath.startsWith('/') && childPath !== '/') {
+                childPath = childPath.slice(1);
+              }
+              return <Route key={route.path || i} path={childPath} element={route.element} />;
+            })}
+          </Route>
+        </Routes>
+      </React.Suspense>
+    </BrowserRouter>
+  );
+};
 
 export default App;
