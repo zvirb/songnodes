@@ -656,8 +656,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:G2 BEGIN -->
 ### G2: Route registry: each page registers its own route
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26, finished implementation of dynamic route registry using import.meta.glob with unit tests.
 <!-- SLOT:G2 END -->
 
 <!-- SLOT:G3 BEGIN -->
