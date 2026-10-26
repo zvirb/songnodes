@@ -1,12 +1,12 @@
 import { readFileSync } from 'fs';
 import { test, expect, openRoute } from './fixtures';
 
-/** Library (Melbourne crate) against the checked-in public/data/music-library.json. */
-const library = JSON.parse(readFileSync(new URL('../../public/data/music-library.json', import.meta.url), 'utf-8'));
+/** Library (Melbourne crate) against the checked-in frontend/tests/e2e/data/library.fixture.json. */
+const library = JSON.parse(readFileSync(new URL('./data/library.fixture.json', import.meta.url), 'utf-8'));
 const TOTAL: number = library.tracks.length;
 const sample = library.tracks.find((t: { a: string; t: string }) => t.a && t.t);
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, withLibraryApi }) => {
   await openRoute(page, '/library');
   await expect(page.locator('.sn-data-table__count')).toContainText(`of ${TOTAL} tracks`);
 });

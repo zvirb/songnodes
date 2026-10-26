@@ -1048,8 +1048,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:QA7 BEGIN -->
 ### QA7: E2E: pin the library and saved-sets API to a fixture
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Created `libraryApi.ts` fixture to intercept and answer library and sets API calls from the frontend to run reliably in Playwright without a live library. Updated `fixtures.ts` to supply `withLibraryApi`. Copied pipeline artifact into `data/library.fixture.json` and updated tests to read from it. Updated `README.md`.
+- Checks run: `tsc` and `oxlint` (locally some linting warnings about pre-existing code exist but no regressions).
+- Checks not run: Playwright tests cannot run in the sandbox; they are expected to mostly pass, with `sets.spec.ts` failing on the `PUT /api/v1/library/sets` because it sends the full set without an ID in the URL, as per the issue description.
+- End: 2026-10-26
 <!-- SLOT:QA7 END -->
 
 <!-- SLOT:G5 BEGIN -->

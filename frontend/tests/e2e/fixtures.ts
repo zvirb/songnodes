@@ -1,10 +1,11 @@
 import { test as base, expect, type Page } from '@playwright/test';
+import { useLibraryFixture } from './libraryApi';
 
 /**
  * Shared test: every test fails if the page logs a console error or throws an
  * uncaught error (CLAUDE.md §4: zero console errors). Nothing is filtered out.
  */
-export const test = base.extend<{ consoleErrors: string[] }>({
+export const test = base.extend<{ consoleErrors: string[], withLibraryApi: void }>({
   consoleErrors: [
     async ({ page }, use) => {
       const errors: string[] = [];
@@ -17,6 +18,10 @@ export const test = base.extend<{ consoleErrors: string[] }>({
     },
     { auto: true },
   ],
+  withLibraryApi: async ({ page }, use) => {
+    await useLibraryFixture(page);
+    await use();
+  },
 });
 
 export { expect };

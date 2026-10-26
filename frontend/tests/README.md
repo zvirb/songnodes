@@ -39,6 +39,22 @@ Without `PLAYWRIGHT_BASE_URL`, Playwright starts Vite on port 3006.
   violation, except the approved exceptions in `docs/design-system/EXCEPTIONS.md`,
   each limited to one rule on one element.
 
+## Pinned Library Fixture
+
+Library and Set builder E2E tests (`library.spec.ts`, `sets.spec.ts`) use a pinned
+library fixture to run predictably, rather than depending on whatever happens to be
+in the local developer's Postgres database (the real library grows every week).
+
+The pinned fixture lives at `frontend/tests/e2e/data/library.fixture.json` and is
+served by Playwright route handlers (`useLibraryFixture`). It never changes automatically
+with the real library.
+
+To deliberately refresh the fixture data, copy the pipeline output over it:
+```bash
+cp frontend/public/data/music-library.json frontend/tests/e2e/data/library.fixture.json
+```
+Only test data may read from it; nothing under `frontend/src` should reference it.
+
 ## Visual baselines
 
 `visual.spec.ts` checks Home, Library, Set builder, Settings, the pipeline telemetry page,
