@@ -1010,8 +1010,12 @@ Work done:
 
 <!-- SLOT:U23 BEGIN -->
 ### U23: Upgrade services/streaming-integrations to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved services/streaming-integrations requirements-test.txt to target Python 3.15 pin of pytest-asyncio==1.4.1.
+- Checks run: `docker build` the image with pip install successfully. Tests are failing to run/import because `psutil` and `asyncpg` are not in `requirements.txt` (reported failure).
+- Checks not run: Full unit tests not completing due to unowned `psutil` missing from requirements.
+- Reviewer check: `docker build` succeeds for pip install into `python:3.15-slim`. `python --version` inside the image prints `Python 3.15.1`. The entry module (`unified_streaming_client.py`) fails to import due to missing `psutil`.
+- End: 2026-10-26
 <!-- SLOT:U23 END -->
 
 <!-- SLOT:U24 BEGIN -->
