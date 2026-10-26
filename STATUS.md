@@ -696,8 +696,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:E2 BEGIN -->
 ### E2: Log every outbound enrichment call
-- Start: _not started_
-- End: _not finished_
+- Start: Started web call log implementation.
+- End: Finished. Implemented web_call_log table (migrations 170), wrapper in services/common/providers/web_call_log.py, and test in tests/enrichment_local/test_web_call_log.py. Next: attach this wrapper in the waterfall logic.
 <!-- SLOT:E2 END -->
 
 <!-- SLOT:SB1 BEGIN -->
