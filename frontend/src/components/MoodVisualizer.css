@@ -19,5 +19,5 @@
 .mv__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin: 0; }
 .mv__stats dt { color: var(--fg-2); }
 .mv__stats dd { margin: 0; color: var(--fg); }
-.mv__detail { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3); background: var(--surface-1); border-radius: var(--radius-control); color: var(--fg-2); }
+.mv__detail { display: flex; flex-direction: column; gap: var(--space-0\.5); padding: var(--space-2) var(--space-3); background: var(--surface-1); border-radius: var(--radius-control); color: var(--fg-2); }
 .mv__detail strong { color: var(--fg); }

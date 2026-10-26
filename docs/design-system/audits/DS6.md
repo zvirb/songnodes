@@ -62,6 +62,7 @@
 | frontend/src/components/MoodVisualizer.css | 15 | 04-typography | `font: 700 0.6875rem/1 var(--font-data);` | Yes | Applied `.data-s` in TSX. |
 | frontend/src/components/MoodVisualizer.css | 16 | 04-typography | `font: 400 0.6875rem/1 var(--font-data);` | Yes | Applied `.data-s` in TSX. |
 | frontend/src/components/MoodVisualizer.css | 17 | 04-typography | `font: 400 0.6875rem/1 var(--font-data);` | Yes | Applied `.data-s` in TSX. |
+| frontend/src/components/MoodVisualizer.css | 22 | 05-layout | Hardcoded pixel spacing `gap: 2px` | Yes | Changed to `gap: var(--space-0.5)` |
 | frontend/src/components/MoodVisualizer.css | 18 | 04-typography | `font: 400 0.75rem/1 var(--font-body);` | Yes | Applied `.label` in TSX. |
 | frontend/src/components/MoodVisualizer.tsx | 426 | 01-writing | Missing `SN.format.count()` on numbers for transitions | Yes | Wrapped variables in SN.format.count() |
 | frontend/src/features/camelot/CamelotPage.tsx | 133 | 01-writing | Missing `SN.format.count()` on numbers for keys count | Yes | Wrapped count variable in SN.format.count() |
