@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useEffect, useCallback } from 'react';
 import { UnifiedTrack, UseUnifiedTracks, TargetPriority } from '../types/unifiedTrack';
 import { fetchTargetTracks, fetchLibraryFixture } from '../services/unifiedTrackService';
 import { getLocalTargets, syncTargetTrack } from '../services/trackSyncAdapter';
@@ -9,6 +10,8 @@ interface UnifiedTracksStore {
   isLoading: boolean;
   error: string | null;
   source: 'backend' | 'library-fixture' | 'mixed';
+  isInitialized: boolean;
+  setInitialized: (initialized: boolean) => void;
   setTracks: (tracks: UnifiedTrack[], targets: UnifiedTrack[], source: 'backend' | 'library-fixture' | 'mixed') => void;
   setError: (error: string | null) => void;
   setLoading: (isLoading: boolean) => void;
@@ -21,6 +24,8 @@ const useUnifiedTracksStore = create<UnifiedTracksStore>((set) => ({
   isLoading: false,
   error: null,
   source: 'backend', // will be updated
+  isInitialized: false,
+  setInitialized: (isInitialized) => set({ isInitialized }),
   setTracks: (tracks, targets, source) => set({ tracks, targetTracks: targets, source }),
   setError: (error) => set({ error }),
   setLoading: (isLoading) => set({ isLoading }),
@@ -53,13 +58,12 @@ const useUnifiedTracksStore = create<UnifiedTracksStore>((set) => ({
   })
 }));
 
-// We only want to load once globally per session unless refreshed
-let initializationPromise: Promise<void> | null = null;
+
 
 export function useUnifiedTracks(): UseUnifiedTracks {
-  const { tracks, targetTracks, isLoading, error, source, setTracks, setError, setLoading, updateTrackTargetState } = useUnifiedTracksStore();
+  const { tracks, targetTracks, isLoading, error, source, isInitialized, setInitialized, setTracks, setError, setLoading, updateTrackTargetState } = useUnifiedTracksStore();
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -76,7 +80,7 @@ export function useUnifiedTracks(): UseUnifiedTracks {
       try {
         libTracks = await fetchLibraryFixture();
       } catch (err) {
-        throw new Error('Failed to load library data: ' + (err instanceof Error ? err.message : String(err)));
+        throw new Error('Failed to load library data: ' + (err instanceof Error ? err.message : String(err)), { cause: err });
       }
 
       // Hydrate library tracks with local target state or backend target state
@@ -133,12 +137,15 @@ export function useUnifiedTracks(): UseUnifiedTracks {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLoading, setError, setTracks]);
 
   // Auto-initialize on first mount
-  if (!initializationPromise && tracks.length === 0 && !isLoading && !error) {
-    initializationPromise = refresh();
-  }
+  useEffect(() => {
+    if (!isInitialized && tracks.length === 0 && !isLoading && !error) {
+      setInitialized(true);
+      refresh().catch(err => console.error("Auto-init failed", err));
+    }
+  }, [isInitialized, setInitialized, tracks.length, isLoading, error, refresh]); // Only run on mount or when state changes to empty
 
   const setTrackAsTarget = (id: string, priority: TargetPriority = 'medium') => {
     const track = tracks.find(t => t.id === id);
