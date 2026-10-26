@@ -524,8 +524,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:QA5 BEGIN -->
 ### QA5: Make sync-design-system.sh work on Windows
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Exported `PYTHONUTF8=1` in `scripts/sync-design-system.sh` and resolved command compatibility (`python3` vs `python`) to fix `UnicodeDecodeError` parsing `tokens.json` in Windows Git Bash.
+- Checks run: `bash scripts/sync-design-system.sh --check` both with valid state and induced drift (tested rollback) successfully correctly identify in sync or out of sync states.
+- Checks not run: Full E2E suite due to environment constraints.
+- PR link: To be generated on submission.
+- End: 2026-10-26
 <!-- SLOT:QA5 END -->
 
 <!-- SLOT:QA6 BEGIN -->
