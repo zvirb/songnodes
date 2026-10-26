@@ -110,3 +110,35 @@ def test_crlf_handling_in_pending_list_and_shrink_check(tmp_path):
 
     assert not cds.has_unmigrated_violations(str(file_clean))
     assert cds.has_unmigrated_violations(str(file_dirty))
+
+
+def test_raw_pixel_spacing_conformance(tmp_path):
+    f_valid = tmp_path / "ValidSpacing.tsx"
+    f_valid.write_text(
+        'const style = { padding: "var(--space-4)", gap: 0 };\n'
+        'const exceptionStyle = { padding: "16px" }; /* design-system exception EX-001 */\n'
+    )
+    assert cds.check_file(str(f_valid)) == []
+
+    f_invalid_css = tmp_path / "InvalidCssSpacing.css"
+    f_invalid_css.write_text(
+        'div {\n'
+        '  padding: 16px;\n'
+        '  padding-left: 10px;\n'
+        '}\n'
+    )
+    violations_css = cds.check_file(str(f_invalid_css))
+    assert len(violations_css) == 2
+    assert violations_css[0][0] == 2
+    assert "Raw pixel spacing found" in violations_css[0][1]
+    assert violations_css[1][0] == 3
+    assert "Raw pixel spacing found" in violations_css[1][1]
+
+    f_invalid_jsx = tmp_path / "InvalidJsxSpacing.tsx"
+    f_invalid_jsx.write_text(
+        'export const Comp = () => <div style={{ margin: "8px" }}>Test</div>;\n'
+    )
+    violations_jsx = cds.check_file(str(f_invalid_jsx))
+    assert len(violations_jsx) == 1
+    assert violations_jsx[0][0] == 1
+    assert "Raw pixel spacing found" in violations_jsx[0][1]

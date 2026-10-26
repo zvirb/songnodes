@@ -40,6 +40,13 @@ ALLOWED_GLYPHS = {'●', '◐', '○', '▲', '✓', '✕', '↻'}
 DIALOG_PATTERN = re.compile(
     r"\b(window\.)?(alert|confirm|prompt)\s*\("
 )
+RAW_SPACING_CSS_PATTERN = re.compile(
+    r"\b((?:padding|margin|gap)(?:-[a-z]+)?)\s*:\s*([^;\n]*?\b[1-9][0-9]*(\.[0-9]+)?px\b)",
+    re.IGNORECASE
+)
+RAW_SPACING_JSX_PATTERN = re.compile(
+    r"\b((?:padding|margin|gap)[A-Za-z]*)\s*:\s*(['\"]?[1-9][0-9]*(\.[0-9]+)?px?['\"]?)"
+)
 
 
 def get_git_files(mode: str) -> List[str]:
@@ -131,32 +138,7 @@ def strip_comments(content: str) -> List[str]:
 
 def has_unmigrated_violations(filepath: str) -> bool:
     """Check if a pending file still contains unmigrated design system violations."""
-    if not os.path.isfile(filepath):
-        return False
-
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            raw_content = f.read()
-    except Exception:
-        return False
-
-    raw_lines = raw_content.splitlines()
-    code_lines = strip_comments(raw_content)
-    is_code_file = filepath.endswith((".ts", ".tsx"))
-
-    for i, raw_line in enumerate(raw_lines):
-        if RAW_COLOUR_PATTERN.search(raw_line):
-            return True
-        code_line = code_lines[i] if i < len(code_lines) else ""
-        if FONT_SIZE_PATTERN.search(code_line):
-            return True
-        for emoji_match in EMOJI_PATTERN.finditer(code_line):
-            if emoji_match.group(0) not in ALLOWED_GLYPHS:
-                return True
-        if is_code_file and DIALOG_PATTERN.search(code_line):
-            return True
-
-    return False
+    return len(check_file(filepath)) > 0
 
 
 def check_file(filepath: str) -> List[Tuple[int, str]]:
@@ -207,6 +189,22 @@ def check_file(filepath: str) -> List[Tuple[int, str]]:
         # Rule 4: Browser dialogs in code
         if is_code_file and DIALOG_PATTERN.search(code_line):
             violations.append((i, "Browser dialog found; use ConfirmDialog/Toast"))
+
+        # Rule 5: Raw pixel spacing
+        if "design-system exception" not in raw_line:
+            line_spacing_found = False
+            for pattern in (RAW_SPACING_CSS_PATTERN, RAW_SPACING_JSX_PATTERN):
+                if line_spacing_found:
+                    break
+                for m in pattern.finditer(code_line):
+                    prop = m.group(1)
+                    raw_val = m.group(2).strip()
+                    val = raw_val.strip("'\"")
+                    if val in ("1px", "-1px", "1.0px", "-1.0px"):
+                        continue
+                    violations.append((i, f"Raw pixel spacing found ({prop}: {val}); use a --space-* token (design-system/05-layout.md)"))
+                    line_spacing_found = True
+                    break
 
     return violations
 

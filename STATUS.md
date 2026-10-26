@@ -1045,3 +1045,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:QA7 END -->
+
+<!-- SLOT:G5 BEGIN -->
+### G5: Add spacing and padding token check to design-system conformance
+- Start: 2026-10-26
+- Built: Updated `scripts/check_design_system.py` to check for hardcoded pixel padding/margin/gap values in CSS and TSX files, requiring `--space-*` tokens per Section 05 of design system rules. Added exemptions in `frontend/design-system-pending.txt` for existing unmigrated files, and added unit tests in `tests/test_check_design_system.py`.
+- Checks run: `python3 -m pytest tests/test_check_design_system.py`, `python3 scripts/check_design_system.py --check` (both with normal state and verified with induced failure on `PageParts.tsx`).
+- Checks not run: Full Playwright E2E suite due to environment constraints.
+- End: 2026-10-26
+<!-- SLOT:G5 END -->
