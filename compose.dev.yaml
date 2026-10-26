@@ -23,7 +23,9 @@ services:
       retries: 30
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.10-alpine
+    volumes:
+      - /data
     healthcheck:
       test: [CMD, redis-cli, ping]
       interval: 3s
