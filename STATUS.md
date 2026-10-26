@@ -1034,8 +1034,8 @@ Work done:
 
 <!-- SLOT:U26 BEGIN -->
 ### U26: Upgrade services/api-gateway to Node 26 and latest npm dependencies
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Upgraded services/api-gateway to Node 26-alpine base image and updated `http-proxy-middleware` to `^4.2.1`. Generated new `package-lock.json` and verified with `npm ci && npm test` and `docker build`.
 <!-- SLOT:U26 END -->
 
 <!-- SLOT:U27 BEGIN -->
