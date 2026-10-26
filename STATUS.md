@@ -1010,3 +1010,21 @@ docker compose -f compose.dev.yaml ps
 docker compose -f compose.dev.yaml logs --since 24h --tail 200
 ```
 Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, or with `--wave up` once wave 1 is out.
+
+<!-- SLOT:L6 BEGIN -->
+### L6: Script: import the musicLibrary SQLite into the running stack
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L6 END -->
+
+<!-- SLOT:SB4 BEGIN -->
+### SB4: Set builder: save and delete sets through the per-set API
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB4 END -->
+
+<!-- SLOT:QA7 BEGIN -->
+### QA7: E2E: pin the library and saved-sets API to a fixture
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA7 END -->
