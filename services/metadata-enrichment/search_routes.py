@@ -41,8 +41,8 @@ async def search(
             headers=headers
         )
     except Exception as e:
-        logger.error(f"Unhandled search error: {e}")
+        logger.exception("Unhandled search error")
         return JSONResponse(
             status_code=500,
-            content={"code": "internal_error", "message": str(e)}
+            content={"code": "internal_error", "message": "An internal error occurred."}
         )
