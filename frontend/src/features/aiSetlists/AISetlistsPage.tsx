@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader } from '../../shell/PageParts';
 import { Button, Tabs, ConfirmDialog } from '../../components/ds';
 import { InlineMessage, CopyButton, DataTable, type DataTableColumn } from './components/ui';
-import { useUnifiedTracks } from './TEMP_useUnifiedTracks';
+import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { buildPrompt } from './api/prompt';
 import { parseAndValidate } from './api/parser';
 import { dedupe, type CatalogSetlist, type DedupeResult } from './api/dedupe';
@@ -14,6 +15,7 @@ import { SN } from '../../lib/songnodes';
 const PAGE_MODULE = 'sources';
 
 export default function AISetlistsPage() {
+  usePageHeader({ lead: 'Sources', title: 'Import tracklist', current: 'sources' });
   const { tracks: catalogTracks, isLoading: tracksLoading } = useUnifiedTracks();
   const [catalogSetlists, setCatalogSetlists] = useState<CatalogSetlist[]>([]);
   const [localLedger, setLocalLedger] = useState<string[]>([]);
@@ -212,8 +214,9 @@ export default function AISetlistsPage() {
     <div className="sn-page sn-page--sources">
       <PageHeader
         mod={PAGE_MODULE}
+        here="Import tracklist"
         lead="Sources"
-        title="AI Setlist Discovery"
+        title="Import tracklist"
         desc="Find and import real, documented DJ setlists using AI providers."
       />
       <div className="sn-page__body">
