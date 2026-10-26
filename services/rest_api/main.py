@@ -686,13 +686,13 @@ async def music_search(service: str, q: str, limit: int = 20):
         raise HTTPException(status_code=400, detail="Service must be 'spotify' or 'tidal'")
 
     try:
-        # For now, we'll make a direct HTTP request to the metadata-enrichment service
-        # In production, this should use proper service discovery
         import aiohttp
+        import asyncio
 
         metadata_service_url = os.getenv('METADATA_ENRICHMENT_URL', 'http://metadata-enrichment:8086')
+        timeout = aiohttp.ClientTimeout(total=5)
 
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             url = f"{metadata_service_url}/api/v1/search/{service}"
             params = {'q': q, 'limit': limit}
 
@@ -700,45 +700,18 @@ async def music_search(service: str, q: str, limit: int = 20):
                 if response.status == 200:
                     data = await response.json()
                     return data
-                elif response.status == 404:
-                    # Service doesn't exist yet, return mock data for development
-                    logger.warning(f"Metadata enrichment service not available, returning mock data")
-                    return {
-                        "tracks": [
-                            {
-                                "id": f"{service}_mock_1",
-                                "name": "Sample Track 1",
-                                "title": "Sample Track 1",
-                                "artist": "Sample Artist",
-                                "artists": [{"name": "Sample Artist"}],
-                                "album": {"name": "Sample Album", "images": [{"url": "https://via.placeholder.com/300"}]},
-                                "duration_ms": 180000,
-                                "preview_url": None,
-                                "image": "https://via.placeholder.com/300"
-                            }
-                        ]
-                    }
                 else:
-                    raise HTTPException(status_code=response.status, detail=f"Music service error: {await response.text()}")
+                    try:
+                        error_detail = await response.json()
+                    except Exception:
+                        error_detail = await response.text()
+                    raise HTTPException(status_code=response.status, detail=error_detail)
 
-    except aiohttp.ClientConnectorError:
+    except (aiohttp.ClientConnectorError, asyncio.TimeoutError):
         logger.warning(f"Cannot connect to metadata enrichment service")
-        # Return mock data for development
-        return {
-            "tracks": [
-                {
-                    "id": f"{service}_mock_1",
-                    "name": q,
-                    "title": q,
-                    "artist": "Mock Artist",
-                    "artists": [{"name": "Mock Artist"}],
-                    "album": {"name": "Mock Album", "images": [{"url": "https://via.placeholder.com/300"}]},
-                    "duration_ms": 180000,
-                    "preview_url": None,
-                    "image": "https://via.placeholder.com/300"
-                }
-            ]
-        }
+        raise HTTPException(status_code=503, detail={"code": "search_service_unavailable"})
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Music search failed for {service}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
