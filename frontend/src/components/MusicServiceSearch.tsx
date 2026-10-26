@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, SearchX, Plus } from 'lucide-react';
 import { SN } from '../lib/songnodes';
-import { EmptyPanel } from './ds';
+import { EmptyPanel, ErrorPanel } from './ds';
 import './MusicServiceSearch.css';
 import { api } from '../services/api';
 
@@ -44,19 +44,20 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
   const [searchResults, setSearchResults] = useState<MusicServiceTrack[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{service: string, message: string}[]>([]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
-    setError(null);
+    setErrors([]);
     setSearchResults([]);
 
     try {
       const services: Array<'spotify' | 'tidal'> =
         selectedService === 'both' ? ['spotify', 'tidal'] : [selectedService];
       const allResults: MusicServiceTrack[] = [];
+      const newErrors: {service: string, message: string}[] = [];
 
       for (const service of services) {
         try {
@@ -82,19 +83,27 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
             })) || [];
 
           allResults.push(...tracks);
-        } catch (err) {
+        } catch (err: any) {
           console.error(`Error searching ${service}:`, err);
-          // Continue with other service even if one fails
+
+          let errMsg = err.message || 'Search failed';
+          // Check if err has detail from our custom API throwing
+          if (err.detail && err.detail.message) {
+            errMsg = err.detail.message;
+          } else if (err.response && err.response.data && err.response.data.detail) {
+            errMsg = err.response.data.detail.message || err.response.data.detail;
+          } else if (err.message && err.message.includes('No results')) {
+             errMsg = err.message;
+          }
+
+          newErrors.push({ service, message: errMsg });
         }
       }
 
-      if (allResults.length === 0 && services.length > 0) {
-        setError('No results from the services. Check that TIDAL and Spotify are connected in Settings.');
-      }
-
+      setErrors(newErrors);
       setSearchResults(allResults);
     } catch (err: any) {
-      setError(err.message || 'Search failed');
+      setErrors([{ service: 'system', message: err.message || 'Search failed' }]);
       console.error('Search error:', err);
     } finally {
       setIsSearching(false);
@@ -148,8 +157,12 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
         </button>
       </div>
 
-      {error && (
-        <p className="sn-inline-message sn-inline-message--boxed" data-status="warn" role="alert">{error}</p>
+      {errors.length > 0 && searchResults.length > 0 && (
+        <div className="mss__errors" style={{ marginBottom: '1rem' }}>
+          {errors.map((e, i) => (
+            <p key={i} className="sn-inline-message sn-inline-message--boxed" data-status="warn" role="alert">{e.message}</p>
+          ))}
+        </div>
       )}
 
       {selectedTracks.size > 0 && (
@@ -167,7 +180,13 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
       {isSearching ? (
         <span className="sn-loading-state__inline" role="status"><span className="sn-spinner" aria-hidden="true" />Searching…</span>
       ) : searchResults.length === 0 ? (
-        searchQuery && error === null ? (
+        searchQuery && errors.length > 0 ? (
+          <div className="mss__errors">
+            {errors.map((e, i) => (
+              <ErrorPanel key={i} title="Search failed" status="warn">{e.message}</ErrorPanel>
+            ))}
+          </div>
+        ) : searchQuery && errors.length === 0 ? (
           <EmptyPanel compact icon={SearchX} title="No results">Try the artist and title in a different order.</EmptyPanel>
         ) : !searchQuery ? (
           <EmptyPanel compact icon={Search} title="Find tracks to target">Search TIDAL and Spotify, then add tracks to your target list.</EmptyPanel>
