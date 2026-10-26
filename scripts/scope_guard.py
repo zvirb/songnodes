@@ -55,6 +55,19 @@ def pending_edit_ok(base, head, changed_paths):
     return all(any(path in c for path in removed) for c in new_comments)
 
 
+TEST_FILE = re.compile(r'\.(test|spec)\.[cm]?[jt]sx?$')
+TESTS_ALLOWED = 'Test files may be updated'
+
+
+def sibling_test_ok(path, status, changed_owned):
+    """An existing test file may be modified (not added or deleted) when the brief allows test updates
+    and the PR also changes an owned file in the same folder, e.g. a copy fix that the test asserts."""
+    if not status.startswith('M') or not TEST_FILE.search(path):
+        return False
+    folder = os.path.dirname(path)
+    return any(os.path.dirname(p) == folder for p in changed_owned)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base', required=True)
@@ -120,6 +133,8 @@ def main():
 
     errors = []
     deleted_errors = []
+    tests_allowed = TESTS_ALLOWED in content
+    changed_owned = {p for p in changed_paths if any(match_glob(p, g) for g in owned_paths)}
 
     for line in lines:
         if not line.strip(): continue
@@ -136,6 +151,9 @@ def main():
                 break
 
         if not matched and path == PENDING and pending_edit_ok(args.base, args.head, changed_paths):
+            matched = True
+
+        if not matched and tests_allowed and sibling_test_ok(path, status, changed_owned):
             matched = True
 
         if not matched:
