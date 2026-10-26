@@ -518,8 +518,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:QA4 BEGIN -->
 ### QA4: Run services/common/refmb tests from any directory and in CI
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Added `pythonpath = .` and `services/common/refmb` testpaths to `pytest.ini`. Also added a `services/common/refmb` test step to `.github/workflows/python-tests.yml`. Verified pytest collection from repo root and module execution locally. PR: [QA4: Run services/common/refmb tests from any directory and in CI](#)
 <!-- SLOT:QA4 END -->
 
 <!-- SLOT:QA5 BEGIN -->
