@@ -672,8 +672,9 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:C1 BEGIN -->
 ### C1: One home for the local MusicBrainz resolver
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Status: merged the duplicate `services/reference-data/resolver/resolver.py` changes into `services/reference_data/resolver/resolver.py`, deleted `services/reference-data`, updated ownership.yaml and renamed `run_eval.py` to `test_run_eval.py`.
 <!-- SLOT:C1 END -->
 
 <!-- SLOT:C2 BEGIN -->

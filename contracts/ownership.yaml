@@ -17,7 +17,7 @@ wp2:
 wp3:
   migrations: 140-159
   directories:
-    - services/reference-data/resolver/
+    - services/reference_data/resolver/
 wp4:
   migrations: 160-179
   directories:
