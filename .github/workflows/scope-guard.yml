@@ -22,9 +22,15 @@ jobs:
           python-version: '3.11'
 
       - name: Run Scope Guard
+        # PR title and branch are untrusted input: pass them through env, never inline ${{ }} in the script
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           python scripts/scope_guard.py \
-            --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}" \
-            --title "${{ github.event.pull_request.title }}" \
-            --branch "${{ github.event.pull_request.head.ref }}"
+            --base "$PR_BASE" \
+            --head "$PR_HEAD" \
+            --title "$PR_TITLE" \
+            --branch "$PR_BRANCH"
