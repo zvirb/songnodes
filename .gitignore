@@ -258,3 +258,7 @@ gha-creds-*.json
 # Local Windows Playwright screenshots (the checked baselines are generated in the Linux image)
 frontend/tests/e2e/accessibility-error-handling.desktop.spec.ts-snapshots/
 frontend/tests/e2e/basic-validation.desktop.spec.ts-snapshots/
+
+# One-off agent scratch scripts in the repository root (AGENTS.md rule 7)
+/patch_*.py
+/fix_*.py
