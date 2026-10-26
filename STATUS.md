@@ -966,8 +966,11 @@ Work done:
 
 <!-- SLOT:U21 BEGIN -->
 ### U21: Upgrade services/serato-integration to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built: Modified `services/serato-integration/Dockerfile` to use `python:3.15-slim` and updated `fastapi` to `0.162.0` in `requirements.txt`.
+- Checks run: `docker build` succeeded, `python --version` inside the container correctly reported 3.15, `import batch_import` succeeded.
+- Checks not run: Full E2E Playwright test suite, no pytest tests exist in `services/serato-integration`.
 <!-- SLOT:U21 END -->
 
 <!-- SLOT:U22 BEGIN -->
