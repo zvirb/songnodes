@@ -1020,8 +1020,11 @@ Work done:
 
 <!-- SLOT:U24 BEGIN -->
 ### U24: Upgrade services/tidal-integration to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Python target to 3.15-slim. Updated fastapi to 0.162.0, tidalapi to 0.8.11, and pytest-asyncio to 1.4.1 in requirements files.
+- Checks run: `docker run ... python:3.15-slim` successfully installs dependencies, imports main and tidal_connector, and passes tests (0 tests).
+- Checks not run: e2e testing.
+- End: 2026-10-26
 <!-- SLOT:U24 END -->
 
 <!-- SLOT:U19 BEGIN -->
