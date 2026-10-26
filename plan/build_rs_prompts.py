@@ -374,12 +374,43 @@ P.append(("L4", "start_dev_migrations", "start-dev applies the migrations added 
   "(the reviewer runs this on the laptop; say in the PR that your sandbox could not).",
   "`bash -n scripts/start-dev.sh` and shellcheck if available. Docker is not available in your sandbox; say so."))
 
+P.append(("L6", "library_import_script", "Script: import the musicLibrary SQLite into the running stack", ["L1", "L3", "L4"],
+  "Add scripts/import-music-library.sh, which loads one musicLibrary SQLite file into the running dev stack through the existing importer.",
+  "The owner's weekly DJ library refresh writes E:\\musicLibrary\\db\\dj_library.sqlite on the laptop. services/library/importer (PR #158) reads that SQLite and "
+  "posts it to POST /api/v1/library/ingest with Idempotency-Key "
+  "import-<md5 of the file>, so the same file never imports twice. Nothing runs it yet, so the Library page shows an empty library.",
+  ["scripts/import-music-library.sh", "docs/library-import.md"],
+  ["Usage: `bash scripts/import-music-library.sh <path-to-dj_library.sqlite>`. Refuse with a clear message if the file is missing or the rest-api "
+   "service is not healthy (`docker compose -f compose.dev.yaml ps`).",
+   "docker cp the file into the rest-api container under /tmp, run `python -m library.importer --sqlite /tmp/<name> --api-url http://localhost:8082/api/v1/library/ingest` there (rest-api listens on 8082 inside its container, see services/rest_api/Dockerfile; the importer's default 8080 is wrong) with "
+   "`docker compose -f compose.dev.yaml exec -T`, then remove the copy. Never mount or write the owner's folder.",
+   "Poll GET /api/v1/jobs for the returned job id until it succeeds or fails (bounded, with a message naming what it waited for); print the "
+   "result counts; exit non-zero on failure. Append one dated line to a log file given by --log (optional).",
+   "docs/library-import.md: what it does, how to run it, and a one-line Windows Task Scheduler entry (Git Bash) to run it weekly after the refresh."],
+  "On the laptop, running the script twice with the same SQLite file creates one ingest job and the second run reports it as already imported; "
+  "/library then shows the library's track count (the reviewer runs this; say in the PR that your sandbox could not).",
+  "`bash -n scripts/import-music-library.sh` and shellcheck if available. Docker is not available in your sandbox; say so."))
+
+P.append(("SB4", "saved_sets_per_set_api", "Set builder: save and delete sets through the per-set API", ["L3"],
+  "Make the Set builder save, list and delete sets through the saved-sets endpoints as the backend defines them.",
+  "frontend/src/features/musicLibrary/data.ts writeSavedSetsAsync sends PUT /api/v1/library/sets with the whole list, but the backend "
+  "(services/rest_api/routers/library_ingest.py, PR #158) only has GET /api/v1/library/sets, PUT and DELETE /api/v1/library/sets/{set_id} "
+  "(set_id is an integer, library.sets.id). The PUT fails, the page saves to localStorage only, and on reload GET returns the database's list, "
+  "so saved sets vanish. The frontend's SavedSet.id is a string.",
+  ["frontend/src/features/musicLibrary/data.ts", "frontend/src/features/musicLibrary/data.test.ts"],
+  ["Save one set with PUT /api/v1/library/sets/{id} and delete with DELETE; map the API's integer id to and from SavedSet.id in data.ts only.",
+   "If the API is unreachable or answers an error, show that honestly through the existing error path instead of silently keeping a local-only copy; "
+   "keep localStorage only as the documented offline cache it already is.",
+   "Unit test with a mocked fetch: save, list after reload, delete, and an API error."],
+  "With QA7's fixture, `bash scripts/e2e-docker.sh sets` passes: a saved set survives a reload and can be deleted.",
+  FE_CHECKS))
+
 WAVES = {
     "1a": ["G1", "G2", "G3"],
     "1b": ["QA5", "R1", "R2", "R3", "C1", "C2", "S1", "E2", "SB1"],
     "1": ["QA5", "G1", "G2", "G3", "R1", "R2", "R3", "C1", "C2", "S1", "E2", "SB1"],
-    "2": ["QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "E1", "SB2", "SEC6A", "L1", "L2", "L3"],
-    "3": ["QA3", "S3", "L4", "L5", "E3", "SB3", "SEC5", "SEC6B"],
+    "2": ["QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "E1", "SB2", "SEC6A", "L1", "L2", "L3", "QA7"],
+    "3": ["QA3", "S3", "L4", "L5", "L6", "SB4", "E3", "SB3", "SEC5", "SEC6B"],
     # runtime upgrades (plan/build_upgrade_prompts.py): send "up" after wave 1b is merged and verified; "up-legacy" after "up" is merged.
     # U7 (Postgres 18) is held: send only with --only. L1-L4 are now repairs of the PR #158 code (waves 2 and 3). U8 (Actions pins) is in wave 4 because waves 1-3 edit workflows.
     "up": ["U1", "U2", "U3", "U4", "U5"],
