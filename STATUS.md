@@ -732,8 +732,9 @@ Work done:
 
 <!-- SLOT:P3 BEGIN -->
 ### P3: Sources: route the AI setlists page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 (Date of run)
+- End: 2026-10-26 (Date of run)
+- Details: Routed the AI setlists page to `/sources/import` by adding `route.tsx`. Migrated to use `useUnifiedTracks` from shared package instead of the TEMP adapter. Per the IA, there is no direct place specified in the design-system for in-page navigation to the `import` page from `targets`, so only the route has been added and this gap will be reported in the PR.
 <!-- SLOT:P3 END -->
 
 <!-- SLOT:S2 BEGIN -->
