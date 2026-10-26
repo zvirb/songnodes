@@ -12,13 +12,14 @@ import { SN, SnIcon, KeyBadge, Bpm, CompatPill, type CompatLevel } from '../../l
 import { loadLibrary, readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, type LibraryFile, type LibraryTrack, type SavedSet } from './data';
 import {
   MAX_MINUTES, MIN_MINUTES, PILLARS, POOLS, SHAPES, buildSlots, countPeaks, draftFromSaved, filtersFromParams, filtersToParams,
-  genreRunBefore, mixTotal, mixedSecs, moveSlot, newSetId, normaliseMix, pillarLabel, poolTracks, removeSlot, retarget,
+  genreRunBefore, mixTotal, mixedSecs, newSetId, normaliseMix, pillarLabel, poolTracks, removeSlot, retarget,
   savedSetFromDraft, shapeOf, slotCount, spares, tracklistText, waveIssues, type Draft, type PoolKey,
 } from './setBuilder';
 import { bannerKey, downloadJson, lsGet, lsSet, melbourneStamp, normaliseTracks, readDraft, writeDraft } from './storage';
 import { Banner, ConfirmDialog, CopyButton, NumberField, OverflowMenu, Switch, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { EnergyWave, type WaveSlot } from './components/EnergyWave';
 import { ExportDialog } from '../setBuilder/ExportDialog';
+import { reorderTracks } from '../setBuilder/reorder';
 import './musicLibrary.css';
 
 type Verdict = { level: CompatLevel; label: string };
@@ -216,7 +217,7 @@ const SetBuilderPage: React.FC = () => {
     const j = i + dir;
     if (j < 0 || j >= draft.slots.length || draft.slots[i].lock || draft.slots[j].lock) return;
     const nm = slotName(i);
-    setDraft((d) => ({ ...d, slots: moveSlot(d.slots, i, dir) }));
+    setDraft((d) => ({ ...d, slots: reorderTracks(d.slots, i, dir) }));
     setOpenSpares(new Set());
     focusAfter.current = `[data-slot="${j}"] [data-act="${dir < 0 ? 'up' : 'down'}"]`;
     say(`${nm} moved to slot ${j + 1}`);
@@ -278,7 +279,11 @@ const SetBuilderPage: React.FC = () => {
           <span className="sn-set-slot__n">{n}</span>
           <span className="sn-set-slot__energy"><SlotEnergy e={null} tgt={s.tgt} /></span>
           <span className="sn-set-slot__empty">No track in the pool fits energy {s.tgt} here. Widen the pool, or add one from the library.</span>
-          <span className="sn-set-slot__act">{btn('x', `Remove empty slot ${n}`, () => remove(i), { act: 'remove' })}</span>
+          <span className="sn-set-slot__act">
+            {btn('arrow-up', `Move slot ${n} up`, () => move(i, -1), { disabled: s.lock || i === 0 || prevLocked, act: 'up' })}
+            {btn('arrow-down', `Move slot ${n} down`, () => move(i, 1), { disabled: s.lock || i === items.length - 1 || nextLocked, act: 'down' })}
+            {btn('x', `Remove empty slot ${n}`, () => remove(i), { act: 'remove' })}
+          </span>
         </li>,
       );
       return;
