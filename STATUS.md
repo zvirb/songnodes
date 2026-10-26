@@ -965,3 +965,28 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:U29 END -->
+
+## Scheduled run
+
+### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
+- Reading taken: unattended run of the RESTRUCTURE.md protocol. The repo folder on the laptop is `E:\songnodes` (lower case), not `E:\songNodes`.
+- Pre-flight: local main and origin/main both at `3a80246` (#156). Tree clean apart from untracked `services/websocket-api/coverage.xml`. A stale `.git/REBASE_HEAD` (25 Oct) is left over, but no rebase is in progress. plan/RESTRUCTURE.md is on main. Open PRs: 0.
+- Merges: none. Nothing was open to merge.
+- Jules: wave 1 has not started (13 packages: QA5 G1 G2 G3 R1 R2 R3 C1 C2 S1 L1 E2 SB1). The dry run against `3a80246` builds all 13 briefs. The `jules` CLI was not reachable from this run, so nothing was sent.
+- Health (read-only):
+  - REST API `:8082/health` is healthy (DB pool and memory ok). graph-api `:8084/health` is healthy (DB and Redis ok). unified-scraper `:8012` is reachable.
+  - The frontend `:3006` returns 200. There were no console errors on /, /graph, /library, /set-builder, /paths, /pipeline or /settings.
+  - Problem: the only data is 3 tracks and 1 playlist from a fixture load (`data_source=fixture`, `example.invalid`, 25 Oct 11:52). `/api/v1/target-tracks` returns 0 rows, and there were no scrape jobs in the last 200 jobs. `ingest_pending` ticks run about once a minute and examine 0 items. That means ingest over the last 24 hours is 0, and the last week holds only the fixture load. The scraper has no targets to work from, so loading real target tracks is a data step for Markus, not a code package.
+  - Projection: graph-api reports 3 song nodes and 2 edges. Outbox reports 3 source and 3 projection rows, 1 stale, 0 missing, 0 extra, backlog 0 and 0 dead letters. The pipeline page also shows 0 dead letters.
+  - Not checked: `docker compose ps`, container logs and RabbitMQ queue depth. This run had no Docker access and RabbitMQ is not published.
+
+### Run on the laptop
+```powershell
+cd E:\songnodes
+git switch main; git pull --ff-only
+python plan/launch_jules.py --wave 1          # dry run, check the 13 briefs
+python plan/launch_jules.py --wave 1 --cli    # send wave 1
+docker compose -f compose.dev.yaml ps
+docker compose -f compose.dev.yaml logs --since 24h --tail 200
+```
+Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, or with `--wave up` once wave 1 is out.
