@@ -81,6 +81,10 @@ Target structure (reached one package at a time):
 | **3** | `QA3` graph API tests, `S3` search UI errors, `L5` reconciliation, `E3` replay report, `SB3` reorder, `SEC5` REST token auth, `SEC6B` AI proxy client, `L4` start-dev migrations | Wave 2 merged |
 | **`up` & `up-legacy`** | `U1`–`U5` (running stack Python 3.15 + Redis 8.10), then `U6`, `U9`–`U29` | `U1`–`U4` merged on 26 Oct alongside 1B (owner's call); `U5` to resend. Send `up-legacy` only after the stack rebuilt from `main` passes `start-dev.sh` and the e2e smoke test on the 3.15 images. |
 | **4, design system per page** | `U8` Actions pins, `DS1` to `DS15`, then `DS16` (held) | Wave 3 merged. **First update `plan/build_ds_prompts.py`** so `ENTRIES` match `G2`/`P1`–`P3` AND `## Owned paths` includes `docs/design-system/audits/{code}.md` and `frontend/design-system-pending.txt` for `G1` compatibility. |
+| **5, search intelligence primitives** | `UX1` search history, `UX2` favorite queries, `UX3` lexicon trie, `UX4` autocomplete search field | Wave 4 merged (or Wave 3 merged; independent primitives) |
+| **6, contextual autocomplete** | `UX5` crate filter autocomplete, `UX6` pathfinder autocomplete, `UX7` music service history, `UX8` quick search palette | Wave 5 merged |
+| **7, target track auto-suggestions** | `TG1` target suggestions endpoint, `TG2` suggestions hook, `TG3` suggestions UI deck, `TG4` crate discovery banner | Wave 6 merged (and Wave 2 FE9 merged) |
+| **8, workflow velocity & transitions** | `FL1` table keyboard nav, `FL2` set transition suggestions, `FL3` crate filter presets, `FL4` mini audio preview | Wave 7 merged (and Wave 3 SB3 merged) |
 
 Retired because they were split or replaced: WP2 (ref_mb is a separate database), WP4 → E1/E2/E3, WP5 → merged in #158 (L1–L4 held for repair, L5 active), BE1 → S1/S2/S3, FE1 → R1, FE3 → R2 + P1, FE4 → SB1/SB2/SB3, FE11 and FEW (replaced by G2 plus P1 to P3), SEC6 → SEC6A/SEC6B. The laptop launcher in `E:\musicLibrary\plan` is retired; it refuses everything and points here.
 
