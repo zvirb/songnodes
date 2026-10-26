@@ -777,8 +777,9 @@ Work done:
 
 <!-- SLOT:SB2 BEGIN -->
 ### SB2: Set builder: export dialog
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Added `ExportDialog` component to handle downloading/copying sets as M3U8, Rekordbox XML, TIDAL JSON, or Tracklist, showing missing metadata summary. Hooked it up to `SetBuilderPage`'s OverflowMenu for a single set. Added `ExportDialog.test.tsx` which successfully passes tests.
+- End: 2026-10-26
 <!-- SLOT:SB2 END -->
 
 <!-- SLOT:SEC6A BEGIN -->

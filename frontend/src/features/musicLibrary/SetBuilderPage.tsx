@@ -18,6 +18,7 @@ import {
 import { bannerKey, downloadJson, lsGet, lsSet, melbourneStamp, normaliseTracks, readDraft, writeDraft } from './storage';
 import { Banner, ConfirmDialog, CopyButton, NumberField, OverflowMenu, Switch, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { EnergyWave, type WaveSlot } from './components/EnergyWave';
+import { ExportDialog } from '../setBuilder/ExportDialog';
 import './musicLibrary.css';
 
 type Verdict = { level: CompatLevel; label: string };
@@ -52,6 +53,7 @@ const SetBuilderPage: React.FC = () => {
   const [armedNew, setArmedNew] = useState(false);
   const [bannerGone, setBannerGone] = useState<number | null>(() => lsGet<number | null>(bannerKey('sets'), null));
   const [controlsOpen, setControlsOpen] = useState(() => !(typeof window !== 'undefined' && !window.matchMedia?.(WIDE).matches && readDraft().slots.length));
+  const [exportingSet, setExportingSet] = useState<SavedSet | null>(null);
   const [tidalSaved, setTidalSaved] = useState<string | null>(null);
   const { toast, region } = useToaster();
   const { say, node: liveNode } = useAnnouncer();
@@ -323,6 +325,7 @@ const SetBuilderPage: React.FC = () => {
 
   const menuItems = [
     { id: 'save', icon: 'save', label: 'Save set', cls: 'sn-page-header__narrow-only' },
+    ...(savedDoc ? [{ id: 'export-single', icon: 'download', label: 'Export this set…' }] : []),
     { id: 'export', icon: 'download', label: 'Export sets for the weekly run' },
     ...(savedDoc ? [{ id: 'delete', icon: 'trash-2', label: 'Delete set…', danger: true }] : []),
   ];
@@ -340,7 +343,7 @@ const SetBuilderPage: React.FC = () => {
         actions={
           <>
             <button className="sn-btn sn-page-header__secondary" type="button" onClick={save}><SnIcon name="save" />Save set</button>
-            <OverflowMenu label="More actions" heading="Set" items={menuItems} onSelect={(id) => { if (id === 'save') save(); if (id === 'export') exportSets(); if (id === 'delete' && savedDoc) setToDelete(savedDoc); }} />
+            <OverflowMenu label="More actions" heading="Set" items={menuItems} onSelect={(id) => { if (id === 'save') save(); if (id === 'export') exportSets(); if (id === 'export-single' && savedDoc) setExportingSet(savedDoc); if (id === 'delete' && savedDoc) setToDelete(savedDoc); }} />
             <button className="sn-btn sn-btn--primary" type="button" onClick={() => build()} disabled={!lib}><SnIcon name="wand-sparkles" />Build set</button>
           </>
         }
@@ -540,6 +543,12 @@ const SetBuilderPage: React.FC = () => {
         </aside>
       </div>
 
+      <ExportDialog
+        open={!!exportingSet}
+        set={exportingSet}
+        byId={byId}
+        onClose={() => setExportingSet(null)}
+      />
       <ConfirmDialog
         open={!!toDelete}
         title={toDelete ? `Delete “${toDelete.name}”?` : ''}
