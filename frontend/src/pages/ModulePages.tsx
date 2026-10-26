@@ -53,7 +53,7 @@ export const NotFoundPage: React.FC = () => {
     <main className="sn-page-error" id="main" tabIndex={-1}>
       <span className="sn-page-error__wordmark">SongNodes</span>
       <p className="sn-page-error__code">404 · Not found</p>
-      <h1 className="sn-page-error__title">Page not found</h1>
+      <h1 className="sn-page-error__title">There is no page here</h1>
       <p className="sn-page-error__text">There is nothing at this address. It may have been typed wrong, or the page was retired.</p>
       <ul className="sn-page-error__next">
         <li>Check the address, or <Link to="/">go to Home</Link>.</li>
