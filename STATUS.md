@@ -800,8 +800,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:U2 BEGIN -->
 ### U2: Upgrade services/graph-visualization-api to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 05:49 UTC
+- End: 2026-10-26 06:01 UTC. Upgraded base image to `python:3.15-slim` and updated pins for `pytest-asyncio`, `ecdsa`, `python-jose`, and `starlette` in `requirements.txt` and `requirements-test.txt`. Added `build-essential` compilation step for `PyYAML`.
 <!-- SLOT:U2 END -->
 
 <!-- SLOT:U3 BEGIN -->
