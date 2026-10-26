@@ -644,8 +644,12 @@ PR: ds5-design-system-audit-sources-not-found-pages
 
 <!-- SLOT:DS6 BEGIN -->
 ### DS6: Design system audit and fix: Harmony (Camelot) page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Audited and migrated Harmony components to design system. Removed inline properties, ad-hoc pixels, non-compliant fallback text ("Unknown") and implemented required text/layout classes (`.data-strong`, `.body-s`, `.label`, `.sn-card`, etc). Documented missing items and review notes in `docs/design-system/audits/DS6.md`.
+- Checks run: `vitest run src`, `tsc`, `oxlint`, `vite build`, and `sync-design-system.sh --check`.
+- Checks not run: Playwright E2E visual tests (sandbox constraint).
+- PR: Pending
+- End: 2026-10-26
 <!-- SLOT:DS6 END -->
 
 <!-- SLOT:DS8 BEGIN -->
