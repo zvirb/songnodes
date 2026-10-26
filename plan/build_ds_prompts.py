@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the design-system audit briefs (plan/agents/DS*.md), one per page or code area.
 
-Ownership is computed from the import graph of the routed pages in frontend/src/App.tsx: each file is owned by
+Ownership is computed from the import graph of the routed pages (static routes in frontend/src/routes/registry.tsx, G2; feature routes in features/*/route.tsx): each file is owned by
 the first page (in ENTRIES order) that reaches it; files no page reaches are grouped by folder.
 Re-run after the routes or components change:  python plan/build_ds_prompts.py
 """
@@ -44,17 +44,19 @@ def deps(f):
 
 # code, title, route, entry files (not followed past App.tsx/main.tsx)
 ENTRIES = [
-    ("DS1", "App shell, navigation drawer and home page", "/ (HomePage, AppShell)", ["pages/HomePage.tsx", "shell/AppShell.tsx", "App.tsx", "main.tsx"]),
+    ("DS1", "App shell, navigation drawer and home page", "/ (HomePage, AppShell)", ["pages/HomePage.tsx", "shell/AppShell.tsx", "App.tsx", "main.tsx", "routes/registry.tsx"]),
     ("DS2", "Graph page", "/graph", ["pages/GraphPage.tsx"]),
-    ("DS3", "Library page", "/library", ["features/musicLibrary/LibraryPage.tsx"]),
+    ("DS3", "Library page", "/library", ["features/musicLibrary/LibraryPage.tsx", "features/musicLibrary/route.tsx"]),
     ("DS4", "Set builder page", "/sets", ["features/musicLibrary/SetBuilderPage.tsx"]),
-    ("DS5", "Paths, sources and not-found pages", "/paths, /sources/targets, * (pages/ModulePages.tsx)", ["pages/ModulePages.tsx"]),
-    ("DS6", "Harmony (Camelot) page", "/harmony", ["pages/CamelotPage.tsx"]),
+    ("DS5", "Sources and not-found pages", "/sources/targets, * (pages/ModulePages.tsx)", ["pages/ModulePages.tsx"]),
+    ("DS6", "Harmony (Camelot) page", "/harmony", ["features/camelot/CamelotPage.tsx", "features/camelot/route.tsx"]),
+    ("DS7", "Paths (route finder) page", "/paths", ["features/pathfinder/PathfinderPage.tsx", "features/pathfinder/route.tsx"]),
     ("DS8", "Pipeline page", "/pipeline", ["pages/ScraperProgressPage.tsx"]),
     ("DS9", "Settings page", "/settings", ["pages/SettingsPage.tsx"]),
     ("DS10", "OAuth callback page", "/callback/spotify, /oauth/callback", ["components/OAuthCallback.tsx"]),
+    ("DS17", "AI setlists import page", "/sources/import", ["features/aiSetlists/AISetlistsPage.tsx", "features/aiSetlists/route.tsx"]),
 ]
-FOLLOW_STOP = {"App.tsx", "main.tsx"}
+FOLLOW_STOP = {"App.tsx", "main.tsx", "routes/registry.tsx"} | {rel(f) for f in files if f.endswith(os.sep + "route.tsx")}
 
 owned, taken = {}, set()
 # smaller pages claim shared files first, so each page owns its own components; the big graph page goes last

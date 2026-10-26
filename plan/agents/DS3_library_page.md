@@ -43,8 +43,14 @@ Create docs/design-system/audits/DS3.md with these sections, in this order:
 - frontend/src/features/musicLibrary/components/CrateFilterRail.tsx
 - frontend/src/features/musicLibrary/components/ui.tsx
 - frontend/src/features/musicLibrary/musicLibrary.css
+- frontend/src/features/musicLibrary/route.tsx
 - frontend/src/features/musicLibrary/setBuilder.ts
 - frontend/src/features/musicLibrary/storage.ts
+- frontend/src/features/musicLibrary/targetAction/TargetActionButton.tsx
+- frontend/src/hooks/useUnifiedTracks.ts
+- frontend/src/services/trackSyncAdapter.ts
+- frontend/src/services/unifiedTrackService.ts
+- frontend/src/types/unifiedTrack.ts
 - docs/design-system/audits/DS3.md
 - frontend/design-system-pending.txt (comment out migrated lines only)
 
