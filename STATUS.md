@@ -616,9 +616,26 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Sources and not-found pages
-- Start: _not started_
-- End: _not finished_
+Start: 2026-10-26
+End: 2026-10-26
+What I built:
+- Audited `TargetTracksManager`, `MusicServiceSearch`, and `ModulePages.tsx` against the design system rules.
+- Replaced hardcoded px layouts, inline margins, and pixel font sizes with design system tokens and helper classes.
+- Used `<StatusPill>` and standard HTML/CSS patterns in place of hand-rolled components.
+- Migrated `NotFoundPage` to use the design system's `ErrorPage` layout instead of its custom structure.
+- Wrote findings and reported a missing `ChipInput` component to `docs/design-system/audits/DS5.md`.
+- Kept the code functional and cleanly integrated.
+
+Checks run:
+- Frontend format, typescript check, lint, vitest, build
+- scripts/sync-design-system.sh --check
+- npm run check:design-system
+- Vitest passed 151/151
+
+Not run:
+- Playwright E2E and visual tests (cannot run in this sandbox environment).
+
+PR: ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:DS5 END -->
 
 <!-- SLOT:DS6 BEGIN -->

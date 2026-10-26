@@ -96,7 +96,7 @@ describe('registry', () => {
       notFound = render(<TestApp url="/does-not-exist" />);
     });
     await waitFor(() => {
-      expect(screen.getByText(/There is no page here/i)).toBeDefined();
+      expect(screen.getByText(/Page not found/i)).toBeDefined();
     });
     notFound.unmount();
   });
