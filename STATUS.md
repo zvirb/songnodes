@@ -679,8 +679,9 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:C2 BEGIN -->
 ### C2: Remove one-off agent scripts from the repo root
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Action: Verified via git grep that all 15 root scratch scripts (ix16.sh, ix_*.py, patch_*.py) are unreferenced outside plan/status docs, deleted them, and added /patch_*.py and /fix_*.py to .gitignore.
+- End: 2026-10-26
 <!-- SLOT:C2 END -->
 
 <!-- SLOT:S1 BEGIN -->
