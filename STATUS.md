@@ -794,8 +794,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:U1 BEGIN -->
 ### U1: Upgrade services/rest_api to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U1 END -->
 
 <!-- SLOT:U2 BEGIN -->
