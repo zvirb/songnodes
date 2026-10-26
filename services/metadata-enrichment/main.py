@@ -398,6 +398,9 @@ async def lifespan(app: FastAPI):
             redis_client=connection_manager.redis_client
         )
 
+        # Make the pipeline available to request handlers without global imports
+        app.state.enrichment_pipeline = enrichment_pipeline
+
         # Initialize configuration-driven enricher
         api_clients = {
             'spotify': spotify_client,
