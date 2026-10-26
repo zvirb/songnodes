@@ -3,15 +3,15 @@
 # When a file is migrated or deleted, comment its line out as `# migrated <CODE>: <path>` (keeps the record); never add one.
 # Any package that changes a listed file may comment out that file's line (scripts/scope_guard.py allows exactly this).
 frontend/src/components/AdvancedSearch.tsx
-frontend/src/components/ArtistAttributionManager.css
+# migrated DS2A: frontend/src/components/ArtistAttributionManager.css
 frontend/src/components/Attributions.tsx
-frontend/src/components/DJInterface.graph.css
+# migrated DS2A: frontend/src/components/DJInterface.graph.css
 frontend/src/components/DJInterface/DJInterface.module.css
 frontend/src/components/DJInterface/panels/PlanModePanel.tsx
 frontend/src/components/DJInterface/panels/PlayModePanel.tsx
 frontend/src/components/FilterPanel.tsx
 frontend/src/components/IntelligentBrowser.legacy.tsx
-frontend/src/components/IntelligentBrowser/IntelligentBrowser.module.css
+# migrated DS2A: frontend/src/components/IntelligentBrowser/IntelligentBrowser.module.css
 frontend/src/components/MobileTrackExplorer.css
 frontend/src/components/MoodVisualizer.css
 frontend/src/components/MultiSelect.tsx
