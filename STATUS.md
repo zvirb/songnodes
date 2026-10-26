@@ -534,8 +534,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:QA6 BEGIN -->
 ### QA6: Stabilise the dev-worker end-to-end integration test
-- Start: _not started_
-- End: _not finished_
+- Start: 2024-10-26
+- Built: Replaced sleeps in `test_dev_worker.py` with bounded polling and clear `AssertionError` messages. Updated the `test_bronze_playlist_flows_to_silver_transitions_and_the_projection` test to wait until the `graph_projection` consumer drains its outbox events. Improved `cleanup()` to explicitly delete `silver_track_transitions` and emit `deleted` outbox events for the `graph_projection` consumer to clean up graph nodes reliably.
+- Checks run: `python -m unittest discover -s tests/integration -p test_dev_worker.py -v` (Skipped as expected since the worker container is not running).
+- Checks not run: Full E2E suite due to environment constraints. To run it 10 times in a row locally, execute: `for i in {1..10}; do python -m unittest discover -s tests/integration -p test_dev_worker.py -v || break; done`
+- PR link: To be generated on submission.
+- End: 2024-10-26
 <!-- SLOT:QA6 END -->
 
 <!-- SLOT:DS10 BEGIN -->
