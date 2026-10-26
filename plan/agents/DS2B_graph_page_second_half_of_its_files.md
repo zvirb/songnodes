@@ -39,10 +39,10 @@ Create docs/design-system/audits/DS2B.md with these sections, in this order:
 7. Could not check: states you could not reach statically, and checks you could not run.
 
 ## Owned paths
+- frontend/src/components/IntelligentBrowser/types.ts
 - frontend/src/components/IntelligentBrowser/utils.ts
 - frontend/src/components/MobileTrackExplorer.css
 - frontend/src/components/MobileTrackExplorer.tsx
-- frontend/src/components/PathfinderPanel.css
 - frontend/src/components/PathfinderPanel.tsx
 - frontend/src/components/QuickSearch.tsx
 - frontend/src/components/ServicePlaylistView.css
@@ -58,7 +58,6 @@ Create docs/design-system/audits/DS2B.md with these sections, in this order:
 - frontend/src/pages/GraphPage.tsx
 - frontend/src/utils/harmonic.ts
 - frontend/src/utils/pathfinding.ts
-- frontend/src/utils/serverPath.ts
 - docs/design-system/audits/DS2B.md
 - frontend/design-system-pending.txt (comment out migrated lines only)
 

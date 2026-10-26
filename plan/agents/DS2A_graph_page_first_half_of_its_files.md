@@ -58,7 +58,6 @@ Create docs/design-system/audits/DS2A.md with these sections, in this order:
 - frontend/src/components/IntelligentBrowser/TrackItem.tsx
 - frontend/src/components/IntelligentBrowser/hooks.ts
 - frontend/src/components/IntelligentBrowser/index.tsx
-- frontend/src/components/IntelligentBrowser/types.ts
 - docs/design-system/audits/DS2A.md
 - frontend/design-system-pending.txt (comment out migrated lines only)
 

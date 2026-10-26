@@ -616,7 +616,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Paths, sources and not-found pages
+### DS5: Design system audit and fix: Sources and not-found pages
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:DS5 END -->
@@ -809,8 +809,8 @@ Work done:
 
 <!-- SLOT:L5 BEGIN -->
 ### L5: Library reconciliation report
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Implemented CLI for reconciliation report of duplicate candidates with ISRC, MBID, and norm_key matches. Wrote tests with planted duplicates asserting exactly what was expected.
 <!-- SLOT:L5 END -->
 
 <!-- SLOT:E3 BEGIN -->
@@ -821,8 +821,8 @@ Work done:
 
 <!-- SLOT:SB3 BEGIN -->
 ### SB3: Set builder: reorder tracks
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:SB3 END -->
 
 <!-- SLOT:SEC6B BEGIN -->
@@ -869,8 +869,8 @@ Work done:
 
 <!-- SLOT:U6 BEGIN -->
 ### U6: Upgrade RabbitMQ to 4.3 in the dev stack
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U6 END -->
 
 <!-- SLOT:U7 BEGIN -->
@@ -893,68 +893,95 @@ Work done:
 
 <!-- SLOT:U10 BEGIN -->
 ### U10: Upgrade services/audio-analysis to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Dockerfile to python:3.15-slim, aio-pika to 10.2.1, and pytest-asyncio to 1.4.1.
+- Checks run: `docker build` succeeds, entry module is importable, python version is 3.15.
+- End: 2026-10-26
 <!-- SLOT:U10 END -->
 
 <!-- SLOT:U11 BEGIN -->
 ### U11: Upgrade services/browser-collector to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated services/browser-collector/Dockerfile to use Python 3.15-slim. Updated services/browser-collector/requirements-test.txt to use pytest-asyncio==1.4.1. Verified docker image builds successfully.
+- Checks run: `docker build` succeeds, module imports via docker run.
+- Checks not run: Tests inside docker due to a missing unowned dependency 'docker' in 'tests/conftest.py'.
+- End: 2026-10-26
 <!-- SLOT:U11 END -->
 
 <!-- SLOT:U12 BEGIN -->
 ### U12: Upgrade services/data-transformer to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Python base image to 3.15-slim in Dockerfile and added `build-essential` compilation step for PyYAML. Updated pinned versions for `fastapi` (0.162.0) and `pytest-asyncio` (1.4.1).
+- Checks run: `docker build` the image, successfully imported entry module inside image container, and checked Python version (3.15).
+- End: 2026-10-26
 <!-- SLOT:U12 END -->
 
 <!-- SLOT:U13 BEGIN -->
 ### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/data-validator base image to python:3.15-slim. Updated pinned versions for pytest-asyncio (1.4.1) and starlette (1.10.0). Added build step to remove build-essential after PyYAML compilation.
+- Checks run: `docker build` (success). `python -m pytest` (success). `import main` (success).
+- Checks not run: None.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U13 END -->
 
 <!-- SLOT:U14 BEGIN -->
 ### U14: Upgrade services/db-connection-pool to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `services/db-connection-pool/requirements.txt` (starlette to 1.10.0) and `requirements-test.txt` (pytest-asyncio to 1.4.1). Updated `Dockerfile` to `python:3.15-slim` and added temporary installation of `build-essential` to compile PyYAML for Python 3.15.
+- Checks run: `docker build` succeeds, imported module internally. Pytest runs locally.
+- Checks not run: Docker compose execution.
+- End: 2026-10-26
 <!-- SLOT:U14 END -->
 
 <!-- SLOT:U15 BEGIN -->
 ### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/dlq-manager base image to Python 3.15. Requirements are already up to date.
+- Checks run: `docker build` succeeds, `python --version` inside the image prints 3.15, and `python -c "import main"` succeeds.
+- Checks not run: Pytest tests (none exist in the service folder).
+- End: 2026-10-26
 <!-- SLOT:U15 END -->
 
 <!-- SLOT:U16 BEGIN -->
 ### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `services/gold-to-operational-etl/Dockerfile` and `services/Dockerfile.gold_processor` base images to Python 3.15-slim. Verified requirements are already at the target version (asyncpg==0.32.0 / >=0.30.0) without needing changes.
+- Checks run: `docker build` for both images. Ran `python --version` inside the built images showing 3.15.1, and successfully imported their respective entry modules (`gold_to_operational_etl` and `gold_layer_processor`). No test files found for this service.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U16 END -->
 
 <!-- SLOT:U17 BEGIN -->
 ### U17: Upgrade services/graphql-api to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Notes: Upgraded Python base image to 3.15-slim in Dockerfile and pytest-asyncio to 1.4.1. Stopped at strawberry-graphql upgrade due to AttributeError ('FastAPI' object has no attribute 'add_websocket_route') in unowned file services/graphql-api/main.py. Documented in docs/integration/U17/notes.md and reported in PR.
 <!-- SLOT:U17 END -->
 
 <!-- SLOT:U18 BEGIN -->
 ### U18: Upgrade services/metadata-enrichment to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated services/metadata-enrichment and services/metadata-enrichment/Dockerfile.worker to use Python 3.15-slim. Updated requirements.txt (starlette to 1.10.0, aio-pika to 10.2.1) and requirements-test.txt (pytest-asyncio to 1.4.1).
+- Checks run: `docker build` succeeds for both Dockerfiles. The entry module imports successfully (`python -c "import main"` and `python -c "import queue_consumer"`) inside their respective images.
+- Checks not run: Full `pytest` test suite inside the container (`python -m pytest tests`) fails during collection due to missing dependencies from outside the owned `services/metadata-enrichment` path (e.g., `fakes`, `docker`). These pre-existing unowned files and test configurations were left untouched as per constraints.
+- End: 2026-10-26
 <!-- SLOT:U18 END -->
 
 <!-- SLOT:U20 BEGIN -->
 ### U20: Upgrade services/scraper-orchestrator to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated Python base image to 3.15-slim in Dockerfile and Dockerfile.enhanced, managing transient compilation dependencies. Bumped pytest-asyncio to 1.4.1 in requirements-test.txt, and starlette to 1.10.0 and wcwidth to 0.9.4 in requirements.txt.
+- Checks run: `docker build` for both Dockerfiles (both successful), imported entry module and verified python version inside the container.
+- End: 2026-10-26
 <!-- SLOT:U20 END -->
 
 <!-- SLOT:U21 BEGIN -->
 ### U21: Upgrade services/serato-integration to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built: Modified `services/serato-integration/Dockerfile` to use `python:3.15-slim` and updated `fastapi` to `0.162.0` in `requirements.txt`.
+- Checks run: `docker build` succeeded, `python --version` inside the container correctly reported 3.15, `import batch_import` succeeded.
+- Checks not run: Full E2E Playwright test suite, no pytest tests exist in `services/serato-integration`.
 <!-- SLOT:U21 END -->
 
 <!-- SLOT:U22 BEGIN -->
@@ -977,8 +1004,8 @@ Work done:
 
 <!-- SLOT:U19 BEGIN -->
 ### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 11:51:15
+- End: 2026-10-26 12:47:04
 <!-- SLOT:U19 END -->
 
 <!-- SLOT:U25 BEGIN -->
@@ -1077,14 +1104,20 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX2 BEGIN -->
 ### UX2: Favorite queries: starred queries and filter preset storage
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Implemented `FavoriteItem<T>` interface and pure typed favorite queries utilities (`getFavorites`, `saveFavorite`, `removeFavorite`, `isFavorite`) inside `favoriteQueries.ts` and their tests in `favoriteQueries.test.ts`. Added handling for invalid JSON payload and duplication update.
+- Checks run: `vitest run src/utils/favoriteQueries.test.ts`, `tsc --noEmit`, `oxlint src`, `vitest run src`, `vite build`, design system check.
+- Checks not run: Playwright E2E suite cannot run in the sandbox.
+- End: 2026-10-26
 <!-- SLOT:UX2 END -->
 
 <!-- SLOT:UX3 BEGIN -->
 ### UX3: Lexicon autocomplete: prefix trie and token completion
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Implemented lightweight `LexiconTrie` class in `frontend/src/utils/lexiconTrie.ts` for fast in-memory search with prefix matching, built-in Camelot key and pillar insertion, normalization (case, punctuation), and weighting. Included comprehensive unit tests in `frontend/src/utils/lexiconTrie.test.ts`.
+- Checks run: `vitest run src/utils/lexiconTrie.test.ts`, `npm ci`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- End: 2026-10-26 - `npx vitest run src/utils/lexiconTrie.test.ts` passes.
 <!-- SLOT:UX3 END -->
 
 <!-- SLOT:UX4 BEGIN -->
@@ -1164,3 +1197,21 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:FL4 END -->
+
+<!-- SLOT:DS7 BEGIN -->
+### DS7: Design system audit and fix: Paths (route finder) page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS7 END -->
+
+<!-- SLOT:DS17 BEGIN -->
+### DS17: Design system audit and fix: AI setlists import page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS17 END -->
+
+<!-- SLOT:BOLT BEGIN -->
+### BOLT: Optimize metadata track matching performance
+- Start: 2026-10-26 - Optimizing `services/common/metadata/matching.py` with pre-compiled regexes, memoized parsing functions, and single-pass target evaluation in `best_match`.
+- End: 2026-10-26 - Pre-compiled regexes, added `@lru_cache` to text normalization functions, and pre-computed target track metadata in `best_match`. Passed unit tests in `services/common/tests/test_metadata_resolution.py` and benchmarked >60% execution time reduction (from 7.46s to 2.88s per 50,000 matches).
+<!-- SLOT:BOLT END -->
