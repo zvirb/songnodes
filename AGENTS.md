@@ -33,7 +33,11 @@ deleted other packages' merged work (see plan/RESTRUCTURE.md, section 1).
    placeholder records in non-test code.
 9. **Rebase before the PR.** Update from `main` immediately before opening the PR
    and re-run your checks. If `main` changed a file you own in a way you cannot
-   reconcile within your scope, stop and say so.
+   reconcile within your scope, stop and say so. Never merge or rebuild your
+   branch from an older base: before every push run
+   `git fetch origin main && git diff --diff-filter=D --name-only origin/main...HEAD`
+   and stop if it lists anything outside your owned paths. (In PR #162 a
+   follow-up rebuilt from an old base would have deleted G1 and R3.)
 10. **PR format.** Title `<CODE>: <task>`. Branch name starts with the code in
     lower case. The description lists: the one job; files added, changed and
     **deleted** (deleted must be empty unless the brief owns them); checks run
@@ -42,6 +46,11 @@ deleted other packages' merged work (see plan/RESTRUCTURE.md, section 1).
 11. **STATUS.md:** edit only the lines inside your own slot
     (`<!-- SLOT:<CODE> BEGIN -->` to `<!-- SLOT:<CODE> END -->`). If it is
     missing, add it at the end of the file and say so.
+12. **Register, don't wire.** A new page exports its route from
+    `frontend/src/features/<page>/route.tsx` (found by `frontend/src/routes`, G2).
+    A new REST router is its own module in `services/rest_api/routers/` exposing
+    `register(app)` (found by `router_registry`, G3). Do not edit `App.tsx` or
+    `services/rest_api/main.py` unless your brief owns them.
 
 ## Task tracking
 

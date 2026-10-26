@@ -18,7 +18,7 @@ from build_rs_prompts import WAVES  # noqa: E402
 # replaced by the restructure (plan/RESTRUCTURE.md, section 4); never send these
 RETIRED = {"WP2", "WP4", "WP5", "BE1", "FE1", "FE3", "FE4", "FE11", "FEW", "SEC6", "QA1", "QA2"}  # QA1, QA2 done in #155
 # sent only when named in --only, after the packages it depends on are merged
-HOLD = {"DS16", "U7", "L1", "L2", "L3", "L4"}  # U7: owner runs the Postgres migration before its PR is merged; L1-L4: held after PR #158 merged WP5
+HOLD = {"DS16", "U7"}  # U7: owner runs the Postgres migration before its PR is merged
 
 
 def sh(*a):
@@ -64,13 +64,25 @@ def main():
     if not a.cli:
         print(f"dry run only ({len(jobs)} packages); add --cli to start sessions")
         return
+    started, failed = [], []
     for i, (code, text) in enumerate(jobs):
         if i:
             time.sleep(a.delay)
-        r = subprocess.run(["jules", "remote", "new", "--repo", REPO], input=text, text=True, shell=sys.platform == "win32")
-        if r.returncode:
-            sys.exit(f"{code} failed; stopping")
-        print(f"started {code}")
+        r = subprocess.run(["jules", "remote", "new", "--repo", REPO], input=text, text=True, capture_output=True,
+                           shell=sys.platform == "win32")
+        out = (r.stdout or "") + (r.stderr or "")
+        print(out.strip())
+        # jules exits 0 even when a session fails to create (U5 on 26 Oct), so read its output too
+        if r.returncode or "failed to create" in out or "Session is created" not in out:
+            failed.append(code)
+            print(f"FAILED {code}: session not created")
+            continue
+        url = next((l.split("URL:", 1)[1].strip() for l in out.splitlines() if "URL:" in l), "")
+        started.append(f"{code} {url}".strip())
+        print(f"started {code} {url}".rstrip())
+    print(f"\nstarted {len(started)}: " + ", ".join(c.split()[0] for c in started))
+    if failed:
+        sys.exit(f"failed {len(failed)}: {', '.join(failed)}; resend with --only {','.join(failed)} --cli")
 
 
 main()
