@@ -8,7 +8,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader, EmptyState } from '../../shell/PageParts';
-import { SN, SnIcon, KeyBadge, Bpm, CompatPill, type CompatLevel } from '../../lib/songnodes';
+import { SN, SnIcon, KeyBadge, Bpm, CompatPill, StatusPill, type CompatLevel } from '../../lib/songnodes';
 import { loadLibrary, readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, type LibraryFile, type LibraryTrack, type SavedSet } from './data';
 import {
   MAX_MINUTES, MIN_MINUTES, PILLARS, POOLS, SHAPES, buildSlots, countPeaks, draftFromSaved, filtersFromParams, filtersToParams,
@@ -344,7 +344,7 @@ const SetBuilderPage: React.FC = () => {
         desc={`${shape.name} over ${draft.minutes} min: ${SN.format.count(filled.length)} tracks, ${mixLine}.`}
         stampVerb="Saved"
         stamp={savedDoc?.updated ?? null}
-        pill={savedDoc && savedDoc.tidal ? <span className="sn-pill sn-status-pill" data-status="idle">Queued for the weekly run</span> : undefined}
+        pill={savedDoc && savedDoc.tidal ? <StatusPill raw="idle" label="Queued for the weekly run" /> : undefined}
         actions={
           <>
             <button className="sn-btn sn-page-header__secondary" type="button" onClick={save}><SnIcon name="save" />Save set</button>
@@ -524,7 +524,7 @@ const SetBuilderPage: React.FC = () => {
                       {es2.map((e, k) => <i key={k} data-e={e} style={{ height: `${e * 10}%` }} />)}
                     </div>
                     <div className="sn-set-card__meta">
-                      {s.tidal ? <span className="sn-pill sn-status-pill" data-status="idle">Queued for the weekly run</span> : <span className="sn-pill sn-status-pill" data-status="idle">Not sent to TIDAL</span>}
+                      {s.tidal ? <StatusPill raw="idle" label="Queued for the weekly run" /> : <StatusPill raw="idle" label="Not sent to TIDAL" />}
                     </div>
                     <div className="sn-set-card__meta">
                       <time dateTime={s.updated} title={SN.format.stamp(s.updated)}>Updated {SN.format.relative(s.updated)}</time>
@@ -565,10 +565,7 @@ const SetBuilderPage: React.FC = () => {
       />
       {liveNode}
       {region}
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-          <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit label" style={{ textAlign: "center", color: "var(--fg-2)", padding: "var(--space-3)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--space-6)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
     </main>
   );
 };
