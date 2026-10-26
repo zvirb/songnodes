@@ -1031,8 +1031,11 @@ Work done:
 
 <!-- SLOT:U29 BEGIN -->
 ### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved graph projection service to Python 3.15-slim. Upgraded neo4j driver to 6.x. Replaced `session.run()` with `driver.execute_query()`.
+- Checks run: `python -m pytest tests/graph_projection` inside the sandbox with python 3.12 (passes). `docker build` the graph projection service on python 3.15 (passes).
+- Checks not run: Full e2e tests due to lack of environment access.
+- End: 2026-10-26
 <!-- SLOT:U29 END -->
 
 ## Scheduled run
