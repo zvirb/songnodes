@@ -1028,8 +1028,12 @@ Work done:
 
 <!-- SLOT:U25 BEGIN -->
 ### U25: Upgrade shared/templates to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Python base image to 3.15-slim. Updated all pinned packages in `shared/templates/base-requirements.txt` to their latest versions (FastAPI, pydantic, SQLAlchemy, etc.). Replaced `BaseSettings` import to use `pydantic-settings` to fix compatibility with Pydantic 2.x. Minimized image size by removing `build-essential` post-install.
+- Checks run: `docker build` inside `shared/templates` (passes). Imported service module inside built image (passes).
+- Checks not run: No test files exist in `shared/templates`. E2E tests cannot run in sandbox.
+- Reviewer check: `docker build` succeeds, `python --version` outputs 3.15.1, and entry module imports successfully.
+- End: 2026-10-26
 <!-- SLOT:U25 END -->
 
 <!-- SLOT:U26 BEGIN -->
