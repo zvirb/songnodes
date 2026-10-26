@@ -935,8 +935,9 @@ Work done:
 
 <!-- SLOT:U17 BEGIN -->
 ### U17: Upgrade services/graphql-api to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Notes: Upgraded Python base image to 3.15-slim in Dockerfile and pytest-asyncio to 1.4.1. Stopped at strawberry-graphql upgrade due to AttributeError ('FastAPI' object has no attribute 'add_websocket_route') in unowned file services/graphql-api/main.py. Documented in docs/integration/U17/notes.md and reported in PR.
 <!-- SLOT:U17 END -->
 
 <!-- SLOT:U18 BEGIN -->
