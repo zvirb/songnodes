@@ -52,16 +52,6 @@ def register_security(app: FastAPI):
         if is_sensitive:
             client_ip = request.client.host if request.client else "unknown"
 
-            # Check rate limits
-            current_time = time.time()
-            count, last_time = _401_limits[client_ip]
-            if current_time - last_time > BLOCK_DURATION_SEC:
-                _401_limits[client_ip] = [0, current_time]
-                count = 0
-
-            if count >= MAX_401_ATTEMPTS:
-                return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
-
             auth_header = request.headers.get("Authorization")
             x_api_token = request.headers.get("X-API-Token")
 
@@ -71,7 +61,23 @@ def register_security(app: FastAPI):
             elif x_api_token:
                 token = x_api_token
 
-            if not token or not hmac.compare_digest(token.encode("utf-8"), api_token.encode("utf-8")):
+            # If token is correct, reset rate limit and allow
+            if token and hmac.compare_digest(token.encode("utf-8"), api_token.encode("utf-8")):
+                if client_ip in _401_limits:
+                    del _401_limits[client_ip]
+            else:
+                # Check rate limits before blocking to avoid excessive logging/checks, but always block
+                current_time = time.time()
+                count, last_time = _401_limits[client_ip]
+                if current_time - last_time > BLOCK_DURATION_SEC:
+                    _401_limits[client_ip] = [0, current_time]
+                    count = 0
+
+                # We always block if token is invalid, but if we exceed attempts, we do it via rate limit logic (generic block)
+                if count >= MAX_401_ATTEMPTS:
+                    return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+                # Increment the failed attempt count
                 _401_limits[client_ip][0] += 1
                 return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
 

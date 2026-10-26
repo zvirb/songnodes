@@ -84,6 +84,6 @@ def test_rate_limit(clear_401_limits):
     for _ in range(5):
         assert client.post("/api/v1/artists/dirty", headers={"Authorization": "Bearer wrong"}).status_code == 401
 
-    # The 6th attempt is blocked entirely
+    # The 6th attempt with a correct token should now pass and reset the rate limit
     response = client.post("/api/v1/artists/dirty", headers={"Authorization": "Bearer secret-token"})
-    assert response.status_code == 401
+    assert response.status_code == 200
