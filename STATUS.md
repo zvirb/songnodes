@@ -461,8 +461,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:SEC5 BEGIN -->
 ### SEC5: Opt-in token auth for write and admin API routes
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 - Configured token authentication for `SONGNODES_API_TOKEN` to protect write and admin REST routes.
+- End: 2026-10-26 - Added `register_security` in `services/rest_api/security/auth.py` and registered it in `services/rest_api/main.py`. Verified with Pytest.
 <!-- SLOT:SEC5 END -->
 
 <!-- SLOT:SEC6 BEGIN -->
