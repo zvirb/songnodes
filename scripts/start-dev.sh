@@ -37,6 +37,18 @@ docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnod
 if [ -z "$(docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -tAc "SELECT to_regclass('library.tracks')" | tr -d '[:space:]')" ]; then
   docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/101_library_schema_up.sql
 fi
+if [ -z "$(docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -tAc "SELECT to_regclass('web_call_log')" | tr -d '[:space:]')" ]; then
+  docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/170_web_call_log_up.sql
+fi
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/180_library_indexes_up.sql
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/181_insert_reconciliation_reports_up.sql
+if [ -z "$(docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -tAc "SELECT column_name FROM information_schema.columns WHERE table_schema='library' AND table_name='track_xref' AND column_name='norm_key'" | tr -d '[:space:]')" ]; then
+  docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/182_update_views_and_model_up.sql
+fi
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/183_energy_model_up.sql
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/184_library_views_v_crates_etc_up.sql
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/185_reconcile_view_mbid_up.sql
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/220_graph_consumer_up.sql
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/240_library_search_indexes_up.sql
 docker compose -f compose.dev.yaml up -d --no-build --force-recreate --wait --wait-timeout 120 graph-api rest-api worker unified-scraper frontend
 curl --fail --silent --show-error http://127.0.0.1:8084/api/graph/data
