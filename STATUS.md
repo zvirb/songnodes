@@ -780,8 +780,8 @@ Work done:
 
 <!-- SLOT:L3 BEGIN -->
 ### L3: Saved sets: outbox events with a UUID aggregate id
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:L3 END -->
 
 <!-- SLOT:L5 BEGIN -->
