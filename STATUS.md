@@ -809,8 +809,8 @@ Work done:
 
 <!-- SLOT:E3 BEGIN -->
 ### E3: Enrichment replay and coverage report
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26: Created tests/enrichment_local/replay/ test suite and script to replay the library fixture and real data through the enrichment waterfall. Evaluated coverage and web calls by provider, writing results to docs/integration/WP4/replay.md and docs/integration/WP4/replay_live.md.
 <!-- SLOT:E3 END -->
 
 <!-- SLOT:SB3 BEGIN -->
