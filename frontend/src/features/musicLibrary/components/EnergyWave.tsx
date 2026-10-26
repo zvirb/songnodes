@@ -22,7 +22,7 @@ const GLYPH = (SN as unknown as { GLYPH: Record<string, string> }).GLYPH;
 export const EnergyWave: React.FC<{ title: React.ReactNode; titleId: string; sub: string; slots: WaveSlot[]; desc: string; empty?: React.ReactNode }> = ({ title, titleId, sub, slots, desc, empty }) => {
   const host = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(800);
-  const [rem, setRem] = useState(16); // rem is used for SVG math, valid exception for drawing
+  const [rem, setRem] = useState(16);
   const [focus, setFocus] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [table, setTable] = useState(false);

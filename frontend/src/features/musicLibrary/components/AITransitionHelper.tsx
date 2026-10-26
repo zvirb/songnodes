@@ -60,7 +60,7 @@ export const AITransitionHelper: React.FC<AITransitionHelperProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-          <div className="sn-body-s" style={{ color: 'var(--fg-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--fg-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
             <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{sourceTitle}</span>
             <ArrowRight size={12} aria-hidden="true" />
             <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{targetTitle}</span>
