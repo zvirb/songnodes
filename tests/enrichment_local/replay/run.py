@@ -155,28 +155,19 @@ async def replay_enrichment(items_path: Path, live_db: bool, out_path: Path):
     original_apply_all = evidence.apply_all
 
     def get_mock_response(url):
-        # Serve canned responses
-        recordings_dir = Path("tests/enrichment_local/replay/recordings")
-        if recordings_dir.exists():
-            for p in recordings_dir.glob("*.json"):
-                with open(p, "r") as f:
-                    # simplistic check
-                    # ...
-                    pass
-
         if "oauth2/token" in url:
             return {"access_token": "fake_token"}
-        if "api.discogs.com" in url:
+        if "://api.discogs.com" in url:
             return {"results": [{"id": 12345, "title": "Test Title", "year": "2026", "style": ["Electronic"]}]}
-        if "ws.audioscrobbler.com" in url:
+        if "://ws.audioscrobbler.com" in url:
             return {"track": {"name": "Test Title", "artist": {"name": "Test Artist"}}}
-        if "getsongbpm.com" in url:
+        if "://getsongbpm.com" in url:
             return {"search": [{"song_title": "Test Title", "artist": {"name": "Test Artist"}, "tempo": 120, "key_of_song": "C"}]}
-        if "api.deezer.com" in url:
+        if "://api.deezer.com" in url:
             return {"data": [{"id": 12345, "title": "Test Title", "artist": {"name": "Test Artist"}, "duration": 300, "isrc": "USRC00000001"}]}
-        if "musicbrainz.org" in url:
+        if "://musicbrainz.org" in url:
             return {"recordings": [{"id": str(uuid.uuid4()), "title": "Test Title", "artist-credit": [{"name": "Test Artist"}], "length": 300000, "isrcs": ["USRC00000001"]}]}
-        if "tidal.com" in url:
+        if "://api.tidal.com" in url or "://tidal.com" in url:
             return {"data": [{"id": 12345, "title": "Test Title", "artist": {"name": "Test Artist"}, "duration": 300, "isrc": "USRC00000001", "url": "https://tidal.com/1"}], "items": [{"item": {"id": 12345, "title": "Test Title", "artists": [{"name": "Test Artist"}], "duration": 300, "isrc": "USRC00000001"}}]}
         return {"data": []}
 
@@ -205,11 +196,9 @@ async def replay_enrichment(items_path: Path, live_db: bool, out_path: Path):
         else:
             env['MB_LOCAL_ENABLED'] = 'true'
 
-        # Re-create clients per pass
         providers = build_providers(env)
 
         for p in providers:
-            # We must use a unique client instance with the mock handler
             transport = httpx.MockTransport(mock_handler)
             p.client = httpx.AsyncClient(transport=transport)
 
@@ -239,7 +228,6 @@ async def replay_enrichment(items_path: Path, live_db: bool, out_path: Path):
     evidence._set_reasons = original_set_reasons
     evidence.apply_all = original_apply_all
 
-    # Calculate coverage
     def calculate_coverage(inserts):
         coverage = {f: 0 for f in EVIDENCE_FIELDS}
         track_fields = defaultdict(set)
