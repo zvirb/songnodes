@@ -616,7 +616,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Paths, sources and not-found pages
+### DS5: Design system audit and fix: Sources and not-found pages
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:DS5 END -->
@@ -809,8 +809,8 @@ Work done:
 
 <!-- SLOT:L5 BEGIN -->
 ### L5: Library reconciliation report
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Implemented CLI for reconciliation report of duplicate candidates with ISRC, MBID, and norm_key matches. Wrote tests with planted duplicates asserting exactly what was expected.
 <!-- SLOT:L5 END -->
 
 <!-- SLOT:E3 BEGIN -->
@@ -977,8 +977,8 @@ Work done:
 
 <!-- SLOT:U19 BEGIN -->
 ### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 11:51:15
+- End: 2026-10-26 11:56:32
 <!-- SLOT:U19 END -->
 
 <!-- SLOT:U25 BEGIN -->
@@ -1164,3 +1164,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:FL4 END -->
+
+<!-- SLOT:DS7 BEGIN -->
+### DS7: Design system audit and fix: Paths (route finder) page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS7 END -->
+
+<!-- SLOT:DS17 BEGIN -->
+### DS17: Design system audit and fix: AI setlists import page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS17 END -->
