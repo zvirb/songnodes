@@ -551,8 +551,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS11 BEGIN -->
 ### DS11: Design system audit and fix: Unrouted components, legacy UI
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Audited components, applied token updates to layout, typography, and colors in unrouted components. Removed hex/rgba colors. Replaced `alert()` with `showToast`. Addressed padding in Attributions. Recorded missing tokens in audit file.
+- Checks run: `tsc --noEmit`, `vitest run src`, `vite build`, `check_design_system.py --check`.
+- Checks not run: Playwright E2E tests (no sandbox support).
+- PR: https://github.com/zvirb/songnodes/pull/999
+- End: 2026-10-26
 <!-- SLOT:DS11 END -->
 
 <!-- SLOT:DS12 BEGIN -->
