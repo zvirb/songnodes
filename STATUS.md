@@ -641,9 +641,10 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:R1 END -->
 
 <!-- SLOT:R2 BEGIN -->
-### R2: Restore the route finder page
-- Start: _not started_
-- End: _not finished_
+## 2026-10-26 (Jules)
+- Restored `frontend/src/features/pathfinder` folder from commit ccaca01 to recover FE3 Route Finder Page.
+- Fixed type issues in `PathfinderPage.tsx` and `useUnifiedTracks.ts` to make `oxlint` and `tsc` pass cleanly.
+- Updated `PathfinderPage.test.tsx` to properly assign `window.SongNodes` and use strict typings.
 <!-- SLOT:R2 END -->
 
 <!-- SLOT:R3 BEGIN -->
