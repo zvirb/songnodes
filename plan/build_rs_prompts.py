@@ -23,7 +23,7 @@ def header(code, title, deps):
     dep = ", ".join(deps) if deps else "nothing"
     return f"""{code}: {title}
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow "Working rules for agents" in AGENTS.md (one job, owned paths only, about 400 changed lines at most, verify then commit, two attempts then stop, rebase before the PR) and CLAUDE.md; the design system rules apply to any UI change. No access to the user's laptop, local data or secrets; work from the repo and fixtures. Open one PR against main titled "{code}: {title}" on a branch starting with "{code.lower()}-"; do not merge it. Edit only the lines inside your own STATUS.md slot (SLOT:{code} BEGIN/END). Depends on: {dep}. If a dependency is not merged on main yet, stop and say so instead of working around it.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow "Working rules for agents" in AGENTS.md (one job, owned paths only, about 400 changed lines at most, verify then commit, two attempts then stop, rebase before the PR) and CLAUDE.md; the design system rules apply to any UI change. No access to the user's laptop, local data or secrets; work from the repo and fixtures. Open one PR against main titled "{code}: {title}" on a branch starting with "{code.lower()}-"; do not merge it. Edit only the lines inside your own STATUS.md slot (SLOT:{code} BEGIN/END). Depends on: {dep}. If a dependency is not merged on main yet, stop and say so instead of working around it. Never merge or rebuild your branch from an older base: before opening or updating the PR, run `git fetch origin main && git diff --diff-filter=D --name-only origin/main...HEAD`; it must list only your owned paths, otherwise stop and say so (the scope guard fails the PR anyway). New pages register through frontend/src/routes (G2) and new REST routers expose register(app) (G3); never edit App.tsx or services/rest_api/main.py unless your brief owns them.
 """
 
 
@@ -164,19 +164,6 @@ P.append(("S1", "search_service", "Track search on metadata-enrichment for TIDAL
   "`python -m pytest services/metadata-enrichment/tests/test_music_search.py` passes; with no credentials set, the route returns 424 with the not-configured code.",
   PY_CHECKS + " Never read, print or commit real credentials."))
 
-P.append(("L1", "library_model", "Library overlay: models and views", [],
-  "Add the models and views for the WP0 library overlay schema, with no importer and no endpoints.",
-  "WP0 created the library overlay schema (sql/migrations/101_library_schema_up.sql) and the library fixture under contracts/. The musicLibrary SQLite views "
-  "being replaced are v_crates, v_source_yield, v_review_queue and v_buy_list. Library-only concepts: rotation status and locks, crate, energy score with auto "
-  "and override parts, tier, tags, source appearances, chart positions, saved sets. Migrations 180-189 are yours (WP5's range was 180-219; L2, L4 use 190-209).",
-  ["services/library/__init__.py", "services/library/model/**", "sql/migrations/18[0-9]_*", "tests/library_model/**"],
-  ["Repositories for the overlay tables (read and write) following the datalayer conventions in services/common/datalayer.",
-   "Views equivalent to the four SQLite views as migrations 180-189, up and down.",
-   "An energy_model field and registry with only a passthrough of today's score (a later package plugs in a new model).",
-   "Tests on the WP0 fixture against a throwaway Postgres if your sandbox can start one; otherwise say so and test the SQL text."],
-  "Views return the same crate counts as the fixture's v_crates; up/down migrations apply cleanly.",
-  PY_CHECKS))
-
 P.append(("E2", "web_call_log", "Log every outbound enrichment call", [],
   "Add web_call_log: a table and a thin wrapper that records every outbound enrichment HTTP call, without changing existing providers.",
   "WP4's goal is to count the web calls the local MusicBrainz data makes unnecessary. Providers live in services/common/providers/ (base.py defines the Provider protocol). Migrations 170-179 are yours.",
@@ -251,25 +238,6 @@ P.append(("S2", "search_proxy", "REST music search: remove the mock results", ["
   "With no credentials: `curl .../api/v1/music-search/tidal?q=test` returns 424 with the not-configured message, not mock tracks.",
   PY_CHECKS))
 
-P.append(("L2", "library_importer", "Library importer: SQLite into silver and the overlay", ["L1"],
-  "Add `python -m library.importer --sqlite <path>`: an idempotent import of the musicLibrary SQLite into silver plus the overlay.",
-  "Use the existing datalayer helpers: datalayer.ingest (resolve_artist, upsert_track) and datalayer.evidence.record for ISRC, TIDAL/Deezer ids, genre, label and "
-  "release year as evidence from source musiclibrary; never overwrite stronger values. Identifiers: (source_system='musiclibrary', source_id=track_id) and norm_key, per contracts/ids.md. "
-  "Real counts on 24 Oct 2026 (owner-side check only): tracks 319, appearances 325, chart_positions 10, rotation_history 319.",
-  ["services/library/importer/**", "tests/library_importer/**", "sql/migrations/19[0-9]_* (only if needed)"],
-  ["One transaction per chunk; per-table counts printed; refuse if the SQLite integrity check fails; a second run changes 0 rows.",
-   "Tests on the WP0 library fixture; the real file is an owner step: give the exact command in the PR."],
-  "Run the importer twice on the fixture: counts match, second run reports 0 changes.",
-  PY_CHECKS))
-
-P.append(("L4", "saved_sets_api", "Saved sets endpoints", ["L1", "G3"],
-  "Add GET /api/v1/library/sets, PUT and DELETE /api/v1/library/sets/{id} and GET /api/v1/library/sets/export.",
-  "The document shape matches the set builder artifact's saved sets (frontend/src/features/musicLibrary/storage.ts shows it). Routers expose register(app) and are discovered by G3.",
-  ["services/rest_api/routers/library_sets.py", "services/library/sets/**", "tests/library_sets/**", "sql/migrations/20[0-9]_* (only if needed)"],
-  ["Repository on the L1 overlay tables; validation; 404 and 409 handling.", "Export returns the same shape the frontend's storage.ts reads."],
-  "TestClient: create, list, replace, delete and export one set.",
-  PY_CHECKS))
-
 P.append(("E1", "mb_local_provider", "Local MusicBrainz provider in the enrichment waterfall", ["C1"],
   "Add MusicBrainzLocalProvider, using the local resolver, ahead of the web MusicBrainz provider.",
   "Providers: services/common/providers/base.py (Provider protocol), musicbrainz.py (the web provider), registry.py build_providers(); evidence via datalayer.evidence.record. "
@@ -312,16 +280,6 @@ P.append(("S3", "search_ui_errors", "Music search UI: show the real error", ["S2
    "Use the design system's banner or empty-state component; no new CSS."],
   "With no TIDAL credentials, searching shows \"TIDAL is not configured...\" and not an empty list.",
   FE_CHECKS))
-
-P.append(("L3", "library_ingest_api", "Library ingest endpoint on the job framework", ["L2", "G3"],
-  "Add POST /api/v1/library/ingest that queues the L2 import as a job, with idempotency.",
-  "songnodes has a job queue with idempotency and an outbox (services/common/datalayer: jobs.enqueue, @handler, outbox.append). Use them; do not build another.",
-  ["services/library/ingest/**", "services/rest_api/routers/library_ingest.py", "tests/library_ingest/**"],
-  ["Idempotency-Key header; jobs.enqueue(kind='library_ingest', ...); a @handler('library_ingest') running the L2 importer logic with per-row results; outbox events in the same transaction as the rows.",
-   "Same key and body replays; same key with a different body returns 409.",
-   "Failure tests: kill mid-batch (no partial chunk; retry resumes), duplicate row, duplicate request, concurrent identical requests, oversized body."],
-  "TestClient: post twice with one key, get one job; post a changed body with the same key, get 409.",
-  PY_CHECKS))
 
 P.append(("L5", "library_reconcile", "Library reconciliation report", ["L2"],
   "Report candidate duplicate tracks between the imported library and existing silver. Never merge anything.",
@@ -369,14 +327,61 @@ P.append(("SEC6B", "ai_proxy_client", "AI proxy: frontend client and migration n
   "Unit test with a mocked fetch covers success, 429 and timeout.",
   FE_CHECKS))
 
+# L1-L4 were superseded by PR #158 (WP5 merged whole). They are now one-job repairs of that code (plan/RESTRUCTURE.md 1.1).
+P.append(("L1", "importer_evidence_fields", "Library importer: write only allowed evidence fields", [],
+  "Make the library importer record evidence only under field names the evidence table accepts.",
+  "PR #158's services/library/importer/import_library.py (around line 50) records evidence for 'label' and 'release_year'. "
+  "silver_track_metadata_evidence.field has a CHECK (sql/migrations/014_data_layer_up.sql line 78) that allows bpm, key, energy, isrc, duration_ms, "
+  "mix_name, genre, record_label, tidal_id, deezer_id and musicbrainz_id, so an import with either field fails the whole transaction.",
+  ["services/library/importer/import_library.py", "tests/library_importer/**"],
+  ["Record the source's 'label' as 'record_label'.",
+   "Do not record 'release_year' as evidence (there is no such field); count it as skipped in the returned stats and log it once per run. Do not change the CHECK.",
+   "Test with a fake connection: a track with label and release_year records record_label, skips release_year, and every recorded field is in the allowed list."],
+  "The test lists the fields the importer records for a fully populated fixture track; all are in the CHECK list.",
+  PY_CHECKS))
+
+P.append(("L2", "reconcile_view_mbid", "Reconciliation view: read MusicBrainz ids from musicbrainz_id", [],
+  "Fix library.v_reconciliation_report so its MBID column reads the evidence field that exists.",
+  "Migration 181 (PR #158) joins silver_track_metadata_evidence on field = 'mbid'; the allowed name is 'musicbrainz_id', so the column is always empty. "
+  "181 may already be applied somewhere, so do not edit it; replace the view in a new migration.",
+  ["sql/migrations/185_reconcile_view_mbid_up.sql", "sql/migrations/185_reconcile_view_mbid_down.sql", "tests/library_model/test_reconcile_view_sql.py"],
+  ["185 up: CREATE OR REPLACE VIEW library.v_reconciliation_report with field = 'musicbrainz_id'; otherwise identical columns and filter.",
+   "185 down: restore 181's definition exactly.",
+   "Test: parse both files; up references musicbrainz_id and not 'mbid'; down equals 181's view body. If your sandbox can start Postgres, also apply 014, 101, 181, 185 up and down."],
+  "The view SQL in 185 differs from 181 only in the evidence field name.",
+  PY_CHECKS))
+
+P.append(("L3", "saved_sets_outbox_uuid", "Saved sets: outbox events with a UUID aggregate id", [],
+  "Make saving a set write a valid outbox event.",
+  "services/library/model/library_db.py save_set passes the integer library.sets.id (bigserial) to datalayer.outbox.append, whose aggregate_id is UUID NOT NULL "
+  "(014_data_layer_up.sql line 124), so PUT on the saved-sets endpoint fails with a 500.",
+  ["services/library/model/library_db.py", "tests/library_model/test_saved_sets_outbox.py"],
+  ["Derive a stable aggregate id with uuid.uuid5 from a fixed namespace and the set id; put the integer set_id in the event payload too.",
+   "Use the same id for any other outbox call in this file (delete_set if it emits one); change nothing else.",
+   "Test with a fake connection: save_set passes a UUID, the same set id always gives the same UUID, and the payload carries set_id."],
+  "The test shows a UUID aggregate id that is stable for a given set id.",
+  PY_CHECKS))
+
+P.append(("L4", "start_dev_migrations", "start-dev applies the migrations added since 26 Oct", ["L2"],
+  "Make scripts/start-dev.sh apply migrations 170, 180-185 and 220 safely on new and existing volumes.",
+  "start-dev.sh applies a fixed list (012, 013, 014, 101 once, 240). Migrations merged on 26 Oct are never applied: 170 web_call_log (E2), 180-184 library "
+  "(PR #158), 185 (L2) and 220 graph projection consumer (R3). 180 and 184 use IF NOT EXISTS / OR REPLACE; 182 and 183 do not (183 is a no-op comment).",
+  ["scripts/start-dev.sh"],
+  ["Apply each in number order after 101 and before 240, with ON_ERROR_STOP like the existing lines.",
+   "Guard any that is not idempotent the same way 101 is guarded (check for the object first); never drop or rewrite existing rows.",
+   "Keep the rest of the script unchanged."],
+  "Running start-dev.sh twice on an existing volume succeeds both times, and `\\d web_call_log` plus `SELECT * FROM outbox_consumers` show the new objects "
+  "(the reviewer runs this on the laptop; say in the PR that your sandbox could not).",
+  "`bash -n scripts/start-dev.sh` and shellcheck if available. Docker is not available in your sandbox; say so."))
+
 WAVES = {
     "1a": ["G1", "G2", "G3"],
     "1b": ["QA5", "R1", "R2", "R3", "C1", "C2", "S1", "E2", "SB1"],
     "1": ["QA5", "G1", "G2", "G3", "R1", "R2", "R3", "C1", "C2", "S1", "E2", "SB1"],
-    "2": ["QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "E1", "SB2", "SEC6A"],
-    "3": ["QA3", "S3", "L5", "E3", "SB3", "SEC5", "SEC6B"],
+    "2": ["QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "E1", "SB2", "SEC6A", "L1", "L2", "L3"],
+    "3": ["QA3", "S3", "L4", "L5", "E3", "SB3", "SEC5", "SEC6B"],
     # runtime upgrades (plan/build_upgrade_prompts.py): send "up" after wave 1b is merged and verified; "up-legacy" after "up" is merged.
-    # U7 (Postgres 18) and L1-L4 (superseded by PR #158) are held: send only with --only. U8 (Actions pins) is in wave 4 because waves 1-3 edit workflows.
+    # U7 (Postgres 18) is held: send only with --only. L1-L4 are now repairs of the PR #158 code (waves 2 and 3). U8 (Actions pins) is in wave 4 because waves 1-3 edit workflows.
     "up": ["U1", "U2", "U3", "U4", "U5"],
     "up-legacy": ["U6", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16", "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29"],
     "4": ["U8", "DS1", "DS2A", "DS2B", "DS3", "DS4", "DS5", "DS6", "DS8", "DS9", "DS10", "DS11", "DS12", "DS13", "DS14", "DS15"],

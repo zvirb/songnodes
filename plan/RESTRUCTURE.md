@@ -2,22 +2,24 @@
 
 Guide: *Architectural Modularity and Cognitive Sustainability in Generative Software Engineering* (the "vibe coding report"). Its claims are used as working heuristics, not as measured facts about this repo. This file replaces the wave plan in the laptop copy of `INTEGRATION_PLAN.md` for everything not yet merged. It is the single plan; `plan/launch_jules.py` in this repo is the single launcher.
 
-## 1. What the audit of main found (`5d1da0f`, 26 Oct 05:43, updated at `60dc69b`, 26 Oct 17:30)
+## 1. What the audit of main found (`5d1da0f`, 26 Oct 05:43, updated at `162c024`, 26 Oct 18:00, after wave 1)
 
 The report's main warning is that a large changeset silently deletes working logic next to the change. That has already happened here several times:
 
 | Merged work | Deleted by | Status on main now |
 |---|---|---|
 | FE1 track bridge (#91) | #93, the stale duplicate WP0 merge | **Restored in `R1` (#165).** `hooks/useUnifiedTracks.ts`, `services/trackSyncAdapter.ts`, `services/unifiedTrackService.ts` and its test are back on `main`. |
-| FE3 route finder (#133) | #136 "fix(ci): fix broken package.json ..." (70 files, -3,679 lines) | Missing (`R2` restores `features/pathfinder/`, `P1` routes `/paths`). |
+| FE3 route finder (#133) | #136 "fix(ci): fix broken package.json ..." (70 files, -3,679 lines) | **Restored in `R2` (#177).** `features/pathfinder/` is back, still with its TEMP local `useUnifiedTracks`; `P1` routes `/paths` and swaps in the shared hook. |
 | WP8 graph projection (#128, #131) | #136 | **Restored in `R3` (#166).** `datalayer/graph_projection.py`, `services/graph-projection/`, migration 220, the `handlers.py` wiring, and `tests/graph_projection/` are back on `main`. |
-| BE1 real music search (#118) | never landed | Only the test fakes were merged. The REST API still returns "Mock Artist" / "Mock Album" (`S1` + `S2` replace it). |
-| WP3 resolver (#142) | n/a | Two copies, in `services/reference-data/resolver/` and `services/reference_data/resolver/` (`C1` consolidates them). |
+| BE1 real music search (#118) | never landed | **`S1` (#172) merged** the search service on metadata-enrichment. The REST API still returns "Mock Artist" / "Mock Album" until `S2` replaces the proxy. |
+| WP3 resolver (#142) | n/a | **Consolidated by `C1` (#173)** into `services/reference_data/`. |
 
-Wave 1 and `up` packages merged so far (`bbc695a..60dc69b`, zero out-of-scope file deletions):
-- **Guards & registries:** `G1` scope guard (#161, #169), `G2` frontend route registry (#170).
-- **Restorations & foundations:** `QA5` Windows design-system sync (#159), `SB1` set exporters (#160), `E2` web call log (#163), `R1` track bridge (#165), `R3` graph projection (#166).
-- **Runtime upgrades:** `U3` worker Python 3.15 (#164), `U1` rest_api Python 3.15 (#167), `U2` graph-visualization-api Python 3.15 (#168).
+Wave 1 is complete except `L1` (repurposed, see 1.1). Merged on 26 Oct, `bbc695a..162c024`; the deleted-work check lists only the 15 root scripts (`C2`) and the duplicate `services/reference-data/resolver/resolver.py` (`C1`), both owned:
+- **Guards & registries:** `G1` scope guard (#161; the env-input fix #169 closes a script-injection hole), `G2` frontend route registry (#170), `G3` REST router registry (#171).
+- **Restorations & foundations:** `QA5` (#159), `SB1` (#160), `E2` (#163), `R1` (#165), `R3` (#166), `C1` (#173), `S1` (#172), `C2` (#162), `R2` (#177).
+- **Runtime upgrades (`up`):** `U1` (#167), `U2` (#168), `U3` (#164), `U4` (#174). `U5` (Redis 8.10) failed to create a Jules session and has to be resent.
+- **Owner fixes:** #175 (docs, prompts, Dockerfiles copy `services/library`), #176 (`handlers.py` circular import).
+- **Lesson from `C2` (#162):** its follow-up commit was rebuilt from an older base and would have deleted G1, R3 and QA5's change. GitHub showed a conflict and the scope guard failed it. AGENTS.md rule 9 and every brief header now require the deleted-files check before each push.
 
 Other findings:
 - Finished pages that were never routed: `features/camelot` (FE5, which duplicates `pages/CamelotPage.tsx`), `features/aiSetlists` (FE10) and the route finder. Each was waiting on a separate "wiring" package that edits the shared `App.tsx`.
@@ -37,8 +39,8 @@ After this restructure plan was written (retiring `WP5` into `L1`–`L5`), an ol
 
 **Disposition of `L1`–`L5` after PR #158:**
 - Do **not** send `L1`, `L2`, `L3` or `L4` as originally written; they collide directly with files and migrations (`180`–`184`, `services/library/**`, `services/rest_api/routers/library_ingest.py`) already on `main`.
-- Apply a **pre-Wave-1 hotfix (`L0` / owner fix)** to resolve the circular import in `handlers.py` and add `COPY services/library /app/library` to `services/rest_api/Dockerfile` and `services/worker/Dockerfile` so containers build and start cleanly.
-- Repurpose `L1`–`L4` into small repair-and-test packages against the merged `services/library/` code (or hold them while `L5` adds the standalone reconciliation CLI).
+- Defects 1 and 2 are fixed on `main` (#176 moves the import to the end of `handlers.py`; #175 adds the Dockerfile copies).
+- `L1`–`L4` are repurposed as one-job repairs of the remaining defects, each with tests: `L1` importer evidence field names (defect 3, importer), `L2` migration 185 replaces the reconciliation view with `musicbrainz_id` (defect 3, view), `L3` saved-sets outbox UUID (defect 4), `L4` `start-dev.sh` applies 170, 180–185 and 220 (defect 5, which also covers E2's and R3's migrations). `L5` (reconciliation CLI) stays in wave 3 after `L2`.
 
 ## 2. What the report says and how it applies here
 
@@ -72,12 +74,12 @@ Target structure (reached one package at a time):
 
 | Wave | Packages (one job each) | Waits on |
 |---|---|---|
-| **Pre-1 hotfix** | Fix PR #158 circular import in `services/common/datalayer/handlers.py` and `COPY services/library /app/library` in `rest_api` + `worker` Dockerfiles | nothing (do before Wave 1A) |
-| **1A, guards & registries** | `G1` scope guard, `G2` route registry, `G3` router registry | Pre-1 hotfix; merge `G1` first so CI enforces scope on everything after |
-| **1B, recover & foundations** | `QA5` sync script, `R1` restore track bridge, `R2` restore route finder, `R3` restore graph projection, `C1` one resolver, `C2` root scripts, `S1` search service, `E2` web call log, `SB1` set exporters (`L1` held/superseded by PR #158) | Wave 1A merged |
-| **2, wire pages, next layer** | `QA4` refmb tests, `QA6` worker test, `P1` `/paths`, `P2` one Camelot page, `P3` AI setlists route, `FE9` add to targets, `S2` search proxy without mocks, `E1` local MB provider, `SB2` export dialog, `SEC6A` AI proxy route (`L2`, `L4` held for PR #158 repair) | Wave 1B merged; each brief names its own dependency |
-| **3** | `QA3` graph API tests, `S3` search UI errors, `L5` reconciliation, `E3` replay report, `SB3` reorder, `SEC5` REST token auth, `SEC6B` AI proxy client (`L3` held for PR #158 repair) | Wave 2 merged |
-| **`up` & `up-legacy`** | `U1`–`U5` (running stack Python 3.15 + Redis 8.10), then `U6`, `U9`–`U29` | Run **after** Wave 1B structural recovery is verified on the baseline runtime |
+| **Pre-1 hotfix** (done, #175 #176) | Fix PR #158 circular import in `services/common/datalayer/handlers.py` and `COPY services/library /app/library` in `rest_api` + `worker` Dockerfiles | nothing (do before Wave 1A) |
+| **1A, guards & registries** (merged) | `G1` scope guard, `G2` route registry, `G3` router registry | Pre-1 hotfix; merge `G1` first so CI enforces scope on everything after |
+| **1B, recover & foundations** (merged) | `QA5` sync script, `R1` restore track bridge, `R2` restore route finder, `R3` restore graph projection, `C1` one resolver, `C2` root scripts, `S1` search service, `E2` web call log, `SB1` set exporters | Wave 1A merged |
+| **2, wire pages, next layer** | `QA4` refmb tests, `QA6` worker test, `P1` `/paths`, `P2` one Camelot page, `P3` AI setlists route, `FE9` add to targets, `S2` search proxy without mocks, `E1` local MB provider, `SB2` export dialog, `SEC6A` AI proxy route, `L1` importer fields, `L2` reconciliation view, `L3` saved-sets outbox | Wave 1B merged; each brief names its own dependency. Send `up`'s `U5` with it. |
+| **3** | `QA3` graph API tests, `S3` search UI errors, `L5` reconciliation, `E3` replay report, `SB3` reorder, `SEC5` REST token auth, `SEC6B` AI proxy client, `L4` start-dev migrations | Wave 2 merged |
+| **`up` & `up-legacy`** | `U1`–`U5` (running stack Python 3.15 + Redis 8.10), then `U6`, `U9`–`U29` | `U1`–`U4` merged on 26 Oct alongside 1B (owner's call); `U5` to resend. Send `up-legacy` only after the stack rebuilt from `main` passes `start-dev.sh` and the e2e smoke test on the 3.15 images. |
 | **4, design system per page** | `U8` Actions pins, `DS1` to `DS15`, then `DS16` (held) | Wave 3 merged. **First update `plan/build_ds_prompts.py`** so `ENTRIES` match `G2`/`P1`–`P3` AND `## Owned paths` includes `docs/design-system/audits/{code}.md` and `frontend/design-system-pending.txt` for `G1` compatibility. |
 
 Retired because they were split or replaced: WP2 (ref_mb is a separate database), WP4 → E1/E2/E3, WP5 → merged in #158 (L1–L4 held for repair, L5 active), BE1 → S1/S2/S3, FE1 → R1, FE3 → R2 + P1, FE4 → SB1/SB2/SB3, FE11 and FEW (replaced by G2 plus P1 to P3), SEC6 → SEC6A/SEC6B. The laptop launcher in `E:\musicLibrary\plan` is retired; it refuses everything and points here.
@@ -87,9 +89,9 @@ Briefs are generated: `python plan/build_rs_prompts.py` writes every R/G/C/S/L/E
 ## 5. Merge protocol and review budget
 
 1. Merge in wave order, one PR at a time. Before each merge, update the PR branch from main and wait for checks again. Never squash a branch whose base is behind main without updating it first; that is how #93 and #136 deleted work.
-2. Require the G1 scope guard to pass (after G1 merges). Until then, read the PR's "deleted" list and `git diff --stat main...<branch>` yourself. Any deleted file outside the brief's owned paths means do not merge.
+2. Require the G1 scope guard to pass (merged #161). Merge G1-type guards first in any wave that adds them; sessions can be sent together, because the guard runs on every PR once it is on main and the branch is updated. Until then, read the PR's "deleted" list and `git diff --stat main...<branch>` yourself. Any deleted file outside the brief's owned paths means do not merge.
 3. Do the PR's under-10-minute behavioural check, then merge.
-4. If a PR conflicts in files it does not own, or needs more than one follow-up message, close it and resend the brief with the lesson added. Do not patch it in conversation.
+4. If a PR conflicts in files it does not own, or needs more than one follow-up message, close it and resend the brief with the lesson added. Do not patch it in conversation. A follow-up push is a new PR as far as review goes: rerun the deleted-files check on every new head, because a session that rebuilds its branch can delete merged work (#162).
 5. A CI breakage outside every open package gets its own one-job QA package. "Fix CI" PRs that touch many areas are not merged.
 6. Merge at most about 10 PRs per sitting and stop at 2 hours, or sooner if you notice yourself skimming diffs.
 7. After each sitting, run the deleted-work check (`git diff --diff-filter=D --name-only <sitting start>..main`) and compare it with the briefs' owned paths.

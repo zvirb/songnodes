@@ -700,7 +700,7 @@ Work done:
 <!-- SLOT:S1 END -->
 
 <!-- SLOT:L1 BEGIN -->
-### L1: Library overlay: models and views
+### L1: Library importer: write only allowed evidence fields
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:L1 END -->
@@ -743,13 +743,13 @@ Work done:
 <!-- SLOT:S2 END -->
 
 <!-- SLOT:L2 BEGIN -->
-### L2: Library importer: SQLite into silver and the overlay
+### L2: Reconciliation view: read MusicBrainz ids from musicbrainz_id
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:L2 END -->
 
 <!-- SLOT:L4 BEGIN -->
-### L4: Saved sets endpoints
+### L4: start-dev applies the migrations added since 26 Oct
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:L4 END -->
@@ -779,7 +779,7 @@ Work done:
 <!-- SLOT:S3 END -->
 
 <!-- SLOT:L3 BEGIN -->
-### L3: Library ingest endpoint on the job framework
+### L3: Saved sets: outbox events with a UUID aggregate id
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:L3 END -->
