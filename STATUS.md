@@ -648,8 +648,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:R3 BEGIN -->
 ### R3: Restore the graph projection consumer
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:R3 END -->
 
 <!-- SLOT:G1 BEGIN -->
