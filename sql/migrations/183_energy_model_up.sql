@@ -1,0 +1,4 @@
+-- Migration 183_energy_model_up.sql
+-- (Table already present in 101, but creating named plug point schema for it)
+-- Note: it exists in 101 as library.energy_model
+-- Nothing to do but reserve the number just in case

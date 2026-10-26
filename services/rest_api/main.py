@@ -756,6 +756,8 @@ app.include_router(datalayer_router)
 # Read contracts are separate from scraper submission validators.
 from routers.catalog_reads import router as catalog_reads_router
 app.include_router(catalog_reads_router)
+from routers.library_ingest import register as register_library
+register_library(app)
 
 if __name__ == "__main__":
     import sys

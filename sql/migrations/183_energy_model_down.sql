@@ -1,0 +1,1 @@
+-- Migration 183_energy_model_down.sql
