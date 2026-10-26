@@ -1083,8 +1083,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX3 BEGIN -->
 ### UX3: Lexicon autocomplete: prefix trie and token completion
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Implemented lightweight `LexiconTrie` class in `frontend/src/utils/lexiconTrie.ts` for fast in-memory search with prefix matching, built-in Camelot key and pillar insertion, normalization (case, punctuation), and weighting. Included comprehensive unit tests in `frontend/src/utils/lexiconTrie.test.ts`.
+- Checks run: `vitest run src/utils/lexiconTrie.test.ts`, `npm ci`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- End: 2026-10-26 - `npx vitest run src/utils/lexiconTrie.test.ts` passes.
 <!-- SLOT:UX3 END -->
 
 <!-- SLOT:UX4 BEGIN -->
