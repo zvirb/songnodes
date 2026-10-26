@@ -19,6 +19,31 @@ class MatchResult:
     dump_version: str
     normaliser_version: str
 
+def get_mix_class(versions: Tuple[str, ...]) -> str:
+    """Uses the common version strings to categorize the mix"""
+    if not versions:
+        return 'original'
+
+    classes = []
+    for v in versions:
+        if 'radio' in v:
+            classes.append('radio')
+        elif 'extended' in v:
+            classes.append('extended')
+        elif 'dub' in v:
+            classes.append('dub')
+        elif 'instrumental' in v:
+            classes.append('instrumental')
+        elif 'remix' in v or 'vip' in v or 'edit' in v or 'bootleg' in v:
+            classes.append('remix')
+        elif 'club' in v:
+            classes.append('club')
+
+    if not classes:
+        return 'other'
+
+    return '-'.join(sorted(set(classes)))
+
 class MusicBrainzResolver:
     def __init__(self, conn: Any, dump_version: str = "2026-10-25"):
         self.conn = conn
@@ -40,70 +65,77 @@ class MusicBrainzResolver:
         duration: Optional[int] = None
     ) -> Optional[MatchResult]:
 
+        # 0. Parse mix/version using the existing module
         full_title = f"{title} {mix}" if mix else title
         parsed_target = matching.parse_title(full_title)
 
-        target_track = matching.Track(
-            title=full_title,
-            artist=artist,
-            isrc=matching.normalize_isrc(isrc) if isrc else None,
-            duration_ms=duration
-        )
-
         # 1. ISRC exact
-        if target_track.isrc:
-            records = await self.conn.fetch("""
-                SELECT r.gid as mbid, r.name as title, ac.name as artist, r.length as duration
-                FROM ref_mb.isrc i
-                JOIN ref_mb.recording r ON r.id = i.recording
-                JOIN ref_mb.artist_credit ac ON r.artist_credit = ac.id
-                WHERE i.isrc = $1
-            """, target_track.isrc)
+        if isrc:
+            norm_isrc = matching.normalize_isrc(isrc)
+            if norm_isrc:
+                records = await self.conn.fetch("""
+                    SELECT r.gid as mbid, r.name as title, ac.name as artist, r.length as duration
+                    FROM ref_mb.isrc i
+                    JOIN ref_mb.recording r ON r.id = i.recording
+                    JOIN ref_mb.artist_credit ac ON r.artist_credit = ac.id
+                    WHERE i.isrc = $1
+                """, norm_isrc)
 
-            if records:
-                best = None
-                best_decision = None
+                if records:
+                    # Implement Tie-break logic
+                    best = None
+                    best_score = -1.0
 
-                for r in records:
-                    c_track = matching.Track(
-                        title=r['title'],
-                        artist=r['artist'],
-                        isrc=target_track.isrc,
-                        duration_ms=r['duration']
+                    target_track = matching.Track(
+                        title=full_title,
+                        artist=artist,
+                        isrc=norm_isrc,
+                        duration_ms=duration
                     )
-                    decision = matching.match_candidate(target_track, c_track)
 
-                    if not best_decision or decision.score > best_decision.score:
-                        best_decision = decision
-                        best = r
+                    for r in records:
+                        c_track = matching.Track(
+                            title=r['title'],
+                            artist=r['artist'],
+                            isrc=norm_isrc,
+                            duration_ms=r['duration']
+                        )
+                        decision = matching.match_candidate(target_track, c_track)
 
-                if best and best_decision:
-                    mbid = str(best['mbid'])
-                    canonical_mbid = await self._resolve_redirects(mbid)
+                        if decision.score > best_score:
+                            best_score = decision.score
+                            best = r
 
-                    return MatchResult(
-                        mbid=mbid,
-                        canonical_mbid=canonical_mbid,
-                        method="isrc",
-                        variant="exact",
-                        artist_sim=best_decision.artist_score,
-                        title_sim=best_decision.title_score,
-                        duration_delta=abs(duration - best['duration']) if duration and best['duration'] else None,
-                        mix_class_match=best_decision.outcome != 'reject',
-                        confidence_bucket="auto",
-                        dump_version=self.dump_version,
-                        normaliser_version=self.normaliser_version
-                    )
+                    if best:
+                        mbid = str(best['mbid'])
+                        canonical_mbid = await self._resolve_redirects(mbid)
+
+                        return MatchResult(
+                            mbid=mbid,
+                            canonical_mbid=canonical_mbid,
+                            method="isrc",
+                            variant="exact",
+                            artist_sim=1.0,
+                            title_sim=1.0,
+                            duration_delta=abs(duration - best['duration']) if duration and best['duration'] else None,
+                            mix_class_match=True,
+                            confidence_bucket="auto",
+                            dump_version=self.dump_version,
+                            normaliser_version=self.normaliser_version
+                        )
 
         # 2. Exact combined_lookup
         variants = []
 
+        # Exact with mix
         variants.append(("exact", normalise.combined_lookup(artist, full_title)))
 
-        has_extended_mix = any(v in ('original mix', 'original', 'extended mix', 'extended') for v in parsed_target.versions)
-        if not parsed_target.versions or has_extended_mix:
+        # If original/extended mix, try without mix
+        target_mix_class = get_mix_class(parsed_target.versions)
+        if target_mix_class in ('original', 'extended', 'other'):
             variants.append(("variant", normalise.combined_lookup(artist, title)))
 
+        # Try primary artist only
         primary_artist = artist.split('feat.')[0].split(' ft.')[0].split(' vs ')[0].strip()
         if primary_artist != artist:
              variants.append(("variant_primary_artist", normalise.combined_lookup(primary_artist, full_title)))
@@ -117,8 +149,16 @@ class MusicBrainzResolver:
             """, lookup_key)
 
             if records:
+                # Use matching.py for consistency
                 best = None
                 best_decision = None
+
+                target_track = matching.Track(
+                    title=full_title,
+                    artist=artist,
+                    isrc=isrc,
+                    duration_ms=duration
+                )
 
                 for r in records:
                     c_track = matching.Track(
@@ -133,7 +173,10 @@ class MusicBrainzResolver:
                 if best and best_decision:
                     mbid = str(best['recording_mbid'])
 
-                    bucket = "auto" if best_decision.outcome == 'match' else "review"
+                    c_parsed = matching.parse_title(best['recording_name'])
+                    mix_match = get_mix_class(parsed_target.versions) == get_mix_class(c_parsed.versions)
+
+                    bucket = "auto" if mix_match and best_decision.outcome == 'match' else "review"
                     if best_decision.outcome == 'reject':
                         bucket = 'none'
 
@@ -146,13 +189,14 @@ class MusicBrainzResolver:
                             artist_sim=best_decision.artist_score,
                             title_sim=best_decision.title_score,
                             duration_delta=None,
-                            mix_class_match=best_decision.outcome != 'reject',
+                            mix_class_match=mix_match,
                             confidence_bucket=bucket,
                             dump_version=self.dump_version,
                             normaliser_version=self.normaliser_version
                         )
 
         # 3. Fuzzy match via trigram
+        # Get top 50 candidates by trigram on recording name using <-> to rank
         norm_title = matching.normalize_text(title)
         records = await self.conn.fetch("""
             SELECT r.gid as mbid, r.name as title, ac.name as artist, r.length as duration
@@ -161,6 +205,13 @@ class MusicBrainzResolver:
             ORDER BY r.name <-> $1
             LIMIT 50
         """, norm_title)
+
+        target_track = matching.Track(
+            title=full_title,
+            artist=artist,
+            isrc=isrc,
+            duration_ms=duration
+        )
 
         best_decision = None
         best_rec = None
@@ -181,6 +232,9 @@ class MusicBrainzResolver:
             mbid = str(best_rec['mbid'])
             canonical_mbid = await self._resolve_redirects(mbid)
 
+            c_parsed = matching.parse_title(best_rec['title'])
+            mix_match = get_mix_class(parsed_target.versions) == get_mix_class(c_parsed.versions)
+
             bucket = "auto" if best_decision.outcome == 'match' else "review"
 
             return MatchResult(
@@ -191,7 +245,7 @@ class MusicBrainzResolver:
                 artist_sim=best_decision.artist_score,
                 title_sim=best_decision.title_score,
                 duration_delta=abs(duration - best_rec['duration']) if duration and best_rec['duration'] else None,
-                mix_class_match=True,
+                mix_class_match=mix_match,
                 confidence_bucket=bucket,
                 dump_version=self.dump_version,
                 normaliser_version=self.normaliser_version
