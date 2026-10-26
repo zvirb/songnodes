@@ -2,8 +2,12 @@
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 import json
+import uuid
 
 from common.datalayer.outbox import append as append_outbox
+
+SET_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_URL, "songnodes.library.sets")
+
 async def save_set(conn, set_id: Optional[int], name: str, description: Optional[str], tracks: List[Dict[str, Any]]) -> int:
     """Creates or updates a saved set."""
     if set_id:
@@ -18,8 +22,9 @@ async def save_set(conn, set_id: Optional[int], name: str, description: Optional
         for pos, track in enumerate(tracks):
             await conn.execute("INSERT INTO library.set_tracks (set_id, track_id, position) VALUES ($1, $2, $3)", set_id, UUID(track['track_id']), pos)
 
-    await append_outbox(conn, 'library_set', set_id, 'library.set.saved.v1', {
-        'name': name, 'description': description, 'tracks': tracks
+    aggregate_id = uuid.uuid5(SET_NAMESPACE, str(set_id))
+    await append_outbox(conn, 'library_set', aggregate_id, 'library.set.saved.v1', {
+        'set_id': set_id, 'name': name, 'description': description, 'tracks': tracks
     })
     return set_id
 

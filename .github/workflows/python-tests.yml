@@ -26,6 +26,9 @@ jobs:
       - name: services/common tests
         working-directory: services
         run: python -m pytest common/tests -q -p no:cacheprovider
+      - name: refmb tests
+        working-directory: services/common/refmb
+        run: python -m pytest -q -p no:cacheprovider
 
   unit:
     runs-on: ubuntu-latest
