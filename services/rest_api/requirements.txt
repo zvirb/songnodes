@@ -3,7 +3,7 @@ uvicorn[standard]==0.54.0
 pydantic==2.14.1
 python-multipart==0.0.32
 asyncpg==0.32.0
-neo4j==5.17.0
+neo4j==6.4.1
 sqlalchemy==2.1.6
 httpx==0.28.1
 aiohttp==3.14.5

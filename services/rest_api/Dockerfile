@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.15-slim
 
 WORKDIR /app
 
@@ -12,10 +12,9 @@ RUN --mount=type=secret,id=proxy_ca,target=/usr/local/share/ca-certificates/clou
     && apt-get install -y --no-install-recommends \
        build-essential \
        gcc \
+    && PIP_CERT=/etc/ssl/certs/ca-certificates.crt pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y --auto-remove build-essential gcc \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
-RUN PIP_CERT=/etc/ssl/certs/ca-certificates.crt pip install --no-cache-dir -r requirements.txt
 
 # Copy shared common directory with secrets_manager and artist_name_cleaner
 COPY services/common /app/common
