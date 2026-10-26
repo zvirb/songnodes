@@ -51,6 +51,11 @@ deleted other packages' merged work (see plan/RESTRUCTURE.md, section 1).
     A new REST router is its own module in `services/rest_api/routers/` exposing
     `register(app)` (found by `router_registry`, G3). Do not edit `App.tsx` or
     `services/rest_api/main.py` unless your brief owns them.
+13. **Design-system exemptions shrink as you go.** If your change makes a file listed in
+    `frontend/design-system-pending.txt` conform (the conformance check then fails with "No longer needs an
+    exemption"), comment its line out in the same PR as `# migrated <CODE>: <path>`. You may do this for files
+    your PR changes even if your brief does not list the pending file; the scope guard allows exactly that.
+    Never add a line, and never touch another file's line.
 
 ## Task tracking
 

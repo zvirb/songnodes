@@ -26,6 +26,35 @@ def match_glob(path, glob_pattern):
     regex = '^' + '/'.join(regex_parts) + '$'
     return re.match(regex, path) is not None
 
+PENDING = 'frontend/design-system-pending.txt'
+
+
+def pending_edit_ok(base, head, changed_paths):
+    """A package may edit the design-system pending list only to comment out (or remove) the lines of files it
+    also changes in this PR. Adding a path, or touching another file's line, is still out of scope."""
+    try:
+        merge_base = run_cmd(['git', 'merge-base', base, head])
+    except SystemExit:
+        merge_base = base
+    def read(rev):
+        try:
+            return subprocess.check_output(['git', 'show', f'{rev}:{PENDING}'], text=True, stderr=subprocess.PIPE).splitlines()
+        except subprocess.CalledProcessError:
+            return []
+    old = [l.strip() for l in read(merge_base)]
+    new = [l.strip() for l in read(head)]
+    active = lambda ls: {l for l in ls if l and not l.startswith('#')}
+    removed = active(old) - active(new)
+    if active(new) - active(old):
+        return False  # a path was added
+    if not removed <= changed_paths:
+        return False  # a line for a file this PR does not change was taken out
+    comments_old = [l for l in old if l.startswith('#')]
+    new_comments = [l for l in new if l.startswith('#') and l not in comments_old]
+    # new comment lines must each name a path this PR took out of the list
+    return all(any(path in c for path in removed) for c in new_comments)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base', required=True)
@@ -87,6 +116,7 @@ def main():
         sys.exit(0)
 
     lines = diff_output.split('\n')
+    changed_paths = {l.split('\t')[-1] for l in lines if l.strip()}
 
     errors = []
     deleted_errors = []
@@ -104,6 +134,9 @@ def main():
             if match_glob(path, glob_pat):
                 matched = True
                 break
+
+        if not matched and path == PENDING and pending_edit_ok(args.base, args.head, changed_paths):
+            matched = True
 
         if not matched:
             if status.startswith('D'):

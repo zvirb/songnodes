@@ -133,7 +133,7 @@ Review EVERY file listed under Owned paths for deviations from the SongNodes des
 - Fix every deviation inside the owned paths with existing tokens, `sn-*` classes and shipped components. Behaviour must not change except where the design system requires it (for example replacing `confirm()` with `ConfirmDialog`).
 - NEVER invent a token name and NEVER edit design-system/ or frontend/src/styles/design-system/ (the synced copy). If the system has no token, class or component for something the page needs (a missing colour step, size, radius, shadow, z-index layer, motion value, icon, component or pattern), do not hack around it: keep the file working, and record it as a MISSING TOKEN or MISSING COMPONENT finding (below). A conflict the system does not settle is a change to the system at its source, which the maintainers decide.
 - Where a value is only close to an existing token, say so and use the token only if the visual difference is imperceptible; otherwise report it.
-- frontend/design-system-pending.txt: you may only REMOVE lines for files you fully migrated or deleted. Never add a line.
+- frontend/design-system-pending.txt: when you fully migrate or delete a listed file, comment its line out as `# migrated <CODE>: <path>`. Never add a line or touch another file's line.
 - Do not edit files outside the owned paths. If a deviation lives in a file another package owns, list it under "Elsewhere" in your audit file.
 
 ## Audit file (required)
@@ -186,7 +186,7 @@ None to run beyond reading; say so. Hand-back: totals and the three most widespr
 def paths_block(code):
     lines = ["- frontend/src/" + p for p in owned[code]]
     lines.append(f"- docs/design-system/audits/{code}.md")
-    lines.append("- frontend/design-system-pending.txt (remove migrated lines only)")
+    lines.append("- frontend/design-system-pending.txt (comment out migrated lines only)")
     return "\n".join(lines)
 
 
