@@ -1,6 +1,6 @@
 DS15: Design system audit and fix: Global stylesheets and legacy CSS
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS15 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS15: Design system audit and fix: Global stylesheets and legacy CSS" on a branch starting with "ds15-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS15 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Global stylesheets and legacy CSS. Route: all pages.
@@ -45,6 +45,8 @@ Create docs/design-system/audits/DS15.md with these sections, in this order:
 - frontend/src/styles/globals.css
 - frontend/src/styles/legacy-aliases.css
 - frontend/src/styles/tokens.css
+- docs/design-system/audits/DS15.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

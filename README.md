@@ -1,426 +1,209 @@
-# 🎵 SongNodes - Music Data Visualization & Analysis Platform
+# SongNodes: DJ Track Transition Graph and Library Platform
 
-## 🎵 Overview
-
-SongNodes is a comprehensive music data platform that combines intelligent scraping, graph visualization, and real-time analytics. Built with containerized microservices and AI-powered data processing, it provides interactive graph-based insights into music relationships, track adjacencies, and performance analytics.
-
-## 🎨 Design system: single source of truth
-
-**Every formatting and design decision in SongNodes comes from the SongNodes design system** in [`design-system/`](design-system/README.md). That covers colour, type, spacing, shape, icons, motion, copy and number/date formatting, plus component markup and page patterns. The same system also styles the music library (Naarm Set Builder). If a component, a guideline or an older stylesheet disagrees with the design system, the design system wins. Nothing is styled ad hoc.
-
-| What | Where |
-|---|---|
-| The system (brand book, 19 guideline sections, 92 components, tokens, fonts, icons, build scripts) | [`design-system/`](design-system/README.md), a mirror of the published design-system artifact (version in `design-system/tokens.json`) |
-| How it works here, and how to change it | [`docs/design-system/README.md`](docs/design-system/README.md) |
-| Rendered reference: what everything should look like | [`docs/design-system/reference.html`](docs/design-system/reference.html) (self-contained copy: `reference.standalone.html`) |
-| Code-only reference for agents | [`docs/design-system/CODE_REFERENCE.md`](docs/design-system/CODE_REFERENCE.md) |
-| Frontend copy (synced, never edited) | `frontend/src/styles/design-system/` via `scripts/sync-design-system.sh` (`--check` in CI) |
-| Typed helpers and shell for React | `frontend/src/lib/songnodes.tsx`, `frontend/src/shell/` |
-| Where it sits in the lifecycle | [`docs/sdlc/SDLC.md`](docs/sdlc/SDLC.md): every phase has a design-system gate |
-
-The rules in brief:
-- Never write a colour, font size, radius, shadow or z-index literal. Use a token.
-- Build from the system's `sn-*` classes and components.
-- Format every date, time, duration, count, BPM and key through `SongNodes.format`, `camelot` and `compat`.
-- Map every status through `SongNodes.status`.
-- Sora for titles, Inter for body text, JetBrains Mono for data.
-- en-AU, sentence case, Australia/Melbourne time.
-- No emoji in the interface. One primary button per view.
-
-## 🚀 Key Features
-
-### Core Features
-- **Interactive Graph Visualization**: D3.js force-directed graphs with PIXI.js WebGL acceleration showing track relationships
-- **Advanced Audio Analysis**: Timbre, rhythm, mood detection, and genre classification using librosa
-- **Intelligent Harmonic Mixing**: Camelot Wheel integration with weighted transition scoring (harmonic, BPM, energy, genre)
-- **Fuzzy Search with Fuse.js**: Typo-tolerant search with faceted filtering (BPM, key, mood, energy, genre)
-- **Enterprise Proxy Management**: Rotating proxies with health monitoring, 4 selection strategies, automatic failover
-- **Target Tracks Management**: User-driven feedback loop for managing tracks to scrape and analyze
-- **Multi-Source Data Collection**: Automated scraping from 1001tracklists, MixesDB, Setlist.fm, Reddit, YouTube, SoundCloud
-
-### Technical Features
-- **Real-time Updates**: WebSocket API with RabbitMQ message queue integration
-- **Advanced NLP Processing**: Tracklist extraction with Claude/Anthropic API integration
-- **Production-Ready Kubernetes**: Complete deployment manifests with HPA, NetworkPolicies, Ingress
-- **Comprehensive Monitoring**: Prometheus + Grafana with custom dashboards for all services
-- **Containerized Architecture**: Full Docker Compose + Kubernetes deployment with health checks
-- **JSONB Advanced Features**: PostgreSQL JSONB columns for timbre, rhythm, mood, and genre metadata
-
-## 📊 Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Nginx Reverse Proxy                      │
-│                    (Ports: 8443, 8088)                      │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────────────┐
-│                      API Gateway                             │
-│                      (Port: 8080)                           │
-└─────────┬──────────────┬──────────────┬────────────────────┘
-          │              │              │
-    ┌─────▼─────┐  ┌────▼────┐  ┌─────▼─────┐
-    │ REST API  │  │GraphQL  │  │WebSocket  │
-    │Port: 8082 │  │Port:8081│  │Port: 8083│
-    └─────┬─────┘  └────┬────┘  └─────┬─────┘
-          │              │              │
-┌─────────▼──────────────▼──────────────▼────────────────────┐
-│              Data Processing Pipeline                       │
-├──────────────────────────────────────────────────────────────┤
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐        │
-│ │Transformer   │ │NLP Processor │ │Validator     │        │
-│ │Port: 8020    │ │Port: 8021    │ │Port: 8022    │        │
-│ └──────────────┘ └──────────────┘ └──────────────┘        │
-└──────────────────────────┬──────────────────────────────────┘
-                          │
-┌──────────────────────────▼──────────────────────────────────┐
-│                   Scraping Services                         │
-├──────────────────────────────────────────────────────────────┤
-│ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐│
-│ │1001tracks │ │MixesDB     │ │Setlist.fm  │ │Reddit    ││
-│ │Port: 8011  │ │Port: 8012  │ │Port: 8013  │ │Port:8014 ││
-│ └────────────┘ └────────────┘ └────────────┘ └──────────┘│
-└──────────────────────────┬──────────────────────────────────┘
-                          │
-┌──────────────────────────▼──────────────────────────────────┐
-│                    Data Storage                             │
-├──────────────────────────────────────────────────────────────┤
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐        │
-│ │PostgreSQL    │ │Redis Cache   │ │RabbitMQ      │        │
-│ │Port: 5433    │ │Port: 6380    │ │Port: 5673    │        │
-│ └──────────────┘ └──────────────┘ └──────────────┘        │
-└──────────────────────────────────────────────────────────────┘
-```
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **Framework**: React 19 + TypeScript + Vite, routed with react-router (`frontend/src/App.tsx`)
-- **State Management**: Zustand 4.5.5 for reactive state
-- **Visualization**: D3.js force simulation + PIXI.js v8.5.2 (WebGL rendering)
-- **Search**: Fuse.js 7.0.0 for fuzzy search with typo tolerance
-- **UI**: the SongNodes design system (`design-system/`): tokens, `sn-*` component classes, `window.SongNodes` helpers, self-hosted Sora / Inter / JetBrains Mono, Lucide icons. Tailwind is retired (it was never compiled) and is removed in migration phase 6.
-
-### Backend
-- **API Framework**: Python FastAPI with async/await patterns
-- **Audio Analysis**: librosa, essentia for advanced feature extraction
-- **NLP**: Claude/Anthropic API for tracklist extraction
-- **Web Scraping**: Scrapy with custom proxy middleware
-- **Validation**: Pydantic models for type safety
-
-### Data & Infrastructure
-- **Database**: PostgreSQL 15 with JSONB columns for advanced features
-- **Cache**: Redis 7 with connection pooling (max 50 connections)
-- **Message Queue**: RabbitMQ 3.12 for async processing
-- **Search Engine**: Fuse.js with weighted multi-field indexing
-- **Orchestration**: Kubernetes 1.25+ with StatefulSets, HPA, NetworkPolicies
-- **Monitoring**: Prometheus + Grafana with custom dashboards
-- **Containerization**: Docker + Docker Compose with resource limits
-
-### Deployment
-- **Development**: Docker Compose with hot-reload
-- **Production**: Kubernetes with Kustomize overlays
-- **CI/CD**: Automated testing (unit, integration, E2E with Playwright)
-- **Security**: Sealed Secrets, NetworkPolicies, TLS/SSL with cert-manager
-
-## 📁 Project Structure
-
-```
-songnodes/
-├── musicdb_scrapy/           # Cloned scraper repository
-├── design-system/            # SongNodes design system: single source of truth for all formatting and design
-├── docs/                     # Comprehensive documentation
-│   ├── design-system/       # How the design system works, rendered reference, code-only reference
-│   ├── sdlc/                # SDLC (design-system gates in every phase)
-│   ├── architecture/        # System architecture
-│   ├── orchestration/       # Workflow implementation
-│   └── deployment/          # Deployment guides
-├── services/                # Microservice implementations
-│   ├── scraper-orchestrator/
-│   ├── data-transformer/
-│   ├── api-gateway/
-│   └── ...
-├── sql/                     # Database schemas
-│   └── init/
-├── monitoring/              # Monitoring configurations
-│   ├── prometheus/
-│   └── grafana/
-├── .claude/                 # Orchestration configs
-│   ├── unified-orchestration-config.yaml
-│   └── orchestration_todos.json
-├── docker-compose.yml       # Main Docker configuration
-└── README.md               # This file
-```
-
-## 🚀 Quick Start
-
-See the maintained [architecture implementation plan](docs/IMPLEMENTATION_PLAN.md)
-and [current task status](STATUS.md) for migration scope, dependencies, and progress.
-
-For the tested minimal development stack, follow [Development baseline](docs/DEVELOPMENT.md).
-The historical full-platform instructions below reference Compose files that are
-not present in this checkout.
-
-For day-to-day contributor expectations, review [AGENTS.md](./AGENTS.md).
-
-### Prerequisites
-
-- Docker 20.10+
-- Docker Compose 2.0+
-- 16GB RAM minimum
-- 100GB disk space
-
-### Installation
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/zvirb/musicdb_scrapy.git
-cd songnodes
-```
-
-2. **Set up environment variables**
-```bash
-cp .env.example .env
-# Edit .env with your API keys and passwords
-```
-
-3. **Start the services**
-```bash
-# Start essential services (MANDATORY: Use Docker Compose)
-docker compose up -d postgres redis rest-api api-gateway
-
-# Start frontend UI
-docker compose up -d frontend
-
-# Start scraping services (optional)
-docker compose up -d scraper-orchestrator scraper-1001tracklists
-
-# Start monitoring (optional)
-docker compose up -d prometheus grafana
-```
-
-4. **Verify services are running**
-```bash
-docker compose ps
-curl http://localhost:8080/health
-curl http://localhost:8082/health
-```
-
-5. **Access the services**
-- **SongNodes UI**: http://localhost:3006 (Main interface)
-- **API Gateway**: http://localhost:8080 (REST endpoints)
-- **Target Tracks API**: http://localhost:8082/api/v1/target-tracks
-- **GraphQL Playground**: http://localhost:8081/graphql
-- **Grafana Dashboard**: http://localhost:3001 (admin/admin)
-- **Ollama AI**: http://localhost:11434
-
-### Kubernetes (Flux CD + Skaffold)
-
-- **Local development**: `skaffold dev` builds all images and deploys the Helm
-  chart with lightweight defaults (`deploy/helm/songnodes/values-dev.yaml`). It
-  watches the repo for changes and performs rolling updates on your cluster.
-- **Build for Flux**: `skaffold build -p flux --default-repo <registry>` pushes
-  versioned images and wires the tags into the Helm values that Flux applies.
-- **Bootstrap/refresh Flux**: `kubectl apply -k deploy/flux` registers the
-  `GitRepository` + `HelmRelease`; `flux reconcile helmrelease songnodes -n
-  flux-system` forces an immediate sync.
-- **Inspect manifests**: `helm template songnodes deploy/helm/songnodes` renders
-  the full set of resources (HPAs, NetworkPolicies, services, stateful sets).
-
-## ✅ Current System Status (Sept 2025)
-
-### Working Features
-- ✅ **REST API Connectivity**: Fixed port exposure, now accessible from frontend
-- ✅ **API Gateway Routing**: Complete proxy routing for target tracks endpoints
-- ✅ **Target Tracks CRUD**: Full create/read/update/delete operations working
-- ✅ **User Feedback Loop**: Frontend → API Gateway → REST API pathway verified
-- ✅ **TypeScript Compilation**: Fixed type definitions and imports
-- ✅ **Docker System**: Optimized with 60GB+ cleanup, services running healthy
-
-### API Endpoints Working
-```bash
-# List target tracks
-curl http://localhost:8080/api/v1/target-tracks
-
-# Create new target track
-curl -X POST http://localhost:8080/api/v1/target-tracks \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Test Track", "artist": "Test Artist", "priority": "medium"}'
-
-# Trigger search for track
-curl -X POST http://localhost:8080/api/v1/target-tracks/1/search
-```
-
-### Service Health
-- 🟢 PostgreSQL (port 5433) - Healthy
-- 🟢 Redis (port 6380) - Healthy
-- 🟢 REST API (port 8082) - Healthy
-- 🟢 API Gateway (port 8080) - Healthy
-- 🟢 Frontend (port 3006) - Building and running
-
-## 📋 Orchestration Workflow
-
-The project follows a 12-step orchestration workflow:
-
-1. **Todo Context Integration** - Load and prioritize tasks
-2. **Agent Ecosystem Validation** - Verify all services are operational
-3. **Strategic Intelligence Planning** - Analyze patterns and plan execution
-4. **Multi-Domain Research Discovery** - Parallel research across domains
-5. **Context Synthesis & Compression** - Integrate findings efficiently
-6. **Parallel Implementation Execution** - Multi-stream task execution
-7. **Evidence-Based Validation** - Validate with concrete evidence
-8. **Decision & Iteration Control** - Analyze and iterate if needed
-9. **Atomic Version Control** - Commit changes atomically
-10. **Meta-Orchestration Audit** - Analyze workflow effectiveness
-11. **Production Deployment** - Blue-green deployment
-12. **Production Validation** - Monitor and loop control
-
-## 🔌 API Usage
-
-### REST API Example
-```bash
-# Get tracks
-curl http://localhost:8082/api/v1/tracks?limit=10
-
-# Search artists
-curl http://localhost:8082/api/v1/artists/search?q=deadmau5
-```
-
-### GraphQL Example
-```graphql
-query {
-  tracks(limit: 10, genre: "Tech House") {
-    id
-    title
-    artists {
-      name
-      role
-    }
-    playCount
-  }
-}
-```
-
-### WebSocket Connection
-```javascript
-const ws = new WebSocket('ws://localhost:8083/live');
-ws.onmessage = (event) => {
-  console.log('New track scraped:', JSON.parse(event.data));
-};
-```
-
-## 📊 Monitoring
-
-Access monitoring dashboards:
-- **Grafana**: http://localhost:3001
-  - Scraping metrics
-  - API performance
-  - System resources
-- **Prometheus**: http://localhost:9091
-- **Kibana**: http://localhost:5602
-
-## 🧪 Testing
-
-```bash
-# Run unit tests
-docker-compose exec scraper-orchestrator pytest tests/unit/
-
-# Run integration tests
-docker-compose exec scraper-orchestrator pytest tests/integration/
-
-# Run end-to-end tests
-./scripts/run-e2e-tests.sh
-```
-
-## 🚢 Deployment
-
-### Development (Docker Compose)
-```bash
-# Start all services
-docker compose up -d
-
-# Start specific services
-docker compose up -d postgres redis rest-api frontend
-
-# View logs
-docker compose logs -f rest-api
-
-# Rebuild after code changes
-docker compose build rest-api && docker compose up -d rest-api
-```
-
-### Production (Kubernetes)
-```bash
-# See k8s/README.md for complete instructions
-
-# 1. Create namespace and secrets
-kubectl apply -f k8s/base/namespace.yaml
-kubectl create secret generic songnodes-secrets --from-env-file=.env -n songnodes
-
-# 2. Deploy with Kustomize
-kubectl apply -k k8s/base/                    # Base deployment
-kubectl apply -k k8s/overlays/production/     # Production overrides
-
-# 3. Verify deployment
-kubectl get pods -n songnodes
-kubectl get svc -n songnodes
-kubectl get ingress -n songnodes
-
-# 4. Access services
-kubectl port-forward svc/frontend-service 3006:80 -n songnodes
-kubectl port-forward svc/grafana-service 3000:3000 -n songnodes
-```
-
-**Production Features**:
-- StatefulSets for PostgreSQL, Redis, RabbitMQ with persistent volumes
-- HorizontalPodAutoscalers (3-10 replicas) for REST API, Frontend, Graph API
-- NetworkPolicies for security isolation between services
-- Ingress with TLS/SSL support (cert-manager integration)
-- Prometheus + Grafana monitoring with ServiceMonitor CRDs
-- Resource limits: DBs (2-4GB), APIs (512MB-1GB), Frontend (256MB)
-
-## 📝 Documentation
-
-Comprehensive documentation available in `/docs`:
-- **[Design system](design-system/README.md)**: single source of truth for all formatting and design ([how it works](docs/design-system/README.md), [rendered reference](docs/design-system/reference.html), [code reference](docs/design-system/CODE_REFERENCE.md))
-- [SDLC](docs/sdlc/SDLC.md): lifecycle with design-system gates
-- [Container Architecture](docs/architecture/container-architecture.md)
-- [Orchestration Workflow](docs/orchestration/workflow-implementation.md)
-- [Deployment Guide](docs/deployment/deployment-guide.md)
-- **[Kubernetes Deployment](k8s/README.md)** - Production deployment guide ⭐
-- **[Proxy Configuration](docs/PROXY_CONFIGURATION.md)** - Enterprise proxy setup
-- **[Scraper Configuration](docs/SCRAPER_CONFIGURATION.md)** - Multi-platform scraping
-- **[NLP API Usage](services/nlp-processor/API_USAGE.md)** - Tracklist extraction
-- **[Implementation Progress](IMPLEMENTATION_PROGRESS.md)** - Feature roadmap
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- Built using the 12-step agentic orchestration workflow
-- Scrapy framework for web scraping
-- PostgreSQL for robust data storage
-- Docker for containerization
-
-## 📞 Support
-
-For issues or questions:
-- Create an issue on GitHub
-- Check logs: `docker-compose logs [service_name]`
-- Review orchestration status: http://localhost:8001/orchestration/status
+SongNodes captures, enriches and visualises proven track pairings from real DJ mixes alongside curated DJ library crates and wave-shaped setlists. Track transitions in SongNodes represent observed sequential pairings (`position N -> position N+1`) from complete playlists rather than unverified algorithmic suggestions.
 
 ---
 
-**Note**: This project uses non-standard ports to avoid conflicts. See the [port reference](docs/deployment/deployment-guide.md#port-reference) for details.
-## Data Sources
-This application uses data from MusicBrainz, which is made available under the CC0 1.0 Universal Public Domain Dedication and the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported license.
+## 1. Governing plans and current architecture direction
+
+SongNodes is actively transitioning from a sprawling microservice checkout into a **modular, small-batch architecture** governed by strict scope boundaries, self-registering feature and router registries, and a single design system.
+
+| Document | Role |
+|---|---|
+| [`plan/RESTRUCTURE.md`](plan/RESTRUCTURE.md) | **Single active execution plan.** Defines the small-batch work packages (`R`, `G`, `C`, `S`, `L`, `E`, `SB`, `P`, `FE9`, `SEC`, `U`, `DS`, `QA`), wave ordering, merge protocol, and independent audit findings. |
+| [`AGENTS.md`](AGENTS.md) | **Mandatory contributor and agent rules.** Enforces the One Job Rule, explicit owned paths (`G1` CI scope guard), ~400-line diff budget, two-attempt stop rule, honest UI/API states (never mock data), and `STATUS.md` slot hygiene. |
+| [`STATUS.md`](STATUS.md) | **Live progress record.** Contains per-package `<!-- SLOT:<CODE> -->` blocks and scheduled-run audit logs. |
+| [`CLAUDE.md`](CLAUDE.md) | **Developer guide.** Covers the `compose.dev.yaml` container stack, Medallion data flow, unified scraper rules, and design-system requirements. |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | **Tested local development baseline.** Startup (`scripts/start-dev.sh`), migrations, verification commands, and catalog read contracts. |
+| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | **Long-term architecture reference.** Milestones 1–8 (domain consolidation, canonical 1–10 energy scale, entity resolution, server search, Memgraph wave routing, Sigma.js renderer, Essentia audio calibration). Execution is sequenced via [`plan/RESTRUCTURE.md`](plan/RESTRUCTURE.md). |
+
+---
+
+## 2. Design system: single source of truth
+
+Every formatting, layout, colour, typography, icon and copy decision in SongNodes—and in the companion Naarm Set Builder (`musicLibrary`)—comes from the SongNodes design system in [`design-system/`](design-system/README.md). Where existing code or legacy stylesheets disagree with the design system, the design system wins.
+
+| Resource | Path |
+|---|---|
+| Brand book, 19 guideline sections, 92 components, tokens, build scripts | [`design-system/`](design-system/README.md) (`design-system/tokens.json`) |
+| Integration guide and workflow | [`docs/design-system/README.md`](docs/design-system/README.md) |
+| Rendered visual reference | [`docs/design-system/reference.html`](docs/design-system/reference.html) |
+| Code-only quick reference | [`docs/design-system/CODE_REFERENCE.md`](docs/design-system/CODE_REFERENCE.md) |
+| Synced frontend copy (never edit directly) | `frontend/src/styles/design-system/` via `scripts/sync-design-system.sh` (`--check` in CI) |
+| React helpers and application shell | `frontend/src/lib/songnodes.tsx` (`SN`), `frontend/src/shell/` (`AppShell`) |
+| SDLC gates | [`docs/sdlc/SDLC.md`](docs/sdlc/SDLC.md) |
+
+### Core design-system rules
+- Never write raw hex, `rgb()`, named colours, `px` font sizes, ad-hoc radii, shadows or `z-index` literals in application code. Use design-system tokens (`var(--...)`) and `sn-*` classes.
+- Format all dates, times, durations, counts, BPM and keys through `SN.format`, `SN.camelot` and `SN.compat`.
+- Map all operational statuses through `SN.status` (always rendered as glyph + word, never colour alone).
+- Typography: **Sora** for display/titles (dimmed lead-in + bold title), **Inter** for body copy, **JetBrains Mono** for tabular/musical data (BPM, Camelot keys, durations, IDs).
+- Locale and copy: `en-AU` spelling, sentence case, `Australia/Melbourne` 24-hour time, missing values shown as an en dash (`sn-none`, never `"N/A"` or `"Unknown"`), and no emoji anywhere in the interface.
+- Navigation: `NavDrawer` is the single site navigation pattern; one primary button per view; never use native `alert()`, `confirm()` or `prompt()`.
+
+---
+
+## 3. Target modular architecture
+
+### 3.1 Medallion + Library Overlay data flow
+
+```text
+unified-scraper
+   │  (complete playlists only; sequential positions 1..N)
+   ▼
+Bronze (PostgreSQL: bronze_scraped_playlists, bronze_scraped_tracks)
+   │  (durable ingestion_jobs queue drained by Celery worker)
+   ▼
+Silver (PostgreSQL: silver_enriched_tracks, silver_enriched_artists,
+        silver_track_transitions, silver_track_metadata_evidence)
+   ├──◄ Local-first Enrichment Waterfall (ref_mb local MusicBrainz DB -> TIDAL v2 -> Deezer -> Discogs -> Last.fm)
+   ├──◄ Library Overlay (library.* schema: crates, rotation history, appearances, saved sets, track_xref)
+   │
+   ▼  (transactional outbox: outbox_events -> outbox_consumers)
+Projections & Read Models
+   ├── PostgreSQL rebuildable projection (projection_tracks)
+   └── Graph projection consumer (services/graph-projection -> Memgraph)
+   │
+   ▼
+APIs (rest-api :8082, graph-api :8084)
+   │
+   ▼
+Frontend (React 19 + Vite + PIXI.js :3006)
+```
+
+### 3.2 Modular frontend structure (Wave 1–4 target)
+- **Feature-folder isolation:** Each page lives in `frontend/src/features/<page>/` with its own `route.tsx`, one primary data hook, and co-located unit tests.
+- **Self-registering routes (`G2`):** `frontend/src/routes/registry.tsx` discovers `../features/*/route.tsx` via `import.meta.glob`, eliminating merge collisions on `frontend/src/App.tsx`.
+- **Shared boundaries:** Shared frontend code is strictly limited to `lib/`, `shell/`, `components/ds/`, `hooks/useUnifiedTracks.ts` (`R1`), and `types/`. Features do not import from other features.
+- **Honest states:** Every page renders real catalog/library data, an explicit empty state (`EmptyState`), or an error banner naming the exact upstream cause—never fabricated fallback tracks or random BPM/key placeholders.
+
+### 3.3 Modular backend structure (Wave 1–3 target)
+- **Shared domain package (`services/common/`):** Pure domain logic (`datalayer/`, `metadata/`, `providers/`, `refmb/`) lives in `services/common/` and is tested independently of HTTP and Celery transports.
+- **Self-registering REST routers (`G3`):** Routers in `services/rest_api/routers/` expose `register(app)` and are discovered automatically by `services/rest_api/router_registry.py`, avoiding concurrent edits to `services/rest_api/main.py`.
+- **Reserved migration ranges:** SQL migrations in `sql/migrations/` use non-overlapping numeric ranges per work package (`contracts/ownership.yaml`) with paired `*_up.sql` and `*_down.sql` scripts.
+- **Server-side credential security (`SEC5`, `SEC6A`, `SEC6B`):** Provider and AI API keys stay encrypted on the server (`API_KEY_ENCRYPTION_SECRET`), never in browser `localStorage` or query strings.
+
+---
+
+## 4. Running stack (`compose.dev.yaml`)
+
+SongNodes runs locally via Docker Compose (`compose.dev.yaml`, project name `songnodes-dev`). Kubernetes/Helm/Flux manifests under `deploy/` and `k8s/` are retained for reference only and are not used in active development.
+
+| Service | Host binding | Role |
+|---|---|---|
+| `frontend` | `http://127.0.0.1:3006` | React 19 / PIXI.js UI behind nginx; proxies `/api/*` to `rest-api` and `graph-api` |
+| `rest-api` | `http://127.0.0.1:8082` | FastAPI catalog, target tracks, library overlay, setlists, and job-trigger API |
+| `graph-api` | `http://127.0.0.1:8084` | FastAPI graph visualization, neighborhood, and subgraph read API |
+| `unified-scraper` | `http://127.0.0.1:8012` | Single unified Scrapy + Playwright service (container port `8000`) for all spiders |
+| `worker` | Compose network only | Celery beat + worker draining `ingestion_jobs`, enrichment, and outbox projections |
+| `postgres` | Compose network only | PostgreSQL (`songnodes` database: bronze, silver, outbox, and `library` schemas) |
+| `redis` | Compose network only | Redis cache and connection pool |
+| `rabbitmq` | Compose network only | RabbitMQ broker for Celery tasks |
+
+---
+
+## 5. Quick start
+
+### Prerequisites
+- Docker Engine and Docker Compose v2 (`docker compose up --wait`)
+- Git Bash (on Windows) to run `scripts/*.sh`
+- Node.js 26 (or 22.12+ for local dev; CI and frontend image use Node 26, TypeScript 7, and Oxlint)
+- Python 3.13–3.15 for local test execution (`PYTHONUTF8=1` on Windows)
+
+### Start the stack
+From the repository root:
+
+```bash
+bash scripts/start-dev.sh
+```
+
+`scripts/start-dev.sh` builds the 5 application images (`graph-api`, `rest-api`, `worker`, `unified-scraper`, `frontend`), starts `postgres` and `redis`, applies idempotent migrations (`012_target_tracks_up.sql`, `013_ingestion_jobs_up.sql`, `014_data_layer_up.sql`, `101_library_schema_up.sql`, `240_library_search_indexes_up.sql`), brings up all containers, and verifies `http://127.0.0.1:8084/api/graph/data`.
+
+> **Known issue on `main` at `bbc695a` (PR #158):** PR #158 introduced a top-level circular import in `services/common/datalayer/handlers.py` (`from library.ingest.handler import library_ingest`) and added `library` imports to `rest-api` and `worker` without copying `services/library` into their Dockerfiles. See [`plan/RESTRUCTURE.md`](plan/RESTRUCTURE.md) section 1.1 for the pre-Wave-1 hotfix required before rebuilding `rest-api` and `worker`.
+
+For hot-reload frontend development against the running backend containers:
+
+```bash
+cd frontend
+npm ci
+npm run dev -- --host 127.0.0.1
+```
+
+Open `http://127.0.0.1:3006` (use `127.0.0.1` rather than `localhost` so Spotify and TIDAL OAuth loopback redirect URIs match).
+
+---
+
+## 6. Verification and testing
+
+| Area | Command | Notes |
+|---|---|---|
+| Scope guard (`G1`, once merged) | `python scripts/scope_guard.py --base origin/main --head HEAD --title "<CODE>: ..." --branch "<code>-..."` | Verifies changed/deleted files stay inside the brief's owned paths |
+| Design-system sync | `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check` | Mandatory on every UI change (`QA5` makes `PYTHONUTF8=1` automatic on Windows) |
+| Frontend type-check, lint, unit tests, build | `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` | Uses TypeScript 7 and Oxlint (`frontend/LINTING.md`) |
+| Shared domain unit tests | `cd services && python -m pytest common/tests` | 112 unit tests covering Camelot, tempo, energy, consensus, matching, ER, and providers |
+| Dev stack integration tests | `python -m unittest discover -s tests/integration -p 'test_dev_*.py' -v` | Runs against the live `compose.dev.yaml` stack using isolated synthetic records |
+| E2E Playwright suite | `bash scripts/e2e-docker.sh` | Runs Playwright inside Linux container against rebuilt stack |
+
+---
+
+## 7. Small-batch workflow and wave schedule
+
+All engineering work is organized into small, single-job work packages generated by:
+- [`plan/build_rs_prompts.py`](plan/build_rs_prompts.py) — recovery (`R1`–`R3`), guards/registries (`G1`–`G3`), cleanup (`C1`–`C2`), search (`S1`–`S3`), library (`L1`–`L5`), local MusicBrainz enrichment (`E1`–`E3`), set builder export/reorder (`SB1`–`SB3`), page routing (`P1`–`P3`, `FE9`), and security (`SEC5`, `SEC6A`, `SEC6B`).
+- [`plan/build_upgrade_prompts.py`](plan/build_upgrade_prompts.py) — runtime and image upgrades (`U1`–`U29`: Python 3.15, Node 26, Redis 8.10, RabbitMQ 4.3, Postgres 18.6).
+- [`plan/build_ds_prompts.py`](plan/build_ds_prompts.py) — per-page design-system audits and fixes (`DS1`–`DS16`).
+
+### Wave execution sequence (see [`plan/RESTRUCTURE.md`](plan/RESTRUCTURE.md) for full details)
+1. **Pre-Wave-1 Hotfix + Wave 1A (Guards & Registries):** Fix PR #158's circular import and Dockerfile `COPY` gap, then land `G1` (scope guard), `G2` (frontend route registry), and `G3` (backend router registry).
+2. **Wave 1B (Recover & Foundations):** Restore deleted work (`R1` track bridge, `R2` route finder, `R3` graph projection), clean up duplicate resolvers (`C1`) and root scratch scripts (`C2`), and add isolated foundation modules (`QA5`, `S1`, `E2`, `SB1`).
+3. **Wave 2 (Wire Pages & Providers):** Wire `/paths` (`P1`), consolidate `/harmony` (`P2`), route AI setlists (`P3`), add library-to-target action (`FE9`), remove REST search mocks (`S2`), add local MusicBrainz provider (`E1`), add set export dialog (`SB2`), add server-side AI proxy (`SEC6A`), and stabilize tests (`QA4`, `QA6`).
+4. **Wave 3 (Integration & Hardening):** Surface real search UI errors (`S3`), complete library reconciliation and replay reports (`L5`, `E3`), add keyboard track reordering (`SB3`), enforce REST token auth (`SEC5`), add AI proxy frontend client (`SEC6B`), and add `graph-api` unit tests (`QA3`).
+5. **Wave `up` & `up-legacy` (Runtime Upgrades):** Upgrade running services (`U1`–`U5`) and legacy services (`U6`, `U9`–`U29`) to Python 3.15 / Node 26 / Redis 8.10 / RabbitMQ 4.3 after Wave 1 structural recovery is verified.
+6. **Wave 4 (Design-System Audits):** Re-generate and run per-page design-system compliance packages (`DS1`–`DS15`, then `DS16`) and pin GitHub Actions (`U8`).
+
+---
+
+## 8. Repository layout
+
+```text
+songnodes/
+├── AGENTS.md                 # Mandatory small-batch rules for all contributors and AI agents
+├── CLAUDE.md                 # Developer guide: Compose stack, medallion flow, design system
+├── STATUS.md                 # Per-package progress slots (<!-- SLOT:<CODE> -->) and run logs
+├── compose.dev.yaml          # Tested local Docker Compose stack (songnodes-dev)
+├── contracts/                # Shared schemas, normalisation vectors, fixtures, ownership ranges
+├── design-system/            # Single source of truth for tokens, CSS/JS bundles, and component specs
+├── docs/                     # Architecture, development baseline, SDLC, and integration records
+├── frontend/                 # React 19 + TypeScript 7 + Vite + PIXI.js application
+│   └── src/
+│       ├── components/       # Shared and legacy UI components (migrating to features/ and ds/)
+│       ├── features/         # Self-contained feature modules (aiSetlists, camelot, musicLibrary, pathfinder, pipeline)
+│       ├── hooks/            # Shared data hooks (useUnifiedTracks)
+│       ├── lib/              # SongNodes design-system helpers (songnodes.tsx) and API client
+│       ├── pages/            # Static pages (migrating to features/*/route.tsx via G2)
+│       ├── routes/           # G2 automatic feature route registry
+│       ├── services/         # API and track synchronisation adapters
+│       ├── shell/            # AppShell, NavDrawer, PageHeader, EmptyState
+│       └── styles/           # Synced design-system tokens/bundles (read-only) and app styles
+├── plan/                     # Restructure plan (RESTRUCTURE.md), prompt builders, Jules launcher
+│   └── agents/               # 80 atomic work-package briefs (<CODE>_*.md)
+├── scrapers/                 # Unified Scrapy + Playwright service (Dockerfile.unified)
+├── scripts/                  # Dev startup (start-dev.sh), design-system sync, E2E runner, scope guard
+├── services/                 # Backend services and shared domain packages
+│   ├── common/               # Shared domain logic: datalayer, metadata, providers, refmb
+│   ├── graph-projection/     # Outbox-to-Memgraph consumer (restored by R3)
+│   ├── graph-visualization-api/ # FastAPI graph read service (:8084)
+│   ├── library/              # DJ library overlay model, importer, and ingest handler
+│   ├── metadata-enrichment/  # Provider search and enrichment service
+│   ├── reference_data/       # Local MusicBrainz (ref_mb) resolver (consolidated by C1)
+│   ├── rest_api/             # FastAPI main backend (:8082) and self-registering routers/
+│   └── worker/               # Celery worker + beat draining durable ingestion_jobs
+├── sql/migrations/           # Versioned PostgreSQL migrations (medallion, data layer, library, ref_mb)
+└── tests/                    # Integration, resolver, and contract test suites
+```
+
+---
+
+## 9. Data sources and attribution
+
+This application uses data from **MusicBrainz** (MetaBrainz Foundation), made available under the **CC0 1.0 Universal Public Domain Dedication** (core and canonical data) and the **Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported Licence** (`CC BY-NC-SA 3.0`, derived and tag/genre datasets). Raw dumps and derived databases (`ref_mb`) are never committed to Git.

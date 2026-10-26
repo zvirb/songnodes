@@ -1,6 +1,6 @@
 DS5: Design system audit and fix: Paths, sources and not-found pages
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS5 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS5: Design system audit and fix: Paths, sources and not-found pages" on a branch starting with "ds5-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS5 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Paths, sources and not-found pages. Route: /paths, /sources/targets, * (pages/ModulePages.tsx).
@@ -51,6 +51,8 @@ Create docs/design-system/audits/DS5.md with these sections, in this order:
 - frontend/src/types/dj.ts
 - frontend/src/types/index.ts
 - frontend/src/utils/trackMetadata.ts
+- docs/design-system/audits/DS5.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

@@ -6,8 +6,9 @@ WORKDIR /app
 COPY services/worker/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Shared domain code (datalayer, metadata, providers) lives in services/common.
+# Shared domain code (datalayer, metadata, providers) lives in services/common; library overlay in services/library.
 COPY services/common /app/common
+COPY services/library /app/library
 COPY services/worker/ .
 # Migrations 012-014 (idempotent), applied by `python migrate.py`.
 COPY sql/migrations/medallion/001_bronze_layer_up.sql sql/migrations/medallion/002_silver_layer_up.sql sql/migrations/medallion/006_track_adjacency_edges_up.sql /app/sql/base/

@@ -84,7 +84,7 @@ config under `deploy/` and `k8s/` are kept only for a possible later move and ar
 used. The full run and first-scrape procedure is `docs/DEPLOYMENT_CHECKLIST.md`.
 
 ### Prerequisites
-Docker with Compose v2, Git Bash on Windows (`scripts/*.sh`), Node 22, Python 3.11+
+Docker with Compose v2, Git Bash on Windows (`scripts/*.sh`), Node 26 (CI and frontend image; 22.12+ locally), Python 3.13–3.15 (`PYTHONUTF8=1` on Windows)
 
 ### Secrets
 Put credentials in your shell environment or an untracked `.env` next to `compose.dev.yaml`
@@ -107,15 +107,15 @@ never reset it to fix a problem.
 | Service | On your machine | Description |
 |---------|------|-------------|
 | `frontend` | http://127.0.0.1:3006 | React/PIXI.js app behind nginx; proxies `/api` to the APIs |
-| `rest-api` | http://127.0.0.1:8082 | FastAPI backend |
+| `rest-api` | http://127.0.0.1:8082 | FastAPI backend (routers self-register via `G3`) |
 | `graph-api` | http://127.0.0.1:8084 | Graph data |
 | `unified-scraper` | http://127.0.0.1:8012 (container port 8000) | ALL spider types (single container) |
 | `worker` | – | Celery jobs: scrape, ingest, projection, enrichment |
 | `postgres`, `redis`, `rabbitmq` | not published | Database, cache, message bus (Compose network only) |
 
 ### Stack
-- **Frontend:** React 19, TypeScript, react-router, PIXI.js v8, D3.js, Zustand; styled only by the SongNodes design system (`design-system/`)
-- **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic v2
+- **Frontend:** React 19, TypeScript 7, Oxlint (`frontend/LINTING.md`), react-router (feature routes self-register via `G2`), PIXI.js v8, D3.js, Zustand; styled only by the SongNodes design system (`design-system/`)
+- **Backend:** Python (3.11 in baseline images, upgrading to 3.15 in Wave `up`; 3.15 in CI), FastAPI, asyncpg / SQLAlchemy 2.0, Pydantic v2
 - **Scraping:** Scrapy 2.11+, scrapy-playwright
 - **Infrastructure:** Docker Compose (`compose.dev.yaml`); no Kubernetes for now
 
@@ -123,13 +123,15 @@ never reset it to fix a problem.
 
 ## 3. Development Workflow
 
-### Branching
-- **main:** Production (direct commits forbidden)
-- **develop:** Integration branch
-- **feature/bugfix:** `feature/[ticket]-[description]` from develop
+See [`AGENTS.md`](AGENTS.md) and [`plan/RESTRUCTURE.md`](plan/RESTRUCTURE.md) for the mandatory small-batch work-package rules (one job, explicit owned paths enforced by `G1`, ~400-line diff budget, two-attempt stop rule, and `STATUS.md` slot rules).
+
+### Branching and PRs
+- **main:** Single integration and production branch (direct commits forbidden; there is no `develop` branch).
+- **Work-package branches:** `<code-lower>-<slug>` branched directly off `main`, with PR title `<CODE>: <task>` (validated by `scripts/scope_guard.py` once `G1` merges).
+- **Merge rule:** Rebase/update from `main` immediately before merging, one PR at a time in wave order (`plan/RESTRUCTURE.md` §5).
 
 ### Commits
-**Format:** `type(scope): description`
+**Format:** `type(scope): description` or concise step summary per `AGENTS.md` Rule 4 (one commit per verified step)
 **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ### Git-First (CRITICAL)
@@ -155,9 +157,10 @@ runs `npm run build` itself.
 
 | Test | Command | When |
 |------|---------|------|
-| **E2E (MANDATORY)** | `scripts/e2e-docker.sh` (Playwright Linux image, against the running stack) | **Before PR merge** |
-| Frontend Unit | `npm run test:unit` | Frontend dev |
-| **Design system sync (MANDATORY)** | `scripts/sync-design-system.sh --check` | **Every UI change** |
+| **Scope guard (`G1`)** | `python scripts/scope_guard.py --base origin/main --head HEAD --title "<CODE>: ..." --branch "<code>-..."` | **Every work-package PR** |
+| **E2E (MANDATORY)** | `scripts/e2e-docker.sh` (Playwright Linux image, against the running stack) | **Before PR merge (on host with Docker)** |
+| Frontend Type + Lint + Unit | `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` | Frontend dev |
+| **Design system sync (MANDATORY)** | `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check` | **Every UI change** |
 | Backend | `python -m pytest` (root), `cd services && python -m pytest common/tests` | Backend dev |
 
 **E2E Requirements:** Zero console errors, sequential execution (`--workers=1`), run against a frontend image rebuilt from the code under test. See `frontend/tests/README.md` and `tests/README.md`.

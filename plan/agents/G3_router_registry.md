@@ -6,7 +6,7 @@ Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow "Working rules for agents"
 Let REST API routers that expose register(app) be included automatically, so new endpoints no longer edit the shared main.py.
 
 ## Context (verified on main 2026-10-26)
-services/rest_api/main.py is 772 lines with explicit include_router calls; routers/library_search.py already uses a register(app) function (main.py lines 758-759).
+services/rest_api/main.py is 774 lines with explicit include_router calls; routers/library_search.py and routers/library_ingest.py (PR #158) already use a register(app) function (main.py lines 758-763). Note that legacy routers like routers/catalog_writes.py import from main at module load time.
 
 ## Owned paths
 - services/rest_api/router_registry.py
@@ -16,9 +16,9 @@ services/rest_api/main.py is 772 lines with explicit include_router calls; route
 (Complete list. Anything else is read-only for you. You may also add a dated note under docs/integration/G3/ if you need to record a decision.)
 
 ## Do
-1. router_registry.register_all(app): import every module in services/rest_api/routers/ that defines register(app) and is not already included explicitly by main.py; call each once, in module-name order; log each.
+1. router_registry.register_all(app): scan services/rest_api/routers/*.py; skip any module already imported/included by main.py (or check AST for a top-level `def register` before importing so legacy routers that import `main` are never re-imported); call register(app) once for each new router in module-name order; log each.
 2. An import error fails fast with a message naming the module (a hidden missing router is worse than a failed start).
-3. Leave the existing explicit includes exactly as they are.
+3. Leave the existing explicit includes (including library_search and library_ingest) exactly as they are.
 
 ## Done when (the reviewer's under-10-minute check; put it in the PR)
 Start the app with TestClient: the route list is identical to before plus nothing; a test with a fake routers package proves discovery and the duplicate guard.

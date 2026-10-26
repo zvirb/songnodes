@@ -1,8 +1,7 @@
 # Development baseline
 
-This is the first increment of the architecture migration: a small, real database
-and API workflow for frontend development. It does not deploy the full platform.
-See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the complete migration plan.
+This is the tested local database and API workflow (`compose.dev.yaml` and `scripts/start-dev.sh`).
+See [`../plan/RESTRUCTURE.md`](../plan/RESTRUCTURE.md) for the active small-batch work packages and wave schedule, and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the milestone reference architecture.
 
 The inactive Wave option is hidden by default. `VITE_ENABLE_WAVE_ROUTING=true`
 reveals it for development only; this does not implement wave routing. Keep the
@@ -12,8 +11,8 @@ startup/build time, so changes require restarting or rebuilding the frontend.
 ## Prerequisites
 
 - Docker Engine and Docker Compose v2 (supporting `up --wait`)
-- Node.js 22.12+ (validated with 24.19) and npm
-- Bash, curl, and, in the Codex proxy environment, Python 3 and getent
+- Node.js 26 (CI and frontend Docker image; 22.12+ / 24.x supported for local host runs) and npm
+- Bash, curl, and Python 3.13–3.15 (`PYTHONUTF8=1` on Windows)
 
 Use the existing checkout. In Codex cloud, files remain in the cloud; no laptop
 drive space is required. For a Windows checkout, use `D:\` as requested and run
@@ -76,10 +75,14 @@ backfill checkpoints, and the `playlist_id`/`position` bronze columns the scrape
 pipeline writes. See [DATA_LAYER.md](DATA_LAYER.md) for the design and
 [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for the cluster redeploy.
 
+The startup script also initializes the library overlay schema once if `library.tracks`
+does not yet exist (`sql/migrations/101_library_schema_up.sql`) and applies the
+idempotent library search indexes (`sql/migrations/240_library_search_indexes_up.sql`).
+
 ### Providers and the worker
 
-The dev stack sets `ENRICHMENT_PROVIDERS=none`, so neither it nor its tests call any
-external provider. To try one, export its credentials and the allow-list before
+The dev stack sets `ENRICHMENT_PROVIDERS=none` and `MB_LOCAL_ENABLED=false`, so neither it nor its tests call any
+external provider by default. To try one, export its credentials and the allow-list before
 `start-dev.sh`, for example `TIDAL_CLIENT_ID=… TIDAL_CLIENT_SECRET=… ENRICHMENT_PROVIDERS=tidal,deezer`.
 Credentials are read from the host environment or an untracked `.env`; none are
 committed. Live provider contract checks are separate and opt-in:
@@ -92,7 +95,7 @@ RUN_LIVE_PROVIDER_TESTS=1 python -m unittest discover -s tests/live -v
 
 With Vite running:
 
-Backend tests (Docker running; set `PYTHONIOENCODING=utf-8` on Windows):
+Backend tests (Docker running; set `PYTHONIOENCODING=utf-8` and `PYTHONUTF8=1` on Windows):
 
 ```bash
 cd services && python -m pytest common/tests              # pure logic: Camelot, tempo, energy, consensus, matching,
@@ -109,9 +112,10 @@ the REST, graph and worker images): `docker build -f services/rest_api/Dockerfil
 curl --fail http://127.0.0.1:8082/health
 curl --fail http://127.0.0.1:8084/api/graph/data
 cd frontend
-npm run build
-npm run type-check
-npm run test:unit
+npx tsc --noEmit -p .
+npx oxlint src
+npx vitest run src
+npx vite build
 node scripts/smoke-dev.mjs
 ```
 

@@ -12,7 +12,6 @@ from uuid import UUID
 import httpx
 
 from . import backfill, enrichment, er, evidence, ingest, outbox, projection, graph_projection
-from library.ingest.handler import library_ingest
 from .errors import CatalogError
 
 
@@ -181,3 +180,9 @@ async def graph_projection_rebuild(conn, ctx: Context, payload: Dict[str, Any]) 
 @handler('graph_projection_reconcile')
 async def graph_projection_reconcile(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
     return await graph_projection.reconcile(conn, repair=bool(payload.get('repair')))
+
+
+try:
+    from library.ingest.handler import library_ingest  # noqa: F401, E402
+except ImportError:
+    pass

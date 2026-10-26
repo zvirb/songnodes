@@ -16,8 +16,9 @@ RUN --mount=type=secret,id=proxy_ca,target=/usr/local/share/ca-certificates/clou
     && apt-get purge -y --auto-remove build-essential gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy shared common directory with secrets_manager and artist_name_cleaner
+# Copy shared common and library directories
 COPY services/common /app/common
+COPY services/library /app/library
 
 # Copy application code (includes pydantic_models.py copied from scrapers directory)
 # Note: pydantic_models.py is a copy of scrapers/pydantic_models.py for shared validation

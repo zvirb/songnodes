@@ -1,5 +1,7 @@
 # SongNodes architecture implementation plan
 
+> **Active Execution Plan (26 Oct 2026):** Work-package decomposition, wave ordering, owned-path guards (`G1`), route/router registries (`G2`/`G3`), and version upgrades are now governed by [`plan/RESTRUCTURE.md`](../plan/RESTRUCTURE.md) and [`AGENTS.md`](../AGENTS.md). Consult this document for the domain contracts and milestone targets (Milestones 1–8), and [`plan/RESTRUCTURE.md`](../plan/RESTRUCTURE.md) for the active small-batch package schedule.
+
 This is the maintained implementation plan for the architecture blueprint and
 the wave-routing addition. It supersedes the plan held only in chat. Update
 `STATUS.md` at the start of every task and record results and the resume point

@@ -18,11 +18,11 @@ from build_rs_prompts import WAVES  # noqa: E402
 # replaced by the restructure (plan/RESTRUCTURE.md, section 4); never send these
 RETIRED = {"WP2", "WP4", "WP5", "BE1", "FE1", "FE3", "FE4", "FE11", "FEW", "SEC6", "QA1", "QA2"}  # QA1, QA2 done in #155
 # sent only when named in --only, after the packages it depends on are merged
-HOLD = {"DS16", "U7"}  # U7: owner runs the Postgres migration before its PR is merged
+HOLD = {"DS16", "U7", "L1", "L2", "L3", "L4"}  # U7: owner runs the Postgres migration before its PR is merged; L1-L4: held after PR #158 merged WP5
 
 
 def sh(*a):
-    return subprocess.run(a, capture_output=True, text=True, check=True).stdout.strip()
+    return subprocess.run(a, cwd=ROOT.parent, capture_output=True, text=True, check=True).stdout.strip()
 
 
 def main():

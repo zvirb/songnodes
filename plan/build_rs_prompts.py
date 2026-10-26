@@ -76,7 +76,8 @@ P.append(("R3", "restore_graph_projection", "Restore the graph projection consum
   "Bring back the WP8 graph projection outbox consumer that the PR #136 CI fix deleted, without the scratch scripts that came with it.",
   "WP8 (PR #128, dee69d5; PR #131, f188682) added services/common/datalayer/graph_projection.py, services/graph-projection/{Dockerfile, cli.py, requirements.txt}, "
   "sql/migrations/220_graph_consumer_{up,down}.sql, docs/integration/WP8/{decisions/2026-10-25-WP8-graph.md, versions.csv} and a 14-line change to "
-  "services/common/datalayer/handlers.py. PR #136 (ecdfe4a) deleted all of it and reverted the handlers.py lines. The graph page has no projected data without it.",
+  "services/common/datalayer/handlers.py. PR #136 (ecdfe4a) deleted all of it and reverted the handlers.py lines. The graph page has no projected data without it. "
+  "Note: handlers.py now also has a bottom-of-file library_ingest import from PR #158; preserve it.",
   ["services/common/datalayer/graph_projection.py", "services/graph-projection/**", "sql/migrations/220_graph_consumer_up.sql",
    "sql/migrations/220_graph_consumer_down.sql", "docs/integration/WP8/**", "services/common/datalayer/handlers.py (only the lines dee69d5 added)",
    "tests/graph_projection/**"],
@@ -115,12 +116,12 @@ P.append(("G2", "route_registry", "Route registry: each page registers its own r
 
 P.append(("G3", "router_registry", "REST API: routers register themselves", [],
   "Let REST API routers that expose register(app) be included automatically, so new endpoints no longer edit the shared main.py.",
-  "services/rest_api/main.py is 772 lines with explicit include_router calls; routers/library_search.py already uses a register(app) function (main.py lines 758-759).",
+  "services/rest_api/main.py is 774 lines with explicit include_router calls; routers/library_search.py and routers/library_ingest.py (PR #158) already use a register(app) function (main.py lines 758-763). Note that legacy routers like routers/catalog_writes.py import from main at module load time.",
   ["services/rest_api/router_registry.py", "services/rest_api/main.py (one call to the registry after the existing includes; nothing else)",
    "tests/rest_api/test_router_registry.py"],
-  ["router_registry.register_all(app): import every module in services/rest_api/routers/ that defines register(app) and is not already included explicitly by main.py; call each once, in module-name order; log each.",
+  ["router_registry.register_all(app): scan services/rest_api/routers/*.py; skip any module already imported/included by main.py (or check AST for a top-level `def register` before importing so legacy routers that import `main` are never re-imported); call register(app) once for each new router in module-name order; log each.",
    "An import error fails fast with a message naming the module (a hidden missing router is worse than a failed start).",
-   "Leave the existing explicit includes exactly as they are."],
+   "Leave the existing explicit includes (including library_search and library_ingest) exactly as they are."],
   "Start the app with TestClient: the route list is identical to before plus nothing; a test with a fake routers package proves discovery and the duplicate guard.",
   PY_CHECKS))
 
@@ -369,11 +370,13 @@ P.append(("SEC6B", "ai_proxy_client", "AI proxy: frontend client and migration n
   FE_CHECKS))
 
 WAVES = {
-    "1": ["QA5", "G1", "G2", "G3", "R1", "R2", "R3", "C1", "C2", "S1", "L1", "E2", "SB1"],
-    "2": ["QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "L2", "L4", "E1", "SB2", "SEC6A"],
-    "3": ["QA3", "S3", "L3", "L5", "E3", "SB3", "SEC5", "SEC6B"],
-    # runtime upgrades (plan/build_upgrade_prompts.py): "up" can go with wave 1; "up-legacy" after "up" is merged.
-    # U7 (Postgres 18) is held: send with --only U7. U8 (Actions pins) is in wave 4 because waves 1-3 edit workflows.
+    "1a": ["G1", "G2", "G3"],
+    "1b": ["QA5", "R1", "R2", "R3", "C1", "C2", "S1", "E2", "SB1"],
+    "1": ["QA5", "G1", "G2", "G3", "R1", "R2", "R3", "C1", "C2", "S1", "E2", "SB1"],
+    "2": ["QA4", "QA6", "P1", "P2", "P3", "FE9", "S2", "E1", "SB2", "SEC6A"],
+    "3": ["QA3", "S3", "L5", "E3", "SB3", "SEC5", "SEC6B"],
+    # runtime upgrades (plan/build_upgrade_prompts.py): send "up" after wave 1b is merged and verified; "up-legacy" after "up" is merged.
+    # U7 (Postgres 18) and L1-L4 (superseded by PR #158) are held: send only with --only. U8 (Actions pins) is in wave 4 because waves 1-3 edit workflows.
     "up": ["U1", "U2", "U3", "U4", "U5"],
     "up-legacy": ["U6", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16", "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29"],
     "4": ["U8", "DS1", "DS2A", "DS2B", "DS3", "DS4", "DS5", "DS6", "DS8", "DS9", "DS10", "DS11", "DS12", "DS13", "DS14", "DS15"],

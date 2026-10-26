@@ -1,6 +1,6 @@
 DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS13 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers" on a branch starting with "ds13-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS13 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Feature folders: aiSetlists, camelot and leftovers. Route: none (not reached from a route).
@@ -59,8 +59,11 @@ Create docs/design-system/audits/DS13.md with these sections, in this order:
 - frontend/src/features/camelot/camelotLogic.ts
 - frontend/src/features/camelot/index.ts
 - frontend/src/features/musicLibrary/components/AITransitionHelper.tsx
+- frontend/src/features/musicLibrary/route.tsx
 - frontend/src/features/musicLibrary/setBuilder.test.ts
 - frontend/src/features/pipeline/usePipelineTelemetry.test.ts
+- docs/design-system/audits/DS13.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 
