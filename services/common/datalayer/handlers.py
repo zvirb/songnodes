@@ -12,6 +12,7 @@ from uuid import UUID
 import httpx
 
 from . import backfill, enrichment, er, evidence, ingest, outbox, projection
+from library.ingest.handler import library_ingest
 from .errors import CatalogError
 
 

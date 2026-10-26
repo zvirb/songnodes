@@ -759,6 +759,8 @@ from routers.library_search import register as register_library_search
 register_library_search(app)
 
 app.include_router(catalog_reads_router)
+from routers.library_ingest import register as register_library
+register_library(app)
 
 if __name__ == "__main__":
     import sys

@@ -1,0 +1,2 @@
+version,date,kind,unit,path,checksum,status,decision_link,notes
+1.0.0,2026-10-25,code,WP5,services/library,None,ACTIVE,docs/integration/WP5/2026-10-25-WP5-library-model.md,Initial WP5 deliverables

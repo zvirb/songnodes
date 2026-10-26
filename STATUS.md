@@ -394,8 +394,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP5 BEGIN -->
 ### WP5: Library overlay model, importer, ingest job and saved-sets endpoints
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25
 <!-- SLOT:WP5 END -->
 
 <!-- SLOT:WP8 BEGIN -->
