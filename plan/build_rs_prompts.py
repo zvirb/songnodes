@@ -405,6 +405,203 @@ P.append(("SB4", "saved_sets_per_set_api", "Set builder: save and delete sets th
   "With QA7's fixture, `bash scripts/e2e-docker.sh sets` passes: a saved set survives a reload and can be deleted.",
   FE_CHECKS))
 
+# ---------------- wave 5: input & search intelligence primitives ----------------
+P.append(("UX1", "search_history_storage", "Search history: recent queries storage", [],
+  "Add a pure, typed utility to record and retrieve recent searches per context in localStorage.",
+  "Search inputs in LibraryPage, Pathfinder, MusicServiceSearch and QuickSearch currently have no shared recent query memory. The design system SearchField component anticipates recent query suggestions.",
+  ["frontend/src/utils/recentSearches.ts", "frontend/src/utils/recentSearches.test.ts"],
+  ["Implement saveRecentSearch(namespace: string, query: string, maxItems = 10) and getRecentSearches(namespace: string): string[] in recentSearches.ts.",
+   "Use key prefix 'sn-recent-' + namespace; trim whitespace, deduplicate case-insensitively, keep most recent at index 0, cap at maxItems; handle localStorage errors and SSR gracefully.",
+   "Add clearRecentSearches(namespace: string) and removeRecentSearch(namespace: string, query: string).",
+   "Unit tests covering: empty query ignored, trimming, case-insensitive deduplication, FIFO capping at max, removal of individual items, clear all, and quota error fallback."],
+  "`npx vitest run src/utils/recentSearches.test.ts` passes with 100% coverage.",
+  FE_CHECKS))
+
+P.append(("UX2", "favorite_queries_storage", "Favorite queries: starred queries and filter preset storage", [],
+  "Add a pure, typed utility to store, toggle, and retrieve starred queries and filter presets in localStorage.",
+  "DJs repeatedly apply the same complex filter combinations (e.g. specific BPM range, Camelot keys, and rotation status) or search for recurring labels/artists without a quick recall mechanism.",
+  ["frontend/src/utils/favoriteQueries.ts", "frontend/src/utils/favoriteQueries.test.ts"],
+  ["Implement FavoriteItem<T> interface { id: string; label: string; payload: T; createdAt: number }.",
+   "Implement getFavorites<T>(namespace: string): FavoriteItem<T>[], saveFavorite<T>(namespace: string, item: Omit<FavoriteItem<T>, 'id' | 'createdAt'>): FavoriteItem<T>, removeFavorite(namespace: string, id: string), isFavorite(namespace: string, label: string): boolean.",
+   "Store under key prefix 'sn-favs-' + namespace with JSON serialization and schema guards.",
+   "Unit tests: adding a favorite, duplicate prevention, removal, custom payload retrieval, invalid JSON recovery."],
+  "`npx vitest run src/utils/favoriteQueries.test.ts` passes.",
+  FE_CHECKS))
+
+P.append(("UX3", "lexicon_autocomplete_engine", "Lexicon autocomplete: prefix trie and token completion", [],
+  "Add a lightweight, pure TypeScript prefix trie / token completion engine for fast in-memory search.",
+  "Typing into filter boxes or search inputs should complete words (artists, genres, Camelot keys 1A-12B, labels, pillars) instantly without network latency or external dependencies.",
+  ["frontend/src/utils/lexiconTrie.ts", "frontend/src/utils/lexiconTrie.test.ts"],
+  ["Implement LexiconTrie class with insert(word: string, category?: string, weight?: number), insertBatch(words: string[]), searchPrefix(prefix: string, limit = 8): { word: string; category?: string }[], clear().",
+   "Normalize case, strip punctuation, rank exact prefix matches first, then weighted frequency (e.g. play count / rotation).",
+   "Include built-in Camelot key vocabulary (1A-12B) and standard Melbourne music pillars.",
+   "Unit tests: empty prefix, case-insensitive match, limit capping, rank order, special characters, batch insertion performance (<5ms for 5,000 words)."],
+  "`npx vitest run src/utils/lexiconTrie.test.ts` passes.",
+  FE_CHECKS))
+
+P.append(("UX4", "ds_autocomplete_search_field", "Design system: AutocompleteSearchField component", ["UX1", "UX3"],
+  "Add AutocompleteSearchField to frontend design-system components, extending SearchField with keyboard-navigable listbox completions.",
+  "design-system/components/SearchField specifies SearchFieldProps and behaviour, but lacks an accessible popup combobox list for recent searches and word completions.",
+  ["frontend/src/components/ds/AutocompleteSearchField.tsx", "frontend/src/components/ds/AutocompleteSearchField.test.tsx",
+   "frontend/src/components/ds/index.tsx (export AutocompleteSearchField)"],
+  ["Implement AutocompleteSearchField: wraps SearchField markup with role=\"combobox\", aria-expanded, aria-controls, aria-autocomplete=\"list\".",
+   "Render a floating sn-menu / sn-card dropdown with tokens when focused: section for 'Recent searches' (from UX1) if empty/prefix match, section for 'Suggestions' (from lexicon/trie or items prop).",
+   "Keyboard navigation: ArrowDown/ArrowUp moves active option (aria-activedescendant), Enter selects, Escape closes and retains focus, Tab closes.",
+   "Export AutocompleteSearchField from frontend/src/components/ds/index.tsx with strict design-system token styling and sn-* classes.",
+   "Tests: renders without crash; keyboard navigation moves selection; Enter selects word; Escape closes; recent searches section renders."],
+  "`npx vitest run src/components/ds/AutocompleteSearchField.test.tsx` passes.",
+  FE_CHECKS))
+
+# ---------------- wave 6: contextual autocomplete across pages ----------------
+P.append(("UX5", "crate_filter_autocomplete", "Crate FilterRail: search autocompletion and recent queries", ["UX4"],
+  "Integrate AutocompleteSearchField into CrateFilterRail with live vocabulary from the loaded crate tracks.",
+  "frontend/src/features/musicLibrary/components/CrateFilterRail.tsx renders a standard input for search. It already extracts unique tags and sources from loaded tracks, but provides no autocompletion while typing.",
+  ["frontend/src/features/musicLibrary/components/CrateFilterRail.tsx",
+   "frontend/src/features/musicLibrary/components/CrateFilterRail.test.tsx"],
+  ["Build a local LexiconTrie from tracks: index artist names, track titles, tags, and source names whenever tracks change.",
+   "Replace the raw input with AutocompleteSearchField using namespace 'library-crate'.",
+   "Display recent queries on focus; show completed word suggestions as user types.",
+   "Preserve the existing debounce, keyboard shortcuts (/), and live match count.",
+   "Tests: typing prefix displays matching artists and tags; selecting suggestion updates query; clear button resets."],
+  "Open /library, click filter search or press /: typing 'bic' suggests 'Bicep', selecting it filters the crate table.",
+  FE_CHECKS))
+
+P.append(("UX6", "pathfinder_autocomplete", "Pathfinder: waypoint autocompletion for start and end tracks", ["UX4", "P1"],
+  "Add track title and artist autocompletion to the start and end track inputs in the route finder page.",
+  "frontend/src/features/pathfinder/PathfinderPage.tsx requires selecting start and end tracks. Currently users must type track titles manually or search without inline completion.",
+  ["frontend/src/features/pathfinder/PathfinderPage.tsx",
+   "frontend/src/features/pathfinder/PathfinderPage.test.tsx"],
+  ["Replace raw text inputs for start and destination tracks with AutocompleteSearchField using namespace 'pathfinder-waypoints'.",
+   "Populate suggestions from useUnifiedTracks() track catalogue.",
+   "Selecting a track binds its track ID and updates the waypoint selection state.",
+   "Tests: typing in start track input suggests matching library tracks; selecting a track sets the start point."],
+  "Open /paths: typing a track prefix in start or end field shows matching tracks and sets waypoint on selection.",
+  FE_CHECKS))
+
+P.append(("UX7", "music_service_search_history", "Music service search: query history and suggestion chips", ["UX1", "S3"],
+  "Add recent search chips and clearable query history to MusicServiceSearch.",
+  "frontend/src/components/MusicServiceSearch.tsx enables searching TIDAL and Spotify. When DJs search for tracks to target, they frequently query the same artist or label names.",
+  ["frontend/src/components/MusicServiceSearch.tsx",
+   "frontend/src/components/MusicServiceSearch.test.tsx"],
+  ["Connect search submission to recentSearches with namespace 'music-service'.",
+   "Render a row of recent search chips (FilterChip style) beneath the search bar when the query is empty.",
+   "Clicking a chip executes the search immediately; quiet 'Clear history' button clears the list.",
+   "Tests: executed search adds to recent list; clicking recent chip triggers search; clear history removes chips."],
+  "In MusicServiceSearch: after searching 'Mall Grab', returning to empty search displays 'Mall Grab' chip; clicking it re-executes search.",
+  FE_CHECKS))
+
+P.append(("UX8", "quick_search_palette", "QuickSearch dialog: recent commands and track completions", ["UX1", "UX3"],
+  "Add recent search memory and module route completions to the QuickSearch dialog.",
+  "frontend/src/components/QuickSearch.tsx provides app-wide Cmd/Ctrl+K search, but starts blank without recent navigation history or keyword suggestions.",
+  ["frontend/src/components/QuickSearch.tsx",
+   "frontend/src/components/QuickSearch.test.tsx"],
+  ["Store and display recently opened tracks, modules, and setlists using recentSearches under namespace 'quick-search'.",
+   "Provide keyword prefix suggestions for navigation shortcuts (e.g. 'lib' -> /library, 'set' -> /sets, 'har' -> /harmony).",
+   "Maintain full keyboard accessibility (ArrowDown/Up, Enter, Esc).",
+   "Tests: opening QuickSearch shows recent items; typing filters options; selecting navigation item redirects."],
+  "Press Cmd/Ctrl+K: recent items appear; typing 'set' selects /sets route.",
+  FE_CHECKS))
+
+# ---------------- wave 7: target track intelligence & auto-suggestions ----------------
+P.append(("TG1", "target_suggestions_endpoint", "Target tracks: suggestions endpoint based on crate and graph gaps", ["G3"],
+  "Add GET /api/v1/target-tracks/suggestions to the REST API, returning prioritized candidates for discovery and scraping.",
+  "services/rest_api/routers/target_tracks.py only lists and creates target tracks. When the target queue is empty, background scrapers have zero work. Silver library tracks with high rotation or missing graph adjacencies are prime candidates.",
+  ["services/rest_api/routers/target_tracks.py", "services/rest_api/target_suggestions.py",
+   "tests/rest_api/test_target_suggestions.py"],
+  ["Implement target_suggestions.py: query candidate tracks from silver and graph projection.",
+   "Scoring rules: priority given to tracks played on >=2 Melbourne shows, tracks with 0 existing target/scrape records, and tracks in camelot keys with low graph edge density.",
+   "Endpoint GET /api/v1/target-tracks/suggestions?limit=20 returning: [{ title, artist, genres, rationale, priority_score }].",
+   "Honest error handling: 503 if DB pool uninitialized, empty list if no silver tracks exist.",
+   "Tests: mock database pool returning sample silver records; verify rationale generation and priority ordering."],
+  "GET /api/v1/target-tracks/suggestions returns JSON array of suggested tracks with rationale (e.g. 'Heard on 3 shows').",
+  PY_CHECKS))
+
+P.append(("TG2", "target_suggestions_hook", "Target suggestions: frontend data hook and actions", ["TG1"],
+  "Add useTargetSuggestions hook with fetch, dismiss, and promote-to-target actions.",
+  "Frontend components need a typed, resilient data hook to query suggested target tracks and convert them into actual targets via api.post('/target-tracks').",
+  ["frontend/src/hooks/useTargetSuggestions.ts", "frontend/src/hooks/useTargetSuggestions.test.ts"],
+  ["Create useTargetSuggestions() hook: state for suggestions, loading, error, and dismissedIds.",
+   "Functions: promoteSuggestion(suggestion) (POSTs to /api/v1/target-tracks and removes from suggestion list), dismissSuggestion(id) (persists to sn-dismissed-suggestions).",
+   "Graceful fallback: if endpoint returns 404 or backend down, set honest error state without crashing.",
+   "Tests: successful load, promoteSuggestion calls API and updates local state, dismissSuggestion persists to local storage."],
+  "`npx vitest run src/hooks/useTargetSuggestions.test.ts` passes.",
+  FE_CHECKS))
+
+P.append(("TG3", "target_suggestions_deck", "TargetTracksManager: suggested tracks discovery rail", ["TG2"],
+  "Mount a 'Suggested for Discovery' card carousel in TargetTracksManager with one-click '+ Add Target' buttons.",
+  "frontend/src/components/TargetTracksManager.tsx displays a table of targets, but has no discovery mechanism when the list is sparse.",
+  ["frontend/src/components/TargetTracksManager.tsx", "frontend/src/components/TargetTracksManager.test.tsx"],
+  ["Mount a horizontal card deck above or alongside the target table when suggestions exist.",
+   "Each card shows: Track title, Artist, Rationale pill (e.g. 'Played on 3 shows'), '+ Add Target' button (sn-btn--quiet sn-btn--sm), and 'Dismiss' button.",
+   "Clicking '+ Add Target' calls promoteSuggestion with optimistic feedback and announces via aria-live.",
+   "Empty/error state: if no suggestions available, render nothing or polite empty indicator without layout jump.",
+   "Tests: suggestions render in deck; clicking '+ Add' promotes track to target list; dismissing card removes it from view."],
+  "Open /sources/targets: suggested tracks appear in deck; clicking '+ Add' moves track into target table.",
+  FE_CHECKS))
+
+P.append(("TG4", "library_crate_discovery_banner", "Library: crate target-enrichment discovery banner", ["TG2", "FE9"],
+  "Add an enrichment opportunity banner to LibraryPage when crate tracks are not yet in the target queue.",
+  "DJs exploring crates in LibraryPage frequently spot un-enriched tracks. A banner informing them of high-rotation un-targeted tracks bridges crate browsing with crawler enrichment.",
+  ["frontend/src/features/musicLibrary/targetAction/DiscoveryBanner.tsx",
+   "frontend/src/features/musicLibrary/targetAction/DiscoveryBanner.test.tsx",
+   "frontend/src/features/musicLibrary/LibraryPage.tsx (one edit: mount banner)"],
+  ["Create DiscoveryBanner component using design system Banner pattern (sn-banner).",
+   "Show count of tracks in the current view that lack BPM/key or graph adjacencies and are not yet targeted.",
+   "Provide 'Target top un-enriched' quick action (invokes setTrackAsTarget in batch up to 5 tracks) and a dismiss button.",
+   "Mount inside LibraryPage between keyed-coverage banner and the data table.",
+   "Tests: banner renders when un-targeted tracks present; action triggers batch targeting; dismiss hides banner."],
+  "Open /library with un-targeted tracks: banner appears; clicking action targets them and updates coverage.",
+  FE_CHECKS))
+
+# ---------------- wave 8: workflow velocity & dj transitions ----------------
+P.append(("FL1", "keyboard_power_nav", "Keyboard navigation: table row selection and quick actions", ["UX4"],
+  "Add keyboard navigation (J/K row navigation, Space preview, T add to target) for the crate table.",
+  "Professional DJs use keyboard shortcuts for rapid library curation without reaching for the mouse.",
+  ["frontend/src/hooks/useTableKeyboardNav.ts", "frontend/src/hooks/useTableKeyboardNav.test.ts"],
+  ["Create useTableKeyboardNav({ rowCount, onSelectRow, onAction }): handles J/Down (next), K/Up (prev), Enter (select/open), T (target action).",
+   "Ignore shortcuts when focus is inside text fields, inputs, or dialogs.",
+   "Maintain visual active row styling and ARIA active descendant.",
+   "Tests: pressing J moves active index down; K moves up; input focus suppresses navigation."],
+  "`npx vitest run src/hooks/useTableKeyboardNav.test.ts` passes.",
+  FE_CHECKS))
+
+P.append(("FL2", "set_transition_suggestions", "Set builder: harmonic and energy transition suggestions", ["SB3"],
+  "Add pure transition matching utility and 'Suggest Next Track' drawer in SetBuilderPage.",
+  "frontend/src/features/musicLibrary/SetBuilderPage.tsx calculates transition checks, but cannot proactively suggest the next compatible track from the library.",
+  ["frontend/src/features/setBuilder/transitions.ts", "frontend/src/features/setBuilder/transitions.test.ts",
+   "frontend/src/features/musicLibrary/SetBuilderPage.tsx (suggest next track action)"],
+  ["transitions.ts: findCompatibleTracks(currentTrack, candidateTracks, options): scores candidates by Camelot key distance (same, +/-1 step, or relative major/minor), BPM delta (+/- 4%), and smooth energy progression.",
+   "In SetBuilderPage: add 'Suggest next' button on empty slot or below last track.",
+   "Opens a compact popover listing the top 5 compatible tracks from the crate with compatibility badges ('Key match 8A', 'BPM +1.2%').",
+   "Clicking a candidate slots it directly into the set.",
+   "Tests: key compatibility scoring handles edge cases (12A -> 1A); BPM tolerance filtering; slotting track updates set."],
+  "On /sets with a track in slot 1: clicking 'Suggest next' lists harmonically compatible crate tracks; clicking one adds it to slot 2.",
+  FE_CHECKS))
+
+P.append(("FL3", "crate_filter_presets", "Crate filter presets: save and recall favorite filter views", ["UX2", "UX5"],
+  "Add saved filter preset chips to CrateFilterRail using favoriteQueries storage.",
+  "DJs need to save recurring filter combinations (e.g. 'Opening Warmup 118-122', 'Peak Acid Techno') and recall them in one click.",
+  ["frontend/src/features/musicLibrary/components/FilterPresets.tsx",
+   "frontend/src/features/musicLibrary/components/FilterPresets.test.tsx",
+   "frontend/src/features/musicLibrary/components/CrateFilterRail.tsx (mount presets section)"],
+  ["FilterPresets component: displays saved preset chips using FilterChip component and a '+ Save current filters' button.",
+   "Clicking a preset applies its CrateFilters state immediately and updates URL search params.",
+   "Preset chips carry an overflow/delete action to remove saved presets.",
+   "Tests: saving current filters creates preset; clicking preset updates filters; deleting removes preset."],
+  "In /library: customize filters, click '+ Save preset', name it 'Warmup': chip appears; resetting filters and clicking 'Warmup' restores state.",
+  FE_CHECKS))
+
+P.append(("FL4", "instant_audio_preview_strip", "Design system: MiniAudioPreview component", [],
+  "Add accessible MiniAudioPreview component for 30-second track audio preview with play/pause and progress.",
+  "Curation and set-building require listening to snippets of tracks without navigating away or opening external music players.",
+  ["frontend/src/components/ds/MiniAudioPreview.tsx", "frontend/src/components/ds/MiniAudioPreview.test.tsx"],
+  ["MiniAudioPreview: compact inline player (32px height) with play/pause button (SnIcon play/pause), time display, and mini progress bar using design-system tokens.",
+   "Audio element lifecycle: stop playback on unmount, handle missing or 404 preview URLs with quiet disabled state.",
+   "Global singleton audio manager ensuring only one preview plays at a time across the entire application.",
+   "Tests: play/pause state toggle; time update; unmount cleans up audio instance; graceful error when audio fails to load."],
+  "`npx vitest run src/components/ds/MiniAudioPreview.test.ts` passes.",
+  FE_CHECKS))
+
 WAVES = {
     "1a": ["G1", "G2", "G3"],
     "1b": ["QA5", "R1", "R2", "R3", "C1", "C2", "S1", "E2", "SB1"],
@@ -416,6 +613,10 @@ WAVES = {
     "up": ["U1", "U2", "U3", "U4", "U5"],
     "up-legacy": ["U6", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16", "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29"],
     "4": ["U8", "DS1", "DS2A", "DS2B", "DS3", "DS4", "DS5", "DS6", "DS8", "DS9", "DS10", "DS11", "DS12", "DS13", "DS14", "DS15"],
+    "5": ["UX1", "UX2", "UX3", "UX4"],
+    "6": ["UX5", "UX6", "UX7", "UX8"],
+    "7": ["TG1", "TG2", "TG3", "TG4"],
+    "8": ["FL1", "FL2", "FL3", "FL4"],
 }
 
 SLOT = "<!-- SLOT:{c} BEGIN -->\n### {c}: {t}\n- Start: _not started_\n- End: _not finished_\n<!-- SLOT:{c} END -->\n"

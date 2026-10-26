@@ -1054,3 +1054,99 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: Full Playwright E2E suite due to environment constraints.
 - End: 2026-10-26
 <!-- SLOT:G5 END -->
+
+<!-- SLOT:UX1 BEGIN -->
+### UX1: Search history: recent queries storage
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX1 END -->
+
+<!-- SLOT:UX2 BEGIN -->
+### UX2: Favorite queries: starred queries and filter preset storage
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX2 END -->
+
+<!-- SLOT:UX3 BEGIN -->
+### UX3: Lexicon autocomplete: prefix trie and token completion
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX3 END -->
+
+<!-- SLOT:UX4 BEGIN -->
+### UX4: Design system: AutocompleteSearchField component
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX4 END -->
+
+<!-- SLOT:UX5 BEGIN -->
+### UX5: Crate FilterRail: search autocompletion and recent queries
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX5 END -->
+
+<!-- SLOT:UX6 BEGIN -->
+### UX6: Pathfinder: waypoint autocompletion for start and end tracks
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX6 END -->
+
+<!-- SLOT:UX7 BEGIN -->
+### UX7: Music service search: query history and suggestion chips
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX7 END -->
+
+<!-- SLOT:UX8 BEGIN -->
+### UX8: QuickSearch dialog: recent commands and track completions
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:UX8 END -->
+
+<!-- SLOT:TG1 BEGIN -->
+### TG1: Target tracks: suggestions endpoint based on crate and graph gaps
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TG1 END -->
+
+<!-- SLOT:TG2 BEGIN -->
+### TG2: Target suggestions: frontend data hook and actions
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TG2 END -->
+
+<!-- SLOT:TG3 BEGIN -->
+### TG3: TargetTracksManager: suggested tracks discovery rail
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TG3 END -->
+
+<!-- SLOT:TG4 BEGIN -->
+### TG4: Library: crate target-enrichment discovery banner
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TG4 END -->
+
+<!-- SLOT:FL1 BEGIN -->
+### FL1: Keyboard navigation: table row selection and quick actions
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FL1 END -->
+
+<!-- SLOT:FL2 BEGIN -->
+### FL2: Set builder: harmonic and energy transition suggestions
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FL2 END -->
+
+<!-- SLOT:FL3 BEGIN -->
+### FL3: Crate filter presets: save and recall favorite filter views
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FL3 END -->
+
+<!-- SLOT:FL4 BEGIN -->
+### FL4: Design system: MiniAudioPreview component
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FL4 END -->
