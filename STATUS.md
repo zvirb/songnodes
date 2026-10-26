@@ -382,8 +382,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP2 BEGIN -->
 ### WP2: MusicBrainz reference ETL into refmb
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:WP2 END -->
 
 <!-- SLOT:WP3 BEGIN -->
@@ -400,8 +400,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP8 BEGIN -->
 ### WP8: Graph projection as an outbox consumer
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:WP8 END -->
 
 <!-- SLOT:WP9 BEGIN -->
@@ -413,14 +413,14 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:WP4 BEGIN -->
 ### WP4: Local MusicBrainz provider at the front of the existing enrichment waterfall
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:WP4 END -->
 
 <!-- SLOT:FE1 BEGIN -->
 ### FE1: Unified track data bridge
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:FE1 END -->
 
 <!-- SLOT:FE3 BEGIN -->
@@ -431,8 +431,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:FE4 BEGIN -->
 ### FE4: Set Builder: crate export formats and reordering
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:FE4 END -->
 
 <!-- SLOT:FE9 BEGIN -->
@@ -443,38 +443,38 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:FEW BEGIN -->
 ### FEW: Route wiring and cleanup
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:FEW END -->
 
 <!-- SLOT:FE11 BEGIN -->
 ### FE11: Navigation audit: find and wire pages missing from navigation
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:FE11 END -->
 
 <!-- SLOT:BE2 BEGIN -->
 ### BE2: Python 3.12 upgrade audit and the audio-analysis NumPy 2.5 build fix
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:BE2 END -->
 
 <!-- SLOT:SEC5 BEGIN -->
 ### SEC5: Opt-in token auth for write and admin API routes
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:SEC5 END -->
 
 <!-- SLOT:SEC6 BEGIN -->
 ### SEC6: Server-side AI provider proxy
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:SEC6 END -->
 
 <!-- SLOT:BE1 BEGIN -->
 ### BE1: Real TIDAL and Spotify track search
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:BE1 END -->
 
 <!-- SLOT:REF0 BEGIN -->
@@ -500,26 +500,27 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:QA1 BEGIN -->
 ### QA1: Add an ESLint 9 flat config to the frontend
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:QA1 END -->
 
 <!-- SLOT:QA2 BEGIN -->
 ### QA2: Fix frontend lockfile so npm ci works on Linux
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:QA2 END -->
 
 <!-- SLOT:QA3 BEGIN -->
 ### QA3: Make graph-visualization-api tests collect and run
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:QA3 END -->
 
 <!-- SLOT:QA4 BEGIN -->
 ### QA4: Run services/common/refmb tests from any directory and in CI
 - Start: 2026-10-26
 - End: 2026-10-26
+- End: 2026-10-26. Added `pythonpath = .` and `services/common/refmb` testpaths to `pytest.ini`. Also added a `services/common/refmb` test step to `.github/workflows/python-tests.yml`. Verified pytest collection from repo root and module execution locally. PR: [QA4: Run services/common/refmb tests from any directory and in CI](#)
 <!-- SLOT:QA4 END -->
 
 <!-- SLOT:QA5 BEGIN -->
@@ -540,98 +541,98 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS10 BEGIN -->
 ### DS10: Design system audit and fix: OAuth callback page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS10 END -->
 
 <!-- SLOT:DS11 BEGIN -->
 ### DS11: Design system audit and fix: Unrouted components, legacy UI
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS11 END -->
 
 <!-- SLOT:DS12 BEGIN -->
 ### DS12: Design system audit and fix: DJ interface, setlist builder and pathfinder components
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS12 END -->
 
 <!-- SLOT:DS13 BEGIN -->
 ### DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS13 END -->
 
 <!-- SLOT:DS14 BEGIN -->
 ### DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS14 END -->
 
 <!-- SLOT:DS15 BEGIN -->
 ### DS15: Design system audit and fix: Global stylesheets and legacy CSS
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS15 END -->
 
 <!-- SLOT:DS16 BEGIN -->
 ### DS16: Consolidate missing design-system tokens from all audits
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS16 END -->
 
 <!-- SLOT:DS1 BEGIN -->
 ### DS1: Design system audit and fix: App shell, navigation drawer and home page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS1 END -->
 
 <!-- SLOT:DS2A BEGIN -->
 ### DS2A: Design system audit and fix: Graph page, first half of its files
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS2A END -->
 
 <!-- SLOT:DS2B BEGIN -->
 ### DS2B: Design system audit and fix: Graph page, second half of its files
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS2B END -->
 
 <!-- SLOT:DS3 BEGIN -->
 ### DS3: Design system audit and fix: Library page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS3 END -->
 
 <!-- SLOT:DS4 BEGIN -->
 ### DS4: Design system audit and fix: Set builder page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
 ### DS5: Design system audit and fix: Paths, sources and not-found pages
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS5 END -->
 
 <!-- SLOT:DS6 BEGIN -->
 ### DS6: Design system audit and fix: Harmony (Camelot) page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS6 END -->
 
 <!-- SLOT:DS8 BEGIN -->
 ### DS8: Design system audit and fix: Pipeline page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS8 END -->
 
 <!-- SLOT:DS9 BEGIN -->
 ### DS9: Design system audit and fix: Settings page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS9 END -->
 
 <!-- SLOT:R1 BEGIN -->
@@ -764,8 +765,8 @@ Work done:
 
 <!-- SLOT:L4 BEGIN -->
 ### L4: start-dev applies the migrations added since 26 Oct
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:L4 END -->
 
 <!-- SLOT:E1 BEGIN -->
@@ -776,8 +777,8 @@ Work done:
 
 <!-- SLOT:SB2 BEGIN -->
 ### SB2: Set builder: export dialog
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:SB2 END -->
 
 <!-- SLOT:SEC6A BEGIN -->
@@ -790,8 +791,8 @@ Work done:
 
 <!-- SLOT:S3 BEGIN -->
 ### S3: Music search UI: show the real error
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:S3 END -->
 
 <!-- SLOT:L3 BEGIN -->
@@ -802,26 +803,26 @@ Work done:
 
 <!-- SLOT:L5 BEGIN -->
 ### L5: Library reconciliation report
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:L5 END -->
 
 <!-- SLOT:E3 BEGIN -->
 ### E3: Enrichment replay and coverage report
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:E3 END -->
 
 <!-- SLOT:SB3 BEGIN -->
 ### SB3: Set builder: reorder tracks
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:SB3 END -->
 
 <!-- SLOT:SEC6B BEGIN -->
 ### SEC6B: AI proxy: frontend client and migration note
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:SEC6B END -->
 
 <!-- SLOT:U1 BEGIN -->
@@ -860,146 +861,146 @@ Work done:
 
 <!-- SLOT:U6 BEGIN -->
 ### U6: Upgrade RabbitMQ to 4.3 in the dev stack
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U6 END -->
 
 <!-- SLOT:U7 BEGIN -->
 ### U7: Prepare the Postgres 18 upgrade (owner runs it)
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U7 END -->
 
 <!-- SLOT:U8 BEGIN -->
 ### U8: Pin every GitHub Action to its latest release
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U8 END -->
 
 <!-- SLOT:U9 BEGIN -->
 ### U9: Upgrade services/api-gateway-internal to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U9 END -->
 
 <!-- SLOT:U10 BEGIN -->
 ### U10: Upgrade services/audio-analysis to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U10 END -->
 
 <!-- SLOT:U11 BEGIN -->
 ### U11: Upgrade services/browser-collector to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U11 END -->
 
 <!-- SLOT:U12 BEGIN -->
 ### U12: Upgrade services/data-transformer to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U12 END -->
 
 <!-- SLOT:U13 BEGIN -->
 ### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U13 END -->
 
 <!-- SLOT:U14 BEGIN -->
 ### U14: Upgrade services/db-connection-pool to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U14 END -->
 
 <!-- SLOT:U15 BEGIN -->
 ### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U15 END -->
 
 <!-- SLOT:U16 BEGIN -->
 ### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U16 END -->
 
 <!-- SLOT:U17 BEGIN -->
 ### U17: Upgrade services/graphql-api to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U17 END -->
 
 <!-- SLOT:U18 BEGIN -->
 ### U18: Upgrade services/metadata-enrichment to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U18 END -->
 
 <!-- SLOT:U20 BEGIN -->
 ### U20: Upgrade services/scraper-orchestrator to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U20 END -->
 
 <!-- SLOT:U21 BEGIN -->
 ### U21: Upgrade services/serato-integration to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U21 END -->
 
 <!-- SLOT:U22 BEGIN -->
 ### U22: Upgrade services/websocket-api to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U22 END -->
 
 <!-- SLOT:U23 BEGIN -->
 ### U23: Upgrade services/streaming-integrations to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U23 END -->
 
 <!-- SLOT:U24 BEGIN -->
 ### U24: Upgrade services/tidal-integration to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U24 END -->
 
 <!-- SLOT:U19 BEGIN -->
 ### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U19 END -->
 
 <!-- SLOT:U25 BEGIN -->
 ### U25: Upgrade shared/templates to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U25 END -->
 
 <!-- SLOT:U26 BEGIN -->
 ### U26: Upgrade services/api-gateway to Node 26 and latest npm dependencies
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U26 END -->
 
 <!-- SLOT:U27 BEGIN -->
 ### U27: Upgrade services/enhanced-visualization-service to Node 26 and latest npm dependencies
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U27 END -->
 
 <!-- SLOT:U28 BEGIN -->
 ### U28: Upgrade services/health-monitor to Node 26 and latest npm dependencies
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U28 END -->
 
 <!-- SLOT:U29 BEGIN -->
 ### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U29 END -->
 
 ## Scheduled run
