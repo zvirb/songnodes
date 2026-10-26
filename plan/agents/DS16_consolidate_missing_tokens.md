@@ -1,6 +1,6 @@
 DS16: Consolidate missing design-system tokens from all audits
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS16 BEGIN/END). Send this package only after the DS1 to DS15 PRs are merged.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS16: Consolidate missing design-system tokens from all audits" on a branch starting with "ds16-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS16 BEGIN/END). Send this package only after the DS1 to DS15 PRs are merged.
 
 ## Task
 Read every docs/design-system/audits/DS*.md. Produce docs/design-system/audits/MISSING_TOKENS.md:
@@ -9,5 +9,11 @@ Read every docs/design-system/audits/DS*.md. Produce docs/design-system/audits/M
 3. The same for MISSING COMPONENTS AND PATTERNS and for requested exceptions.
 4. A proposed version bump per design-system/17-governance.md and the exact steps (edit source, build_tokens.py, build_bundle.py, scripts/sync-design-system.sh) for the maintainers to run.
 5. A short table of which audit pages are clean.
-Owned paths: docs/design-system/audits/MISSING_TOKENS.md only. Do NOT edit design-system/, frontend/src/styles/design-system/ or any app code, and do not invent tokens that no audit reported.
-Checks: none to run beyond reading; say so. Hand-back: totals and the three most widespread gaps.
+
+## Owned paths
+- docs/design-system/audits/MISSING_TOKENS.md
+
+(Do NOT edit design-system/, frontend/src/styles/design-system/ or any app code, and do not invent tokens that no audit reported.)
+
+## Checks
+None to run beyond reading; say so. Hand-back: totals and the three most widespread gaps.

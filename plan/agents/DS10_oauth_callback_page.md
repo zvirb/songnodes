@@ -1,6 +1,6 @@
 DS10: Design system audit and fix: OAuth callback page
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS10 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS10: Design system audit and fix: OAuth callback page" on a branch starting with "ds10-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS10 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: OAuth callback page. Route: /callback/spotify, /oauth/callback.
@@ -40,6 +40,8 @@ Create docs/design-system/audits/DS10.md with these sections, in this order:
 
 ## Owned paths
 - frontend/src/components/OAuthCallback.tsx
+- docs/design-system/audits/DS10.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

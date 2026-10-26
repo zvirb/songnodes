@@ -2,23 +2,43 @@
 
 Guide: *Architectural Modularity and Cognitive Sustainability in Generative Software Engineering* (the "vibe coding report"). Its claims are used as working heuristics, not as measured facts about this repo. This file replaces the wave plan in the laptop copy of `INTEGRATION_PLAN.md` for everything not yet merged. It is the single plan; `plan/launch_jules.py` in this repo is the single launcher.
 
-## 1. What the audit of main found (5d1da0f, 26 Oct 05:43)
+## 1. What the audit of main found (`5d1da0f`, 26 Oct 05:43, updated at `60dc69b`, 26 Oct 17:30)
 
 The report's main warning is that a large changeset silently deletes working logic next to the change. That has already happened here several times:
 
-| Merged work | Deleted by | What is missing on main now |
+| Merged work | Deleted by | Status on main now |
 |---|---|---|
-| FE1 track bridge (#91) | #93, the stale duplicate WP0 merge | `hooks/useUnifiedTracks.ts`, `services/trackSyncAdapter.ts`, `services/unifiedTrackService.ts` and its test. Three pages carry TEMP copies instead. |
-| FE3 route finder (#133) | #136 "fix(ci): fix broken package.json ..." (70 files, -3,679 lines) | All of `features/pathfinder/`. `/paths` still shows the placeholder. |
-| WP8 graph projection (#128, #131) | #136 | `datalayer/graph_projection.py`, `services/graph-projection/`, migration 220, the handlers wiring, WP8 docs. |
-| BE1 real music search (#118) | never landed | Only the test fakes were merged. The REST API still returns "Mock Artist" / "Mock Album". |
-| WP3 resolver (#142) | n/a | Two copies, in `services/reference-data/resolver/` and `services/reference_data/resolver/`. It also rewrote WP0's fixtures. |
+| FE1 track bridge (#91) | #93, the stale duplicate WP0 merge | **Restored in `R1` (#165).** `hooks/useUnifiedTracks.ts`, `services/trackSyncAdapter.ts`, `services/unifiedTrackService.ts` and its test are back on `main`. |
+| FE3 route finder (#133) | #136 "fix(ci): fix broken package.json ..." (70 files, -3,679 lines) | Missing (`R2` restores `features/pathfinder/`, `P1` routes `/paths`). |
+| WP8 graph projection (#128, #131) | #136 | **Restored in `R3` (#166).** `datalayer/graph_projection.py`, `services/graph-projection/`, migration 220, the `handlers.py` wiring, and `tests/graph_projection/` are back on `main`. |
+| BE1 real music search (#118) | never landed | Only the test fakes were merged. The REST API still returns "Mock Artist" / "Mock Album" (`S1` + `S2` replace it). |
+| WP3 resolver (#142) | n/a | Two copies, in `services/reference-data/resolver/` and `services/reference_data/resolver/` (`C1` consolidates them). |
+
+Wave 1 and `up` packages merged so far (`bbc695a..60dc69b`, zero out-of-scope file deletions):
+- **Guards & registries:** `G1` scope guard (#161, #169), `G2` frontend route registry (#170).
+- **Restorations & foundations:** `QA5` Windows design-system sync (#159), `SB1` set exporters (#160), `E2` web call log (#163), `R1` track bridge (#165), `R3` graph projection (#166).
+- **Runtime upgrades:** `U3` worker Python 3.15 (#164), `U1` rest_api Python 3.15 (#167), `U2` graph-visualization-api Python 3.15 (#168).
 
 Other findings:
 - Finished pages that were never routed: `features/camelot` (FE5, which duplicates `pages/CamelotPage.tsx`), `features/aiSetlists` (FE10) and the route finder. Each was waiting on a separate "wiring" package that edits the shared `App.tsx`.
 - Agent sessions committed scratch scripts to the repo root (`patch_*.py`, `fix_*.py`, `fix16.sh`).
 - 12 components in `frontend/src/components/` are imported by nothing. That folder holds 63 files and about 29,000 lines.
 - Work packages that bundled several jobs either finished only one of them (BE1 shipped only its test fakes) or reached into other packages' files to get CI green (#136).
+
+### 1.1 Post-plan change on `main`: PR #158 (`bbc695a`, 26 Oct 16:37)
+
+After this restructure plan was written (retiring `WP5` into `L1`–`L5`), an older monolithic `WP5` branch was merged in PR #158 (`bbc695a`). An independent audit of `bbc695a` found both overlap with `L1`–`L5` and **five defects now on `main`**:
+
+1. **Circular import crash in `services/common/datalayer/handlers.py`:** Line 15 (`from library.ingest.handler import library_ingest`) runs before `Context` (line 24) and `def handler` (line 35) are defined, while `services/library/ingest/handler.py` imports `from common.datalayer.handlers import handler, Context`. Importing `common.datalayer.handlers` fails with `ImportError: cannot import name 'handler' from partially initialized module 'common.datalayer.handlers'`.
+2. **Missing `COPY services/library /app/library` in Dockerfiles:** Neither `services/rest_api/Dockerfile` nor `services/worker/Dockerfile` copies `services/library` into `/app/library`. Rebuilding `rest-api` or `worker` from `main` fails on startup with `ModuleNotFoundError: No module named 'library'`.
+3. **Invalid evidence field names in `services/library/importer/import_library.py`:** Line 50 passes `'label'` and `'release_year'` to `record_evidence()`, violating the `CHECK` constraint on `silver_track_metadata_evidence.field` in `014_data_layer_up.sql` (`'record_label'` is allowed; `'label'` and `'release_year'` are not). Similarly, `sql/migrations/181_insert_reconciliation_reports_up.sql` queries `field = 'mbid'` instead of `'musicbrainz_id'`.
+4. **Outbox UUID type mismatch in `services/library/model/library_db.py`:** Line 21 passes an integer `set_id` (`library.sets.id` is `BIGSERIAL`) to `append_outbox()`, which requires `aggregate_id UUID NOT NULL` in `outbox_events`.
+5. **No tests and unapplied migrations:** PR #158 added zero unit tests (`tests/library_*` do not exist) and `scripts/start-dev.sh` does not apply `sql/migrations/180_*`–`184_*`.
+
+**Disposition of `L1`–`L5` after PR #158:**
+- Do **not** send `L1`, `L2`, `L3` or `L4` as originally written; they collide directly with files and migrations (`180`–`184`, `services/library/**`, `services/rest_api/routers/library_ingest.py`) already on `main`.
+- Apply a **pre-Wave-1 hotfix (`L0` / owner fix)** to resolve the circular import in `handlers.py` and add `COPY services/library /app/library` to `services/rest_api/Dockerfile` and `services/worker/Dockerfile` so containers build and start cleanly.
+- Repurpose `L1`–`L4` into small repair-and-test packages against the merged `services/library/` code (or hold them while `L5` adds the standalone reconciliation CLI).
 
 ## 2. What the report says and how it applies here
 
@@ -52,12 +72,15 @@ Target structure (reached one package at a time):
 
 | Wave | Packages (one job each) | Waits on |
 |---|---|---|
-| 1, recover and guard | QA5 sync script, G1 scope guard, G2 route registry, G3 router registry, R1 restore track bridge, R2 restore route finder, R3 restore graph projection, C1 one resolver, C2 root scripts, S1 search service, L1 library model, E2 web call log, SB1 set exporters | nothing |
-| 2, wire pages, next layer | QA4 refmb tests, QA6 worker test, P1 /paths, P2 one Camelot page, P3 AI setlists route, FE9 add to targets, S2 search proxy without mocks, L2 importer, L4 saved sets API, E1 local MB provider, SB2 export dialog, SEC6A AI proxy route | wave 1 merged; each brief names its own dependency (QA4 also needs PR #121 merged or closed) |
-| 3 | QA3 graph API tests, S3 search UI errors, L3 ingest API, L5 reconciliation, E3 replay report, SB3 reorder, SEC5 REST token auth, SEC6B AI proxy client | wave 2 |
-| 4, design system per page | DS1 to DS15, then DS16 (held) | wave 3. **First rerun `plan/build_ds_prompts.py` with its ENTRIES updated for the G2 registry and P2**, so ownership matches the new files. |
+| **Pre-1 hotfix** | Fix PR #158 circular import in `services/common/datalayer/handlers.py` and `COPY services/library /app/library` in `rest_api` + `worker` Dockerfiles | nothing (do before Wave 1A) |
+| **1A, guards & registries** | `G1` scope guard, `G2` route registry, `G3` router registry | Pre-1 hotfix; merge `G1` first so CI enforces scope on everything after |
+| **1B, recover & foundations** | `QA5` sync script, `R1` restore track bridge, `R2` restore route finder, `R3` restore graph projection, `C1` one resolver, `C2` root scripts, `S1` search service, `E2` web call log, `SB1` set exporters (`L1` held/superseded by PR #158) | Wave 1A merged |
+| **2, wire pages, next layer** | `QA4` refmb tests, `QA6` worker test, `P1` `/paths`, `P2` one Camelot page, `P3` AI setlists route, `FE9` add to targets, `S2` search proxy without mocks, `E1` local MB provider, `SB2` export dialog, `SEC6A` AI proxy route (`L2`, `L4` held for PR #158 repair) | Wave 1B merged; each brief names its own dependency |
+| **3** | `QA3` graph API tests, `S3` search UI errors, `L5` reconciliation, `E3` replay report, `SB3` reorder, `SEC5` REST token auth, `SEC6B` AI proxy client (`L3` held for PR #158 repair) | Wave 2 merged |
+| **`up` & `up-legacy`** | `U1`–`U5` (running stack Python 3.15 + Redis 8.10), then `U6`, `U9`–`U29` | Run **after** Wave 1B structural recovery is verified on the baseline runtime |
+| **4, design system per page** | `U8` Actions pins, `DS1` to `DS15`, then `DS16` (held) | Wave 3 merged. **First update `plan/build_ds_prompts.py`** so `ENTRIES` match `G2`/`P1`–`P3` AND `## Owned paths` includes `docs/design-system/audits/{code}.md` and `frontend/design-system-pending.txt` for `G1` compatibility. |
 
-Retired because they were split or replaced: WP2 (ref_mb is a separate database), WP4 → E1/E2/E3, WP5 → L1 to L5, BE1 → S1/S2/S3, FE1 → R1, FE3 → R2 + P1, FE4 → SB1/SB2/SB3, FE11 and FEW (replaced by G2 plus P1 to P3), SEC6 → SEC6A/SEC6B. The laptop launcher in `E:\musicLibrary\plan` is retired; it refuses everything and points here.
+Retired because they were split or replaced: WP2 (ref_mb is a separate database), WP4 → E1/E2/E3, WP5 → merged in #158 (L1–L4 held for repair, L5 active), BE1 → S1/S2/S3, FE1 → R1, FE3 → R2 + P1, FE4 → SB1/SB2/SB3, FE11 and FEW (replaced by G2 plus P1 to P3), SEC6 → SEC6A/SEC6B. The laptop launcher in `E:\musicLibrary\plan` is retired; it refuses everything and points here.
 
 Briefs are generated: `python plan/build_rs_prompts.py` writes every R/G/C/S/L/E/SB/P/FE9/SEC brief and adds missing STATUS.md slots. The DS briefs come from `plan/build_ds_prompts.py`. The QA briefs are hand-written.
 
@@ -83,11 +106,11 @@ Test, lint and type-check tooling was upgraded directly in PR #155, not by Jules
 
 This retires QA1 and QA2.
 
-Everything else is one-job Jules packages built by `plan/build_upgrade_prompts.py`. That script looks up the latest versions when it runs and writes the chosen versions into each brief. Rerun it before sending, so the targets are current.
+Everything else is one-job Jules packages built by `plan/build_upgrade_prompts.py`. That script looks up the latest versions when it runs and writes the chosen versions into each brief. Rerun it before sending, so the targets are current. **Schedule note:** send `up` after Wave 1B is merged and verified so runtime upgrades do not compound with structural recovery.
 
 | Wave | Packages | Notes |
 |---|---|---|
-| `up` (send with wave 1) | U1 rest_api, U2 graph-visualization-api, U3 worker, U4 scrapers (all Python 3.15), U5 Redis 8.10 | The running stack first. |
+| `up` (after Wave 1B) | U1 rest_api, U2 graph-visualization-api, U3 worker, U4 scrapers (all Python 3.15), U5 Redis 8.10 | The running stack first, once Wave 1 recovery is green. |
 | `up-legacy` (after `up` is merged) | U6 RabbitMQ 4.3; U9–U18, U20–U24 Python services not in compose (3.15); U19 nlp-processor (3.14, since spaCy needs Python <3.15); U25 base template; U26–U28 Node services (Node 26); U29 graph projection (Python 3.15 and neo4j 6, after R3) | Keeps every image building. |
 | `4` | U8 GitHub Actions pinned by SHA to their latest releases | After waves 1–3, which edit workflows. |
 | held | U7 Postgres 18.6 | Prepares a new volume, a migration script and a runbook. Send it with `--only U7`. Merge it only after the owner has run `scripts/upgrade-postgres-18.sh`. The old volume is never removed. |

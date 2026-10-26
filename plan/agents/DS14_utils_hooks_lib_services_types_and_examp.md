@@ -1,6 +1,6 @@
 DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS14 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples" on a branch starting with "ds14-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS14 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Utils, hooks, lib, services, types and examples. Route: none (code only).
@@ -42,6 +42,8 @@ Create docs/design-system/audits/DS14.md with these sections, in this order:
 - frontend/src/examples/CommunityDetectionExample.tsx
 - frontend/src/examples/GraphVisualizationEnhanced.example.tsx
 - frontend/src/examples/spatialIndexUsage.example.tsx
+- frontend/src/features/setBuilder/exporters.test.ts
+- frontend/src/features/setBuilder/exporters.ts
 - frontend/src/hooks/index.ts
 - frontend/src/hooks/useForceSimulation.ts
 - frontend/src/hooks/useGraphInteraction.ts
@@ -50,8 +52,14 @@ Create docs/design-system/audits/DS14.md with these sections, in this order:
 - frontend/src/hooks/useLiveDataLoader.tsx
 - frontend/src/hooks/useStaleClosureSafeState.ts
 - frontend/src/hooks/useToast.tsx
+- frontend/src/hooks/useUnifiedTracks.ts
 - frontend/src/lib/apiBase.test.ts
+- frontend/src/routes/registry.test.tsx
+- frontend/src/routes/registry.tsx
 - frontend/src/services/aiService.ts
+- frontend/src/services/trackSyncAdapter.ts
+- frontend/src/services/unifiedTrackService.test.ts
+- frontend/src/services/unifiedTrackService.ts
 - frontend/src/types/d3-scale-chromatic.d.ts
 - frontend/src/types/unifiedTrack.ts
 - frontend/src/utils/attributions.test.ts
@@ -77,6 +85,8 @@ Create docs/design-system/audits/DS14.md with these sections, in this order:
 - frontend/src/utils/visualEncoding.ts
 - frontend/src/utils/visualEncodingIntegration.ts
 - frontend/src/vite-env.d.ts
+- docs/design-system/audits/DS14.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

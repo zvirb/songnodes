@@ -1,6 +1,6 @@
 DS3: Design system audit and fix: Library page
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS3 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS3: Design system audit and fix: Library page" on a branch starting with "ds3-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS3 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Library page. Route: /library.
@@ -45,6 +45,8 @@ Create docs/design-system/audits/DS3.md with these sections, in this order:
 - frontend/src/features/musicLibrary/musicLibrary.css
 - frontend/src/features/musicLibrary/setBuilder.ts
 - frontend/src/features/musicLibrary/storage.ts
+- docs/design-system/audits/DS3.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

@@ -1,6 +1,6 @@
 DS12: Design system audit and fix: DJ interface, setlist builder and pathfinder components
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS12 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS12: Design system audit and fix: DJ interface, setlist builder and pathfinder components" on a branch starting with "ds12-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS12 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: DJ interface, setlist builder and pathfinder components. Route: none (not reached from a route).
@@ -67,6 +67,8 @@ Create docs/design-system/audits/DS12.md with these sections, in this order:
 - frontend/src/components/SetlistBuilder/useSetlistState.ts
 - frontend/src/components/SetlistBuilder/utils.ts
 - frontend/src/components/ds/index.test.tsx
+- docs/design-system/audits/DS12.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

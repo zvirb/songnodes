@@ -6,7 +6,7 @@ Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow "Working rules for agents"
 Bring back the WP8 graph projection outbox consumer that the PR #136 CI fix deleted, without the scratch scripts that came with it.
 
 ## Context (verified on main 2026-10-26)
-WP8 (PR #128, dee69d5; PR #131, f188682) added services/common/datalayer/graph_projection.py, services/graph-projection/{Dockerfile, cli.py, requirements.txt}, sql/migrations/220_graph_consumer_{up,down}.sql, docs/integration/WP8/{decisions/2026-10-25-WP8-graph.md, versions.csv} and a 14-line change to services/common/datalayer/handlers.py. PR #136 (ecdfe4a) deleted all of it and reverted the handlers.py lines. The graph page has no projected data without it.
+WP8 (PR #128, dee69d5; PR #131, f188682) added services/common/datalayer/graph_projection.py, services/graph-projection/{Dockerfile, cli.py, requirements.txt}, sql/migrations/220_graph_consumer_{up,down}.sql, docs/integration/WP8/{decisions/2026-10-25-WP8-graph.md, versions.csv} and a 14-line change to services/common/datalayer/handlers.py. PR #136 (ecdfe4a) deleted all of it and reverted the handlers.py lines. The graph page has no projected data without it. Note: handlers.py now also has a bottom-of-file library_ingest import from PR #158; preserve it.
 
 ## Owned paths
 - services/common/datalayer/graph_projection.py

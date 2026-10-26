@@ -1,6 +1,6 @@
 QA5: Make sync-design-system.sh work on Windows
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md. No access to the user's laptop, local data or secrets; work from the repo and fixtures. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:QA5 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below. Do not edit frontend/src/styles/design-system/ or design-system/. If a check cannot run in your sandbox, say so in the PR.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md. No access to the user's laptop, local data or secrets; work from the repo and fixtures. Open one PR against main titled "QA5: Make sync-design-system.sh work on Windows" on a branch starting with "qa5-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:QA5 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below. Do not edit frontend/src/styles/design-system/ or design-system/. If a check cannot run in your sandbox, say so in the PR.
 
 ## Problem
 `bash scripts/sync-design-system.sh --check` on Windows crashes with UnicodeDecodeError (cp1252 cannot decode byte 0x8f) because the embedded python reads files with the default locale encoding. With PYTHONUTF8=1 it passes ("design-system 1.1.1: frontend copy in sync").

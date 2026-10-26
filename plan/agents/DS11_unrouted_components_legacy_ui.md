@@ -1,6 +1,6 @@
 DS11: Design system audit and fix: Unrouted components, legacy UI
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS11 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS11: Design system audit and fix: Unrouted components, legacy UI" on a branch starting with "ds11-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS11 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Unrouted components, legacy UI. Route: none (not reached from a route).
@@ -61,6 +61,8 @@ Create docs/design-system/audits/DS11.md with these sections, in this order:
 - frontend/src/components/StatsPanel.tsx
 - frontend/src/components/TrackEditModal.tsx
 - frontend/src/components/TrackSearch.tsx
+- docs/design-system/audits/DS11.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

@@ -1,6 +1,6 @@
 DS8: Design system audit and fix: Pipeline page
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS8 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS8: Design system audit and fix: Pipeline page" on a branch starting with "ds8-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS8 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Pipeline page. Route: /pipeline.
@@ -42,6 +42,8 @@ Create docs/design-system/audits/DS8.md with these sections, in this order:
 - frontend/src/features/pipeline/usePipelineTelemetry.ts
 - frontend/src/pages/ScraperProgressPage.tsx
 - frontend/src/utils/dataLoaderUtils.ts
+- docs/design-system/audits/DS8.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

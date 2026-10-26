@@ -1,6 +1,6 @@
 DS2B: Design system audit and fix: Graph page, second half of its files
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS2B BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS2B: Design system audit and fix: Graph page, second half of its files" on a branch starting with "ds2b-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS2B BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Graph page, second half of its files. Route: /graph.
@@ -59,6 +59,8 @@ Create docs/design-system/audits/DS2B.md with these sections, in this order:
 - frontend/src/utils/harmonic.ts
 - frontend/src/utils/pathfinding.ts
 - frontend/src/utils/serverPath.ts
+- docs/design-system/audits/DS2B.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

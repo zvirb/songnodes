@@ -1,6 +1,6 @@
 DS9: Design system audit and fix: Settings page
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS9 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS9: Design system audit and fix: Settings page" on a branch starting with "ds9-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS9 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
 Page or area: Settings page. Route: /settings.
@@ -46,6 +46,8 @@ Create docs/design-system/audits/DS9.md with these sections, in this order:
 - frontend/src/pages/SettingsPage.tsx
 - frontend/src/services/apiKeyService.ts
 - frontend/src/shell/PreferencesPanel.tsx
+- docs/design-system/audits/DS9.md
+- frontend/design-system-pending.txt (remove migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

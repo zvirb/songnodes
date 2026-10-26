@@ -1,5 +1,7 @@
 # Integration plan: MetaBrainz reference data + musicLibrary into songnodes
 
+> **Superseded for Wave Execution (26 Oct 2026):** All unmerged work packages from this document have been decomposed into atomic, single-job packages in [`plan/RESTRUCTURE.md`](../../plan/RESTRUCTURE.md) (`C1`, `E1`–`E3`, `L1`–`L5`, `R3`, `P1`–`P3`, etc.) and are launched via `plan/launch_jules.py`. Retain this document as the domain and contract reference (`D1`–`D12`, §3–4); follow [`plan/RESTRUCTURE.md`](../../plan/RESTRUCTURE.md) for active wave ordering and PR rules.
+
 *Written 25 Oct 2026. Plan only: no product code is changed by this document. Fan-out prompts are in `plan/agents/`.*
 *Source of this file: `plan/build_prompts.py` generates the agent prompts; this plan is hand-written.*
 

@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 import os
 
-from neo4j import AsyncGraphDatabase
+try:
+    from neo4j import AsyncGraphDatabase
+except ImportError:
+    AsyncGraphDatabase = None
 
 CONSUMER = 'graph_projection'
 
