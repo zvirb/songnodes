@@ -5,7 +5,6 @@ import { NotFoundPage, PlannedModulePage, SourcesPage } from '../pages/ModulePag
 
 const GraphPage = React.lazy(() => import('../pages/GraphPage'));
 const SettingsPage = React.lazy(() => import('../pages/SettingsPage'));
-const CamelotPage = React.lazy(() => import('../pages/CamelotPage'));
 const ScraperProgressPage = React.lazy(() => import('../pages/ScraperProgressPage'));
 
 export type RouteDef = { path: string; element: React.ReactElement };
@@ -15,7 +14,6 @@ const STATIC_ROUTES: RouteDef[] = [
   { path: '/', element: <HomePage /> },
   { path: '/graph', element: <GraphPage /> },
   { path: '/paths', element: <PlannedModulePage mod="paths" /> },
-  { path: '/harmony', element: <CamelotPage /> },
   { path: '/sources', element: <Navigate to="/sources/targets" replace /> },
   { path: '/sources/targets', element: <SourcesPage /> },
   { path: '/pipeline', element: <ScraperProgressPage /> },
