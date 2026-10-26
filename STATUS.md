@@ -720,8 +720,8 @@ Work done:
 
 <!-- SLOT:P1 BEGIN -->
 ### P1: Route /paths to the route finder page
-- Start: _not started_
-- End: _not finished_
+- Start: 2024-05-15
+- End: 2024-05-15 Added `frontend/src/features/pathfinder/route.tsx` to expose the page through the shared registry. Switched to `useUnifiedTracks` from the `hooks/` directory, gracefully handling empty library paths and potential errors. `frontend/src/features/pathfinder/useUnifiedTracks.ts` was deleted. Pre-commit checks passed successfully.
 <!-- SLOT:P1 END -->
 
 <!-- SLOT:P2 BEGIN -->

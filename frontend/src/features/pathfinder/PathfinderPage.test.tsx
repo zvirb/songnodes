@@ -17,7 +17,7 @@ beforeAll(() => {
 import PathfinderPage from './PathfinderPage';
 
 // Mock the hooks
-vi.mock('./useUnifiedTracks', () => ({
+vi.mock('../../hooks/useUnifiedTracks', () => ({
   useUnifiedTracks: () => ({
     tracks: [
       { id: '1', title: 'Track 1', artist: 'Artist 1', key: '8A' },

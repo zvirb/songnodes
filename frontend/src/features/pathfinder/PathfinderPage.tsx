@@ -6,12 +6,12 @@ import { Route, Search, ServerCrash, X } from 'lucide-react';
 import { Title, Bpm, KeyBadge, EnergyBar, SN } from '../../lib/songnodes';
 import { CompatibilityBadge, EmptyPanel, ErrorPanel, LoadingPanel } from '../../components/ds';
 import { usePathfinder } from '../../components/PathfinderPanel/hooks';
-import { useUnifiedTracks } from './useUnifiedTracks';
+import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { UnifiedTrack } from '../../types/unifiedTrack';
 import '../../components/PathfinderPanel.css';
 
 export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds: string[]) => void }) {
-  const { tracks, source } = useUnifiedTracks();
+  const { tracks, source, isLoading, error } = useUnifiedTracks();
   const pf = usePathfinder();
   const uid = useId().replace(/:/g, '');
 
@@ -75,12 +75,26 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
 
       <div className="sn-page__body pf">
 
-        <div className="sn-inline-message" data-status={source === 'backend' ? 'ok' : 'warn'}>
-          <span className="sn-inline-message__text">
-             Using data from: {source === 'backend' ? 'Backend' : 'Library fixture'}.
-             {tracksWithoutKey.length > 0 && ` ${tracksWithoutKey.length} tracks excluded due to missing keys.`}
-          </span>
-        </div>
+        {error && (
+          <ErrorPanel title="Cannot load tracks" icon={ServerCrash}>
+            {error}
+          </ErrorPanel>
+        )}
+
+        {!error && !isLoading && tracks.length === 0 && (
+          <EmptyPanel title="No tracks found" icon={Route}>
+            There are no tracks to build a path from. Try adding tracks to the library.
+          </EmptyPanel>
+        )}
+
+        {!error && tracks.length > 0 && (
+          <div className="sn-inline-message" data-status={source === 'backend' ? 'ok' : 'warn'}>
+            <span className="sn-inline-message__text">
+              Using data from: {source === 'backend' ? 'Backend' : 'Library fixture'}.
+              {tracksWithoutKey.length > 0 && ` ${tracksWithoutKey.length} tracks excluded due to missing keys.`}
+            </span>
+          </div>
+        )}
 
         <div className="pf__facts">
           {/* Start Track Picker */}
