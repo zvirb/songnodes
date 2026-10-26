@@ -44,7 +44,6 @@ Create docs/design-system/audits/DS1.md with these sections, in this order:
 - frontend/src/lib/songnodes.tsx
 - frontend/src/main.tsx
 - frontend/src/pages/HomePage.tsx
-- frontend/src/routes/registry.tsx
 - frontend/src/shell/AppShell.tsx
 - frontend/src/shell/PageParts.tsx
 - docs/design-system/audits/DS1.md

@@ -39,16 +39,28 @@ Create docs/design-system/audits/DS13.md with these sections, in this order:
 7. Could not check: states you could not reach statically, and checks you could not run.
 
 ## Owned paths
+- frontend/src/features/aiSetlists/AISetlistsPage.tsx
+- frontend/src/features/aiSetlists/TEMP_useUnifiedTracks.ts
+- frontend/src/features/aiSetlists/api/config.ts
+- frontend/src/features/aiSetlists/api/dedupe.ts
+- frontend/src/features/aiSetlists/api/directRun.ts
+- frontend/src/features/aiSetlists/api/parser.ts
+- frontend/src/features/aiSetlists/api/prompt.ts
+- frontend/src/features/aiSetlists/api/schema.ts
+- frontend/src/features/aiSetlists/components/ui.tsx
 - frontend/src/features/aiSetlists/index.ts
 - frontend/src/features/aiSetlists/tests/aiSetlists.test.ts
 - frontend/src/features/aiSetlists/tests/api.test.ts
+- frontend/src/features/camelot/CamelotPage.tsx
+- frontend/src/features/camelot/TEMP_useUnifiedTracks.ts
+- frontend/src/features/camelot/camelot.css
 - frontend/src/features/camelot/camelot.test.tsx
 - frontend/src/features/camelot/camelotLogic.test.ts
+- frontend/src/features/camelot/camelotLogic.ts
 - frontend/src/features/camelot/index.ts
 - frontend/src/features/musicLibrary/components/AITransitionHelper.tsx
-- frontend/src/features/musicLibrary/data.test.ts
+- frontend/src/features/musicLibrary/route.tsx
 - frontend/src/features/musicLibrary/setBuilder.test.ts
-- frontend/src/features/musicLibrary/targetAction/TargetActionButton.test.tsx
 - frontend/src/features/pipeline/usePipelineTelemetry.test.ts
 - docs/design-system/audits/DS13.md
 - frontend/design-system-pending.txt (comment out migrated lines only)

@@ -51,7 +51,6 @@ Create docs/design-system/audits/DS11.md with these sections, in this order:
 - frontend/src/components/IntelligentBrowser.legacy.tsx
 - frontend/src/components/LiveDataLoader.tsx
 - frontend/src/components/MultiSelect.tsx
-- frontend/src/components/MusicServiceSearch.test.tsx
 - frontend/src/components/NowPlayingDeck.tsx
 - frontend/src/components/OnboardingOverlay.tsx
 - frontend/src/components/PathBuilder.tsx
