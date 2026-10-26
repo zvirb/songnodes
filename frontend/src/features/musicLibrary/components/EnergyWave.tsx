@@ -84,9 +84,9 @@ export const EnergyWave: React.FC<{ title: React.ReactNode; titleId: string; sub
       <ul className="sn-chart-frame__legend" aria-label="Legend">
         <li>
           <svg className="sn-chart-frame__keysvg" width="30" height="12" aria-hidden="true">
-            <rect x="0" y="4" width="8" height="8" rx="1" style={{ fill: 'var(--energy-3)' }} />
-            <rect x="10" y="2" width="8" height="10" rx="1" style={{ fill: 'var(--energy-6)' }} />
-            <rect x="20" y="0" width="8" height="12" rx="1" style={{ fill: 'var(--energy-9)' }} />
+            <rect x="0" y="4" width="8" height="8" rx="1" fill="var(--energy-3)" />
+            <rect x="10" y="2" width="8" height="10" rx="1" fill="var(--energy-6)" />
+            <rect x="20" y="0" width="8" height="12" rx="1" fill="var(--energy-9)" />
           </svg>
           Energy per slot
         </li>

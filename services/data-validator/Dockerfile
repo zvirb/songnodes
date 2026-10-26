@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.15-slim
 
 WORKDIR /app
 
@@ -11,7 +11,10 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for better caching
 COPY data-validator/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y gcc \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy shared common directory with secrets_manager
 COPY common /app/common

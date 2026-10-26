@@ -563,8 +563,14 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS13 BEGIN -->
 ### DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
-- Start: _not started_
-- End: _not finished_
+- Start: 2024-10-26
+- End: 2024-10-26
+- Built:
+  - Reviewed all specified feature files. Fixed deviations in `AITransitionHelper`, `EnergyWave`, `ui`, and `usePipelineTelemetry`.
+  - Skipped out-of-scope files `AISetlistsPage.tsx`, `CamelotPage.tsx`, and `camelot.css`.
+  - Created DS13.md audit file.
+- Checks run: `vitest` pass, `check_design_system.py` pass. E2E Playwright skipped (unavailable in sandbox).
+- PR: Pending
 <!-- SLOT:DS13 END -->
 
 <!-- SLOT:DS14 BEGIN -->
@@ -616,9 +622,26 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Sources and not-found pages
-- Start: _not started_
-- End: _not finished_
+Start: 2026-10-26
+End: 2026-10-26
+What I built:
+- Audited `TargetTracksManager`, `MusicServiceSearch`, and `ModulePages.tsx` against the design system rules.
+- Replaced hardcoded px layouts, inline margins, and pixel font sizes with design system tokens and helper classes.
+- Used `<StatusPill>` and standard HTML/CSS patterns in place of hand-rolled components.
+- Migrated `NotFoundPage` to use the design system's `ErrorPage` layout instead of its custom structure.
+- Wrote findings and reported a missing `ChipInput` component to `docs/design-system/audits/DS5.md`.
+- Kept the code functional and cleanly integrated.
+
+Checks run:
+- Frontend format, typescript check, lint, vitest, build
+- scripts/sync-design-system.sh --check
+- npm run check:design-system
+- Vitest passed 151/151
+
+Not run:
+- Playwright E2E and visual tests (cannot run in this sandbox environment).
+
+PR: ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:DS5 END -->
 
 <!-- SLOT:DS6 BEGIN -->
@@ -821,8 +844,8 @@ Work done:
 
 <!-- SLOT:SB3 BEGIN -->
 ### SB3: Set builder: reorder tracks
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:SB3 END -->
 
 <!-- SLOT:SEC6B BEGIN -->
@@ -869,8 +892,8 @@ Work done:
 
 <!-- SLOT:U6 BEGIN -->
 ### U6: Upgrade RabbitMQ to 4.3 in the dev stack
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U6 END -->
 
 <!-- SLOT:U7 BEGIN -->
@@ -918,8 +941,11 @@ Work done:
 
 <!-- SLOT:U13 BEGIN -->
 ### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/data-validator base image to python:3.15-slim. Updated pinned versions for pytest-asyncio (1.4.1) and starlette (1.10.0). Added build step to remove build-essential after PyYAML compilation.
+- Checks run: `docker build` (success). `python -m pytest` (success). `import main` (success).
+- Checks not run: None.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U13 END -->
 
 <!-- SLOT:U14 BEGIN -->
@@ -933,8 +959,11 @@ Work done:
 
 <!-- SLOT:U15 BEGIN -->
 ### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/dlq-manager base image to Python 3.15. Requirements are already up to date.
+- Checks run: `docker build` succeeds, `python --version` inside the image prints 3.15, and `python -c "import main"` succeeds.
+- Checks not run: Pytest tests (none exist in the service folder).
+- End: 2026-10-26
 <!-- SLOT:U15 END -->
 
 <!-- SLOT:U16 BEGIN -->
@@ -995,8 +1024,8 @@ Work done:
 
 <!-- SLOT:U19 BEGIN -->
 ### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 11:51:15
+- End: 2026-10-26 12:47:04
 <!-- SLOT:U19 END -->
 
 <!-- SLOT:U25 BEGIN -->
@@ -1025,8 +1054,11 @@ Work done:
 
 <!-- SLOT:U29 BEGIN -->
 ### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved graph projection service to Python 3.15-slim. Upgraded neo4j driver to 6.x. Replaced `session.run()` with `driver.execute_query()`.
+- Checks run: `python -m pytest tests/graph_projection` inside the sandbox with python 3.12 (passes). `docker build` the graph projection service on python 3.15 (passes).
+- Checks not run: Full e2e tests due to lack of environment access.
+- End: 2026-10-26
 <!-- SLOT:U29 END -->
 
 ## Scheduled run

@@ -158,7 +158,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
       </div>
 
       {errors.length > 0 && searchResults.length > 0 && (
-        <div className="mss__errors" style={{ marginBottom: '1rem' }}>
+        <div className="sn-stack" style={{ gap: 'var(--space-2)' }}>
           {errors.map((e, i) => (
             <p key={i} className="sn-inline-message sn-inline-message--boxed" data-status="warn" role="alert">{e.message}</p>
           ))}
@@ -167,7 +167,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
 
       {selectedTracks.size > 0 && (
         <div className="mss__bulk">
-          <span role="status">{selectedTracks.size} selected</span>
+          <span role="status" className="body-s">{selectedTracks.size} selected</span>
           <button type="button" className="sn-btn sn-btn--sm" onClick={handleAddSelected}>
             <Plus size={16} strokeWidth={2} aria-hidden="true" />
             Add {selectedTracks.size} to targets
@@ -181,7 +181,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
         <span className="sn-loading-state__inline" role="status"><span className="sn-spinner" aria-hidden="true" />Searching…</span>
       ) : searchResults.length === 0 ? (
         searchQuery && errors.length > 0 ? (
-          <div className="mss__errors">
+          <div className="sn-stack" style={{ gap: 'var(--space-2)' }}>
             {errors.map((e, i) => (
               <ErrorPanel key={i} title="Search failed" status="warn">{e.message}</ErrorPanel>
             ))}
@@ -210,7 +210,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
                   <span className="sn-track-cell__meta">
                     {track.album ? <span className="sn-track-cell__mix">{track.album}</span> : null}
                     {track.album && track.duration_ms ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}
-                    {track.duration_ms ? <span className="sn-track-cell__dur">{SN.format.duration(track.duration_ms / 1000)}</span> : null}
+                    {track.duration_ms ? <span className="sn-track-cell__dur data">{SN.format.duration(track.duration_ms / 1000)}</span> : null}
                   </span>
                 </div>
                 <span className="sn-tag">{track.service === 'spotify' ? 'Spotify' : 'TIDAL'}</span>
