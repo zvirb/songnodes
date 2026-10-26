@@ -768,8 +768,10 @@ Work done:
 
 <!-- SLOT:SEC6A BEGIN -->
 ### SEC6A: AI proxy route on the REST API
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Added `POST /api/v1/ai/complete` endpoint in `services/rest_api/routers/ai_proxy.py` to act as an AI proxy.
+- Added comprehensive unit tests in `tests/ai_proxy/test_ai_proxy.py` to ensure provider keys are never exposed in the response and testing edge cases.
 <!-- SLOT:SEC6A END -->
 
 <!-- SLOT:S3 BEGIN -->
