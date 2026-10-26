@@ -1,9 +1,9 @@
-DS5: Design system audit and fix: Paths, sources and not-found pages
+DS17: Design system audit and fix: AI setlists import page
 
-Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS5: Design system audit and fix: Paths, sources and not-found pages" on a branch starting with "ds5-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS5 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
+Base: main at BASE_SHA. Repo: zvirb/songnodes. Follow AGENTS.md and CLAUDE.md (section 4, the design system, is mandatory). No access to the user's laptop, local data or secrets; work from the repo only. Open one PR against main titled "DS17: Design system audit and fix: AI setlists import page" on a branch starting with "ds17-"; do not merge it. Edit only the lines inside your own slot in STATUS.md (SLOT:DS17 BEGIN/END): dated start entry, dated end entry with what you built, checks run and not run, and the PR link. Stay inside the owned paths below.
 
 ## Scope
-Page or area: Paths, sources and not-found pages. Route: /paths, /sources/targets, * (pages/ModulePages.tsx).
+Page or area: AI setlists import page. Route: /sources/import.
 Review EVERY file listed under Owned paths for deviations from the SongNodes design system, and fix them. Read the page the way a user sees it: layout, every state (loading, empty, error, populated), every control, every piece of copy.
 
 ## Read first
@@ -29,7 +29,7 @@ Review EVERY file listed under Owned paths for deviations from the SongNodes des
 - Do not edit files outside the owned paths. If a deviation lives in a file another package owns, list it under "Elsewhere" in your audit file.
 
 ## Audit file (required)
-Create docs/design-system/audits/DS5.md with these sections, in this order:
+Create docs/design-system/audits/DS17.md with these sections, in this order:
 1. Summary: files reviewed (all of them, by path), deviations found, fixed, left open.
 2. Findings table: file, line, rule (section of the design system), what was wrong, fixed (yes/no), how.
 3. MISSING TOKENS: one row each: the value or need found, where it is used (file:line), what token name the design system would need (propose a name that follows the naming pattern in tokens.css; mark it a proposal), the nearest existing token and why it is not enough, and which design-system section would own it.
@@ -39,19 +39,17 @@ Create docs/design-system/audits/DS5.md with these sections, in this order:
 7. Could not check: states you could not reach statically, and checks you could not run.
 
 ## Owned paths
-- frontend/src/components/MusicServiceSearch.css
-- frontend/src/components/MusicServiceSearch.tsx
-- frontend/src/components/TargetTracksManager.css
-- frontend/src/components/TargetTracksManager.tsx
-- frontend/src/components/ds/index.tsx
-- frontend/src/lib/apiBase.ts
-- frontend/src/lib/utils.ts
-- frontend/src/pages/ModulePages.tsx
-- frontend/src/services/api.ts
-- frontend/src/types/dj.ts
-- frontend/src/types/index.ts
-- frontend/src/utils/trackMetadata.ts
-- docs/design-system/audits/DS5.md
+- frontend/src/features/aiSetlists/AISetlistsPage.tsx
+- frontend/src/features/aiSetlists/api/config.ts
+- frontend/src/features/aiSetlists/api/dedupe.ts
+- frontend/src/features/aiSetlists/api/directRun.ts
+- frontend/src/features/aiSetlists/api/parser.ts
+- frontend/src/features/aiSetlists/api/prompt.ts
+- frontend/src/features/aiSetlists/api/schema.ts
+- frontend/src/features/aiSetlists/components/ui.tsx
+- frontend/src/features/aiSetlists/route.tsx
+- frontend/src/services/aiService.ts
+- docs/design-system/audits/DS17.md
 - frontend/design-system-pending.txt (comment out migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
