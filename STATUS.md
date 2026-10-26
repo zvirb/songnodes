@@ -605,8 +605,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS3 BEGIN -->
 ### DS3: Design system audit and fix: Library page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Fixed inline pixel sizes, invalid tokens (`var(--text-2)`, `var(--spacing-md)`), missing padding and font-size tokens by replacing with `sn-` utility classes and correct space/fg tokens. Checked vitest tests and sync-design-system. Playwright tests could not be run. PR link: TBD.
 <!-- SLOT:DS3 END -->
 
 <!-- SLOT:DS4 BEGIN -->
@@ -616,9 +616,26 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Sources and not-found pages
-- Start: _not started_
-- End: _not finished_
+Start: 2026-10-26
+End: 2026-10-26
+What I built:
+- Audited `TargetTracksManager`, `MusicServiceSearch`, and `ModulePages.tsx` against the design system rules.
+- Replaced hardcoded px layouts, inline margins, and pixel font sizes with design system tokens and helper classes.
+- Used `<StatusPill>` and standard HTML/CSS patterns in place of hand-rolled components.
+- Migrated `NotFoundPage` to use the design system's `ErrorPage` layout instead of its custom structure.
+- Wrote findings and reported a missing `ChipInput` component to `docs/design-system/audits/DS5.md`.
+- Kept the code functional and cleanly integrated.
+
+Checks run:
+- Frontend format, typescript check, lint, vitest, build
+- scripts/sync-design-system.sh --check
+- npm run check:design-system
+- Vitest passed 151/151
+
+Not run:
+- Playwright E2E and visual tests (cannot run in this sandbox environment).
+
+PR: ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:DS5 END -->
 
 <!-- SLOT:DS6 BEGIN -->
@@ -821,8 +838,8 @@ Work done:
 
 <!-- SLOT:SB3 BEGIN -->
 ### SB3: Set builder: reorder tracks
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:SB3 END -->
 
 <!-- SLOT:SEC6B BEGIN -->
@@ -869,8 +886,8 @@ Work done:
 
 <!-- SLOT:U6 BEGIN -->
 ### U6: Upgrade RabbitMQ to 4.3 in the dev stack
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U6 END -->
 
 <!-- SLOT:U7 BEGIN -->
@@ -1031,8 +1048,11 @@ Work done:
 
 <!-- SLOT:U29 BEGIN -->
 ### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved graph projection service to Python 3.15-slim. Upgraded neo4j driver to 6.x. Replaced `session.run()` with `driver.execute_query()`.
+- Checks run: `python -m pytest tests/graph_projection` inside the sandbox with python 3.12 (passes). `docker build` the graph projection service on python 3.15 (passes).
+- Checks not run: Full e2e tests due to lack of environment access.
+- End: 2026-10-26
 <!-- SLOT:U29 END -->
 
 ## Scheduled run
