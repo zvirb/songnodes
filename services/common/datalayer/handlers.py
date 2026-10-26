@@ -182,7 +182,4 @@ async def graph_projection_reconcile(conn, ctx: Context, payload: Dict[str, Any]
     return await graph_projection.reconcile(conn, repair=bool(payload.get('repair')))
 
 
-try:
-    from library.ingest.handler import library_ingest  # noqa: F401, E402
-except ImportError:
-    pass
+from library.ingest.handler import library_ingest  # noqa: F401, E402
