@@ -51,7 +51,22 @@ class WorkerEndToEnd(unittest.TestCase):
 
     def cleanup(self):
         m = f'%{self.marker}%'
-        # 1) Remove the source rows first. Once they are gone, the live worker can only delete projection rows, never add them.
+        # 1) Emit deleted events so the live worker can detach/delete synthetic graph projection nodes cleanly.
+        sql(f"""BEGIN;
+            INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload)
+            SELECT 'track', id, 'deleted', '{{"_marker": "{self.marker}"}}'::jsonb FROM silver_enriched_tracks
+            WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
+            COMMIT;""")
+
+        # 2) Wait for the worker to process the deletion events.
+        deadline = time.time() + 15
+        while time.time() < deadline:
+            drained = sql(f"SELECT count(*) FROM outbox_events WHERE payload::text LIKE '{m}' AND seq > COALESCE((SELECT head FROM outbox_consumers WHERE consumer = 'graph_projection'), 0)").strip() == '0'
+            if drained:
+                break
+            time.sleep(1)
+
+        # 3) Remove the source rows first. Once they are gone, the live worker can only delete projection rows, never add them.
         sql(f"""BEGIN;
             DELETE FROM ingestion_jobs WHERE payload::text LIKE '{m}' OR idempotency_key LIKE '{m}'
                 OR idempotency_key ~ '^(backfill-after-ingest|backfill-next|proj-after-ingest|proj-after-backfill|ingest-next|ingest-after-scrape):';
@@ -61,8 +76,9 @@ class WorkerEndToEnd(unittest.TestCase):
             DELETE FROM bronze_scraped_tracks WHERE source_url LIKE '{m}';
             DELETE FROM bronze_scraped_playlists WHERE source_url LIKE '{m}';
             COMMIT;""")
-        # 2) Then the derived rows and events (a late worker pass over a deleted track now removes, rather than writes, a row).
+        # 4) Then the derived rows and events (a late worker pass over a deleted track now removes, rather than writes, a row).
         sql(f"""BEGIN;
+            DELETE FROM silver_track_transitions WHERE playlist_occurrences::text LIKE '{m}';
             DELETE FROM projection_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
             DELETE FROM outbox_events WHERE payload::text LIKE '{m}';
             COMMIT;""")
@@ -84,6 +100,8 @@ class WorkerEndToEnd(unittest.TestCase):
             if job['attempts'] >= 1 and job['last_error']:
                 break
             time.sleep(1)
+        else:
+            raise AssertionError(f"scrape trigger job {queued['job_id']} did not record a failure within 60s: {job}")
         # No unified scraper runs in the minimal stack: the failure is recorded, retried later, never reported as success.
         self.assertEqual(job['status'], 'queued', job)
         self.assertIn('unified scraper unreachable', job['last_error'])
@@ -114,9 +132,14 @@ class WorkerEndToEnd(unittest.TestCase):
         projected = '0'
         while time.time() < deadline:
             projected = sql(f"SELECT count(*) FROM projection_tracks WHERE track_title LIKE '%{self.marker}'").strip()
-            if projected == '3':
+            # Wait for graph_projection consumer to drain (outbox_events deleted or processed past our events).
+            # If the queue is empty for our tracks, the graph projection is done.
+            graph_drained = sql(f"SELECT count(*) FROM outbox_events WHERE payload::text LIKE '%{self.marker}%' AND seq > COALESCE((SELECT head FROM outbox_consumers WHERE consumer = 'graph_projection'), 0)").strip() == '0'
+            if projected == '3' and graph_drained:
                 break
             time.sleep(1)
+        else:
+            raise AssertionError(f"consumers did not catch up within 60s, found {projected}/3 projection_tracks, graph_drained: {graph_drained}")
         self.assertEqual(projected, '3', 'the projection consumer caught up through the chained job')
         one = sql(f"SELECT bpm || '|' || camelot_key FROM projection_tracks WHERE track_title = 'Flow One {self.marker}'").strip()
         self.assertEqual(one, '128.00|8A', 'scraped BPM/key flow through evidence into the projection')
