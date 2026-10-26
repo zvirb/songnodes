@@ -1049,8 +1049,11 @@ Work done:
 
 <!-- SLOT:U27 BEGIN -->
 ### U27: Upgrade services/enhanced-visualization-service to Node 26 and latest npm dependencies
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved enhanced-visualization-service to node:26-alpine. Upgraded typescript to ^7.0.2. Regenerated package-lock.json. Had to add vite as a devDependency to fix ERR_MODULE_NOT_FOUND on vite because vitest@5.0.5 requires it but it's not present. Fixed npm install in Dockerfiles to use --omit=dev and --legacy-peer-deps to support modern NPM and peer dependency resolution.
+- Checks run: `npm ci && npm test -- --passWithNoTests` (passes). `docker build` (passes). `docker run --rm enhanced-visualization-service:test node --version` (prints v26.12.1).
+- Checks not run: Full end-to-end suite.
+- End: 2026-10-26
 <!-- SLOT:U27 END -->
 
 <!-- SLOT:U28 BEGIN -->
