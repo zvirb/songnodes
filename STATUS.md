@@ -616,7 +616,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Paths, sources and not-found pages
+### DS5: Design system audit and fix: Sources and not-found pages
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:DS5 END -->
@@ -809,8 +809,8 @@ Work done:
 
 <!-- SLOT:L5 BEGIN -->
 ### L5: Library reconciliation report
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Implemented CLI for reconciliation report of duplicate candidates with ISRC, MBID, and norm_key matches. Wrote tests with planted duplicates asserting exactly what was expected.
 <!-- SLOT:L5 END -->
 
 <!-- SLOT:E3 BEGIN -->
@@ -929,8 +929,10 @@ Work done:
 
 <!-- SLOT:U16 BEGIN -->
 ### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `services/gold-to-operational-etl/Dockerfile` and `services/Dockerfile.gold_processor` base images to Python 3.15-slim. Verified requirements are already at the target version (asyncpg==0.32.0 / >=0.30.0) without needing changes.
+- Checks run: `docker build` for both images. Ran `python --version` inside the built images showing 3.15.1, and successfully imported their respective entry modules (`gold_to_operational_etl` and `gold_layer_processor`). No test files found for this service.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U16 END -->
 
 <!-- SLOT:U17 BEGIN -->
@@ -1164,3 +1166,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:FL4 END -->
+
+<!-- SLOT:DS7 BEGIN -->
+### DS7: Design system audit and fix: Paths (route finder) page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS7 END -->
+
+<!-- SLOT:DS17 BEGIN -->
+### DS17: Design system audit and fix: AI setlists import page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS17 END -->

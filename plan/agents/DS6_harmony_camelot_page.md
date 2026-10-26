@@ -45,8 +45,11 @@ Create docs/design-system/audits/DS6.md with these sections, in this order:
 - frontend/src/components/KeyMoodPanel.tsx
 - frontend/src/components/MoodVisualizer.css
 - frontend/src/components/MoodVisualizer.tsx
+- frontend/src/features/camelot/CamelotPage.tsx
+- frontend/src/features/camelot/camelot.css
+- frontend/src/features/camelot/camelotLogic.ts
+- frontend/src/features/camelot/route.tsx
 - frontend/src/lib/graphColours.ts
-- frontend/src/pages/CamelotPage.tsx
 - frontend/src/store/useStore.ts
 - frontend/src/types/pathfinding.ts
 - frontend/src/utils/camelotData.ts
