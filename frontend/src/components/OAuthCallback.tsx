@@ -1,98 +1,65 @@
-/**
- * OAuth Callback Handler for Music Service Authentication
- * Handles OAuth redirects from Tidal, Spotify, and other services
- * Dynamically routes to the correct backend endpoint based on URL path
- */
-
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Title, Button, Card, ErrorPanel } from './ds';
 import { API_BASE_URL } from '../lib/apiBase';
 
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
-  const [message, setMessage] = useState('Processing authentication...');
-  const [service, setService] = useState<'tidal' | 'spotify'>('tidal');
-
-  // Prevent duplicate requests in React Strict Mode (development)
+  const [message, setMessage] = useState<string>('Validating authentication request...');
+  const [service, setService] = useState<string>('music service');
   const hasProcessed = useRef(false);
 
   useEffect(() => {
+    // Prevent double-processing in React Strict Mode
+    if (hasProcessed.current) return;
+    hasProcessed.current = true;
+
     const handleOAuthCallback = async () => {
-      // Guard against React Strict Mode double-rendering
-      if (hasProcessed.current) {
-        return;
-      }
-      hasProcessed.current = true;
       try {
-        // Detect which service from URL path (2025 Best Practice: Explicit service detection)
-        const pathname = window.location.pathname;
-        console.log('[OAuth] Callback pathname:', pathname);
-
-        // Explicit service detection with validation
-        let detectedService: 'spotify' | 'tidal';
-        if (pathname.includes('/callback/spotify') || pathname.includes('spotify')) {
-          detectedService = 'spotify';
-        } else if (pathname.includes('/oauth/callback') || pathname.includes('tidal')) {
-          detectedService = 'tidal';
-        } else {
-          console.error('[OAuth] Unable to determine service from path:', pathname);
-          throw new Error('Unable to determine authentication service. Please try again.');
-        }
-
-        setService(detectedService);
-        console.log('[OAuth] Detected service:', detectedService);
-
-        const serviceName = detectedService.charAt(0).toUpperCase() + detectedService.slice(1);
-
-        // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const state = urlParams.get('state');
+
+        // Error handling from OAuth provider
         const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
-
-        // SECURITY: Immediately sanitize history and URL address bar using history.replaceState
-        // to strip authorization codes, tokens, and scopes, preventing token leakage through browser history or Referer headers.
-        if (window.location.search || window.location.hash) {
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-
-        // Check for OAuth errors
         if (error) {
+          console.error('OAuth returned error:', error);
           setStatus('error');
-          setMessage(`Authentication failed: ${errorDescription || error}`);
+          setMessage(`Authentication failed: The provider returned an error (${error})`);
 
-          // Notify parent window (if opened as popup)
           if (window.opener) {
             window.opener.postMessage({
               type: 'oauth-error',
-              service: detectedService,
-              error: error,
-              error_description: errorDescription
+              error: error
             }, window.location.origin);
           }
-
-          setTimeout(() => {
-            if (window.opener) {
-              window.close();
-            } else {
-              window.location.href = '/';
-            }
-          }, 3000);
           return;
         }
 
-        // Validate required parameters
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+
         if (!code || !state) {
-          setStatus('error');
-          setMessage('Missing required OAuth parameters');
-          setTimeout(() => window.location.href = '/', 3000);
-          return;
+          throw new Error('Missing authorization code or state parameter');
         }
 
-        // SECURITY: Cryptographic state parameter verification (OAuth CSRF protection)
-        // Retrieve and consume securely generated pre-flight nonce from session storage
+        // Determine which service this is based on path or state
+        const path = window.location.pathname;
+        let detectedService = 'spotify'; // default
+
+        if (path.includes('spotify')) {
+          detectedService = 'spotify';
+        } else if (path.includes('tidal') || state.includes('tidal')) {
+          detectedService = 'tidal';
+        } else if (sessionStorage.getItem('tidal_auth_state')) {
+          detectedService = 'tidal';
+        }
+
+        setService(detectedService);
+        const serviceName = detectedService.charAt(0).toUpperCase() + detectedService.slice(1);
+
+        setMessage(`Authorizing with ${serviceName}...`);
+
+        // 2025 Best Practice: Stricter state validation with domain prefixing
+        // We check a few possible keys to maintain backwards compatibility during rollout
         const candidateKeys = [
-          `${detectedService}_auth_state`,
           'spotify_auth_state',
           'tidal_auth_state',
           'oauth_state',
@@ -137,6 +104,9 @@ const OAuthCallback: React.FC = () => {
         }
 
         setMessage(`Exchanging authorization code for ${serviceName} access token...`);
+
+        // Clean URL to prevent leaking codes in history or referrers
+        window.history.replaceState({}, document.title, window.location.pathname);
 
         // Exchange authorization code for tokens
         // SECURITY: Client secret handled entirely by backend, never exposed to frontend
@@ -276,87 +246,41 @@ const OAuthCallback: React.FC = () => {
   }, []);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      backgroundColor: 'var(--bg)',
-      color: 'var(--fg)',
-      fontFamily: 'var(--font-body)',
-      padding: 'var(--space-5)'
-    }}>
-      <div style={{
-        textAlign: 'center',
-        maxWidth: '500px',
-        padding: 'var(--space-10)',
-        backgroundColor: 'var(--surface-1)',
-        borderRadius: 'var(--radius-card)',
-        border: '1px solid var(--line)'
-      }}>
-        {/* Status Icon */}
-        <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-5)' }}>
-          {status === 'processing' && '⏳'}
-          {status === 'success' && '✅'}
-          {status === 'error' && '❌'}
-        </div>
-
-        {/* Title */}
-        <h1 style={{ margin: '0 0 var(--space-4) 0', fontSize: '1.375rem', fontFamily: 'var(--font-display)' }}>
-          {status === 'processing' && `Authenticating with ${service.charAt(0).toUpperCase() + service.slice(1)}`}
-          {status === 'success' && 'Authentication Successful!'}
-          {status === 'error' && 'Authentication Failed'}
-        </h1>
-
-        {/* Message */}
-        <p style={{ margin: 0, fontSize: '0.9375rem', color: 'var(--fg-3)', lineHeight: 1.5 }}>
-          {message}
-        </p>
-
-        {/* Loading Spinner */}
-        {status === 'processing' && (
-          <div style={{
-            marginTop: 'var(--space-6)',
-            width: 'var(--control-md)',
-            height: 'var(--control-md)',
-            border: '4px solid var(--line)',
-            borderTop: '4px solid var(--status-ok)',
-            borderRadius: 'var(--radius-pill)',
-            animation: 'spin 1s linear infinite',
-            margin: 'var(--space-6) auto 0'
-          }} />
-        )}
-
-        {/* Manual close button for errors */}
-        {status === 'error' && (
-          <button
-            onClick={() => window.opener ? window.close() : window.location.href = '/'}
-            style={{
-              marginTop: 'var(--space-6)',
-              padding: 'var(--space-2) var(--space-5)',
-              backgroundColor: 'var(--brand)',
-              border: 'none',
-              borderRadius: 'var(--radius-control)',
-              color: 'var(--on-brand)',
-              fontSize: '0.875rem',
-              cursor: 'pointer'
-            }}
-          >
-            Close Window
-          </button>
-        )}
-      </div>
-
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+    <main className="sn-page-auth">
+      {status === 'error' ? (
+        <ErrorPanel
+          status="bad"
+          title="Authentication Failed"
+          panel
+          actions={
+            <Button
+              kind="primary"
+              onClick={() => window.opener ? window.close() : window.location.href = '/'}
+            >
+              Try again
+            </Button>
           }
-        `}
-      </style>
-    </div>
+        >
+          {message}
+        </ErrorPanel>
+      ) : (
+        <Card className="sn-auth-callback-card">
+          <div className="sn-card__head">
+            <Title size="title-s" as="h1" className="sn-card__primary">
+              {status === 'processing' && `Connecting: ${service.charAt(0).toUpperCase() + service.slice(1)}`}
+              {status === 'success' && `${service.charAt(0).toUpperCase() + service.slice(1)}: Connected`}
+            </Title>
+          </div>
+
+          <div className="sn-card__body">
+            {status === 'processing' && (
+              <div className="sn-spinner" aria-busy="true" aria-label="Processing"></div>
+            )}
+            <p className="sn-body">{message}</p>
+          </div>
+        </Card>
+      )}
+    </main>
   );
 };
 

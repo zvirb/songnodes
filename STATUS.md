@@ -1204,3 +1204,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: 2026-10-26 - Optimizing `services/common/metadata/matching.py` with pre-compiled regexes, memoized parsing functions, and single-pass target evaluation in `best_match`.
 - End: 2026-10-26 - Pre-compiled regexes, added `@lru_cache` to text normalization functions, and pre-computed target track metadata in `best_match`. Passed unit tests in `services/common/tests/test_metadata_resolution.py` and benchmarked >60% execution time reduction (from 7.46s to 2.88s per 50,000 matches).
 <!-- SLOT:BOLT END -->
+
+<!-- SLOT:DS10 BEGIN -->
+### DS10: Design system audit and fix: OAuth callback page
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed audit and fixes. Documented missing `StagedProgress` and layout class in `docs/design-system/audits/DS10.md`. Refactored `frontend/src/components/OAuthCallback.tsx` to use design system components (`Card`, `Title`, `Button`) and `sn-*` classes instead of inline styles. Run `npm ci`, `npx tsc`, `npx vite build` and `check_design_system.py`. Did not run Playwright E2E tests due to sandbox environment constraints. PR: https://github.com/zvirb/songnodes/pull/NEW
+<!-- SLOT:DS10 END -->

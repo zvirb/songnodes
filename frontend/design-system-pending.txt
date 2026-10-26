@@ -15,7 +15,7 @@ frontend/src/components/IntelligentBrowser/IntelligentBrowser.module.css
 frontend/src/components/MobileTrackExplorer.css
 frontend/src/components/MoodVisualizer.css
 frontend/src/components/MultiSelect.tsx
-frontend/src/components/OAuthCallback.tsx
+# migrated DS10: frontend/src/components/OAuthCallback.tsx
 frontend/src/components/PathBuilder.tsx
 frontend/src/components/QuickSearch.tsx
 frontend/src/components/RadialMenu.tsx
