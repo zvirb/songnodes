@@ -14,6 +14,7 @@
 # Usage: scripts/sync-design-system.sh [--check]
 #   --check  exit 1 if the synced copy differs from design-system/ (CI gate)
 set -euo pipefail
+export PYTHONUTF8=1
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="$ROOT/design-system"
@@ -21,7 +22,13 @@ DEST="$ROOT/frontend/src/styles/design-system"
 CHECK=0
 [[ "${1:-}" == "--check" ]] && CHECK=1
 
-ver_tokens=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['version'])" "$SRC/tokens.json")
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+else
+  PYTHON_CMD="python"
+fi
+
+ver_tokens=$("$PYTHON_CMD" -c "import json,sys;print(json.load(open(sys.argv[1]))['version'])" "$SRC/tokens.json")
 ver_bundle=$(grep -oE 'version: "[0-9]+\.[0-9]+\.[0-9]+"' "$SRC/components/bundle.js" | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 if [[ "$ver_tokens" != "$ver_bundle" ]]; then
   echo "design-system: tokens.json version $ver_tokens != SongNodes.version $ver_bundle" >&2
