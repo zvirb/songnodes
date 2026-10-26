@@ -1010,3 +1010,9 @@ docker compose -f compose.dev.yaml ps
 docker compose -f compose.dev.yaml logs --since 24h --tail 200
 ```
 Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, or with `--wave up` once wave 1 is out.
+
+<!-- SLOT:FE9 BEGIN -->
+### FE9: Add library tracks to target tracks
+- Start: 2026-10-26
+- End: 2026-10-26. Verified missing icon behavior. Wrote `TargetActionButton.tsx` inside `targetAction` directory. Added a note in `docs/integration/FE9/README.md`.
+<!-- SLOT:FE9 END -->
