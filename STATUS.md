@@ -769,8 +769,9 @@ Work done:
 
 <!-- SLOT:L4 BEGIN -->
 ### L4: start-dev applies the migrations added since 26 Oct
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Done: Modified scripts/start-dev.sh to include migrations 170, 180-185, and 220 between 101 and 240. Added a guard for migration 182 since it is not idempotent (checks for the norm_key column) and 170.
 <!-- SLOT:L4 END -->
 
 <!-- SLOT:E1 BEGIN -->
