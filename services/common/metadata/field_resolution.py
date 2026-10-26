@@ -8,11 +8,11 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 DEFAULT_PRIORITIES: Dict[str, Tuple[str, ...]] = {
-    'isrc': ('tidal', 'deezer', 'musicbrainz'),
-    'duration_ms': ('tidal', 'deezer'),
-    'mix_name': ('tidal', 'deezer'),
-    'genre': ('discogs', 'deezer_album', 'lastfm'),
-    'record_label': ('discogs', 'deezer_album'),
+    'isrc': ('tidal', 'deezer', 'musicbrainz_local', 'musicbrainz'),
+    'duration_ms': ('tidal', 'deezer', 'musicbrainz_local'),
+    'mix_name': ('tidal', 'deezer', 'musicbrainz_local'),
+    'genre': ('discogs', 'deezer_album', 'lastfm', 'musicbrainz_local'),
+    'record_label': ('discogs', 'deezer_album', 'musicbrainz_local'),
 }
 MANUAL = 'manual'
 GENERIC_TAGS = {'seen live', 'favorites', 'favourites', 'favorite', 'love', 'loved', 'awesome', 'good', 'best',
