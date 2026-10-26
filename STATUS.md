@@ -1004,8 +1004,10 @@ Work done:
 
 <!-- SLOT:U22 BEGIN -->
 ### U22: Upgrade services/websocket-api to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded `services/websocket-api` to Python 3.15. Updated `fastapi` to `0.162.0`, `aio-pika` to `10.2.1`, and `pytest-asyncio` to `1.4.1`. Installed `greenlet` in Dockerfile to fix `sqlalchemy.ext.asyncio` compatibility with Python 3.15.
+- Checks run: `docker build -f services/websocket-api/Dockerfile -t websocket-api-test services/` (success). `docker run --rm websocket-api-test python --version` (3.15.1). `docker run --rm websocket-api-test python -c "import main"` (success). `PYTHONPATH=$(pwd) python3 -m pytest services/websocket-api/tests` (success).
+- End: 2026-10-26
 <!-- SLOT:U22 END -->
 
 <!-- SLOT:U23 BEGIN -->
