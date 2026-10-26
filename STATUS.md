@@ -520,6 +520,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 ### QA4: Run services/common/refmb tests from any directory and in CI
 - Start: 2026-10-26
 - End: 2026-10-26
+- End: 2026-10-26. Added `pythonpath = .` and `services/common/refmb` testpaths to `pytest.ini`. Also added a `services/common/refmb` test step to `.github/workflows/python-tests.yml`. Verified pytest collection from repo root and module execution locally. PR: [QA4: Run services/common/refmb tests from any directory and in CI](#)
 <!-- SLOT:QA4 END -->
 
 <!-- SLOT:QA5 BEGIN -->
@@ -720,20 +721,25 @@ Work done:
 
 <!-- SLOT:P1 BEGIN -->
 ### P1: Route /paths to the route finder page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2024-05-15
+- End: 2024-05-15 Added `frontend/src/features/pathfinder/route.tsx` to expose the page through the shared registry. Switched to `useUnifiedTracks` from the `hooks/` directory, gracefully handling empty library paths and potential errors. `frontend/src/features/pathfinder/useUnifiedTracks.ts` was deleted. Pre-commit checks passed successfully.
 <!-- SLOT:P1 END -->
 
 <!-- SLOT:P2 BEGIN -->
 ### P2: Harmony: one Camelot page
 - Start: 2026-10-26
-- End: 2026-10-26
+- End: 2026-10-26 07:36 UTC
+- Retained `frontend/src/features/camelot/CamelotPage.tsx` using `useUnifiedTracks` architecture.
+- Ported user-visible visual components (`KeyMoodPanel`, `HarmonicSet`) from the legacy page.
+- Registered `/harmony` path in `frontend/src/features/camelot/route.tsx`.
+- Removed old page and legacy static route.
 <!-- SLOT:P2 END -->
 
 <!-- SLOT:P3 BEGIN -->
 ### P3: Sources: route the AI setlists page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-26 (Date of run)
+- End: 2026-10-26 (Date of run)
+- Details: Routed the AI setlists page to `/sources/import` by adding `route.tsx`. Migrated to use `useUnifiedTracks` from shared package instead of the TEMP adapter. Per the IA, there is no direct place specified in the design-system for in-page navigation to the `import` page from `targets`, so only the route has been added and this gap will be reported in the PR.
 <!-- SLOT:P3 END -->
 
 <!-- SLOT:S2 BEGIN -->
@@ -745,7 +751,7 @@ Work done:
 <!-- SLOT:L2 BEGIN -->
 ### L2: Reconciliation view: read MusicBrainz ids from musicbrainz_id
 - Start: 2026-10-26
-- End: 2026-10-26
+- End: 2026-10-26. Created 185 up migration using `musicbrainz_id` and 185 down restoring 181. Added tests testing the SQL content.
 <!-- SLOT:L2 END -->
 
 <!-- SLOT:L4 BEGIN -->
@@ -770,6 +776,8 @@ Work done:
 ### SEC6A: AI proxy route on the REST API
 - Start: 2026-10-26
 - End: 2026-10-26
+- Added `POST /api/v1/ai/complete` endpoint in `services/rest_api/routers/ai_proxy.py` to act as an AI proxy.
+- Added comprehensive unit tests in `tests/ai_proxy/test_ai_proxy.py` to ensure provider keys are never exposed in the response and testing edge cases.
 <!-- SLOT:SEC6A END -->
 
 <!-- SLOT:S3 BEGIN -->
@@ -1010,3 +1018,21 @@ docker compose -f compose.dev.yaml ps
 docker compose -f compose.dev.yaml logs --since 24h --tail 200
 ```
 Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, or with `--wave up` once wave 1 is out.
+
+<!-- SLOT:L6 BEGIN -->
+### L6: Script: import the musicLibrary SQLite into the running stack
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L6 END -->
+
+<!-- SLOT:SB4 BEGIN -->
+### SB4: Set builder: save and delete sets through the per-set API
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB4 END -->
+
+<!-- SLOT:QA7 BEGIN -->
+### QA7: E2E: pin the library and saved-sets API to a fixture
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA7 END -->
