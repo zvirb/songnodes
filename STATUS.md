@@ -821,8 +821,10 @@ Work done:
 
 <!-- SLOT:SEC6B BEGIN -->
 ### SEC6B: AI proxy: frontend client and migration note
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Added a typed frontend client in `aiProxyClient.ts` to call `/api/v1/ai/complete` with timeout/error mapping. Authored a migration plan in `docs/security/ai-proxy.md` documenting the client switchover for `aiService.ts` and `directRun.ts` and detailing the `localStorage` cleanup strategy.
+- Checks run: `npm ci`, `tsc`, `oxlint`, `vitest` (added mock tests for proxy client handling success, timeout, rate limit), `vite build`. E2E tests cannot be executed due to sandbox limitations.
+- End: 2026-10-26
 <!-- SLOT:SEC6B END -->
 
 <!-- SLOT:U1 BEGIN -->
