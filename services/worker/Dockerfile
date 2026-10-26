@@ -1,5 +1,5 @@
 # Data-layer worker: Celery tasks that drain the durable ingestion_jobs queue.
-FROM python:3.11-slim
+FROM python:3.15-slim
 
 WORKDIR /app
 

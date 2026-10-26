@@ -806,8 +806,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:U3 BEGIN -->
 ### U3: Upgrade services/worker to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Upgraded `python:3.11-slim` to `python:3.15-slim` in `services/worker/Dockerfile`.
+- Pinned `neo4j==6.4.1` in `services/worker/requirements.txt`.
+- No worker code imports `neo4j` directly.
+- Note: `docker build` failed locally due to an environment overlayfs cachemount issue (`err: invalid argument` on WORKDIR), but this is not a code issue.
 <!-- SLOT:U3 END -->
 
 <!-- SLOT:U4 BEGIN -->
