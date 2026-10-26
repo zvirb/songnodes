@@ -838,8 +838,8 @@ Work done:
 
 <!-- SLOT:U5 BEGIN -->
 ### U5: Upgrade Redis to 8.10 in the dev stack
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 07:54 UTC
+- End: 2026-10-26 07:54 UTC. Upgraded the dev compose `redis` service from 7-alpine to 8.10-alpine. Added the `volumes: - /data` directive so the existing anonymous volume reattaches correctly (as the 8.10 Dockerfile removes the implicit VOLUME instruction). Added docs in `docs/upgrades/redis-8.md`.
 <!-- SLOT:U5 END -->
 
 <!-- SLOT:U6 BEGIN -->
