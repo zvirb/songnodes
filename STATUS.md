@@ -632,8 +632,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:R1 BEGIN -->
 ### R1: Restore the unified track data bridge
-- Start: _not started_
-- End: _not finished_
+- Start: _Started, completed git checkout from 541ee5e_
+- End: _Done. Restored files from 541ee5e and reconciled unifiedTrack.ts with main. tests pass._
 <!-- SLOT:R1 END -->
 
 <!-- SLOT:R2 BEGIN -->
