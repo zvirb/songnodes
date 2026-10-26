@@ -893,8 +893,10 @@ Work done:
 
 <!-- SLOT:U10 BEGIN -->
 ### U10: Upgrade services/audio-analysis to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Dockerfile to python:3.15-slim, aio-pika to 10.2.1, and pytest-asyncio to 1.4.1.
+- Checks run: `docker build` succeeds, entry module is importable, python version is 3.15.
+- End: 2026-10-26
 <!-- SLOT:U10 END -->
 
 <!-- SLOT:U11 BEGIN -->
