@@ -1176,3 +1176,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:DS17 END -->
+
+<!-- SLOT:BOLT BEGIN -->
+### BOLT: Optimize metadata track matching performance
+- Start: 2026-10-26 - Optimizing `services/common/metadata/matching.py` with pre-compiled regexes, memoized parsing functions, and single-pass target evaluation in `best_match`.
+- End: 2026-10-26 - Pre-compiled regexes, added `@lru_cache` to text normalization functions, and pre-computed target track metadata in `best_match`. Passed unit tests in `services/common/tests/test_metadata_resolution.py` and benchmarked >60% execution time reduction (from 7.46s to 2.88s per 50,000 matches).
+<!-- SLOT:BOLT END -->
