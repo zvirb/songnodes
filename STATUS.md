@@ -744,8 +744,8 @@ Work done:
 
 <!-- SLOT:L2 BEGIN -->
 ### L2: Reconciliation view: read MusicBrainz ids from musicbrainz_id
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Created 185 up migration using `musicbrainz_id` and 185 down restoring 181. Added tests testing the SQL content.
 <!-- SLOT:L2 END -->
 
 <!-- SLOT:L4 BEGIN -->
