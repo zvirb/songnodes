@@ -831,8 +831,8 @@ Work done:
 
 <!-- SLOT:U4 BEGIN -->
 ### U4: Upgrade scrapers to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U4 END -->
 
 <!-- SLOT:U5 BEGIN -->

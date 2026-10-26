@@ -1,9 +1,9 @@
 # SongNodes scraper stack Docker image
-FROM public.ecr.aws/docker/library/python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.15-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y gcc libpq-dev \
+RUN apt-get update && apt-get install -y build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
