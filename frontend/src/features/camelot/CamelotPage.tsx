@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Music, Layers } from 'lucide-react';
-import { useUnifiedTracks } from './TEMP_useUnifiedTracks';
+import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { PageHeader } from '../../shell/PageParts';
 import { EmptyPanel } from '../../components/ds';
 import { SN, Bpm, KeyBadge, EnergyBar } from '../../lib/songnodes';
 import { compatibleKeys } from './camelotLogic';
-import CamelotWheel from '../../components/CamelotWheel';
+import { CamelotWheel } from '../../components/CamelotWheel';
+import { KeyMoodPanel } from '../../components/KeyMoodPanel';
+import { HarmonicSet } from '../../components/HarmonicCompatibility';
 import './camelot.css';
 
 const CODES: string[] = (['B', 'A'] as const).flatMap((L) => Array.from({ length: 12 }, (_, i) => `${i + 1}${L}`));
@@ -63,6 +65,17 @@ const CamelotPage: React.FC = () => {
       });
   });
 
+  const activeTracksForSet = useMemo(() => {
+    if (!activeKey) return [];
+    return tracks
+      .filter(t => t.key === activeKey)
+      .map(t => ({
+        id: t.id,
+        key: t.key!,
+        name: `${t.artist} - ${t.title}`
+      }));
+  }, [tracks, activeKey]);
+
   return (
     <main className="sn-page__main sn-camelot-page" id="main" tabIndex={-1}>
       <PageHeader
@@ -72,7 +85,7 @@ const CamelotPage: React.FC = () => {
         desc="Keys, mood and energy across the library."
       />
 
-      <div className="sn-camelot-page__grid">
+      <div className="sn-camelot-page__grid" style={{ marginBottom: 'var(--space-6)' }}>
         <section className="sn-card sn-camelot-page__wheel-card">
           <div className="sn-camelot-page__wheel-container" style={{ position: 'relative' }}>
             <CamelotWheel
@@ -183,6 +196,38 @@ const CamelotPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      <section
+        style={{
+          background: 'var(--surface-1)',
+          border: '1px solid var(--line)',
+          borderRadius: 'var(--radius-card)',
+          padding: 'var(--space-6)',
+          marginBottom: 'var(--space-6)'
+        }}
+      >
+        <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          Acoustic Mood & Energy Profile
+        </h2>
+        <KeyMoodPanel defaultExpanded={true} />
+      </section>
+
+      {activeKey && activeTracksForSet.length > 0 && (
+        <section
+          style={{
+            background: 'var(--surface-1)',
+            border: '1px solid var(--line)',
+            borderRadius: 'var(--radius-card)',
+            padding: 'var(--space-6)',
+          }}
+        >
+          <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Music size={20} style={{ color: 'var(--brand)' }} />
+            Tracks in <KeyBadge value={activeKey} withName />
+          </h2>
+          <HarmonicSet currentKey={activeKey} tracks={activeTracksForSet} />
+        </section>
+      )}
     </main>
   );
 };

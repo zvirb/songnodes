@@ -726,8 +726,12 @@ Work done:
 
 <!-- SLOT:P2 BEGIN -->
 ### P2: Harmony: one Camelot page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 07:36 UTC
+- Retained `frontend/src/features/camelot/CamelotPage.tsx` using `useUnifiedTracks` architecture.
+- Ported user-visible visual components (`KeyMoodPanel`, `HarmonicSet`) from the legacy page.
+- Registered `/harmony` path in `frontend/src/features/camelot/route.tsx`.
+- Removed old page and legacy static route.
 <!-- SLOT:P2 END -->
 
 <!-- SLOT:P3 BEGIN -->
