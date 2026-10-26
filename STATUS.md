@@ -917,8 +917,11 @@ Work done:
 
 <!-- SLOT:U14 BEGIN -->
 ### U14: Upgrade services/db-connection-pool to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `services/db-connection-pool/requirements.txt` (starlette to 1.10.0) and `requirements-test.txt` (pytest-asyncio to 1.4.1). Updated `Dockerfile` to `python:3.15-slim` and added temporary installation of `build-essential` to compile PyYAML for Python 3.15.
+- Checks run: `docker build` succeeds, imported module internally. Pytest runs locally.
+- Checks not run: Docker compose execution.
+- End: 2026-10-26
 <!-- SLOT:U14 END -->
 
 <!-- SLOT:U15 BEGIN -->
