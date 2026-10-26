@@ -616,7 +616,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Paths, sources and not-found pages
+### DS5: Design system audit and fix: Sources and not-found pages
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:DS5 END -->
@@ -923,8 +923,11 @@ Work done:
 
 <!-- SLOT:U15 BEGIN -->
 ### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/dlq-manager base image to Python 3.15. Requirements are already up to date.
+- Checks run: `docker build` succeeds, `python --version` inside the image prints 3.15, and `python -c "import main"` succeeds.
+- Checks not run: Pytest tests (none exist in the service folder).
+- End: 2026-10-26
 <!-- SLOT:U15 END -->
 
 <!-- SLOT:U16 BEGIN -->
@@ -1164,3 +1167,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:FL4 END -->
+
+<!-- SLOT:DS7 BEGIN -->
+### DS7: Design system audit and fix: Paths (route finder) page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS7 END -->
+
+<!-- SLOT:DS17 BEGIN -->
+### DS17: Design system audit and fix: AI setlists import page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS17 END -->

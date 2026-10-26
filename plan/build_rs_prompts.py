@@ -612,7 +612,7 @@ WAVES = {
     # U7 (Postgres 18) is held: send only with --only. L1-L4 are now repairs of the PR #158 code (waves 2 and 3). U8 (Actions pins) is in wave 4 because waves 1-3 edit workflows.
     "up": ["U1", "U2", "U3", "U4", "U5"],
     "up-legacy": ["U6", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16", "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29"],
-    "4": ["U8", "DS1", "DS2A", "DS2B", "DS3", "DS4", "DS5", "DS6", "DS8", "DS9", "DS10", "DS11", "DS12", "DS13", "DS14", "DS15"],
+    "4": ["U8", "DS1", "DS2A", "DS2B", "DS3", "DS4", "DS5", "DS6", "DS7", "DS8", "DS9", "DS10", "DS11", "DS12", "DS13", "DS14", "DS15", "DS17"],
     "5": ["UX1", "UX2", "UX3", "UX4"],
     "6": ["UX5", "UX6", "UX7", "UX8"],
     "7": ["TG1", "TG2", "TG3", "TG4"],

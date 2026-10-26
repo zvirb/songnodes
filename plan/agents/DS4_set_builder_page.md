@@ -41,6 +41,8 @@ Create docs/design-system/audits/DS4.md with these sections, in this order:
 ## Owned paths
 - frontend/src/features/musicLibrary/SetBuilderPage.tsx
 - frontend/src/features/musicLibrary/components/EnergyWave.tsx
+- frontend/src/features/setBuilder/ExportDialog.tsx
+- frontend/src/features/setBuilder/exporters.ts
 - docs/design-system/audits/DS4.md
 - frontend/design-system-pending.txt (comment out migrated lines only)
 
