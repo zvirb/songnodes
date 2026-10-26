@@ -1,11 +1,30 @@
+import ast
 import importlib
 import logging
+import os
 import pkgutil
 from fastapi.routing import APIRoute
 from fastapi import APIRouter
 import sys
 
 logger = logging.getLogger(__name__)
+
+def _defines_register(package_dirs, module_name):
+    """True if the module's source has a top-level register() function.
+
+    Read from source so that routers without register(app) (legacy modules main.py does not
+    mount, such as data_quality) are never imported at startup. Returns None when there is no
+    source file to read, and the caller falls back to importing the module.
+    """
+    for d in package_dirs:
+        path = os.path.join(d, f"{module_name}.py")
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8") as f:
+                tree = ast.parse(f.read(), filename=path)
+            return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "register"
+                       for n in tree.body)
+    return None
+
 
 def register_all(app):
     """
@@ -40,6 +59,10 @@ def register_all(app):
             # The test `python -c ...` above failed because `main.py` is being imported inside the circular import,
             # while the test itself is the entrypoint. That's a test environment artifact.
             # But just in case, we can use import_module.
+
+            if _defines_register(list(routers.__path__), module_name) is False:
+                logger.debug(f"Skipping {module_name}: no top-level register(app)")
+                continue
 
             mod = importlib.import_module(mod_name)
 

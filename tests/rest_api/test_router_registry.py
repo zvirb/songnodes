@@ -122,3 +122,19 @@ def test_router_discovery():
     finally:
         pkgutil.iter_modules = original_iter_modules
         importlib.import_module = original_import_module
+
+
+def test_dormant_routers_are_not_imported():
+    """Routers without a top-level register(app) are read from source, never imported.
+
+    data_quality.py has no register() and is not mounted by main.py; importing it at startup
+    pulled in sqlalchemy.ext.asyncio and crashed rest-api when greenlet was absent (26 Oct).
+    """
+    import main  # noqa: F401  (runs register_all)
+    import router_registry
+    import routers
+    dirs = list(routers.__path__)
+    assert router_registry._defines_register(dirs, "data_quality") is False
+    assert router_registry._defines_register(dirs, "library_search") is True
+    assert "routers.data_quality" not in sys.modules
+    assert router_registry._defines_register(dirs, "no_such_module") is None
