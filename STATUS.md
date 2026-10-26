@@ -701,6 +701,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:E2 END -->
 
 <!-- SLOT:SB1 BEGIN -->
+2026-10-26: Implemented set exporters for M3U8, Rekordbox XML, and TIDAL id lists per SB1 job requirements. Added functions and comprehensive test coverage. Tested locally using vitest, build successful.
 ### SB1: Set exporters: M3U8, Rekordbox XML and a TIDAL list
 - Start: _not started_
 - End: _not finished_
