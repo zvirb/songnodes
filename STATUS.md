@@ -593,8 +593,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS2A BEGIN -->
 ### DS2A: Design system audit and fix: Graph page, first half of its files
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built: Audited the following components and fixed their CSS and token usage to adhere to design system specifications: `ArtistAttributionManager.tsx` & `.css`, `ContextMenu.tsx`, `EdgeDetailsModal.tsx` & `.css`, `GraphFilterPanel.tsx` & `.css`, `GraphMiniMap.tsx`, `IntelligentBrowser.module.css`, `CurrentTrack.tsx`, `FilterTabs.tsx`, `TrackItem.tsx`, and `DJInterface.tsx` & `.graph.css`. Replaced ad-hoc typography styles (font weights, px sizing) with standard tokens (e.g. `data-s`, `caption`, `label`, `body-strong`). Replaced inline pixel metrics (e.g., `34px`) with `var(--space-8)` and `2px` with `var(--space-0.5)`. Replaced hard-coded colors with tokens like `color-fg-3` and `color-fg`. Fixed ad-hoc media breakpoints for `.gx-main--play/plan` and `.aam__split` to match `--bp-tablet` (768px). Updated `frontend/design-system-pending.txt` to indicate migrations for `ArtistAttributionManager.css`, `DJInterface.graph.css`, and `IntelligentBrowser.module.css`. Logged audit results in `docs/design-system/audits/DS2A.md`.
+- Checks run: `npm ci`, `tsc`, `vitest` (passed), `vite build` (passed), `check_design_system.py` (passed), `sync-design-system.sh --check` (passed).
+- Checks not run: Playwright E2E tests cannot run in sandbox.
+- PR: Pending.
 <!-- SLOT:DS2A END -->
 
 <!-- SLOT:DS2B BEGIN -->
