@@ -790,9 +790,9 @@ Work done:
 <!-- SLOT:SEC6A END -->
 
 <!-- SLOT:S3 BEGIN -->
-### S3: Music search UI: show the real error
-- Start: _not started_
-- End: _not finished_
+2026-10-26 09:24
+- Updated `frontend/src/components/MusicServiceSearch.tsx` to handle structural errors emitted by the API and to display errors using `ErrorPanel`.
+- Implemented `frontend/src/components/MusicServiceSearch.test.tsx` to ensure proper test coverage.
 <!-- SLOT:S3 END -->
 
 <!-- SLOT:L3 BEGIN -->
