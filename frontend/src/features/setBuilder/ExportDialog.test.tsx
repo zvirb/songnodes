@@ -28,7 +28,7 @@ describe('ExportDialog', () => {
     }]
   ]);
 
-  let mockOnClose: ReturnType<typeof vi.fn>;
+  let mockOnClose: any;
 
   beforeEach(() => {
     mockOnClose = vi.fn();
@@ -84,7 +84,7 @@ describe('ExportDialog', () => {
     });
 
     const mockAnchor = document.createElement('a');
-    const mockClick = vi.fn();
+    const mockClick = vi.fn() as any;
     mockAnchor.click = mockClick;
 
     // Capture original before spying
