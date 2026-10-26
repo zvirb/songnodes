@@ -1036,8 +1036,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:SB4 BEGIN -->
 ### SB4: Set builder: save and delete sets through the per-set API
-- Start: _not started_
-- End: _not finished_
+- Start: 2023-10-26
+- End: 2023-10-26 - Completed changes
 <!-- SLOT:SB4 END -->
 
 <!-- SLOT:QA7 BEGIN -->
