@@ -685,8 +685,16 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:S1 BEGIN -->
 ### S1: Track search on metadata-enrichment for TIDAL and Spotify
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+
+Work done:
+- Implemented `search_tracks` in `music_search.py` using instances from `app.state.enrichment_pipeline`
+- Created `search_routes.py` with `GET /api/v1/search/{service}` yielding normalized tracks
+- Avoided global application state by using `fastapi.Request.app.state` to inject the pipeline
+- Included the router in `services/metadata-enrichment/main.py`
+- Wrote and verified fake server integration tests in `test_music_search.py`
+- Passed Pre-commit validation and code review, returning required exact `{"code": ..., "message": ...}`
 <!-- SLOT:S1 END -->
 
 <!-- SLOT:L1 BEGIN -->
