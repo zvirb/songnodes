@@ -9,8 +9,10 @@ import { KeyCompat } from '../components/ds';
 import { getModulationTargets, getTrackKey, getTracksByKey } from '../utils/camelotUtils';
 import { CAMELOT_KEYS } from '../utils/camelotData';
 import { GraphNode } from '../types';
+import { usePageHeader } from '../shell/AppShell';
 
 export const CamelotPage: React.FC = () => {
+  usePageHeader({ lead: 'Key & mood', title: 'Harmonic Modulation Explorer', current: 'harmony' });
   const [activeKey, setActiveKey] = useState<string>('8A');
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
@@ -50,8 +52,10 @@ export const CamelotPage: React.FC = () => {
   }, [activeKeyTracks, activeKey]);
 
   return (
-    <div
+    <main
       className="camelot-explorer-page"
+      id="main"
+      tabIndex={-1}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -437,7 +441,7 @@ export const CamelotPage: React.FC = () => {
           <HarmonicSet currentKey={activeKey} tracks={activeTracksForSet} />
         </section>
       )}
-    </div>
+    </main>
   );
 };
 

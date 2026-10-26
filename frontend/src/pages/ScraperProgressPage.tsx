@@ -6,6 +6,7 @@ import { ConfirmDialog, showToast } from '../components/ds';
 import { formatThroughput, getStatusTokenColor, JobResponse } from '../utils/dataLoaderUtils';
 import { usePipelineTelemetry } from '../features/pipeline/usePipelineTelemetry';
 import { api } from '../services/api';
+import { usePageHeader } from '../shell/AppShell';
 
 const SectionHeading = ({ title, count }: { title: string; count?: string | number }) => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
@@ -19,6 +20,7 @@ const SectionHeading = ({ title, count }: { title: string; count?: string | numb
 );
 
 const ScraperProgressPage: React.FC = () => {
+  usePageHeader({ lead: 'Pipeline', title: 'Telemetry', current: 'pipeline' });
   const { telemetry, stages, workers, jobs, isLoading, error, lastUpdated, source, refresh } = usePipelineTelemetry();
   const [retryingJob, setRetryingJob] = useState<string | null>(null);
   const [confirmRetryId, setConfirmRetryId] = useState<string | null>(null);
@@ -54,7 +56,7 @@ const ScraperProgressPage: React.FC = () => {
 
   if (error && source === 'unavailable') {
     return (
-      <main className="sn-page sn-page--full">
+      <main className="sn-page sn-page--full" id="main" tabIndex={-1}>
         <header className="sn-page__header">
           <div className="sn-page__title-group">
             <h1 className="heading-2">Pipeline Telemetry</h1>
@@ -87,7 +89,7 @@ const ScraperProgressPage: React.FC = () => {
   }
 
   return (
-    <main className="sn-page sn-page--full">
+    <main className="sn-page sn-page--full" id="main" tabIndex={-1}>
       <header className="sn-page__header">
         <div className="sn-page__title-group">
           <h1 className="heading-2">Pipeline Telemetry</h1>
@@ -257,7 +259,7 @@ const ScraperProgressPage: React.FC = () => {
                 {workers.map((w) => (
                   <tr key={w.id}>
                     <td className="body-strong" style={{ color: 'var(--fg)' }}>
-                      {w.name}
+                      {w.name || <span className="sn-none">–</span>}
                     </td>
                     <td style={{ color: 'var(--fg-2)' }}>{w.kind}</td>
                     <td>
@@ -310,7 +312,7 @@ const ScraperProgressPage: React.FC = () => {
                     <td className="sn-mono" style={{ fontSize: '0.8125rem' }}>{j.job_id.substring(0, 8)}</td>
                     <td>{j.kind}</td>
                     <td style={{ color: 'var(--status-bad)', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={j.last_error || ''}>
-                      {j.last_error || 'Unknown error'}
+                      {j.last_error || <span className="sn-none">–</span>}
                     </td>
                     <td>
                       <button

@@ -382,7 +382,9 @@ export const Banner: React.FC<{ status: 'info' | 'warn' | 'ok'; title: string; c
   </div>
 );
 
+
 /* ------------------------------------------------------------------ TrackCell */
+
 
 const EXT: [keyof LibraryTrack, string][] = [['tidal', 'TIDAL'], ['dz', 'Deezer'], ['bp', 'Beatport']];
 
@@ -395,11 +397,19 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
   if (t.lbl) meta.push(<span key="l">{t.lbl}</span>);
   if (t.d) meta.push(<span className="sn-track-cell__dur" key="d">{SN.format.duration(t.d)}</span>);
   const ext = links ? EXT.filter(([k]) => t[k]) : [];
+  const [showCov, setShowCov] = useState(false);
   return (
     <div className="sn-track-cell">
       <span className="sn-track-cell__title">
         <span className="sn-track-cell__name" title={name}><span className="sn-track-cell__artist">{t.a} –</span> {t.t}</span>
+        {t.mbid && (
+          <button className="sn-btn sn-btn--quiet sn-tag sn-category-tag sn-u-ml-xs" title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'})
+dump date: ${t.mbdump || '–'}`} onClick={() => setShowCov(s => !s)}>
+            MusicBrainz match
+          </button>
+        )}
       </span>
+      {showCov && <CoveragePanel t={t} />}
       <span className="sn-track-cell__meta">
         {meta.map((m, i) => (
           <React.Fragment key={i}>{i ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}{m}</React.Fragment>
@@ -413,6 +423,30 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
           </span>
         ) : null}
       </span>
+    </div>
+  );
+};
+
+
+
+
+/* ------------------------------------------------------------------ CoveragePanel */
+export const CoveragePanel: React.FC<{ t: LibraryTrack }> = ({ t }) => {
+  const fields = ['a', 't', 'm', 'd', 'bpm', 'k', 'e', 'p', 'rot', 'g', 'lbl'].filter(k => t[k as keyof LibraryTrack] !== null && t[k as keyof LibraryTrack] !== undefined && t[k as keyof LibraryTrack] !== '');
+  const filledCount = fields.length;
+  const totalCount = 11;
+  const sourceCount = t.src ? t.src.length : 0;
+
+  return (
+    <div className="sn-coverage-panel sn-panel sn-panel--sm sn-u-mt-sm" style={{ padding: "0.5rem" }}>
+      <div className="sn-panel__header"><h4 className="sn-panel__title" style={{ fontSize: "0.875rem" }}>Data Coverage</h4></div>
+      <div className="sn-panel__body">
+        <ul className="sn-stats-list" style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "0.75rem", color: "var(--text-2)" }}>
+          <li><strong>{filledCount} / {totalCount}</strong> core fields filled</li>
+          <li><strong>{sourceCount}</strong> known sources {t.src && t.src.length > 0 ? `(${t.src.join(', ')})` : ''}</li>
+          {t.mbid ? <li><strong>MusicBrainz</strong> match via {t.mbconf} confidence</li> : null}
+        </ul>
+      </div>
     </div>
   );
 };

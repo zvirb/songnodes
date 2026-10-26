@@ -33,6 +33,11 @@ docker compose -f compose.dev.yaml up -d --wait --wait-timeout 120 postgres redi
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/012_target_tracks_up.sql
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/013_ingestion_jobs_up.sql
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/014_data_layer_up.sql
+# The library overlay schema is not idempotent: apply it once, then the (idempotent) search indexes.
+if [ -z "$(docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -tAc "SELECT to_regclass('library.tracks')" | tr -d '[:space:]')" ]; then
+  docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/101_library_schema_up.sql
+fi
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/240_library_search_indexes_up.sql
 docker compose -f compose.dev.yaml up -d --no-build --force-recreate --wait --wait-timeout 120 graph-api rest-api worker unified-scraper frontend
 curl --fail --silent --show-error http://127.0.0.1:8084/api/graph/data
 printf '\nBackend ready. In frontend/, run npm ci and npm run dev.\n'

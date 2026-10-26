@@ -1,3 +1,13 @@
+# Current task: run full tests, rebuild containers, and validate deployment — started 2026-10-25
+
+Scope: run the repository's applicable full test suites, diagnose and fix failures
+caused by the current checkout when feasible, rebuild/recreate the Compose
+application containers without resetting persistent data, then run post-deployment
+health and additional tests. Preserve unrelated worktree changes if any appear.
+
+Next step: inspect exact documented commands and stack prerequisites, then run the
+test suites and address any actionable failures before deployment.
+
 # Current task: commit and sync screenshot ignore update — completed 2026-10-25
 
 Committed as `c25d0d9` (`fix(test): ignore local Playwright screenshot folders`) on
@@ -378,8 +388,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP3 BEGIN -->
 ### WP3: Local MusicBrainz resolver: ISRC → exact lookup → fuzzy, plugged into the existing matching and providers
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25
 <!-- SLOT:WP3 END -->
 
 <!-- SLOT:WP5 BEGIN -->
@@ -396,8 +406,9 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP9 BEGIN -->
 ### WP9: Server-side search and the Library / Set-builder pages on the API
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-25
+- End: 2026-10-25
+Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:WP9 END -->
 
 <!-- SLOT:WP4 BEGIN -->
@@ -465,3 +476,517 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:BE1 END -->
+
+<!-- SLOT:REF0 BEGIN -->
+**[2026-10-25] ref_mb schema and DB preparation (Jules)**:
+- Replaced schema migration 100 with NO-OPs since ref_mb will use a separate DB.
+- Recorded deployment decision to docs/integration/ref_mb/DECISION.md.
+- Added connection settings and pass-through variables in compose.dev.yaml.
+- Created docs/integration/ref_mb/SETTINGS.md.
+- Generated tests, Pytest fixture with mock data, and DDL for ref_mb schema.
+- Added license documentation in docs/licensing/MUSICBRAINZ.md and README.md.
+- Superseded legacy MBID schema migration 001.
+<!-- SLOT:REF0 END -->
+
+<!-- SLOT:SEC_SENTINEL BEGIN -->
+### SEC: Tidal OAuth Secret Exposure Remediation (2026-10-25)
+- Start: 2026-10-25
+- End: 2026-10-25
+- Removed mandatory client_secret / client_id query parameters from Tidal token refresh and device code initialization endpoints in `services/rest_api/routers/music_auth.py`.
+- Configured endpoints to default to server-side `TIDAL_CLIENT_ID` and `TIDAL_CLIENT_SECRET` environment variables to prevent sensitive credentials from leaking in HTTP request query parameters and server logs.
+- Added `/tidal/refresh` route alias.
+- Checks: `python3 -m py_compile` passed, code review passed.
+<!-- SLOT:SEC_SENTINEL END -->
+
+<!-- SLOT:QA1 BEGIN -->
+### QA1: Add an ESLint 9 flat config to the frontend
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA1 END -->
+
+<!-- SLOT:QA2 BEGIN -->
+### QA2: Fix frontend lockfile so npm ci works on Linux
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA2 END -->
+
+<!-- SLOT:QA3 BEGIN -->
+### QA3: Make graph-visualization-api tests collect and run
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA3 END -->
+
+<!-- SLOT:QA4 BEGIN -->
+### QA4: Run services/common/refmb tests from any directory and in CI
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA4 END -->
+
+<!-- SLOT:QA5 BEGIN -->
+### QA5: Make sync-design-system.sh work on Windows
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA5 END -->
+
+<!-- SLOT:QA6 BEGIN -->
+### QA6: Stabilise the dev-worker end-to-end integration test
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:QA6 END -->
+
+<!-- SLOT:DS10 BEGIN -->
+### DS10: Design system audit and fix: OAuth callback page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS10 END -->
+
+<!-- SLOT:DS11 BEGIN -->
+### DS11: Design system audit and fix: Unrouted components, legacy UI
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS11 END -->
+
+<!-- SLOT:DS12 BEGIN -->
+### DS12: Design system audit and fix: DJ interface, setlist builder and pathfinder components
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS12 END -->
+
+<!-- SLOT:DS13 BEGIN -->
+### DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS13 END -->
+
+<!-- SLOT:DS14 BEGIN -->
+### DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS14 END -->
+
+<!-- SLOT:DS15 BEGIN -->
+### DS15: Design system audit and fix: Global stylesheets and legacy CSS
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS15 END -->
+
+<!-- SLOT:DS16 BEGIN -->
+### DS16: Consolidate missing design-system tokens from all audits
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS16 END -->
+
+<!-- SLOT:DS1 BEGIN -->
+### DS1: Design system audit and fix: App shell, navigation drawer and home page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS1 END -->
+
+<!-- SLOT:DS2A BEGIN -->
+### DS2A: Design system audit and fix: Graph page, first half of its files
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS2A END -->
+
+<!-- SLOT:DS2B BEGIN -->
+### DS2B: Design system audit and fix: Graph page, second half of its files
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS2B END -->
+
+<!-- SLOT:DS3 BEGIN -->
+### DS3: Design system audit and fix: Library page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS3 END -->
+
+<!-- SLOT:DS4 BEGIN -->
+### DS4: Design system audit and fix: Set builder page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS4 END -->
+
+<!-- SLOT:DS5 BEGIN -->
+### DS5: Design system audit and fix: Paths, sources and not-found pages
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS5 END -->
+
+<!-- SLOT:DS6 BEGIN -->
+### DS6: Design system audit and fix: Harmony (Camelot) page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS6 END -->
+
+<!-- SLOT:DS8 BEGIN -->
+### DS8: Design system audit and fix: Pipeline page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS8 END -->
+
+<!-- SLOT:DS9 BEGIN -->
+### DS9: Design system audit and fix: Settings page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DS9 END -->
+
+<!-- SLOT:R1 BEGIN -->
+### R1: Restore the unified track data bridge
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:R1 END -->
+
+<!-- SLOT:R2 BEGIN -->
+### R2: Restore the route finder page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:R2 END -->
+
+<!-- SLOT:R3 BEGIN -->
+### R3: Restore the graph projection consumer
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:R3 END -->
+
+<!-- SLOT:G1 BEGIN -->
+### G1: Scope guard: fail PRs that touch files outside their package
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:G1 END -->
+
+<!-- SLOT:G2 BEGIN -->
+### G2: Route registry: each page registers its own route
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:G2 END -->
+
+<!-- SLOT:G3 BEGIN -->
+### G3: REST API: routers register themselves
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:G3 END -->
+
+<!-- SLOT:C1 BEGIN -->
+### C1: One home for the local MusicBrainz resolver
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:C1 END -->
+
+<!-- SLOT:C2 BEGIN -->
+### C2: Remove one-off agent scripts from the repo root
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:C2 END -->
+
+<!-- SLOT:S1 BEGIN -->
+### S1: Track search on metadata-enrichment for TIDAL and Spotify
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:S1 END -->
+
+<!-- SLOT:L1 BEGIN -->
+### L1: Library overlay: models and views
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L1 END -->
+
+<!-- SLOT:E2 BEGIN -->
+### E2: Log every outbound enrichment call
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:E2 END -->
+
+<!-- SLOT:SB1 BEGIN -->
+### SB1: Set exporters: M3U8, Rekordbox XML and a TIDAL list
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB1 END -->
+
+<!-- SLOT:P1 BEGIN -->
+### P1: Route /paths to the route finder page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:P1 END -->
+
+<!-- SLOT:P2 BEGIN -->
+### P2: Harmony: one Camelot page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:P2 END -->
+
+<!-- SLOT:P3 BEGIN -->
+### P3: Sources: route the AI setlists page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:P3 END -->
+
+<!-- SLOT:S2 BEGIN -->
+### S2: REST music search: remove the mock results
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:S2 END -->
+
+<!-- SLOT:L2 BEGIN -->
+### L2: Library importer: SQLite into silver and the overlay
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L2 END -->
+
+<!-- SLOT:L4 BEGIN -->
+### L4: Saved sets endpoints
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L4 END -->
+
+<!-- SLOT:E1 BEGIN -->
+### E1: Local MusicBrainz provider in the enrichment waterfall
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:E1 END -->
+
+<!-- SLOT:SB2 BEGIN -->
+### SB2: Set builder: export dialog
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB2 END -->
+
+<!-- SLOT:SEC6A BEGIN -->
+### SEC6A: AI proxy route on the REST API
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SEC6A END -->
+
+<!-- SLOT:S3 BEGIN -->
+### S3: Music search UI: show the real error
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:S3 END -->
+
+<!-- SLOT:L3 BEGIN -->
+### L3: Library ingest endpoint on the job framework
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L3 END -->
+
+<!-- SLOT:L5 BEGIN -->
+### L5: Library reconciliation report
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L5 END -->
+
+<!-- SLOT:E3 BEGIN -->
+### E3: Enrichment replay and coverage report
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:E3 END -->
+
+<!-- SLOT:SB3 BEGIN -->
+### SB3: Set builder: reorder tracks
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SB3 END -->
+
+<!-- SLOT:SEC6B BEGIN -->
+### SEC6B: AI proxy: frontend client and migration note
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SEC6B END -->
+
+<!-- SLOT:U1 BEGIN -->
+### U1: Upgrade services/rest_api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U1 END -->
+
+<!-- SLOT:U2 BEGIN -->
+### U2: Upgrade services/graph-visualization-api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U2 END -->
+
+<!-- SLOT:U3 BEGIN -->
+### U3: Upgrade services/worker to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U3 END -->
+
+<!-- SLOT:U4 BEGIN -->
+### U4: Upgrade scrapers to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U4 END -->
+
+<!-- SLOT:U5 BEGIN -->
+### U5: Upgrade Redis to 8.10 in the dev stack
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U5 END -->
+
+<!-- SLOT:U6 BEGIN -->
+### U6: Upgrade RabbitMQ to 4.3 in the dev stack
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U6 END -->
+
+<!-- SLOT:U7 BEGIN -->
+### U7: Prepare the Postgres 18 upgrade (owner runs it)
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U7 END -->
+
+<!-- SLOT:U8 BEGIN -->
+### U8: Pin every GitHub Action to its latest release
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U8 END -->
+
+<!-- SLOT:U9 BEGIN -->
+### U9: Upgrade services/api-gateway-internal to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U9 END -->
+
+<!-- SLOT:U10 BEGIN -->
+### U10: Upgrade services/audio-analysis to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U10 END -->
+
+<!-- SLOT:U11 BEGIN -->
+### U11: Upgrade services/browser-collector to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U11 END -->
+
+<!-- SLOT:U12 BEGIN -->
+### U12: Upgrade services/data-transformer to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U12 END -->
+
+<!-- SLOT:U13 BEGIN -->
+### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U13 END -->
+
+<!-- SLOT:U14 BEGIN -->
+### U14: Upgrade services/db-connection-pool to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U14 END -->
+
+<!-- SLOT:U15 BEGIN -->
+### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U15 END -->
+
+<!-- SLOT:U16 BEGIN -->
+### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U16 END -->
+
+<!-- SLOT:U17 BEGIN -->
+### U17: Upgrade services/graphql-api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U17 END -->
+
+<!-- SLOT:U18 BEGIN -->
+### U18: Upgrade services/metadata-enrichment to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U18 END -->
+
+<!-- SLOT:U20 BEGIN -->
+### U20: Upgrade services/scraper-orchestrator to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U20 END -->
+
+<!-- SLOT:U21 BEGIN -->
+### U21: Upgrade services/serato-integration to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U21 END -->
+
+<!-- SLOT:U22 BEGIN -->
+### U22: Upgrade services/websocket-api to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U22 END -->
+
+<!-- SLOT:U23 BEGIN -->
+### U23: Upgrade services/streaming-integrations to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U23 END -->
+
+<!-- SLOT:U24 BEGIN -->
+### U24: Upgrade services/tidal-integration to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U24 END -->
+
+<!-- SLOT:U19 BEGIN -->
+### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U19 END -->
+
+<!-- SLOT:U25 BEGIN -->
+### U25: Upgrade shared/templates to Python 3.15 and latest requirements
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U25 END -->
+
+<!-- SLOT:U26 BEGIN -->
+### U26: Upgrade services/api-gateway to Node 26 and latest npm dependencies
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U26 END -->
+
+<!-- SLOT:U27 BEGIN -->
+### U27: Upgrade services/enhanced-visualization-service to Node 26 and latest npm dependencies
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U27 END -->
+
+<!-- SLOT:U28 BEGIN -->
+### U28: Upgrade services/health-monitor to Node 26 and latest npm dependencies
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U28 END -->
+
+<!-- SLOT:U29 BEGIN -->
+### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:U29 END -->
+
+## Scheduled run
+
+### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
+- Reading taken: unattended run of the RESTRUCTURE.md protocol. The repo folder on the laptop is `E:\songnodes` (lower case), not `E:\songNodes`.
+- Pre-flight: local main and origin/main both at `3a80246` (#156). Tree clean apart from untracked `services/websocket-api/coverage.xml`. A stale `.git/REBASE_HEAD` (25 Oct) is left over, but no rebase is in progress. plan/RESTRUCTURE.md is on main. Open PRs: 0.
+- Merges: none. Nothing was open to merge.
+- Jules: wave 1 has not started (13 packages: QA5 G1 G2 G3 R1 R2 R3 C1 C2 S1 L1 E2 SB1). The dry run against `3a80246` builds all 13 briefs. The `jules` CLI was not reachable from this run, so nothing was sent.
+- Health (read-only):
+  - REST API `:8082/health` is healthy (DB pool and memory ok). graph-api `:8084/health` is healthy (DB and Redis ok). unified-scraper `:8012` is reachable.
+  - The frontend `:3006` returns 200. There were no console errors on /, /graph, /library, /set-builder, /paths, /pipeline or /settings.
+  - Problem: the only data is 3 tracks and 1 playlist from a fixture load (`data_source=fixture`, `example.invalid`, 25 Oct 11:52). `/api/v1/target-tracks` returns 0 rows, and there were no scrape jobs in the last 200 jobs. `ingest_pending` ticks run about once a minute and examine 0 items. That means ingest over the last 24 hours is 0, and the last week holds only the fixture load. The scraper has no targets to work from, so loading real target tracks is a data step for Markus, not a code package.
+  - Projection: graph-api reports 3 song nodes and 2 edges. Outbox reports 3 source and 3 projection rows, 1 stale, 0 missing, 0 extra, backlog 0 and 0 dead letters. The pipeline page also shows 0 dead letters.
+  - Not checked: `docker compose ps`, container logs and RabbitMQ queue depth. This run had no Docker access and RabbitMQ is not published.
+
+### Run on the laptop
+```powershell
+cd E:\songnodes
+git switch main; git pull --ff-only
+python plan/launch_jules.py --wave 1          # dry run, check the 13 briefs
+python plan/launch_jules.py --wave 1 --cli    # send wave 1
+docker compose -f compose.dev.yaml ps
+docker compose -f compose.dev.yaml logs --since 24h --tail 200
+```
+Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, or with `--wave up` once wave 1 is out.
