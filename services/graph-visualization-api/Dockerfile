@@ -1,7 +1,7 @@
 # Graph Visualization API Dockerfile
 # Optimized for high-performance graph data processing
 
-FROM python:3.11-slim
+FROM python:3.15-slim
 
 # Set working directory
 WORKDIR /app
@@ -14,7 +14,12 @@ RUN --mount=type=secret,id=proxy_ca,target=/usr/local/share/ca-certificates/clou
 COPY services/graph-visualization-api/requirements.txt .
 
 # Install Python dependencies
-RUN PIP_CERT=/etc/ssl/certs/ca-certificates.crt pip install --no-cache-dir -r requirements.txt
+# Build-essential is required to compile PyYAML from source on Python 3.15
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && PIP_CERT=/etc/ssl/certs/ca-certificates.crt pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y build-essential \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy common directory (contains secrets_manager.py)
 COPY services/common /app/common

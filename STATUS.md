@@ -636,8 +636,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:R1 BEGIN -->
 ### R1: Restore the unified track data bridge
-- Start: _not started_
-- End: _not finished_
+- Start: _Started, completed git checkout from 541ee5e_
+- End: _Done. Restored files from 541ee5e and reconciled unifiedTrack.ts with main. tests pass._
 <!-- SLOT:R1 END -->
 
 <!-- SLOT:R2 BEGIN -->
@@ -696,8 +696,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:E2 BEGIN -->
 ### E2: Log every outbound enrichment call
-- Start: _not started_
-- End: _not finished_
+- Start: Started web call log implementation.
+- End: Finished. Implemented web_call_log table (migrations 170), wrapper in services/common/providers/web_call_log.py, and test in tests/enrichment_local/test_web_call_log.py. Next: attach this wrapper in the waterfall logic.
 <!-- SLOT:E2 END -->
 
 <!-- SLOT:SB1 BEGIN -->
@@ -805,8 +805,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:U2 BEGIN -->
 ### U2: Upgrade services/graph-visualization-api to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 05:49 UTC
+- End: 2026-10-26 06:01 UTC. Upgraded base image to `python:3.15-slim` and updated pins for `pytest-asyncio`, `ecdsa`, `python-jose`, and `starlette` in `requirements.txt` and `requirements-test.txt`. Added `build-essential` compilation step for `PyYAML`.
 <!-- SLOT:U2 END -->
 
 <!-- SLOT:U3 BEGIN -->
