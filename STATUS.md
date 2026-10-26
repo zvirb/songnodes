@@ -899,8 +899,11 @@ Work done:
 
 <!-- SLOT:U11 BEGIN -->
 ### U11: Upgrade services/browser-collector to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated services/browser-collector/Dockerfile to use Python 3.15-slim. Updated services/browser-collector/requirements-test.txt to use pytest-asyncio==1.4.1. Verified docker image builds successfully.
+- Checks run: `docker build` succeeds, module imports via docker run.
+- Checks not run: Tests inside docker due to a missing unowned dependency 'docker' in 'tests/conftest.py'.
+- End: 2026-10-26
 <!-- SLOT:U11 END -->
 
 <!-- SLOT:U12 BEGIN -->
