@@ -809,8 +809,8 @@ Work done:
 
 <!-- SLOT:L5 BEGIN -->
 ### L5: Library reconciliation report
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Implemented CLI for reconciliation report of duplicate candidates with ISRC, MBID, and norm_key matches. Wrote tests with planted duplicates asserting exactly what was expected.
 <!-- SLOT:L5 END -->
 
 <!-- SLOT:E3 BEGIN -->
