@@ -26,16 +26,16 @@ export const ENERGY_DESCRIPTORS: { [key: number]: { label: string; desc: string 
  */
 export const getEnergyColor = (level: number): string => {
   const colors: { [key: number]: string } = {
-    1: '#2E3A87',
-    2: '#3A4A9C',
-    3: '#4A5FB1',
-    4: '#5A7AC6',
-    5: '#4A90E2',
-    6: '#62B0FF',
-    7: '#FFA500',
-    8: '#FF7F00',
-    9: '#FF5500',
-    10: '#FF0000'
+    1: 'var(--energy-1)',
+    2: 'var(--energy-2)',
+    3: 'var(--energy-3)',
+    4: 'var(--energy-4)',
+    5: 'var(--energy-5)',
+    6: 'var(--energy-6)',
+    7: 'var(--energy-7)',
+    8: 'var(--energy-8)',
+    9: 'var(--energy-9)',
+    10: 'var(--energy-10)'
   };
   return colors[level] || colors[5];
 };

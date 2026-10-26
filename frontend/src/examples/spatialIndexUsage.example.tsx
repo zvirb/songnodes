@@ -132,8 +132,9 @@ export function BoxSelectionExample() {
             top: selectionBox.y,
             width: selectionBox.width,
             height: selectionBox.height,
-            border: '2px dashed #007bff',
-            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            border: 'var(--space-0.5) dashed var(--brand)',
+            backgroundColor: 'var(--surface-2)',
+            zIndex: 'var(--z-above, 10)',
             pointerEvents: 'none',
           }}
         />
@@ -165,7 +166,7 @@ export function RadiusDiscoveryExample() {
 
     setCenterNode(node);
     setNearbyNodes(filtered);
-    console.log(`Found ${filtered.length} nodes within ${radius}px of ${node.label}`);
+    console.log(`Found ${filtered.length} nodes within radius ${radius} of ${node.label}`);
   }, [graphInteraction]);
 
   return (
@@ -209,38 +210,38 @@ export function PerformanceMonitorExample() {
   }
 
   return (
-    <div style={{ padding: 20, border: '1px solid #ccc', borderRadius: 5 }}>
+    <div className="sn-card sn-p-5">
       <h3>Spatial Index Performance</h3>
 
-      <div style={{ marginBottom: 10 }}>
+      <div className="sn-mb-3">
         <strong>Nodes in Index:</strong> {stats.nodeCount}
       </div>
 
-      <div style={{ marginBottom: 10 }}>
+      <div className="sn-mb-3">
         <strong>Total Queries:</strong> {stats.totalQueries}
       </div>
 
-      <div style={{ marginBottom: 10 }}>
+      <div className="sn-mb-3">
         <strong>Average Query Time:</strong> {stats.avgQueryDuration.toFixed(3)}ms
       </div>
 
       <h4>Query Breakdown:</h4>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table className="sn-table sn-w-full">
         <thead>
           <tr>
-            <th style={{ border: '1px solid #ccc', padding: 8 }}>Type</th>
-            <th style={{ border: '1px solid #ccc', padding: 8 }}>Avg Duration (ms)</th>
-            <th style={{ border: '1px solid #ccc', padding: 8 }}>Count</th>
+            <th>Type</th>
+            <th>Avg Duration (ms)</th>
+            <th>Count</th>
           </tr>
         </thead>
         <tbody>
           {Object.entries(stats.metricsByType).map(([type, metrics]: [string, any]) => (
             <tr key={type}>
-              <td style={{ border: '1px solid #ccc', padding: 8 }}>{type}</td>
-              <td style={{ border: '1px solid #ccc', padding: 8 }}>
+              <td>{type}</td>
+              <td>
                 {metrics.avgDuration.toFixed(3)}
               </td>
-              <td style={{ border: '1px solid #ccc', padding: 8 }}>{metrics.count}</td>
+              <td>{metrics.count}</td>
             </tr>
           ))}
         </tbody>
@@ -324,7 +325,7 @@ export function BenchmarkExample() {
   }, []);
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="sn-p-5">
       <h3>Spatial Index Benchmark</h3>
 
       <button onClick={runBenchmark} disabled={isRunning}>
@@ -332,7 +333,7 @@ export function BenchmarkExample() {
       </button>
 
       {benchmarkResults && (
-        <div style={{ marginTop: 20 }}>
+        <div className="sn-mt-5">
           <h4>Summary</h4>
           <p>Average Point Query Speedup: {benchmarkResults.summary.avgSpeedupPoint.toFixed(2)}x</p>
           <p>Average Radius Query Speedup: {benchmarkResults.summary.avgSpeedupRadius.toFixed(2)}x</p>
@@ -340,30 +341,30 @@ export function BenchmarkExample() {
           <p>Recommended Minimum Nodes: {benchmarkResults.summary.recommendedMinNodes}</p>
 
           <h4>Detailed Results</h4>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+          <table className="sn-table sn-w-full sn-mt-3">
             <thead>
               <tr>
-                <th style={{ border: '1px solid #ccc', padding: 8 }}>Nodes</th>
-                <th style={{ border: '1px solid #ccc', padding: 8 }}>Build (ms)</th>
-                <th style={{ border: '1px solid #ccc', padding: 8 }}>Point Speedup</th>
-                <th style={{ border: '1px solid #ccc', padding: 8 }}>Radius Speedup</th>
-                <th style={{ border: '1px solid #ccc', padding: 8 }}>Rectangle Speedup</th>
+                <th>Nodes</th>
+                <th>Build (ms)</th>
+                <th>Point Speedup</th>
+                <th>Radius Speedup</th>
+                <th>Rectangle Speedup</th>
               </tr>
             </thead>
             <tbody>
               {benchmarkResults.nodeCounts.map((count: number, i: number) => (
                 <tr key={count}>
-                  <td style={{ border: '1px solid #ccc', padding: 8 }}>{count}</td>
-                  <td style={{ border: '1px solid #ccc', padding: 8 }}>
+                  <td>{count}</td>
+                  <td>
                     {benchmarkResults.buildIndexTimes[i].duration.toFixed(2)}
                   </td>
-                  <td style={{ border: '1px solid #ccc', padding: 8 }}>
+                  <td>
                     {benchmarkResults.pointQuery[i].speedup.toFixed(1)}x
                   </td>
-                  <td style={{ border: '1px solid #ccc', padding: 8 }}>
+                  <td>
                     {benchmarkResults.radiusQuery[i].speedup.toFixed(1)}x
                   </td>
-                  <td style={{ border: '1px solid #ccc', padding: 8 }}>
+                  <td>
                     {benchmarkResults.rectangleQuery[i].speedup.toFixed(1)}x
                   </td>
                 </tr>
@@ -396,7 +397,7 @@ export function AdaptivePerformanceModeExample() {
       <h3>Adaptive Performance Mode</h3>
       <p>Node Count: {nodeCount}</p>
       <p>Using Spatial Index: {useSpatialIndex ? 'Yes' : 'No (linear search)'}</p>
-      <p>Hover Radius: {useSpatialIndex ? 15 : 25}px</p>
+      <p>Hover Radius: {useSpatialIndex ? 15 : 25}</p>
 
       <input
         type="range"
@@ -406,7 +407,7 @@ export function AdaptivePerformanceModeExample() {
         onChange={(e) => setNodeCount(parseInt(e.target.value))}
       />
 
-      <div style={{ marginTop: 10, color: useSpatialIndex ? 'green' : 'orange' }}>
+      <div className={useSpatialIndex ? "sn-mt-3 sn-status-ok" : "sn-mt-3 sn-status-warn"}>
         {useSpatialIndex
           ? '✅ Spatial indexing enabled for optimal performance'
           : '⚠️ Linear search (acceptable for small graphs)'}

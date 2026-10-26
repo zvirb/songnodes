@@ -93,7 +93,7 @@ export function camelotToKey(camelotKey: CamelotKey): string {
   const info = CAMELOT_WHEEL[camelotKey];
   if (!info) {
     console.warn(`Invalid Camelot key: ${camelotKey}`);
-    return 'Unknown';
+    return '–';
   }
   return `${info.key} ${info.mode}`;
 }
@@ -376,7 +376,7 @@ export function getKeyColor(camelotKey: CamelotKey): string {
 
   if (!wheelData) {
     console.warn(`Invalid Camelot key: ${camelotKey}`);
-    return 'hsl(0, 50%, 50%)'; // Default gray color
+    return 'var(--line-strong)'; // Default gray color
   }
 
   const position = wheelData.position;
@@ -387,7 +387,7 @@ export function getKeyColor(camelotKey: CamelotKey): string {
   const saturation = isMinor ? '60%' : '80%'; // Minor keys are less saturated
   const lightness = isMinor ? '40%' : '60%'; // Minor keys are darker
 
-  return `hsl(${hue}, ${saturation}, ${lightness})`;
+  return `var(--key-${camelotKey.toLowerCase()})`;
 }
 
 /**

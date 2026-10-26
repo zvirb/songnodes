@@ -51,7 +51,7 @@ interface SnIconProps {
 export const SnIcon: React.FC<SnIconProps> = ({ name, size, label, className }) => (
   <span
     className={className}
-    style={{ display: 'inline-flex', lineHeight: 0 }}
+
     aria-hidden={label ? undefined : true}
     dangerouslySetInnerHTML={{ __html: SN.icon(name, { size, label }) }}
   />

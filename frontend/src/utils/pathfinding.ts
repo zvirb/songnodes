@@ -252,7 +252,7 @@ export async function findDJPath(
       const track: Track = node.track || {
         id: node.id,
         name: node.name || node.title || node.label,
-        artist: node.artist || 'Unknown Artist',
+        artist: node.artist || '–',
         duration: node.duration,
         bpm: node.bpm,
         key: node.key,

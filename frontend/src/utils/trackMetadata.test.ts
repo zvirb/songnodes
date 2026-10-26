@@ -39,7 +39,7 @@ describe('stored track metadata transport', () => {
     expect(trackFromNode({ bpm: true, duration_ms: 'NaN', energy: '0.72' })).toMatchObject({ energy: 0.72 });
     expect(trackFromNode({ bpm: true }).bpm).toBeUndefined();
     expect(formatStoredEnergy(0)).toBe('0 (scale not recorded)');
-    expect(formatStoredEnergy(undefined)).toBe('Unknown');
+    expect(formatStoredEnergy(undefined)).toBe('–');
     expect(formatStoredEnergy(7, 'dj_1_10')).toBe('7 (dj_1_10)');
   });
   it('sends measured durations and zero energy to routing and rejects unknown durations', () => {
