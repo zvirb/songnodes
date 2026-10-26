@@ -947,8 +947,10 @@ Work done:
 
 <!-- SLOT:U20 BEGIN -->
 ### U20: Upgrade services/scraper-orchestrator to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated Python base image to 3.15-slim in Dockerfile and Dockerfile.enhanced, managing transient compilation dependencies. Bumped pytest-asyncio to 1.4.1 in requirements-test.txt, and starlette to 1.10.0 and wcwidth to 0.9.4 in requirements.txt.
+- Checks run: `docker build` for both Dockerfiles (both successful), imported entry module and verified python version inside the container.
+- End: 2026-10-26
 <!-- SLOT:U20 END -->
 
 <!-- SLOT:U21 BEGIN -->
