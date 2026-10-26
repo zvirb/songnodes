@@ -936,8 +936,11 @@ Work done:
 
 <!-- SLOT:U15 BEGIN -->
 ### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/dlq-manager base image to Python 3.15. Requirements are already up to date.
+- Checks run: `docker build` succeeds, `python --version` inside the image prints 3.15, and `python -c "import main"` succeeds.
+- Checks not run: Pytest tests (none exist in the service folder).
+- End: 2026-10-26
 <!-- SLOT:U15 END -->
 
 <!-- SLOT:U16 BEGIN -->
