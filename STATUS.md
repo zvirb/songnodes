@@ -905,8 +905,10 @@ Work done:
 
 <!-- SLOT:U12 BEGIN -->
 ### U12: Upgrade services/data-transformer to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Python base image to 3.15-slim in Dockerfile and added `build-essential` compilation step for PyYAML. Updated pinned versions for `fastapi` (0.162.0) and `pytest-asyncio` (1.4.1).
+- Checks run: `docker build` the image, successfully imported entry module inside image container, and checked Python version (3.15).
+- End: 2026-10-26
 <!-- SLOT:U12 END -->
 
 <!-- SLOT:U13 BEGIN -->
