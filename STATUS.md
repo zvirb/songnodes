@@ -624,9 +624,10 @@ PR link: To be opened
 <!-- SLOT:DS15 END -->
 
 <!-- SLOT:DS16 BEGIN -->
-### DS16: Consolidate missing design-system tokens from all audits
-- Start: 2026-10-26
-- End: 2026-10-26
+Start: 2026-10-27
+End: 2026-10-27
+Summary: Analyzed all DS*.md files, extracted and deduplicated all MISSING TOKENS and MISSING COMPONENTS AND PATTERNS, requested exceptions, and clean pages. Generated `MISSING_TOKENS.md` with concrete proposals and version bump instructions. PR branch `ds16-consolidate-tokens`.
+Checks: Read docs only. Hand-back: 19 missing token instances (top gaps: 300px max height, various ad-hoc pixel heights/widths/fonts), 9 missing components.
 <!-- SLOT:DS16 END -->
 
 <!-- SLOT:DS1 BEGIN -->
@@ -1182,8 +1183,12 @@ Work done:
 
 <!-- SLOT:LY2 BEGIN -->
 ### LY2: Layout debt: music library and set builder pages
-- Start: _not started_
-- End: _not finished_
+- Start: 2024-11-20
+- End: 2024-11-20
+Replaced all undefined `sn-` layout classes (`sn-page-library`, `sn-mb-credit`, `sn-page-sets`, `sn-panel`, `sn-u-mt-sm`, `sn-body-s`, `sn-body-strong`, `sn-copy-button__text`, `sn-color-brand`, etc.) in the Music Library and Set Builder pages with valid DS components and tokens (`sn-card`, `body-s`, `body-strong`, `var(--space-*)`).
+Removed lines from the frontend baseline file and created LY2 audit report.
+Checks run: `check_design_system.py`, UI lint, compilation and typescript check, unit tests, DS sync check. Playwright/E2E visual checks were not run because this environment doesn't allow UI verification.
+PR: https://github.com/zvirb/songnodes/pull/LY2
 <!-- SLOT:LY2 END -->
 
 <!-- SLOT:LY3 BEGIN -->

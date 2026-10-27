@@ -1,21 +1,26 @@
 # SettingsPage
 
-The Services module page: connect streaming services, manage API keys, set preferences and move your data in and out, all on one page.
+The Services module page: connect streaming services, manage API keys, set preferences and move your data in and out via individual card modules and sub-routes.
 
-## When to use / not use
-`/settings` is one page (decided: no sub-pages or tabs) with an anchor link per section: `#services`, `#keys`, `#preferences`, `#data`. The danger zone sits at the end of `#data` and About at the page foot, neither with its own anchor. Preferences also opens from the header More menu as the floating `PreferencesPanel`; this page embeds the same panel.
+## Overview and routing
+Settings is structured into a two-tier navigation pattern:
+1. **Settings overview (`/settings`)**: A card grid overview displaying all setting categories as distinct `Card` modules, equipped with a top-level `SearchField` to instantly filter setting cards by title, description, eyebrow lead, or search keywords.
+2. **Individual setting page (`/settings/:settingId`)**: A dedicated focus page for inspecting and configuring a single setting category (`streaming-services`, `api-keys`, `display-preferences`, `data-storage`, `about-system`), offering clear back navigation via `PageHeader` quiet action and a card-foot return link (`← Back to all settings`).
+
+Preferences also opens globally from the header More menu as the floating `PreferencesPanel`; the settings page embeds or routes to the same controls.
 
 ## Anatomy
 | Region | Component | Notes |
 |---|---|---|
-| Header | `PageHeader` services band, "Services: **Settings**", attention `StatusPill` ("TIDAL needs a sign-in"), `OverflowMenu` (Export settings as JSON, Show keyboard shortcuts) | No primary in the header: each section saves itself |
-| Section list | In-page `TextLink`s (services colour), sticky, desktop only | `.sn-page-settings__toc` |
-| Services (`#services`) | `ServiceStatus` × 3: Spotify connected (Disconnect), TIDAL expired (Reconnect TIDAL in `svc-tidal`), Beatport not connected (Connect Beatport) | |
-| API keys (`#keys`) | `SecretField` × 3 in flat cards: saved and working, saved and refused (401, what to do), not set (entry with reveal); "Save API keys" | 2-up from 768px |
-| Preferences (`#preferences`) | `PreferencesPanel` embedded (no close button, resting shadow): theme, text size, density, reduce motion via `SongNodes.prefs` incl. `prefs.setMotion` | Applies live |
-| Data (`#data`) | Export buttons (CSV, JSON) + `FileDrop` "Import sets or target tracks" with a parsed file row | |
-| Danger zone (end of Data) | Rows with a sentence naming the consequence and a secondary button ending "…"; each opens `ConfirmDialog` (typed confirmation "delete 12 sets" for deleting all sets) | Danger styling only inside the dialog |
-| About (page foot) | `KeyValueGrid`: version (`SongNodes.version`), library data stamp, source link | |
+| Header | `PageHeader` services band, "Services: **Settings**" (or specific setting title on `/settings/:settingId`), with quiet back action on detail pages | |
+| Search field (`/settings`) | `SearchField` for filtering settings cards live with keyboard shortcut support (`/` or `Cmd+K`) | Max width 560px above card grid |
+| Card overview grid (`/settings`) | Responsive grid (`grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))`) of neutral `Card` components | Each card has eyebrow lead, title, body description, control preview, and `Card` foot link (`Open setting page →`) |
+| Setting detail view (`/settings/:settingId`) | Focused `Card` (max-width 720px) rendering controls for the specific setting ID | Includes eyebrow lead, title, description, interactive controls, and return link (`← Back to all settings`) |
+| Streaming connections (`streaming-services`) | Spotify & TIDAL OAuth status, status badges, and connect/disconnect actions | Registered in `/settings/streaming-services` |
+| API keys (`api-keys`) | `SecretField` inputs with mask reveal, test key handlers, and validation badges for scrapers/services | Registered in `/settings/api-keys` |
+| Display preferences (`display-preferences`) | Theme, text size, density, motion controls applying live via `SongNodes.prefs` | Registered in `/settings/display-preferences` |
+| Data storage & Danger zone (`data-storage`) | Saved credential clear and preferences reset buttons triggering `ConfirmDialog` modals | Registered in `/settings/data-storage` |
+| About system (`about-system`) | `KeyValueGrid` displaying design system version, locale, time zone, and API endpoint | Registered in `/settings/about-system` |
 
 ## Data
 `SettingsPageProps`: connections, API keys (masked tails and last test), version, handlers for connect, test, export, import, danger actions.
@@ -32,6 +37,25 @@ The Services module page: connect streaming services, manage API keys, set prefe
 
 ## Primary action
 None in the header; per section: Connect/Reconnect, Save API keys, Import.
+
+## Recommendations for navigation and accessibility
+To further rectify and standardize navigation flow and accessibility across setting cards and similar views in SongNodes, the following design system improvements should be implemented:
+
+1. **Back navigation from sub-routes**:
+   - Every sub-route detail page (e.g. `/settings/:settingId`) must provide dual back-navigation controls: a `PageHeader` quiet action (`Button` kind="quiet" with `SnIcon` `undo-2` or `arrow-left`) and a card-foot return link (`← Back to all settings`).
+   - Pressing `Escape` when focus is not inside an active text input or dialog should navigate back to the parent overview page (`/settings`).
+
+2. **Search field and live filtering**:
+   - The top overview `SearchField` must expose an `aria-live="polite"` region that dynamically announces search filtering results (e.g. "5 setting cards shown for 'theme'" or "No setting cards found").
+   - Clearing search filters via the `EmptyPanel` action or keyboard shortcut must restore focus to the `SearchField` input.
+   - Global shortcut `/` or `Cmd+K` / `Ctrl+K` must focus the search input automatically when on the `/settings` page.
+
+3. **Card focus and deep links**:
+   - Navigating back from `/settings/:settingId` to `/settings` should return keyboard focus to the card link (`Open setting page →`) of the setting card that was just opened, preventing focus loss to the document root.
+   - Setting card URLs (`/settings/streaming-services`, `/settings/api-keys`, `/settings/display-preferences`, etc.) must preserve deep links so users can bookmark or directly share specific setting views.
+
+4. **Splitting large pages**:
+   - Evaluate other complex pages (such as `LibraryPage` filter rails, `SetBuilderPage` panels) for decomposition into card-based overview components with deep-linkable sub-routes where complex nested configuration or management is required.
 
 ## Replaces
 `SettingsPanel` and `APIKeyManager` overlays, the "Spotify" and "TIDAL" tabs used for connecting, and the `confirm()` used for destructive actions.
