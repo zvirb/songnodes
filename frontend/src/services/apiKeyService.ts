@@ -138,7 +138,7 @@ export const validateKeyFormat = (provider: AIProvider, key: string): { valid: b
       return { valid: true };
 
     default:
-      return { valid: false, message: 'Unknown provider.' };
+      return { valid: false, message: 'Provider missing or not supported.' };
   }
 };
 

@@ -3,4 +3,4 @@
 .stp__service, .stp__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--line); }
 .stp__service-main { display: flex; align-items: center; gap: var(--space-2); }
 .stp__service-name { font-weight: 600; }
-.stp__help { margin: var(--space-0\.5) 0 0; font-size: 0.8125rem; color: var(--fg-3); }
+.stp__help { margin: var(--space-1) 0 0; font-size: 0.8125rem; color: var(--fg-3); }
