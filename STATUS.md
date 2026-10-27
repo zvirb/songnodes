@@ -1230,8 +1230,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:TG1 BEGIN -->
 ### TG1: Target tracks: suggestions endpoint based on crate and graph gaps
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Added `target_suggestions.py` with scoring logic (queries from `silver_enriched_tracks` and prioritises tracks with high Melbourne event frequency, low edge graph count, and zero existing target records). Registered `GET /api/v1/target-tracks/suggestions` on the `target_tracks` router to return `[{ title, artist, genres, rationale, priority_score }]` arrays for discovery suggestions. Also added async tests `test_target_suggestions.py` simulating DB responses to verify the logic and 503 error handling.
+- Checks run: `python3 -m pytest tests/rest_api/test_target_suggestions.py` using DB mocks passes 100%. Tested 503 handling, zero track returns, and ranking mechanics.
+- Checks not run: Full suite / Playwright could not be run as per limitations.
+- End: 2026-10-27
 <!-- SLOT:TG1 END -->
 
 <!-- SLOT:TG2 BEGIN -->
