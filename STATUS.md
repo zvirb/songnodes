@@ -1227,8 +1227,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX8 BEGIN -->
 ### UX8: QuickSearch dialog: recent commands and track completions
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Modified QuickSearch.tsx to include recent searches (with JSON serialization of type and id) and added static route modules that can be matched and selected via fuse and navigation via `useNavigate`. Added QuickSearch.test.tsx that asserts filtering and recent modules loading and Enter key navigation.
+- Checks run: `vitest run src/components/QuickSearch.test.tsx`, `tsc --noEmit -p .`, `oxlint src`, `vitest run src`, `vite build`. All passed.
+- Checks not run: Playwright E2E suite cannot run in the sandbox.
+- End: 2026-10-26 - Completed changes. https://github.com/zvirb/songnodes/pull/NEW
 <!-- SLOT:UX8 END -->
 
 <!-- SLOT:TG1 BEGIN -->
