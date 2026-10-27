@@ -24,11 +24,7 @@ frontend/src/components/SmartTooltip.tsx
 frontend/src/components/TrackSearch.tsx
 frontend/src/components/TracklistImporter.css
 frontend/src/examples/spatialIndexUsage.example.tsx
-<<<<<<< HEAD
-frontend/src/features/musicLibrary/SetBuilderPage.tsx
-=======
 # migrated DS4: frontend/src/features/musicLibrary/SetBuilderPage.tsx
->>>>>>> origin/main
 frontend/src/hooks/useToast.tsx
 frontend/src/pages/ScraperProgressPage.tsx
 frontend/src/styles/global.css
