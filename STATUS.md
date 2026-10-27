@@ -619,8 +619,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS4 BEGIN -->
 ### DS4: Design system audit and fix: Set builder page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Migrated `SetBuilderPage.tsx`, `EnergyWave.tsx`, and `ExportDialog.tsx` to fully comply with design-system rules, replacing inline pixels/colors with proper tokens (e.g. `--space-3`, `--fg-2`, `.label`), replacing manual status chips with `<StatusPill>`, and exporting missing metadata as empty strings instead of "Unknown". Created audit DS4.md and marked files as migrated.
+- Checks run: `vitest run src`, `oxlint`, `tsc`, `vite build`, `python scripts/check_design_system.py --check`.
+- Checks not run: Playwright E2E visual tests (not supported in sandbox).
+- PR: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-27
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
