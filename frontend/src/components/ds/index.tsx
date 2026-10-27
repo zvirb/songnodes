@@ -658,6 +658,62 @@ export const Checkbox = React.forwardRef<HTMLLabelElement, CheckboxProps>(({
 });
 Checkbox.displayName = 'Checkbox';
 
+export interface RadioProps extends Omit<React.LabelHTMLAttributes<HTMLLabelElement>, 'onChange'> {
+  label?: React.ReactNode;
+  name?: string;
+  value?: string;
+  checked: boolean;
+  onChange?: (checked: boolean) => void;
+  hint?: string;
+  disabledReason?: string;
+  bare?: boolean;
+  ariaLabel?: string;
+}
+
+export const Radio = React.forwardRef<HTMLLabelElement, RadioProps>(({
+  label,
+  name,
+  value,
+  checked,
+  onChange,
+  hint,
+  disabledReason,
+  bare,
+  ariaLabel,
+  className = '',
+  ...props
+}, ref) => {
+  const isDisabled = !!disabledReason;
+  const cls = [
+    'sn-checkbox',
+    bare && 'sn-checkbox--bare',
+    isDisabled && 'sn-checkbox--disabled',
+    className,
+  ].filter(Boolean).join(' ');
+
+  return (
+    <label ref={ref} className={cls} data-disabled={isDisabled || undefined} {...props}>
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        disabled={isDisabled}
+        aria-label={bare ? ariaLabel : undefined}
+        title={disabledReason}
+        onChange={(e) => !isDisabled && onChange?.(e.target.checked)}
+      />
+      {!bare ? (
+        <span className="sn-checkbox__text">
+          <span>{label}</span>
+          {hint ? <span className="sn-checkbox__hint">{hint}</span> : null}
+        </span>
+      ) : null}
+    </label>
+  );
+});
+Radio.displayName = 'Radio';
+
 export interface SwitchProps {
   label: string;
   description?: string;
