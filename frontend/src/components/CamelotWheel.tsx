@@ -318,7 +318,7 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
         </g>
       </svg>
 
-      <p className="sn-camelot-wheel__summary body-s" role="status" style={{ margin: 0, color: 'var(--fg-2)', textAlign: 'center' }}>
+      <p className="body-s" role="status" style={{ margin: 0, marginTop: 'var(--space-4)', color: 'var(--fg-2)', textAlign: 'center' }}>
         {selectedKeys.length
           ? <>Selected {selectedKeys.join(', ')} · {SN.format.count(selectedTotal)} tracks</>
           : <>Active key: <span className="data-strong">{currentActiveKey}</span> ({SN.keyName(currentActiveKey)})</>}

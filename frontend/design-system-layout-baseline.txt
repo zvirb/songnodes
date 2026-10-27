@@ -4,15 +4,3 @@
 # Remove a line in the same PR that fixes it. Do not add lines.
 #   class <sn-class>   used in app code but defined by no stylesheet (renders no spacing or style)
 #   main <file>        a <main> that is not a design-system page container
-class sn-camelot-page
-class sn-camelot-page__list-card
-class sn-camelot-page__wheel-container
-class sn-camelot-wheel__summary
-class sn-dropdown
-class sn-inline-message__text
-class sn-input-icon
-class sn-input-wrap
-class sn-page__body
-class sn-page__head
-class sn-track-cell__primary
-class sn-track-cell__secondary
