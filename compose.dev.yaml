@@ -83,9 +83,7 @@ services:
       retries: 20
 
   rabbitmq:
-    image: rabbitmq:4.3-alpine
-    volumes:
-      - dev-rabbitmq-4:/var/lib/rabbitmq
+    image: rabbitmq:3.13-alpine
     # Development only: default guest credentials, reachable inside the compose network only (no published port).
     healthcheck:
       test: [CMD, rabbitmq-diagnostics, -q, ping]
@@ -185,4 +183,3 @@ services:
 
 volumes:
   dev-postgres:
-  dev-rabbitmq-4:

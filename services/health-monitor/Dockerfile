@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/node:26-alpine
+FROM public.ecr.aws/docker/library/node:18-alpine
 
 # Install system dependencies for health checks
 RUN apk add --no-cache \

@@ -50,16 +50,16 @@ export const NotFoundPage: React.FC = () => {
   const { pathname } = useLocation();
   usePageHeader({ lead: 'SongNodes', title: 'Page not found', current: 'home' });
   return (
-    <main className="sn-page-error" id="main" tabIndex={-1}>
-      <span className="sn-page-error__wordmark">SongNodes</span>
-      <p className="sn-page-error__code">404 · Not found</p>
-      <h1 className="sn-page-error__title">There is no page here</h1>
-      <p className="sn-page-error__text">There is nothing at this address. It may have been typed wrong, or the page was retired.</p>
-      <ul className="sn-page-error__next">
-        <li>Check the address, or <Link to="/">go to Home</Link>.</li>
-        <li>Looking for a track or set? Search from Home with Ctrl K.</li>
-      </ul>
-      <p className="sn-page-error__text data sn-muted" style={{ marginTop: 'var(--space-4)' }}>Address: {pathname}</p>
+    <main className="sn-page__main sn-page-retired" id="main" tabIndex={-1}>
+      <section className="sn-card sn-page-retired__card" aria-labelledby="nf-t">
+        <span className="sn-page-retired__icon"><SnIcon name="route" size={24} /></span>
+        <h1 className="sn-title title-l" id="nf-t">There is no page here</h1>
+        <p className="body-l sn-muted">Nothing lives at this address. It may have moved when SongNodes adopted the design system.</p>
+        <dl className="sn-page-retired__facts">
+          <dt>Address</dt><dd className="sn-mono">{pathname}</dd>
+        </dl>
+        <p className="sn-page-retired__dest"><Link className="sn-link" to="/">Go to Home</Link></p>
+      </section>
     </main>
   );
 };

@@ -30,28 +30,28 @@ export const CurrentTrack: React.FC<CurrentTrackProps> = ({ track }) => {
       <div className={styles.currentHead}>
         <div>
           <h3 className={`sn-title title-s ${styles.currentName}`}>{track.name}</h3>
-          <p className={`${styles.currentArtist} body-s color-fg-2`}>{track.artist}</p>
+          <p className={styles.currentArtist}>{track.artist}</p>
         </div>
         <span className="sn-tag">Now playing</span>
       </div>
 
       <div className={styles.metrics}>
         <div className={styles.metric}>
-          <span className={`${styles.metricLabel} label color-fg-3`}>BPM</span>
+          <span className={styles.metricLabel}>BPM</span>
           <Bpm value={track.bpm} />
         </div>
         <div className={styles.metric}>
-          <span className={`${styles.metricLabel} label color-fg-3`}>Key</span>
+          <span className={styles.metricLabel}>Key</span>
           <KeyBadge value={track.key} />
         </div>
         <div className={styles.metric}>
-          <span className={`${styles.metricLabel} label color-fg-3`}>Energy</span>
+          <span className={styles.metricLabel}>Energy</span>
           <TrackEnergy energy={track.energy} scale={(track as { energy_scale?: string }).energy_scale} />
         </div>
         <div className={styles.metric}>
-          <span className={`${styles.metricLabel} label color-fg-3`}>Length</span>
+          <span className={styles.metricLabel}>Length</span>
           {seconds != null ? (
-            <span className="data color-fg">{SN.format.duration(seconds)}</span>
+            <span className={styles.metricValue}>{SN.format.duration(seconds)}</span>
           ) : (
             <span className="sn-none" title="Length not set">–</span>
           )}
