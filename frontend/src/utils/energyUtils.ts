@@ -24,20 +24,18 @@ export const ENERGY_DESCRIPTORS: { [key: number]: { label: string; desc: string 
  * @param {number} level - The energy level (1-10).
  * @returns {string} The corresponding hex color code.
  */
+/**
+ * Resolve a design-system token to its computed value (for canvas/PIXI callers that
+ * cannot use var()). Falls back to the var() reference when no DOM is available.
+ */
+const readToken = (name: string): string => {
+  if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') return '';
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+};
+
 export const getEnergyColor = (level: number): string => {
-  const colors: { [key: number]: string } = {
-    1: 'var(--energy-1)',
-    2: 'var(--energy-2)',
-    3: 'var(--energy-3)',
-    4: 'var(--energy-4)',
-    5: 'var(--energy-5)',
-    6: 'var(--energy-6)',
-    7: 'var(--energy-7)',
-    8: 'var(--energy-8)',
-    9: 'var(--energy-9)',
-    10: 'var(--energy-10)'
-  };
-  return colors[level] || colors[5];
+  const step = Math.min(10, Math.max(1, Math.round(level) || 5));
+  return readToken(`--energy-${step}`) || `var(--energy-${step})`;
 };
 
 /**

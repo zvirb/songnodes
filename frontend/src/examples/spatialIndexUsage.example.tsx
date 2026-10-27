@@ -210,7 +210,7 @@ export function PerformanceMonitorExample() {
   }
 
   return (
-    <div className="sn-card sn-p-5">
+    <div className="sn-card" style={{ padding: 'var(--space-5)' }}>
       <h3>Spatial Index Performance</h3>
 
       <div className="sn-mb-3">
@@ -226,7 +226,7 @@ export function PerformanceMonitorExample() {
       </div>
 
       <h4>Query Breakdown:</h4>
-      <table className="sn-table sn-w-full">
+      <table className="sn-table" style={{ width: '100%' }}>
         <thead>
           <tr>
             <th>Type</th>
@@ -325,7 +325,7 @@ export function BenchmarkExample() {
   }, []);
 
   return (
-    <div className="sn-p-5">
+    <div style={{ padding: 'var(--space-5)' }}>
       <h3>Spatial Index Benchmark</h3>
 
       <button onClick={runBenchmark} disabled={isRunning}>
@@ -333,7 +333,7 @@ export function BenchmarkExample() {
       </button>
 
       {benchmarkResults && (
-        <div className="sn-mt-5">
+        <div style={{ marginTop: 'var(--space-5)' }}>
           <h4>Summary</h4>
           <p>Average Point Query Speedup: {benchmarkResults.summary.avgSpeedupPoint.toFixed(2)}x</p>
           <p>Average Radius Query Speedup: {benchmarkResults.summary.avgSpeedupRadius.toFixed(2)}x</p>
@@ -341,7 +341,7 @@ export function BenchmarkExample() {
           <p>Recommended Minimum Nodes: {benchmarkResults.summary.recommendedMinNodes}</p>
 
           <h4>Detailed Results</h4>
-          <table className="sn-table sn-w-full sn-mt-3">
+          <table className="sn-table" style={{ width: '100%', marginTop: 'var(--space-3)' }}>
             <thead>
               <tr>
                 <th>Nodes</th>
@@ -407,10 +407,10 @@ export function AdaptivePerformanceModeExample() {
         onChange={(e) => setNodeCount(parseInt(e.target.value))}
       />
 
-      <div className={useSpatialIndex ? "sn-mt-3 sn-status-ok" : "sn-mt-3 sn-status-warn"}>
+      <div style={{ marginTop: 'var(--space-3)', color: useSpatialIndex ? 'var(--status-ok)' : 'var(--status-warn)' }}>
         {useSpatialIndex
-          ? '✅ Spatial indexing enabled for optimal performance'
-          : '⚠️ Linear search (acceptable for small graphs)'}
+          ? 'Spatial indexing enabled for optimal performance'
+          : 'Linear search (acceptable for small graphs)'}
       </div>
     </div>
   );

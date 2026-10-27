@@ -162,8 +162,8 @@ export const checkAIAvailability = async (): Promise<AvailabilityResult> => {
  * Formats track summary into a clean string representation.
  */
 const formatTrackInfo = (t: TrackSummary): string => {
-  const title = t.title || t.name || '–';
-  const artist = t.artist || '–';
+  const title = t.title || t.name || 'Unknown Track';
+  const artist = t.artist || 'Unknown Artist';
   const bpm = t.bpm ? `${t.bpm} BPM` : 'BPM unknown';
   const key = t.camelotKey || t.camelot_key || 'Key unknown';
   const energy = t.energy != null ? `Energy: ${t.energy}/10` : 'Energy unknown';

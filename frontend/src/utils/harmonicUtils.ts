@@ -43,10 +43,10 @@ export const COMPATIBILITY_PROPS: { [key in HarmonicCompatibilityType]: {
   icon: string;
   colorValue: string;
 } } = {
-  perfect:    { bgClass: 'bg-green-400',    textClass: 'text-black',     label: 'Perfect',    icon: '✓✓', colorValue: 'var(--compat-perfect)' },
-  compatible: { bgClass: 'bg-yellow-400',   textClass: 'text-black',     label: 'Compatible', icon: '✓',  colorValue: 'var(--compat-compatible)' },
-  possible:   { bgClass: 'bg-orange-400',   textClass: 'text-black',     label: 'Possible',   icon: '~',  colorValue: 'var(--compat-possible)' },
-  clash:      { bgClass: 'bg-red-500',      textClass: 'text-white',     label: 'Clash',      icon: '✗',  colorValue: 'var(--compat-clash)' },
+  perfect:    { bgClass: 'bg-green-400',    textClass: 'text-black',     label: 'Perfect',    icon: 'check-check', colorValue: 'var(--compat-perfect)' },
+  compatible: { bgClass: 'bg-yellow-400',   textClass: 'text-black',     label: 'Compatible', icon: 'check',  colorValue: 'var(--compat-compatible)' },
+  possible:   { bgClass: 'bg-orange-400',   textClass: 'text-black',     label: 'Possible',   icon: 'minus',  colorValue: 'var(--compat-possible)' },
+  clash:      { bgClass: 'bg-red-500',      textClass: 'text-white',     label: 'Clash',      icon: 'x',  colorValue: 'var(--compat-clash)' },
 };
 
 /**

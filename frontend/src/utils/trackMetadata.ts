@@ -35,14 +35,14 @@ export function trackFromNode(input: GraphNode | Record<string, unknown>): Track
   const bpm = number(field('bpm'));
   const key = text(field('key', 'musical_key'));
   const camelotKey = text(field('camelot_key', 'camelotKey'));
-  const title = text(field('title', 'name', 'track_name')) ?? text(field('label')) ?? '–';
+  const title = text(field('title', 'name', 'track_name')) ?? text(field('label')) ?? 'Unknown Track';
   const releaseDate = text(field('release_date'));
   const genre = field('genre', 'category');
   const track: Track = {
     ...nested,
     id: identifier(node.id ?? node.track_id ?? nested.id) ?? '',
     name: title, title,
-    artist: text(field('artist', 'artist_name')) ?? '–',
+    artist: text(field('artist', 'artist_name')) ?? 'Unknown Artist',
     bpm: bpm !== undefined && bpm > 0 ? bpm : undefined,
     key, musical_key: text(field('musical_key', 'key')),
     camelotKey, camelot_key: camelotKey,
@@ -89,7 +89,7 @@ const textId = (value: unknown) => typeof value === 'string' ? value : undefined
 /** Never turn an uncalibrated stored energy value into a rating or percentage. */
 export function formatStoredEnergy(energy?: number, scale?: string): string {
   return energy === undefined || !Number.isFinite(energy)
-    ? '–' : `${energy} (${scale || 'scale not recorded'})`;
+    ? 'Unknown' : `${energy} (${scale || 'scale not recorded'})`;
 }
 
 /**
