@@ -709,12 +709,12 @@ PR: ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:DS8 END -->
 
 <!-- SLOT:DS9 BEGIN -->
-### DS9: Design system audit and fix: Settings page
+### DS9: Design system rebuild: Settings page and individual cards
 - Start: 2026-10-27
-- Built: Audited the Settings page for design system deviations. Replaced raw values, ad-hoc pixels, custom `Segmented` component, direct radio inputs, and direct `lucide-react` imports with standard `ds` components (`SegmentedControl`, `Checkbox`), `SnIcon`, `StatusPill`, and CSS tokens. Recorded `SecretField` missing component upstream.
-- Checks run: `npm ci`, `tsc`, `oxlint`, `vitest`, `vite build`, `scripts/check_design_system.py --check`.
-- Checks not run: Full E2E Playwright tests due to sandbox environment constraints.
-- End: 2026-10-27 - PR created.
+- Built: Rebuilt `SettingsPage.tsx` so each setting and preference is broken into smaller chunks with its own page (`/settings/:settingId`) and card. Main overview `/settings` features a live text box search (`SearchField`) that filters setting cards by all searchable terms in each card. Wired routes in `registry.tsx`, updated copy to en-AU, sentence case, and Australia/Melbourne time. Added comprehensive unit tests in `SettingsPage.test.tsx`.
+- Checks run: `npm run type-check`, `npm run test:unit`, `python3 scripts/check_design_system.py --check`, Playwright video & screenshot verification (`verify_settings.py`).
+- Checks not run: Live cloud deployment.
+- End: 2026-10-27
 <!-- SLOT:DS9 END -->
 
 <!-- SLOT:R1 BEGIN -->

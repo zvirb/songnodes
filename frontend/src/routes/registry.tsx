@@ -18,6 +18,7 @@ const STATIC_ROUTES: RouteDef[] = [
   { path: '/sources/targets', element: <SourcesPage /> },
   { path: '/pipeline', element: <ScraperProgressPage /> },
   { path: '/settings', element: <SettingsPage /> },
+  { path: '/settings/:settingId', element: <SettingsPage /> },
   { path: '*', element: <NotFoundPage /> },
 ];
 
