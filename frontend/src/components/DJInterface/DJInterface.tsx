@@ -228,11 +228,11 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
       {isLoading && (
         <div className={styles.loadingContainer}>
           <div className={styles.spinner} />
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--fg)' }}>
+          <p className="title-lead" style={{ margin: 0, fontWeight: 600, color: 'var(--fg)' }}>
             Loading your music library...
           </p>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', margin: 'var(--space-2) 0 0 0', color: 'var(--fg-3)' }}>
-            Found <strong style={{ fontFamily: 'var(--font-data)', color: 'var(--fg)' }}>{tracks.length}</strong> tracks so far
+          <p className="body" style={{ fontSize: '0.875rem', margin: 'var(--space-2) 0 0 0', color: 'var(--fg-3)' }}>
+            Found <strong className="data" style={{ color: 'var(--fg)' }}>{tracks.length}</strong> tracks so far
           </p>
         </div>
       )}
