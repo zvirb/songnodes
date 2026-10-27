@@ -14,8 +14,8 @@ for (const route of ROUTES) {
 
 test('/harmony opens the Camelot explorer', async ({ page }) => {
   await openRoute(page, '/harmony');
-  await expect(page.getByRole('heading', { name: 'Harmonic Modulation Explorer' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Camelot Wheel' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Music: Camelot wheel' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Acoustic mood and energy profile' })).toBeVisible();
 });
 
 test('/pipeline opens the telemetry dashboard', async ({ page }) => {
