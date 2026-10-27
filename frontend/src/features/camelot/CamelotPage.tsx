@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Music, Layers } from 'lucide-react';
 import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { PageHeader } from '../../shell/PageParts';
+import { usePageHeader } from '../../shell/AppShell';
 import { EmptyPanel } from '../../components/ds';
 import { SN, Bpm, KeyBadge, EnergyBar } from '../../lib/songnodes';
 import { compatibleKeys } from './camelotLogic';
@@ -13,6 +14,7 @@ import './camelot.css';
 const CODES: string[] = (['B', 'A'] as const).flatMap((L) => Array.from({ length: 12 }, (_, i) => `${i + 1}${L}`));
 
 const CamelotPage: React.FC = () => {
+  usePageHeader({ lead: 'Key & mood', title: 'Camelot wheel', current: 'harmony' });
   const { tracks, isLoading, source } = useUnifiedTracks();
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);

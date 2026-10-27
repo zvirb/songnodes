@@ -123,9 +123,9 @@ export function PlanModePanel({
             color: 'var(--fg-3)',
             marginBottom: 'var(--space-2)'
           }}>
-            <span style={{ fontFamily: 'var(--font-data)', fontVariantNumeric: 'tabular-nums' }}>
+            <span className="data">
               {filteredTracks.length}
-            </span> of <span style={{ fontFamily: 'var(--font-data)', fontVariantNumeric: 'tabular-nums' }}>
+            </span> of <span className="data">
               {tracks.length}
             </span> tracks
           </div>
@@ -143,13 +143,13 @@ export function PlanModePanel({
               {librarySearchQuery ? (
                 <>
                   <SearchX size={36} strokeWidth={1.5} style={{ margin: '0 auto var(--space-3)', color: 'var(--fg-3)' }} aria-hidden="true" />
-                  <div style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 'var(--space-1)' }}>No tracks found</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>Try a different search term</div>
+                  <div className="body-strong" style={{ color: 'var(--fg)', marginBottom: 'var(--space-1)' }}>No tracks found</div>
+                  <div className="caption" style={{ color: 'var(--fg-3)' }}>Try a different search term</div>
                 </>
               ) : (
                 <>
                   <Library size={36} strokeWidth={1.5} style={{ margin: '0 auto var(--space-3)', color: 'var(--fg-3)' }} aria-hidden="true" />
-                  <div style={{ fontWeight: 600, color: 'var(--fg)' }}>No tracks in library</div>
+                  <div className="body-strong" style={{ color: 'var(--fg)' }}>No tracks in library</div>
                 </>
               )}
             </div>
