@@ -20,9 +20,20 @@ class MemgraphClient:
         self.uri = os.getenv('MEMGRAPH_URI', uri)
         self.driver = None
 
+    def is_enabled(self) -> bool:
+        val = os.getenv('MEMGRAPH_ENABLED')
+        if val is not None:
+            return val.lower() in ('1', 'true', 'yes')
+        return bool(os.getenv('MEMGRAPH_URI'))
+
     async def connect(self):
         if not self.driver:
-            self.driver = AsyncGraphDatabase.driver(self.uri, auth=("", ""))
+            self.driver = AsyncGraphDatabase.driver(
+                self.uri,
+                auth=("", ""),
+                connection_timeout=5.0,
+                max_transaction_retry_time=5.0
+            )
 
     async def close(self):
         if self.driver:
@@ -274,6 +285,8 @@ async def project_ref_mb_edges(conn, track_id: UUID):
         )
 async def handle_event(conn, event: Dict[str, Any]) -> None:
     """Process an outbox event to update the Memgraph projection."""
+    if not client.is_enabled():
+        return
     kind, aggregate = event['event_type'], event['aggregate_id']
     payload = event['payload'] if isinstance(event['payload'], dict) else json.loads(event['payload'])
 
@@ -300,6 +313,10 @@ async def handle_event(conn, event: Dict[str, Any]) -> None:
 
 async def rebuild(conn) -> Dict[str, Any]:
     """Drop all nodes and edges in Memgraph and recreate from PostgreSQL using batched UNWIND."""
+    if not client.is_enabled():
+        from . import outbox
+        await outbox.skip_to_head(conn, CONSUMER)
+        return {'rebuilt': 0, 'status': 'memgraph_disabled'}
     await ensure_constraints()
 
     # Drop all
@@ -382,6 +399,14 @@ async def rebuild(conn) -> Dict[str, Any]:
 async def reconcile(conn, repair: bool = False) -> Dict[str, Any]:
     """Compare PostgreSQL data with Memgraph and report differences."""
     pg_count = await conn.fetchval("SELECT count(*) FROM silver_enriched_tracks")
+    if not client.is_enabled():
+        return {
+            "pg_tracks": pg_count,
+            "mg_tracks": 0,
+            "diff_tracks": pg_count,
+            "repaired": False,
+            "status": "memgraph_disabled"
+        }
 
     mg_res = await client.execute_query("MATCH (t:Track) RETURN count(t) as cnt")
     mg_count = mg_res[0]['cnt'] if mg_res else 0
