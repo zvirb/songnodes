@@ -86,7 +86,9 @@ async def schedule_async() -> int:
     now = int(time.time())
     created = 0
     try:
-        for kind, interval, payload in (('projection_consume', PROJECTION_INTERVAL, {}), ('ingest_pending', INGEST_INTERVAL, {})):
+        for kind, interval, payload in (('projection_consume', PROJECTION_INTERVAL, {}),
+                                        ('graph_projection_consume', PROJECTION_INTERVAL, {}),
+                                        ('ingest_pending', INGEST_INTERVAL, {})):
             _, was_created = await jobs.enqueue(connection, kind, f'tick:{kind}:{now // interval}', payload)
             created += int(was_created)
         await jobs.prune(connection, int(os.getenv('JOB_RETENTION_DAYS', '14')))
