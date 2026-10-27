@@ -21,7 +21,7 @@ const SectionHeading = ({ title, count }: { title: string; count?: string | numb
 
 const ScraperProgressPage: React.FC = () => {
   usePageHeader({ lead: 'Pipeline', title: 'Telemetry', current: 'pipeline' });
-  const { telemetry, stages, workers, jobs, isLoading, error, lastUpdated, source, refresh } = usePipelineTelemetry();
+  const { telemetry, stages, workers, jobs, scrapeRuns, isLoading, error, lastUpdated, source, refresh } = usePipelineTelemetry();
   const [retryingJob, setRetryingJob] = useState<string | null>(null);
   const [confirmRetryId, setConfirmRetryId] = useState<string | null>(null);
 
@@ -53,6 +53,13 @@ const ScraperProgressPage: React.FC = () => {
 
   const deadJobs = jobs.filter(j => j.status === 'dead');
   const activeJobs = jobs.filter(j => j.status === 'queued' || j.status === 'running');
+  const todayStart = new Date(lastUpdated); todayStart.setHours(0, 0, 0, 0);
+  const runningScrapes = scrapeRuns.filter(r => r.state === 'running' || r.state === 'queued');
+  const finishedToday = scrapeRuns.filter(r => r.finishedAt && new Date(r.finishedAt) >= todayStart);
+  const tracksToday = finishedToday.reduce((n, r) => n + (r.tracks ?? 0), 0);
+  const emptyToday = finishedToday.filter(r => r.state === 'found_nothing').length;
+  const STAGE_PILL: Record<string, [string, string]> = { done: ['completed', 'Done'], running: ['running', 'Running'], waiting: ['idle', 'Waiting'], warning: ['warning', 'Warning'], failed: ['failed', 'Failed'], cancelled: ['cancelled', 'Cancelled'] };
+  const RUN_PILL: Record<string, [string, string]> = { queued: ['queued', 'Queued'], running: ['running', 'Running'], found_nothing: ['warning', 'Found nothing'], done: ['success', 'Done'], failed: ['failed', 'Failed'] };
 
   if (error && source === 'unavailable') {
     return (
@@ -131,6 +138,43 @@ const ScraperProgressPage: React.FC = () => {
         </section>
       )}
 
+      {/* Scrape runs: the jobs that fill bronze, newest first */}
+      <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
+        <SectionHeading title="Scrape runs" count={`${SN.format.count(scrapeRuns.length)} recent`} />
+        {scrapeRuns.length > 0 ? (
+          <div className="sn-tablebox">
+            <table className="sn-table" aria-label="Scrape runs">
+              <thead>
+                <tr>
+                  <th scope="col">Search</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Started</th>
+                  <th scope="col" className="num">Duration</th>
+                  <th scope="col" className="num">Playlists</th>
+                  <th scope="col" className="num">Tracks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scrapeRuns.slice(0, 20).map((r) => (
+                  <tr key={r.id}>
+                    <td className="body-strong">{r.query || <span className="sn-none">–</span>}</td>
+                    <td>{r.source || <span className="sn-none">–</span>}</td>
+                    <td title={r.error ?? undefined}><StatusPill raw={RUN_PILL[r.state][0]} label={RUN_PILL[r.state][1]} /></td>
+                    <td className="data">{SN.format.dateTime(r.createdAt)}</td>
+                    <td className="num data">{SN.format.duration(r.seconds)}</td>
+                    <td className="num data">{SN.format.count(r.playlists)}</td>
+                    <td className="num data">{SN.format.count(r.tracks)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="body" style={{ color: 'var(--fg-2)' }}>No scrape has run yet. Queue one from the target tracks below.</p>
+        )}
+      </section>
+
       {/* Primary KPI Metrics Tiles */}
       <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
         <SectionHeading title="Global pipeline health" />
@@ -139,28 +183,28 @@ const ScraperProgressPage: React.FC = () => {
           {/* Tile 1: Active Workers */}
           <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Running jobs</span>
+              <span className="label" style={{ flex: 1 }}>Scrapes running</span>
               <Activity size={18} color="var(--brand)" />
             </div>
             <div className="figure data" >
-              {SN.format.count(telemetry.activeWorkers)}
+              {SN.format.count(runningScrapes.length)}
             </div>
             <div className="caption" style={{ color: 'var(--fg-2)', marginTop: 'var(--space-1)' }}>
-              Distinct job kinds running
+              {runningScrapes.length > 0 ? runningScrapes.map(r => r.query || r.source).join(', ') : 'None at the moment'}
             </div>
           </div>
 
           {/* Tile 2: Items Processed */}
           <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Total jobs executed</span>
-              <CheckCircle2 size={18} color="var(--status-ok)" />
+              <span className="label" style={{ flex: 1 }}>Tracks scraped today</span>
+              <CheckCircle2 size={18} color={tracksToday > 0 ? "var(--status-ok)" : "var(--fg-3)"} />
             </div>
             <div className="figure data" >
-              {SN.format.count(telemetry.itemsProcessed)}
+              {SN.format.count(tracksToday)}
             </div>
-            <div className="caption data" style={{ marginTop: "var(--space-1)" }}>
-              {SN.format.count(telemetry.itemsRemaining)} pending jobs left
+            <div className="caption" style={{ color: 'var(--fg-2)', marginTop: "var(--space-1)" }}>
+              {SN.format.count(finishedToday.length)} scrapes finished today{emptyToday > 0 ? `, ${SN.format.count(emptyToday)} found nothing` : ''}
             </div>
           </div>
 
@@ -209,11 +253,12 @@ const ScraperProgressPage: React.FC = () => {
                     {stg.state === 'running' && <RefreshCw size={18} className="sn-spinner" color="var(--brand)" />}
                     {stg.state === 'waiting' && <Clock size={18} color="var(--fg-3)" />}
                     {stg.state === 'failed' && <XCircle size={18} color="var(--status-bad)" />}
+                    {stg.state === 'warning' && <AlertTriangle size={18} color="var(--status-warn)" />}
 
                     <span className="body-strong" >
                       {stg.name}
                     </span>
-                    <StatusPill raw={stg.state} />
+                    <StatusPill raw={STAGE_PILL[stg.state][0]} label={STAGE_PILL[stg.state][1]} />
                   </div>
 
                   <div className="data" >
@@ -238,18 +283,18 @@ const ScraperProgressPage: React.FC = () => {
 
       {/* Scraper Worker Pool Status Table */}
       <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
-        <SectionHeading title="Active worker pool" count={`${workers.length} workers`} />
+        <SectionHeading title="Workers" count={`${SN.format.count(workers.length)} ${workers.length === 1 ? 'worker' : 'workers'}`} />
         {workers.length > 0 ? (
           <div className="sn-tablebox" style={{ overflowX: 'auto' }}>
-            <table className="sn-table" aria-label="Scraper Workers Health">
+            <table className="sn-table" aria-label="Worker health">
               <thead>
                 <tr>
-                  <th scope="col">Worker Name</th>
-                  <th scope="col">Kind / Service</th>
+                  <th scope="col">Worker</th>
+                  <th scope="col">Kind</th>
                   <th scope="col">Status</th>
-                  <th scope="col" className="num">Success Rate</th>
-                  <th scope="col" className="num">Jobs Today</th>
-                  <th scope="col">Active Target / Action</th>
+                  <th scope="col" className="num">Success rate</th>
+                  <th scope="col" className="num">Jobs today</th>
+                  <th scope="col">Working on</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,7 +319,7 @@ const ScraperProgressPage: React.FC = () => {
                           {w.activeTarget}
                         </span>
                       ) : (
-                        <span className="caption">— Idle waiting for next queue item</span>
+                        <span className="caption">Idle</span>
                       )}
                     </td>
                   </tr>
@@ -292,12 +337,12 @@ const ScraperProgressPage: React.FC = () => {
         <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
           <SectionHeading title="Dead jobs requiring retry" count={`${deadJobs.length} jobs`} />
           <div className="sn-tablebox" style={{ overflowX: 'auto' }}>
-            <table className="sn-table" aria-label="Dead Jobs">
+            <table className="sn-table" aria-label="Dead jobs">
               <thead>
                 <tr>
-                  <th scope="col">Job ID</th>
+                  <th scope="col">Job</th>
                   <th scope="col">Kind</th>
-                  <th scope="col">Last Error</th>
+                  <th scope="col">Last error</th>
                   <th scope="col">Action</th>
                 </tr>
               </thead>
