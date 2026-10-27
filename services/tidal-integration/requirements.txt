@@ -1,6 +1,6 @@
-fastapi==0.159.1
+fastapi==0.162.0
 uvicorn[standard]==0.54.0
-tidalapi @ git+https://github.com/tehkillerbee/python-tidal.git@6c15d7c538c5c0fdca6c7883cb92c03e243d4de1#egg=tidalapi
+tidalapi==0.8.11
 asyncpg==0.32.0
 pydantic==2.14.1
 python-dotenv==1.2.4
