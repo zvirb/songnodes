@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
+import { useTargetSuggestions, type TargetSuggestion } from '../hooks/useTargetSuggestions';
 import MusicServiceSearch from './MusicServiceSearch';
 import { Plus, Upload, Download, Archive, ArchiveRestore, Search, Pencil, Trash2, Target, X, SearchX, ServerCrash } from 'lucide-react';
 import { SN } from '../lib/songnodes';
-import { SegmentedControl, OverflowMenu, StatusPill, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast } from './ds';
+import { SegmentedControl, OverflowMenu, StatusPill, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast, Card, Title, Text } from './ds';
 import './TargetTracksManager.css';
 
 export interface TargetTrack {
@@ -27,6 +28,8 @@ interface TargetTracksManagerProps {
 }
 
 const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = false, filterStatus = 'all' }) => {
+  const { suggestions, promoteSuggestion, dismissSuggestion } = useTargetSuggestions();
+
   const [tracks, setTracks] = useState<TargetTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -391,8 +394,45 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
     return <StatusPill raw={status} label={label} />;
   };
 
+  const handlePromoteSuggestion = async (suggestion: TargetSuggestion) => {
+    try {
+      await promoteSuggestion(suggestion);
+      showToast(`Added ${suggestion.title} to targets`);
+      void loadTracks();
+    } catch {
+      showToast('Could not add the target');
+    }
+  };
+
   return (
     <div className={`ttm ${embedded ? 'ttm--embedded' : ''}`}>
+      {!embedded && activeTab === 'manage' && suggestions && suggestions.length > 0 && (
+        <section aria-labelledby="ttm-suggestions-title" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <Title size="title-m" as="h2" id="ttm-suggestions-title">Suggested for discovery</Title>
+          <div style={{ display: 'flex', overflowX: 'auto', gap: 'var(--space-3)', paddingBottom: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+            {suggestions.map(s => (
+              <Card key={s.id} style={{ flex: '0 0 var(--rail-w)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                  <Text variant="body-strong">{s.title}</Text>
+                  <Text variant="body-s" className="sn-muted">{s.artist}</Text>
+                  {s.reason && (
+                    <div style={{ marginTop: 'var(--space-2)' }}>
+                      <StatusPill raw="info" label={s.reason} />
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'auto' }}>
+                  <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={() => dismissSuggestion(s.id)}>Dismiss</button>
+                  <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={() => { void handlePromoteSuggestion(s); }}>
+                    <Plus size={16} strokeWidth={2} aria-hidden="true" /> Add to targets
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="ttm__head">
         <p className="body-s sn-muted">
           <span className="data-strong">{SN.format.count(filteredTracks.length)}</span> target {filteredTracks.length === 1 ? 'track' : 'tracks'}

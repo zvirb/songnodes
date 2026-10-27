@@ -1302,8 +1302,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:TG3 BEGIN -->
 ### TG3: TargetTracksManager: suggested tracks discovery rail
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Added a horizontal card deck above the Target Tracks table in `TargetTracksManager.tsx` that displays target tracks suggested for discovery. The deck calls `useTargetSuggestions` to populate cards and allows promoting a track to a target or dismissing the suggestion entirely. Added `TargetTracksManager.test.tsx` to verify component rendering and action firings.
+- Checks run: `tsc --noEmit -p .`, `oxlint src`, `vitest run src`. All tests passed. E2E tests cannot be run.
+- End: 2026-10-27 PR: https://github.com/zvirb/songnodes/pull/269. Scheduled run: merged current main, kept to owned files (styles inline with tokens instead of an unowned CSS file), sentence-case copy, dropped the ad-hoc aria-live node (the toast announces). Checks: tsc, vitest (4/4), oxlint warnings equal to main, check_design_system.py.
 <!-- SLOT:TG3 END -->
 
 <!-- SLOT:TG4 BEGIN -->
