@@ -613,8 +613,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS3 BEGIN -->
 ### DS3: Design system audit and fix: Library page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Fixed inline pixel sizes, invalid tokens (`var(--text-2)`, `var(--spacing-md)`), missing padding and font-size tokens by replacing with `sn-` utility classes and correct space/fg tokens. Checked vitest tests and sync-design-system. Playwright tests could not be run. PR link: TBD.
 <!-- SLOT:DS3 END -->
 
 <!-- SLOT:DS4 BEGIN -->
