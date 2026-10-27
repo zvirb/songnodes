@@ -1174,6 +1174,36 @@ Work done:
 - End: 2026-10-26
 <!-- SLOT:U29 END -->
 
+<!-- SLOT:LY1 BEGIN -->
+### LY1: Layout debt: AI setlists page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY1 END -->
+
+<!-- SLOT:LY2 BEGIN -->
+### LY2: Layout debt: music library and set builder pages
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY2 END -->
+
+<!-- SLOT:LY3 BEGIN -->
+### LY3: Layout debt: pathfinder and Camelot pages
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY3 END -->
+
+<!-- SLOT:LY4 BEGIN -->
+### LY4: Layout debt: pipeline page and export dialog
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY4 END -->
+
+<!-- SLOT:LY5 BEGIN -->
+### LY5: Layout debt: shared components and the DJ interface page container
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY5 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
@@ -1198,6 +1228,14 @@ docker compose -f compose.dev.yaml ps
 docker compose -f compose.dev.yaml logs --since 24h --tail 200
 ```
 Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, or with `--wave up` once wave 1 is out.
+
+### 2026-10-28 (Claude, scheduled run, stage 2 to 3)
+- Merged #285 to #295 (scraper psycopg2, MixesDB positions and search/category routing, pipeline scrape-runs table, graph_projection scheduling and Memgraph opt-in, found_nothing warning, 07-api-keys.sql in start-dev.sh, non-compose Dockerfile fixes, settings rebuild). Open PRs: 0. No deletions found after merges.
+- Antigravity on the laptop (E:\songnodes-e2e): all 8 compose services healthy; all 24 non-compose Dockerfiles build; E2E 359/367, the 8 failures are visual snapshots of /settings and /pipeline after intended redesigns.
+- First real scrape, 'Deadmau5 Strobe' on MixesDB: 5 sets found; bronze 9 playlists and 100 tracks (positions 1..N, no gaps); silver 132 tracks, 80 transitions; graph-api 132 nodes, 80 edges; outbox backlog 0.
+- Open: the job result (928 persisted) and /pipeline (1 playlist, 15 tracks) disagree with bronze; playlist 9fe4886d has 3 tracks; snapshots to refresh. Sent to Antigravity.
+- Known: services/scraper-orchestrator/main_enhanced.py imports automated_scheduler, which no longer exists, so that image builds but would fail on import. It is not in compose.dev.yaml; the U20 slot's import claim does not hold.
+- Next: LY1 to LY5 (layout debt, briefs from plan/build_ly_prompts.py) and DS16.
 
 <!-- SLOT:L6 BEGIN -->
 ### L6: Script: import the musicLibrary SQLite into the running stack
