@@ -1262,8 +1262,8 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 
 <!-- SLOT:DS17 BEGIN -->
 ### DS17: Design system audit and fix: AI setlists import page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Fixed ad-hoc spacing, inline styling, missing SN formatters, and missing Button components in AISetlistsPage.tsx. Checked and validated UI components under design system. Vitest tests passed. Could not run Playwright. PR link pending.
 <!-- SLOT:DS17 END -->
 
 <!-- SLOT:BOLT BEGIN -->
