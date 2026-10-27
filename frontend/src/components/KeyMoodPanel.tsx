@@ -182,12 +182,12 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
           )}
 
           <section className="km__card" aria-labelledby="km-stats">
-            <h4 className="km__label label" id="km-stats">In the graph</h4>
+            <h4 className="km__label" id="km-stats">In the graph</h4>
             <dl className="km__stats">
-              <div><dt className="body-s">Tracks</dt><dd className="data-strong">{SN.format.count(graphData.nodes.length)}</dd></div>
-              <div><dt className="body-s">Connections</dt><dd className="data-strong">{SN.format.count(graphData.edges.length)}</dd></div>
-              <div><dt className="body-s">Keys found</dt><dd className="data-strong">{SN.format.count(keysFound)}</dd></div>
-              <div><dt className="body-s">Playlist links</dt><dd className="data-strong">{SN.format.count(playlistEdges)}</dd></div>
+              <div><dt>Tracks</dt><dd>{SN.format.count(graphData.nodes.length)}</dd></div>
+              <div><dt>Connections</dt><dd>{SN.format.count(graphData.edges.length)}</dd></div>
+              <div><dt>Keys found</dt><dd>{SN.format.count(keysFound)}</dd></div>
+              <div><dt>Playlist links</dt><dd>{SN.format.count(playlistEdges)}</dd></div>
             </dl>
 
             <div className="km__actions">
@@ -206,7 +206,7 @@ export const KeyMoodPanel: React.FC<KeyMoodPanelProps> = ({
             </div>
           </section>
 
-          <details className="km__help body-s">
+          <details className="km__help">
             <summary>How to use Key and mood</summary>
             <ul>
               <li><strong>Camelot wheel:</strong> select key segments to pick the tracks in those keys.</li>

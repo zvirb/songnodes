@@ -15,7 +15,6 @@ Every pinned requirement is already on its latest version; only the Python versi
 ## Owned paths
 - shared/templates/Dockerfile.base-service (base image and install steps only)
 - shared/templates/*requirements*.txt
-- shared/templates/base_fastapi_service.py (imports needed by the new pins only)
 
 (Complete list. Anything else is read-only for you. You may also add a dated note under docs/integration/U25/ if you need to record a decision.)
 

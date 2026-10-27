@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Users, ChevronDown, ChevronRight, Music, TrendingUp, Hash } from 'lucide-react';
 import { Community } from '../utils/communityDetection';
 import useStore from '../store/useStore';
-import { KeyBadge, Bpm, EnergyBar, SN } from '../lib/songnodes';
 
 interface CommunityClusterProps {
   community: Community;
@@ -216,10 +215,14 @@ export const CommunityCluster: React.FC<CommunityClusterProps> = ({
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginLeft: 'var(--space-2)' }}>
                     {node.bpm && (
-                      <Bpm value={node.bpm} />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+                        {Math.round(node.bpm)} BPM
+                      </span>
                     )}
                     {(node.key || node.camelot_key) && (
-                      <KeyBadge value={(node.camelot_key || node.key) as string} />
+                      <span style={{ fontSize: '0.75rem', padding: 'var(--space-0.5) var(--space-1.5)', borderRadius: 'var(--radius-chip)', backgroundColor: 'var(--brand-soft)', color: 'var(--brand-strong)' }}>
+                        {node.camelot_key || node.key}
+                      </span>
                     )}
                   </div>
                 </div>

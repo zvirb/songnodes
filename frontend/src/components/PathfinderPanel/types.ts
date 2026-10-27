@@ -79,35 +79,35 @@ export const DEFAULT_CONSTRAINTS: PathConstraints = {
 export const WIZARD_STEPS: WizardStepConfig[] = [
   {
     id: 'selectStart',
-    title: 'Select start track',
-    description: 'Choose the track to begin your set',
+    title: 'Select Start Track',
+    description: 'Choose the track to begin your DJ set',
     optional: false,
     validation: (ctx) => ctx.startTrack !== null,
   },
   {
     id: 'selectEnd',
-    title: 'Select end track (optional)',
+    title: 'Select End Track (Optional)',
     description: 'Optionally choose a track to end your set',
     optional: true,
     validation: () => true, // Always valid since it's optional
   },
   {
     id: 'configureConstraints',
-    title: 'Configure constraints',
+    title: 'Configure Constraints',
     description: 'Set duration, BPM, and key preferences',
     optional: false,
     validation: (ctx) => ctx.constraints.targetDuration > 0,
   },
   {
     id: 'addWaypoints',
-    title: 'Add waypoints (optional)',
+    title: 'Add Waypoints (Optional)',
     description: 'Select tracks that must be included in the path',
     optional: true,
     validation: () => true, // Always valid since waypoints are optional
   },
   {
     id: 'reviewPath',
-    title: 'Review & calculate',
+    title: 'Review & Calculate',
     description: 'Review settings and calculate optimal path',
     optional: false,
     validation: (ctx) => ctx.startTrack !== null,
