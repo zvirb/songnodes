@@ -9,7 +9,7 @@ mkdir -p "$DOCKER_CONFIG"
 
 # Cloud checkouts may give SQL files mode 600; Postgres initializes as its own user.
 chmod a+r sql/migrations/medallion/{001_bronze_layer_up,002_silver_layer_up,006_track_adjacency_edges_up}.sql
-chmod a+r sql/migrations/012_target_tracks_up.sql sql/migrations/013_ingestion_jobs_up.sql sql/migrations/014_data_layer_up.sql
+chmod a+r sql/migrations/012_target_tracks_up.sql sql/migrations/013_ingestion_jobs_up.sql sql/migrations/014_data_layer_up.sql sql/init/07-api-keys.sql
 
 build_args=(--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY)
 if [[ -n "${CODEX_PROXY_CERT:-}" ]]; then
@@ -50,6 +50,10 @@ docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnod
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/185_reconcile_view_mbid_up.sql
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/220_graph_consumer_up.sql
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/240_library_search_indexes_up.sql
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+if [ -z "$(docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -tAc "SELECT to_regclass('api_keys')" | tr -d '[:space:]')" ]; then
+  docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/init/07-api-keys.sql
+fi
 docker compose -f compose.dev.yaml up -d --no-build --force-recreate --wait --wait-timeout 120 graph-api rest-api worker unified-scraper frontend
 curl --fail --silent --show-error http://127.0.0.1:8084/api/graph/data
 printf '\nBackend ready. In frontend/, run npm ci and npm run dev.\n'

@@ -143,9 +143,6 @@ async def get_api_key_requirements(pool = Depends(get_db_pool)):
             return requirements
 
     except Exception as e:
-        if isinstance(e, (asyncpg.UndefinedTableError, asyncpg.UndefinedFunctionError)) or 'does not exist' in str(e):
-            logger.warning(f"api_key_requirements table does not exist: {e}")
-            return []
         logger.error(f"Failed to fetch API key requirements: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -199,9 +196,6 @@ async def get_api_keys(
             return api_keys
 
     except Exception as e:
-        if isinstance(e, (asyncpg.UndefinedTableError, asyncpg.UndefinedFunctionError)) or 'does not exist' in str(e):
-            logger.warning(f"api_keys table or function does not exist: {e}")
-            return []
         logger.error(f"Failed to fetch API keys: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
