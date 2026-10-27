@@ -545,14 +545,18 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS10 BEGIN -->
 ### DS10: Design system audit and fix: OAuth callback page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed audit and fixes. Documented missing `StagedProgress` and layout class in `docs/design-system/audits/DS10.md`. Refactored `frontend/src/components/OAuthCallback.tsx` to use design system components (`Card`, `Title`, `Button`) and `sn-*` classes instead of inline styles. Run `npm ci`, `npx tsc`, `npx vite build` and `check_design_system.py`. Did not run Playwright E2E tests due to sandbox environment constraints.
 <!-- SLOT:DS10 END -->
 
 <!-- SLOT:DS11 BEGIN -->
 ### DS11: Design system audit and fix: Unrouted components, legacy UI
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Audited components, applied token updates to layout, typography, and colors in unrouted components. Removed hex/rgba colors. Replaced `alert()` with `showToast`. Addressed padding in Attributions. Recorded missing tokens in audit file.
+- Checks run: `tsc --noEmit`, `vitest run src`, `vite build`, `check_design_system.py --check`.
+- Checks not run: Playwright E2E tests (no sandbox support).
+- PR: https://github.com/zvirb/songnodes/pull/999
+- End: 2026-10-26
 <!-- SLOT:DS11 END -->
 
 <!-- SLOT:DS12 BEGIN -->
@@ -615,14 +619,18 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS3 BEGIN -->
 ### DS3: Design system audit and fix: Library page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Fixed inline pixel sizes, invalid tokens (`var(--text-2)`, `var(--spacing-md)`), missing padding and font-size tokens by replacing with `sn-` utility classes and correct space/fg tokens. Checked vitest tests and sync-design-system. Playwright tests could not be run. PR link: TBD.
 <!-- SLOT:DS3 END -->
 
 <!-- SLOT:DS4 BEGIN -->
 ### DS4: Design system audit and fix: Set builder page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Migrated `SetBuilderPage.tsx`, `EnergyWave.tsx`, and `ExportDialog.tsx` to fully comply with design-system rules, replacing inline pixels/colors with proper tokens (e.g. `--space-3`, `--fg-2`, `.label`), replacing manual status chips with `<StatusPill>`, and exporting missing metadata as empty strings instead of "Unknown". Created audit DS4.md and marked files as migrated.
+- Checks run: `vitest run src`, `oxlint`, `tsc`, `vite build`, `python scripts/check_design_system.py --check`.
+- Checks not run: Playwright E2E visual tests (not supported in sandbox).
+- PR: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-27
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
@@ -846,8 +854,8 @@ Work done:
 
 <!-- SLOT:E3 BEGIN -->
 ### E3: Enrichment replay and coverage report
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26: Created tests/enrichment_local/replay/ test suite and script to replay the library fixture and real data through the enrichment waterfall. Evaluated coverage and web calls by provider, writing results to docs/integration/WP4/replay.md and docs/integration/E3/replay_live.md.
 <!-- SLOT:E3 END -->
 
 <!-- SLOT:SB3 BEGIN -->
@@ -991,8 +999,11 @@ Work done:
 
 <!-- SLOT:U18 BEGIN -->
 ### U18: Upgrade services/metadata-enrichment to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated services/metadata-enrichment and services/metadata-enrichment/Dockerfile.worker to use Python 3.15-slim. Updated requirements.txt (starlette to 1.10.0, aio-pika to 10.2.1) and requirements-test.txt (pytest-asyncio to 1.4.1).
+- Checks run: `docker build` succeeds for both Dockerfiles. The entry module imports successfully (`python -c "import main"` and `python -c "import queue_consumer"`) inside their respective images.
+- Checks not run: Full `pytest` test suite inside the container (`python -m pytest tests`) fails during collection due to missing dependencies from outside the owned `services/metadata-enrichment` path (e.g., `fakes`, `docker`). These pre-existing unowned files and test configurations were left untouched as per constraints.
+- End: 2026-10-26
 <!-- SLOT:U18 END -->
 
 <!-- SLOT:U20 BEGIN -->
@@ -1047,8 +1058,12 @@ Work done:
 
 <!-- SLOT:U25 BEGIN -->
 ### U25: Upgrade shared/templates to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Python base image to 3.15-slim. Updated all pinned packages in `shared/templates/base-requirements.txt` to their latest versions (FastAPI, pydantic, SQLAlchemy, etc.). Replaced `BaseSettings` import to use `pydantic-settings` to fix compatibility with Pydantic 2.x. Minimized image size by removing `build-essential` post-install.
+- Checks run: `docker build` inside `shared/templates` (passes). Imported service module inside built image (passes).
+- Checks not run: No test files exist in `shared/templates`. E2E tests cannot run in sandbox.
+- Reviewer check: `docker build` succeeds, `python --version` outputs 3.15.1, and entry module imports successfully.
+- End: 2026-10-26
 <!-- SLOT:U25 END -->
 
 <!-- SLOT:U26 BEGIN -->
@@ -1247,15 +1262,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:FL4 END -->
 
 <!-- SLOT:DS7 BEGIN -->
-### DS7: Design system audit and fix: Paths (route finder) page
-- Start: _not started_
-- End: _not finished_
+Started 2026-10-26 22:29
+Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables and refactored EmptyPanel -> EmptyState. Checks run: ts, lint, vite, vitest (tests passed), and sync script. Not run: Playwright E2E/visuals (no sandbox). PR: (pending)
 <!-- SLOT:DS7 END -->
 
 <!-- SLOT:DS17 BEGIN -->
 ### DS17: Design system audit and fix: AI setlists import page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Fixed ad-hoc spacing, inline styling, missing SN formatters, and missing Button components in AISetlistsPage.tsx. Checked and validated UI components under design system. Vitest tests passed. Could not run Playwright. PR link pending.
 <!-- SLOT:DS17 END -->
 
 <!-- SLOT:BOLT BEGIN -->
