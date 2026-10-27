@@ -4,15 +4,11 @@
 # Remove a line in the same PR that fixes it. Do not add lines.
 #   class <sn-class>   used in app code but defined by no stylesheet (renders no spacing or style)
 #   main <file>        a <main> that is not a design-system page container
-main frontend/src/components/DJInterface/DJInterface.tsx
-class sn-auth-callback-card
 class sn-banner--info
 class sn-banner--warning
-class sn-body
 class sn-body-s
 class sn-body-strong
 class sn-btn--outline
-class sn-btn-transport
 class sn-camelot-page
 class sn-camelot-page__list-card
 class sn-camelot-page__wheel-container
@@ -23,7 +19,6 @@ class sn-color-fg
 class sn-color-fg-2
 class sn-copy-button__text
 class sn-coverage-panel
-class sn-dialog__form
 class sn-dropdown
 class sn-export-dialog
 class sn-field--inline
@@ -38,8 +33,6 @@ class sn-inline-msg__text
 class sn-input-icon
 class sn-input-wrap
 class sn-justify-between
-class sn-key__code
-class sn-label
 class sn-layout-grid
 class sn-layout-stack
 class sn-list

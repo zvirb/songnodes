@@ -471,7 +471,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
                 cursor: previewUrl ? 'pointer' : 'not-allowed',
                 opacity: previewUrl ? 1 : 'var(--opacity-disabled)'
               }}
-              className="sn-btn-transport"
+
               aria-label={isPlayingPreview ? 'Pause preview' : 'Play preview'}
             >
               {isPreviewLoading ? (

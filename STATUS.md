@@ -1200,8 +1200,12 @@ Work done:
 
 <!-- SLOT:LY5 BEGIN -->
 ### LY5: Layout debt: shared components and the DJ interface page container
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Replaced undefined classes with standard design-system components or inline space/typography variables across OAuthCallback, AIAssistantModal, NowPlayingDeck, ds/index, spatialIndexUsage, and DJInterface. Shrunk the layout baseline exception list. Replaced nested <main> in DJInterface with a div so GraphPage acts as the page container. Documented changes in docs/design-system/audits/LY5.md.
+- Checks run: check_design_system.py (passed with baseline shrunk), tsc, oxlint, vitest, vite build, sync-design-system.sh.
+- Checks not run: Playwright E2E and visual tests due to environment limitations.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-27
 <!-- SLOT:LY5 END -->
 
 ## Scheduled run

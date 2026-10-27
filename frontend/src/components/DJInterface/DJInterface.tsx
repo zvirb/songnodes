@@ -254,7 +254,7 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
 
       {/* Main Content (Mode-specific panels) */}
       {!isLoading && !error && (
-        <main className={styles.main}>
+        <div className={styles.main}>
           {mode === 'play' ? (
             <PlayModePanel
               tracks={tracks}
@@ -278,7 +278,7 @@ export function DJInterface({ initialMode = 'play' }: DJInterfaceProps): React.R
               onRightPanelTabChange={setRightPanelTab}
             />
           )}
-        </main>
+        </div>
       )}
 
       {/* ============================================
