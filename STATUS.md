@@ -704,14 +704,17 @@ PR: ds5-design-system-audit-sources-not-found-pages
 
 <!-- SLOT:DS8 BEGIN -->
 ### DS8: Design system audit and fix: Pipeline page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-27
+- End: 2026-10-27 ScraperProgressPage.tsx, usePipelineTelemetry.ts and dataLoaderUtils.ts moved to tokens, StatusPill and SN.format; sentence-case labels; audit in docs/design-system/audits/DS8.md; ScraperProgressPage.tsx commented out of design-system-pending.txt. Checks: tsc, vitest, design-system checker. Not run: Playwright. Branch merged with current main and border props reordered by the scheduled run.
 <!-- SLOT:DS8 END -->
 
 <!-- SLOT:DS9 BEGIN -->
 ### DS9: Design system audit and fix: Settings page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-27
+- Built: Audited the Settings page for design system deviations. Replaced raw values, ad-hoc pixels, custom `Segmented` component, direct radio inputs, and direct `lucide-react` imports with standard `ds` components (`SegmentedControl`, `Checkbox`), `SnIcon`, `StatusPill`, and CSS tokens. Recorded `SecretField` missing component upstream.
+- Checks run: `npm ci`, `tsc`, `oxlint`, `vitest`, `vite build`, `scripts/check_design_system.py --check`.
+- Checks not run: Full E2E Playwright tests due to sandbox environment constraints.
+- End: 2026-10-27 - PR created.
 <!-- SLOT:DS9 END -->
 
 <!-- SLOT:R1 BEGIN -->
@@ -971,8 +974,12 @@ Work done:
 
 <!-- SLOT:U8 BEGIN -->
 ### U8: Pin every GitHub Action to its latest release
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-27
+- Built: Pinned all GitHub Action `uses:` lines in workflows to their latest commit SHAs with version comments, and removed placeholders.
+- Checks run: `python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]"`
+- Checks not run: Full CI checks as this is pending PR creation.
+- Reviewer check: Every `uses:` line ends in a 40-character SHA and a version comment; CI runs on the PR.
+- End: 2026-10-27
 <!-- SLOT:U8 END -->
 
 <!-- SLOT:U9 BEGIN -->
@@ -1295,10 +1302,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:TG3 BEGIN -->
 ### TG3: TargetTracksManager: suggested tracks discovery rail
-- Start: 2026-10-27
-- Built: Added a horizontal card deck above the Target Tracks table in `TargetTracksManager.tsx` that displays target tracks suggested for discovery. The deck calls `useTargetSuggestions` to populate cards and allows promoting a track to a target or dismissing the suggestion entirely. Added `TargetTracksManager.test.tsx` to verify component rendering and action firings.
-- Checks run: `tsc --noEmit -p .`, `oxlint src`, `vitest run src`. All tests passed. E2E tests cannot be run.
-- End: 2026-10-27 - Completed implementation and testing. Ready for PR.
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:TG3 END -->
 
 <!-- SLOT:TG4 BEGIN -->

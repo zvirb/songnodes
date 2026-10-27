@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { APIKey, APIKeyRequirement, AIProvider, AIKeyConfig } from '../types';
-import { Eye, EyeOff, ExternalLink, KeyRound } from 'lucide-react';
-import { SN, StatusPill } from '../lib/songnodes';
+import { SN, StatusPill, SnIcon } from '../lib/songnodes';
 import { Dialog, ConfirmDialog, Tabs, TabPanel, EmptyPanel, LoadingPanel, showToast, SegmentedControl } from './ds';
 import './APIKeyManager.css';
 import { API_BASE_URL } from '../lib/apiBase';
@@ -131,7 +130,7 @@ export const SecretField: React.FC<SecretFieldProps> = ({
             target="_blank"
             rel="noopener noreferrer"
           >
-            {getKeyLabel} <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
+              {getKeyLabel} <SnIcon name="external-link" />
           </a>
         )}
       </div>
@@ -141,7 +140,7 @@ export const SecretField: React.FC<SecretFieldProps> = ({
       {showSavedRow ? (
         <div className="sn-secret-field__row">
           <div className="sn-secret-field__saved">
-            <KeyRound size={16} className="sn-icon" aria-hidden="true" />
+            <SnIcon name="key-round" className="sn-icon" aria-hidden="true" />
             <code>{savedMask}</code>
           </div>
           {onTest && (
@@ -192,7 +191,7 @@ export const SecretField: React.FC<SecretFieldProps> = ({
               aria-label={revealed ? `Hide ${label}` : `Show ${label}`}
               title={revealed ? 'Hide' : 'Show'}
             >
-              {revealed ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+              {revealed ? <SnIcon name="eye-off" /> : <SnIcon name="eye" />}
             </button>
           </div>
           <button
@@ -596,7 +595,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                       </div>
                       <p className="akm__desc">{req.description}</p>
                       <a className="sn-link sn-link--ext" href={req.documentation_url} target="_blank" rel="noopener noreferrer">
-                        Get a key <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
+                        Get a key <SnIcon name="external-link" />
                       </a>
 
                       {existing ? (
@@ -631,7 +630,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ isOpen, onClose })
                               autoComplete="off"
                             />
                             <button type="button" className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm akm__eye" onClick={() => toggleShowKey(inputKey)} aria-label={isShowingKey ? `Hide ${req.display_name}` : `Show ${req.display_name}`} title={isShowingKey ? 'Hide' : 'Show'}>
-                              {isShowingKey ? <EyeOff size={16} strokeWidth={2} aria-hidden="true" /> : <Eye size={16} strokeWidth={2} aria-hidden="true" />}
+                              {isShowingKey ? <SnIcon name="eye-off" /> : <SnIcon name="eye" />}
                             </button>
                           </div>
                           <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleSaveKey(service, req.key_name)} disabled={saveStatus === 'saving'} aria-busy={saveStatus === 'saving' || undefined}>

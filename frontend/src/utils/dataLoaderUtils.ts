@@ -103,7 +103,7 @@ export const getDefaultMedallionStages = (
   return [
     {
       id: 'bronze',
-      name: 'Stage 1: Bronze Ingestion',
+      name: "Stage 1: bronze ingestion",
       description: 'Raw scraping & API queries from 1001TL, Spotify & Tidal',
       state: isComplete ? 'done' : 'running',
       done: Math.min(processed, total),
@@ -115,7 +115,7 @@ export const getDefaultMedallionStages = (
     },
     {
       id: 'silver',
-      name: 'Stage 2: Silver Normalization',
+      name: "Stage 2: silver normalization",
       description: 'Artist cleaning, schema validation & key/BPM standardization',
       state: isComplete ? 'done' : isSilverActive ? 'running' : 'waiting',
       done: isComplete ? total : Math.floor(processed * 0.95),
@@ -127,7 +127,7 @@ export const getDefaultMedallionStages = (
     },
     {
       id: 'gold',
-      name: 'Stage 3: Gold Graphing',
+      name: "Stage 3: gold graphing",
       description: 'Adjacency matrix generation, track affinity & edge weighting',
       state: isComplete ? 'done' : isGoldActive ? 'running' : 'waiting',
       done: isComplete ? total : Math.floor(processed * 0.88),
@@ -139,7 +139,7 @@ export const getDefaultMedallionStages = (
     },
     {
       id: 'serving',
-      name: 'Stage 4: Serving Index',
+      name: "Stage 4: serving index",
       description: 'Operational cache synchronization & client delivery',
       state: isComplete ? 'done' : isServingActive ? 'running' : 'waiting',
       done: isComplete ? total : Math.floor(processed * 0.82),

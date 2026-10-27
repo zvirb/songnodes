@@ -1,6 +1,7 @@
 /** PreferencesPanel (design-system): theme, text size, density and motion, applied live through SN.prefs. */
 import React, { useState } from 'react';
 import { SN, SnIcon } from '../lib/songnodes';
+import { SegmentedControl, Checkbox } from '../components/ds';
 
 type Theme = 'system' | 'dark' | 'light' | 'booth';
 const THEMES: [Theme, string, string][] = [
@@ -9,27 +10,6 @@ const THEMES: [Theme, string, string][] = [
   ['light', 'Light', 'sun'],
   ['booth', 'Booth', 'headphones'],
 ];
-
-function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
-  const onKey = (e: React.KeyboardEvent, i: number) => {
-    const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
-    if (!d) return;
-    e.preventDefault();
-    const next = options[(i + d + options.length) % options.length][0];
-    onChange(next);
-    const group = (e.currentTarget as HTMLElement).parentElement;
-    requestAnimationFrame(() => group?.querySelector<HTMLElement>(`[data-value="${next}"]`)?.focus());
-  };
-  return (
-    <div className="sn-seg sn-segmented-control sn-segmented-control--block" role="radiogroup" aria-label={label}>
-      {options.map(([v, text], i) => (
-        <button key={v} type="button" role="radio" data-value={v} aria-checked={v === value} tabIndex={v === value ? 0 : -1} onClick={() => onChange(v)} onKeyDown={(e) => onKey(e, i)}>
-          {text}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export const PreferencesPanel: React.FC<{ embedded?: boolean }> = ({ embedded = true }) => {
   const [p, setP] = useState(() => SN.prefs.get());
@@ -56,21 +36,37 @@ export const PreferencesPanel: React.FC<{ embedded?: boolean }> = ({ embedded = 
           <p className="sn-preferences-panel__help">Booth is pure black with larger type for dark rooms and reading at a distance.</p>
         </div>
         <div className="sn-preferences-panel__set">
-          <span className="sn-field__label">Text size</span>
-          <Segmented label="Text size" value={p.textSize as 's' | 'm' | 'l' | 'xl'} options={[['s', 'S'], ['m', 'M'], ['l', 'L'], ['xl', 'XL']]}
-            onChange={(v) => { SN.prefs.setTextSize(v); refresh(`Text size ${v.toUpperCase()}`); }} />
+          <SegmentedControl
+            label="Text size"
+            value={p.textSize as 's' | 'm' | 'l' | 'xl'}
+            options={[{ value: 's', label: 'S' }, { value: 'm', label: 'M' }, { value: 'l', label: 'L' }, { value: 'xl', label: 'XL' }]}
+            onChange={(v) => { SN.prefs.setTextSize(v); refresh(`Text size ${v.toUpperCase()}`); }}
+            block
+          />
         </div>
         <div className="sn-preferences-panel__set">
-          <span className="sn-field__label">Row density</span>
-          <Segmented label="Row density" value={p.density as 'comfortable' | 'compact'} options={[['comfortable', 'Comfortable'], ['compact', 'Compact']]}
-            onChange={(v) => { SN.prefs.setDensity(v); refresh(`Row density ${v}`); }} />
+          <SegmentedControl
+            label="Row density"
+            value={p.density as 'comfortable' | 'compact'}
+            options={[{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }]}
+            onChange={(v) => { SN.prefs.setDensity(v); refresh(`Row density ${v}`); }}
+            block
+          />
           <p className="sn-preferences-panel__help">Comfortable rows are 40px; compact rows are 32px.</p>
         </div>
         <fieldset className="sn-preferences-panel__set">
           <legend className="sn-field__label">Reduce motion</legend>
-          <div className="sn-preferences-panel__radios">
-            <label className="sn-check"><input type="radio" name="pp-motion" checked={p.motion !== 'reduce'} onChange={() => { SN.prefs.setMotion('system'); refresh('Motion follows this device'); }} /> <span>Follow this device’s setting</span></label>
-            <label className="sn-check"><input type="radio" name="pp-motion" checked={p.motion === 'reduce'} onChange={() => { SN.prefs.setMotion('reduce'); refresh('Motion reduced'); }} /> <span>Always reduce motion</span></label>
+          <div className="sn-preferences-panel__radios" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <Checkbox
+              label="Follow this device’s setting"
+              checked={p.motion !== 'reduce'}
+              onChange={() => { SN.prefs.setMotion('system'); refresh('Motion follows this device'); }}
+            />
+            <Checkbox
+              label="Always reduce motion"
+              checked={p.motion === 'reduce'}
+              onChange={() => { SN.prefs.setMotion('reduce'); refresh('Motion reduced'); }}
+            />
           </div>
         </fieldset>
       </div>
