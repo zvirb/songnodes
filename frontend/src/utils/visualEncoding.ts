@@ -131,14 +131,14 @@ export function getEnergyBasedColor(node: GraphNode): number {
 
   // Priority 2: Use energy level directly
   if (node.energy !== undefined && node.energy > 0) {
-    const energyColor = getEnergyColor(Math.round(node.energy));
-    return parseInt(energyColor.replace('#', ''), 16);
+    const parsed = parseInt(getEnergyColor(Math.round(node.energy)).replace('#', ''), 16);
+    if (!Number.isNaN(parsed)) return parsed;
   }
 
   // Priority 3: Derive from metadata
   if (node.metadata?.energy) {
-    const energyColor = getEnergyColor(Math.round(node.metadata.energy));
-    return parseInt(energyColor.replace('#', ''), 16);
+    const parsed = parseInt(getEnergyColor(Math.round(node.metadata.energy)).replace('#', ''), 16);
+    if (!Number.isNaN(parsed)) return parsed;
   }
 
   // Priority 4: Default blue

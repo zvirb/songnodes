@@ -14,7 +14,7 @@ async def process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
 async def _process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Processes the library ingest payload safely."""
     stats = {
-        'tracks': {'inserted': 0, 'updated': 0, 'unchanged': 0},
+        'tracks': {'inserted': 0, 'updated': 0, 'unchanged': 0, 'skipped': 0},
         'appearances': {'inserted': 0, 'updated': 0, 'unchanged': 0},
         'rotation_history': {'inserted': 0, 'updated': 0, 'unchanged': 0},
         'chart_positions': {'inserted': 0, 'updated': 0, 'unchanged': 0},
@@ -27,6 +27,7 @@ async def _process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     tracks = payload.get('tracks', [])
+    logged_release_year_skip = False
     track_id_map = {}
     for track in tracks:
         track_id = track.get('id')
@@ -48,8 +49,18 @@ async def _process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
         """, canonical_id)
 
         for evidence_field in ['isrc', 'tidal_id', 'deezer_id', 'genre', 'label', 'release_year']:
-            if track.get(evidence_field):
-                await record_evidence(conn, canonical_id, evidence_field, track[evidence_field], 'musiclibrary', method='importer')
+            if evidence_field == 'label':
+                if track.get('label'):
+                    await record_evidence(conn, canonical_id, 'record_label', track['label'], 'musiclibrary', method='importer')
+            elif evidence_field == 'release_year':
+                if track.get('release_year'):
+                    if not logged_release_year_skip:
+                        logger.info("Skipping unallowed evidence field release_year in this import run.")
+                        logged_release_year_skip = True
+                    stats['tracks']['skipped'] += 1
+            else:
+                if track.get(evidence_field):
+                    await record_evidence(conn, canonical_id, evidence_field, track[evidence_field], 'musiclibrary', method='importer')
 
         if res['status'] == 'created':
             stats['tracks']['inserted'] += 1

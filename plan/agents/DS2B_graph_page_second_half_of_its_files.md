@@ -25,7 +25,7 @@ Review EVERY file listed under Owned paths for deviations from the SongNodes des
 - Fix every deviation inside the owned paths with existing tokens, `sn-*` classes and shipped components. Behaviour must not change except where the design system requires it (for example replacing `confirm()` with `ConfirmDialog`).
 - NEVER invent a token name and NEVER edit design-system/ or frontend/src/styles/design-system/ (the synced copy). If the system has no token, class or component for something the page needs (a missing colour step, size, radius, shadow, z-index layer, motion value, icon, component or pattern), do not hack around it: keep the file working, and record it as a MISSING TOKEN or MISSING COMPONENT finding (below). A conflict the system does not settle is a change to the system at its source, which the maintainers decide.
 - Where a value is only close to an existing token, say so and use the token only if the visual difference is imperceptible; otherwise report it.
-- frontend/design-system-pending.txt: you may only REMOVE lines for files you fully migrated or deleted. Never add a line.
+- frontend/design-system-pending.txt: when you fully migrate or delete a listed file, comment its line out as `# migrated <CODE>: <path>`. Never add a line or touch another file's line.
 - Do not edit files outside the owned paths. If a deviation lives in a file another package owns, list it under "Elsewhere" in your audit file.
 
 ## Audit file (required)
@@ -39,10 +39,10 @@ Create docs/design-system/audits/DS2B.md with these sections, in this order:
 7. Could not check: states you could not reach statically, and checks you could not run.
 
 ## Owned paths
+- frontend/src/components/IntelligentBrowser/types.ts
 - frontend/src/components/IntelligentBrowser/utils.ts
 - frontend/src/components/MobileTrackExplorer.css
 - frontend/src/components/MobileTrackExplorer.tsx
-- frontend/src/components/PathfinderPanel.css
 - frontend/src/components/PathfinderPanel.tsx
 - frontend/src/components/QuickSearch.tsx
 - frontend/src/components/ServicePlaylistView.css
@@ -58,9 +58,8 @@ Create docs/design-system/audits/DS2B.md with these sections, in this order:
 - frontend/src/pages/GraphPage.tsx
 - frontend/src/utils/harmonic.ts
 - frontend/src/utils/pathfinding.ts
-- frontend/src/utils/serverPath.ts
 - docs/design-system/audits/DS2B.md
-- frontend/design-system-pending.txt (remove migrated lines only)
+- frontend/design-system-pending.txt (comment out migrated lines only)
 
 (Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)
 

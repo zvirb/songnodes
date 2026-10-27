@@ -62,7 +62,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'play',
           label: 'Play',
           icon: <Play size={20} />,
-          color: '#10b981',
+          color: 'var(--status-ok)',
           action: () => {
             onClose();
           }
@@ -71,7 +71,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'add',
           label: 'Add to Set',
           icon: <Plus size={20} />,
-          color: '#3b82f6',
+          color: 'var(--mod-graph)',
           action: () => {
             if (targetNode.track) {
               addToSetlist(targetNode.track);
@@ -83,7 +83,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'info',
           label: 'Details',
           icon: <Info size={20} />,
-          color: '#8b5cf6',
+          color: 'var(--brand)',
           action: () => {
             selectNode(targetNode.id);
             onClose();
@@ -93,7 +93,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'path',
           label: 'Path From',
           icon: <Share2 size={20} />,
-          color: '#f59e0b',
+          color: 'var(--status-warn)',
           action: () => {
             selectNode(targetNode.id);
             setSelectedTool('path');
@@ -104,7 +104,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'filter',
           label: 'Find Similar',
           icon: <Filter size={20} />,
-          color: '#ec4899',
+          color: 'var(--mod-paths)',
           action: () => {
             applyFilters({
               genre: targetNode.genre ? [targetNode.genre] : undefined,
@@ -117,7 +117,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'target',
           label: 'Set Target',
           icon: <Target size={20} />,
-          color: '#ef4444',
+          color: 'var(--status-bad)',
           action: () => {
             onClose();
           }
@@ -129,7 +129,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'play',
           label: 'Play',
           icon: <Play size={20} />,
-          color: '#10b981',
+          color: 'var(--status-ok)',
           action: () => {
             onClose();
           }
@@ -138,7 +138,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'add',
           label: 'Add to Set',
           icon: <Plus size={20} />,
-          color: '#3b82f6',
+          color: 'var(--mod-graph)',
           action: () => {
             addToSetlist(targetTrack);
             onClose();
@@ -148,7 +148,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'graph',
           label: 'View in Graph',
           icon: <Layers size={20} />,
-          color: '#8b5cf6',
+          color: 'var(--brand)',
           action: () => {
             onClose();
           }
@@ -157,7 +157,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'analyze',
           label: 'Analyze',
           icon: <BarChart size={20} />,
-          color: '#f59e0b',
+          color: 'var(--status-warn)',
           action: () => {
             onClose();
           }
@@ -170,7 +170,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'browse',
           label: 'Browse',
           icon: <Music size={20} />,
-          color: '#3b82f6',
+          color: 'var(--mod-graph)',
           action: () => {
             setSelectedTool('select');
             onClose();
@@ -180,7 +180,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'shuffle',
           label: 'Shuffle',
           icon: <Shuffle size={20} />,
-          color: '#10b981',
+          color: 'var(--status-ok)',
           action: () => {
             onClose();
           }
@@ -189,7 +189,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'filter',
           label: 'Filter',
           icon: <Filter size={20} />,
-          color: '#ec4899',
+          color: 'var(--mod-paths)',
           action: () => {
             setSelectedTool('filter');
             onClose();
@@ -199,7 +199,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
           id: 'layers',
           label: 'Layers',
           icon: <Layers size={20} />,
-          color: '#8b5cf6',
+          color: 'var(--brand)',
           action: () => {
             onClose();
           }
@@ -350,7 +350,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
                 y1="50%"
                 x2={`calc(50% + ${pos.x}px)`}
                 y2={`calc(50% + ${pos.y}px)`}
-                stroke={selectedIndex === index ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'}
+                stroke={selectedIndex === index ? 'var(--line-strong)' : 'var(--surface-3)'}
                 strokeWidth={selectedIndex === index ? 2 : 1}
                 style={{
                   transition: 'all 0.2s ease'
@@ -370,8 +370,8 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
             width: CENTER_RADIUS * 2,
             height: CENTER_RADIUS * 2,
             borderRadius: '50%',
-            backgroundColor: 'rgba(30, 30, 40, 0.95)',
-            border: '2px solid rgba(255, 255, 255, 0.2)',
+            backgroundColor: 'var(--surface-1)',
+            border: '2px solid var(--line)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -384,7 +384,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.8)'
+            backgroundColor: 'var(--fg-2)'
           }} />
         </div>
 
@@ -404,8 +404,8 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
                 width: ITEM_RADIUS * 2,
                 height: ITEM_RADIUS * 2,
                 borderRadius: '50%',
-                backgroundColor: isSelected ? item.color : 'rgba(30, 30, 40, 0.95)',
-                border: `2px solid ${isSelected ? item.color : 'rgba(255, 255, 255, 0.2)'}`,
+                backgroundColor: isSelected ? item.color : 'var(--surface-1)',
+                border: `2px solid ${isSelected ? item.color : 'var(--line)'}`,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -421,7 +421,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
               onClick={() => !item.disabled && item.action()}
             >
               <div style={{
-                color: isSelected ? '#fff' : 'rgba(255, 255, 255, 0.8)',
+                color: isSelected ? 'var(--fg)' : 'var(--fg-2)',
                 transition: 'color 0.2s ease'
               }}>
                 {item.icon}
@@ -431,9 +431,9 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
                   position: 'absolute',
                   bottom: '-25px',
                   fontSize: '12px',
-                  color: '#fff',
+                  color: 'var(--fg)',
                   whiteSpace: 'nowrap',
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  backgroundColor: 'var(--overlay)',
                   padding: '4px 8px',
                   borderRadius: '4px',
                   pointerEvents: 'none'

@@ -23,7 +23,9 @@ services:
       retries: 30
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.10-alpine
+    volumes:
+      - /data
     healthcheck:
       test: [CMD, redis-cli, ping]
       interval: 3s
@@ -81,7 +83,9 @@ services:
       retries: 20
 
   rabbitmq:
-    image: rabbitmq:3.13-alpine
+    image: rabbitmq:4.3-alpine
+    volumes:
+      - dev-rabbitmq-4:/var/lib/rabbitmq
     # Development only: default guest credentials, reachable inside the compose network only (no published port).
     healthcheck:
       test: [CMD, rabbitmq-diagnostics, -q, ping]
@@ -181,3 +185,4 @@ services:
 
 volumes:
   dev-postgres:
+  dev-rabbitmq-4:

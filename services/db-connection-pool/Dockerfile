@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.15-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -18,7 +18,10 @@ WORKDIR /app
 
 # Copy requirements and install Python dependencies
 COPY db-connection-pool/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y build-essential \
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y --auto-remove build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy application code
 COPY db-connection-pool/. .

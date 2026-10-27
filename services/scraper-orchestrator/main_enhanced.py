@@ -4,6 +4,7 @@ This is an enhanced version of the main orchestrator that includes intelligent s
 """
 
 import asyncio
+import json
 import logging
 import os
 from datetime import datetime
@@ -346,9 +347,16 @@ async def get_scraper_history(scraper_name: str, limit: int = 100):
         key = f"scraper:history:{scraper_name}"
         history = redis_client.lrange(key, 0, limit - 1)
 
+        parsed_history = []
+        for h in history:
+            if isinstance(h, str):
+                parsed_history.append(json.loads(h))
+            else:
+                parsed_history.append(h)
+
         return {
             "scraper": scraper_name,
-            "history": [eval(h) for h in history],  # Convert JSON strings back to dicts
+            "history": parsed_history,  # Safely convert JSON strings back to dicts
             "count": len(history)
         }
     except Exception as e:

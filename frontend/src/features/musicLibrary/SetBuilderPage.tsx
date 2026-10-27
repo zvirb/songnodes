@@ -8,16 +8,18 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader, EmptyState } from '../../shell/PageParts';
-import { SN, SnIcon, KeyBadge, Bpm, CompatPill, type CompatLevel } from '../../lib/songnodes';
+import { SN, SnIcon, KeyBadge, Bpm, CompatPill, StatusPill, type CompatLevel } from '../../lib/songnodes';
 import { loadLibrary, readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, type LibraryFile, type LibraryTrack, type SavedSet } from './data';
 import {
   MAX_MINUTES, MIN_MINUTES, PILLARS, POOLS, SHAPES, buildSlots, countPeaks, draftFromSaved, filtersFromParams, filtersToParams,
-  genreRunBefore, mixTotal, mixedSecs, moveSlot, newSetId, normaliseMix, pillarLabel, poolTracks, removeSlot, retarget,
+  genreRunBefore, mixTotal, mixedSecs, newSetId, normaliseMix, pillarLabel, poolTracks, removeSlot, retarget,
   savedSetFromDraft, shapeOf, slotCount, spares, tracklistText, waveIssues, type Draft, type PoolKey,
 } from './setBuilder';
 import { bannerKey, downloadJson, lsGet, lsSet, melbourneStamp, normaliseTracks, readDraft, writeDraft } from './storage';
 import { Banner, ConfirmDialog, CopyButton, NumberField, OverflowMenu, Switch, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { EnergyWave, type WaveSlot } from './components/EnergyWave';
+import { ExportDialog } from '../setBuilder/ExportDialog';
+import { reorderTracks } from '../setBuilder/reorder';
 import './musicLibrary.css';
 
 type Verdict = { level: CompatLevel; label: string };
@@ -52,6 +54,7 @@ const SetBuilderPage: React.FC = () => {
   const [armedNew, setArmedNew] = useState(false);
   const [bannerGone, setBannerGone] = useState<number | null>(() => lsGet<number | null>(bannerKey('sets'), null));
   const [controlsOpen, setControlsOpen] = useState(() => !(typeof window !== 'undefined' && !window.matchMedia?.(WIDE).matches && readDraft().slots.length));
+  const [exportingSet, setExportingSet] = useState<SavedSet | null>(null);
   const [tidalSaved, setTidalSaved] = useState<string | null>(null);
   const { toast, region } = useToaster();
   const { say, node: liveNode } = useAnnouncer();
@@ -214,7 +217,7 @@ const SetBuilderPage: React.FC = () => {
     const j = i + dir;
     if (j < 0 || j >= draft.slots.length || draft.slots[i].lock || draft.slots[j].lock) return;
     const nm = slotName(i);
-    setDraft((d) => ({ ...d, slots: moveSlot(d.slots, i, dir) }));
+    setDraft((d) => ({ ...d, slots: reorderTracks(d.slots, i, dir) }));
     setOpenSpares(new Set());
     focusAfter.current = `[data-slot="${j}"] [data-act="${dir < 0 ? 'up' : 'down'}"]`;
     say(`${nm} moved to slot ${j + 1}`);
@@ -276,7 +279,11 @@ const SetBuilderPage: React.FC = () => {
           <span className="sn-set-slot__n">{n}</span>
           <span className="sn-set-slot__energy"><SlotEnergy e={null} tgt={s.tgt} /></span>
           <span className="sn-set-slot__empty">No track in the pool fits energy {s.tgt} here. Widen the pool, or add one from the library.</span>
-          <span className="sn-set-slot__act">{btn('x', `Remove empty slot ${n}`, () => remove(i), { act: 'remove' })}</span>
+          <span className="sn-set-slot__act">
+            {btn('arrow-up', `Move slot ${n} up`, () => move(i, -1), { disabled: s.lock || i === 0 || prevLocked, act: 'up' })}
+            {btn('arrow-down', `Move slot ${n} down`, () => move(i, 1), { disabled: s.lock || i === items.length - 1 || nextLocked, act: 'down' })}
+            {btn('x', `Remove empty slot ${n}`, () => remove(i), { act: 'remove' })}
+          </span>
         </li>,
       );
       return;
@@ -323,6 +330,7 @@ const SetBuilderPage: React.FC = () => {
 
   const menuItems = [
     { id: 'save', icon: 'save', label: 'Save set', cls: 'sn-page-header__narrow-only' },
+    ...(savedDoc ? [{ id: 'export-single', icon: 'download', label: 'Export this set…' }] : []),
     { id: 'export', icon: 'download', label: 'Export sets for the weekly run' },
     ...(savedDoc ? [{ id: 'delete', icon: 'trash-2', label: 'Delete set…', danger: true }] : []),
   ];
@@ -336,11 +344,11 @@ const SetBuilderPage: React.FC = () => {
         desc={`${shape.name} over ${draft.minutes} min: ${SN.format.count(filled.length)} tracks, ${mixLine}.`}
         stampVerb="Saved"
         stamp={savedDoc?.updated ?? null}
-        pill={savedDoc && savedDoc.tidal ? <span className="sn-pill sn-status-pill" data-status="idle">Queued for the weekly run</span> : undefined}
+        pill={savedDoc && savedDoc.tidal ? <StatusPill raw="idle" label="Queued for the weekly run" /> : undefined}
         actions={
           <>
             <button className="sn-btn sn-page-header__secondary" type="button" onClick={save}><SnIcon name="save" />Save set</button>
-            <OverflowMenu label="More actions" heading="Set" items={menuItems} onSelect={(id) => { if (id === 'save') save(); if (id === 'export') exportSets(); if (id === 'delete' && savedDoc) setToDelete(savedDoc); }} />
+            <OverflowMenu label="More actions" heading="Set" items={menuItems} onSelect={(id) => { if (id === 'save') save(); if (id === 'export') exportSets(); if (id === 'export-single' && savedDoc) setExportingSet(savedDoc); if (id === 'delete' && savedDoc) setToDelete(savedDoc); }} />
             <button className="sn-btn sn-btn--primary" type="button" onClick={() => build()} disabled={!lib}><SnIcon name="wand-sparkles" />Build set</button>
           </>
         }
@@ -516,7 +524,7 @@ const SetBuilderPage: React.FC = () => {
                       {es2.map((e, k) => <i key={k} data-e={e} style={{ height: `${e * 10}%` }} />)}
                     </div>
                     <div className="sn-set-card__meta">
-                      {s.tidal ? <span className="sn-pill sn-status-pill" data-status="idle">Queued for the weekly run</span> : <span className="sn-pill sn-status-pill" data-status="idle">Not sent to TIDAL</span>}
+                      {s.tidal ? <StatusPill raw="idle" label="Queued for the weekly run" /> : <StatusPill raw="idle" label="Not sent to TIDAL" />}
                     </div>
                     <div className="sn-set-card__meta">
                       <time dateTime={s.updated} title={SN.format.stamp(s.updated)}>Updated {SN.format.relative(s.updated)}</time>
@@ -540,6 +548,12 @@ const SetBuilderPage: React.FC = () => {
         </aside>
       </div>
 
+      <ExportDialog
+        open={!!exportingSet}
+        set={exportingSet}
+        byId={byId}
+        onClose={() => setExportingSet(null)}
+      />
       <ConfirmDialog
         open={!!toDelete}
         title={toDelete ? `Delete “${toDelete.name}”?` : ''}
@@ -551,10 +565,7 @@ const SetBuilderPage: React.FC = () => {
       />
       {liveNode}
       {region}
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-          <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--spacing-xl)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit label" style={{ textAlign: "center", color: "var(--fg-2)", padding: "var(--space-3)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--space-6)" }} /* design-system exception */>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
     </main>
   );
 };

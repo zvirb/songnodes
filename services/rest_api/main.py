@@ -735,6 +735,9 @@ app.include_router(catalog_reads_router)
 from routers.library_ingest import register as register_library
 register_library(app)
 
+from security.auth import register_security
+register_security(app)
+
 import router_registry
 router_registry.register_all(app)
 

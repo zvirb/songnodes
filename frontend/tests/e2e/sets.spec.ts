@@ -2,7 +2,7 @@ import { test, expect, openRoute } from './fixtures';
 
 /** Set builder: build from the library file, save, reopen after reload, delete through ConfirmDialog. */
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, withLibraryApi }) => {
   await openRoute(page, '/sets');
 });
 

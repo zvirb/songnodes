@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Music, Layers } from 'lucide-react';
-import { useUnifiedTracks } from './TEMP_useUnifiedTracks';
+import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { PageHeader } from '../../shell/PageParts';
 import { EmptyPanel } from '../../components/ds';
 import { SN, Bpm, KeyBadge, EnergyBar } from '../../lib/songnodes';
 import { compatibleKeys } from './camelotLogic';
-import CamelotWheel from '../../components/CamelotWheel';
+import { CamelotWheel } from '../../components/CamelotWheel';
+import { KeyMoodPanel } from '../../components/KeyMoodPanel';
+import { HarmonicSet } from '../../components/HarmonicCompatibility';
 import './camelot.css';
 
 const CODES: string[] = (['B', 'A'] as const).flatMap((L) => Array.from({ length: 12 }, (_, i) => `${i + 1}${L}`));
@@ -63,6 +65,17 @@ const CamelotPage: React.FC = () => {
       });
   });
 
+  const activeTracksForSet = useMemo(() => {
+    if (!activeKey) return [];
+    return tracks
+      .filter(t => t.key === activeKey)
+      .map(t => ({
+        id: t.id,
+        key: t.key!,
+        name: `${t.artist} - ${t.title}`
+      }));
+  }, [tracks, activeKey]);
+
   return (
     <main className="sn-page__main sn-camelot-page" id="main" tabIndex={-1}>
       <PageHeader
@@ -72,7 +85,7 @@ const CamelotPage: React.FC = () => {
         desc="Keys, mood and energy across the library."
       />
 
-      <div className="sn-camelot-page__grid">
+      <div className="sn-camelot-page__grid" style={{ marginBottom: 'var(--space-6)' }}>
         <section className="sn-card sn-camelot-page__wheel-card">
           <div className="sn-camelot-page__wheel-container" style={{ position: 'relative' }}>
             <CamelotWheel
@@ -114,21 +127,17 @@ const CamelotPage: React.FC = () => {
                       y={y}
                       textAnchor="middle"
                       alignmentBaseline="middle"
-                      style={{
-                        fontFamily: 'var(--font-data)',
-                        fontSize: '0.75rem',
-                        fill: 'var(--fg)',
-                        textShadow: '0 1px 2px var(--bg)'
-                      }}
+                      className="data-s"
+                      style={{ fill: 'var(--fg)', textShadow: 'var(--shadow-1)' }}
                     >
-                      {count}
+                      {SN.format.count(count)}
                     </text>
                   );
                 })}
               </g>
             </svg>
 
-            <div className="sn-camelot-page__stats">
+            <div className="sn-camelot-page__stats body-s">
               <p>Data source: {source === 'library-fixture' ? 'Music library' : source}</p>
               <p>{SN.format.count(tracksWithoutKey)} tracks without key</p>
             </div>
@@ -160,7 +169,7 @@ const CamelotPage: React.FC = () => {
                       <div className="sn-track-cell">
                         <div className="sn-track-cell__primary">{track.artist} – {track.title}</div>
                         <div className="sn-track-cell__secondary">
-                          {track.mix ? `${track.mix} · ` : ''}{track.label || 'Unknown'}
+                          {track.mix ? `${track.mix} · ` : ''}{track.label || <span className="sn-none">–</span>}
                         </div>
                       </div>
                     </td>
@@ -183,6 +192,23 @@ const CamelotPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      <section className="sn-card" style={{ marginBottom: 'var(--space-6)' }}>
+        <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          Acoustic mood and energy profile
+        </h2>
+        <KeyMoodPanel defaultExpanded={true} />
+      </section>
+
+      {activeKey && activeTracksForSet.length > 0 && (
+        <section className="sn-card">
+          <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Music size={20} style={{ color: 'var(--brand)' }} />
+            Tracks in <KeyBadge value={activeKey} withName />
+          </h2>
+          <HarmonicSet currentKey={activeKey} tracks={activeTracksForSet} />
+        </section>
+      )}
     </main>
   );
 };

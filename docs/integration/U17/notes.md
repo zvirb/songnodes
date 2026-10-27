@@ -1,0 +1,1 @@
+2026-10-26: The upgrade of strawberry-graphql to 0.337.2 or fastapi issue. I am seeing 'FastAPI' object has no attribute 'add_websocket_route' in services/graphql-api/main.py. Wait, the brief says 'if a needed change is outside them [owned paths], stop at the last working step and report it.' So I will stop here and report it in the PR.

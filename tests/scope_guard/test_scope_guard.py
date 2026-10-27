@@ -125,3 +125,91 @@ Outside slot modified
         )
         assert result5.returncode == 0
         assert "not a work package" in result5.stdout
+
+
+def _pending_repo(tmp, pending_after, touched):
+    """Repo where package T1 owns src/app/** only; returns the guard's exit code for a PR that changes
+    `touched` files and rewrites the design-system pending list to `pending_after`."""
+    script = os.path.abspath('scripts/scope_guard.py')
+    run = lambda *a: subprocess.run(list(a), cwd=tmp, check=True, capture_output=True)
+    run('git', 'init', '-b', 'main'); run('git', 'config', 'user.name', 't'); run('git', 'config', 'user.email', 't@t')
+    os.makedirs(os.path.join(tmp, 'plan/agents')); os.makedirs(os.path.join(tmp, 'src/app')); os.makedirs(os.path.join(tmp, 'frontend'))
+    open(os.path.join(tmp, 'plan/agents/T1_t.md'), 'w').write('T1: t\n\n## Owned paths\n- src/app/**\n')
+    for name in ('a.tsx', 'b.tsx'):
+        open(os.path.join(tmp, 'src/app', name), 'w').write('old\n')
+    pending = os.path.join(tmp, 'frontend/design-system-pending.txt')
+    open(pending, 'w').write('# header\nsrc/app/a.tsx\nsrc/app/b.tsx\n')
+    run('git', 'add', '.'); run('git', 'commit', '-m', 'base'); base = run('git', 'rev-parse', 'HEAD').stdout.decode().strip()
+    run('git', 'checkout', '-b', 't1-x')
+    for name in touched:
+        open(os.path.join(tmp, 'src/app', name), 'w').write('new\n')
+    open(pending, 'w').write(pending_after)
+    run('git', 'commit', '-am', 'change'); head = run('git', 'rev-parse', 'HEAD').stdout.decode().strip()
+    r = subprocess.run(['python3', script, '--base', base, '--head', head, '--title', 'T1: t', '--branch', 't1-x'], cwd=tmp, capture_output=True, text=True)
+    return r.returncode, r.stdout
+
+
+def test_pending_comment_out_for_changed_file_passes():
+    with tempfile.TemporaryDirectory() as tmp:
+        code, out = _pending_repo(tmp, '# header\n# migrated T1: src/app/a.tsx\nsrc/app/b.tsx\n', ['a.tsx'])
+        assert code == 0, out
+
+
+def test_pending_comment_out_for_unchanged_file_fails():
+    with tempfile.TemporaryDirectory() as tmp:
+        code, out = _pending_repo(tmp, '# header\nsrc/app/a.tsx\n# migrated T1: src/app/b.tsx\n', ['a.tsx'])
+        assert code == 1 and 'design-system-pending' in out
+
+
+def test_pending_adding_a_path_fails():
+    with tempfile.TemporaryDirectory() as tmp:
+        code, out = _pending_repo(tmp, '# header\nsrc/app/a.tsx\nsrc/app/b.tsx\nsrc/app/c.tsx\n', ['a.tsx'])
+        assert code == 1 and 'design-system-pending' in out
+
+
+def _test_file_repo(tmp, brief_extra, change_page, test_action):
+    """Repo where T1 owns src/feat/Page.tsx; the PR may change Page.tsx and does `test_action`
+    ('modify' or 'add') to a test file in the same folder. Returns the guard's exit code and output."""
+    script = os.path.abspath('scripts/scope_guard.py')
+    run = lambda *a: subprocess.run(list(a), cwd=tmp, check=True, capture_output=True)
+    run('git', 'init', '-b', 'main'); run('git', 'config', 'user.name', 't'); run('git', 'config', 'user.email', 't@t')
+    os.makedirs(os.path.join(tmp, 'plan/agents')); os.makedirs(os.path.join(tmp, 'src/feat'))
+    open(os.path.join(tmp, 'plan/agents/T1_t.md'), 'w').write('T1: t\n\n## Owned paths\n- src/feat/Page.tsx\n\n' + brief_extra + '\n')
+    open(os.path.join(tmp, 'src/feat/Page.tsx'), 'w').write('old\n')
+    open(os.path.join(tmp, 'src/feat/Page.test.tsx'), 'w').write('old\n')
+    run('git', 'add', '.'); run('git', 'commit', '-m', 'base'); base = run('git', 'rev-parse', 'HEAD').stdout.decode().strip()
+    run('git', 'checkout', '-b', 't1-x')
+    if change_page:
+        open(os.path.join(tmp, 'src/feat/Page.tsx'), 'w').write('new\n')
+    name = 'Page.test.tsx' if test_action == 'modify' else 'Other.test.tsx'
+    open(os.path.join(tmp, 'src/feat', name), 'w').write('new\n')
+    run('git', 'add', '.'); run('git', 'commit', '-m', 'change'); head = run('git', 'rev-parse', 'HEAD').stdout.decode().strip()
+    r = subprocess.run(['python3', script, '--base', base, '--head', head, '--title', 'T1: t', '--branch', 't1-x'], cwd=tmp, capture_output=True, text=True)
+    return r.returncode, r.stdout
+
+
+ALLOW = '(Files listed are the complete set. Test files may be updated only to keep them passing after your fixes.)'
+
+
+def test_sibling_test_update_allowed_when_brief_permits():
+    with tempfile.TemporaryDirectory() as tmp:
+        code, out = _test_file_repo(tmp, ALLOW, True, 'modify')
+        assert code == 0, out
+
+
+def test_sibling_test_update_fails_without_brief_permission():
+    with tempfile.TemporaryDirectory() as tmp:
+        code, out = _test_file_repo(tmp, '', True, 'modify')
+        assert code == 1 and 'Page.test.tsx' in out
+
+
+def test_test_update_fails_when_owned_sibling_unchanged():
+    with tempfile.TemporaryDirectory() as tmp:
+        code, out = _test_file_repo(tmp, ALLOW, False, 'modify')
+        assert code == 1 and 'Page.test.tsx' in out
+
+
+def test_new_test_file_is_not_covered():
+    with tempfile.TemporaryDirectory() as tmp:
+        code, out = _test_file_repo(tmp, ALLOW, True, 'add')
+        assert code == 1 and 'Other.test.tsx' in out

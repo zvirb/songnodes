@@ -14,9 +14,10 @@ from .discogs import DiscogsClient
 from .getsongbpm import GetSongBpmClient
 from .lastfm import LastFmClient
 from .musicbrainz import MusicBrainzClient
+from .musicbrainz_local import MusicBrainzLocalProvider
 from .tidal import TidalClient
 
-DEFAULT_ORDER = ('tidal', 'deezer', 'musicbrainz', 'discogs', 'lastfm', 'getsongbpm')
+DEFAULT_ORDER = ('tidal', 'deezer', 'musicbrainz_local', 'musicbrainz', 'discogs', 'lastfm', 'getsongbpm')
 
 
 def configured(value: Optional[str]) -> bool:
@@ -47,6 +48,8 @@ def build_providers(env: Optional[Dict[str, str]] = None, **client_kwargs) -> Li
                                      env.get('TIDAL_COUNTRY_CODE', 'AU'), **client_kwargs)
     if wanted('deezer'):
         built['deezer'] = DeezerClient(**client_kwargs)
+    if truthy(env.get('MB_LOCAL_ENABLED')) and wanted('musicbrainz_local'):
+        built['musicbrainz_local'] = MusicBrainzLocalProvider()
     if wanted('musicbrainz'):
         built['musicbrainz'] = MusicBrainzClient(contact=env.get('MUSICBRAINZ_CONTACT'), **client_kwargs)
     discogs_token = env.get('DISCOGS_TOKEN') or env.get('DISCOGS_API_TOKEN')   # the Helm secret uses DISCOGS_API_TOKEN

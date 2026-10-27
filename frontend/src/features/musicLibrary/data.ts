@@ -76,6 +76,7 @@ export function loadLibrary(): Promise<LibraryFile> {
       try {
         const res = await fetch('/api/v1/library/search?limit=5000');
         if (res.ok) {
+          /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
           const tracks = await res.json() as LibraryTrack[];
           return {
             generated: new Date().toISOString(),
@@ -92,6 +93,7 @@ export function loadLibrary(): Promise<LibraryFile> {
 
       const r = await fetch('/data/music-library.json', { cache: 'no-cache' });
       if (!r.ok) throw new Error(`Library file returned ${r.status}`);
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
       return r.json() as Promise<LibraryFile>;
     })().catch((err) => {
       cache = null;
@@ -109,6 +111,7 @@ export interface SavedSetTrack {
   a?: string; t?: string; m?: string | null; e?: number | null; k?: string | null; bpm?: number | null;
   tidal?: string | null;
   move?: string | null;
+  track_id?: string;
 }
 
 export interface SavedSet {
@@ -123,13 +126,27 @@ export interface SavedSet {
   tracks: SavedSetTrack[];
   updated: string;
   created: string;
+  description?: string;
 }
+
+let serverSetsCache: SavedSet[] = [];
 
 export async function readSavedSetsAsync(): Promise<SavedSet[]> {
   try {
     const res = await fetch('/api/v1/library/sets');
     if (res.ok) {
-      return await res.json() as SavedSet[];
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
+      const data = await res.json() as any[];
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
+      const mapped = data.map((d: any) => ({
+        ...d,
+        id: String(d.id),
+        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+        tracks: (d.tracks || []).map((t: any) => ({ ...t, id: t.track_id || t.id }))
+      })) as SavedSet[];
+      serverSetsCache = JSON.parse(JSON.stringify(mapped));
+      writeSavedSets(mapped);
+      return mapped;
     }
   } catch (e) {
     console.warn('API sets read failed, falling back to local storage', e);
@@ -138,21 +155,64 @@ export async function readSavedSetsAsync(): Promise<SavedSet[]> {
 }
 
 export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<void> {
-  try {
-    const res = await fetch('/api/v1/library/sets', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sets),
-    });
-  } catch (e) {
-    console.warn('API sets write failed, falling back to local storage', e);
+  const currentIds = new Set(sets.map(s => s.id));
+
+  const toDelete = serverSetsCache.filter(s => !currentIds.has(s.id));
+  const toSave = sets.filter(s => {
+    const prev = serverSetsCache.find(x => x.id === s.id);
+    return !prev || prev.updated !== s.updated || prev.name !== s.name;
+  });
+
+  let hasError = false;
+
+  for (const s of toDelete) {
+    try {
+      const res = await fetch(`/api/v1/library/sets/${s.id}`, { method: 'DELETE' });
+      if (!res.ok) hasError = true;
+    } catch (e) {
+      console.warn(`Failed to delete set ${s.id}`, e);
+      hasError = true;
+    }
   }
+
+  for (const s of toSave) {
+    try {
+      const intId = /^\d+$/.test(s.id) ? parseInt(s.id, 10) : 0;
+      const res = await fetch(`/api/v1/library/sets/${intId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: s.name,
+          description: s.description || '',
+          tracks: s.tracks.map(t => ({ track_id: t.id }))
+        }),
+      });
+      if (res.ok) {
+        /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
+        const data = await res.json() as { id: number };
+        if (intId === 0 && data.id) {
+          s.id = String(data.id);
+        }
+      } else {
+        hasError = true;
+      }
+    } catch (e) {
+      console.warn(`Failed to save set ${s.id}`, e);
+      hasError = true;
+    }
+  }
+
+  if (!hasError) {
+    serverSetsCache = JSON.parse(JSON.stringify(sets));
+  }
+
   writeSavedSets(sets);
 }
 
 export function readSavedSets(): SavedSet[] {
   try {
     const raw = localStorage.getItem(SAVED_SETS_KEY);
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
     return raw ? (JSON.parse(raw) as SavedSet[]) : [];
   } catch {
     return [];

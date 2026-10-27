@@ -17,6 +17,7 @@ import {
 import { FILTERS_KEY, bannerKey, lsGet, lsSet, melbourneStamp, normaliseTracks, readDraft, writeDraft } from './storage';
 import { Banner, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { CrateFilterRail } from './components/CrateFilterRail';
+import { TargetActionButton } from './targetAction/TargetActionButton';
 import './musicLibrary.css';
 
 const FIRST_BATCH = 150;
@@ -274,10 +275,7 @@ const LibraryPage: React.FC = () => {
         </Banner>
       ) : null}
 
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
-      <div className="sn-mb-credit" style={{ textAlign: "center", color: "var(--text-2)", fontSize: "0.875rem", padding: "var(--spacing-md)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit sn-body-s" style={{ textAlign: "center", color: "var(--fg-2)", padding: "var(--space-4)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
       <div className="sn-page-library__body">
         <CrateFilterRail
           tracks={tracks}
@@ -358,7 +356,8 @@ const LibraryPage: React.FC = () => {
                           <td data-label="Rotation"><RotationTag rot={t.rot} /></td>
                           <td className="num" data-label="Heard"><Heard t={t} /></td>
                           <td className="num" data-label="Last heard"><LastHeard d={t.last} /></td>
-                          <td className="sn-data-table__actions">
+                          <td className="sn-data-table__actions" style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                            <TargetActionButton track={t} />
                             <button className="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label={`Add ${name} to set`} title={`Add ${name} to set`} onClick={() => addToSet(t)}>
                               <SnIcon name="plus" />
                             </button>
