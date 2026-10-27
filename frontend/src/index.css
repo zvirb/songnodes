@@ -30,15 +30,12 @@
 @layer base {
   /* Ensure design system typography is applied */
   html {
-    font-family: var(--font-family-base);
-    font-size: 16px; /* Base font size for rem calculations */
+    font-family: var(--font-body);
   }
 
   body {
-    font-size: var(--font-size-base);
-    line-height: var(--line-height-normal);
-    color: var(--color-text-primary);
-    background-color: var(--color-bg-base);
+    color: var(--fg);
+    background-color: var(--bg);
   }
 }
 
@@ -47,7 +44,7 @@
 
   /* Track node styles */
   .track-node {
-    transition: var(--transition-all);
+    transition: all var(--duration-base) var(--ease-standard);
   }
 
   .track-node:hover {
@@ -65,11 +62,11 @@
 
   /* Accessible skip link */
   .skip-to-content {
-    @apply absolute -top-24 left-4 z-max;
-    @apply px-4 py-2 rounded-base;
-    @apply bg-brand-primary text-text-inverse;
+    @apply absolute -top-24 left-4 z-tooltip;
+    @apply px-4 py-2 rounded-control;
+    @apply bg-brand text-on-brand;
     @apply font-semibold;
-    @apply transition-all duration-base;
+    transition: all var(--duration-base) var(--ease-standard);
   }
 
   .skip-to-content:focus {
@@ -79,14 +76,14 @@
   /* Focus ring for accessibility */
   .focus-ring {
     @apply focus-visible:outline-none;
-    @apply focus-visible:ring-2 focus-visible:ring-brand-primary;
-    @apply focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base;
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
   }
 
   /* Responsive container */
   .container-responsive {
     width: 100%;
-    max-width: var(--layout-content-max-width);
+    max-width: var(--content-max);
     margin-left: auto;
     margin-right: auto;
     padding-left: var(--space-4);
@@ -95,24 +92,24 @@
 
   /* Panel animations */
   .panel-slide-left {
-    animation: slideInLeft var(--duration-base) var(--ease-out);
+    animation: slideInLeft var(--duration-base) var(--ease-standard);
   }
 
   .panel-slide-right {
-    animation: slideInRight var(--duration-base) var(--ease-out);
+    animation: slideInRight var(--duration-base) var(--ease-standard);
   }
 
   .panel-slide-up {
-    animation: slideInUp var(--duration-base) var(--ease-out);
+    animation: slideInUp var(--duration-base) var(--ease-standard);
   }
 
   /* Modal animations */
   .modal-enter {
-    animation: fadeIn var(--duration-base) var(--ease-out),
-               scaleIn var(--duration-base) var(--ease-spring);
+    animation: fadeIn var(--duration-base) var(--ease-standard),
+               scaleIn var(--duration-base) var(--ease-standard);
   }
 
   .modal-exit {
-    animation: fadeOut var(--duration-base) var(--ease-out);
+    animation: fadeOut var(--duration-base) var(--ease-standard);
   }
 }

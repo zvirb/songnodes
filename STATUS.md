@@ -578,9 +578,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS14 END -->
 
 <!-- SLOT:DS15 BEGIN -->
-### DS15: Design system audit and fix: Global stylesheets and legacy CSS
-- Start: _not started_
-- End: _not finished_
+2026-10-27 19:47:14 - Started DS15: Design system audit and fix: Global stylesheets and legacy CSS
+2026-10-27 19:47:14 - Completed DS15. Stripped all literal hex, px fonts, padding/margins/shadows/animations from legacy stylesheets and repointed everything strictly to tokens. Verified tests, built successfully, and passed check_design_system.py. Reported audit in docs/design-system/audits/DS15.md.
 <!-- SLOT:DS15 END -->
 
 <!-- SLOT:DS16 BEGIN -->
