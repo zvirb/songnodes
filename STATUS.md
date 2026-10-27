@@ -1252,9 +1252,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:FL4 END -->
 
 <!-- SLOT:DS7 BEGIN -->
-### DS7: Design system audit and fix: Paths (route finder) page
-- Start: _not started_
-- End: _not finished_
+Started 2026-10-26 22:29
+Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables and refactored EmptyPanel -> EmptyState. Checks run: ts, lint, vite, vitest (tests passed), and sync script. Not run: Playwright E2E/visuals (no sandbox). PR: (pending)
 <!-- SLOT:DS7 END -->
 
 <!-- SLOT:DS17 BEGIN -->

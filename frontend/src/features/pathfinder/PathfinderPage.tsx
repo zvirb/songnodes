@@ -4,7 +4,8 @@
 import React, { useState, useId, useEffect } from 'react';
 import { Route, Search, ServerCrash, X } from 'lucide-react';
 import { Title, Bpm, KeyBadge, EnergyBar, SN } from '../../lib/songnodes';
-import { CompatibilityBadge, EmptyPanel, ErrorPanel, LoadingPanel } from '../../components/ds';
+import { CompatibilityBadge, ErrorPanel, LoadingPanel } from '../../components/ds';
+import { EmptyState } from '../../shell/PageParts';
 import { usePathfinder } from '../../components/PathfinderPanel/hooks';
 import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { UnifiedTrack } from '../../types/unifiedTrack';
@@ -82,16 +83,16 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
         )}
 
         {!error && !isLoading && tracks.length === 0 && (
-          <EmptyPanel title="No tracks found" icon={Route}>
+          <EmptyState title="No tracks found" icon="route">
             There are no tracks to build a path from. Try adding tracks to the library.
-          </EmptyPanel>
+          </EmptyState>
         )}
 
         {!error && tracks.length > 0 && (
           <div className="sn-inline-message" data-status={source === 'backend' ? 'ok' : 'warn'}>
             <span className="sn-inline-message__text">
               Using data from: {source === 'backend' ? 'Backend' : 'Library fixture'}.
-              {tracksWithoutKey.length > 0 && ` ${tracksWithoutKey.length} tracks excluded due to missing keys.`}
+              {tracksWithoutKey.length > 0 && ` ${SN.format.count(tracksWithoutKey.length)} tracks excluded due to missing keys.`}
             </span>
           </div>
         )}
@@ -99,11 +100,11 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
         <div className="pf__facts">
           {/* Start Track Picker */}
           <div className="sn-field">
-            <label htmlFor={`${uid}-start`}>Start Track</label>
+            <label htmlFor={`${uid}-start`}>Start track</label>
 
             {pf.state.startTrack ? (
               <div className="pf__selected">
-                <span className="pf__selected-name">{pf.state.startTrack.artist} – {pf.state.startTrack.name || (pf.state.startTrack as any).title}</span>
+                <strong className="pf__selected-name body-s">{pf.state.startTrack.artist} – {pf.state.startTrack.name || (pf.state.startTrack as any).title}</strong>
                 <button type="button" className="sn-btn sn-btn--icon sn-btn--quiet" onClick={() => pf.send({ type: 'SET_START_TRACK', track: null as any })}>
                   <X size={16} aria-label="Clear start track" />
                 </button>
@@ -115,7 +116,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                   id={`${uid}-start`}
                   className="sn-input"
                   type="text"
-                  placeholder="Search tracks..."
+                  placeholder="Search tracks…"
                   value={startQuery}
                   onChange={e => setStartQuery(e.target.value)}
                 />
@@ -135,11 +136,11 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
 
           {/* End Track Picker */}
           <div className="sn-field">
-            <label htmlFor={`${uid}-end`}>End Track (optional)</label>
+            <label htmlFor={`${uid}-end`}>End track (optional)</label>
 
             {pf.state.endTrack ? (
               <div className="pf__selected">
-                <span className="pf__selected-name">{pf.state.endTrack.artist} – {pf.state.endTrack.name || (pf.state.endTrack as any).title}</span>
+                <strong className="pf__selected-name body-s">{pf.state.endTrack.artist} – {pf.state.endTrack.name || (pf.state.endTrack as any).title}</strong>
                 <button type="button" className="sn-btn sn-btn--icon sn-btn--quiet" onClick={() => pf.send({ type: 'SET_END_TRACK', track: null as any })}>
                   <X size={16} aria-label="Clear end track" />
                 </button>
@@ -151,7 +152,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                   id={`${uid}-end`}
                   className="sn-input"
                   type="text"
-                  placeholder="Search tracks..."
+                  placeholder="Search tracks…"
                   value={endQuery}
                   onChange={e => setEndQuery(e.target.value)}
                 />
@@ -171,9 +172,9 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
         </div>
 
         <div className="sn-field">
-            <label htmlFor={`${uid}-hops`}>Max Hops: <span className="pf__value">{maxHops}</span></label>
+            <label htmlFor={`${uid}-hops`}>Max hops: <span className="pf__value">{maxHops}</span></label>
             <input id={`${uid}-hops`} type="range" min="1" max="5" value={maxHops} onChange={e => setMaxHops(parseInt(e.target.value))} />
-            <div className="pf__range">
+            <div className="pf__range caption">
               <span>1</span>
               <span>5</span>
             </div>
@@ -181,7 +182,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
 
         <div>
           <button type="button" className="sn-btn sn-btn--primary" onClick={handleCalculate} disabled={pf.isCalculating || !pf.state.startTrack}>
-              {pf.isCalculating ? 'Calculating...' : 'Find Path'}
+              {pf.isCalculating ? 'Calculating…' : 'Find path'}
           </button>
         </div>
 
@@ -192,33 +193,33 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                 {pf.state.error}
              </ErrorPanel>
            )}
-           {pf.isCalculating && <LoadingPanel message="Finding optimal route..." />}
+           {pf.isCalculating && <LoadingPanel message="Finding optimal route…" />}
 
            {!pf.isCalculating && !pf.hasError && !pf.hasResult && (
-             <EmptyPanel title="Ready to find a path" icon={Route}>
+             <EmptyState title="Ready to find a path" icon="route">
                 Select a start track to begin finding a route.
-             </EmptyPanel>
+             </EmptyState>
            )}
 
            {pf.hasResult && pf.state.result && (
               <section>
                   <div className="pf__selected">
-                    <Title size="title-m" as="h2">Found Path</Title>
+                    <Title size="title-m" as="h2">Found path</Title>
                     {onAddToSet && (
                       <button type="button" className="sn-btn sn-btn--sm" onClick={() => onAddToSet(pf.state.result!.path.map(s => s.track.id))}>
-                         Add to Set
+                         Add to set
                       </button>
                     )}
                   </div>
 
                   <dl className="pf__facts">
                     <div>
-                      <dt>Total length</dt>
-                      <dd>{SN.format.duration(pf.state.result.total_duration_ms / 1000)}</dd>
+                      <dt className="caption">Total length</dt>
+                      <dd className="data-strong">{SN.format.duration(pf.state.result.total_duration_ms / 1000)}</dd>
                     </div>
                     <div>
-                      <dt>Tracks</dt>
-                      <dd>{pf.state.result.path.length}</dd>
+                      <dt className="caption">Tracks</dt>
+                      <dd className="data-strong">{pf.state.result.path.length}</dd>
                     </div>
                   </dl>
 
@@ -243,7 +244,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
 
                        return (
                          <li key={index} className="pf__step">
-                            <span className="pf__num" aria-hidden="true">{index + 1}</span>
+                            <strong className="pf__num data-s" aria-hidden="true">{index + 1}</strong>
                             <div className="sn-track-cell pf__step-main">
                                <span className="sn-track-cell__title">
                                  <span className="sn-track-cell__name">
@@ -264,15 +265,15 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                                       </span>
                                       <span className="sn-track-cell__sep" aria-hidden="true">·</span>
                                       <span>
-                                         {bpmShift !== 0 && `BPM ${bpmShift > 0 ? '+' : ''}${bpmShift.toFixed(1)}`}
+                                         {bpmShift !== 0 && SN.bpmStep(prevSegment.track.bpm!, segment.track.bpm!).label}
                                          {bpmShift !== 0 && energyChange !== 0 && ', '}
-                                         {energyChange !== 0 && `Energy ${energyChange > 0 ? '+' : ''}${energyChange.toFixed(2)}`}
+                                         {energyChange !== 0 && SN.energyStep(prevSegment.track.energy!, segment.track.energy!).label}
                                       </span>
 
                                       <span className="sn-track-cell__sep" aria-hidden="true">·</span>
                                       <CompatibilityBadge
                                         level={segment.key_compatible ? 'compatible' : 'clash'}
-                                        label={segment.key_compatible ? 'Key Fits' : 'Key Clash'}
+                                        label={segment.key_compatible ? 'Key fits' : 'Key clash'}
                                         outline
                                       />
                                     </>
