@@ -143,8 +143,8 @@ async def get_api_key_requirements(pool = Depends(get_db_pool)):
             return requirements
 
     except Exception as e:
-        logger.error(f"Failed to fetch API key requirements: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to fetch API key requirements: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch API key requirements")
 
 @router.get("", response_model=List[APIKeyResponse])
 async def get_api_keys(
@@ -196,8 +196,8 @@ async def get_api_keys(
             return api_keys
 
     except Exception as e:
-        logger.error(f"Failed to fetch API keys: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to fetch API keys: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch API keys")
 
 @router.post("", response_model=APIKeyResponse, status_code=status.HTTP_201_CREATED)
 async def create_or_update_api_key(
@@ -250,8 +250,8 @@ async def create_or_update_api_key(
             )
 
     except Exception as e:
-        logger.error(f"Failed to create/update API key: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to create/update API key: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to store API key")
 
 @router.delete("/{service_name}/{key_name}")
 async def delete_api_key(
@@ -282,8 +282,8 @@ async def delete_api_key(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to delete API key: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to delete API key: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete API key")
 
 @router.post("/test", response_model=APIKeyTestResponse)
 async def test_api_key(
@@ -348,8 +348,8 @@ async def test_api_key(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to test API key: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to test API key: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to test API key")
 
 # ===========================================
 # API KEY TESTING FUNCTIONS
