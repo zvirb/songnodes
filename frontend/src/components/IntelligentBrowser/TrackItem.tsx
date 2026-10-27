@@ -9,6 +9,7 @@ import React, { useRef } from 'react';
 import { Disc } from 'lucide-react';
 import type { TrackRecommendation, Track } from './types';
 import { scoreBand, formatDuration } from './utils';
+import { Bpm, KeyBadge } from '../../lib/songnodes';
 import { CompatibilityBadge, KeyCompat } from '../ds';
 import styles from './IntelligentBrowser.module.css';
 
@@ -78,16 +79,16 @@ export const TrackItem = React.memo<TrackItemProps>(({
               <Disc size={18} strokeWidth={1.5} />
             )}
           </div>
-          <span className={styles.trackTitleText} title={`${track.artist} – ${track.name}`}>
-            <span className={styles.trackArtistText}>{track.artist} –</span> {track.name}
+          <span className={`${styles.trackTitleText} body-strong`} title={`${track.artist} – ${track.name}`}>
+            <span className={`${styles.trackArtistText} body color-fg-2`}>{track.artist} –</span> {track.name}
           </span>
         </div>
 
-        <div className={styles.rowMetaRow}>
-          {track.bpm ? <span className={styles.bpmTag}>{track.bpm} BPM</span> : null}
-          {track.key ? <span className={styles.keyPill}>{track.key}</span> : null}
-          {length !== '–' ? <span className={styles.durationTag}>{length}</span> : null}
-          {track.genre ? <span className={styles.genreChip}>{track.genre}</span> : null}
+        <div className={`${styles.rowMetaRow} caption color-fg-3`}>
+          {track.bpm ? <Bpm value={track.bpm} /> : null}
+          {track.key ? <KeyBadge value={track.key} /> : null}
+          {length !== '–' ? <span className="data-s color-fg-3">{length}</span> : null}
+          {track.genre ? <span className="sn-tag">{track.genre}</span> : null}
           {topReason ? <span className="sn-track-cell__mix">{topReason}</span> : null}
         </div>
       </div>

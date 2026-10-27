@@ -294,7 +294,7 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
           <div style={{
             fontSize: '14px',
             fontWeight: '600',
-            color: 'rgba(255, 255, 255, 0.95)',
+            color: 'var(--fg)',
             marginBottom: content.subtitle ? '4px' : '0',
             wordBreak: 'break-word'
           }}>
@@ -303,7 +303,7 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
           {content.subtitle && (
             <div style={{
               fontSize: '12px',
-              color: 'rgba(255, 255, 255, 0.6)',
+              color: 'var(--fg-3)',
               wordBreak: 'break-word'
             }}>
               {content.subtitle}
@@ -321,7 +321,7 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
                 alignItems: 'end',
                 gap: '1px',
                 padding: '8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                backgroundColor: 'var(--surface-2)',
                 borderRadius: '6px'
               }}>
                 {content.preview.waveform.map((amplitude, i) => (
@@ -330,7 +330,7 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
                     style={{
                       flex: 1,
                       height: `${amplitude * 100}%`,
-                      backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                      backgroundColor: 'var(--brand-soft)',
                       borderRadius: '1px',
                       minHeight: '2px'
                     }}
@@ -347,7 +347,7 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
                   height: '80px',
                   objectFit: 'cover',
                   borderRadius: '6px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                  backgroundColor: 'var(--surface-2)'
                 }}
               />
             )}
@@ -374,14 +374,14 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  color: 'var(--fg-2)',
                   fontSize: '12px'
                 }}>
                   {detail.icon}
                   {detail.label}
                 </span>
                 <span style={{
-                  color: detail.color || 'rgba(255, 255, 255, 0.9)',
+                  color: detail.color || 'var(--fg)',
                   fontSize: '12px',
                   fontWeight: '500'
                 }}>
@@ -399,7 +399,7 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
             gap: '8px',
             marginTop: '12px',
             paddingTop: '12px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+            borderTop: '1px solid var(--line)'
           }}>
             {content.actions.map((action, index) => (
               <button
@@ -410,10 +410,10 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
                 }}
                 style={{
                   padding: '6px 12px',
-                  backgroundColor: action.color ? `rgba(${hexToRgb(action.color)}, 0.2)` : 'rgba(255, 255, 255, 0.1)',
-                  border: action.color ? `1px solid rgba(${hexToRgb(action.color)}, 0.3)` : '1px solid rgba(255, 255, 255, 0.2)',
+                  backgroundColor: 'var(--surface-2)',
+                  border: '1px solid var(--line)',
                   borderRadius: '6px',
-                  color: action.color || 'rgba(255, 255, 255, 0.9)',
+                  color: action.color || 'var(--fg)',
                   cursor: 'pointer',
                   fontSize: '11px',
                   fontWeight: '500',
@@ -426,13 +426,11 @@ export const SmartTooltip: React.FC<SmartTooltipProps> = ({
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = action.color
-                    ? `rgba(${hexToRgb(action.color)}, 0.3)`
-                    : 'rgba(255, 255, 255, 0.15)';
+                    ? 'var(--surface-3)'
+                    : 'var(--surface-3)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = action.color
-                    ? `rgba(${hexToRgb(action.color)}, 0.2)`
-                    : 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-2)';
                 }}
               >
                 {action.icon}
@@ -489,19 +487,19 @@ export const useSmartTooltip = () => {
             label: 'BPM',
             value: Math.round(track.bpm).toString(),
             icon: <Activity size={12} />,
-            color: '#10b981'
+            color: 'var(--status-ok)'
           }] : []),
           ...(track.key ? [{
             label: 'Key',
             value: track.key,
             icon: <Hash size={12} />,
-            color: '#8b5cf6'
+            color: 'var(--brand)'
           }] : []),
           ...(track.energy ? [{
             label: 'Energy',
             value: `${Math.round(track.energy * 100)}%`,
             icon: <Zap size={12} />,
-            color: '#f59e0b'
+            color: 'var(--status-warn)'
           }] : []),
           ...(track.year ? [{
             label: 'Year',
@@ -519,7 +517,7 @@ export const useSmartTooltip = () => {
             label: 'Play',
             icon: <Play size={12} />,
             onClick: () => { /* Play functionality not implemented */ },
-            color: '#10b981'
+            color: 'var(--status-ok)'
           },
           {
             label: 'Add',
@@ -531,7 +529,7 @@ export const useSmartTooltip = () => {
                 addToSetlist(track as Track);
               }
             },
-            color: '#3b82f6'
+            color: 'var(--mod-graph)'
           }
         ] : undefined,
         // Generate mock waveform for preview

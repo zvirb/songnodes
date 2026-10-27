@@ -60,8 +60,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
   } else if (format === 'tracklist') {
     exportContent = set.tracks.map((track, i) => {
       const t = byId.get(track.id);
-      const artist = t ? t.a : (track.a || '–');
-      const title = t ? t.t : (track.t || '–');
+        const artist = t ? t.a : (track.a || '');
+        const title = t ? t.t : (track.t || '');
       return `${i + 1}. ${artist} - ${title}`;
     }).join('\n');
     filename = `${set.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tracklist.txt`;
@@ -137,12 +137,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
           </pre>
         </div>
       </div>
-      <div className="sn-dialog__foot">
-        <div className="sn-dialog__foot-start">
+      <div className="sn-dialog__foot" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+        <div>
           <CopyButton label="Copy" what={format} getText={() => exportContent} size="sm" />
         </div>
-        <button ref={cancelRef} className="sn-btn" type="button" onClick={onClose}>Close</button>
-        <button className="sn-btn sn-btn--primary" type="button" onClick={handleDownload}><SnIcon name="download" /> Download {filename}</button>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <button ref={cancelRef} className="sn-btn" type="button" onClick={onClose}>Close</button>
+          <button className="sn-btn sn-btn--primary" type="button" onClick={handleDownload}><SnIcon name="download" /> Download {filename}</button>
+        </div>
       </div>
     </dialog>
   );

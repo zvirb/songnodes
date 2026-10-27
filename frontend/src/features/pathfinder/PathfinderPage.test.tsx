@@ -57,6 +57,6 @@ describe('PathfinderPage', () => {
   it('renders title and found path', () => {
     render(<PathfinderPage />);
     expect(screen.getByText('Pathfinder')).toBeTruthy();
-    expect(screen.getByText('Found Path')).toBeTruthy();
+    expect(screen.getByText('Found path')).toBeTruthy();
   });
 });
