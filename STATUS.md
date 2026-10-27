@@ -971,8 +971,12 @@ Work done:
 
 <!-- SLOT:U8 BEGIN -->
 ### U8: Pin every GitHub Action to its latest release
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-27
+- Built: Pinned all GitHub Action `uses:` lines in workflows to their latest commit SHAs with version comments, and removed placeholders.
+- Checks run: `python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]"`
+- Checks not run: Full CI checks as this is pending PR creation.
+- Reviewer check: Every `uses:` line ends in a 40-character SHA and a version comment; CI runs on the PR.
+- End: 2026-10-27
 <!-- SLOT:U8 END -->
 
 <!-- SLOT:U9 BEGIN -->
