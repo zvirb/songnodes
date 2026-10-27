@@ -567,8 +567,14 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS13 BEGIN -->
 ### DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built:
+  - Reviewed all specified feature files. Fixed deviations in `AITransitionHelper.tsx`.
+  - Skipped out-of-scope files `AISetlistsPage.tsx`, `CamelotPage.tsx`, `camelot.css`, `EnergyWave.tsx`, `ui.tsx`, and `usePipelineTelemetry.ts`.
+  - Created DS13.md audit file.
+- Checks run: `vitest` pass, `check_design_system.py` pass. E2E Playwright skipped (unavailable in sandbox).
+- PR: Pending
 <!-- SLOT:DS13 END -->
 
 <!-- SLOT:DS14 BEGIN -->
