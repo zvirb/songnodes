@@ -6,6 +6,8 @@ import { Route, Search, ServerCrash, X } from 'lucide-react';
 import { Title, Bpm, KeyBadge, EnergyBar, SN } from '../../lib/songnodes';
 import { CompatibilityBadge, ErrorPanel, LoadingPanel } from '../../components/ds';
 import { EmptyState } from '../../shell/PageParts';
+import { usePageHeader } from '../../shell/AppShell';
+import { Link } from 'react-router-dom';
 import { usePathfinder } from '../../components/PathfinderPanel/hooks';
 import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { UnifiedTrack } from '../../types/unifiedTrack';
@@ -13,7 +15,9 @@ import '../../components/PathfinderPanel.css';
 
 export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds: string[]) => void }) {
   const { tracks, source, isLoading, error } = useUnifiedTracks();
+  usePageHeader({ lead: 'Pathfinder', title: 'Route finder', current: 'paths' });
   const pf = usePathfinder();
+  const { send } = pf;
   const uid = useId().replace(/:/g, '');
 
   // Use local state for queries and max hops as they are specific to this page
@@ -26,13 +30,13 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
 
   // Sync maxHops with the state machine constraints whenever it changes
   useEffect(() => {
-    pf.send({
+    send({
       type: 'UPDATE_CONSTRAINTS',
       constraints: {
          targetDuration: maxHops * 5 // approximate mapping
       }
     });
-  }, [maxHops, pf]);
+  }, [maxHops, send]);
 
   // Basic filtering for track pickers
   const getFilteredTracks = (query: string) => {
@@ -68,10 +72,13 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
   };
 
   return (
-    <main className="sn-page pf-page">
+    <main className="sn-page__main sn-page pf-page" id="main" tabIndex={-1}>
       <div className="sn-page__head">
         <Title size="display-xl" as="h1">Pathfinder</Title>
         <p className="sn-lead">Find harmonic paths between tracks</p>
+        <p>
+          <Link className="sn-link sn-m-graph" to="/graph?tab=pathfinder">Open Pathfinder in Graph</Link>
+        </p>
       </div>
 
       <div className="sn-page__body pf">
