@@ -578,9 +578,22 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS13 END -->
 
 <!-- SLOT:DS14 BEGIN -->
-### DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples
-- Start: _not started_
-- End: _not finished_
+2026-10-26: Started design system audit and fix for DS14 paths.
+2026-10-26: Completed audit and fix for DS14 paths.
+What I built:
+- Replaced custom inline styles and hex/rgb/pixel values with `var(--token)` or `sn-*` classes in `spatialIndexUsage.example.tsx` and `ExportDialog.tsx`.
+- Changed "Unknown" to an en dash (`–`) in `trackMetadata.ts`, `pathfinding.ts`, `aiService.ts`, `exporters.ts` and `ExportDialog.tsx`.
+- Changed `useToast.tsx` from raw markup to `sn-toast` markup as specified by the system.
+- Replaced custom colour strings in utility functions (`energyUtils.ts`, `harmonicUtils.ts`, `moodVisualizerUtils.ts`) with appropriate tokens.
+- Audited all files in scope and compiled findings into `docs/design-system/audits/DS14.md`.
+Checks run:
+- TypeScript compilation (`npx tsc --noEmit`)
+- Unit tests (`npx vitest run src`)
+- Vite build (`npx vite build`)
+- Sync script check (`bash scripts/sync-design-system.sh --check`)
+Checks not run:
+- Playwright E2E tests (unavailable in sandbox environment)
+PR link: To be opened
 <!-- SLOT:DS14 END -->
 
 <!-- SLOT:DS15 BEGIN -->
