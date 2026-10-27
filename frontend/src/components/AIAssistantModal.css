@@ -99,8 +99,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--control-sm);
-  height: var(--control-sm);
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-pill);
   background-color: var(--surface-2);
   color: var(--fg-3);
@@ -207,7 +207,7 @@
 }
 
 .ai-assistant-modal__skeleton-line {
-  height: var(--space-4);
+  height: 16px;
   border-radius: var(--radius-control);
   background-color: var(--surface-3);
   animation: ai-pulse 1.5s ease-in-out infinite;

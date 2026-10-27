@@ -4,7 +4,6 @@ import { useDebounce } from 'react-use';
 import { LocateFixed, ListPlus, Route, Search, X, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { api } from '../services/api';
-import { KeyBadge, Bpm, EnergyBar, SN } from '../lib/songnodes';
 import {
   Track,
   SearchResult,
@@ -656,12 +655,12 @@ const TrackSearch: React.FC<TrackSearchProps> = ({
                             <span className="sn-tag">{Math.round(score * 100)}%</span>
                           ) : null}
                         </div>
-                        <p style={{ margin: 'var(--space-0\\.5) 0 0', fontSize: '0.8125rem', color: 'var(--fg-2)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: 'var(--fg-2)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                           by {track.artist}
                         </p>
-                        <div style={{ display: 'flex', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)', marginTop: 'var(--space-0\\.5)' }}>
-                          {track.bpm ? <Bpm value={track.bpm} /> : null}
-                          {track.camelotKey ? <KeyBadge value={track.camelotKey} /> : null}
+                        <div style={{ display: 'flex', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)', marginTop: '2px' }}>
+                          {track.bpm ? <span style={{ fontFamily: 'var(--font-data)' }}>{track.bpm} BPM</span> : null}
+                          {track.camelotKey ? <span style={{ fontFamily: 'var(--font-data)' }}>{track.camelotKey}</span> : null}
                           {track.genre ? <span>{track.genre}</span> : null}
                         </div>
                       </div>
