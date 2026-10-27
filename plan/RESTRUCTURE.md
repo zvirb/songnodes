@@ -85,10 +85,11 @@ Target structure (reached one package at a time):
 | **6, contextual autocomplete** | `UX5` crate filter autocomplete, `UX6` pathfinder autocomplete, `UX7` music service history, `UX8` quick search palette | Wave 5 merged |
 | **7, target track auto-suggestions** | `TG1` target suggestions endpoint, `TG2` suggestions hook, `TG3` suggestions UI deck, `TG4` crate discovery banner | Wave 6 merged (and Wave 2 FE9 merged) |
 | **8, workflow velocity & transitions** | `FL1` table keyboard nav, `FL2` set transition suggestions, `FL3` crate filter presets, `FL4` mini audio preview | Wave 7 merged (and Wave 3 SB3 merged) |
+| **9, layout debt** | `LY1` AI setlists, `LY2` music library, `LY3` pathfinder and Camelot, `LY4` pipeline and export, `LY5` shared components; `DS16` (resend) | Wave 4 merged. Briefs from `plan/build_ly_prompts.py`. They share `frontend/design-system-layout-baseline.txt`, so merge one at a time and rebase each on main first. |
 
 Retired because they were split or replaced: WP2 (ref_mb is a separate database), WP4 → E1/E2/E3, WP5 → merged in #158 (L1–L4 held for repair, L5 active), BE1 → S1/S2/S3, FE1 → R1, FE3 → R2 + P1, FE4 → SB1/SB2/SB3, FE11 and FEW (replaced by G2 plus P1 to P3), SEC6 → SEC6A/SEC6B. The laptop launcher in `E:\musicLibrary\plan` is retired; it refuses everything and points here.
 
-Briefs are generated: `python plan/build_rs_prompts.py` writes every R/G/C/S/L/E/SB/P/FE9/SEC brief and adds missing STATUS.md slots. The DS briefs come from `plan/build_ds_prompts.py`. The QA briefs are hand-written.
+Briefs are generated: `python plan/build_rs_prompts.py` writes every R/G/C/S/L/E/SB/P/FE9/SEC brief and adds missing STATUS.md slots. The DS briefs come from `plan/build_ds_prompts.py`, the LY briefs from `plan/build_ly_prompts.py`. The QA briefs are hand-written.
 
 ## 5. Merge protocol and review budget
 

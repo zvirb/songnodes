@@ -121,6 +121,12 @@ The global set is listed in `ShortcutSheet` (open with ?).
 | 3.3.1 / 3.3.3 Error identification and suggestion | Text error with fix | `TextField`, `KeyPicker`, `TracklistPaste` |
 | 3.3.4 Error prevention | Confirm or undo destructive actions | `ConfirmDialog`, `Toast` with Undo |
 | 3.3.7 Redundant entry | Don't ask twice in one flow | `TracklistPaste`, `SettingsPage` |
+
 | 3.3.8 Accessible authentication | No cognitive tests; paste allowed in `SecretField` | `SecretField`, `AuthCallbackPage` |
 | 4.1.2 Name, role, value | Correct ARIA on custom widgets | `Switch`, `SegmentedControl`, `Tabs`, `CamelotWheel` |
 | 4.1.3 Status messages | Live regions as above | `Toast`, `Banner`, `StagedProgress` |
+
+## Card overviews and detail sub-routes
+- **Focus return**: When navigating back from a detail sub-route (e.g. `/settings/:settingId`) to a card grid overview page (`/settings`), keyboard focus must return to the card action element (`Open setting page →`) that initiated navigation.
+- **Live result count**: Search fields that filter card grids live must announce the matching card count using an `aria-live="polite"` region.
+- **Two ways back**: Sub-route detail pages must offer both a top `PageHeader` back action button and a card-foot return link, plus support the `Escape` key to return to the parent overview page.

@@ -498,6 +498,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Configured endpoints to default to server-side `TIDAL_CLIENT_ID` and `TIDAL_CLIENT_SECRET` environment variables to prevent sensitive credentials from leaking in HTTP request query parameters and server logs.
 - Added `/tidal/refresh` route alias.
 - Checks: `python3 -m py_compile` passed, code review passed.
+
+### SEC: API Key Router Exception Leakage Remediation (2026-10-27)
+- Start: 2026-10-27
+- End: 2026-10-27
+- Fixed raw exception message leakage (`detail=str(e)`) across five endpoints in `services/rest_api/routers/api_keys.py`. Replaced internal trace detail responses with generic sanitized error messages while preserving server-side logging.
+- Added security regression unit tests in `tests/security/test_api_keys_security.py`.
+- Checks: `PYTHONPATH=. python3 -m pytest tests/security/test_api_keys_security.py` passed (5/5).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
@@ -1167,6 +1174,36 @@ Work done:
 - End: 2026-10-26
 <!-- SLOT:U29 END -->
 
+<!-- SLOT:LY1 BEGIN -->
+### LY1: Layout debt: AI setlists page
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY1 END -->
+
+<!-- SLOT:LY2 BEGIN -->
+### LY2: Layout debt: music library and set builder pages
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY2 END -->
+
+<!-- SLOT:LY3 BEGIN -->
+### LY3: Layout debt: pathfinder and Camelot pages
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY3 END -->
+
+<!-- SLOT:LY4 BEGIN -->
+### LY4: Layout debt: pipeline page and export dialog
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY4 END -->
+
+<!-- SLOT:LY5 BEGIN -->
+### LY5: Layout debt: shared components and the DJ interface page container
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LY5 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
@@ -1191,6 +1228,14 @@ docker compose -f compose.dev.yaml ps
 docker compose -f compose.dev.yaml logs --since 24h --tail 200
 ```
 Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, or with `--wave up` once wave 1 is out.
+
+### 2026-10-28 (Claude, scheduled run, stage 2 to 3)
+- Merged #285 to #295 (scraper psycopg2, MixesDB positions and search/category routing, pipeline scrape-runs table, graph_projection scheduling and Memgraph opt-in, found_nothing warning, 07-api-keys.sql in start-dev.sh, non-compose Dockerfile fixes, settings rebuild). Open PRs: 0. No deletions found after merges.
+- Antigravity on the laptop (E:\songnodes-e2e): all 8 compose services healthy; all 24 non-compose Dockerfiles build; E2E 359/367, the 8 failures are visual snapshots of /settings and /pipeline after intended redesigns.
+- First real scrape, 'Deadmau5 Strobe' on MixesDB: 5 sets found; bronze 9 playlists and 100 tracks (positions 1..N, no gaps); silver 132 tracks, 80 transitions; graph-api 132 nodes, 80 edges; outbox backlog 0.
+- Open: the job result (928 persisted) and /pipeline (1 playlist, 15 tracks) disagree with bronze; playlist 9fe4886d has 3 tracks; snapshots to refresh. Sent to Antigravity.
+- Known: services/scraper-orchestrator/main_enhanced.py imports automated_scheduler, which no longer exists, so that image builds but would fail on import. It is not in compose.dev.yaml; the U20 slot's import claim does not hold.
+- Next: LY1 to LY5 (layout debt, briefs from plan/build_ly_prompts.py) and DS16.
 
 <!-- SLOT:L6 BEGIN -->
 ### L6: Script: import the musicLibrary SQLite into the running stack
@@ -1355,7 +1400,11 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 <!-- SLOT:DS17 END -->
 
 <!-- SLOT:BOLT BEGIN -->
-### BOLT: Optimize metadata track matching performance
-- Start: 2026-10-26 - Optimizing `services/common/metadata/matching.py` with pre-compiled regexes, memoized parsing functions, and single-pass target evaluation in `best_match`.
-- End: 2026-10-26 - Pre-compiled regexes, added `@lru_cache` to text normalization functions, and pre-computed target track metadata in `best_match`. Passed unit tests in `services/common/tests/test_metadata_resolution.py` and benchmarked >60% execution time reduction (from 7.46s to 2.88s per 50,000 matches).
+### BOLT: Optimize artist name cleaner regex compilation and memoization
+- Start: 2026-10-27
+- Built: Pre-compiled module-level regexes and added `@lru_cache(maxsize=4096)` memoization to `clean_artist_name` and `normalize_artist_name` across `services/common/artist_name_cleaner.py`, `common/artist_name_cleaner.py`, and `scrapers/artist_name_cleaner.py`. Added unit tests in `services/common/tests/test_artist_name_cleaner.py`.
+- Checks run: `PYTHONPATH=. pytest -o addopts="" services/common/tests/` (71 passed).
+- Impact: 2.2x speedup on unique artist names (regex pre-compilation), >40x speedup on repeated artist names in matching/playlist loops (`@lru_cache`).
+- PR: [⚡ Bolt: pre-compile regexes and memoize artist name cleaning](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-27
 <!-- SLOT:BOLT END -->
