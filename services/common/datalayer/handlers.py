@@ -100,6 +100,7 @@ async def ingest_pending(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[st
     follow_ups = []
     if changed:
         follow_ups += [after('projection_consume', payload, tag='proj-after-ingest'),
+                       after('graph_projection_consume', payload, tag='graph-proj-after-ingest'),
                        after('enrichment_backfill', payload, tag='backfill-after-ingest')]
     if summary['playlists']['examined'] >= limit:  # more may be waiting
         follow_ups.append(after('ingest_pending', payload, {k: v for k, v in payload.items() if k != 'job_id'}, tag='ingest-next'))
@@ -125,7 +126,8 @@ async def enrichment_backfill(conn, ctx: Context, payload: Dict[str, Any]) -> Di
     if result['status'] == 'throttled':
         raise RetryableError(f"providers throttled at track {result['unavailable_for']}")
     carry = {k: v for k, v in payload.items() if k not in ('job_id', 'restart')}
-    follow_ups = [after('projection_consume', payload, tag='proj-after-backfill')]
+    follow_ups = [after('projection_consume', payload, tag='proj-after-backfill'),
+                  after('graph_projection_consume', payload, tag='graph-proj-after-backfill')]
     if result['status'] == 'running':
         follow_ups.append(after('enrichment_backfill', payload, carry, tag='backfill-next'))
     return {**result, 'enqueue': follow_ups}
