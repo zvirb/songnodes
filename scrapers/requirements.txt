@@ -3,6 +3,7 @@ scrapy==2.19.0
 
 # Database
 psycopg-binary==3.3.6
+psycopg2-binary==2.9.13
 asyncpg==0.32.0
 SQLAlchemy==2.1.6
 
