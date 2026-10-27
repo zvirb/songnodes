@@ -625,8 +625,8 @@ PR link: To be opened
 
 <!-- SLOT:DS2B BEGIN -->
 ### DS2B: Design system audit and fix: Graph page, second half of its files
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-27 Audit in docs/design-system/audits/DS2B.md (Jules). Raw px spacing replaced with --space-* tokens in QuickSearch.tsx, MobileTrackExplorer.css and TracklistImporter.css (scheduled run); those three lines commented out of design-system-pending.txt. Checks: check_design_system.py --check passes. Playwright not run. PR: https://github.com/zvirb/songnodes/pull/259
 <!-- SLOT:DS2B END -->
 
 <!-- SLOT:DS3 BEGIN -->
