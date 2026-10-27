@@ -121,7 +121,7 @@ const ScraperProgressPage: React.FC = () => {
       )}
 
       {jobs.length === 0 && source === 'live' && (
-        <section className="sn-page__section sn-empty-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-8)", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", border: "1px dashed var(--line)", marginBottom: "var(--space-6)" }}>
+        <section className="sn-page__section sn-empty-state" style={{ border: "1px dashed var(--line)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-8)", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", marginBottom: "var(--space-6)" }}>
           <Clock size={48} color="var(--fg-3)" style={{ marginBottom: 'var(--space-4)' }} />
           <h2 className="heading-3" style={{ marginBottom: 'var(--space-2)' }}>No jobs yet</h2>
           <p className="body" style={{ color: 'var(--fg-2)', marginBottom: 'var(--space-4)' }}>The pipeline queue is currently empty.</p>
