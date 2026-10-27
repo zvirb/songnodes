@@ -1610,12 +1610,15 @@ class PersistencePipeline:
                 self.logger.info(f"✓ Successfully inserted {len(adjacencies_with_ids)} song_adjacency records")
 
             except Exception as e:
-                self.logger.error(
-                    f"❌ Failed to insert song_adjacency batch: {e}",
-                    extra={'batch_size': len(adjacencies_with_ids)},
-                    exc_info=True
-                )
-                raise
+                if 'undefinedtableerror' in str(e).lower() or 'relation "song_adjacency" does not exist' in str(e).lower():
+                    self.logger.warning(f"song_adjacency table does not exist (legacy table replaced by transitions); skipping")
+                else:
+                    self.logger.error(
+                        f"❌ Failed to insert song_adjacency batch: {e}",
+                        extra={'batch_size': len(adjacencies_with_ids)},
+                        exc_info=True
+                    )
+                    raise
         else:
             self.logger.warning(
                 f"⚠️ No song_adjacency records inserted! {skipped_count} items skipped (tracks not found in DB)"

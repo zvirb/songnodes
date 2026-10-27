@@ -115,10 +115,23 @@ class MixesdbSpider(scrapy.Spider):
         # Support for search query (from orchestrator)
         elif search_query:
             from urllib.parse import quote
-            # Fixed URL format: MixesDB uses MediaWiki Special:Search syntax
-            search_url = f"https://www.mixesdb.com/w/index.php?title=Special:Search&search={quote(search_query)}"
-            self.start_urls = [search_url]
-            self.logger.info(f"Using search query: {search_query} -> {search_url}")
+            from .utils import parse_track_string
+            parsed = parse_track_string(search_query)
+            artist_candidate = (parsed.get('primary_artists') or [None])[0] if parsed else None
+            if not artist_candidate:
+                parts = search_query.split()
+                if parts:
+                    artist_candidate = parts[0]
+
+            urls = []
+            if artist_candidate:
+                cat_name = quote(artist_candidate.replace(' ', '_'))
+                urls.append(f"https://www.mixesdb.com/w/Category:{cat_name}")
+                urls.append(f"https://www.mixesdb.com/w/index.php?search={quote(artist_candidate)}")
+            urls.append(f"https://www.mixesdb.com/w/index.php?search={quote(search_query)}")
+            urls.append(f"https://www.mixesdb.com/w/index.php?title=Special:Search&search={quote(search_query)}")
+            self.start_urls = list(dict.fromkeys(urls))
+            self.logger.info(f"Using search query: {search_query} -> {self.start_urls}")
         else:
             self.start_urls = self.generate_search_urls()
 
@@ -849,7 +862,7 @@ class MixesdbSpider(scrapy.Spider):
                     'start_time': start_time,
                     'track_type': 'Mix',
                     'source_context': track_string,
-                    'position_in_source': i + 1,
+                    'position_in_source': len(tracks_data) + 1,
                     'remix_type': remix_type,
                     # Note: source_url removed - stored in external_urls instead (EnhancedTrackItem doesn't support it)
                     'metadata': json.dumps({
@@ -911,7 +924,7 @@ class MixesdbSpider(scrapy.Spider):
                 tracks_data.append({
                     'track': track_item,
                     'relationships': relationships,
-                    'track_order': i + 1
+                    'track_order': len(tracks_data) + 1
                 })
 
             except Exception as e:

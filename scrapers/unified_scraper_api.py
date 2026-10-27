@@ -298,17 +298,18 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
 
     # Add source-specific parameters
     if request.source == "mixesdb":
+        target_urls = request.start_urls or request.url
         logger.info(
             "MixesDB spider parameters: start_urls=%s, search_query=%s, artist_name=%s, limit=%s",
-            request.start_urls,
+            target_urls,
             request.search_query,
             request.artist_name,
             request.limit
         )
-        if request.start_urls:
+        if target_urls:
             # Direct URL scraping (for testing specific mix pages)
-            cmd.extend(["-a", f"start_urls={request.start_urls}"])
-            logger.info("Added start_urls parameter: %s", request.start_urls)
+            cmd.extend(["-a", f"start_urls={target_urls}"])
+            logger.info("Added start_urls parameter: %s", target_urls)
         elif request.search_query:
             # Use search_query if provided (preferred)
             cmd.extend(["-a", f"search_query={request.search_query}"])
