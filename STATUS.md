@@ -1199,8 +1199,12 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 
 <!-- SLOT:LY4 BEGIN -->
 ### LY4: Layout debt: pipeline page and export dialog
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Replaced undefined `sn-*` layout classes with standard layout structures and Design System components. Replaced `<dialog>` and `<select>` with `<Dialog>` and `<SelectField>` in `ExportDialog.tsx`. Refactored `ScraperProgressPage.tsx` to remove pseudo-headers and redundant elements. Removed resolved items from `frontend/design-system-layout-baseline.txt` and completed the layout audit in `docs/design-system/audits/LY4.md`.
+- Checks run: `python scripts/check_design_system.py --check`, `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
+- Checks not run: Playwright E2E and visual tests due to environment limitations in the sandbox.
+- PR: [LY4: Layout debt: pipeline page and export dialog](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-27
 <!-- SLOT:LY4 END -->
 
 <!-- SLOT:LY5 BEGIN -->
