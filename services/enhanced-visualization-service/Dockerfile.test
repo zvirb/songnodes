@@ -50,7 +50,7 @@ WORKDIR /app
 
 # Copy package.json and install only production dependencies
 COPY package*.json ./
-RUN npm install --only=production && npm cache clean --force
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Copy built application
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
