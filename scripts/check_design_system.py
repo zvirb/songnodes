@@ -18,6 +18,13 @@ from typing import List, Tuple, Set, Optional
 
 # Constants
 PENDING_FILE_PATH = "frontend/design-system-pending.txt"
+LAYOUT_BASELINE_PATH = "frontend/design-system-layout-baseline.txt"
+# Page containers the design system defines (design-system/13-page-patterns.md, Page container).
+PAGE_CONTAINERS = ("sn-page__main", "sn-page-error", "sn-page-auth")
+MAIN_TAG_PATTERN = re.compile(r"<main\b([^>]*)>")
+CLASSNAME_LITERAL_PATTERN = re.compile(r"""className=(?:"([^"]*)"|'([^']*)'|\{\s*`([^`]*)`\s*\}|\{\s*["']([^"']*)["']\s*\})""")
+SN_CLASS_PATTERN = re.compile(r"(?<![\w-])(sn-[A-Za-z0-9_-]*[A-Za-z0-9_])(?![\w-]*\$)")
+CSS_CLASS_PATTERN = re.compile(r"\.(sn-[A-Za-z0-9_-]+)")
 EXCLUDED_FILES = {
     "frontend/src/lib/graphColours.ts",
 }
@@ -206,7 +213,71 @@ def check_file(filepath: str) -> List[Tuple[int, str]]:
                     line_spacing_found = True
                     break
 
+        # Rule 6: a <main> must use a design-system page container (gutters, max width)
+        if is_code_file and "design-system exception" not in raw_line:
+            for m in MAIN_TAG_PATTERN.finditer(code_line):
+                attrs = m.group(1)
+                if not any(c in attrs for c in PAGE_CONTAINERS):
+                    violations.append((i, "<main> without a page container; use className=\"sn-page__main\" (design-system/13-page-patterns.md, Page container)"))
+
     return violations
+
+
+def load_layout_baseline() -> Set[str]:
+    """Known layout debt: lines 'main <file>' or 'class <sn-class>'. Shrink-only."""
+    if not os.path.exists(LAYOUT_BASELINE_PATH):
+        return set()
+    out = set()
+    with open(LAYOUT_BASELINE_PATH, "r", encoding="utf-8") as f:
+        for line in f.read().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                out.add(" ".join(line.split()))
+    return out
+
+
+def defined_sn_classes(css_files: List[str]) -> Set[str]:
+    defined: Set[str] = set()
+    for f in css_files:
+        try:
+            with open(f, "r", encoding="utf-8") as fh:
+                defined.update(CSS_CLASS_PATTERN.findall(fh.read()))
+        except OSError:
+            continue
+    return defined
+
+
+def used_sn_classes(filepath: str) -> List[Tuple[int, str]]:
+    """sn-* classes named in static className values of a TSX file (dynamic parts are skipped)."""
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            raw = f.read()
+    except OSError:
+        return []
+    code_lines = strip_comments(raw)
+    found = []
+    for i, line in enumerate(code_lines, 1):
+        for m in CLASSNAME_LITERAL_PATTERN.finditer(line):
+            text = next(g for g in m.groups() if g is not None)
+            # a class glued to an interpolation (sn-m-${key}) is built at runtime: skip it
+            text = re.sub(r"[\w-]*\$\{[^}]*\}[\w-]*", " ", text)
+            for c in SN_CLASS_PATTERN.findall(text):
+                found.append((i, c))
+    return found
+
+
+def check_undefined_classes(files: List[str], baseline: Set[str]) -> List[Tuple[str, int, str]]:
+    """Every sn-* class used in TSX must be defined by a stylesheet (the sn- prefix is the design system's)."""
+    css_files = [f for f in files if f.endswith(".css")]
+    defined = defined_sn_classes(css_files)
+    out = []
+    for f in files:
+        if not f.endswith(".tsx") or ".test." in f or f in EXCLUDED_FILES or any(f.startswith(p) for p in EXCLUDED_PREFIXES):
+            continue
+        for line_no, c in used_sn_classes(f):
+            if c not in defined and f"class {c}" not in baseline:
+                out.append((f, line_no, f"Class {c} is not defined by the design system or any stylesheet, so it renders no spacing or style; use a real sn-* class or token (design-system/17-governance.md, The sn- namespace)"))
+    return out
 
 
 def main():
@@ -240,6 +311,27 @@ def main():
         file_violations = check_file(f)
         for line_no, msg in file_violations:
             all_violations.append((f, line_no, msg))
+
+    if mode == "check":
+        baseline = load_layout_baseline()
+        all_violations.extend(check_undefined_classes(files_to_check, baseline))
+        # Baseline is shrink-only: drop entries that no longer apply
+        css_defined = defined_sn_classes([f for f in files_to_check if f.endswith(".css")])
+        still_used = {c for f in files_to_check if f.endswith(".tsx") for _, c in used_sn_classes(f)}
+        mains_failing = set()
+        for f in files_to_check:
+            if f.endswith(".tsx"):
+                if any("<main> without a page container" in msg for _, msg in check_file(f)):
+                    mains_failing.add(f)
+        for entry in sorted(baseline):
+            kind, _, value = entry.partition(" ")
+            stale = (kind == "class" and (value in css_defined or value not in still_used)) or \
+                    (kind == "main" and value not in mains_failing)
+            if stale:
+                all_violations.append((LAYOUT_BASELINE_PATH, 1, f"'{entry}' is fixed; remove it from {LAYOUT_BASELINE_PATH}"))
+        # main-container debt listed in the baseline is not reported again
+        all_violations = [v for v in all_violations
+                          if not ("<main> without a page container" in v[2] and f"main {v[0]}" in baseline)]
 
     # Shrink check for pending list (run during --check mode)
     if mode == "check":

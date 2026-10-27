@@ -20,6 +20,11 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.1.3 — 27 Oct 2026: page container and the sn- namespace**
+- Added the Page container rule to 13-page-patterns: every page root is `main.sn-page__main` (`sn-page-error`, `sn-page-auth` for those patterns; the graph canvas is the only full-bleed page).
+- Added "The sn- namespace" below: only classes the bundle defines may carry the `sn-` prefix; spacing comes from tokens or defined classes, never from invented utilities such as `sn-mb-3` or `sn-p-5`.
+- Added three conformance checks: page container and undefined `sn-*` classes (static, CI) and the rendered page gutter (Playwright). No token, class or helper changed.
+
 **1.1.2 — 27 Oct 2026: filter chip contrast**
 - Fixed: a FilterChip that is both selected (`aria-pressed="true"`) and empty (`data-empty`) kept the empty chip's `--fg-3` text on the selected `--fg` fill (2.4:1 dark, 2.8:1 light). The empty text colour now applies only to unselected chips; the dashed border still marks every empty chip. No token changed.
 
@@ -126,6 +131,13 @@ All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 r
 | EX-001 | WCAG 1.4.3 text contrast (axe `color-contrast`) | The AppHeader wordmark is the SongNodes logotype (section 14: the identity is the wordmark), and WCAG 1.4.3 exempts logotypes. Dark `brand` #9b85cb on `surface-1` #2d2d2d measures 4.33:1. | `.sn-app-header__wordmark`, all themes; SongNodes checks it in `frontend/tests/e2e/accessibility.spec.ts` | Markus, 25 Oct 2026 | 1.2.0 |
 | EX-002 | WCAG 2.5.3 label in name (axe `label-content-name-mismatch`) | `LauncherCard` names its link from the title only (`aria-labelledby="lc-t"`), so the visible module label is not part of the accessible name. Kept as specified until the markup is decided. | `.sn-launcher-card` links (HomePage); same test file | Markus, 25 Oct 2026 | 1.2.0 |
 
+## The sn- namespace
+
+- The `sn-` prefix belongs to the design system. App code may use an `sn-*` class only if `components/bundle.css` (or a SongNodes stylesheet that implements a documented pattern) defines it.
+- There are no spacing utility classes (`sn-mb-*`, `sn-mt-*`, `sn-p-*`, `sn-gap-*`, `sn-u-*`). Spacing comes from the component or page pattern, or from a `var(--space-*)` token in a feature stylesheet or inline style.
+- Feature-local classes use the feature's own prefix (`ttm__`, `mte__`, `pf-`), never `sn-`.
+- A class name that nothing defines fails silently: the element renders with no padding, gap or margin. This is why the checks below fail on it rather than warn.
+
 ## Distribution and staying in sync
 
 - This design-system artifact is the source. Nothing is edited downstream.
@@ -147,6 +159,9 @@ Automated (CI on SongNodes, script on the design system):
 | Contrast | `build_tokens.py` contrast report | Any listed pair below 4.5:1 (3:1 for large text and UI edges) |
 | Visual | Playwright snapshots of every `preview.html` in dark, light, booth; and key routes | Diff above threshold without an approved update |
 | Version sync | build script | `tokens.json` and `SongNodes.version` differ |
+| Page container | `scripts/check_design_system.py` | A `<main>` without `sn-page__main`, `sn-page-error` or `sn-page-auth` (exception comment allowed only for the graph canvas) |
+| Undefined classes | `scripts/check_design_system.py` | An `sn-*` class in app code that no stylesheet defines; existing debt is listed in `frontend/design-system-layout-baseline.txt`, which may only shrink |
+| Page gutter (rendered) | Playwright `design-rules.spec.ts` on every shell route except the graph | The page has no side gutter, or visible text starts within the gutter of the window edge |
 
 Manual: run the pre-release checklist in Accessibility and quality (section 09) before each minor or major release.
 

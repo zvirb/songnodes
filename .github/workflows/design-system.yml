@@ -1,7 +1,8 @@
 # Design-system conformance (design-system/17-governance.md, "Conformance checking").
 # The SongNodes design system in design-system/ is the single source of truth for every
 # formatting and design decision; this workflow keeps the frontend copy in sync and stops
-# new raw colours, emoji and browser dialogs in code that has moved onto the system.
+# new raw colours, emoji, browser dialogs, pages without a page container and undefined
+# sn-* classes in code that has moved onto the system.
 name: design-system
 
 on:
@@ -19,6 +20,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0 }
+      - name: Layout baseline only shrinks
+        if: github.event_name == 'pull_request'
+        run: |
+          base="origin/${{ github.base_ref }}"
+          git cat-file -e "$base:frontend/design-system-layout-baseline.txt" 2>/dev/null || { echo "Baseline is new in this PR"; exit 0; }
+          added=$(git diff "$base...HEAD" -- frontend/design-system-layout-baseline.txt | grep -E '^\+(class|main) ' || true)
+          if [ -n "$added" ]; then
+            echo "::error file=frontend/design-system-layout-baseline.txt::New layout debt cannot be added to the baseline; fix it instead:"
+            echo "$added"
+            exit 1
+          fi
       - name: Frontend copy matches design-system/
         run: bash scripts/sync-design-system.sh --check
       - name: Design-system conformance check
