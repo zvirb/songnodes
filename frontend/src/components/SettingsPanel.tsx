@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
 import { APIKeyManager } from './APIKeyManager';
-import { KeyRound } from 'lucide-react';
-import { StatusPill } from '../lib/songnodes';
+import { StatusPill, SnIcon } from '../lib/songnodes';
 import { Dialog, ConfirmDialog, showToast } from './ds';
 import './SettingsPanel.css';
 import { API_BASE_URL, oauthRedirectUri } from '../lib/apiBase';
@@ -243,7 +242,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
       window.location.href = authData.authorization_url;
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : 'Connection failed';
       setConnectError(`Couldn’t start the TIDAL connection: ${errorMessage}`);
       general.setLoading(false);
     }
@@ -326,7 +325,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
             <p className="stp__help">Keys for the services the scrapers use.</p>
           </div>
           <button type="button" className="sn-btn sn-btn--sm" onClick={() => setShowAPIKeyManager(true)}>
-            <KeyRound size={16} strokeWidth={2} aria-hidden="true" />
+            <SnIcon name="key-round" aria-hidden="true" />
             Manage API keys
           </button>
         </div>

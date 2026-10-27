@@ -710,8 +710,11 @@ PR: ds5-design-system-audit-sources-not-found-pages
 
 <!-- SLOT:DS9 BEGIN -->
 ### DS9: Design system audit and fix: Settings page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-27
+- Built: Audited the Settings page for design system deviations. Replaced raw values, ad-hoc pixels, custom `Segmented` component, direct radio inputs, and direct `lucide-react` imports with standard `ds` components (`SegmentedControl`, `Checkbox`), `SnIcon`, `StatusPill`, and CSS tokens. Recorded `SecretField` missing component upstream.
+- Checks run: `npm ci`, `tsc`, `oxlint`, `vitest`, `vite build`, `scripts/check_design_system.py --check`.
+- Checks not run: Full E2E Playwright tests due to sandbox environment constraints.
+- End: 2026-10-27 - PR created.
 <!-- SLOT:DS9 END -->
 
 <!-- SLOT:R1 BEGIN -->
