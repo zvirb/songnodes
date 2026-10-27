@@ -6,12 +6,9 @@
 #   main <file>        a <main> that is not a design-system page container
 main frontend/src/components/DJInterface/DJInterface.tsx
 class sn-auth-callback-card
-class sn-banner--info
-class sn-banner--warning
 class sn-body
 class sn-body-s
 class sn-body-strong
-class sn-btn--outline
 class sn-btn-transport
 class sn-camelot-page
 class sn-camelot-page__list-card
@@ -25,9 +22,7 @@ class sn-copy-button__text
 class sn-coverage-panel
 class sn-dialog__form
 class sn-dropdown
-class sn-export-dialog
 class sn-field--inline
-class sn-field__input
 class sn-filter-rail__trigger
 class sn-gap-1
 class sn-gap-2
@@ -58,11 +53,8 @@ class sn-mt-4
 class sn-mt-6
 class sn-page-library
 class sn-page-sets
-class sn-page__actions
 class sn-page__body
 class sn-page__head
-class sn-page__header
-class sn-page__title-group
 class sn-panel
 class sn-panel--sm
 class sn-panel__body

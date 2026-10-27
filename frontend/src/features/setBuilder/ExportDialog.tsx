@@ -3,6 +3,8 @@ import { SnIcon } from '../../lib/songnodes';
 import type { LibraryTrack, SavedSet } from '../musicLibrary/data';
 import { exportM3U8, exportRekordbox, exportTidal, getMissingFieldsSummary, formatMissingFieldsSummary } from './exporters';
 import { CopyButton } from '../musicLibrary/components/ui';
+import { Dialog, SelectField } from '../../components/ds';
+
 
 interface ExportDialogProps {
   open: boolean;
@@ -14,27 +16,9 @@ interface ExportDialogProps {
 type Format = 'm3u8' | 'rekordbox' | 'tidal' | 'tracklist';
 
 export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onClose }) => {
-  const ref = useRef<HTMLDialogElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  const opener = useRef<Element | null>(null);
   const id = useId();
 
   const [format, setFormat] = useState<Format>('m3u8');
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      opener.current = document.activeElement;
-      try { d.showModal(); } catch { d.setAttribute('open', ''); }
-      cancelRef.current?.focus();
-    } else if (!open && d.open) {
-      d.close();
-      if (opener.current instanceof HTMLElement) {
-        opener.current.focus();
-      }
-    }
-  }, [open]);
 
   if (!set) return null;
 
@@ -83,24 +67,30 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
   const previewLines = exportContent.split('\n').slice(0, 5).join('\n');
 
   return (
-    <dialog
-      ref={ref}
-      className="sn-dialog sn-dialog--m sn-export-dialog"
-      aria-modal="true"
-      aria-labelledby={`${id}-t`}
-      onCancel={(e) => { e.preventDefault(); onClose(); }}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={`Export "${set.name}"`}
+      size="m"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+          <div>
+            <CopyButton label="Copy" what={format} getText={() => exportContent} size="sm" />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <button className="sn-btn sn-btn--quiet" type="button" onClick={onClose}>Cancel</button>
+            <button className="sn-btn sn-btn--primary" type="button" onClick={handleDownload}><SnIcon name="download" /> Download {filename}</button>
+          </div>
+        </div>
+      }
     >
-      <div className="sn-dialog__head">
-        <span className="sn-confirm-dialog__icon"><SnIcon name="download" /></span>
-        <h2 className="sn-title title-s sn-dialog__title" id={`${id}-t`}>Export "{set.name}"</h2>
-      </div>
-      <div className="sn-dialog__body">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
         {missingLines.length > 0 && (
-          <div className="sn-banner sn-banner--warning sn-mb-3" role="alert">
+          <div className="sn-banner" data-status="warn" role="alert">
             <span className="sn-banner__icon"><SnIcon name="triangle-alert" /></span>
             <div className="sn-banner__content">
               <strong>Missing metadata</strong>
-              <ul>
+              <ul style={{ margin: 0, paddingLeft: 'var(--space-4)' }}>
                 {missingLines.map((line, idx) => (
                   <li key={idx}>{line}</li>
                 ))}
@@ -109,43 +99,30 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
           </div>
         )}
 
-        <div className="sn-field sn-mb-3">
-          <label className="sn-field__label" htmlFor={`${id}-format`}>Format</label>
-          <select
-            id={`${id}-format`}
-            className="sn-field__input"
-            value={format}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === 'm3u8' || val === 'rekordbox' || val === 'tidal' || val === 'tracklist') {
-                setFormat(val);
-              }
-            }}
-          >
-            <option value="m3u8">M3U8 Playlist</option>
-            <option value="rekordbox">Rekordbox XML</option>
-            <option value="tidal">TIDAL JSON</option>
-            <option value="tracklist">Text Tracklist</option>
-          </select>
-        </div>
+        <SelectField
+          label="Format"
+          value={format}
+          onChange={(val) => {
+            if (val === 'm3u8' || val === 'rekordbox' || val === 'tidal' || val === 'tracklist') {
+              setFormat(val as Format);
+            }
+          }}
+          options={[
+            { value: 'm3u8', label: 'M3U8 Playlist' },
+            { value: 'rekordbox', label: 'Rekordbox XML' },
+            { value: 'tidal', label: 'TIDAL JSON' },
+            { value: 'tracklist', label: 'Text Tracklist' },
+          ]}
+        />
 
-        <div className="sn-field sn-mb-3">
-          <label className="sn-field__label" htmlFor={`${id}-preview`}>Preview (first 5 lines)</label>
-          <pre id={`${id}-preview`} className="sn-field__input sn-mono" style={{ whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+          <label className="sn-label" htmlFor={`${id}-preview`}>Preview (first 5 lines)</label>
+          <pre id={`${id}-preview`} className="sn-mono" style={{ border: '1px solid var(--line)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)', backgroundColor: 'var(--surface-1)', whiteSpace: 'pre-wrap', maxHeight: '15rem', overflowY: 'auto', margin: 0 }}>
             {previewLines}
             {exportContent.split('\n').length > 5 && '\n...'}
           </pre>
         </div>
       </div>
-      <div className="sn-dialog__foot" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-        <div>
-          <CopyButton label="Copy" what={format} getText={() => exportContent} size="sm" />
-        </div>
-        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-          <button ref={cancelRef} className="sn-btn" type="button" onClick={onClose}>Close</button>
-          <button className="sn-btn sn-btn--primary" type="button" onClick={handleDownload}><SnIcon name="download" /> Download {filename}</button>
-        </div>
-      </div>
-    </dialog>
+    </Dialog>
   );
 };

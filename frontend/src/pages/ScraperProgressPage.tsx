@@ -8,16 +8,7 @@ import { usePipelineTelemetry } from '../features/pipeline/usePipelineTelemetry'
 import { api } from '../services/api';
 import { usePageHeader } from '../shell/AppShell';
 
-const SectionHeading = ({ title, count }: { title: string; count?: string | number }) => (
-  <div className="sn-page__title-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
-    <h2 className="heading-3">{title}</h2>
-    {count !== undefined && (
-      <span className="caption data" >
-        {count}
-      </span>
-    )}
-  </div>
-);
+import { SectionHeading } from '../components/ds';
 
 const ScraperProgressPage: React.FC = () => {
   usePageHeader({ lead: 'Pipeline', title: 'Telemetry', current: 'pipeline' });
@@ -64,9 +55,9 @@ const ScraperProgressPage: React.FC = () => {
   if (error && source === 'unavailable') {
     return (
       <main className="sn-page__main" id="main" tabIndex={-1}>
-        <header className="sn-page__header">
-          <div className="sn-page__title-group">
-            <h1 className="heading-2">Pipeline telemetry</h1>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-8)' }}>
+          <div>
+            <h1 className="sn-title title-l" style={{ margin: 0 }}>Pipeline telemetry</h1>
           </div>
         </header>
         <section className="sn-page__section sn-empty-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "300px", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", border: "1px solid var(--line)" }}>
@@ -97,16 +88,16 @@ const ScraperProgressPage: React.FC = () => {
 
   return (
     <main className="sn-page__main" id="main" tabIndex={-1}>
-      <header className="sn-page__header">
-        <div className="sn-page__title-group">
-          <h1 className="heading-2">Pipeline telemetry</h1>
-          <p className="body" >
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-8)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <h1 className="sn-title title-l" style={{ margin: 0 }}>Pipeline telemetry</h1>
+          <p className="body" style={{ margin: 0 }}>
             Real-time status of the 4-stage ingestion and graphing pipeline.
           </p>
         </div>
-        <div className="sn-page__actions">
+        <div>
           <button
-            className="sn-btn sn-btn--outline"
+            className="sn-btn"
             onClick={refresh}
             disabled={isLoading}
             title={`Last synced: ${new Date(lastUpdated).toLocaleTimeString()}`}
@@ -119,7 +110,7 @@ const ScraperProgressPage: React.FC = () => {
       </header>
 
       {source !== 'live' && (
-        <div className="sn-banner sn-banner--info" style={{ marginBottom: 'var(--space-6)' }}>
+        <div className="sn-banner" data-status="info" style={{ marginBottom: 'var(--space-6)' }}>
           <Activity size={20} />
           <div>
             <strong>Live telemetry unavailable.</strong> The REST API did not answer /api/v1/jobs or /api/v1/outbox/status, so no job or worker data is shown.
@@ -356,7 +347,7 @@ const ScraperProgressPage: React.FC = () => {
                     </td>
                     <td>
                       <button
-                        className="sn-btn sn-btn--outline sn-btn--sm"
+                        className="sn-btn sn-btn--quiet sn-btn--sm"
                         aria-label={`Retry dead job ${j.job_id}`} onClick={() => setConfirmRetryId(j.job_id)}
                         disabled={retryingJob === j.job_id}
                         aria-live="polite"
