@@ -304,7 +304,7 @@ TYPE = {
     {"name": "data-s", "fontSize": "0.6875rem", "lineHeight": 1.35, "fontWeight": 400, "sample": "trk_01HF9Z", "usage": "External IDs (ISRC, Spotify ID), chart tick labels."}]}]}
 
 tok = {
- "name": "SongNodes", "version": "1.1.2",
+ "name": "SongNodes", "version": "1.1.3",
  "meta": {"source": "Decisions page 24 Oct 2026 + songnodes repo audit + Naarm Set Builder", "generator": "source/build_tokens.py"},
  "color": {"themes": [{"id": t, "name": n} for t, n in THEMES], "tokens": tokens},
  "type": TYPE,

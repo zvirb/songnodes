@@ -154,7 +154,7 @@ const CamelotPage: React.FC = () => {
               : `${SN.format.count(displayedTracks.length)} tracks total`}
           </h2>
 
-          <div className="sn-table-wrap">
+          <div className="sn-tablebox">
             <table className="sn-table">
               <thead>
                 <tr>

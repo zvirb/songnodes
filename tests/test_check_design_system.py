@@ -142,3 +142,43 @@ def test_raw_pixel_spacing_conformance(tmp_path):
     assert len(violations_jsx) == 1
     assert violations_jsx[0][0] == 1
     assert "Raw pixel spacing found" in violations_jsx[0][1]
+
+
+def test_main_without_page_container_fails(tmp_path):
+    f = tmp_path / "Page.tsx"
+    f.write_text('export const P = () => <main className="sn-page sn-page--full" id="main">x</main>;\n')
+    msgs = [m for _, m in cds.check_file(str(f))]
+    assert any("<main> without a page container" in m for m in msgs)
+
+
+def test_main_with_page_container_passes(tmp_path):
+    f = tmp_path / "Page.tsx"
+    f.write_text(
+        'export const A = () => <main className="sn-page__main" id="main">x</main>;\n'
+        'export const B = () => <main className="sn-page-error" id="main">x</main>;\n'
+        'export const C = () => <main className="sn-graph-route">{/* design-system exception: full-bleed */}x</main>;\n'
+    )
+    assert not [m for _, m in cds.check_file(str(f)) if "page container" in m]
+
+
+def test_used_sn_classes_skips_runtime_built_names(tmp_path):
+    f = tmp_path / "C.tsx"
+    f.write_text(
+        'const a = <div className="sn-card sn-mb-3" />;\n'
+        'const b = <div className={`sn-nav-drawer__item sn-m-${key}`} />;\n'
+        "const c = <div className={'sn-gap-2'} />;\n"
+    )
+    used = [c for _, c in cds.used_sn_classes(str(f))]
+    assert used == ["sn-card", "sn-mb-3", "sn-nav-drawer__item", "sn-gap-2"]
+
+
+def test_undefined_class_reported_unless_baselined(tmp_path, monkeypatch):
+    css = tmp_path / "a.css"
+    css.write_text(".sn-card { padding: var(--space-4); }\n")
+    tsx = tmp_path / "C.tsx"
+    tsx.write_text('const a = <div className="sn-card sn-mb-3 sn-p-5" />;\n')
+    files = [str(css), str(tsx)]
+    out = cds.check_undefined_classes(files, set())
+    assert sorted(m.split()[1] for _, _, m in out) == ["sn-mb-3", "sn-p-5"]
+    out = cds.check_undefined_classes(files, {"class sn-mb-3"})
+    assert [m.split()[1] for _, _, m in out] == ["sn-p-5"]
