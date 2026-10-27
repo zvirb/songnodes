@@ -382,8 +382,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP2 BEGIN -->
 ### WP2: MusicBrainz reference ETL into refmb
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:WP2 END -->
 
 <!-- SLOT:WP3 BEGIN -->
@@ -400,8 +400,8 @@ Write a dated start entry when you begin and a dated end entry when you finish (
 
 <!-- SLOT:WP8 BEGIN -->
 ### WP8: Graph projection as an outbox consumer
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:WP8 END -->
 
 <!-- SLOT:WP9 BEGIN -->
@@ -413,14 +413,14 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:WP4 BEGIN -->
 ### WP4: Local MusicBrainz provider at the front of the existing enrichment waterfall
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:WP4 END -->
 
 <!-- SLOT:FE1 BEGIN -->
 ### FE1: Unified track data bridge
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:FE1 END -->
 
 <!-- SLOT:FE3 BEGIN -->
@@ -431,8 +431,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:FE4 BEGIN -->
 ### FE4: Set Builder: crate export formats and reordering
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:FE4 END -->
 
 <!-- SLOT:FE9 BEGIN -->
@@ -443,38 +443,40 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:FEW BEGIN -->
 ### FEW: Route wiring and cleanup
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:FEW END -->
 
 <!-- SLOT:FE11 BEGIN -->
 ### FE11: Navigation audit: find and wire pages missing from navigation
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:FE11 END -->
 
 <!-- SLOT:BE2 BEGIN -->
 ### BE2: Python 3.12 upgrade audit and the audio-analysis NumPy 2.5 build fix
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:BE2 END -->
 
 <!-- SLOT:SEC5 BEGIN -->
 ### SEC5: Opt-in token auth for write and admin API routes
+- Start: 2026-10-26
+- End: 2026-10-26
 - Start: 2026-10-26 - Configured token authentication for `SONGNODES_API_TOKEN` to protect write and admin REST routes.
 - End: 2026-10-26 - Added `register_security` in `services/rest_api/security/auth.py` and registered it in `services/rest_api/main.py`. Verified with Pytest.
 <!-- SLOT:SEC5 END -->
 
 <!-- SLOT:SEC6 BEGIN -->
 ### SEC6: Server-side AI provider proxy
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:SEC6 END -->
 
 <!-- SLOT:BE1 BEGIN -->
 ### BE1: Real TIDAL and Spotify track search
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:BE1 END -->
 
 <!-- SLOT:REF0 BEGIN -->
@@ -500,14 +502,14 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:QA1 BEGIN -->
 ### QA1: Add an ESLint 9 flat config to the frontend
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:QA1 END -->
 
 <!-- SLOT:QA2 BEGIN -->
 ### QA2: Fix frontend lockfile so npm ci works on Linux
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:QA2 END -->
 
 <!-- SLOT:QA3 BEGIN -->
@@ -546,6 +548,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS10 BEGIN -->
 ### DS10: Design system audit and fix: OAuth callback page
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26 - Completed audit and fixes. Documented missing `StagedProgress` and layout class in `docs/design-system/audits/DS10.md`. Refactored `frontend/src/components/OAuthCallback.tsx` to use design system components (`Card`, `Title`, `Button`) and `sn-*` classes instead of inline styles. Run `npm ci`, `npx tsc`, `npx vite build` and `check_design_system.py`. Did not run Playwright E2E tests due to sandbox environment constraints.
 <!-- SLOT:DS10 END -->
 
@@ -561,12 +564,24 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS12 BEGIN -->
 ### DS12: Design system audit and fix: DJ interface, setlist builder and pathfinder components
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:DS12 END -->
 
 <!-- SLOT:DS13 BEGIN -->
 ### DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
+- Start: 2026-10-26
+- End: 2026-10-26
+<!-- SLOT:DS13 END -->
+
+<!-- SLOT:DS14 BEGIN -->
+### DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples
+- Start: 2026-10-26
+- End: 2026-10-26
+<!-- SLOT:DS14 END -->
+
+<!-- SLOT:DS15 BEGIN -->
+### DS15: Design system audit and fix: Global stylesheets and legacy CSS
 - Start: 2026-10-26
 - End: 2026-10-26
 - Built:
@@ -603,14 +618,14 @@ PR link: To be opened
 
 <!-- SLOT:DS16 BEGIN -->
 ### DS16: Consolidate missing design-system tokens from all audits
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:DS16 END -->
 
 <!-- SLOT:DS1 BEGIN -->
 ### DS1: Design system audit and fix: App shell, navigation drawer and home page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:DS1 END -->
 
 <!-- SLOT:DS2A BEGIN -->
@@ -626,18 +641,27 @@ PR link: To be opened
 <!-- SLOT:DS2B BEGIN -->
 ### DS2B: Design system audit and fix: Graph page, second half of its files
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-27 Audit in docs/design-system/audits/DS2B.md (Jules). Raw px spacing replaced with --space-* tokens in QuickSearch.tsx, MobileTrackExplorer.css and TracklistImporter.css (scheduled run); those three lines commented out of design-system-pending.txt. Checks: check_design_system.py --check passes. Playwright not run. PR: https://github.com/zvirb/songnodes/pull/259
 <!-- SLOT:DS2B END -->
 
 <!-- SLOT:DS3 BEGIN -->
 ### DS3: Design system audit and fix: Library page
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26. Fixed inline pixel sizes, invalid tokens (`var(--text-2)`, `var(--spacing-md)`), missing padding and font-size tokens by replacing with `sn-` utility classes and correct space/fg tokens. Checked vitest tests and sync-design-system. Playwright tests could not be run. PR link: TBD.
 <!-- SLOT:DS3 END -->
 
 <!-- SLOT:DS4 BEGIN -->
 ### DS4: Design system audit and fix: Set builder page
 - Start: 2026-10-26
+- End: 2026-10-26
+<!-- SLOT:DS4 END -->
+
+<!-- SLOT:DS5 BEGIN -->
+### DS5: Design system audit and fix: Paths, sources and not-found pages
+- Start: 2026-10-26
+- End: 2026-10-26
 - Built: Migrated `SetBuilderPage.tsx`, `EnergyWave.tsx`, and `ExportDialog.tsx` to fully comply with design-system rules, replacing inline pixels/colors with proper tokens (e.g. `--space-3`, `--fg-2`, `.label`), replacing manual status chips with `<StatusPill>`, and exporting missing metadata as empty strings instead of "Unknown". Created audit DS4.md and marked files as migrated.
 - Checks run: `vitest run src`, `oxlint`, `tsc`, `vite build`, `python scripts/check_design_system.py --check`.
 - Checks not run: Playwright E2E visual tests (not supported in sandbox).
@@ -680,14 +704,14 @@ PR: ds5-design-system-audit-sources-not-found-pages
 
 <!-- SLOT:DS8 BEGIN -->
 ### DS8: Design system audit and fix: Pipeline page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:DS8 END -->
 
 <!-- SLOT:DS9 BEGIN -->
 ### DS9: Design system audit and fix: Settings page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:DS9 END -->
 
 <!-- SLOT:R1 BEGIN -->
@@ -785,6 +809,8 @@ Work done:
 
 <!-- SLOT:P1 BEGIN -->
 ### P1: Route /paths to the route finder page
+- Start: 2026-10-26
+- End: 2026-10-26
 - Start: 2024-05-15
 - End: 2024-05-15 Added `frontend/src/features/pathfinder/route.tsx` to expose the page through the shared registry. Switched to `useUnifiedTracks` from the `hooks/` directory, gracefully handling empty library paths and potential errors. `frontend/src/features/pathfinder/useUnifiedTracks.ts` was deleted. Pre-commit checks passed successfully.
 <!-- SLOT:P1 END -->
@@ -792,6 +818,7 @@ Work done:
 <!-- SLOT:P2 BEGIN -->
 ### P2: Harmony: one Camelot page
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26 07:36 UTC
 - Retained `frontend/src/features/camelot/CamelotPage.tsx` using `useUnifiedTracks` architecture.
 - Ported user-visible visual components (`KeyMoodPanel`, `HarmonicSet`) from the legacy page.
@@ -801,6 +828,8 @@ Work done:
 
 <!-- SLOT:P3 BEGIN -->
 ### P3: Sources: route the AI setlists page
+- Start: 2026-10-26
+- End: 2026-10-26
 - Start: 2026-10-26 (Date of run)
 - End: 2026-10-26 (Date of run)
 - Details: Routed the AI setlists page to `/sources/import` by adding `route.tsx`. Migrated to use `useUnifiedTracks` from shared package instead of the TEMP adapter. Per the IA, there is no direct place specified in the design-system for in-page navigation to the `import` page from `targets`, so only the route has been added and this gap will be reported in the PR.
@@ -815,6 +844,7 @@ Work done:
 <!-- SLOT:L2 BEGIN -->
 ### L2: Reconciliation view: read MusicBrainz ids from musicbrainz_id
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26. Created 185 up migration using `musicbrainz_id` and 185 down restoring 181. Added tests testing the SQL content.
 <!-- SLOT:L2 END -->
 
@@ -842,6 +872,12 @@ Work done:
 ### SEC6A: AI proxy route on the REST API
 - Start: 2026-10-26
 - End: 2026-10-26
+<!-- SLOT:SEC6A END -->
+
+<!-- SLOT:S3 BEGIN -->
+### S3: Music search UI: show the real error
+- Start: 2026-10-26
+- End: 2026-10-26
 - Added `POST /api/v1/ai/complete` endpoint in `services/rest_api/routers/ai_proxy.py` to act as an AI proxy.
 - Added comprehensive unit tests in `tests/ai_proxy/test_ai_proxy.py` to ensure provider keys are never exposed in the response and testing edge cases.
 <!-- SLOT:SEC6A END -->
@@ -861,18 +897,21 @@ Work done:
 <!-- SLOT:L5 BEGIN -->
 ### L5: Library reconciliation report
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26. Implemented CLI for reconciliation report of duplicate candidates with ISRC, MBID, and norm_key matches. Wrote tests with planted duplicates asserting exactly what was expected.
 <!-- SLOT:L5 END -->
 
 <!-- SLOT:E3 BEGIN -->
 ### E3: Enrichment replay and coverage report
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26: Created tests/enrichment_local/replay/ test suite and script to replay the library fixture and real data through the enrichment waterfall. Evaluated coverage and web calls by provider, writing results to docs/integration/WP4/replay.md and docs/integration/E3/replay_live.md.
 <!-- SLOT:E3 END -->
 
 <!-- SLOT:SB3 BEGIN -->
 ### SB3: Set builder: reorder tracks
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26 - Completed changes
 <!-- SLOT:SB3 END -->
 
@@ -926,14 +965,14 @@ Work done:
 
 <!-- SLOT:U7 BEGIN -->
 ### U7: Prepare the Postgres 18 upgrade (owner runs it)
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U7 END -->
 
 <!-- SLOT:U8 BEGIN -->
 ### U8: Pin every GitHub Action to its latest release
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U8 END -->
 
 <!-- SLOT:U9 BEGIN -->
@@ -973,6 +1012,7 @@ Work done:
 <!-- SLOT:U13 BEGIN -->
 ### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
 - Start: 2026-10-26
+- End: 2026-10-26
 - Built: Upgraded services/data-validator base image to python:3.15-slim. Updated pinned versions for pytest-asyncio (1.4.1) and starlette (1.10.0). Added build step to remove build-essential after PyYAML compilation.
 - Checks run: `docker build` (success). `python -m pytest` (success). `import main` (success).
 - Checks not run: None.
@@ -1000,6 +1040,7 @@ Work done:
 <!-- SLOT:U16 BEGIN -->
 ### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
 - Start: 2026-10-26
+- End: 2026-10-26
 - Built: Updated `services/gold-to-operational-etl/Dockerfile` and `services/Dockerfile.gold_processor` base images to Python 3.15-slim. Verified requirements are already at the target version (asyncpg==0.32.0 / >=0.30.0) without needing changes.
 - Checks run: `docker build` for both images. Ran `python --version` inside the built images showing 3.15.1, and successfully imported their respective entry modules (`gold_to_operational_etl` and `gold_layer_processor`). No test files found for this service.
 - End: 2026-10-26 - Completed changes
@@ -1067,6 +1108,8 @@ Work done:
 
 <!-- SLOT:U19 BEGIN -->
 ### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
+- Start: 2026-10-26
+- End: 2026-10-26
 - Start: 2026-10-26 11:51:15
 - End: 2026-10-26 12:47:04
 <!-- SLOT:U19 END -->
@@ -1084,6 +1127,7 @@ Work done:
 <!-- SLOT:U26 BEGIN -->
 ### U26: Upgrade services/api-gateway to Node 26 and latest npm dependencies
 - Start: 2026-10-26
+- End: 2026-10-26
 - End: 2026-10-26. Upgraded services/api-gateway to Node 26-alpine base image and updated `http-proxy-middleware` to `^4.2.1`. Generated new `package-lock.json` and verified with `npm ci && npm test` and `docker build`.
 <!-- SLOT:U26 END -->
 

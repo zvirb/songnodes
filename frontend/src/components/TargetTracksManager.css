@@ -5,6 +5,44 @@
   gap: var(--space-4);
 }
 
+.ttm__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ttm__suggestions-deck {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.ttm__suggestion-card {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ttm__suggestion-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ttm__suggestion-reason {
+  margin-top: var(--space-2);
+}
+
+.ttm__suggestion-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
 .ttm__head {
   display: flex;
   align-items: center;

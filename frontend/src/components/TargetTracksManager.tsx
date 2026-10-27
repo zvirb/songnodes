@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
+import { useTargetSuggestions } from '../hooks/useTargetSuggestions';
 import MusicServiceSearch from './MusicServiceSearch';
 import { Plus, Upload, Download, Archive, ArchiveRestore, Search, Pencil, Trash2, Target, X, SearchX, ServerCrash } from 'lucide-react';
 import { SN } from '../lib/songnodes';
-import { SegmentedControl, OverflowMenu, StatusPill, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast } from './ds';
+import { SegmentedControl, OverflowMenu, StatusPill, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast, Card, Title, Text } from './ds';
 import './TargetTracksManager.css';
 
 export interface TargetTrack {
@@ -27,6 +28,8 @@ interface TargetTracksManagerProps {
 }
 
 const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = false, filterStatus = 'all' }) => {
+  const { suggestions, promoteSuggestion, dismissSuggestion } = useTargetSuggestions();
+
   const [tracks, setTracks] = useState<TargetTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -391,8 +394,53 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
     return <StatusPill raw={status} label={label} />;
   };
 
+  const handlePromoteSuggestion = async (suggestion: any) => {
+    try {
+      await promoteSuggestion(suggestion);
+      showToast(`Added ${suggestion.title} to targets`);
+      // Announce for screen readers
+      const announcer = document.createElement('div');
+      announcer.setAttribute('aria-live', 'polite');
+      announcer.style.position = 'absolute';
+      announcer.style.left = '-9999px';
+      announcer.textContent = `Added ${suggestion.title} to targets`;
+      document.body.appendChild(announcer);
+      setTimeout(() => document.body.removeChild(announcer), 3000);
+      loadTracks();
+    } catch (err) {
+      showToast('Failed to add target');
+    }
+  };
+
   return (
     <div className={`ttm ${embedded ? 'ttm--embedded' : ''}`}>
+      {!embedded && activeTab === 'manage' && suggestions && suggestions.length > 0 && (
+        <section className="ttm__suggestions">
+          <Title size="title-m" as="h2">Suggested for Discovery</Title>
+          <div className="ttm__suggestions-deck">
+            {suggestions.map(s => (
+              <Card key={s.id} className="ttm__suggestion-card">
+                <div className="ttm__suggestion-content">
+                  <Text variant="body-strong">{s.title}</Text>
+                  <Text variant="body-s" className="sn-muted">{s.artist}</Text>
+                  {s.reason && (
+                    <div className="ttm__suggestion-reason">
+                      <StatusPill raw="info" label={s.reason} />
+                    </div>
+                  )}
+                </div>
+                <div className="ttm__suggestion-actions">
+                  <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={() => dismissSuggestion(s.id)}>Dismiss</button>
+                  <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={() => handlePromoteSuggestion(s)}>
+                    <Plus size={16} strokeWidth={2} aria-hidden="true" /> Add Target
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="ttm__head">
         <p className="body-s sn-muted">
           <span className="data-strong">{SN.format.count(filteredTracks.length)}</span> target {filteredTracks.length === 1 ? 'track' : 'tracks'}
