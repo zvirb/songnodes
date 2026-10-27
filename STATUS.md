@@ -597,8 +597,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS2A BEGIN -->
 ### DS2A: Design system audit and fix: Graph page, first half of its files
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built: Audited the following components and fixed their CSS and token usage to adhere to design system specifications: `ArtistAttributionManager.tsx` & `.css`, `ContextMenu.tsx`, `EdgeDetailsModal.tsx` & `.css`, `GraphFilterPanel.tsx` & `.css`, `GraphMiniMap.tsx`, `IntelligentBrowser.module.css`, `CurrentTrack.tsx`, `FilterTabs.tsx`, `TrackItem.tsx`, and `DJInterface.tsx` & `.graph.css`. Replaced ad-hoc typography styles (font weights, px sizing) with standard tokens (e.g. `data-s`, `caption`, `label`, `body-strong`). Replaced inline pixel metrics (e.g., `34px`) with `var(--space-8)` and `2px` with `var(--space-0.5)`. Replaced hard-coded colors with tokens like `color-fg-3` and `color-fg`. Fixed ad-hoc media breakpoints for `.gx-main--play/plan` and `.aam__split` to match `--bp-tablet` (768px). Updated `frontend/design-system-pending.txt` to indicate migrations for `ArtistAttributionManager.css`, `DJInterface.graph.css`, and `IntelligentBrowser.module.css`. Logged audit results in `docs/design-system/audits/DS2A.md`.
+- Checks run: `npm ci`, `tsc`, `vitest` (passed), `vite build` (passed), `check_design_system.py` (passed), `sync-design-system.sh --check` (passed).
+- Checks not run: Playwright E2E tests cannot run in sandbox.
+- PR: Pending.
 <!-- SLOT:DS2A END -->
 
 <!-- SLOT:DS2B BEGIN -->
@@ -620,15 +624,36 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
-### DS5: Design system audit and fix: Sources and not-found pages
-- Start: _not started_
-- End: _not finished_
+Start: 2026-10-26
+End: 2026-10-26
+What I built:
+- Audited `TargetTracksManager`, `MusicServiceSearch`, and `ModulePages.tsx` against the design system rules.
+- Replaced hardcoded px layouts, inline margins, and pixel font sizes with design system tokens and helper classes.
+- Used `<StatusPill>` and standard HTML/CSS patterns in place of hand-rolled components.
+- Migrated `NotFoundPage` to use the design system's `ErrorPage` layout instead of its custom structure.
+- Wrote findings and reported a missing `ChipInput` component to `docs/design-system/audits/DS5.md`.
+- Kept the code functional and cleanly integrated.
+
+Checks run:
+- Frontend format, typescript check, lint, vitest, build
+- scripts/sync-design-system.sh --check
+- npm run check:design-system
+- Vitest passed 151/151
+
+Not run:
+- Playwright E2E and visual tests (cannot run in this sandbox environment).
+
+PR: ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:DS5 END -->
 
 <!-- SLOT:DS6 BEGIN -->
 ### DS6: Design system audit and fix: Harmony (Camelot) page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Audited and migrated Harmony components to design system. Removed inline properties, ad-hoc pixels, non-compliant fallback text ("Unknown") and implemented required text/layout classes (`.data-strong`, `.body-s`, `.label`, `.sn-card`, etc). Documented missing items and review notes in `docs/design-system/audits/DS6.md`.
+- Checks run: `vitest run src`, `tsc`, `oxlint`, `vite build`, and `sync-design-system.sh --check`.
+- Checks not run: Playwright E2E visual tests (sandbox constraint).
+- PR: Pending
+- End: 2026-10-26
 <!-- SLOT:DS6 END -->
 
 <!-- SLOT:DS8 BEGIN -->
@@ -825,8 +850,8 @@ Work done:
 
 <!-- SLOT:SB3 BEGIN -->
 ### SB3: Set builder: reorder tracks
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:SB3 END -->
 
 <!-- SLOT:SEC6B BEGIN -->
@@ -873,8 +898,8 @@ Work done:
 
 <!-- SLOT:U6 BEGIN -->
 ### U6: Upgrade RabbitMQ to 4.3 in the dev stack
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U6 END -->
 
 <!-- SLOT:U7 BEGIN -->
@@ -922,8 +947,11 @@ Work done:
 
 <!-- SLOT:U13 BEGIN -->
 ### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/data-validator base image to python:3.15-slim. Updated pinned versions for pytest-asyncio (1.4.1) and starlette (1.10.0). Added build step to remove build-essential after PyYAML compilation.
+- Checks run: `docker build` (success). `python -m pytest` (success). `import main` (success).
+- Checks not run: None.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U13 END -->
 
 <!-- SLOT:U14 BEGIN -->
@@ -937,14 +965,19 @@ Work done:
 
 <!-- SLOT:U15 BEGIN -->
 ### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/dlq-manager base image to Python 3.15. Requirements are already up to date.
+- Checks run: `docker build` succeeds, `python --version` inside the image prints 3.15, and `python -c "import main"` succeeds.
+- Checks not run: Pytest tests (none exist in the service folder).
+- End: 2026-10-26
 <!-- SLOT:U15 END -->
 
 <!-- SLOT:U16 BEGIN -->
 ### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `services/gold-to-operational-etl/Dockerfile` and `services/Dockerfile.gold_processor` base images to Python 3.15-slim. Verified requirements are already at the target version (asyncpg==0.32.0 / >=0.30.0) without needing changes.
+- Checks run: `docker build` for both images. Ran `python --version` inside the built images showing 3.15.1, and successfully imported their respective entry modules (`gold_to_operational_etl` and `gold_layer_processor`). No test files found for this service.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U16 END -->
 
 <!-- SLOT:U17 BEGIN -->
@@ -979,26 +1012,35 @@ Work done:
 
 <!-- SLOT:U22 BEGIN -->
 ### U22: Upgrade services/websocket-api to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded `services/websocket-api` to Python 3.15. Updated `fastapi` to `0.162.0`, `aio-pika` to `10.2.1`, and `pytest-asyncio` to `1.4.1`. Installed `greenlet` in Dockerfile to fix `sqlalchemy.ext.asyncio` compatibility with Python 3.15.
+- Checks run: `docker build -f services/websocket-api/Dockerfile -t websocket-api-test services/` (success). `docker run --rm websocket-api-test python --version` (3.15.1). `docker run --rm websocket-api-test python -c "import main"` (success). `PYTHONPATH=$(pwd) python3 -m pytest services/websocket-api/tests` (success).
+- End: 2026-10-26
 <!-- SLOT:U22 END -->
 
 <!-- SLOT:U23 BEGIN -->
 ### U23: Upgrade services/streaming-integrations to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved services/streaming-integrations requirements-test.txt to target Python 3.15 pin of pytest-asyncio==1.4.1.
+- Checks run: `docker build` the image with pip install successfully. Tests are failing to run/import because `psutil` and `asyncpg` are not in `requirements.txt` (reported failure).
+- Checks not run: Full unit tests not completing due to unowned `psutil` missing from requirements.
+- Reviewer check: `docker build` succeeds for pip install into `python:3.15-slim`. `python --version` inside the image prints `Python 3.15.1`. The entry module (`unified_streaming_client.py`) fails to import due to missing `psutil`.
+- End: 2026-10-26
 <!-- SLOT:U23 END -->
 
 <!-- SLOT:U24 BEGIN -->
 ### U24: Upgrade services/tidal-integration to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Python target to 3.15-slim. Updated fastapi to 0.162.0, tidalapi to 0.8.11, and pytest-asyncio to 1.4.1 in requirements files.
+- Checks run: `docker run ... python:3.15-slim` successfully installs dependencies, imports main and tidal_connector, and passes tests (0 tests).
+- Checks not run: e2e testing.
+- End: 2026-10-26
 <!-- SLOT:U24 END -->
 
 <!-- SLOT:U19 BEGIN -->
 ### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 11:51:15
+- End: 2026-10-26 12:47:04
 <!-- SLOT:U19 END -->
 
 <!-- SLOT:U25 BEGIN -->
@@ -1009,26 +1051,37 @@ Work done:
 
 <!-- SLOT:U26 BEGIN -->
 ### U26: Upgrade services/api-gateway to Node 26 and latest npm dependencies
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Upgraded services/api-gateway to Node 26-alpine base image and updated `http-proxy-middleware` to `^4.2.1`. Generated new `package-lock.json` and verified with `npm ci && npm test` and `docker build`.
 <!-- SLOT:U26 END -->
 
 <!-- SLOT:U27 BEGIN -->
 ### U27: Upgrade services/enhanced-visualization-service to Node 26 and latest npm dependencies
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved enhanced-visualization-service to node:26-alpine. Upgraded typescript to ^7.0.2. Regenerated package-lock.json. Had to add vite as a devDependency to fix ERR_MODULE_NOT_FOUND on vite because vitest@5.0.5 requires it but it's not present. Fixed npm install in Dockerfiles to use --omit=dev and --legacy-peer-deps to support modern NPM and peer dependency resolution.
+- Checks run: `npm ci && npm test -- --passWithNoTests` (passes). `docker build` (passes). `docker run --rm enhanced-visualization-service:test node --version` (prints v26.12.1).
+- Checks not run: Full end-to-end suite.
+- End: 2026-10-26
 <!-- SLOT:U27 END -->
 
 <!-- SLOT:U28 BEGIN -->
 ### U28: Upgrade services/health-monitor to Node 26 and latest npm dependencies
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded `services/health-monitor/Dockerfile` base image to `node:26-alpine`. Regenerated `package-lock.json` with npm 12. Modified `package.json` test script to use `--passWithNoTests` since there are no test files.
+- Checks run: `npm ci && npm test` and `docker build` of the owned Dockerfile.
+- Checks not run: Full end-to-end integration tests due to lack of environment access.
+- PR: U28: Upgrade services/health-monitor to Node 26 and latest npm dependencies (u28-health-monitor-node26)
+- Reviewer check: `docker build` succeeds; `node --version` in the image prints v26.
+- End: 2026-10-26
 <!-- SLOT:U28 END -->
 
 <!-- SLOT:U29 BEGIN -->
 ### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved graph projection service to Python 3.15-slim. Upgraded neo4j driver to 6.x. Replaced `session.run()` with `driver.execute_query()`.
+- Checks run: `python -m pytest tests/graph_projection` inside the sandbox with python 3.12 (passes). `docker build` the graph projection service on python 3.15 (passes).
+- Checks not run: Full e2e tests due to lack of environment access.
+- End: 2026-10-26
 <!-- SLOT:U29 END -->
 
 ## Scheduled run
