@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../../services/api';
+import { SN } from '../../lib/songnodes';
 import {
   PipelineBatchTelemetry,
   MedallionStageInfo,
@@ -51,55 +52,115 @@ export const mapJobsToTelemetry = (jobs: JobResponse[]): PipelineBatchTelemetry 
   };
 };
 
-export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageInfo[] => {
-  const getBacklog = (consumerId: string) => {
-    const consumer = outbox.consumers.find(c => c.consumer === consumerId);
-    return consumer ? consumer.backlog : 0;
+/** Job kinds the worker runs on a timer; they are housekeeping, not pipeline work. */
+export const HOUSEKEEPING_KINDS = new Set(['projection_consume', 'ingest_pending']);
+
+export type ScrapeRunState = 'queued' | 'running' | 'found_nothing' | 'done' | 'failed';
+
+export interface ScrapeRun {
+  id: string;
+  source: string;
+  query: string;
+  state: ScrapeRunState;
+  createdAt: string;
+  finishedAt: string | null;
+  seconds: number | null;
+  playlists: number | null;
+  tracks: number | null;
+  error: string | null;
+}
+
+const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+/** One row per scrape job, in API order (newest first). A finished scrape that saved nothing is 'found_nothing', not 'done'. */
+export const mapScrapeRuns = (jobs: JobResponse[]): ScrapeRun[] => {
+  const runs: ScrapeRun[] = jobs
+    .filter((j) => j.kind === 'scrape')
+    .map((j) => {
+      const r = j.result ?? {};
+      const scraper: Record<string, unknown> = r.scraper && typeof r.scraper === 'object' ? r.scraper : {};
+      const playlists = num(r.bronze_playlists) ?? num(scraper.bronze_playlists_persisted);
+      const tracks = num(r.bronze_tracks) ?? num(scraper.bronze_tracks_persisted);
+      let state: ScrapeRunState;
+      if (j.status === 'queued') state = 'queued';
+      else if (j.status === 'running') state = 'running';
+      else if (j.status === 'dead') state = 'failed';
+      else if (r.found_nothing === true || (playlists ?? 0) === 0) state = 'found_nothing';
+      else state = 'done';
+      const seconds = num(scraper.duration_seconds) ?? (j.started_at && j.finished_at
+        ? (new Date(j.finished_at).getTime() - new Date(j.started_at).getTime()) / 1000
+        : null);
+      return {
+        id: j.job_id,
+        source: String(j.payload?.source ?? ''),
+        query: String(j.payload?.search_query ?? ''),
+        state,
+        createdAt: j.created_at,
+        finishedAt: j.finished_at,
+        seconds,
+        playlists,
+        tracks,
+        error: j.last_error,
+      };
+    });
+  return runs; // GET /jobs returns newest first
+};
+
+const STALL_MS = 10 * 60 * 1000;
+
+/**
+ * The four stages from real signals: scrape jobs (bronze), the projection_tracks and
+ * graph_projection outbox consumers (silver, gold) and the projection drift report (serving).
+ * A consumer with a backlog that has not moved for 10 minutes is shown as failed (stalled).
+ */
+export const mapPipelineStages = (outbox: OutboxStatusResponse, runs: ScrapeRun[], now = Date.now()): MedallionStageInfo[] => {
+  const consumer = (id: string) => outbox.consumers.find((c) => c.consumer === id);
+  const consumerStage = (id: string): Pick<MedallionStageInfo, 'state' | 'done' | 'total' | 'detail'> => {
+    const c = consumer(id);
+    if (!c) return { state: 'waiting', done: 0, total: 0, detail: `No ${id} consumer reported` };
+    if (c.backlog === 0) return { state: 'done', done: 0, total: 0, detail: c.updated_at ? `Up to date, last run ${SN.format.relative(c.updated_at)}` : 'Up to date' };
+    const age = c.updated_at ? now - new Date(c.updated_at).getTime() : Infinity;
+    if (age > STALL_MS) {
+      return { state: 'failed', done: 0, total: c.backlog, detail: `Stalled: ${SN.format.count(c.backlog)} waiting, no progress since ${c.updated_at ? SN.format.dateTime(c.updated_at) : 'it started'}` };
+    }
+    return { state: 'running', done: 0, total: c.backlog, detail: `${SN.format.count(c.backlog)} waiting` };
   };
 
-  const silverBacklog = getBacklog('silver_normalization');
-  const goldBacklog = getBacklog('gold_graphing');
-  const servingBacklog = getBacklog('serving_index') || (outbox.projection ? (outbox.projection.pending || 0) : 0);
+  const active = runs.filter((r) => r.state === 'running' || r.state === 'queued');
+  const lastFinished = runs.find((r) => r.state !== 'running' && r.state !== 'queued');
+  let bronze: Pick<MedallionStageInfo, 'state' | 'done' | 'total' | 'detail'>;
+  if (active.length > 0) {
+    bronze = { state: 'running', done: 0, total: 0, detail: `Scraping ${active.map((r) => r.query || r.source).join(', ')}` };
+  } else if (!lastFinished) {
+    bronze = { state: 'waiting', done: 0, total: 0, detail: 'No scrape has run yet' };
+  } else if (lastFinished.state === 'found_nothing') {
+    bronze = { state: 'warning', done: 0, total: 0, detail: `Last scrape (${lastFinished.query || lastFinished.source}) found nothing` };
+  } else if (lastFinished.state === 'failed') {
+    bronze = { state: 'failed', done: 0, total: 0, detail: `Last scrape (${lastFinished.query || lastFinished.source}) failed` };
+  } else {
+    bronze = { state: 'done', done: 0, total: 0, detail: `Last scrape saved ${SN.format.count(lastFinished.playlists)} playlists, ${SN.format.count(lastFinished.tracks)} tracks` };
+  }
+
+  const p: Record<string, unknown> = outbox.projection ?? {};
+  const sourceTotal = num(p.source_total) ?? 0;
+  const projected = num(p.projection_total) ?? 0;
+  const missing = num(p.missing) ?? 0;
+  const stale = num(p.stale) ?? 0;
+  const serving: Pick<MedallionStageInfo, 'state' | 'done' | 'total' | 'detail'> = sourceTotal === 0
+    ? { state: 'waiting', done: 0, total: 0, detail: 'No tracks to serve yet' }
+    : { state: missing + stale === 0 ? 'done' : 'warning', done: projected, total: sourceTotal,
+        detail: missing + stale === 0 ? 'Graph matches the catalogue' : `${SN.format.count(missing)} missing, ${SN.format.count(stale)} out of date in the graph` };
 
   return [
-    {
-      id: 'bronze',
-      name: "Stage 1: bronze ingestion",
-      description: 'Raw scraping & API queries from 1001TL, Spotify & Tidal',
-      state: 'done', // Em Dash logic - no real tracking for bronze from outbox, so we assume done for now or let jobs dictate it.
-      done: 0,
-      total: 0,
-      detail: 'See active worker pool for ingestion status',
-    },
-    {
-      id: 'silver',
-      name: "Stage 2: silver normalization",
-      description: 'Artist cleaning, schema validation & key/BPM standardization',
-      state: silverBacklog > 0 ? 'running' : 'waiting',
-      done: 0,
-      total: silverBacklog,
-      detail: silverBacklog > 0 ? `Processing ${silverBacklog} queued items` : '—',
-    },
-    {
-      id: 'gold',
-      name: "Stage 3: gold graphing",
-      description: 'Adjacency matrix generation, track affinity & edge weighting',
-      state: goldBacklog > 0 ? 'running' : 'waiting',
-      done: 0,
-      total: goldBacklog,
-      detail: goldBacklog > 0 ? `Computing graphs for ${goldBacklog} items` : '—',
-    },
-    {
-      id: 'serving',
-      name: "Stage 4: serving index",
-      description: 'Operational cache synchronization & client delivery',
-      state: servingBacklog > 0 ? 'running' : 'waiting',
-      done: 0,
-      total: servingBacklog,
-      detail: servingBacklog > 0 ? `Indexing ${servingBacklog} changes` : '—',
-    },
+    { id: 'bronze', name: 'Stage 1: bronze ingestion', description: 'Complete playlists scraped with positions', ...bronze },
+    { id: 'silver', name: 'Stage 2: silver normalization', description: 'Canonical tracks and transitions (projection_tracks)', ...consumerStage('projection_tracks') },
+    { id: 'gold', name: 'Stage 3: gold graphing', description: 'Graph projection of tracks and edges (graph_projection)', ...consumerStage('graph_projection') },
+    { id: 'serving', name: 'Stage 4: serving index', description: 'Tracks visible in the graph', ...serving },
   ];
 };
+
+/** Kept for callers of the old name. */
+export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageInfo[] => mapPipelineStages(outbox, []);
 
 export const mapJobsToWorkers = (jobs: JobResponse[]): ScraperWorkerHealth[] => {
   const workersMap = new Map<string, {
@@ -193,6 +254,7 @@ export const usePipelineTelemetry = () => {
   const [stages, setStages] = useState<MedallionStageInfo[]>([]);
   const [workers, setWorkers] = useState<ScraperWorkerHealth[]>([]);
   const [jobs, setJobs] = useState<JobResponse[]>([]);
+  const [scrapeRuns, setScrapeRuns] = useState<ScrapeRun[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -206,8 +268,10 @@ export const usePipelineTelemetry = () => {
     try {
       if (document.hidden) return; // Pause polling when tab is hidden
 
-      const [jobsRes, outboxRes] = await Promise.all([
+      // Scrape jobs are fetched on their own so housekeeping ticks cannot push them out of the window.
+      const [jobsRes, scrapeRes, outboxRes] = await Promise.all([
         api.get('/jobs?limit=200'),
+        api.get('/jobs?kind=scrape&limit=50'),
         api.get('/outbox/status')
       ]);
 
@@ -216,10 +280,15 @@ export const usePipelineTelemetry = () => {
       const fetchedJobs = (jobsRes.data || []) as JobResponse[];
       const outboxStatus = (outboxRes.data || { consumers: [], dead_letters: 0, projection: {} }) as OutboxStatusResponse;
 
+      const scrapeJobs: JobResponse[] = scrapeRes.data || [];
+      const runs = mapScrapeRuns(scrapeJobs);
+      const pipelineJobs = fetchedJobs.filter((j) => !HOUSEKEEPING_KINDS.has(j.kind));
+
       setJobs(fetchedJobs);
-      setTelemetry(mapJobsToTelemetry(fetchedJobs));
-      setStages(mapOutboxToStages(outboxStatus));
-      setWorkers(mapJobsToWorkers(fetchedJobs));
+      setScrapeRuns(runs);
+      setTelemetry(mapJobsToTelemetry(pipelineJobs));
+      setStages(mapPipelineStages(outboxStatus, runs));
+      setWorkers(mapJobsToWorkers(pipelineJobs));
       setSource('live');
       setError(null);
       setLastUpdated(Date.now());
@@ -270,5 +339,5 @@ export const usePipelineTelemetry = () => {
     };
   }, [fetchData, error]);
 
-  return { telemetry, stages, workers, jobs, isLoading, error, lastUpdated, source, refresh };
+  return { telemetry, stages, workers, jobs, scrapeRuns, isLoading, error, lastUpdated, source, refresh };
 };

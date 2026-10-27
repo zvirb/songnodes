@@ -30,7 +30,7 @@ export const hasValidArtist = (node: GraphNode): boolean => {
 };
 
 export type MedallionStageId = 'bronze' | 'silver' | 'gold' | 'serving';
-export type PipelineStageState = 'done' | 'running' | 'waiting' | 'failed' | 'cancelled';
+export type PipelineStageState = 'done' | 'running' | 'waiting' | 'warning' | 'failed' | 'cancelled';
 
 export interface MedallionStageInfo {
   id: MedallionStageId;
