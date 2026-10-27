@@ -211,7 +211,7 @@ export default function AISetlistsPage() {
   ];
 
   return (
-    <div className="sn-page sn-page--sources">
+    <main className="sn-page__main" id="main" tabIndex={-1}>
       <PageHeader
         mod={PAGE_MODULE}
         here="Import tracklist"
@@ -419,6 +419,6 @@ export default function AISetlistsPage() {
       >
         <p className="body">{retryMode ? "This will retry the failed setlists." : "These setlists and their tracks will be permanently added to the backend catalog."}</p>
       </ConfirmDialog>
-    </div>
+    </main>
   );
 }

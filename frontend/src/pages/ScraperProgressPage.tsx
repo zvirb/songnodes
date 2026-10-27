@@ -56,7 +56,7 @@ const ScraperProgressPage: React.FC = () => {
 
   if (error && source === 'unavailable') {
     return (
-      <main className="sn-page sn-page--full" id="main" tabIndex={-1}>
+      <main className="sn-page__main" id="main" tabIndex={-1}>
         <header className="sn-page__header">
           <div className="sn-page__title-group">
             <h1 className="heading-2">Pipeline telemetry</h1>
@@ -89,7 +89,7 @@ const ScraperProgressPage: React.FC = () => {
   }
 
   return (
-    <main className="sn-page sn-page--full" id="main" tabIndex={-1}>
+    <main className="sn-page__main" id="main" tabIndex={-1}>
       <header className="sn-page__header">
         <div className="sn-page__title-group">
           <h1 className="heading-2">Pipeline telemetry</h1>
@@ -106,7 +106,7 @@ const ScraperProgressPage: React.FC = () => {
             aria-live="polite"
           >
             <RefreshCw size={16} aria-label="Sync" className={isLoading ? "sn-spinner" : ""} />
-            {isLoading ? 'Syncing...' : 'Sync Now'}
+            {isLoading ? 'Syncing…' : 'Sync now'}
           </button>
         </div>
       </header>
@@ -115,7 +115,7 @@ const ScraperProgressPage: React.FC = () => {
         <div className="sn-banner sn-banner--info" style={{ marginBottom: 'var(--space-6)' }}>
           <Activity size={20} />
           <div>
-            <strong>Demonstration mode active.</strong> Live job and worker telemetry is not connected.
+            <strong>Live telemetry unavailable.</strong> The REST API did not answer /api/v1/jobs or /api/v1/outbox/status, so no job or worker data is shown.
           </div>
         </div>
       )}
