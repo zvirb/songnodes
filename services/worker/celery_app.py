@@ -44,6 +44,9 @@ app = Celery('songnodes', broker=broker_url())
 app.conf.update(
     task_acks_late=True, task_reject_on_worker_lost=True, worker_prefetch_multiplier=1,
     broker_connection_retry_on_startup=True, timezone='UTC', enable_utc=True, task_ignore_result=True,
+    worker_enable_remote_control=False,
+    worker_gossip=False,
+    worker_mingle=False,
     beat_schedule={
         'drain-jobs': {'task': 'songnodes.drain', 'schedule': POLL_SECONDS, 'options': {'expires': max(POLL_SECONDS * 3, 15)}},
         'schedule-recurring': {'task': 'songnodes.schedule', 'schedule': SCHEDULE_SECONDS, 'options': {'expires': SCHEDULE_SECONDS * 3}},

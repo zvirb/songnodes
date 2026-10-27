@@ -21,4 +21,4 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import os,sys,time; sys.exit(0 if time.time()-os.path.getmtime('/tmp/worker-heartbeat') < 90 else 1)"
 
-CMD ["celery", "-A", "celery_app", "worker", "--beat", "--loglevel=INFO", "--concurrency=2", "--schedule=/tmp/celerybeat-schedule"]
+CMD ["celery", "-A", "celery_app", "worker", "--without-gossip", "--without-mingle", "--beat", "--loglevel=INFO", "--concurrency=2", "--schedule=/tmp/celerybeat-schedule"]

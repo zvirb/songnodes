@@ -1,11 +1,21 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Fuse from 'fuse.js';
-import { LocateFixed, ListPlus, Route, Search as SearchIcon, X } from 'lucide-react';
+import { LocateFixed, ListPlus, Route, Search as SearchIcon, X, Navigation } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getRecentSearches, saveRecentSearch } from '../utils/recentSearches';
 
 import { useStore } from '../store/useStore';
 import { Track } from '../types';
 
+interface SearchableRouteItem {
+  type: 'route';
+  id: string;
+  title: string;
+  path: string;
+}
+
 interface SearchableTrackItem {
+  type: 'track';
   id: string;
   nodeId: string;
   title: string;
@@ -17,8 +27,10 @@ interface SearchableTrackItem {
   track: Track;
 }
 
+type SearchableItem = SearchableTrackItem | SearchableRouteItem;
+
 type CommandResult = {
-  item: SearchableTrackItem;
+  item: SearchableItem;
   score?: number;
 };
 
@@ -31,6 +43,18 @@ export const QuickSearch: React.FC = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const lastFocusedElement = useRef<HTMLElement | null>(null);
+  const navigate = useNavigate();
+
+  const routeItems = useMemo<SearchableRouteItem[]>(() => [
+    { type: 'route', id: 'route-/library', title: 'Library', path: '/library' },
+    { type: 'route', id: 'route-/sets', title: 'Sets', path: '/sets' },
+    { type: 'route', id: 'route-/harmony', title: 'Harmony', path: '/harmony' },
+    { type: 'route', id: 'route-/graph', title: 'Graph', path: '/graph' },
+    { type: 'route', id: 'route-/paths', title: 'Paths', path: '/paths' },
+    { type: 'route', id: 'route-/sources/targets', title: 'Targets', path: '/sources/targets' },
+    { type: 'route', id: 'route-/pipeline', title: 'Pipeline', path: '/pipeline' },
+    { type: 'route', id: 'route-/settings', title: 'Settings', path: '/settings' },
+  ], []);
 
   const nodes = useStore((state) => state.graphData.nodes);
   const selectNode = useStore((state) => state.graph.selectNode);
@@ -84,6 +108,7 @@ export const QuickSearch: React.FC = () => {
 
       if (!dedup.has(node.id)) {
         dedup.set(node.id, {
+          type: 'track',
           id: node.id,
           nodeId: node.id,
           title: trackName,
@@ -114,22 +139,57 @@ export const QuickSearch: React.FC = () => {
     });
   }, [searchableItems]);
 
+  const allItems = useMemo(() => [...routeItems, ...searchableItems], [routeItems, searchableItems]);
+
+  const routeFuse = useMemo(() => {
+    return new Fuse(routeItems, {
+      keys: ['title', 'path'],
+      threshold: 0.3,
+      includeScore: true,
+      ignoreLocation: true,
+    });
+  }, [routeItems]);
+
   const results = useMemo<CommandResult[]>(() => {
     if (!isOpen) {
       return [];
     }
 
     if (!query.trim()) {
-      return searchableItems
-        .slice(0, 12)
-        .map((item) => ({ item }));
+      const recent = getRecentSearches('quick-search');
+      if (recent.length > 0) {
+        const recentResults: CommandResult[] = [];
+        for (const str of recent) {
+          try {
+            const parsed = JSON.parse(str);
+            const found = allItems.find((i) => i.id === parsed.id);
+            if (found) {
+              recentResults.push({ item: found });
+            }
+          } catch { // ignore e
+            // ignore
+          }
+        }
+        if (recentResults.length > 0) {
+          return recentResults.slice(0, 12);
+        }
+      }
+      return allItems.slice(0, 12).map((item) => ({ item }));
     }
 
-    return fuse.search(query.trim()).slice(0, 12).map((res) => ({
+    const routeRes = routeFuse.search(query.trim()).map((res) => ({
       item: res.item,
       score: res.score,
     }));
-  }, [fuse, isOpen, query, searchableItems]);
+
+    const trackRes = fuse.search(query.trim()).map((res) => ({
+      item: res.item,
+      score: res.score,
+    }));
+
+    const combined = [...routeRes, ...trackRes]; combined.sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
+    return combined.slice(0, 12);
+  }, [fuse, routeFuse, isOpen, query, allItems]);
 
   useEffect(() => {
     setHighlightedIndex((prev) => {
@@ -150,14 +210,21 @@ export const QuickSearch: React.FC = () => {
   }, []);
 
   const focusTrack = useCallback(
-    (item: SearchableTrackItem, shouldClose: boolean) => {
+    (item: SearchableItem, shouldClose: boolean) => {
+      saveRecentSearch('quick-search', JSON.stringify({ id: item.id }));
+
+      if (item.type === 'route') {
+        void navigate(item.path);
+        if (shouldClose) closePalette();
+        return;
+      }
       selectNode(item.nodeId);
       navigateToNode(item.nodeId, { highlight: true, selectNode: true });
       if (shouldClose) {
         closePalette();
       }
     },
-    [closePalette, navigateToNode, selectNode],
+    [closePalette, navigate, navigateToNode, selectNode],
   );
 
   const handleAddToSetlist = useCallback(
@@ -378,7 +445,7 @@ export const QuickSearch: React.FC = () => {
             </button>
           ) : null}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>
               Cmd+K
             </kbd>
           </div>
@@ -387,7 +454,7 @@ export const QuickSearch: React.FC = () => {
         <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
           {showEmptyState ? (
             <div style={{ padding: 'var(--space-8)', textAlign: 'center', fontSize: '0.875rem', color: 'var(--fg-2)' }}>
-              {searchableItems.length === 0 ? (
+              {allItems.length === 0 ? (
                 <div>
                   <p style={{ margin: 0 }}>No tracks available yet.</p>
                   <p style={{ margin: 'var(--space-1) 0 0', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
@@ -402,6 +469,32 @@ export const QuickSearch: React.FC = () => {
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {results.map(({ item, score }, index) => {
                 const isActive = index === highlightedIndex;
+                if (item.type === 'route') {
+                  return (
+                    <li key={item.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                      <button
+                        type="button"
+                        onClick={() => focusTrack(item, true)}
+                        style={{
+                          display: 'flex',
+                          width: '100%',
+                          alignItems: 'center',
+                          gap: 'var(--space-3)',
+                          padding: 'var(--space-3) var(--space-4)',
+                          textAlign: 'left',
+                          backgroundColor: isActive ? 'var(--hover-bg)' : 'transparent',
+                          border: 'none',
+                          color: 'var(--fg)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Navigation size={ACTION_ICON_SIZE} style={{ color: 'var(--fg-3)' }} />
+                        <span style={{ flex: 1, fontSize: '0.875rem', fontWeight: 600 }}>{item.title}</span>
+                      </button>
+                    </li>
+                  );
+                }
+
                 const pathLabel = pathActionLabel(item.track.id);
 
                 return (
@@ -434,7 +527,7 @@ export const QuickSearch: React.FC = () => {
                             </span>
                           ) : null}
                         </div>
-                        <div style={{ marginTop: '2px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+                        <div style={{ marginTop: 'var(--space-0\\.5)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                           <span style={{ fontWeight: 500, color: 'var(--fg-2)' }}>{item.artist}</span>
                           {item.genre ? <span className="sn-tag">{item.genre}</span> : null}
                           {item.bpm ? <span style={{ fontFamily: 'var(--font-data)' }}>{item.bpm} BPM</span> : null}
@@ -490,13 +583,13 @@ export const QuickSearch: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--line)', padding: 'var(--space-2) var(--space-4)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>↑↓</kbd>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>↑↓</kbd>
             Navigate
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>Enter</kbd>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>Enter</kbd>
             Focus
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>Esc</kbd>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>Esc</kbd>
             Close
           </div>
         </div>
