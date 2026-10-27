@@ -13,9 +13,9 @@ export const Attributions: React.FC = () => {
 
   if (items.length === 0) return null;
   return (
-    <footer aria-label="Data provider attributions" className="caption" style={{ padding: 'var(--space-1) var(--space-3)', opacity: 'var(--opacity-disabled)' }}>
+    <footer aria-label="Data provider attributions" style={{ padding: '4px 12px', fontSize: 12, opacity: 0.8 }}>
       {items.map((item) => (
-        <a key={item.provider} href={item.url} target="_blank" rel="noopener noreferrer" className="sn-link" style={{ marginRight: 'var(--space-3)' }}>
+        <a key={item.provider} href={item.url} target="_blank" rel="noopener noreferrer" style={{ marginRight: 12 }}>
           {item.text}
         </a>
       ))}

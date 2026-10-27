@@ -545,18 +545,14 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS10 BEGIN -->
 ### DS10: Design system audit and fix: OAuth callback page
-- Start: 2026-10-26
-- End: 2026-10-26 - Completed audit and fixes. Documented missing `StagedProgress` and layout class in `docs/design-system/audits/DS10.md`. Refactored `frontend/src/components/OAuthCallback.tsx` to use design system components (`Card`, `Title`, `Button`) and `sn-*` classes instead of inline styles. Run `npm ci`, `npx tsc`, `npx vite build` and `check_design_system.py`. Did not run Playwright E2E tests due to sandbox environment constraints.
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS10 END -->
 
 <!-- SLOT:DS11 BEGIN -->
 ### DS11: Design system audit and fix: Unrouted components, legacy UI
-- Start: 2026-10-26
-- Built: Audited components, applied token updates to layout, typography, and colors in unrouted components. Removed hex/rgba colors. Replaced `alert()` with `showToast`. Addressed padding in Attributions. Recorded missing tokens in audit file.
-- Checks run: `tsc --noEmit`, `vitest run src`, `vite build`, `check_design_system.py --check`.
-- Checks not run: Playwright E2E tests (no sandbox support).
-- PR: https://github.com/zvirb/songnodes/pull/999
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS11 END -->
 
 <!-- SLOT:DS12 BEGIN -->
@@ -613,18 +609,14 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS3 BEGIN -->
 ### DS3: Design system audit and fix: Library page
-- Start: 2026-10-26
-- End: 2026-10-26. Fixed inline pixel sizes, invalid tokens (`var(--text-2)`, `var(--spacing-md)`), missing padding and font-size tokens by replacing with `sn-` utility classes and correct space/fg tokens. Checked vitest tests and sync-design-system. Playwright tests could not be run. PR link: TBD.
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS3 END -->
 
 <!-- SLOT:DS4 BEGIN -->
 ### DS4: Design system audit and fix: Set builder page
-- Start: 2026-10-26
-- Built: Migrated `SetBuilderPage.tsx`, `EnergyWave.tsx`, and `ExportDialog.tsx` to fully comply with design-system rules, replacing inline pixels/colors with proper tokens (e.g. `--space-3`, `--fg-2`, `.label`), replacing manual status chips with `<StatusPill>`, and exporting missing metadata as empty strings instead of "Unknown". Created audit DS4.md and marked files as migrated.
-- Checks run: `vitest run src`, `oxlint`, `tsc`, `vite build`, `python scripts/check_design_system.py --check`.
-- Checks not run: Playwright E2E visual tests (not supported in sandbox).
-- PR: https://github.com/zvirb/songnodes/pull/NEW
-- End: 2026-10-27
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS4 END -->
 
 <!-- SLOT:DS5 BEGIN -->
@@ -652,12 +644,8 @@ PR: ds5-design-system-audit-sources-not-found-pages
 
 <!-- SLOT:DS6 BEGIN -->
 ### DS6: Design system audit and fix: Harmony (Camelot) page
-- Start: 2026-10-26
-- Built: Audited and migrated Harmony components to design system. Removed inline properties, ad-hoc pixels, non-compliant fallback text ("Unknown") and implemented required text/layout classes (`.data-strong`, `.body-s`, `.label`, `.sn-card`, etc). Documented missing items and review notes in `docs/design-system/audits/DS6.md`.
-- Checks run: `vitest run src`, `tsc`, `oxlint`, `vite build`, and `sync-design-system.sh --check`.
-- Checks not run: Playwright E2E visual tests (sandbox constraint).
-- PR: Pending
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:DS6 END -->
 
 <!-- SLOT:DS8 BEGIN -->
@@ -993,11 +981,8 @@ Work done:
 
 <!-- SLOT:U18 BEGIN -->
 ### U18: Upgrade services/metadata-enrichment to Python 3.15 and latest requirements
-- Start: 2026-10-26
-- Built: Updated services/metadata-enrichment and services/metadata-enrichment/Dockerfile.worker to use Python 3.15-slim. Updated requirements.txt (starlette to 1.10.0, aio-pika to 10.2.1) and requirements-test.txt (pytest-asyncio to 1.4.1).
-- Checks run: `docker build` succeeds for both Dockerfiles. The entry module imports successfully (`python -c "import main"` and `python -c "import queue_consumer"`) inside their respective images.
-- Checks not run: Full `pytest` test suite inside the container (`python -m pytest tests`) fails during collection due to missing dependencies from outside the owned `services/metadata-enrichment` path (e.g., `fakes`, `docker`). These pre-existing unowned files and test configurations were left untouched as per constraints.
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U18 END -->
 
 <!-- SLOT:U20 BEGIN -->
@@ -1064,11 +1049,8 @@ Work done:
 
 <!-- SLOT:U27 BEGIN -->
 ### U27: Upgrade services/enhanced-visualization-service to Node 26 and latest npm dependencies
-- Start: 2026-10-26
-- Built: Moved enhanced-visualization-service to node:26-alpine. Upgraded typescript to ^7.0.2. Regenerated package-lock.json. Had to add vite as a devDependency to fix ERR_MODULE_NOT_FOUND on vite because vitest@5.0.5 requires it but it's not present. Fixed npm install in Dockerfiles to use --omit=dev and --legacy-peer-deps to support modern NPM and peer dependency resolution.
-- Checks run: `npm ci && npm test -- --passWithNoTests` (passes). `docker build` (passes). `docker run --rm enhanced-visualization-service:test node --version` (prints v26.12.1).
-- Checks not run: Full end-to-end suite.
-- End: 2026-10-26
+- Start: _not started_
+- End: _not finished_
 <!-- SLOT:U27 END -->
 
 <!-- SLOT:U28 BEGIN -->
@@ -1252,8 +1234,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:FL4 END -->
 
 <!-- SLOT:DS7 BEGIN -->
-Started 2026-10-26 22:29
-Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables and refactored EmptyPanel -> EmptyState. Checks run: ts, lint, vite, vitest (tests passed), and sync script. Not run: Playwright E2E/visuals (no sandbox). PR: (pending)
+Started 2026-10-26 23:30
+Ended 2026-10-26 23:30: Audited Pathfinder (DS7). Fixed CSS typography variables and refactored EmptyPanel -> EmptyState. Checks run: ts, lint, vite, vitest (tests passed), and sync script. Not run: Playwright E2E/visuals (no sandbox). PR: (pending)
 <!-- SLOT:DS7 END -->
 
 <!-- SLOT:DS17 BEGIN -->

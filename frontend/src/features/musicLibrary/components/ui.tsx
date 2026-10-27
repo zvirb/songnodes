@@ -438,10 +438,10 @@ export const CoveragePanel: React.FC<{ t: LibraryTrack }> = ({ t }) => {
   const sourceCount = t.src ? t.src.length : 0;
 
   return (
-    <div className="sn-coverage-panel sn-panel sn-panel--sm sn-u-mt-sm" style={{ padding: "var(--space-2)" }}>
-      <div className="sn-panel__header"><h4 className="sn-panel__title sn-body-strong">Data Coverage</h4></div>
+    <div className="sn-coverage-panel sn-panel sn-panel--sm sn-u-mt-sm" style={{ padding: "0.5rem" }}>
+      <div className="sn-panel__header"><h4 className="sn-panel__title" style={{ fontSize: "0.875rem" }}>Data Coverage</h4></div>
       <div className="sn-panel__body">
-        <ul className="sn-stats-list sn-body-s" style={{ listStyle: "none", margin: 0, padding: 0, color: "var(--fg-2)" }}>
+        <ul className="sn-stats-list" style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "0.75rem", color: "var(--text-2)" }}>
           <li><strong>{filledCount} / {totalCount}</strong> core fields filled</li>
           <li><strong>{sourceCount}</strong> known sources {t.src && t.src.length > 0 ? `(${t.src.join(', ')})` : ''}</li>
           {t.mbid ? <li><strong>MusicBrainz</strong> match via {t.mbconf} confidence</li> : null}

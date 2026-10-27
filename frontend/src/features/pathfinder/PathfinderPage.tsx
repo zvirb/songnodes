@@ -204,7 +204,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
            {pf.hasResult && pf.state.result && (
               <section>
                   <div className="pf__selected">
-                    <Title size="title-m" as="h2">Found path</Title>
+                    <Title size="title-m" as="h2">Found Path</Title>
                     {onAddToSet && (
                       <button type="button" className="sn-btn sn-btn--sm" onClick={() => onAddToSet(pf.state.result!.path.map(s => s.track.id))}>
                          Add to set
