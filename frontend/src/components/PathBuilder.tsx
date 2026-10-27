@@ -4,8 +4,8 @@ import { useStore } from '../store/useStore';
 import { validateWaypoints } from '../utils/pathfinding';
 import { DEFAULT_CONSTRAINTS, AVAILABLE_ALGORITHMS } from '../types/pathfinding';
 import { formatCamelotKey } from '../utils/harmonic';
-import { SN, KeyBadge } from '../lib/songnodes';
-import { CompatibilityBadge } from './ds';
+import { SN, KeyBadge, Bpm, EnergyBar } from '../lib/songnodes';
+import { CompatibilityBadge, showToast } from './ds';
 import clsx from 'clsx';
 import Fuse, { FuseResult } from 'fuse.js';
 import { API_BASE_URL } from '../lib/apiBase';
@@ -305,7 +305,7 @@ export const PathBuilder: React.FC = () => {
       });
 
       // Show error message to user
-      alert(`Pathfinding Error: ${errorMessage}`);
+      showToast(`Pathfinding Error: ${errorMessage}`);
     }
 
     pathActions.setPathCalculating(false);
@@ -359,9 +359,9 @@ export const PathBuilder: React.FC = () => {
                   {item.artist}
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
-                  {item.bpm && <span>{item.bpm} BPM</span>}
+                  {item.bpm && <Bpm value={item.bpm} />}
                   {item.camelotKey && <KeyBadge value={item.camelotKey} />}
-                  {item.energy !== undefined && <span>E:{(item.energy * 100).toFixed(0)}%</span>}
+                  {item.energy !== undefined && <EnergyBar value={item.energy} />}
                 </div>
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--fg-3)', fontFamily: 'var(--font-data)' }}>
@@ -388,10 +388,10 @@ export const PathBuilder: React.FC = () => {
           <div style={{ font: '600 0.8125rem/1.3 var(--font-body)', color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.title}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.artist}</div>
           <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)', alignItems: 'center' }}>
-            {track.bpm && <span>{track.bpm} BPM</span>}
+            {track.bpm && <Bpm value={track.bpm} />}
             {track.camelotKey && <KeyBadge value={track.camelotKey} />}
-            {track.energy !== undefined && <span>E:{(track.energy * 100).toFixed(0)}%</span>}
-            {track.duration && <span>{Math.round(track.duration / 60)}m</span>}
+            {track.energy !== undefined && <EnergyBar value={track.energy} />}
+            {track.duration && <span>{SN.format.duration(track.duration)}</span>}
           </div>
           {validation && !validation.isReachable && (
             <div style={{ fontSize: '0.75rem', color: 'var(--status-bad)', marginTop: 'var(--space-1)' }}>
@@ -845,9 +845,9 @@ export const PathBuilder: React.FC = () => {
                                   <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.title}</div>
                                   <div style={{ fontSize: '0.75rem', color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.artist}</div>
                                   <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)', alignItems: 'center' }}>
-                                    {track.bpm && <span>{track.bpm} BPM</span>}
+                                    {track.bpm && <Bpm value={track.bpm} />}
                                     {track.camelotKey && <KeyBadge value={track.camelotKey} />}
-                                    {track.energy !== undefined && <span>E:{(track.energy * 100).toFixed(0)}%</span>}
+                                    {track.energy !== undefined && <EnergyBar value={track.energy} />}
                                   </div>
                                 </div>
                                 {pathNode.isWaypoint && (

@@ -127,21 +127,17 @@ const CamelotPage: React.FC = () => {
                       y={y}
                       textAnchor="middle"
                       alignmentBaseline="middle"
-                      style={{
-                        fontFamily: 'var(--font-data)',
-                        fontSize: '0.75rem',
-                        fill: 'var(--fg)',
-                        textShadow: '0 1px 2px var(--bg)'
-                      }}
+                      className="data-s"
+                      style={{ fill: 'var(--fg)', textShadow: 'var(--shadow-1)' }}
                     >
-                      {count}
+                      {SN.format.count(count)}
                     </text>
                   );
                 })}
               </g>
             </svg>
 
-            <div className="sn-camelot-page__stats">
+            <div className="sn-camelot-page__stats body-s">
               <p>Data source: {source === 'library-fixture' ? 'Music library' : source}</p>
               <p>{SN.format.count(tracksWithoutKey)} tracks without key</p>
             </div>
@@ -173,7 +169,7 @@ const CamelotPage: React.FC = () => {
                       <div className="sn-track-cell">
                         <div className="sn-track-cell__primary">{track.artist} – {track.title}</div>
                         <div className="sn-track-cell__secondary">
-                          {track.mix ? `${track.mix} · ` : ''}{track.label || 'Unknown'}
+                          {track.mix ? `${track.mix} · ` : ''}{track.label || <span className="sn-none">–</span>}
                         </div>
                       </div>
                     </td>
@@ -197,31 +193,16 @@ const CamelotPage: React.FC = () => {
         </section>
       </div>
 
-      <section
-        style={{
-          background: 'var(--surface-1)',
-          border: '1px solid var(--line)',
-          borderRadius: 'var(--radius-card)',
-          padding: 'var(--space-6)',
-          marginBottom: 'var(--space-6)'
-        }}
-      >
-        <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          Acoustic Mood & Energy Profile
+      <section className="sn-card" style={{ marginBottom: 'var(--space-6)' }}>
+        <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          Acoustic mood and energy profile
         </h2>
         <KeyMoodPanel defaultExpanded={true} />
       </section>
 
       {activeKey && activeTracksForSet.length > 0 && (
-        <section
-          style={{
-            background: 'var(--surface-1)',
-            border: '1px solid var(--line)',
-            borderRadius: 'var(--radius-card)',
-            padding: 'var(--space-6)',
-          }}
-        >
-          <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <section className="sn-card">
+          <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <Music size={20} style={{ color: 'var(--brand)' }} />
             Tracks in <KeyBadge value={activeKey} withName />
           </h2>

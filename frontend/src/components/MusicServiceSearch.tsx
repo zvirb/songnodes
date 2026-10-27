@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, SearchX, Plus } from 'lucide-react';
 import { SN } from '../lib/songnodes';
 import { EmptyPanel, ErrorPanel } from './ds';
+import { saveRecentSearch, getRecentSearches, clearRecentSearches } from '../utils/recentSearches';
 import './MusicServiceSearch.css';
 import { api } from '../services/api';
 
@@ -45,11 +46,19 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<{service: string, message: string}[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  useEffect(() => {
+    setRecentSearches(getRecentSearches('music-service'));
+  }, []);
+
+  const handleSearch = async (overrideQuery?: string) => {
+    const queryToSearch = overrideQuery ?? searchQuery;
+    if (!queryToSearch.trim()) return;
 
     setIsSearching(true);
+    const updatedRecent = saveRecentSearch('music-service', queryToSearch);
+    setRecentSearches(updatedRecent);
     setErrors([]);
     setSearchResults([]);
 
@@ -62,7 +71,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
       for (const service of services) {
         try {
           const response = await api.get(`/music-search/${service}`, {
-            q: searchQuery,
+            q: queryToSearch,
             limit: 20,
           });
           const data = response.data as MusicServiceSearchResponse;
@@ -151,14 +160,14 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
           <option value="spotify">Spotify</option>
           <option value="tidal">TIDAL</option>
         </select>
-        <button type="button" className="sn-btn sn-btn--sm" onClick={handleSearch} disabled={isSearching || !searchQuery.trim()} aria-busy={isSearching || undefined}>
+        <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleSearch()} disabled={isSearching || !searchQuery.trim()} aria-busy={isSearching || undefined}>
           {isSearching ? <span className="sn-spinner" aria-hidden="true" /> : <Search size={16} strokeWidth={2} aria-hidden="true" />}
           {isSearching ? 'Searching…' : 'Search'}
         </button>
       </div>
 
       {errors.length > 0 && searchResults.length > 0 && (
-        <div className="mss__errors" style={{ marginBottom: '1rem' }}>
+        <div className="sn-stack" style={{ gap: 'var(--space-2)' }}>
           {errors.map((e, i) => (
             <p key={i} className="sn-inline-message sn-inline-message--boxed" data-status="warn" role="alert">{e.message}</p>
           ))}
@@ -167,7 +176,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
 
       {selectedTracks.size > 0 && (
         <div className="mss__bulk">
-          <span role="status">{selectedTracks.size} selected</span>
+          <span role="status" className="body-s">{selectedTracks.size} selected</span>
           <button type="button" className="sn-btn sn-btn--sm" onClick={handleAddSelected}>
             <Plus size={16} strokeWidth={2} aria-hidden="true" />
             Add {selectedTracks.size} to targets
@@ -181,7 +190,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
         <span className="sn-loading-state__inline" role="status"><span className="sn-spinner" aria-hidden="true" />Searching…</span>
       ) : searchResults.length === 0 ? (
         searchQuery && errors.length > 0 ? (
-          <div className="mss__errors">
+          <div className="sn-stack" style={{ gap: 'var(--space-2)' }}>
             {errors.map((e, i) => (
               <ErrorPanel key={i} title="Search failed" status="warn">{e.message}</ErrorPanel>
             ))}
@@ -189,7 +198,33 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
         ) : searchQuery && errors.length === 0 ? (
           <EmptyPanel compact icon={SearchX} title="No results">Try the artist and title in a different order.</EmptyPanel>
         ) : !searchQuery ? (
-          <EmptyPanel compact icon={Search} title="Find tracks to target">Search TIDAL and Spotify, then add tracks to your target list.</EmptyPanel>
+          <div className="sn-stack" style={{ gap: 'var(--space-4)' }}>
+            {recentSearches.length > 0 ? (
+              <div className="sn-filter-chip-group" role="group" aria-labelledby="mss-recent">
+                <div className="sn-filter-chip-group__head">
+                  <span className="sn-filter-chip-group__legend" id="mss-recent">Recent searches</span>
+                  <button className="sn-filter-chip-group__clear" type="button" onClick={() => { clearRecentSearches('music-service'); setRecentSearches([]); }}>Clear history</button>
+                </div>
+                <ul className="sn-filter-chip-group__list">
+                  {recentSearches.map(query => (
+                    <li key={query}>
+                      <button
+                        type="button"
+                        className="sn-chip sn-filter-chip"
+                        onClick={() => {
+                          setSearchQuery(query);
+                          handleSearch(query);
+                        }}
+                      >
+                        <span>{query}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <EmptyPanel compact icon={Search} title="Find tracks to target">Search TIDAL and Spotify, then add tracks to your target list.</EmptyPanel>
+          </div>
         ) : null
       ) : (
         <ul className="mss__list">
@@ -210,7 +245,7 @@ const MusicServiceSearch: React.FC<Props> = ({ onAddToTargets }) => {
                   <span className="sn-track-cell__meta">
                     {track.album ? <span className="sn-track-cell__mix">{track.album}</span> : null}
                     {track.album && track.duration_ms ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}
-                    {track.duration_ms ? <span className="sn-track-cell__dur">{SN.format.duration(track.duration_ms / 1000)}</span> : null}
+                    {track.duration_ms ? <span className="sn-track-cell__dur data">{SN.format.duration(track.duration_ms / 1000)}</span> : null}
                   </span>
                 </div>
                 <span className="sn-tag">{track.service === 'spotify' ? 'Spotify' : 'TIDAL'}</span>
