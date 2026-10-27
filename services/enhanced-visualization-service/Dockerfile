@@ -100,7 +100,6 @@ USER devuser
 
 # Copy source code for development
 COPY --chown=devuser:devgroup src/ ./src/
-COPY --chown=devuser:devgroup public/ ./public/
 COPY --chown=devuser:devgroup minimal-server.js ./minimal-server.js
 COPY --chown=devuser:devgroup metrics.js ./metrics.js
 

@@ -7,7 +7,7 @@ FROM python:${PYTHON_VERSION}-slim
 # Build arguments
 ARG SERVICE_NAME=service
 ARG SERVICE_PORT=8000
-ARG REQUIREMENTS_FILE=requirements.txt
+ARG REQUIREMENTS_FILE=shared/templates/base-requirements.txt
 
 # Set working directory
 WORKDIR /app
