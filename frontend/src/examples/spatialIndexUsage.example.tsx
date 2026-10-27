@@ -213,15 +213,15 @@ export function PerformanceMonitorExample() {
     <div className="sn-card" style={{ padding: 'var(--space-5)' }}>
       <h3>Spatial Index Performance</h3>
 
-      <div className="sn-mb-3">
+      <div style={{ marginBottom: 'var(--space-3)' }}>
         <strong>Nodes in Index:</strong> {stats.nodeCount}
       </div>
 
-      <div className="sn-mb-3">
+      <div style={{ marginBottom: 'var(--space-3)' }}>
         <strong>Total Queries:</strong> {stats.totalQueries}
       </div>
 
-      <div className="sn-mb-3">
+      <div style={{ marginBottom: 'var(--space-3)' }}>
         <strong>Average Query Time:</strong> {stats.avgQueryDuration.toFixed(3)}ms
       </div>
 
