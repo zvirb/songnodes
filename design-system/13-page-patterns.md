@@ -122,7 +122,9 @@ Grafana stays the deep tool, linked with `TextLink --ext`; this page answers "is
 
 ## SettingsPage
 
-Left list of sections (desktop) or stacked sections (phone): Appearance (`PreferencesPanel`: theme, text size, density), Connections (Spotify, TIDAL with `ServiceStatus` and connect buttons in `svc-*`), API keys (`SecretField`), Keyboard shortcuts (`ShortcutSheet`), About (version, `SongNodes.version`). Each section saves explicitly except Appearance.
+Two-tier card & sub-route architecture for settings management:
+1. **Settings overview (`/settings`)**: `PageHeader` (Services: Settings) · `SearchField` (filter settings cards by title, description, keywords) · responsive grid of neutral `Card` components (`grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))`) · each card displays eyebrow lead, setting title, brief description, interactive control snippet, and card foot link (`Open setting page →` to `/settings/:settingId`) · empty filter panel with clear search action.
+2. **Individual setting detail page (`/settings/:settingId`)**: `PageHeader` with quiet back action ("All settings") · focused `Card` container (max-width 720px) holding full section controls · card foot return link (`← Back to all settings`) · supports deep-linking directly to `/settings/streaming-services`, `/settings/api-keys`, `/settings/display-preferences`, `/settings/data-storage`, or `/settings/about-system`.
 
 ## RetiredPageNotice (moved or retired page)
 
