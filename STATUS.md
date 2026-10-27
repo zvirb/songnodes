@@ -649,9 +649,22 @@ PR: ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:DS6 END -->
 
 <!-- SLOT:DS8 BEGIN -->
-### DS8: Design system audit and fix: Pipeline page
-- Start: _not started_
-- End: _not finished_
+Start: 2026-10-27
+End: 2026-10-27
+
+### Built
+- Fixed hardcoded spacing, shape, color, typography deviations across `ScraperProgressPage.tsx`.
+- Integrated `<StatusPill>` and removed inline Pill configurations.
+- Integrated `SN.format(value, 'count')` and removed `toLocaleString`.
+- Converted heading texts to sentence case.
+- Audited WCAG AA checks, and resolved decorative and unlabelled icons.
+- Updated `design-system-pending.txt` keeping migration references.
+
+### Checks
+Run: tsc, vitest, build, design-system checker
+Not Run: Playwright E2E and visual tests
+
+PR: https://github.com/zvirb/songnodes/pull/xxxx
 <!-- SLOT:DS8 END -->
 
 <!-- SLOT:DS9 BEGIN -->

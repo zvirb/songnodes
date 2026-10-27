@@ -26,7 +26,7 @@ frontend/src/components/TracklistImporter.css
 frontend/src/examples/spatialIndexUsage.example.tsx
 frontend/src/features/musicLibrary/SetBuilderPage.tsx
 frontend/src/hooks/useToast.tsx
-frontend/src/pages/ScraperProgressPage.tsx
+# migrated DS8: frontend/src/pages/ScraperProgressPage.tsx
 frontend/src/styles/global.css
 frontend/src/styles/globals.css
 frontend/src/styles/tokens.css
