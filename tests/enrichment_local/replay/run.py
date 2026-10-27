@@ -6,6 +6,7 @@ import gzip
 import csv
 import httpx
 from pathlib import Path
+from urllib.parse import urlparse
 from collections import defaultdict
 from unittest.mock import MagicMock, AsyncMock
 
@@ -155,19 +156,20 @@ async def replay_enrichment(items_path: Path, live_db: bool, out_path: Path):
     original_apply_all = evidence.apply_all
 
     def get_mock_response(url):
+        host = (urlparse(url).hostname or "").lower()
         if "oauth2/token" in url:
             return {"access_token": "fake_token"}
-        if "://api.discogs.com" in url:
+        if host == "api.discogs.com":
             return {"results": [{"id": 12345, "title": "Test Title", "year": "2026", "style": ["Electronic"]}]}
-        if "://ws.audioscrobbler.com" in url:
+        if host == "ws.audioscrobbler.com":
             return {"track": {"name": "Test Title", "artist": {"name": "Test Artist"}}}
-        if "://getsongbpm.com" in url:
+        if host == "getsongbpm.com":
             return {"search": [{"song_title": "Test Title", "artist": {"name": "Test Artist"}, "tempo": 120, "key_of_song": "C"}]}
-        if "://api.deezer.com" in url:
+        if host == "api.deezer.com":
             return {"data": [{"id": 12345, "title": "Test Title", "artist": {"name": "Test Artist"}, "duration": 300, "isrc": "USRC00000001"}]}
-        if "://musicbrainz.org" in url:
+        if host == "musicbrainz.org":
             return {"recordings": [{"id": str(uuid.uuid4()), "title": "Test Title", "artist-credit": [{"name": "Test Artist"}], "length": 300000, "isrcs": ["USRC00000001"]}]}
-        if "://api.tidal.com" in url or "://tidal.com" in url:
+        if host in ("api.tidal.com", "tidal.com"):
             return {"data": [{"id": 12345, "title": "Test Title", "artist": {"name": "Test Artist"}, "duration": 300, "isrc": "USRC00000001", "url": "https://tidal.com/1"}], "items": [{"item": {"id": 12345, "title": "Test Title", "artists": [{"name": "Test Artist"}], "duration": 300, "isrc": "USRC00000001"}}]}
         return {"data": []}
 
