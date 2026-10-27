@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../../services/api';
-import { SN } from '../../lib/songnodes';
 import {
   PipelineBatchTelemetry,
   MedallionStageInfo,
@@ -79,7 +78,7 @@ export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageI
       state: silverBacklog > 0 ? 'running' : 'waiting',
       done: 0,
       total: silverBacklog,
-      detail: silverBacklog > 0 ? `Processing ${SN.format.count(silverBacklog)} queued items` : '—',
+      detail: silverBacklog > 0 ? `Processing ${silverBacklog} queued items` : '—',
     },
     {
       id: 'gold',
@@ -88,7 +87,7 @@ export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageI
       state: goldBacklog > 0 ? 'running' : 'waiting',
       done: 0,
       total: goldBacklog,
-      detail: goldBacklog > 0 ? `Computing graphs for ${SN.format.count(goldBacklog)} items` : '—',
+      detail: goldBacklog > 0 ? `Computing graphs for ${goldBacklog} items` : '—',
     },
     {
       id: 'serving',
@@ -97,7 +96,7 @@ export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageI
       state: servingBacklog > 0 ? 'running' : 'waiting',
       done: 0,
       total: servingBacklog,
-      detail: servingBacklog > 0 ? `Indexing ${SN.format.count(servingBacklog)} changes` : '—',
+      detail: servingBacklog > 0 ? `Indexing ${servingBacklog} changes` : '—',
     },
   ];
 };
