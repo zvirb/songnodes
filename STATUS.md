@@ -1355,7 +1355,11 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 <!-- SLOT:DS17 END -->
 
 <!-- SLOT:BOLT BEGIN -->
-### BOLT: Optimize metadata track matching performance
-- Start: 2026-10-26 - Optimizing `services/common/metadata/matching.py` with pre-compiled regexes, memoized parsing functions, and single-pass target evaluation in `best_match`.
-- End: 2026-10-26 - Pre-compiled regexes, added `@lru_cache` to text normalization functions, and pre-computed target track metadata in `best_match`. Passed unit tests in `services/common/tests/test_metadata_resolution.py` and benchmarked >60% execution time reduction (from 7.46s to 2.88s per 50,000 matches).
+### BOLT: Optimize artist name cleaner regex compilation and memoization
+- Start: 2026-10-27
+- Built: Pre-compiled module-level regexes and added `@lru_cache(maxsize=4096)` memoization to `clean_artist_name` and `normalize_artist_name` across `services/common/artist_name_cleaner.py`, `common/artist_name_cleaner.py`, and `scrapers/artist_name_cleaner.py`. Added unit tests in `services/common/tests/test_artist_name_cleaner.py`.
+- Checks run: `PYTHONPATH=. pytest -o addopts="" services/common/tests/` (71 passed).
+- Impact: 2.2x speedup on unique artist names (regex pre-compilation), >40x speedup on repeated artist names in matching/playlist loops (`@lru_cache`).
+- PR: [⚡ Bolt: pre-compile regexes and memoize artist name cleaning](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-27
 <!-- SLOT:BOLT END -->
