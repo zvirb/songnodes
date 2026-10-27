@@ -1,5 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Title, Button, Card, ErrorPanel } from './ds';
+/**
+ * OAuth Callback Handler for Music Service Authentication
+ * Handles OAuth redirects from Tidal, Spotify, and other services
+ * Dynamically routes to the correct backend endpoint based on URL path
+ */
+
+import React, { useEffect, useState, useRef } from 'react';
 import { API_BASE_URL } from '../lib/apiBase';
 
 const OAuthCallback: React.FC = () => {
@@ -17,7 +22,6 @@ const OAuthCallback: React.FC = () => {
         return;
       }
       hasProcessed.current = true;
-
       try {
         // Detect which service from URL path (2025 Best Practice: Explicit service detection)
         const pathname = window.location.pathname;
@@ -272,41 +276,87 @@ const OAuthCallback: React.FC = () => {
   }, []);
 
   return (
-    <main className="sn-page-auth">
-      {status === 'error' ? (
-        <ErrorPanel
-          status="bad"
-          title="Authentication Failed"
-          panel
-          actions={
-            <Button
-              kind="primary"
-              onClick={() => window.opener ? window.close() : window.location.href = '/'}
-            >
-              Try again
-            </Button>
-          }
-        >
-          {message}
-        </ErrorPanel>
-      ) : (
-        <Card className="sn-auth-callback-card">
-          <div className="sn-card__head">
-            <Title size="title-s" as="h1" className="sn-card__primary">
-              {status === 'processing' && `Connecting: ${service.charAt(0).toUpperCase() + service.slice(1)}`}
-              {status === 'success' && `${service.charAt(0).toUpperCase() + service.slice(1)}: Connected`}
-            </Title>
-          </div>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      backgroundColor: 'var(--bg)',
+      color: 'var(--fg)',
+      fontFamily: 'var(--font-body)',
+      padding: 'var(--space-5)'
+    }}>
+      <div style={{
+        textAlign: 'center',
+        maxWidth: '500px',
+        padding: 'var(--space-10)',
+        backgroundColor: 'var(--surface-1)',
+        borderRadius: 'var(--radius-card)',
+        border: '1px solid var(--line)'
+      }}>
+        {/* Status Icon */}
+        <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-5)' }}>
+          {status === 'processing' && '⏳'}
+          {status === 'success' && '✅'}
+          {status === 'error' && '❌'}
+        </div>
 
-          <div className="sn-card__body">
-            {status === 'processing' && (
-              <div className="sn-spinner" aria-busy="true" aria-label="Processing"></div>
-            )}
-            <p className="sn-body">{message}</p>
-          </div>
-        </Card>
-      )}
-    </main>
+        {/* Title */}
+        <h1 style={{ margin: '0 0 var(--space-4) 0', fontSize: '1.375rem', fontFamily: 'var(--font-display)' }}>
+          {status === 'processing' && `Authenticating with ${service.charAt(0).toUpperCase() + service.slice(1)}`}
+          {status === 'success' && 'Authentication Successful!'}
+          {status === 'error' && 'Authentication Failed'}
+        </h1>
+
+        {/* Message */}
+        <p style={{ margin: 0, fontSize: '0.9375rem', color: 'var(--fg-3)', lineHeight: 1.5 }}>
+          {message}
+        </p>
+
+        {/* Loading Spinner */}
+        {status === 'processing' && (
+          <div style={{
+            marginTop: 'var(--space-6)',
+            width: 'var(--control-md)',
+            height: 'var(--control-md)',
+            border: '4px solid var(--line)',
+            borderTop: '4px solid var(--status-ok)',
+            borderRadius: 'var(--radius-pill)',
+            animation: 'spin 1s linear infinite',
+            margin: 'var(--space-6) auto 0'
+          }} />
+        )}
+
+        {/* Manual close button for errors */}
+        {status === 'error' && (
+          <button
+            onClick={() => window.opener ? window.close() : window.location.href = '/'}
+            style={{
+              marginTop: 'var(--space-6)',
+              padding: 'var(--space-2) var(--space-5)',
+              backgroundColor: 'var(--brand)',
+              border: 'none',
+              borderRadius: 'var(--radius-control)',
+              color: 'var(--on-brand)',
+              fontSize: '0.875rem',
+              cursor: 'pointer'
+            }}
+          >
+            Close Window
+          </button>
+        )}
+      </div>
+
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+    </div>
   );
 };
 

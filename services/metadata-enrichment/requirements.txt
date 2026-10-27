@@ -24,7 +24,7 @@ redis==8.1.0
 six==1.17.0
 sniffio==1.3.1
 SQLAlchemy==2.1.6
-starlette==1.10.0
+starlette==1.9.0
 structlog==26.1.0
 typing_extensions==4.16.0
 tzdata==2026.5
@@ -39,7 +39,7 @@ splink==5.0.0
 pandas==3.1.0
 rapidfuzz==3.14.6
 python-Levenshtein==0.27.5  # Fast edit distance calculation for fuzzy matching
-aio-pika==10.2.1  # RabbitMQ async client for queue consumers
+aio-pika==10.1.1  # RabbitMQ async client for queue consumers
 requests==2.34.2  # Required by common/api_gateway module
 
 # Serato integration dependencies (for file-based metadata extraction)

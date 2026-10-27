@@ -33,10 +33,13 @@
 
 .currentName {
   margin: 0;
+  color: var(--fg);
 }
 
 .currentArtist {
   margin: var(--space-1) 0 0;
+  color: var(--fg-2);
+  font-size: 0.875rem;
 }
 
 .metrics {
@@ -53,7 +56,16 @@
 }
 
 .metricLabel {
+  font: 600 0.75rem/1.3 var(--font-body);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.metricValue {
+  font: 400 0.8125rem/1.4 var(--font-data);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
 }
 
 /* Search */
@@ -126,6 +138,12 @@
   gap: var(--space-2);
 }
 
+.sortInfo {
+  font-size: 0.75rem;
+  color: var(--fg-3);
+  font-family: var(--font-body);
+}
+
 /* List */
 .list {
   flex: 1 1 auto;
@@ -174,7 +192,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-0\.5);
+  gap: 2px;
 }
 
 .rowTitleRow {
@@ -204,20 +222,63 @@
 }
 
 .trackTitleText {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--fg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .trackArtistText {
+  color: var(--fg-2);
+  font-weight: 400;
 }
 
 .rowMetaRow {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--fg-3);
   min-width: 0;
   flex-wrap: wrap;
+}
+
+.bpmTag {
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  color: var(--fg-2);
+  background: var(--surface-2);
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-chip);
+}
+
+.keyPill {
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--surface-3);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-chip);
+}
+
+.durationTag {
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  color: var(--fg-3);
+}
+
+.genreChip {
+  font-size: 0.6875rem;
+  color: var(--fg-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+  line-height: 1.4;
 }
 
 .rowBadges {
@@ -232,10 +293,14 @@
 .help {
   border-top: 1px solid var(--line);
   padding-top: var(--space-3);
+  font-size: 0.8125rem;
+  color: var(--fg-2);
 }
 
 .help summary {
   cursor: pointer;
+  color: var(--fg-2);
+  font-weight: 600;
 }
 
 .help summary:focus-visible {
@@ -256,4 +321,14 @@
 
 .helpList dd {
   margin: 0;
+  color: var(--fg-3);
+}
+
+.helpList kbd {
+  font: 400 0.75rem/1 var(--font-data);
+  padding: 2px var(--space-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-chip);
+  background: var(--surface-2);
+  color: var(--fg);
 }

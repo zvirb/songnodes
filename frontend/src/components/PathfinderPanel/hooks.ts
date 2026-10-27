@@ -10,7 +10,6 @@ import { pathfinderMachine } from './pathfinder.machine';
 import { PathfinderContext, WizardStep } from './types';
 import { Track } from '../../types';
 import { adaptServerPath } from '../../utils/serverPath';
-import { SN } from '../../lib/songnodes';
 
 /**
  * Main pathfinder hook - integrates XState machine with Zustand store
@@ -247,9 +246,23 @@ export function useDebouncedConstraintUpdate(send: (event: any) => void, delay: 
  * Hook for formatting duration values
  */
 export function useFormatDuration() {
-  const formatDuration = useCallback((ms: number): string => SN.format.span(ms / 1000), []);
+  const formatDuration = useCallback((ms: number): string => {
+    const totalMinutes = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  }, []);
 
-  const formatDurationVerbose = useCallback((ms: number): string => SN.format.span(ms / 1000), []);
+  const formatDurationVerbose = useCallback((ms: number): string => {
+    const totalMinutes = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''} and ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  }, []);
 
   return { formatDuration, formatDurationVerbose };
 }

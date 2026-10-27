@@ -327,7 +327,7 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
           group.append('text')
             .attr('x', 0)
             .attr('y', -12)
-            .attr('class', 'mv__mark data-s')
+            .attr('class', 'mv__mark')
             .text(d.transition === 'boost' ? '↑' : '↓');
         }
 
@@ -335,7 +335,7 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
           group.append('text')
             .attr('x', 0)
             .attr('y', 20)
-            .attr('class', 'mv__tier data-s')
+            .attr('class', 'mv__tier')
             .text(String(d.energy));
         }
       })
@@ -349,23 +349,23 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
 
     g.append('g')
       .attr('transform', `translate(0, ${chartHeight})`)
-      .attr('class', 'mv__axis data-s')
+      .attr('class', 'mv__axis')
       .call(xAxis);
 
     g.append('g')
-      .attr('class', 'mv__axis data-s')
+      .attr('class', 'mv__axis')
       .call(yAxis);
 
     g.append('text')
       .attr('transform', `translate(${chartWidth / 2}, ${chartHeight + 24})`)
-      .attr('class', 'mv__axis-label label')
+      .attr('class', 'mv__axis-label')
       .text('Track order');
 
     g.append('text')
       .attr('transform', 'rotate(-90)')
       .attr('y', -28)
       .attr('x', -chartHeight / 2)
-      .attr('class', 'mv__axis-label label')
+      .attr('class', 'mv__axis-label')
       .text('Energy');
 
   }, [
@@ -389,7 +389,7 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
   return (
     <div className={`mood-visualizer mv ${className}`}>
       <div className="mv__head">
-        <h4 className="mv__title label">Energy flow</h4>
+        <h4 className="mv__title">Energy flow</h4>
         {selectedPoints.length > 0 && (
           <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => setSelectedPoints([])}>
             Clear selection
@@ -403,7 +403,7 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
         </EmptyPanel>
       ) : (
         <>
-          <ul className="mv__legend caption" aria-label="Legend">
+          <ul className="mv__legend" aria-label="Legend">
             <li><svg width="18" height="6" aria-hidden="true"><line x1="0" y1="3" x2="18" y2="3" className="mv__link mv__link--played" strokeWidth="2" /></svg>Played transition</li>
             <li><svg width="18" height="6" aria-hidden="true"><line x1="0" y1="3" x2="18" y2="3" className="mv__link mv__link--other" strokeWidth="1" /></svg>Other neighbour</li>
             <li><span aria-hidden="true">↑</span>Energy up 2 or more</li>
@@ -421,16 +421,16 @@ export const MoodVisualizer: React.FC<MoodVisualizerProps> = ({
           </div>
 
           <dl className="mv__stats">
-            <div><dt className="caption">Tracks</dt><dd className="data-strong">{SN.format.count(energySequence.length)}</dd></div>
-            <div><dt className="caption">Energy range</dt><dd className="data-strong">{Math.min(...energies)}–{Math.max(...energies)}</dd></div>
-            <div><dt className="caption">Played links</dt><dd className="data-strong">{SN.format.count(played)} of {SN.format.count(moodTransitions.length)}</dd></div>
+            <div><dt>Tracks</dt><dd>{SN.format.count(energySequence.length)}</dd></div>
+            <div><dt>Energy range</dt><dd>{Math.min(...energies)}–{Math.max(...energies)}</dd></div>
+            <div><dt>Played links</dt><dd>{played} of {moodTransitions.length}</dd></div>
           </dl>
 
           {hp && (
-            <div className="mv__detail body-s" role="status">
+            <div className="mv__detail" role="status">
               <strong>{hp.track.label}</strong>
               <span>Energy {hp.energy} · {hp.mood}</span>
-              <span>Key {hp.key ? (SN.camelot(hp.key) ?? hp.key) : <span className="sn-none">–</span>}</span>
+              <span>Key {hp.key ? (SN.camelot(hp.key) ?? hp.key) : '–'}</span>
             </div>
           )}
         </>

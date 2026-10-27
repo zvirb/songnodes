@@ -32,14 +32,15 @@ class MemgraphClient:
     async def execute_query(self, query: str, parameters: Dict[str, Any] = None):
         if not self.driver:
             await self.connect()
-        records, _, _ = await self.driver.execute_query(query, parameters or {})
-        return [record.data() for record in records]
+        async with self.driver.session() as session:
+            result = await session.run(query, parameters or {})
+            return [record.data() async for record in result]
 
     async def execute_write(self, query: str, parameters: Dict[str, Any] = None):
         if not self.driver:
             await self.connect()
-        records, _, _ = await self.driver.execute_query(query, parameters or {})
-        return [record.data() for record in records]
+        async with self.driver.session() as session:
+            return await session.run(query, parameters or {})
 
 client = MemgraphClient()
 
