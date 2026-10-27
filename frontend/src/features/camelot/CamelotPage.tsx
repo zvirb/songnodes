@@ -79,7 +79,7 @@ const CamelotPage: React.FC = () => {
   }, [tracks, activeKey]);
 
   return (
-    <main className="sn-page__main sn-camelot-page" id="main" tabIndex={-1}>
+    <main className="sn-page__main" id="main" tabIndex={-1}>
       <PageHeader
         mod="harmony"
         lead="Music"
@@ -89,7 +89,7 @@ const CamelotPage: React.FC = () => {
 
       <div className="sn-camelot-page__grid" style={{ marginBottom: 'var(--space-6)' }}>
         <section className="sn-card sn-camelot-page__wheel-card">
-          <div className="sn-camelot-page__wheel-container" style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }}>
             <CamelotWheel
               selectedKeys={wheelKeys}
               onKeySelect={handleSelectedChange}
@@ -146,7 +146,7 @@ const CamelotPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="sn-card sn-camelot-page__list-card">
+        <section className="sn-card">
           <h2 className="title-s" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <Layers size={18} />
             {selectedKeys.length > 0
@@ -169,9 +169,13 @@ const CamelotPage: React.FC = () => {
                   <tr key={track.id}>
                     <td>
                       <div className="sn-track-cell">
-                        <div className="sn-track-cell__primary">{track.artist} – {track.title}</div>
-                        <div className="sn-track-cell__secondary">
-                          {track.mix ? `${track.mix} · ` : ''}{track.label || <span className="sn-none">–</span>}
+                        <div className="sn-track-cell__title">
+                          <span className="sn-track-cell__name"><span className="sn-track-cell__artist">{track.artist} –</span> {track.title}</span>
+                        </div>
+                        <div className="sn-track-cell__meta">
+                          {track.mix ? <span className="sn-track-cell__mix">{track.mix}</span> : null}
+                          {track.mix && track.label ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}
+                          {track.label ? <span>{track.label}</span> : (!track.mix ? <span className="sn-none">–</span> : null)}
                         </div>
                       </div>
                     </td>

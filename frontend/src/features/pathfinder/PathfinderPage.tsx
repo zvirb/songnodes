@@ -5,7 +5,7 @@ import React, { useState, useId, useEffect } from 'react';
 import { Route, Search, ServerCrash, X } from 'lucide-react';
 import { Title, Bpm, KeyBadge, EnergyBar, SN } from '../../lib/songnodes';
 import { CompatibilityBadge, ErrorPanel, LoadingPanel } from '../../components/ds';
-import { EmptyState } from '../../shell/PageParts';
+import { EmptyState, PageHeader } from '../../shell/PageParts';
 import { usePageHeader } from '../../shell/AppShell';
 import { Link } from 'react-router-dom';
 import { usePathfinder } from '../../components/PathfinderPanel/hooks';
@@ -71,17 +71,22 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
     }
   };
 
-  return (
-    <main className="sn-page__main sn-page pf-page" id="main" tabIndex={-1}>
-      <div className="sn-page__head">
-        <Title size="display-xl" as="h1">Pathfinder</Title>
-        <p className="sn-lead">Find harmonic paths between tracks</p>
-        <p>
-          <Link className="sn-link sn-m-graph" to="/graph?tab=pathfinder">Open Pathfinder in Graph</Link>
-        </p>
-      </div>
+  usePageHeader({ lead: 'Pathfinder', title: 'Route builder', current: 'paths' });
 
-      <div className="sn-page__body pf">
+  return (
+    <main className="sn-page__main pf-page" id="main" tabIndex={-1}>
+      <PageHeader
+        mod="paths"
+        lead="Pathfinder"
+        title="Route builder"
+        desc={
+          <>
+            Find harmonic paths between tracks. <Link className="sn-link sn-m-graph" to="/graph?tab=pathfinder">Open Pathfinder in Graph</Link>
+          </>
+        }
+      />
+
+      <div className="pf">
 
         {error && (
           <ErrorPanel title="Cannot load tracks" icon={ServerCrash}>
@@ -96,15 +101,15 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
         )}
 
         {!error && tracks.length > 0 && (
-          <div className="sn-inline-message" data-status={source === 'backend' ? 'ok' : 'warn'}>
-            <span className="sn-inline-message__text">
+          <div className="sn-inline-message sn-inline-message--boxed" data-status={source === 'backend' ? 'ok' : 'warn'} role="status">
+            <span>
               Using data from: {source === 'backend' ? 'Backend' : 'Library fixture'}.
               {tracksWithoutKey.length > 0 && ` ${SN.format.count(tracksWithoutKey.length)} tracks excluded due to missing keys.`}
             </span>
           </div>
         )}
 
-        <div className="pf__facts">
+        <div className="pf__facts" style={{ marginTop: 'var(--space-4)' }}>
           {/* Start Track Picker */}
           <div className="sn-field">
             <label htmlFor={`${uid}-start`}>Start track</label>
@@ -117,21 +122,33 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                 </button>
               </div>
             ) : (
-              <div className="sn-input-wrap" style={{ position: 'relative' }}>
-                <Search className="sn-input-icon" size={16} aria-hidden="true" />
-                <input
-                  id={`${uid}-start`}
-                  className="sn-input"
-                  type="text"
-                  placeholder="Search tracks…"
-                  value={startQuery}
-                  onChange={e => setStartQuery(e.target.value)}
-                />
+              <div style={{ position: 'relative' }}>
+                <div className="sn-search-field__box">
+                  <span className="sn-search-field__icon" aria-hidden="true">
+                    <Search size={16} strokeWidth={2} />
+                  </span>
+                  <input
+                    id={`${uid}-start`}
+                    type="search"
+                    className="sn-input sn-search-field__input"
+                    aria-label="Search tracks"
+                    placeholder="Search tracks…"
+                    value={startQuery}
+                    onChange={e => setStartQuery(e.target.value)}
+                  />
+                  {startQuery ? (
+                    <div className="sn-search-field__end">
+                      <button type="button" className="sn-search-field__clear" aria-label="Clear search" onClick={() => setStartQuery('')}>
+                        <X size={14} strokeWidth={2} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
 
                 {startQuery && startResults.length > 0 && (
-                  <ul className="sn-dropdown" role="listbox">
+                  <ul role="listbox" className="sn-list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
                     {startResults.map(t => (
-                      <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'start')}>
+                      <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'start')} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: 'var(--space-2) var(--space-3)' }}>
                         <span className="sn-track-cell__name">{t.artist} – {t.title}</span>
                       </li>
                     ))}
@@ -153,21 +170,33 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                 </button>
               </div>
             ) : (
-              <div className="sn-input-wrap" style={{ position: 'relative' }}>
-                <Search className="sn-input-icon" size={16} aria-hidden="true" />
-                <input
-                  id={`${uid}-end`}
-                  className="sn-input"
-                  type="text"
-                  placeholder="Search tracks…"
-                  value={endQuery}
-                  onChange={e => setEndQuery(e.target.value)}
-                />
+              <div style={{ position: 'relative' }}>
+                <div className="sn-search-field__box">
+                  <span className="sn-search-field__icon" aria-hidden="true">
+                    <Search size={16} strokeWidth={2} />
+                  </span>
+                  <input
+                    id={`${uid}-end`}
+                    type="search"
+                    className="sn-input sn-search-field__input"
+                    aria-label="Search tracks"
+                    placeholder="Search tracks…"
+                    value={endQuery}
+                    onChange={e => setEndQuery(e.target.value)}
+                  />
+                  {endQuery ? (
+                    <div className="sn-search-field__end">
+                      <button type="button" className="sn-search-field__clear" aria-label="Clear search" onClick={() => setEndQuery('')}>
+                        <X size={14} strokeWidth={2} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
 
                 {endQuery && endResults.length > 0 && (
-                  <ul className="sn-dropdown" role="listbox">
+                  <ul role="listbox" className="sn-list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
                     {endResults.map(t => (
-                      <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'end')}>
+                      <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'end')} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: 'var(--space-2) var(--space-3)' }}>
                         <span className="sn-track-cell__name">{t.artist} – {t.title}</span>
                       </li>
                     ))}

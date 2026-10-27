@@ -1188,8 +1188,12 @@ Work done:
 
 <!-- SLOT:LY3 BEGIN -->
 ### LY3: Layout debt: pathfinder and Camelot pages
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Replaced undefined layout classes (`sn-camelot-page`, `sn-page__head`, `sn-input-wrap`, etc) in Camelot and Pathfinder pages with standard design-system shell components (PageHeader) and inline layout tokens. Adopted standard CSS from `bundle.css` for TrackCell and InlineMessage inside Pathfinder and Camelot views. Cleared all requested unused layout classes from `design-system-layout-baseline.txt` and generated the LY3 audit file.
+- Checks run: `check_design_system.py`, `sync-design-system.sh`, `vitest`, `tsc`, `oxlint`.
+- Checks not run: Playwright E2E and visual tests (cannot run browser in sandbox).
+- PR: [LY3: Layout debt: pathfinder and Camelot pages](https://github.com/zvirb/songnodes/pull/LY3)
+- End: 2026-10-27
 <!-- SLOT:LY3 END -->
 
 <!-- SLOT:LY4 BEGIN -->

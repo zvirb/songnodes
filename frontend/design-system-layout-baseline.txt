@@ -1,10 +1,9 @@
-# Known layout debt (design-system/17-governance.md, Conformance checking).
-# scripts/check_design_system.py --check fails on a NEW undefined sn-* class or a <main> without a page
-# container; entries here are existing debt and are reported only when fixed, so this list can only shrink.
-# Remove a line in the same PR that fixes it. Do not add lines.
 #   class <sn-class>   used in app code but defined by no stylesheet (renders no spacing or style)
 #   main <file>        a <main> that is not a design-system page container
-main frontend/src/components/DJInterface/DJInterface.tsx
+# Known layout debt (design-system/17-governance.md, Conformance checking).
+# Remove a line in the same PR that fixes it. Do not add lines.
+# container; entries here are existing debt and are reported only when fixed, so this list can only shrink.
+# scripts/check_design_system.py --check fails on a NEW undefined sn-* class or a <main> without a page
 class sn-auth-callback-card
 class sn-banner--info
 class sn-banner--warning
@@ -13,10 +12,6 @@ class sn-body-s
 class sn-body-strong
 class sn-btn--outline
 class sn-btn-transport
-class sn-camelot-page
-class sn-camelot-page__list-card
-class sn-camelot-page__wheel-container
-class sn-camelot-wheel__summary
 class sn-card--danger
 class sn-color-brand
 class sn-color-fg
@@ -24,19 +19,12 @@ class sn-color-fg-2
 class sn-copy-button__text
 class sn-coverage-panel
 class sn-dialog__form
-class sn-dropdown
 class sn-export-dialog
 class sn-field--inline
 class sn-field__input
 class sn-filter-rail__trigger
 class sn-gap-1
 class sn-gap-2
-class sn-inline-message__text
-class sn-inline-msg
-class sn-inline-msg__icon
-class sn-inline-msg__text
-class sn-input-icon
-class sn-input-wrap
 class sn-justify-between
 class sn-key__code
 class sn-label
@@ -52,6 +40,7 @@ class sn-ml-2
 class sn-ml-auto
 class sn-ml-library
 class sn-mr-2
+class sn-page__header
 class sn-mt-2
 class sn-mt-3
 class sn-mt-4
@@ -60,8 +49,6 @@ class sn-page-library
 class sn-page-sets
 class sn-page__actions
 class sn-page__body
-class sn-page__head
-class sn-page__header
 class sn-page__title-group
 class sn-panel
 class sn-panel--sm
@@ -71,7 +58,6 @@ class sn-panel__title
 class sn-row--compact
 class sn-stat
 class sn-stats-list
-class sn-track-cell__primary
-class sn-track-cell__secondary
 class sn-u-ml-xs
 class sn-u-mt-sm
+main frontend/src/components/DJInterface/DJInterface.tsx
