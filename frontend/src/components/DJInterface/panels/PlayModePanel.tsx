@@ -60,25 +60,15 @@ export function PlayModePanel({
             />
 
             {/* Graph Legend Overlay */}
-            <div style={{
+            <div className="sn-card" style={{
               position: 'absolute',
               bottom: 'var(--space-4)',
               left: 'var(--space-4)',
-              padding: 'var(--space-3)',
-              backgroundColor: 'var(--surface-1)',
-              borderRadius: 'var(--radius-control)',
-              border: '1px solid var(--line-strong)',
-              boxShadow: 'var(--shadow-2)',
               zIndex: 'var(--z-sticky)',
               maxWidth: '260px'
             }}>
-              <h4 style={{
+              <h4 className="label" style={{
                 margin: '0 0 var(--space-2) 0',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.6875rem',
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
                 color: 'var(--fg-3)'
               }}>
                 Node Legend
