@@ -170,7 +170,7 @@ export const CopyButton: React.FC<{ label: string; what: string; getText: () => 
       <button className={`sn-btn sn-copy-button${size ? ' sn-btn--sm' : ''}`} type="button" data-state={state === 'copied' ? 'copied' : undefined} onClick={copy}>
         <span className="sn-copy-button__idle"><SnIcon name="copy" /></span>
         <span className="sn-copy-button__done"><SnIcon name="check" /></span>
-        <span className="sn-copy-button__text">{state === 'copied' ? 'Copied' : label}</span>
+        <span>{state === 'copied' ? 'Copied' : label}</span>
       </button>
       <span className="sn-sr" aria-live="polite">{live}</span>
       {state === 'refused' ? (
@@ -403,7 +403,7 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
       <span className="sn-track-cell__title">
         <span className="sn-track-cell__name" title={name}><span className="sn-track-cell__artist">{t.a} –</span> {t.t}</span>
         {t.mbid && (
-          <button className="sn-btn sn-btn--quiet sn-tag sn-category-tag sn-u-ml-xs" title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'})
+          <button className="sn-btn sn-btn--quiet sn-tag sn-category-tag" style={{ marginLeft: "var(--space-1)" }} title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'})
 dump date: ${t.mbdump || '–'}`} onClick={() => setShowCov(s => !s)}>
             MusicBrainz match
           </button>
@@ -438,10 +438,10 @@ export const CoveragePanel: React.FC<{ t: LibraryTrack }> = ({ t }) => {
   const sourceCount = t.src ? t.src.length : 0;
 
   return (
-    <div className="sn-coverage-panel sn-panel sn-panel--sm sn-u-mt-sm" style={{ padding: "var(--space-2)" }}>
-      <div className="sn-panel__header"><h4 className="sn-panel__title sn-body-strong">Data Coverage</h4></div>
-      <div className="sn-panel__body">
-        <ul className="sn-stats-list sn-body-s" style={{ listStyle: "none", margin: 0, padding: 0, color: "var(--fg-2)" }}>
+    <div className="sn-card sn-card--compact" style={{ marginTop: "var(--space-2)" }}>
+      <div className="sn-card__head"><h4 className="sn-title title-s">Data Coverage</h4></div>
+      <div className="sn-card__body">
+        <ul className="body-s" style={{ listStyle: "none", margin: 0, padding: 0, color: "var(--fg-2)" }}>
           <li><strong>{filledCount} / {totalCount}</strong> core fields filled</li>
           <li><strong>{sourceCount}</strong> known sources {t.src && t.src.length > 0 ? `(${t.src.join(', ')})` : ''}</li>
           {t.mbid ? <li><strong>MusicBrainz</strong> match via {t.mbconf} confidence</li> : null}

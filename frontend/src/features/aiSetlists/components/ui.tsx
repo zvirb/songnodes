@@ -25,7 +25,7 @@ export const CopyButton: React.FC<{ label: string; what: string; value: string; 
 
   return (
     <Button size={size} onClick={handleCopy} aria-label={`Copy ${what}`}>
-      <SnIcon name={copied ? "check" : "copy"} size={16} className="sn-mr-2" />
+      <span style={{ marginRight: 'var(--space-2)' }}><SnIcon name={copied ? "check" : "copy"} size={16} /></span>
       {copied ? "Copied" : label}
     </Button>
   );
