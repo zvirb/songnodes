@@ -920,8 +920,11 @@ Work done:
 
 <!-- SLOT:U9 BEGIN -->
 ### U9: Upgrade services/api-gateway-internal to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/api-gateway-internal/Dockerfile base image to `python:3.15-slim`. No other requirements were changed as they were already on their target versions.
+- Checks run: `docker build` succeeds, `python --version` inside the image reports Python 3.15.2, and `python -c "import main"` successfully imports the entry module.
+- Checks not run: No test requirements or Pytest tests exist for this service.
+- End: 2026-10-26
 <!-- SLOT:U9 END -->
 
 <!-- SLOT:U10 BEGIN -->
