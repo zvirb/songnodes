@@ -1,7 +1,7 @@
 /* Phone explorer (no canvas). Tokens only. */
 .mte { display: flex; flex-direction: column; gap: var(--space-3); height: 100%; overflow-y: auto; padding: var(--space-4); }
 .mte__search { position: relative; }
-.mte__search .sn-input { width: 100%; padding-left: 34px; }
+.mte__search .sn-input { width: 100%; padding-left: var(--space-8); }
 .mte__search-icon { position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--fg-3); display: inline-flex; pointer-events: none; }
 .mte__list { display: flex; flex-direction: column; }
 .mte__row { display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: var(--touch-min, 44px); padding: var(--space-2) 0; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--fg); text-align: left; cursor: pointer; }

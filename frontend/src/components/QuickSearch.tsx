@@ -445,7 +445,7 @@ export const QuickSearch: React.FC = () => {
             </button>
           ) : null}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>
               Cmd+K
             </kbd>
           </div>
@@ -527,7 +527,7 @@ export const QuickSearch: React.FC = () => {
                             </span>
                           ) : null}
                         </div>
-                        <div style={{ marginTop: '2px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
+                        <div style={{ marginTop: 'var(--space-0\\.5)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
                           <span style={{ fontWeight: 500, color: 'var(--fg-2)' }}>{item.artist}</span>
                           {item.genre ? <span className="sn-tag">{item.genre}</span> : null}
                           {item.bpm ? <span style={{ fontFamily: 'var(--font-data)' }}>{item.bpm} BPM</span> : null}
@@ -583,13 +583,13 @@ export const QuickSearch: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--line)', padding: 'var(--space-2) var(--space-4)', fontSize: '0.75rem', color: 'var(--fg-3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>↑↓</kbd>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>↑↓</kbd>
             Navigate
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>Enter</kbd>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>Enter</kbd>
             Focus
-            <kbd style={{ padding: '2px var(--space-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)' }}>Esc</kbd>
+            <kbd style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-chip)', background: 'var(--surface-2)', fontFamily: 'var(--font-data)', padding: 'var(--space-0\\.5) var(--space-1)' }}>Esc</kbd>
             Close
           </div>
         </div>
