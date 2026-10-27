@@ -27,14 +27,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build frontend image for Trivy
         run: |
           docker build -f frontend/Dockerfile -t songnodes/frontend:${{ github.sha }} ./frontend
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: 'songnodes/frontend:${{ github.sha }}'
           format: 'template'
@@ -43,6 +43,6 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@0fda7a646fd14a20daf520829ca1ae8847000819 # codeql-bundle-v2.27.3
         with:
           sarif_file: 'trivy-results.sarif'

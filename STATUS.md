@@ -971,8 +971,12 @@ Work done:
 
 <!-- SLOT:U8 BEGIN -->
 ### U8: Pin every GitHub Action to its latest release
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-27
+- Built: Pinned all GitHub Action `uses:` lines in workflows to their latest commit SHAs with version comments, and removed placeholders.
+- Checks run: `python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]"`
+- Checks not run: Full CI checks as this is pending PR creation.
+- Reviewer check: Every `uses:` line ends in a 40-character SHA and a version comment; CI runs on the PR.
+- End: 2026-10-27
 <!-- SLOT:U8 END -->
 
 <!-- SLOT:U9 BEGIN -->
@@ -1301,8 +1305,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:TG4 BEGIN -->
 ### TG4: Library: crate target-enrichment discovery banner
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Created DiscoveryBanner to highlight unenriched tracks that are not yet targeted, offering a "Target top un-enriched" batch action. Mounted inside LibraryPage.
+- Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` in frontend, `python scripts/check_design_system.py --check`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: Open /library with un-targeted tracks: banner appears; clicking action targets them and updates coverage.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-27
 <!-- SLOT:TG4 END -->
 
 <!-- SLOT:FL1 BEGIN -->
