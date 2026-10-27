@@ -5,7 +5,7 @@
 # ===========================================
 
 # ===== DEPENDENCIES CACHE STAGE =====
-FROM public.ecr.aws/docker/library/node:18-alpine AS deps-cache
+FROM public.ecr.aws/docker/library/node:26-alpine AS deps-cache
 
 # Install system dependencies once for better caching
 RUN apk add --no-cache \
@@ -22,7 +22,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (dev + prod) for build
-RUN npm install && npm cache clean --force
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
 # ===== BUILD STAGE =====
 FROM deps-cache AS builder
@@ -41,7 +41,7 @@ RUN npm run build && \
     rm -rf .npm tsconfig.json src/
 
 # ===== NODE.JS PRODUCTION STAGE =====
-FROM public.ecr.aws/docker/library/node:18-alpine AS production
+FROM public.ecr.aws/docker/library/node:26-alpine AS production
 
 # Apply security updates and install minimal runtime dependencies
 RUN apk upgrade --no-cache && \

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { HarmonicCompatibility } from './HarmonicCompatibility';
+import { KeyBadge, Bpm, EnergyBar, SN } from '../lib/songnodes';
 import { EnergyMeter } from './EnergyMeter';
 import {
   Track,
@@ -187,7 +188,7 @@ const RecommendationCard: React.FC<{
           <h4 style={{ color: 'var(--fg)', fontSize: '0.9375rem', margin: 0, fontWeight: 600 }}>
             {track.name}
           </h4>
-          <p style={{ color: 'var(--fg-2)', fontSize: '0.8125rem', margin: '2px 0 0 0' }}>
+          <p style={{ color: 'var(--fg-2)', fontSize: '0.8125rem', margin: 'var(--space-0\\.5) 0 0 0' }}>
             {track.artist}
           </p>
         </div>
@@ -196,15 +197,14 @@ const RecommendationCard: React.FC<{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '36px',
-          height: '36px',
+          width: '40px',
+          height: '40px',
           borderRadius: 'var(--radius-pill)',
           backgroundColor: 'var(--surface-2)',
           border: '1px solid var(--line)',
           color: 'var(--brand)',
-          fontSize: '0.875rem',
           fontWeight: 700
-        }}>
+        }} className="body-strong">
           {score}
         </div>
       </div>
@@ -216,41 +216,23 @@ const RecommendationCard: React.FC<{
             targetKey={track.key as any}
             size="small"
           />
-          <div style={{ color: 'var(--fg-3)', fontSize: '0.6875rem', marginTop: '2px' }}>
-            {track.key}
-          </div>
+          <KeyBadge value={track.key || undefined} />
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <EnergyMeter level={track.energy || 5} size="small" />
-          <div style={{ color: 'var(--fg-3)', fontSize: '0.6875rem', marginTop: '2px' }}>
-            Energy
-          </div>
+          <EnergyBar value={track.energy || null} />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <Bpm value={track.bpm} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
-            color: compatibility.bpm === 'perfect' ? 'var(--status-ok)' :
-                   compatibility.bpm === 'close' ? 'var(--status-warn)' : 'var(--fg-3)',
-            fontSize: '1rem',
-            fontWeight: 600,
-            fontFamily: 'var(--font-data)'
-          }}>
-            {track.bpm}
-          </div>
-          <div style={{ color: 'var(--fg-3)', fontSize: '0.6875rem' }}>
-            BPM
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            padding: '2px 8px',
+            padding: 'var(--space-0\\.5) var(--space-2)',
             backgroundColor: 'var(--surface-2)',
             borderRadius: 'var(--radius-pill)',
-            color: 'var(--fg-2)',
-            fontSize: '0.6875rem',
-            fontWeight: 600
+            color: 'var(--fg-2)'
           }}>
             {track.genre || 'House'}
           </div>
@@ -269,11 +251,10 @@ const RecommendationCard: React.FC<{
             <span
               key={i}
               style={{
-                padding: '2px 6px',
+                padding: 'var(--space-0\\.5) var(--space-1)',
                 backgroundColor: 'var(--surface-2)',
                 borderRadius: 'var(--radius-chip)',
-                color: 'var(--fg-3)',
-                fontSize: '0.6875rem'
+                color: 'var(--fg-3)'
               }}
             >
               {reason.description}
@@ -361,7 +342,7 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
             <h3 style={{ color: 'var(--fg)', fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>
               {currentTrack.name}
             </h3>
-            <p style={{ color: 'var(--fg-2)', fontSize: '0.875rem', margin: '4px 0 0 0' }}>
+            <p style={{ color: 'var(--fg-2)', fontSize: '0.875rem', margin: 'var(--space-1) 0 0 0' }}>
               {currentTrack.artist}
             </p>
           </div>
