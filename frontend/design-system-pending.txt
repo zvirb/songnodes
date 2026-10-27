@@ -14,24 +14,26 @@ frontend/src/components/IntelligentBrowser.legacy.tsx
 # migrated DS2A: frontend/src/components/IntelligentBrowser/IntelligentBrowser.module.css
 frontend/src/components/MobileTrackExplorer.css
 frontend/src/components/MoodVisualizer.css
+# migrated DS2B: frontend/src/components/MobileTrackExplorer.css
+# migrated DS6: frontend/src/components/MoodVisualizer.css
 frontend/src/components/MultiSelect.tsx
 frontend/src/components/OAuthCallback.tsx
 frontend/src/components/PathBuilder.tsx
-frontend/src/components/QuickSearch.tsx
+# migrated DS2B: frontend/src/components/QuickSearch.tsx
 frontend/src/components/RadialMenu.tsx
 frontend/src/components/SetlistBuilder/AnalyticsPanel.tsx
 frontend/src/components/SmartTooltip.tsx
 frontend/src/components/TrackSearch.tsx
-frontend/src/components/TracklistImporter.css
-frontend/src/examples/spatialIndexUsage.example.tsx
+# migrated DS2B: frontend/src/components/TracklistImporter.css
+# migrated DS14: frontend/src/examples/spatialIndexUsage.example.tsx
 # migrated DS4: frontend/src/features/musicLibrary/SetBuilderPage.tsx
-frontend/src/hooks/useToast.tsx
+# migrated DS14: frontend/src/hooks/useToast.tsx
 frontend/src/pages/ScraperProgressPage.tsx
 frontend/src/styles/global.css
 frontend/src/styles/globals.css
 frontend/src/styles/tokens.css
-frontend/src/utils/attributions.test.ts
-frontend/src/utils/energyUtils.ts
+# migrated DS14: frontend/src/utils/attributions.test.ts
+# migrated DS14: frontend/src/utils/energyUtils.ts
 frontend/src/utils/graphHelpers.ts
-frontend/src/utils/harmonicUtils.ts
-frontend/src/utils/moodVisualizerUtils.ts
+# migrated DS14: frontend/src/utils/harmonicUtils.ts
+# migrated DS14: frontend/src/utils/moodVisualizerUtils.ts

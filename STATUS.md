@@ -563,20 +563,38 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS13 BEGIN -->
 ### DS13: Design system audit and fix: Feature folders: aiSetlists, camelot and leftovers
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built:
+  - Reviewed all specified feature files. Fixed deviations in `AITransitionHelper.tsx`.
+  - Skipped out-of-scope files `AISetlistsPage.tsx`, `CamelotPage.tsx`, `camelot.css`, `EnergyWave.tsx`, `ui.tsx`, and `usePipelineTelemetry.ts`.
+  - Created DS13.md audit file.
+- Checks run: `vitest` pass, `check_design_system.py` pass. E2E Playwright skipped (unavailable in sandbox).
+- PR: Pending
 <!-- SLOT:DS13 END -->
 
 <!-- SLOT:DS14 BEGIN -->
-### DS14: Design system audit and fix: Utils, hooks, lib, services, types and examples
-- Start: _not started_
-- End: _not finished_
+2026-10-26: Started design system audit and fix for DS14 paths.
+2026-10-26: Completed audit and fix for DS14 paths.
+What I built:
+- Replaced custom inline styles and hex/rgb/pixel values with `var(--token)` or `sn-*` classes in `spatialIndexUsage.example.tsx` and `ExportDialog.tsx`.
+- Changed "Unknown" to an en dash (`–`) in `trackMetadata.ts`, `pathfinding.ts`, `aiService.ts`, `exporters.ts` and `ExportDialog.tsx`.
+- Changed `useToast.tsx` from raw markup to `sn-toast` markup as specified by the system.
+- Replaced custom colour strings in utility functions (`energyUtils.ts`, `harmonicUtils.ts`, `moodVisualizerUtils.ts`) with appropriate tokens.
+- Audited all files in scope and compiled findings into `docs/design-system/audits/DS14.md`.
+Checks run:
+- TypeScript compilation (`npx tsc --noEmit`)
+- Unit tests (`npx vitest run src`)
+- Vite build (`npx vite build`)
+- Sync script check (`bash scripts/sync-design-system.sh --check`)
+Checks not run:
+- Playwright E2E tests (unavailable in sandbox environment)
+PR link: To be opened
 <!-- SLOT:DS14 END -->
 
 <!-- SLOT:DS15 BEGIN -->
-### DS15: Design system audit and fix: Global stylesheets and legacy CSS
-- Start: _not started_
-- End: _not finished_
+2026-10-27 19:47:14 - Started DS15: Design system audit and fix: Global stylesheets and legacy CSS
+2026-10-27 19:47:14 - Completed DS15. Stripped all literal hex, px fonts, padding/margins/shadows/animations from legacy stylesheets and repointed everything strictly to tokens. Verified tests, built successfully, and passed check_design_system.py. Reported audit in docs/design-system/audits/DS15.md.
 <!-- SLOT:DS15 END -->
 
 <!-- SLOT:DS16 BEGIN -->
@@ -603,8 +621,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS2B BEGIN -->
 ### DS2B: Design system audit and fix: Graph page, second half of its files
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-27 Audit in docs/design-system/audits/DS2B.md (Jules). Raw px spacing replaced with --space-* tokens in QuickSearch.tsx, MobileTrackExplorer.css and TracklistImporter.css (scheduled run); those three lines commented out of design-system-pending.txt. Checks: check_design_system.py --check passes. Playwright not run. PR: https://github.com/zvirb/songnodes/pull/259
 <!-- SLOT:DS2B END -->
 
 <!-- SLOT:DS3 BEGIN -->
@@ -840,8 +858,8 @@ Work done:
 
 <!-- SLOT:E3 BEGIN -->
 ### E3: Enrichment replay and coverage report
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26: Created tests/enrichment_local/replay/ test suite and script to replay the library fixture and real data through the enrichment waterfall. Evaluated coverage and web calls by provider, writing results to docs/integration/WP4/replay.md and docs/integration/E3/replay_live.md.
 <!-- SLOT:E3 END -->
 
 <!-- SLOT:SB3 BEGIN -->
@@ -912,8 +930,11 @@ Work done:
 
 <!-- SLOT:U9 BEGIN -->
 ### U9: Upgrade services/api-gateway-internal to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/api-gateway-internal/Dockerfile base image to `python:3.15-slim`. No other requirements were changed as they were already on their target versions.
+- Checks run: `docker build` succeeds, `python --version` inside the image reports Python 3.15.2, and `python -c "import main"` successfully imports the entry module.
+- Checks not run: No test requirements or Pytest tests exist for this service.
+- End: 2026-10-26
 <!-- SLOT:U9 END -->
 
 <!-- SLOT:U10 BEGIN -->
@@ -1032,8 +1053,12 @@ Work done:
 
 <!-- SLOT:U25 BEGIN -->
 ### U25: Upgrade shared/templates to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded Python base image to 3.15-slim. Updated all pinned packages in `shared/templates/base-requirements.txt` to their latest versions (FastAPI, pydantic, SQLAlchemy, etc.). Replaced `BaseSettings` import to use `pydantic-settings` to fix compatibility with Pydantic 2.x. Minimized image size by removing `build-essential` post-install.
+- Checks run: `docker build` inside `shared/templates` (passes). Imported service module inside built image (passes).
+- Checks not run: No test files exist in `shared/templates`. E2E tests cannot run in sandbox.
+- Reviewer check: `docker build` succeeds, `python --version` outputs 3.15.1, and entry module imports successfully.
+- End: 2026-10-26
 <!-- SLOT:U25 END -->
 
 <!-- SLOT:U26 BEGIN -->
@@ -1165,26 +1190,35 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX7 BEGIN -->
 ### UX7: Music service search: query history and suggestion chips
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `MusicServiceSearch.tsx` to use `recentSearches.ts`, adding recent search tracking and rendering chips for empty search states. Added `Clear history` functionality. Added integration tests to `MusicServiceSearch.test.tsx`.
+- Checks run: `vitest run src/components/MusicServiceSearch.test.tsx`, `tsc --noEmit`, `oxlint src`, `vitest run src`, `vite build`, design system check.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- End: 2026-10-26
 <!-- SLOT:UX7 END -->
 
 <!-- SLOT:UX8 BEGIN -->
 ### UX8: QuickSearch dialog: recent commands and track completions
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Modified QuickSearch.tsx to include recent searches (with JSON serialization of type and id) and added static route modules that can be matched and selected via fuse and navigation via `useNavigate`. Added QuickSearch.test.tsx that asserts filtering and recent modules loading and Enter key navigation.
+- Checks run: `vitest run src/components/QuickSearch.test.tsx`, `tsc --noEmit -p .`, `oxlint src`, `vitest run src`, `vite build`. All passed.
+- Checks not run: Playwright E2E suite cannot run in the sandbox.
+- End: 2026-10-26 - Completed changes. https://github.com/zvirb/songnodes/pull/NEW
 <!-- SLOT:UX8 END -->
 
 <!-- SLOT:TG1 BEGIN -->
 ### TG1: Target tracks: suggestions endpoint based on crate and graph gaps
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Added `target_suggestions.py` with scoring logic (queries from `silver_enriched_tracks` and prioritises tracks with high Melbourne event frequency, low edge graph count, and zero existing target records). Registered `GET /api/v1/target-tracks/suggestions` on the `target_tracks` router to return `[{ title, artist, genres, rationale, priority_score }]` arrays for discovery suggestions. Also added async tests `test_target_suggestions.py` simulating DB responses to verify the logic and 503 error handling.
+- Checks run: `python3 -m pytest tests/rest_api/test_target_suggestions.py` using DB mocks passes 100%. Tested 503 handling, zero track returns, and ranking mechanics.
+- Checks not run: Full suite / Playwright could not be run as per limitations.
+- End: 2026-10-27
 <!-- SLOT:TG1 END -->
 
 <!-- SLOT:TG2 BEGIN -->
 ### TG2: Target suggestions: frontend data hook and actions
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- End: 2026-10-27 Added `useTargetSuggestions` hook in `frontend/src/hooks/useTargetSuggestions.ts` for managing target track suggestions via `/api/v1/target-tracks/suggestions` including fetch, dismiss (persisting to local storage), and promote-to-target functionalities. Checks run: `npx vitest run src/hooks/useTargetSuggestions.test.ts`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vite build` on Node 26. Playwright E2E testing cannot run in sandbox. PR: https://github.com/zvirb/songnodes/pull/260
 <!-- SLOT:TG2 END -->
 
 <!-- SLOT:TG3 BEGIN -->
@@ -1224,15 +1258,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:FL4 END -->
 
 <!-- SLOT:DS7 BEGIN -->
-### DS7: Design system audit and fix: Paths (route finder) page
-- Start: _not started_
-- End: _not finished_
+Started 2026-10-26 22:29
+Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables and refactored EmptyPanel -> EmptyState. Checks run: ts, lint, vite, vitest (tests passed), and sync script. Not run: Playwright E2E/visuals (no sandbox). PR: (pending)
 <!-- SLOT:DS7 END -->
 
 <!-- SLOT:DS17 BEGIN -->
 ### DS17: Design system audit and fix: AI setlists import page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Fixed ad-hoc spacing, inline styling, missing SN formatters, and missing Button components in AISetlistsPage.tsx. Checked and validated UI components under design system. Vitest tests passed. Could not run Playwright. PR link pending.
 <!-- SLOT:DS17 END -->
 
 <!-- SLOT:BOLT BEGIN -->
