@@ -28,6 +28,7 @@ class JobResponse(BaseModel):
     last_error: Optional[str] = None
     payload: Dict[str, Any] = Field(default_factory=dict)
     result: Optional[Dict[str, Any]] = None
+    warning: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -40,7 +41,12 @@ def job_response(row) -> JobResponse:
     data = dict(row)
     data['job_id'] = data.pop('id')
     data['payload'] = decode(data['payload']) or {}
-    data['result'] = decode(data['result'])
+    res = decode(data['result'])
+    data['result'] = res
+    if isinstance(res, dict) and res.get('warning'):
+        data['warning'] = res['warning']
+    elif isinstance(res, dict) and res.get('found_nothing'):
+        data['warning'] = 'No tracks or playlists found by scraper'
     return JobResponse(**data)
 
 

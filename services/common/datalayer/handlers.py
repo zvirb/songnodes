@@ -88,8 +88,12 @@ async def scrape(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
     result = response.json() if response.content else {}
     persisted = {'bronze_playlists': int(result.get('bronze_playlists_persisted') or 0),
                  'bronze_tracks': int(result.get('bronze_tracks_persisted') or 0)}
-    return {'scraper': result, **persisted, 'found_nothing': not any(persisted.values()),
-            'enqueue': [after('ingest_pending', payload, tag='ingest-after-scrape')]}
+    found_nothing = not any(persisted.values())
+    job_result = {'scraper': result, **persisted, 'found_nothing': found_nothing,
+                  'enqueue': [after('ingest_pending', payload, tag='ingest-after-scrape')]}
+    if found_nothing:
+        job_result['warning'] = 'No tracks or playlists found by scraper'
+    return job_result
 
 
 @handler('ingest_pending')
