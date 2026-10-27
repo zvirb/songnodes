@@ -10,10 +10,13 @@ import { getAppRoutes } from './routes/registry';
 const OAuthCallback = React.lazy(() => import('./components/OAuthCallback'));
 
 const PageLoading: React.FC = () => (
-  <main className="sn-page__main" id="main" aria-busy="true">
-    <div className="sn-card" style={{ minHeight: 120 }}>
-      <span className="sn-skel" style={{ width: '40%', height: '1.75rem' }} />
-      <span className="sn-skel" style={{ width: '70%' }} />
+  <main className="sn-page__main" id="main">
+    <div className="sn-loading-state" aria-busy="true" data-slow>
+      <div className="sn-card sn-loading-state__tiles" style={{ minHeight: '120px' }}>
+        <span className="sn-skel" style={{ '--w': '40%', '--h': '1.75rem' } as React.CSSProperties} />
+        <span className="sn-skel" style={{ '--w': '70%' } as React.CSSProperties} />
+      </div>
+      <p className="sn-loading-state__msg" role="status">Loading page…</p>
     </div>
   </main>
 );

@@ -35,7 +35,7 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({ sortBy, onSortChange, re
         onChange={onSortChange}
         options={OPTIONS.map(({ value, label }) => ({ value, label }))}
       />
-      <div className={styles.sortInfo} role="status" aria-live="polite">
+      <div className="caption color-fg-3" role="status" aria-live="polite">
         {SN.format.count(resultCount)} {resultCount === 1 ? 'track' : 'tracks'} · sorted by {current.info}
       </div>
     </div>
