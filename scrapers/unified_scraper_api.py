@@ -240,11 +240,11 @@ def _extract_stats(stdout: str, stderr: str) -> Dict[str, int]:
                     count_part = parts[1].strip().split()[0]
                     count = int(count_part)
                     if "playlist" in line.lower():
-                        bronze_playlists_persisted = count
-                        logger.info(f"Extracted bronze_playlists_persisted: {count} from line: {line[:100]}")
+                        bronze_playlists_persisted += count
+                        logger.info(f"Extracted bronze_playlists_persisted: +{count} (total={bronze_playlists_persisted}) from line: {line[:100]}")
                     elif "track" in line.lower():
-                        bronze_tracks_persisted = count
-                        logger.info(f"Extracted bronze_tracks_persisted: {count} from line: {line[:100]}")
+                        bronze_tracks_persisted += count
+                        logger.info(f"Extracted bronze_tracks_persisted: +{count} (total={bronze_tracks_persisted}) from line: {line[:100]}")
             except (IndexError, ValueError) as e:
                 logger.debug(f"Failed to parse bronze insert count from line: {line[:100]}, error: {e}")
                 continue
