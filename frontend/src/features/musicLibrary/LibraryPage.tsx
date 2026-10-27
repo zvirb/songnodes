@@ -19,7 +19,6 @@ import { Banner, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { CrateFilterRail } from './components/CrateFilterRail';
 import { TargetActionButton } from './targetAction/TargetActionButton';
 import { DiscoveryBanner } from './targetAction/DiscoveryBanner';
-
 import './musicLibrary.css';
 
 const FIRST_BATCH = 150;

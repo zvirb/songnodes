@@ -1315,7 +1315,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` in frontend, `python scripts/check_design_system.py --check`.
 - Checks not run: Playwright E2E suite due to environment constraints.
 - Reviewer Check: Open /library with un-targeted tracks: banner appears; clicking action targets them and updates coverage.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- PR Link: opened by the scheduled run from branch tg4-crate-discovery-banner-17335777320996562292 (merged current main, kept to owned files).
 - End: 2026-10-27
 <!-- SLOT:TG4 END -->
 

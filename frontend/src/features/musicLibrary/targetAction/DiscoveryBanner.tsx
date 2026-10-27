@@ -36,7 +36,7 @@ export const DiscoveryBanner: React.FC<DiscoveryBannerProps> = ({ tracks }) => {
     tracksToTarget.forEach(track => {
       setTrackAsTarget(track.id, 'medium');
 
-      const searchTerms = [track.a, track.t, track.m].filter(Boolean) as string[];
+      const searchTerms = [track.a, track.t, track.m].filter(Boolean);
 
       // Fire off API request (optimistic, following TargetActionButton pattern)
       fetch('/api/v1/target-tracks', {
