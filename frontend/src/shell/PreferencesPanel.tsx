@@ -1,7 +1,7 @@
 /** PreferencesPanel (design-system): theme, text size, density and motion, applied live through SN.prefs. */
 import React, { useState } from 'react';
 import { SN, SnIcon } from '../lib/songnodes';
-import { SegmentedControl, Checkbox } from '../components/ds';
+import { SegmentedControl, Checkbox, Radio } from '../components/ds';
 
 type Theme = 'system' | 'dark' | 'light' | 'booth';
 const THEMES: [Theme, string, string][] = [
@@ -57,12 +57,14 @@ export const PreferencesPanel: React.FC<{ embedded?: boolean }> = ({ embedded = 
         <fieldset className="sn-preferences-panel__set">
           <legend className="sn-field__label">Reduce motion</legend>
           <div className="sn-preferences-panel__radios" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <Checkbox
+            <Radio
+              name="motion"
               label="Follow this device’s setting"
               checked={p.motion !== 'reduce'}
               onChange={() => { SN.prefs.setMotion('system'); refresh('Motion follows this device'); }}
             />
-            <Checkbox
+            <Radio
+              name="motion"
               label="Always reduce motion"
               checked={p.motion === 'reduce'}
               onChange={() => { SN.prefs.setMotion('reduce'); refresh('Motion reduced'); }}
