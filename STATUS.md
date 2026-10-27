@@ -985,8 +985,11 @@ Work done:
 
 <!-- SLOT:U18 BEGIN -->
 ### U18: Upgrade services/metadata-enrichment to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated services/metadata-enrichment and services/metadata-enrichment/Dockerfile.worker to use Python 3.15-slim. Updated requirements.txt (starlette to 1.10.0, aio-pika to 10.2.1) and requirements-test.txt (pytest-asyncio to 1.4.1).
+- Checks run: `docker build` succeeds for both Dockerfiles. The entry module imports successfully (`python -c "import main"` and `python -c "import queue_consumer"`) inside their respective images.
+- Checks not run: Full `pytest` test suite inside the container (`python -m pytest tests`) fails during collection due to missing dependencies from outside the owned `services/metadata-enrichment` path (e.g., `fakes`, `docker`). These pre-existing unowned files and test configurations were left untouched as per constraints.
+- End: 2026-10-26
 <!-- SLOT:U18 END -->
 
 <!-- SLOT:U20 BEGIN -->
