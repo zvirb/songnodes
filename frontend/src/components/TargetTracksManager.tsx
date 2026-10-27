@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import MusicServiceSearch from './MusicServiceSearch';
 import { Plus, Upload, Download, Archive, ArchiveRestore, Search, Pencil, Trash2, Target, X, SearchX, ServerCrash } from 'lucide-react';
 import { SN } from '../lib/songnodes';
-import { SegmentedControl, OverflowMenu, StatusPill, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast } from './ds';
+import { SegmentedControl, OverflowMenu, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast } from './ds';
 import './TargetTracksManager.css';
 
 export interface TargetTrack {
@@ -387,15 +387,18 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
 
   const priorityPill = (priority: 'high' | 'medium' | 'low') => {
     const label = priority === 'high' ? 'High priority' : priority === 'medium' ? 'Medium priority' : 'Low priority';
-    const status = priority === 'high' ? 'bad' : priority === 'medium' ? 'warn' : 'ok';
-    return <StatusPill raw={status} label={label} />;
+    return (
+      <span className={`ttm__pill ttm__pill--${priority}`}>
+        {label}
+      </span>
+    );
   };
 
   return (
     <div className={`ttm ${embedded ? 'ttm--embedded' : ''}`}>
       <div className="ttm__head">
-        <p className="body-s sn-muted">
-          <span className="data-strong">{SN.format.count(filteredTracks.length)}</span> target {filteredTracks.length === 1 ? 'track' : 'tracks'}
+        <p className="ttm__count">
+          <span className="ttm__num">{SN.format.count(filteredTracks.length)}</span> target {filteredTracks.length === 1 ? 'track' : 'tracks'}
         </p>
         <div className="ttm__actions">
           <button type="button" className="sn-btn sn-btn--sm" onClick={handleAddTrack}>
@@ -465,7 +468,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
 
           {selectedTracks.size > 0 ? (
             <div className="ttm__bulk" role="region" aria-label="Selected target tracks">
-              <span role="status" className="data"><strong className="data-strong">{selectedTracks.size}</strong> selected</span>
+              <span role="status" className="ttm__mono"><strong className="ttm__num">{selectedTracks.size}</strong> selected</span>
               <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleBulkActivate(true)}>Turn on</button>
               <button type="button" className="sn-btn sn-btn--sm" onClick={() => handleBulkActivate(false)}>Turn off</button>
               <button type="button" className="sn-btn sn-btn--sm sn-btn--danger-quiet" onClick={() => setPendingDelete({ ids: Array.from(selectedTracks), label: `${selectedTracks.size} target tracks`, bulk: true })}>
@@ -476,7 +479,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
             </div>
           ) : filteredTracks.length > 1 ? (
             <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet ttm__selectall" onClick={selectAllTracks}>
-              Select all <span className="data-strong">{filteredTracks.length}</span> tracks
+              Select all <span className="ttm__num">{filteredTracks.length}</span> tracks
             </button>
           ) : null}
 
@@ -532,33 +535,33 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
                           </span>
                         </span>
                         <span className="sn-track-cell__meta">
-                          <span className="data"><strong className="data-strong">{SN.format.count(track.playlists_found || 0)}</strong> playlists</span>
+                          <span className="ttm__mono"><strong className="ttm__num">{SN.format.count(track.playlists_found || 0)}</strong> playlists</span>
                           <span className="sn-track-cell__sep" aria-hidden="true">·</span>
-                          <span className="data"><strong className="data-strong">{SN.format.count(track.adjacencies_found || 0)}</strong> transitions</span>
+                          <span className="ttm__mono"><strong className="ttm__num">{SN.format.count(track.adjacencies_found || 0)}</strong> transitions</span>
                           {track.last_searched ? (
                             <>
                               <span className="sn-track-cell__sep" aria-hidden="true">·</span>
-                              <span>Searched <time className="data">{SN.format.date(track.last_searched)}</time></span>
+                              <span>Searched <time className="ttm__mono">{SN.format.date(track.last_searched)}</time></span>
                             </>
                           ) : null}
                           {track.track_id ? (
                             <>
                               <span className="sn-track-cell__sep" aria-hidden="true">·</span>
-                              <span className="data" style={{ fontSize: '0.6875rem', color: 'var(--fg-3)' }}>ID: {track.track_id}</span>
+                              <span className="ttm__mono" style={{ fontSize: '0.6875rem', color: 'var(--fg-3)' }}>ID: {track.track_id}</span>
                             </>
                           ) : null}
                         </span>
                       </div>
                       <div className="ttm__tags">
                         {priorityPill(track.priority)}
-                        {!track.is_active && <StatusPill raw="info" label="Disabled" />}
+                        {!track.is_active && <span className="ttm__pill ttm__pill--off">Disabled</span>}
                         {track.archived && <span className="sn-tag">Archived</span>}
                         {track.genres?.map((genre, idx) => <span key={idx} className="sn-tag">{genre}</span>)}
                       </div>
                       <div className="ttm__progress">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label className="label" htmlFor={`ttm-done-${id}`}>Progress:</label>
-                          <span className="data-strong">{completion}%</span>
+                          <label htmlFor={`ttm-done-${id}`}>Progress:</label>
+                          <span className="ttm__mono" style={{ fontWeight: 600 }}>{completion}%</span>
                         </div>
                         <div className="ttm__progress-track">
                           <div className="ttm__progress-bar" style={{ width: `${completion}%` }} />
@@ -645,7 +648,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
               {formData.genres.map((genre, idx) => (
                 <span key={idx} className="sn-tag">
                   {genre}
-                  <button type="button" className="sn-chip-input__remove" onClick={() => removeGenre(genre)} aria-label={`Remove genre ${genre}`}>×</button>
+                  <button type="button" className="ttm__chip-x" onClick={() => removeGenre(genre)} aria-label={`Remove genre ${genre}`}><X size={12} strokeWidth={2} aria-hidden="true" /></button>
                 </span>
               ))}
             </div>
@@ -662,7 +665,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
               {formData.search_terms.map((term, idx) => (
                 <span key={idx} className="sn-tag">
                   {term}
-                  <button type="button" className="sn-chip-input__remove" onClick={() => removeSearchTerm(term)} aria-label={`Remove search term ${term}`}>×</button>
+                  <button type="button" className="ttm__chip-x" onClick={() => removeSearchTerm(term)} aria-label={`Remove search term ${term}`}><X size={12} strokeWidth={2} aria-hidden="true" /></button>
                 </span>
               ))}
             </div>
