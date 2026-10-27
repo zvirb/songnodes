@@ -71,14 +71,13 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
     }
   };
 
-  usePageHeader({ lead: 'Pathfinder', title: 'Route builder', current: 'paths' });
 
   return (
     <main className="sn-page__main pf-page" id="main" tabIndex={-1}>
       <PageHeader
         mod="paths"
         lead="Pathfinder"
-        title="Route builder"
+        title="Route finder"
         desc={
           <>
             Find harmonic paths between tracks. <Link className="sn-link sn-m-graph" to="/graph?tab=pathfinder">Open Pathfinder in Graph</Link>
@@ -146,7 +145,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                 </div>
 
                 {startQuery && startResults.length > 0 && (
-                  <ul role="listbox" className="sn-list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
+                  <ul role="listbox" className="sn-popover__list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
                     {startResults.map(t => (
                       <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'start')} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: 'var(--space-2) var(--space-3)' }}>
                         <span className="sn-track-cell__name">{t.artist} – {t.title}</span>
@@ -194,7 +193,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                 </div>
 
                 {endQuery && endResults.length > 0 && (
-                  <ul role="listbox" className="sn-list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
+                  <ul role="listbox" className="sn-popover__list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
                     {endResults.map(t => (
                       <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'end')} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: 'var(--space-2) var(--space-3)' }}>
                         <span className="sn-track-cell__name">{t.artist} – {t.title}</span>
