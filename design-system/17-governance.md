@@ -20,6 +20,10 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.1.4 — 28 Oct 2026: settings cards and sub-routes**
+- Changed: SettingsPage is a card overview at `/settings` with a filter `SearchField`, plus one page per setting at `/settings/:settingId` (`streaming-services`, `api-keys`, `display-preferences`, `data-storage`, `about-system`), replacing the single page with anchors. 02, 10, 13 and the SettingsPage card updated.
+- Added: accessibility guidance for card overviews with detail sub-routes (focus return, live result count, two ways back) to 06. No token, class or helper changed.
+
 **1.1.3 — 27 Oct 2026: page container and the sn- namespace**
 - Added the Page container rule to 13-page-patterns: every page root is `main.sn-page__main` (`sn-page-error`, `sn-page-auth` for those patterns; the graph canvas is the only full-bleed page).
 - Added "The sn- namespace" below: only classes the bundle defines may carry the `sn-` prefix; spacing comes from tokens or defined classes, never from invented utilities such as `sn-mb-3` or `sn-p-5`.
