@@ -565,7 +565,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:DS12 BEGIN -->
 ### DS12: Design system audit and fix: DJ interface, setlist builder and pathfinder components
 - Start: 2026-10-26
-- End: 2026-10-26
+- End: 2026-10-27 First part merged 26 Oct. The last four pending files (DJInterface.module.css, panels/PlanModePanel.tsx, panels/PlayModePanel.tsx, SetlistBuilder/AnalyticsPanel.tsx) moved to spacing tokens and commented out of design-system-pending.txt by the scheduled run (Jules session 15439738244305149109 stalled). Audit in docs/design-system/audits/DS12.md. Checks: check_design_system.py, tsc, vitest. Not run: Playwright.
 <!-- SLOT:DS12 END -->
 
 <!-- SLOT:DS13 BEGIN -->

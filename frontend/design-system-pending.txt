@@ -6,9 +6,9 @@ frontend/src/components/AdvancedSearch.tsx
 # migrated DS2A: frontend/src/components/ArtistAttributionManager.css
 # migrated DS11: frontend/src/components/Attributions.tsx
 # migrated DS2A: frontend/src/components/DJInterface.graph.css
-frontend/src/components/DJInterface/DJInterface.module.css
-frontend/src/components/DJInterface/panels/PlanModePanel.tsx
-frontend/src/components/DJInterface/panels/PlayModePanel.tsx
+# migrated DS12: frontend/src/components/DJInterface/DJInterface.module.css
+# migrated DS12: frontend/src/components/DJInterface/panels/PlanModePanel.tsx
+# migrated DS12: frontend/src/components/DJInterface/panels/PlayModePanel.tsx
 frontend/src/components/FilterPanel.tsx
 # migrated DS11: frontend/src/components/IntelligentBrowser.legacy.tsx
 # migrated DS2A: frontend/src/components/IntelligentBrowser/IntelligentBrowser.module.css
@@ -19,7 +19,7 @@ frontend/src/components/MultiSelect.tsx
 frontend/src/components/PathBuilder.tsx
 # migrated DS2B: frontend/src/components/QuickSearch.tsx
 frontend/src/components/RadialMenu.tsx
-frontend/src/components/SetlistBuilder/AnalyticsPanel.tsx
+# migrated DS12: frontend/src/components/SetlistBuilder/AnalyticsPanel.tsx
 frontend/src/components/SmartTooltip.tsx
 frontend/src/components/TrackSearch.tsx
 # migrated DS2B: frontend/src/components/TracklistImporter.css
