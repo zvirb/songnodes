@@ -189,7 +189,7 @@ export function PlanModePanel({
                     fontSize: '0.8125rem',
                     fontWeight: 600,
                     lineHeight: 1.3,
-                    marginBottom: '2px',
+                    marginBottom: 'var(--space-0\\.5)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
@@ -243,7 +243,7 @@ export function PlanModePanel({
             onClick={() => onRightPanelTabChange('analysis')}
             className={`${styles.tabButton} ${rightPanelTab === 'analysis' ? styles.tabButtonActive : ''}`}
           >
-            <BarChart2 size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            <BarChart2 size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 'var(--space-1)' }} aria-hidden="true" />
             Track Analysis
           </button>
           <button
@@ -253,7 +253,7 @@ export function PlanModePanel({
             onClick={() => onRightPanelTabChange('keymood')}
             className={`${styles.tabButton} ${rightPanelTab === 'keymood' ? styles.tabButtonActive : ''}`}
           >
-            <Disc size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            <Disc size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 'var(--space-1)' }} aria-hidden="true" />
             Key & Mood
           </button>
           <button
@@ -263,7 +263,7 @@ export function PlanModePanel({
             onClick={() => onRightPanelTabChange('pathfinder')}
             className={`${styles.tabButton} ${rightPanelTab === 'pathfinder' ? styles.tabButtonActive : ''}`}
           >
-            <Route size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            <Route size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 'var(--space-1)' }} aria-hidden="true" />
             Pathfinder
           </button>
           <button
@@ -273,7 +273,7 @@ export function PlanModePanel({
             onClick={() => onRightPanelTabChange('tidal')}
             className={`${styles.tabButton} ${rightPanelTab === 'tidal' ? styles.tabButtonActive : ''}`}
           >
-            <Radio size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            <Radio size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 'var(--space-1)' }} aria-hidden="true" />
             Tidal
           </button>
           <button
@@ -283,7 +283,7 @@ export function PlanModePanel({
             onClick={() => onRightPanelTabChange('spotify')}
             className={`${styles.tabButton} ${rightPanelTab === 'spotify' ? styles.tabButtonActive : ''}`}
           >
-            <Headphones size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            <Headphones size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 'var(--space-1)' }} aria-hidden="true" />
             Spotify
           </button>
           <button
@@ -293,7 +293,7 @@ export function PlanModePanel({
             onClick={() => onRightPanelTabChange('targets')}
             className={`${styles.tabButton} ${rightPanelTab === 'targets' ? styles.tabButtonActive : ''}`}
           >
-            <Target size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} aria-hidden="true" />
+            <Target size={14} strokeWidth={2} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 'var(--space-1)' }} aria-hidden="true" />
             Targets
           </button>
         </div>

@@ -221,7 +221,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ setlist }) => {
               />
               <Legend
                 wrapperStyle={{
-                  paddingTop: '12px',
+                  paddingTop: 'var(--space-3)',
                   fontFamily: 'var(--font-body)',
                   fontSize: '0.8125rem',
                   color: 'var(--fg-2)',

@@ -73,7 +73,7 @@ export function PlayModePanel({
               }}>
                 Node Legend
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1.5, 6px)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                   <div style={{
                     width: '10px',
