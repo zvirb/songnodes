@@ -28,12 +28,12 @@ describe('TargetTracksManager', () => {
     });
 
     render(<TargetTracksManager />);
-    expect(screen.getByText('Suggested for Discovery')).toBeDefined();
+    expect(screen.getByText('Suggested for discovery')).toBeDefined();
     expect(screen.getByText('Suggestion 1')).toBeDefined();
     expect(screen.getByText('Artist 1')).toBeDefined();
   });
 
-  it('calls promoteSuggestion when + Add Target is clicked', async () => {
+  it('calls promoteSuggestion when Add to targets is clicked', async () => {
     const promoteSuggestion = vi.fn();
     const mockSuggestions = [
       { id: '1', title: 'Suggestion 1', artist: 'Artist 1', reason: 'Because' }
@@ -49,7 +49,7 @@ describe('TargetTracksManager', () => {
     });
 
     render(<TargetTracksManager />);
-    const addButtons = screen.getAllByRole('button', { name: /Add Target/i });
+    const addButtons = screen.getAllByRole('button', { name: /Add to targets/i });
     fireEvent.click(addButtons[0]);
 
     await waitFor(() => {
@@ -93,6 +93,6 @@ describe('TargetTracksManager', () => {
     });
 
     render(<TargetTracksManager />);
-    expect(screen.queryByText('Suggested for Discovery')).toBeNull();
+    expect(screen.queryByText('Suggested for discovery')).toBeNull();
   });
 });

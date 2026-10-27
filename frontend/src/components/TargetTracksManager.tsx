@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { useTargetSuggestions } from '../hooks/useTargetSuggestions';
+import { useTargetSuggestions, type TargetSuggestion } from '../hooks/useTargetSuggestions';
 import MusicServiceSearch from './MusicServiceSearch';
 import { Plus, Upload, Download, Archive, ArchiveRestore, Search, Pencil, Trash2, Target, X, SearchX, ServerCrash } from 'lucide-react';
 import { SN } from '../lib/songnodes';
@@ -394,45 +394,37 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
     return <StatusPill raw={status} label={label} />;
   };
 
-  const handlePromoteSuggestion = async (suggestion: any) => {
+  const handlePromoteSuggestion = async (suggestion: TargetSuggestion) => {
     try {
       await promoteSuggestion(suggestion);
       showToast(`Added ${suggestion.title} to targets`);
-      // Announce for screen readers
-      const announcer = document.createElement('div');
-      announcer.setAttribute('aria-live', 'polite');
-      announcer.style.position = 'absolute';
-      announcer.style.left = '-9999px';
-      announcer.textContent = `Added ${suggestion.title} to targets`;
-      document.body.appendChild(announcer);
-      setTimeout(() => document.body.removeChild(announcer), 3000);
-      loadTracks();
-    } catch (err) {
-      showToast('Failed to add target');
+      void loadTracks();
+    } catch {
+      showToast('Could not add the target');
     }
   };
 
   return (
     <div className={`ttm ${embedded ? 'ttm--embedded' : ''}`}>
       {!embedded && activeTab === 'manage' && suggestions && suggestions.length > 0 && (
-        <section className="ttm__suggestions">
-          <Title size="title-m" as="h2">Suggested for Discovery</Title>
-          <div className="ttm__suggestions-deck">
+        <section aria-labelledby="ttm-suggestions-title" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <Title size="title-m" as="h2" id="ttm-suggestions-title">Suggested for discovery</Title>
+          <div style={{ display: 'flex', overflowX: 'auto', gap: 'var(--space-3)', paddingBottom: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
             {suggestions.map(s => (
-              <Card key={s.id} className="ttm__suggestion-card">
-                <div className="ttm__suggestion-content">
+              <Card key={s.id} style={{ flex: '0 0 var(--rail-w)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
                   <Text variant="body-strong">{s.title}</Text>
                   <Text variant="body-s" className="sn-muted">{s.artist}</Text>
                   {s.reason && (
-                    <div className="ttm__suggestion-reason">
+                    <div style={{ marginTop: 'var(--space-2)' }}>
                       <StatusPill raw="info" label={s.reason} />
                     </div>
                   )}
                 </div>
-                <div className="ttm__suggestion-actions">
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'auto' }}>
                   <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={() => dismissSuggestion(s.id)}>Dismiss</button>
-                  <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={() => handlePromoteSuggestion(s)}>
-                    <Plus size={16} strokeWidth={2} aria-hidden="true" /> Add Target
+                  <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={() => { void handlePromoteSuggestion(s); }}>
+                    <Plus size={16} strokeWidth={2} aria-hidden="true" /> Add to targets
                   </button>
                 </div>
               </Card>
