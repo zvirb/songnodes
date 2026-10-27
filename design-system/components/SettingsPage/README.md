@@ -2,10 +2,10 @@
 
 The Services module page: connect streaming services, manage API keys, set preferences and move your data in and out via individual card modules and sub-routes.
 
-## Overview & Routing Architecture
+## Overview and routing
 Settings is structured into a two-tier navigation pattern:
-1. **Settings Overview (`/settings`)**: A card grid overview displaying all setting categories as distinct `Card` modules, equipped with a top-level `SearchField` to instantly filter setting cards by title, description, eyebrow lead, or search keywords.
-2. **Individual Setting Page (`/settings/:settingId`)**: A dedicated focus page for inspecting and configuring a single setting category (`streaming-services`, `api-keys`, `display-preferences`, `data-storage`, `about-system`), offering clear back navigation via `PageHeader` quiet action and a card-foot return link (`← Back to all settings`).
+1. **Settings overview (`/settings`)**: A card grid overview displaying all setting categories as distinct `Card` modules, equipped with a top-level `SearchField` to instantly filter setting cards by title, description, eyebrow lead, or search keywords.
+2. **Individual setting page (`/settings/:settingId`)**: A dedicated focus page for inspecting and configuring a single setting category (`streaming-services`, `api-keys`, `display-preferences`, `data-storage`, `about-system`), offering clear back navigation via `PageHeader` quiet action and a card-foot return link (`← Back to all settings`).
 
 Preferences also opens globally from the header More menu as the floating `PreferencesPanel`; the settings page embeds or routes to the same controls.
 
@@ -38,23 +38,23 @@ Preferences also opens globally from the header More menu as the floating `Prefe
 ## Primary action
 None in the header; per section: Connect/Reconnect, Save API keys, Import.
 
-## Recommendations for Navigation Flow & Accessibility Improvements
+## Recommendations for navigation and accessibility
 To further rectify and standardize navigation flow and accessibility across setting cards and similar views in SongNodes, the following design system improvements should be implemented:
 
-1. **Page & Sub-Route Back Navigation Standard**:
+1. **Back navigation from sub-routes**:
    - Every sub-route detail page (e.g. `/settings/:settingId`) must provide dual back-navigation controls: a `PageHeader` quiet action (`Button` kind="quiet" with `SnIcon` `undo-2` or `arrow-left`) and a card-foot return link (`← Back to all settings`).
    - Pressing `Escape` when focus is not inside an active text input or dialog should navigate back to the parent overview page (`/settings`).
 
-2. **Search Field & Live Filter Accessibility**:
+2. **Search field and live filtering**:
    - The top overview `SearchField` must expose an `aria-live="polite"` region that dynamically announces search filtering results (e.g. "5 setting cards shown for 'theme'" or "No setting cards found").
    - Clearing search filters via the `EmptyPanel` action or keyboard shortcut must restore focus to the `SearchField` input.
    - Global shortcut `/` or `Cmd+K` / `Ctrl+K` must focus the search input automatically when on the `/settings` page.
 
-3. **Card Focus Management & Deep-Link Preservation**:
+3. **Card focus and deep links**:
    - Navigating back from `/settings/:settingId` to `/settings` should return keyboard focus to the card link (`Open setting page →`) of the setting card that was just opened, preventing focus loss to the document root.
    - Setting card URLs (`/settings/streaming-services`, `/settings/api-keys`, `/settings/display-preferences`, etc.) must preserve deep links so users can bookmark or directly share specific setting views.
 
-4. **Audit & Decomposition of Monolithic Pages**:
+4. **Splitting large pages**:
    - Evaluate other complex pages (such as `LibraryPage` filter rails, `SetBuilderPage` panels) for decomposition into card-based overview components with deep-linkable sub-routes where complex nested configuration or management is required.
 
 ## Replaces
