@@ -105,22 +105,9 @@ const LibraryPage: React.FC = () => {
     const t = window.setTimeout(() => {
       setFilters((f) => ({ ...f, q: query }));
       setLimit(FIRST_BATCH);
-
-      // Perform server search
-      const q = new URLSearchParams();
-      if (query) q.set('q', query);
-      // We pass 5000 to get all debounced results into lib cache to preserve existing filterTracks paradigm
-      // since the prompt says "Server-side filtering... debounced search" but it's hard to rip out filterTracks entirely without breaking SetBuilder.
-      fetch('/api/v1/library/search?limit=5000&' + q.toString())
-        .then(r => r.json())
-        .then(tracks => {
-           if(lib) setLib({...lib, tracks});
-        })
-        .catch(e => console.warn(e));
-
     }, 150);
     return () => window.clearTimeout(t);
-  }, [query, filters.q, lib]);
+  }, [query, filters.q]);
 
   // Persist per device and mirror into the URL.
   useEffect(() => {
