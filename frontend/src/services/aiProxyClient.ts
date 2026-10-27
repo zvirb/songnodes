@@ -67,7 +67,7 @@ export const aiProxyComplete = async (request: AICompletionRequest, timeoutMs: n
     if (error instanceof AIProxyError) {
         throw error;
     }
-    throw new AIProxyError(error.message || 'Unknown network error', undefined, 'NETWORK_ERROR');
+    throw new AIProxyError(error.message || 'Network error', undefined, 'NETWORK_ERROR');
   } finally {
     clearTimeout(timeoutId);
   }
