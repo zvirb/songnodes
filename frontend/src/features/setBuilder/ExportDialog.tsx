@@ -116,7 +116,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-          <label className="label" htmlFor={`${id}-preview`}>Preview (first 5 lines)</label>
+          <label className="sn-label" htmlFor={`${id}-preview`}>Preview (first 5 lines)</label>
           <pre id={`${id}-preview`} className="sn-mono" style={{ border: '1px solid var(--line)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)', backgroundColor: 'var(--surface-1)', whiteSpace: 'pre-wrap', maxHeight: '15rem', overflowY: 'auto', margin: 0 }}>
             {previewLines}
             {exportContent.split('\n').length > 5 && '\n...'}

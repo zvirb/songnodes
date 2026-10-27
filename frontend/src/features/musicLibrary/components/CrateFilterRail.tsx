@@ -129,7 +129,7 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
     <div className="sn-filter-rail" data-open={open ? '' : undefined}>
       <div className="sn-filter-rail__bar">
         <div className="sn-filter-rail__bar-row">
-          <button ref={triggerRef} type="button" className="sn-btn" aria-haspopup="dialog" aria-expanded={open} aria-controls="crate-filters" onClick={() => setOpen(true)}>
+          <button ref={triggerRef} type="button" className="sn-btn sn-filter-rail__trigger" aria-haspopup="dialog" aria-expanded={open} aria-controls="crate-filters" onClick={() => setOpen(true)}>
             <SnIcon name="list-filter" />
             <span>{nActive ? `Filters (${nActive})` : 'Filters'}</span>
           </button>

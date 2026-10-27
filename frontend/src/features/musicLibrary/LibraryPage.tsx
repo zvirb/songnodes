@@ -203,7 +203,7 @@ const LibraryPage: React.FC = () => {
   ].filter(Boolean).join(' and ');
 
   return (
-    <main className="sn-page__main" id="main" tabIndex={-1}>
+    <main className="sn-page__main sn-page-library sn-ml-library" id="main" tabIndex={-1}>
       <PageHeader
         mod="library"
         lead="Library"
@@ -265,7 +265,7 @@ const LibraryPage: React.FC = () => {
 
       <DiscoveryBanner tracks={rows} />
 
-      <div className="body-s" style={{ textAlign: "center", color: "var(--fg-2)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-mb-credit sn-body-s" style={{ textAlign: "center", color: "var(--fg-2)", padding: "var(--space-4)" }}>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
       <div className="sn-page-library__body">
         <CrateFilterRail
           tracks={tracks}

@@ -42,7 +42,7 @@ Owner of every surface: Markus. Status: live (exists today, to be restyled), pla
 | Jobs | pipeline | `/pipeline/jobs` | Scraper, enrichment and audio-analysis jobs with status | Retry failed | planned | `LogPage` |
 | Validation | pipeline | `/pipeline/validation` | Validation findings by severity | Open track | planned | `LogPage` |
 | Data quality review | pipeline | `/pipeline/review` | Approve, reject or skip low-confidence matches | Approve | live | `LibraryPage` (queue) ; replaces `DataQualityReview` |
-| Settings | services | `/settings`, `/settings/:settingId` | Connect Spotify/TIDAL, API keys, theme, display preferences, data storage | Save settings | live | `SettingsPage` (card grid & individual sub-routes); replaces `SettingsPanel`, `APIKeyManager` overlays |
+| Settings | services | `/settings` | Connect Spotify/TIDAL, API keys, theme, text size, density | Save settings | live | `SettingsPage`, `PreferencesPanel`; replaces `SettingsPanel`, `APIKeyManager` overlays |
 | Sign-in return | services | `/callback/spotify`, `/oauth/callback` | Finish a service connection, then return | Back to settings | live | `AuthCallbackPage`; replaces `OAuthCallback` |
 | Not found / server error | – | nginx `404.html`, `50x.html` | Explain and offer a way home | Go to home | live | `ErrorPage` (static build) |
 | Quick search | library | any page, Ctrl/Cmd K or / | Find a track, artist or page | Open result | live | `CommandPalette`; replaces `QuickSearch` |
@@ -88,7 +88,7 @@ Owner of every surface: Markus. Status: live (exists today, to be restyled), pla
 | `rightPanelTab = 'keymood'` | `/harmony` |
 | `rightPanelTab = 'pathfinder'` | `/paths` |
 | `rightPanelTab = 'tidal'` | `/sets/:id?send=tidal` |
-| `rightPanelTab = 'spotify'` | `/sets/:id?send=spotify` (connection: `/settings/streaming-services`) |
+| `rightPanelTab = 'spotify'` | `/sets/:id?send=spotify` (connection: `/settings#services`) |
 | `rightPanelTab = 'targets'` | `/sources/targets` |
 | `leftPanel = 'search'` | `/library` with `SearchField` focused |
 | `leftPanel = 'setlist'` | `/sets` |
