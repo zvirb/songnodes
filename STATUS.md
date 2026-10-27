@@ -498,6 +498,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Configured endpoints to default to server-side `TIDAL_CLIENT_ID` and `TIDAL_CLIENT_SECRET` environment variables to prevent sensitive credentials from leaking in HTTP request query parameters and server logs.
 - Added `/tidal/refresh` route alias.
 - Checks: `python3 -m py_compile` passed, code review passed.
+
+### SEC: API Key Router Exception Leakage Remediation (2026-10-27)
+- Start: 2026-10-27
+- End: 2026-10-27
+- Fixed raw exception message leakage (`detail=str(e)`) across five endpoints in `services/rest_api/routers/api_keys.py`. Replaced internal trace detail responses with generic sanitized error messages while preserving server-side logging.
+- Added security regression unit tests in `tests/security/test_api_keys_security.py`.
+- Checks: `PYTHONPATH=. python3 -m pytest tests/security/test_api_keys_security.py` passed (5/5).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
