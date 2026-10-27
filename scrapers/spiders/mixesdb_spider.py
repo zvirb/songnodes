@@ -114,6 +114,7 @@ class MixesdbSpider(scrapy.Spider):
             self.logger.info(f"Using provided start_urls: {self.start_urls}")
         # Support for search query (from orchestrator)
         elif search_query:
+            self.force_run = True
             from urllib.parse import quote
             from .utils import parse_track_string
             parsed = parse_track_string(search_query)
@@ -342,7 +343,7 @@ class MixesdbSpider(scrapy.Spider):
             return
 
         # Handle search results
-        if 'Special:Search' in response.url:
+        if 'Special:Search' in response.url or 'search=' in response.url:
             yield from self.parse_search_results(response)
             return
 
@@ -358,7 +359,7 @@ class MixesdbSpider(scrapy.Spider):
 
         # Default: Handle individual mix pages (including direct URLs from start_urls)
         # This handles direct playlist URLs like /w/2015-03-28_-_Martin_Garrix_@_...
-        if self.is_mix_page(response) or '/w/' in response.url:
+        if self.is_mix_page(response) or (self.is_mix_url(response.url) and '/w/' in response.url):
             yield from self.parse_mix_page(response)
             return
 
@@ -376,25 +377,27 @@ class MixesdbSpider(scrapy.Spider):
         max_results = int(os.getenv('MIXESDB_MAX_RESULTS_PER_SEARCH', '5'))
 
         requests_yielded = 0
-        for link in mix_links[:max_results]:
+        valid_links = []
+        for link in mix_links:
             full_url = response.urljoin(link)
-            self.logger.info(f"🔍 Processing link: {full_url}")
             if self.is_mix_url(full_url):
-                self.logger.info(f"✅ is_mix_url passed: {full_url}")
-                if self.is_source_processed(full_url):
-                    self.logger.info(f"⏭️  Skipping already processed URL: {full_url}")
+                if not self.force_run and self.is_source_processed(full_url):
                     continue
-                self.logger.info(f"🚀 Yielding Request for: {full_url}")
-                requests_yielded += 1
-                yield scrapy.Request(
-                    url=full_url,
-                    callback=self.parse_mix_page,
-                    errback=self.handle_error,
-                    dont_filter=True,  # CRITICAL FIX: Allow URL following even if previously seen
-                    meta={'download_timeout': 30}
-                )
-            else:
-                self.logger.info(f"❌ is_mix_url failed: {full_url}")
+                if full_url not in valid_links:
+                    valid_links.append(full_url)
+                    if len(valid_links) >= max_results:
+                        break
+
+        for full_url in valid_links:
+            self.logger.info(f"🚀 Yielding Request for: {full_url}")
+            requests_yielded += 1
+            yield scrapy.Request(
+                url=full_url,
+                callback=self.parse_mix_page,
+                errback=self.handle_error,
+                dont_filter=True,
+                meta={'download_timeout': 30}
+            )
 
         self.logger.info(f"🔍 parse_search_results COMPLETE: Yielded {requests_yielded} requests")
 
@@ -421,23 +424,30 @@ class MixesdbSpider(scrapy.Spider):
 
         # Fallback to traditional CSS selectors
         if not mix_links:
-            mix_links = response.css('div.mw-category a::attr(href), li a::attr(href)').getall()
+            mix_links = response.css('li.gallerybox div.gallerytext a::attr(href), ul#catSubList a::attr(href), #mw-pages a::attr(href), div.mw-category a::attr(href), li a::attr(href)').getall()
 
         # Limit to 5 results per category page to prevent timeouts
         max_results = int(os.getenv('MIXESDB_MAX_RESULTS_PER_CATEGORY', '5'))
 
-        for link in mix_links[:max_results]:
+        valid_links = []
+        for link in mix_links:
             full_url = response.urljoin(link)
             if self.is_mix_url(full_url):
-                if self.is_source_processed(full_url):
-                    self.logger.debug(f"Skipping already processed URL: {full_url}")
+                if not self.force_run and self.is_source_processed(full_url):
                     continue
-                yield scrapy.Request(
-                    url=full_url,
-                    callback=self.parse_mix_page,
-                    errback=self.handle_error,
-                    meta={'download_timeout': 30}
-                )
+                if full_url not in valid_links:
+                    valid_links.append(full_url)
+                    if len(valid_links) >= max_results:
+                        break
+
+        for full_url in valid_links:
+            yield scrapy.Request(
+                url=full_url,
+                callback=self.parse_mix_page,
+                errback=self.handle_error,
+                dont_filter=True,
+                meta={'download_timeout': 30}
+            )
 
     def parse_recent_changes(self, response):
         """Parse recent changes for new mix links"""
@@ -461,13 +471,17 @@ class MixesdbSpider(scrapy.Spider):
 
     def is_mix_page(self, response):
         """Check if current page is a mix page"""
-        return bool(response.css('ol.tracklist, div.tracklist-section, h1#firstHeading'))
+        if any(p in response.url for p in ['Special:', 'Category:', 'search=', 'index.php?']):
+            return False
+        return bool(response.css('ol.tracklist, div.tracklist-section, table.tracklist, ul.tracklist')) or (
+            bool(response.xpath('//h2[contains(., "Tracklist")]')) and bool(response.xpath('//ol//li'))
+        )
 
     def is_mix_url(self, url):
         """Check if URL is likely a mix page"""
         exclude_patterns = [
             'Special:', 'Category:', 'User:', 'Talk:', 'File:', 'Template:',
-            'Help:', 'MediaWiki:', 'Main_Page'
+            'Help:', 'MediaWiki:', 'Main_Page', 'search=', 'index.php?'
         ]
         return not any(pattern in url for pattern in exclude_patterns)
 
