@@ -377,10 +377,10 @@ export const SettingsPage: React.FC = () => {
               label="Text size"
               value={prefs.textSize as 's' | 'm' | 'l' | 'xl'}
               options={[
-                { value: 's', label: 'S', ariaLabel: 'Small' },
-                { value: 'm', label: 'M', ariaLabel: 'Medium' },
-                { value: 'l', label: 'L', ariaLabel: 'Large' },
-                { value: 'xl', label: 'XL', ariaLabel: 'Extra large' },
+                { value: 's', label: 'Small (S)' },
+                { value: 'm', label: 'Medium (M)' },
+                { value: 'l', label: 'Large (L)' },
+                { value: 'xl', label: 'Extra large (XL)' },
               ]}
               onChange={(v) => {
                 SN.prefs.setTextSize(v);
@@ -451,7 +451,7 @@ export const SettingsPage: React.FC = () => {
                 <StatusPill raw="not_configured" label="Not connected" />
               )}
               {musicCredentials.tidal?.lastValidated ? (
-                <span className="sn-muted body-s">
+                <span className="sn-muted" style={{ fontSize: '0.8125rem' }}>
                   Last validated {SN.format.dateTime(new Date(musicCredentials.tidal.lastValidated))}
                 </span>
               ) : null}
@@ -461,7 +461,7 @@ export const SettingsPage: React.FC = () => {
             )}
             <div>
               <Button
-                kind="secondary"
+                kind={isTidalConnected ? 'secondary' : 'primary'}
                 onClick={connectTidal}
               >
                 <SnIcon name="plug" />
@@ -484,7 +484,7 @@ export const SettingsPage: React.FC = () => {
                 <StatusPill raw="not_configured" label="Not connected" />
               )}
               {musicCredentials.spotify?.lastValidated ? (
-                <span className="sn-muted body-s">
+                <span className="sn-muted" style={{ fontSize: '0.8125rem' }}>
                   Last validated {SN.format.dateTime(new Date(musicCredentials.spotify.lastValidated))}
                 </span>
               ) : null}
@@ -494,7 +494,7 @@ export const SettingsPage: React.FC = () => {
             )}
             <div>
               <Button
-                kind="secondary"
+                kind={isSpotifyConnected ? 'secondary' : 'primary'}
                 onClick={connectSpotify}
               >
                 <SnIcon name="plug" />
@@ -531,7 +531,7 @@ export const SettingsPage: React.FC = () => {
         return (
           <div>
             <SecretField
-              label="Anthropic (Claude) API key"
+              label="Anthropic (Claude) API Key"
               savedMask={getMaskedKey(aiConfig.claudeApiKey)}
               status={aiConfig.claudeStatus || 'unconfigured'}
               onSave={async (key) => {
@@ -567,7 +567,7 @@ export const SettingsPage: React.FC = () => {
         return (
           <div>
             <SecretField
-              label="OpenAI API key"
+              label="OpenAI API Key"
               savedMask={getMaskedKey(aiConfig.openaiApiKey)}
               status={aiConfig.openaiStatus || 'unconfigured'}
               onSave={async (key) => {
@@ -603,7 +603,7 @@ export const SettingsPage: React.FC = () => {
         return (
           <div>
             <SecretField
-              label="Google (Gemini) API key"
+              label="Google (Gemini) API Key"
               savedMask={getMaskedKey(aiConfig.geminiApiKey)}
               status={aiConfig.geminiStatus || 'unconfigured'}
               onSave={async (key) => {
@@ -707,7 +707,7 @@ export const SettingsPage: React.FC = () => {
                 Reset preferences to defaults
               </Button>
             </div>
-            <p className="sn-muted body-s">
+            <p className="sn-muted" style={{ fontSize: '0.8125rem' }}>
               Clearing credentials removes stored TIDAL and Spotify OAuth tokens in this browser.
             </p>
           </div>

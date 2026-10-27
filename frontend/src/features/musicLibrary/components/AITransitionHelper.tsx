@@ -41,7 +41,7 @@ export const AITransitionHelper: React.FC<AITransitionHelperProps> = ({
       <div className={`ai-transition-helper${compact ? ' ai-transition-helper--compact' : ''}`}>
         <div className="ai-transition-helper__header">
           <div className="ai-transition-helper__title">
-            <Sparkles size={16} aria-hidden="true" style={{ color: "var(--brand)" }} />
+            <Sparkles size={16} aria-hidden="true" className="sn-color-brand" />
             <span>AI Transition Advisor</span>
           </div>
 
@@ -54,11 +54,11 @@ export const AITransitionHelper: React.FC<AITransitionHelperProps> = ({
           </div>
         </div>
 
-        <div className="sn-row" style={{ justifyContent: "space-between", gap: "var(--space-2)" }}>
-          <div className="sn-row body-s" style={{ color: "var(--fg-2)", gap: "var(--space-1)" }}>
-            <span className="body-strong" style={{ color: "var(--fg)" }}>{sourceTitle}</span>
+        <div className="sn-row sn-justify-between sn-gap-2">
+          <div className="sn-row sn-color-fg-2 body-s sn-gap-1">
+            <span className="body-strong sn-color-fg">{sourceTitle}</span>
             <ArrowRight size={12} aria-hidden="true" />
-            <span className="body-strong" style={{ color: "var(--fg)" }}>{targetTitle}</span>
+            <span className="body-strong sn-color-fg">{targetTitle}</span>
           </div>
 
           <button
