@@ -3,13 +3,9 @@ import { SnIcon } from '../../../lib/songnodes';
 import { Button } from '../../../components/ds';
 
 export const InlineMessage: React.FC<{ status: 'ok' | 'fair' | 'warn' | 'bad' | 'info'; children: React.ReactNode; boxed?: boolean; id?: string }> = ({ status, children, boxed, id }) => {
-  const icons: Record<string, string> = { ok: 'check-circle', fair: 'adjustments-horizontal', warn: 'alert-triangle', bad: 'x-circle', info: 'info' };
   return (
-    <div id={id} className={`sn-inline-msg sn-inline-msg--${status} ${boxed ? 'sn-inline-msg--boxed' : ''}`} role="status">
-       <span className="sn-inline-msg__icon" aria-hidden="true">
-         <SnIcon name={icons[status] as any} size={16} />
-       </span>
-       <span className="sn-inline-msg__text body">{children}</span>
+    <div id={id} className={`sn-inline-message ${boxed ? 'sn-inline-message--boxed' : ''}`} data-status={status} role="status">
+       <span>{children}</span>
     </div>
   );
 };
@@ -29,7 +25,7 @@ export const CopyButton: React.FC<{ label: string; what: string; value: string; 
 
   return (
     <Button size={size} onClick={handleCopy} aria-label={`Copy ${what}`}>
-      <SnIcon name={copied ? "check" : "copy"} size={16} className="sn-mr-2" />
+      <span style={{ marginRight: 'var(--space-2)' }}><SnIcon name={copied ? "check" : "copy"} size={16} /></span>
       {copied ? "Copied" : label}
     </Button>
   );
