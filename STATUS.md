@@ -1245,8 +1245,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:TG2 BEGIN -->
 ### TG2: Target suggestions: frontend data hook and actions
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- End: 2026-10-27 Added `useTargetSuggestions` hook in `frontend/src/hooks/useTargetSuggestions.ts` for managing target track suggestions via `/api/v1/target-tracks/suggestions` including fetch, dismiss (persisting to local storage), and promote-to-target functionalities. Checks run: `npx vitest run src/hooks/useTargetSuggestions.test.ts`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vite build` on Node 26. Playwright E2E testing cannot run in sandbox. PR: https://github.com/zvirb/songnodes/pull/260
 <!-- SLOT:TG2 END -->
 
 <!-- SLOT:TG3 BEGIN -->
