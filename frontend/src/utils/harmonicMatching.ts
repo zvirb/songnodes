@@ -167,7 +167,7 @@ export function calculateEnergyScore(
  * Calculate genre compatibility score (0-1)
  */
 export function calculateGenreScore(sourceGenre?: string, targetGenre?: string): number {
-  if (!sourceGenre || !targetGenre) return 0.5; // Missing - neutral score
+  if (!sourceGenre || !targetGenre) return 0.5; // Unknown - neutral score
 
   if (sourceGenre === targetGenre) return 1.0;
 

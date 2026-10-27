@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, Settings, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { checkAIAvailability, type TrackSummary } from '../../../services/aiService';
 import { AIAssistantModal } from '../../../components/AIAssistantModal';
-import { StatusPill } from '../../../lib/songnodes';
 import '../../../components/AIAssistantModal.css';
 
 export interface AITransitionHelperProps {
@@ -41,24 +40,30 @@ export const AITransitionHelper: React.FC<AITransitionHelperProps> = ({
       <div className={`ai-transition-helper${compact ? ' ai-transition-helper--compact' : ''}`}>
         <div className="ai-transition-helper__header">
           <div className="ai-transition-helper__title">
-            <Sparkles size={16} aria-hidden="true" className="sn-color-brand" />
+            <Sparkles size={16} aria-hidden="true" style={{ color: 'var(--brand)' }} />
             <span>AI Transition Advisor</span>
           </div>
 
           <div className="ai-transition-helper__badge">
             {isAvailable === true ? (
-              <StatusPill raw="ok" label="AI Active" />
+              <span className="sn-pill sn-pill--outline" style={{ color: 'var(--status-ok)', borderColor: 'var(--status-ok)' }}>
+                <ShieldCheck size={12} aria-hidden="true" style={{ marginRight: 'var(--space-1)' }} />
+                AI Active
+              </span>
             ) : isAvailable === false ? (
-              <StatusPill raw="warn" label="Unconfigured" />
+              <span className="sn-pill sn-pill--outline" style={{ color: 'var(--status-warn)', borderColor: 'var(--status-warn)' }}>
+                <AlertTriangle size={12} aria-hidden="true" style={{ marginRight: 'var(--space-1)' }} />
+                Unconfigured
+              </span>
             ) : null}
           </div>
         </div>
 
-        <div className="sn-row sn-justify-between sn-gap-2">
-          <div className="sn-row sn-color-fg-2 body-s sn-gap-1">
-            <span className="body-strong sn-color-fg">{sourceTitle}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--fg-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+            <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{sourceTitle}</span>
             <ArrowRight size={12} aria-hidden="true" />
-            <span className="body-strong sn-color-fg">{targetTitle}</span>
+            <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{targetTitle}</span>
           </div>
 
           <button

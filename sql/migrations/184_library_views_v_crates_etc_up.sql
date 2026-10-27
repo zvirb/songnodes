@@ -18,7 +18,7 @@ SELECT track_id, reason
 FROM library.pending;
 
 CREATE OR REPLACE VIEW library.v_buy_list AS
-SELECT t.id AS track_id
+SELECT track_id
 FROM library.tracks t
 WHERE NOT EXISTS (SELECT 1 FROM library.rejected WHERE track_id = t.id)
   AND NOT EXISTS (SELECT 1 FROM library.pending WHERE track_id = t.id);

@@ -15,14 +15,14 @@ export interface EnergyPoint {
 }
 
 export const MOOD_COLORS: { [key: string]: string } = {
-  euphoric: 'var(--energy-10)',
-  energetic: 'var(--energy-8)',
-  uplifting: 'var(--energy-6)',
-  balanced: 'var(--status-ok)',
-  mellow: 'var(--energy-3)',
-  contemplative: 'var(--energy-2)',
-  melancholic: 'var(--brand)',
-  ambient: 'var(--line-strong)',
+  euphoric: '#ef4444',
+  energetic: '#f97316',
+  uplifting: '#f59e0b',
+  balanced: '#10b981',
+  mellow: '#06b6d4',
+  contemplative: '#3b82f6',
+  melancholic: '#8b5cf6',
+  ambient: '#6b7280',
 };
 
 const classifyMood = (energy: number): string => {

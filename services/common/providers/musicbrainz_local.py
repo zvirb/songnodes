@@ -9,11 +9,8 @@ from common.providers.base import Provider, ProviderTrack
 try:
     from services.reference_data.resolver.resolver import MusicBrainzResolver, local_candidates
 except ImportError:
-    try:
-        from reference_data.resolver.resolver import MusicBrainzResolver, local_candidates
-    except ImportError:
-        MusicBrainzResolver = None
-        local_candidates = None
+    # Need to be able to import when running pytest
+    from reference_data.resolver.resolver import MusicBrainzResolver, local_candidates
 
 class MusicBrainzLocalProvider(Provider):
     name = 'musicbrainz_local'
@@ -31,7 +28,7 @@ class MusicBrainzLocalProvider(Provider):
         return self.pool
 
     async def lookup(self, target: Track, genres: Optional[List[str]] = None) -> List[ProviderTrack]:
-        if not self.settings.enabled or MusicBrainzResolver is None:
+        if not self.settings.enabled:
             return []
 
         pool = await self._get_pool()

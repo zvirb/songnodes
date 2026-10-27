@@ -10,7 +10,7 @@ describe('parseAttributions', () => {
   it('drops malformed entries, non-https links and unexpected payloads', () => {
     const payload = { attributions: [
       { provider: 'a', text: 'x', url: 'http://insecure.example' },
-      { provider: 'b', text: 'x', url: 'javascript:console.log(1)' },
+      { provider: 'b', text: 'x', url: 'javascript:alert(1)' },
       { provider: 'c', text: 'x', url: 'not a url' },
       { provider: 'd', text: 5, url: 'https://ok.example' },
       null,
