@@ -263,7 +263,7 @@ export const KeyBadge = React.forwardRef<HTMLSpanElement, KeyBadgeProps>(({
 
   return (
     <span ref={ref} className={cls} data-key={code} {...props}>
-      <span className="sn-key__code">{code}</span>
+      <span className="data">{code}</span>
       {name ? <span className="sn-key__name">{name}</span> : null}
     </span>
   );
@@ -1409,7 +1409,7 @@ export const Dialog = React.forwardRef<HTMLDialogElement, DialogProps>(({
           <X {...ICON} />
         </Button>
       </div>
-      {open ? (onSubmit ? <form onSubmit={onSubmit} className="sn-dialog__form">{inner}</form> : inner) : null}
+      {open ? (onSubmit ? <form onSubmit={onSubmit}>{inner}</form> : inner) : null}
     </dialog>
   );
 });

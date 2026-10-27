@@ -234,7 +234,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
 
             {/* Custom Instructions Field */}
             <div className="sn-field">
-              <label htmlFor="ai-custom-instructions" className="sn-label">
+              <label htmlFor="ai-custom-instructions" className="label">
                 Custom Mixing Focus or Cue Notes (Optional)
               </label>
               <input
@@ -326,7 +326,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
 
             <TabPanel idBase="ai-modal" id="history">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
-                <span className="sn-label">Past Prompt Executions</span>
+                <span className="label">Past Prompt Executions</span>
                 {history.length > 0 && (
                   <button type="button" className="sn-btn sn-btn--quiet sn-btn--sm" onClick={handleClearHistory}>
                     <RotateCcw size={12} aria-hidden="true" style={{ marginRight: 'var(--space-1)' }} />

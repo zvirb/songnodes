@@ -63,7 +63,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Text size')).toBeDefined();
     expect(screen.getByText('TIDAL connection')).toBeDefined();
     expect(screen.getByText('Spotify connection')).toBeDefined();
-    expect(screen.getByText('Anthropic (Claude) API key')).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Anthropic (Claude) API key' })).toBeDefined();
   });
 
   it('filters setting cards live when typing in the search box', async () => {

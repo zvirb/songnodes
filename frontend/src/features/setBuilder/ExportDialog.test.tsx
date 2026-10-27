@@ -113,11 +113,11 @@ describe('ExportDialog', () => {
   it('calls onClose when close button is clicked', async () => {
     render(<ExportDialog open={true} set={mockSet} byId={byId} onClose={mockOnClose} />);
 
-    // Find the Close button using document.querySelectorAll to avoid multiple matches from icons etc if they exist
+    // Find the Cancel button using document.querySelectorAll to avoid multiple matches from icons etc if they exist
     const buttons = document.querySelectorAll('button');
     let closeBtn: HTMLButtonElement | null = null;
     buttons.forEach((b) => {
-      if (b.textContent === 'Close') closeBtn = b;
+      if (b.textContent === 'Cancel' || b.getAttribute('aria-label') === 'Close') closeBtn = b;
     });
 
     if (!closeBtn) {

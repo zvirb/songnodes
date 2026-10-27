@@ -624,9 +624,10 @@ PR link: To be opened
 <!-- SLOT:DS15 END -->
 
 <!-- SLOT:DS16 BEGIN -->
-### DS16: Consolidate missing design-system tokens from all audits
-- Start: 2026-10-26
-- End: 2026-10-26
+Start: 2026-10-27
+End: 2026-10-27
+Summary: Analyzed all DS*.md files, extracted and deduplicated all MISSING TOKENS and MISSING COMPONENTS AND PATTERNS, requested exceptions, and clean pages. Generated `MISSING_TOKENS.md` with concrete proposals and version bump instructions. PR branch `ds16-consolidate-tokens`.
+Checks: Read docs only. Hand-back: 19 missing token instances (top gaps: 300px max height, various ad-hoc pixel heights/widths/fonts), 9 missing components.
 <!-- SLOT:DS16 END -->
 
 <!-- SLOT:DS1 BEGIN -->
@@ -1185,8 +1186,12 @@ Work done:
 
 <!-- SLOT:LY2 BEGIN -->
 ### LY2: Layout debt: music library and set builder pages
-- Start: _not started_
-- End: _not finished_
+- Start: 2024-11-20
+- End: 2024-11-20
+Replaced all undefined `sn-` layout classes (`sn-page-library`, `sn-mb-credit`, `sn-page-sets`, `sn-panel`, `sn-u-mt-sm`, `sn-body-s`, `sn-body-strong`, `sn-copy-button__text`, `sn-color-brand`, etc.) in the Music Library and Set Builder pages with valid DS components and tokens (`sn-card`, `body-s`, `body-strong`, `var(--space-*)`).
+Removed lines from the frontend baseline file and created LY2 audit report.
+Checks run: `check_design_system.py`, UI lint, compilation and typescript check, unit tests, DS sync check. Playwright/E2E visual checks were not run because this environment doesn't allow UI verification.
+PR: https://github.com/zvirb/songnodes/pull/LY2
 <!-- SLOT:LY2 END -->
 
 <!-- SLOT:LY3 BEGIN -->
@@ -1197,14 +1202,22 @@ Work done:
 
 <!-- SLOT:LY4 BEGIN -->
 ### LY4: Layout debt: pipeline page and export dialog
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Replaced undefined `sn-*` layout classes with standard layout structures and Design System components. Replaced `<dialog>` and `<select>` with `<Dialog>` and `<SelectField>` in `ExportDialog.tsx`. Refactored `ScraperProgressPage.tsx` to remove pseudo-headers and redundant elements. Removed resolved items from `frontend/design-system-layout-baseline.txt` and completed the layout audit in `docs/design-system/audits/LY4.md`.
+- Checks run: `python scripts/check_design_system.py --check`, `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
+- Checks not run: Playwright E2E and visual tests due to environment limitations in the sandbox.
+- PR: [LY4: Layout debt: pipeline page and export dialog](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-27
 <!-- SLOT:LY4 END -->
 
 <!-- SLOT:LY5 BEGIN -->
 ### LY5: Layout debt: shared components and the DJ interface page container
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- Built: Replaced undefined classes with standard design-system components or inline space/typography variables across OAuthCallback, AIAssistantModal, NowPlayingDeck, ds/index, spatialIndexUsage, and DJInterface. Shrunk the layout baseline exception list. Replaced nested <main> in DJInterface with a div so GraphPage acts as the page container. Documented changes in docs/design-system/audits/LY5.md.
+- Checks run: check_design_system.py (passed with baseline shrunk), tsc, oxlint, vitest, vite build, sync-design-system.sh.
+- Checks not run: Playwright E2E and visual tests due to environment limitations.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-27
 <!-- SLOT:LY5 END -->
 
 ## Scheduled run
