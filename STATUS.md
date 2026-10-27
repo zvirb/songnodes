@@ -1176,8 +1176,11 @@ Work done:
 
 <!-- SLOT:LY1 BEGIN -->
 ### LY1: Layout debt: AI setlists page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26. Replaced undefined layout classes (`sn-card--danger`, `sn-field--inline`, `sn-layout-stack`, `sn-layout-grid`, `sn-list`, `sn-mb-*`, `sn-ml-*`, `sn-mr-*`, `sn-mt-*`, `sn-page__body`, `sn-row--compact`, `sn-stat`, `sn-inline-msg`) with valid design system counterparts, components like `ErrorPanel` and `FigureTile`, or exact layout inline styles using `var(--space-*)` in `AISetlistsPage.tsx` and `ui.tsx`. Generated audit docs at `docs/design-system/audits/LY1.md`.
+- Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` (success), `python scripts/check_design_system.py --check` (success), `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check` (success).
+- Checks not run: Playwright E2E and visual tests due to environment constraints.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
 <!-- SLOT:LY1 END -->
 
 <!-- SLOT:LY2 BEGIN -->

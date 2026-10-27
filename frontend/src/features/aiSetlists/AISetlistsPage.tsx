@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader } from '../../shell/PageParts';
-import { Button, Tabs, ConfirmDialog } from '../../components/ds';
+import { Button, Tabs, ConfirmDialog, ErrorPanel } from '../../components/ds';
 import { InlineMessage, CopyButton, DataTable, type DataTableColumn } from './components/ui';
 import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { buildPrompt } from './api/prompt';
@@ -219,7 +219,7 @@ export default function AISetlistsPage() {
         title="Import tracklist"
         desc="Find and import real, documented DJ setlists using AI providers."
       />
-      <div className="sn-page__body">
+      <div>
         <Tabs
           label="Import Methods"
           value={activeTab}
@@ -229,11 +229,11 @@ export default function AISetlistsPage() {
             { id: 'api', label: 'Use API' }
           ]}
         />
-        <div className="sn-layout-stack" style={{ gap: 'var(--space-6)', marginTop: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', marginTop: 'var(--space-4)' }}>
 
            <div className="sn-card">
-             <h2 className="title-s sn-mb-3">Setlist Parameters</h2>
-             <div className="sn-layout-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
+             <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>Setlist Parameters</h2>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
                <label className="sn-field">
                  <span className="label">Genre / Style</span>
                  <input type="text" className="sn-input" value={genre} onChange={e => setGenre(e.target.value)} placeholder="e.g. Techno, UKG" />
@@ -255,15 +255,15 @@ export default function AISetlistsPage() {
 
            {activeTab === 'prompt' ? (
              <div className="sn-card">
-               <h2 className="title-s sn-mb-3">1. Copy Prompt</h2>
+               <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>1. Copy Prompt</h2>
                <div className="sn-tablebox" style={{ maxHeight: 200, padding: 'var(--space-3)' }}>
                  <pre className="data" style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{generatedPrompt}</pre>
                </div>
-               <div className="sn-mt-3">
+               <div style={{ marginTop: 'var(--space-3)' }}>
                  <CopyButton value={generatedPrompt} what="Prompt" label="Copy prompt" />
                </div>
 
-               <h2 className="title-s sn-mt-6 sn-mb-3">2. Paste Result</h2>
+               <h2 className="title-s" style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-3)' }}>2. Paste Result</h2>
                <textarea
                  className="sn-input"
                  rows={8}
@@ -271,27 +271,27 @@ export default function AISetlistsPage() {
                  onChange={e => setPastedJson(e.target.value)}
                  placeholder="Paste the JSON response here..."
                />
-               <div className="sn-mt-3">
+               <div style={{ marginTop: 'var(--space-3)' }}>
                  <button className="sn-btn sn-btn--primary" onClick={() => handleReview(pastedJson)} disabled={!pastedJson.trim()}>Review Data</button>
                </div>
              </div>
            ) : (
              <div className="sn-card">
-                <h2 className="title-s sn-mb-3">Provider Settings</h2>
+                <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>Provider Settings</h2>
                 {providers.length === 0 ? (
                    <InlineMessage status="warn">No AI providers configured. Add keys in Settings.</InlineMessage>
                 ) : (
-                   <div className="sn-row sn-row--compact">
-                     <label className="sn-field sn-field--inline">
+                   <div className="sn-row">
+                     <label className="sn-field" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
                        <span className="label">Provider</span>
                        <select className="sn-input" value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)}>
                          {providers.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
                        </select>
                      </label>
                      {selectedProvider === 'gemini' && (
-                       <label className="sn-field sn-field--inline" style={{ marginLeft: 'var(--space-4)' }}>
+                       <label className="sn-field" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)', marginLeft: 'var(--space-4)' }}>
                          <input type="checkbox" checked={useWebSearch} onChange={e => setUseWebSearch(e.target.checked)} />
-                         <span className="label sn-ml-2">Enable Web Search</span>
+                         <span className="label" style={{ marginLeft: 'var(--space-2)' }}>Enable Web Search</span>
                        </label>
                      )}
                      <button className="sn-btn sn-btn--primary" onClick={handleRunAPI} disabled={isCallingAPI}>
@@ -299,45 +299,44 @@ export default function AISetlistsPage() {
                      </button>
                    </div>
                 )}
-                {apiError && <div className="sn-mt-3"><InlineMessage status="bad">{apiError}</InlineMessage></div>}
+                {apiError && <div style={{ marginTop: 'var(--space-3)' }}><InlineMessage status="bad">{apiError}</InlineMessage></div>}
              </div>
            )}
 
            {parseErrors.length > 0 && (
-             <div className="sn-card sn-card--danger">
-               <h2 className="title-s">Validation Errors</h2>
-               <ul className="sn-list sn-mt-2">
+             <ErrorPanel status="bad" title="Validation Errors" helps={false} style={{ marginBottom: 'var(--space-4)' }}>
+               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                  {parseErrors.map((err, i) => <li key={i} className="body">{err}</li>)}
                </ul>
-             </div>
+             </ErrorPanel>
            )}
 
            {reviewResult && (
              <div className="sn-card">
-               <h2 className="title-s sn-mb-4">Review Summary</h2>
-               <div className="sn-layout-grid sn-mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)'}}>
-                  <div className="sn-stat">
-                    <div className="figure">{reviewResult.newSetlists.length}</div>
-                    <div className="label">NEW SETLISTS</div>
+               <h2 className="title-s" style={{ marginBottom: 'var(--space-4)' }}>Review Summary</h2>
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)'}}>
+                  <div className="sn-figure-tile">
+                    <div className="sn-figure-tile__label">NEW SETLISTS</div>
+                    <div className="sn-figure-tile__figure">{reviewResult.newSetlists.length}</div>
                   </div>
-                  <div className="sn-stat">
-                    <div className="figure" style={{ color: 'var(--fg-3)'}}>{reviewResult.existingSetlists.length}</div>
-                    <div className="label">EXCLUDED</div>
+                  <div className="sn-figure-tile">
+                    <div className="sn-figure-tile__label">EXCLUDED</div>
+                    <div className="sn-figure-tile__figure" style={{ color: 'var(--fg-3)' }}>{reviewResult.existingSetlists.length}</div>
                   </div>
-                  <div className="sn-stat">
-                    <div className="figure">{reviewResult.tracksNew}</div>
-                    <div className="label">NEW TRACKS</div>
+                  <div className="sn-figure-tile">
+                    <div className="sn-figure-tile__label">NEW TRACKS</div>
+                    <div className="sn-figure-tile__figure">{reviewResult.tracksNew}</div>
                   </div>
-                  <div className="sn-stat">
-                    <div className="figure" style={{ color: 'var(--fg-3)'}}>{reviewResult.tracksExisting}</div>
-                    <div className="label">EXISTING TRACKS</div>
+                  <div className="sn-figure-tile">
+                    <div className="sn-figure-tile__label">EXISTING TRACKS</div>
+                    <div className="sn-figure-tile__figure" style={{ color: 'var(--fg-3)' }}>{reviewResult.tracksExisting}</div>
                   </div>
                </div>
 
                {reviewResult.existingSetlists.length > 0 && (
-                  <div className="sn-mb-6">
-                    <h3 className="title-lead sn-mb-2">Excluded Setlists</h3>
-                    <ul className="sn-list">
+                  <div style={{ marginBottom: 'var(--space-6)' }}>
+                    <h3 className="title-lead" style={{ marginBottom: 'var(--space-2)' }}>Excluded Setlists</h3>
+                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                       {reviewResult.existingSetlists.map((ex, i) => (
                          <li key={i} className="body-s">
                            <span style={{ color: 'var(--fg-2)' }}>{ex.setlist.dj} @ {ex.setlist.event} ({ex.setlist.date})</span> — {ex.reason}
@@ -348,15 +347,15 @@ export default function AISetlistsPage() {
                )}
 
                {reviewResult.newSetlists.length > 0 && (
-                 <div className="sn-mb-6">
-                   <h3 className="title-lead sn-mb-2">New Setlists to Import</h3>
-                   <div className="sn-layout-stack" style={{ gap: 'var(--space-6)' }}>
+                 <div style={{ marginBottom: 'var(--space-6)' }}>
+                   <h3 className="title-lead" style={{ marginBottom: 'var(--space-2)' }}>New Setlists to Import</h3>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                      {reviewResult.newSetlists.map(sl => {
                         const slKey = `${sl.dj}|${sl.event}|${sl.date}`;
                         const isSelected = selectedSetlists.has(slKey);
                         return (
                           <div key={slKey}>
-                            <div className="sn-row sn-mb-2">
+                            <div className="sn-row" style={{ marginBottom: 'var(--space-2)' }}>
                               <input
                                 type="checkbox"
                                 checked={isSelected}
@@ -368,7 +367,7 @@ export default function AISetlistsPage() {
                                 }}
                               />
                               <span className="body-strong">{sl.dj} @ {sl.event} ({sl.date || 'Unknown Date'})</span>
-                              <a href={sl.source_url} target="_blank" rel="noreferrer" className="label sn-link sn-ml-auto">Source</a>
+                              <a href={sl.source_url} target="_blank" rel="noreferrer" className="label sn-link" style={{ marginLeft: 'auto' }}>Source</a>
                             </div>
                             {isSelected && (
                               <DataTable
@@ -386,7 +385,7 @@ export default function AISetlistsPage() {
                  </div>
                )}
 
-               <div className="sn-mt-6" aria-live="polite">
+               <div style={{ marginTop: 'var(--space-6)' }} aria-live="polite">
                  <button
                    className="sn-btn sn-btn--primary"
                    disabled={selectedSetlists.size === 0 || isImporting}
@@ -397,12 +396,12 @@ export default function AISetlistsPage() {
                </div>
 
                {importStats && (
-                 <div className="sn-mt-4">
+                 <div style={{ marginTop: 'var(--space-4)' }}>
                    <InlineMessage status={importStats.failed > 0 ? "warn" : "ok"}>
                      Import complete: {importStats.created} created, {importStats.replayed} replayed, {importStats.failed} failed.
                    </InlineMessage>
                    {failedSetlists.length > 0 && (
-                     <button className="sn-btn sn-mt-2" onClick={handleRetryFailed}>Retry Failed Imports</button>
+                     <button className="sn-btn" style={{ marginTop: 'var(--space-2)' }} onClick={handleRetryFailed}>Retry Failed Imports</button>
                    )}
                  </div>
                )}
