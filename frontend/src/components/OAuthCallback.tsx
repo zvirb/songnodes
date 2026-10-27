@@ -4,62 +4,91 @@ import { API_BASE_URL } from '../lib/apiBase';
 
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
-  const [message, setMessage] = useState<string>('Validating authentication request...');
-  const [service, setService] = useState<string>('music service');
+  const [message, setMessage] = useState('Processing authentication...');
+  const [service, setService] = useState<'tidal' | 'spotify'>('tidal');
+
+  // Prevent duplicate requests in React Strict Mode (development)
   const hasProcessed = useRef(false);
 
   useEffect(() => {
-    // Prevent double-processing in React Strict Mode
-    if (hasProcessed.current) return;
-    hasProcessed.current = true;
-
     const handleOAuthCallback = async () => {
+      // Guard against React Strict Mode double-rendering
+      if (hasProcessed.current) {
+        return;
+      }
+      hasProcessed.current = true;
+
       try {
-        const urlParams = new URLSearchParams(window.location.search);
+        // Detect which service from URL path (2025 Best Practice: Explicit service detection)
+        const pathname = window.location.pathname;
+        console.log('[OAuth] Callback pathname:', pathname);
 
-        // Error handling from OAuth provider
-        const error = urlParams.get('error');
-        if (error) {
-          console.error('OAuth returned error:', error);
-          setStatus('error');
-          setMessage(`Authentication failed: The provider returned an error (${error})`);
-
-          if (window.opener) {
-            window.opener.postMessage({
-              type: 'oauth-error',
-              error: error
-            }, window.location.origin);
-          }
-          return;
-        }
-
-        const code = urlParams.get('code');
-        const state = urlParams.get('state');
-
-        if (!code || !state) {
-          throw new Error('Missing authorization code or state parameter');
-        }
-
-        // Determine which service this is based on path or state
-        const path = window.location.pathname;
-        let detectedService = 'spotify'; // default
-
-        if (path.includes('spotify')) {
+        // Explicit service detection with validation
+        let detectedService: 'spotify' | 'tidal';
+        if (pathname.includes('/callback/spotify') || pathname.includes('spotify')) {
           detectedService = 'spotify';
-        } else if (path.includes('tidal') || state.includes('tidal')) {
+        } else if (pathname.includes('/oauth/callback') || pathname.includes('tidal')) {
           detectedService = 'tidal';
-        } else if (sessionStorage.getItem('tidal_auth_state')) {
-          detectedService = 'tidal';
+        } else {
+          console.error('[OAuth] Unable to determine service from path:', pathname);
+          throw new Error('Unable to determine authentication service. Please try again.');
         }
 
         setService(detectedService);
+        console.log('[OAuth] Detected service:', detectedService);
+
         const serviceName = detectedService.charAt(0).toUpperCase() + detectedService.slice(1);
 
-        setMessage(`Authorizing with ${serviceName}...`);
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
 
-        // 2025 Best Practice: Stricter state validation with domain prefixing
-        // We check a few possible keys to maintain backwards compatibility during rollout
+        // SECURITY: Immediately sanitize history and URL address bar using history.replaceState
+        // to strip authorization codes, tokens, and scopes, preventing token leakage through browser history or Referer headers.
+        if (window.location.search || window.location.hash) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Check for OAuth errors
+        if (error) {
+          setStatus('error');
+          setMessage(`Authentication failed: ${errorDescription || error}`);
+
+          // Notify parent window (if opened as popup)
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth-error',
+              service: detectedService,
+              error: error,
+              error_description: errorDescription
+            }, window.location.origin);
+          }
+
+          setTimeout(() => {
+            if (window.opener) {
+              window.close();
+            } else {
+              window.location.href = '/';
+            }
+          }, 3000);
+          return;
+        }
+
+        // Validate required parameters
+        if (!code || !state) {
+          setStatus('error');
+          setMessage('Missing required OAuth parameters');
+          setTimeout(() => window.location.href = '/', 3000);
+          return;
+        }
+
+        // SECURITY: Cryptographic state parameter verification (OAuth CSRF protection)
+        // Retrieve and consume securely generated pre-flight nonce from session storage
         const candidateKeys = [
+          `${detectedService}_auth_state`,
           'spotify_auth_state',
           'tidal_auth_state',
           'oauth_state',
@@ -104,9 +133,6 @@ const OAuthCallback: React.FC = () => {
         }
 
         setMessage(`Exchanging authorization code for ${serviceName} access token...`);
-
-        // Clean URL to prevent leaking codes in history or referrers
-        window.history.replaceState({}, document.title, window.location.pathname);
 
         // Exchange authorization code for tokens
         // SECURITY: Client secret handled entirely by backend, never exposed to frontend

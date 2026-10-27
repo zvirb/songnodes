@@ -545,8 +545,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:DS10 BEGIN -->
 ### DS10: Design system audit and fix: OAuth callback page
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed audit and fixes. Documented missing `StagedProgress` and layout class in `docs/design-system/audits/DS10.md`. Refactored `frontend/src/components/OAuthCallback.tsx` to use design system components (`Card`, `Title`, `Button`) and `sn-*` classes instead of inline styles. Run `npm ci`, `npx tsc`, `npx vite build` and `check_design_system.py`. Did not run Playwright E2E tests due to sandbox environment constraints.
 <!-- SLOT:DS10 END -->
 
 <!-- SLOT:DS11 BEGIN -->
@@ -821,8 +821,8 @@ Work done:
 
 <!-- SLOT:SB3 BEGIN -->
 ### SB3: Set builder: reorder tracks
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:SB3 END -->
 
 <!-- SLOT:SEC6B BEGIN -->
@@ -869,8 +869,8 @@ Work done:
 
 <!-- SLOT:U6 BEGIN -->
 ### U6: Upgrade RabbitMQ to 4.3 in the dev stack
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
 <!-- SLOT:U6 END -->
 
 <!-- SLOT:U7 BEGIN -->
@@ -918,8 +918,11 @@ Work done:
 
 <!-- SLOT:U13 BEGIN -->
 ### U13: Upgrade services/data-validator to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/data-validator base image to python:3.15-slim. Updated pinned versions for pytest-asyncio (1.4.1) and starlette (1.10.0). Added build step to remove build-essential after PyYAML compilation.
+- Checks run: `docker build` (success). `python -m pytest` (success). `import main` (success).
+- Checks not run: None.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U13 END -->
 
 <!-- SLOT:U14 BEGIN -->
@@ -933,14 +936,19 @@ Work done:
 
 <!-- SLOT:U15 BEGIN -->
 ### U15: Upgrade services/dlq-manager to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Upgraded services/dlq-manager base image to Python 3.15. Requirements are already up to date.
+- Checks run: `docker build` succeeds, `python --version` inside the image prints 3.15, and `python -c "import main"` succeeds.
+- Checks not run: Pytest tests (none exist in the service folder).
+- End: 2026-10-26
 <!-- SLOT:U15 END -->
 
 <!-- SLOT:U16 BEGIN -->
 ### U16: Upgrade services/gold-to-operational-etl to Python 3.15 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `services/gold-to-operational-etl/Dockerfile` and `services/Dockerfile.gold_processor` base images to Python 3.15-slim. Verified requirements are already at the target version (asyncpg==0.32.0 / >=0.30.0) without needing changes.
+- Checks run: `docker build` for both images. Ran `python --version` inside the built images showing 3.15.1, and successfully imported their respective entry modules (`gold_to_operational_etl` and `gold_layer_processor`). No test files found for this service.
+- End: 2026-10-26 - Completed changes
 <!-- SLOT:U16 END -->
 
 <!-- SLOT:U17 BEGIN -->
@@ -993,8 +1001,8 @@ Work done:
 
 <!-- SLOT:U19 BEGIN -->
 ### U19: Upgrade services/nlp-processor to Python 3.14 and latest requirements
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26 11:51:15
+- End: 2026-10-26 12:47:04
 <!-- SLOT:U19 END -->
 
 <!-- SLOT:U25 BEGIN -->
@@ -1023,8 +1031,11 @@ Work done:
 
 <!-- SLOT:U29 BEGIN -->
 ### U29: Upgrade the graph projection service to Python 3.15 and neo4j 6
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Moved graph projection service to Python 3.15-slim. Upgraded neo4j driver to 6.x. Replaced `session.run()` with `driver.execute_query()`.
+- Checks run: `python -m pytest tests/graph_projection` inside the sandbox with python 3.12 (passes). `docker build` the graph projection service on python 3.15 (passes).
+- Checks not run: Full e2e tests due to lack of environment access.
+- End: 2026-10-26
 <!-- SLOT:U29 END -->
 
 ## Scheduled run
@@ -1204,9 +1215,3 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Start: 2026-10-26 - Optimizing `services/common/metadata/matching.py` with pre-compiled regexes, memoized parsing functions, and single-pass target evaluation in `best_match`.
 - End: 2026-10-26 - Pre-compiled regexes, added `@lru_cache` to text normalization functions, and pre-computed target track metadata in `best_match`. Passed unit tests in `services/common/tests/test_metadata_resolution.py` and benchmarked >60% execution time reduction (from 7.46s to 2.88s per 50,000 matches).
 <!-- SLOT:BOLT END -->
-
-<!-- SLOT:DS10 BEGIN -->
-### DS10: Design system audit and fix: OAuth callback page
-- Start: 2026-10-26
-- End: 2026-10-26 - Completed audit and fixes. Documented missing `StagedProgress` and layout class in `docs/design-system/audits/DS10.md`. Refactored `frontend/src/components/OAuthCallback.tsx` to use design system components (`Card`, `Title`, `Button`) and `sn-*` classes instead of inline styles. Run `npm ci`, `npx tsc`, `npx vite build` and `check_design_system.py`. Did not run Playwright E2E tests due to sandbox environment constraints. PR: https://github.com/zvirb/songnodes/pull/NEW
-<!-- SLOT:DS10 END -->
