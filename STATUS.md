@@ -1218,8 +1218,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX7 BEGIN -->
 ### UX7: Music service search: query history and suggestion chips
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- Built: Updated `MusicServiceSearch.tsx` to use `recentSearches.ts`, adding recent search tracking and rendering chips for empty search states. Added `Clear history` functionality. Added integration tests to `MusicServiceSearch.test.tsx`.
+- Checks run: `vitest run src/components/MusicServiceSearch.test.tsx`, `tsc --noEmit`, `oxlint src`, `vitest run src`, `vite build`, design system check.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- End: 2026-10-26
 <!-- SLOT:UX7 END -->
 
 <!-- SLOT:UX8 BEGIN -->
