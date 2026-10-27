@@ -137,7 +137,7 @@ const ScraperProgressPage: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
 
           {/* Tile 1: Active Workers */}
-          <div className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
               <span className="label" style={{ flex: 1 }}>Running jobs</span>
               <Activity size={18} color="var(--brand)" />
@@ -151,7 +151,7 @@ const ScraperProgressPage: React.FC = () => {
           </div>
 
           {/* Tile 2: Items Processed */}
-          <div className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
               <span className="label" style={{ flex: 1 }}>Total jobs executed</span>
               <CheckCircle2 size={18} color="var(--status-ok)" />
@@ -165,7 +165,7 @@ const ScraperProgressPage: React.FC = () => {
           </div>
 
           {/* Tile 3: Throughput Rate */}
-          <div className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
               <span className="label" style={{ flex: 1 }}>Throughput speed</span>
               <Zap size={18} color="var(--status-info)" />
@@ -179,7 +179,7 @@ const ScraperProgressPage: React.FC = () => {
           </div>
 
           {/* Tile 4: Error Count */}
-          <div className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
               <span className="label" style={{ flex: 1 }}>Dead letters</span>
               <AlertTriangle size={18} color={telemetry.errorCount > 0 ? "var(--status-warn)" : "var(--status-ok)"} />
@@ -196,13 +196,13 @@ const ScraperProgressPage: React.FC = () => {
 
       {/* Multi-Stage Medallion Pipeline Progress */}
       <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
-        <SectionHeading title="Medallion pipeline flow" count="4 Stages" />
-        <div style={{ padding: 'var(--space-5)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <SectionHeading title="Medallion pipeline flow" count="4 stages" />
+        <div style={{ border: '1px solid var(--line)', padding: 'var(--space-5)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {stages.map((stg) => {
             const pct = stg.total > 0 ? Math.round((stg.done / stg.total) * 100) : 0;
 
             return (
-              <div key={stg.id} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', padding: 'var(--space-3)', backgroundColor: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)' }}>
+              <div key={stg.id} style={{ border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', padding: 'var(--space-3)', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-control)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     {stg.state === 'done' && <CheckCircle2 size={18} color="var(--status-ok)" />}
@@ -331,7 +331,7 @@ const ScraperProgressPage: React.FC = () => {
       {/* Target Tracks Queue Section */}
       <section className="sn-page__section">
         <SectionHeading title="Pending & failed scrape targets queue" />
-        <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+        <div style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
           <TargetTracksManager embedded filterStatus="pending" />
         </div>
       </section>
