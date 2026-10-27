@@ -858,7 +858,8 @@ html[data-motion="reduce"] .sn-skel { animation: none !important; }
 .sn-filter-chip[data-tier="low"] { --sw1: var(--energy-1); --sw2: var(--energy-3); --sw3: var(--energy-4); }
 .sn-filter-chip[data-tier="building"] { --sw1: var(--energy-5); --sw2: var(--energy-6); --sw3: var(--energy-7); }
 .sn-filter-chip[data-tier="high"] { --sw1: var(--energy-8); --sw2: var(--energy-9); --sw3: var(--energy-10); }
-.sn-filter-chip[data-empty] { border-style: dashed; color: var(--fg-3); }
+.sn-filter-chip[data-empty] { border-style: dashed; }
+.sn-filter-chip[data-empty]:not([aria-pressed="true"]) { color: var(--fg-3); }
 .sn-filter-chip--emph:not([aria-pressed="true"]) { background: var(--brand-soft); border-color: var(--brand); color: var(--fg); }
 
 /* -- SearchField ------------------------------------------------------ */

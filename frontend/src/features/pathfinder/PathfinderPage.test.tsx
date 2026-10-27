@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 // Setup basic window.SongNodes for vitest before any imports
 beforeAll(() => {
@@ -55,8 +56,8 @@ vi.mock('../../components/PathfinderPanel/hooks', () => ({
 
 describe('PathfinderPage', () => {
   it('renders title and found path', () => {
-    render(<PathfinderPage />);
+    render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
     expect(screen.getByText('Pathfinder')).toBeTruthy();
-    expect(screen.getByText('Found Path')).toBeTruthy();
+    expect(screen.getByText('Found path')).toBeTruthy();
   });
 });

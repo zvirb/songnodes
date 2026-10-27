@@ -48,6 +48,12 @@ def get_pool():
     return db_pool
 
 
+@router.get('/suggestions')
+async def target_suggestions(limit: int = 20):
+    from target_suggestions import get_target_suggestions
+    pool = get_pool()
+    return await get_target_suggestions(pool, limit=limit)
+
 @router.get('')
 async def list_targets():
     async with get_pool().acquire() as conn:

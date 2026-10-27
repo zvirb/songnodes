@@ -23,8 +23,8 @@ export function exportM3U8(set: SavedSet, byId: Map<string, LibraryTrack>): stri
   for (const track of set.tracks) {
     const t = getTrack(track.id, byId);
     const duration = t && t.d !== null ? Math.round(t.d) : -1;
-    const artist = t ? t.a : (track.a || 'Unknown');
-    const title = t ? t.t : (track.t || 'Unknown');
+    const artist = t ? t.a : (track.a || '');
+    const title = t ? t.t : (track.t || '');
 
     lines.push(`#EXTINF:${duration},${artist} - ${title}`);
 

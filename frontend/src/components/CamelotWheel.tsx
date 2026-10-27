@@ -221,19 +221,17 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
             return (
               <React.Fragment key={code}>
                 <text
-                  className={`sn-camelot-wheel__code${fg ? ' sn-camelot-wheel__code--fg' : ''}`}
+                  className={`sn-camelot-wheel__code data-strong${fg ? ' sn-camelot-wheel__code--fg' : ''}`}
                   x={x}
                   y={y + (showCounts ? -6 : 0)}
-                  style={{ fontFamily: 'var(--font-data)' }}
                 >
                   {code}
                 </text>
                 {showCounts ? (
                   <text
-                    className={`sn-camelot-wheel__count${fg ? ' sn-camelot-wheel__count--fg' : ''}`}
+                    className={`sn-camelot-wheel__count data-s${fg ? ' sn-camelot-wheel__count--fg' : ''}`}
                     x={x}
                     y={y + 9}
-                    style={{ fontFamily: 'var(--font-data)' }}
                   >
                     {SN.format.count(count(code))}
                   </text>
@@ -314,19 +312,19 @@ export const CamelotWheel: React.FC<CamelotWheelProps> = ({
         {/* Center Hub Display */}
         <g aria-hidden="true">
           <circle className="sn-camelot-wheel__hub" cx={C} cy={C} r={94} />
-          <text className="sn-camelot-wheel__hub-code" x={C} y={C - 2} style={{ fontFamily: 'var(--font-data)' }}>{hubKey}</text>
-          <text className="sn-camelot-wheel__hub-name" x={C} y={C + 18} style={{ fontFamily: 'var(--font-display)' }}>{SN.keyName(hubKey)}</text>
-          <text className="sn-camelot-wheel__hub-meta" x={C} y={C + 36} style={{ fontFamily: 'var(--font-body)' }}>{hubMeta}</text>
+          <text className="sn-camelot-wheel__hub-code data-strong" x={C} y={C - 2}>{hubKey}</text>
+          <text className="sn-camelot-wheel__hub-name title-s" x={C} y={C + 18}>{SN.keyName(hubKey)}</text>
+          <text className="sn-camelot-wheel__hub-meta body-s" x={C} y={C + 36}>{hubMeta}</text>
         </g>
       </svg>
 
-      <p className="sn-camelot-wheel__summary" role="status" style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--fg-2)', textAlign: 'center', fontFamily: 'var(--font-body)' }}>
+      <p className="sn-camelot-wheel__summary body-s" role="status" style={{ margin: 0, color: 'var(--fg-2)', textAlign: 'center' }}>
         {selectedKeys.length
           ? <>Selected {selectedKeys.join(', ')} · {SN.format.count(selectedTotal)} tracks</>
-          : <>Active Key: <span style={{ fontFamily: 'var(--font-data)', fontWeight: 600 }}>{currentActiveKey}</span> ({SN.keyName(currentActiveKey)})</>}
+          : <>Active key: <span className="data-strong">{currentActiveKey}</span> ({SN.keyName(currentActiveKey)})</>}
       </p>
 
-      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'center', marginTop: 'var(--space-2)' }}>
         <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => setShowCounts((v) => !v)}>
           {showCounts ? 'Hide track counts' : 'Show track counts'}
         </button>

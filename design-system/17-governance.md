@@ -20,6 +20,9 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.1.2 — 27 Oct 2026: filter chip contrast**
+- Fixed: a FilterChip that is both selected (`aria-pressed="true"`) and empty (`data-empty`) kept the empty chip's `--fg-3` text on the selected `--fg` fill (2.4:1 dark, 2.8:1 light). The empty text colour now applies only to unselected chips; the dashed border still marks every empty chip. No token changed.
+
 **1.1.1 — 25 Oct 2026: exceptions register**
 - Added the approved exceptions EX-001 (AppHeader wordmark contrast in dark) and EX-002 (LauncherCard accessible name) to the register under Open questions. No token, class or helper changed.
 
