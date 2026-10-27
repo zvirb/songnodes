@@ -290,7 +290,7 @@ const OAuthCallback: React.FC = () => {
           {message}
         </ErrorPanel>
       ) : (
-        <Card className="sn-auth-callback-card">
+        <Card>
           <div className="sn-card__head">
             <Title size="title-s" as="h1" className="sn-card__primary">
               {status === 'processing' && `Connecting: ${service.charAt(0).toUpperCase() + service.slice(1)}`}
@@ -302,7 +302,7 @@ const OAuthCallback: React.FC = () => {
             {status === 'processing' && (
               <div className="sn-spinner" aria-busy="true" aria-label="Processing"></div>
             )}
-            <p className="sn-body">{message}</p>
+            <p className="body">{message}</p>
           </div>
         </Card>
       )}
