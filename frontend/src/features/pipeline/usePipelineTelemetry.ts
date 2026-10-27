@@ -64,7 +64,7 @@ export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageI
   return [
     {
       id: 'bronze',
-      name: 'Stage 1: Bronze Ingestion',
+      name: "Stage 1: bronze ingestion",
       description: 'Raw scraping & API queries from 1001TL, Spotify & Tidal',
       state: 'done', // Em Dash logic - no real tracking for bronze from outbox, so we assume done for now or let jobs dictate it.
       done: 0,
@@ -73,7 +73,7 @@ export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageI
     },
     {
       id: 'silver',
-      name: 'Stage 2: Silver Normalization',
+      name: "Stage 2: silver normalization",
       description: 'Artist cleaning, schema validation & key/BPM standardization',
       state: silverBacklog > 0 ? 'running' : 'waiting',
       done: 0,
@@ -82,7 +82,7 @@ export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageI
     },
     {
       id: 'gold',
-      name: 'Stage 3: Gold Graphing',
+      name: "Stage 3: gold graphing",
       description: 'Adjacency matrix generation, track affinity & edge weighting',
       state: goldBacklog > 0 ? 'running' : 'waiting',
       done: 0,
@@ -91,7 +91,7 @@ export const mapOutboxToStages = (outbox: OutboxStatusResponse): MedallionStageI
     },
     {
       id: 'serving',
-      name: 'Stage 4: Serving Index',
+      name: "Stage 4: serving index",
       description: 'Operational cache synchronization & client delivery',
       state: servingBacklog > 0 ? 'running' : 'waiting',
       done: 0,
@@ -171,7 +171,7 @@ export const mapJobsToWorkers = (jobs: JobResponse[]): ScraperWorkerHealth[] => 
 
   return Array.from(workersMap.values()).map(w => ({
     id: `${w.kind}-${w.source}`,
-    name: w.source ? `${w.source} Worker` : '',
+    name: w.source ? `${w.source} worker` : "",
     kind: w.kind,
     status: w.status,
     lastSuccessAt: w.lastSuccessAt,

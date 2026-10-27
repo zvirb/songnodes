@@ -704,8 +704,8 @@ PR: ds5-design-system-audit-sources-not-found-pages
 
 <!-- SLOT:DS8 BEGIN -->
 ### DS8: Design system audit and fix: Pipeline page
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-27
+- End: 2026-10-27 ScraperProgressPage.tsx, usePipelineTelemetry.ts and dataLoaderUtils.ts moved to tokens, StatusPill and SN.format; sentence-case labels; audit in docs/design-system/audits/DS8.md; ScraperProgressPage.tsx commented out of design-system-pending.txt. Checks: tsc, vitest, design-system checker. Not run: Playwright. Branch merged with current main and border props reordered by the scheduled run.
 <!-- SLOT:DS8 END -->
 
 <!-- SLOT:DS9 BEGIN -->

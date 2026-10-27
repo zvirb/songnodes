@@ -53,11 +53,11 @@ describe('usePipelineTelemetry mappers', () => {
     const workers = mapJobsToWorkers(jobs);
     expect(workers.length).toBe(3);
 
-    const w1 = workers.find(w => w.name === '1001tracklists Worker');
+    const w1 = workers.find(w => w.name === "1001tracklists worker");
     expect(w1).toBeDefined();
     expect(w1!.successRate).toBeCloseTo(66.67, 1);
 
-    const w2 = workers.find(w => w.name === 'spotify Worker');
+    const w2 = workers.find(w => w.name === "spotify worker");
     expect(w2).toBeDefined();
     expect(w2!.status).toBe('running');
 
