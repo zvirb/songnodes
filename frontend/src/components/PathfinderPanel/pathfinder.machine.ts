@@ -240,7 +240,7 @@ export const pathfinderMachine = setup({
           guard: ({ context }) => context.startTrack !== null,
           actions: assign({
             error: null,
-            announcement: () => 'Calculating optimal path…',
+            announcement: () => 'Calculating optimal path...',
           }),
         },
         RESET: {

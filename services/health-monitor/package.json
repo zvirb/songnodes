@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node health-check.js",
     "dev": "nodemon health-check.js",
-    "test": "jest --passWithNoTests",
+    "test": "jest",
     "lint": "eslint ."
   },
   "dependencies": {

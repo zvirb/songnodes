@@ -21,5 +21,7 @@
 .sn-camelot-page__stats {
   margin-top: var(--space-4);
   color: var(--fg-2);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
   text-align: center;
 }

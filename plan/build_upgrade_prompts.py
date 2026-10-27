@@ -54,7 +54,7 @@ def parse_reqs(path):
 
 
 def py_changes(folder):
-    files = sorted(p for p in (REPO / folder).glob("*requirements*.txt"))
+    files = sorted(p for p in (REPO / folder).glob("requirements*.txt"))
     names = sorted({n for f in files for n, _ in parse_reqs(f)}, key=str.lower)
     with ThreadPoolExecutor(16) as ex:
         latest = dict(zip(names, ex.map(pypi_latest, names)))
@@ -97,7 +97,7 @@ def py_pkg(wave, code, slug, folder, dockerfiles, live, extra_owned=(), pyver=PY
     if comp:
         do.insert(2, f"{', '.join(sorted(comp))} ship no Python {pyver} wheel yet and compile from source: make sure the build stage has a compiler "
                      "(for example `build-essential`) and that it is not left in the final image if the Dockerfile has a separate runtime stage.")
-    owned = [f"{d} (base image and install steps only)" for d in dockerfiles] + [f"{folder}/*requirements*.txt"] + list(extra_owned)
+    owned = [f"{d} (base image and install steps only)" for d in dockerfiles] + [f"{folder}/requirements*.txt"] + list(extra_owned)
     P.append((wave, code, slug, f"Upgrade {folder} to Python {pyver} and latest requirements", [],
               f"Move {folder} to Python {pyver} and set its pinned requirements to the latest versions listed below.",
               ctx, owned, do,
@@ -194,7 +194,6 @@ for code, slug, folder, dfs in legacy:
 py_pkg("up-legacy", "U19", "nlp_processor", "services/nlp-processor", ["services/nlp-processor/Dockerfile"], False, pyver=PY_SPACY,
        note="Python 3.14, not 3.15: spaCy 3.8.16 (latest) declares requires_python <3.15 and has no cp315 wheels. Move to 3.15 when spaCy supports it.")
 py_pkg("up-legacy", "U25", "base_template", "shared/templates", ["shared/templates/Dockerfile.base-service"], False,
-       extra_owned=["shared/templates/base_fastapi_service.py (imports needed by the new pins only)"],
        note="The template takes ARG PYTHON_VERSION; set its default to 3.15.")
 P.append(("up-legacy", "U29", "graph_projection_py315", "Upgrade the graph projection service to Python 3.15 and neo4j 6", ["R3"],
           "Move services/graph-projection (restored by R3) to Python 3.15 and the neo4j driver from 5.17.0 to the latest 6.x, keeping the projection working.",
