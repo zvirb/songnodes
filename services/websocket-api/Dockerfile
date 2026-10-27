@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.15-slim
 
 # Set working directory
 WORKDIR /app
@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
 COPY websocket-api/requirements.txt .
 
 # Install Python dependencies
+RUN pip install greenlet
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared common directory with secrets_manager
