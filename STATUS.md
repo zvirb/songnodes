@@ -1639,3 +1639,9 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Start: 2026-10-28
 - End: 2026-10-28 - design-system/ mirrored to 1.3.0 from the artifact and re-synced (VERSION 1.3.0). Added DateRange (calendar range popover) and the DateField calendar button, SongNodes.calendar / format.range / format.dayLong / dateRange / iconNames, the menu icon-gap part, and the text-inset fixes from a browser audit of all previews (05-layout "Text inset"). Q10–Q18 in 17-governance wait for Markus. Checks: sync --check and check_design_system.py --check pass; frontend checks in the PR body.
 <!-- SLOT:DS18 END -->
+
+<!-- SLOT:DS20 BEGIN -->
+### DS20: Design system 1.4.0: drag and drop, stalled loads, CSV guard, no printed paths
+- Start: 2026-10-28
+- End: 2026-10-28 - design-system/ mirrored to 1.4.0 and re-synced: DragDrop, StagedProgress stalled state, SongNodes.csv formula guard, never print file paths; DR-031 to DR-033. Checks: sync --check, check_design_system.py --check.
+<!-- SLOT:DS20 END -->

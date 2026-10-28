@@ -42,3 +42,6 @@ Add target track.
 
 ## Replaces
 `TargetTracksManager.tsx` (its table, `window.confirm` deletes, emoji buttons and `target_tracks_<ISO>.json` export) and the "Targets" tab of the DJ Interface right panel.
+
+## Locations (1.4.0)
+A log line or job detail names a file by its file name and a place in words ("Wrote songnodes-target-tracks-2026-10-24-2130.json to the Pipeline output folder"); a path never appears in the log text. A row that lists a file may carry the icon-only path copy (CopyButton, 1.4.0).

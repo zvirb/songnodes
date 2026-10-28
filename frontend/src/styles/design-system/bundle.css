@@ -1711,7 +1711,7 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 
 /* -- SetSlot ------------------------------------------------------------ */
 .sn-set-slot-list { list-style: none; margin: 0; padding: 0; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; }
-.sn-set-slot { display: grid; grid-template-columns: 2.25rem 7.5rem minmax(0, 1fr) 7rem auto; grid-template-areas: "n e track data act"; align-items: center; gap: 0 var(--space-3); min-height: var(--row-two-line); padding: 0 var(--space-2) 0 var(--space-3); border-top: 1px solid var(--line); }
+.sn-set-slot { display: grid; grid-template-columns: var(--sn-set-slot-n, 2.25rem) 7.5rem minmax(0, 1fr) 7rem auto; grid-template-areas: "n e track data act"; align-items: center; gap: 0 var(--space-3); min-height: var(--row-two-line); padding: 0 var(--space-2) 0 var(--space-3); border-top: 1px solid var(--line); }
 .sn-set-slot-list > li:first-child .sn-set-slot, .sn-set-slot-list > li:first-child.sn-set-slot { border-top: 0; }
 .sn-set-slot__n { grid-area: n; font: 600 0.8125rem/1 var(--font-data); color: var(--fg-3); text-align: right; }
 .sn-set-slot__energy { grid-area: e; display: flex; flex-direction: column; gap: 3px; }
@@ -1725,20 +1725,20 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-set-slot[data-now] { box-shadow: inset 3px 0 0 var(--now); background: var(--surface-2); }
 .sn-set-slot[data-now] .sn-set-slot__n { color: var(--now); }
 .sn-set-slot--empty .sn-set-slot__empty { grid-column: 3 / 5; display: flex; align-items: center; gap: var(--space-2); min-height: 40px; padding: 0 var(--space-3); border: 1px dashed var(--line-strong); border-radius: var(--radius-control); color: var(--fg-2); font-size: 0.8125rem; }
-.sn-set-slot__spares { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: 0 var(--space-3) var(--space-3) calc(var(--space-3) + 2.25rem + var(--space-3)); }
+.sn-set-slot__spares { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: 0 var(--space-3) var(--space-3) calc(var(--space-3) + var(--sn-set-slot-n, 2.25rem) + var(--space-3)); }
 .sn-set-slot__spares-label { font-size: 0.75rem; color: var(--fg-3); }
 .sn-set-slot__spare { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 30px; padding: 0 var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: transparent; color: var(--fg-2); font: 500 0.8125rem/1.2 var(--font-body); cursor: pointer; max-width: 100%; }
 .sn-set-slot__spare:hover { background: var(--hover-bg); color: var(--fg); }
 .sn-set-slot__spare span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sn-set-slot .sn-transition-note, .sn-set-slot-list .sn-transition-note { border-top: 1px dashed var(--line); background: var(--sunk); padding-left: calc(var(--space-3) + 2.25rem + var(--space-3)); }
+.sn-set-slot .sn-transition-note, .sn-set-slot-list .sn-transition-note { border-top: 1px dashed var(--line); background: var(--sunk); padding-left: calc(var(--space-3) + var(--sn-set-slot-n, 2.25rem) + var(--space-3)); }
 @media (max-width: 767px) {
-  .sn-set-slot { grid-template-columns: 2rem minmax(0, 1fr) auto; grid-template-areas: "n track act" "n e e" "n data data"; row-gap: var(--space-1); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); align-items: start; }
+  .sn-set-slot { grid-template-columns: var(--sn-set-slot-n-sm, 2rem) minmax(0, 1fr) auto; grid-template-areas: "n track act" "n e e" "n data data"; row-gap: var(--space-1); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); align-items: start; }
   .sn-set-slot__n { padding-top: 0.6rem; }
   .sn-set-slot__energy { flex-direction: row; align-items: center; gap: var(--space-2); }
   .sn-set-slot__data { flex-direction: row; gap: var(--space-3); }
   .sn-set-slot__act { flex-wrap: wrap; justify-content: flex-end; max-width: 88px; }
   .sn-set-slot--empty .sn-set-slot__empty { grid-column: 2 / 3; grid-row: 1; padding: var(--space-2) var(--space-3); }
-  .sn-set-slot__spares, .sn-set-slot-list .sn-transition-note { padding-left: calc(var(--space-3) + 2rem); }
+  .sn-set-slot__spares, .sn-set-slot-list .sn-transition-note { padding-left: calc(var(--space-3) + var(--sn-set-slot-n-sm, 2rem)); }
 }
 
 /* DataTable keyboard row navigation (1.2.0): the active row (J/K, arrow keys) is outlined, separate from selection. */
@@ -1760,6 +1760,49 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-mini-preview[data-state="unavailable"] .sn-mini-preview__time { color: var(--fg-3); min-width: 0; }
 .sn-mini-preview[data-state="unavailable"] .sn-mini-preview__track { display: none; }
 @media (pointer: coarse) { .sn-mini-preview { height: var(--touch-min); } .sn-mini-preview__btn { width: var(--touch-min); height: var(--touch-min); } }
+
+/* -- DragDrop (1.4.0, imported from BeanAlliance DragDrop v4.17) ---------------------------------------
+   Reordering SetSlots in the running order and dragging crate tracks into a slot. A handle starts a drag,
+   a name-only ghost follows the pointer, the target is outlined dashed in brand and says the outcome, an
+   insertion line shows where order matters, a locked target turns the ghost into "Locked: can't drop here".
+   Behaviour lives in the component (pointer + keyboard); these are the looks. Tokens only. */
+
+/* Handle: grip-vertical, 24px (44px on touch); only the handle starts a drag. */
+.sn-drag-handle { display: inline-grid; place-items: center; flex: none; width: var(--space-6); height: var(--space-6); padding: 0; margin: 0; border: 0; border-radius: var(--radius-chip); background: transparent; color: var(--fg-2); font: inherit; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+.sn-drag-handle .sn-icon { width: 16px; height: 16px; }
+@media (hover: hover) { .sn-drag-handle:hover { color: var(--fg); background: var(--hover-bg); } }
+.sn-drag-handle[aria-pressed="true"] { color: var(--fg); background: var(--brand-soft); cursor: grabbing; }
+@media (pointer: coarse) { .sn-drag-handle { width: var(--touch-min); height: var(--touch-min); } }
+
+/* The item left behind while it is held (a move; a copy from the crate leaves its row as it is). */
+.sn-drag-origin { opacity: var(--opacity-disabled); }
+
+/* Ghost: the item's name only ("Bicep – Glue"), on surface, 1px brand border, shadow-2 (it floats). */
+.sn-drag-ghost { position: fixed; z-index: var(--z-tooltip); left: 0; top: 0; display: inline-flex; align-items: center; gap: var(--space-2); max-width: min(20rem, calc(100vw - var(--space-8))); min-height: var(--control-sm); padding: 0 var(--space-3); border: 1px solid var(--brand); border-radius: var(--radius-control); background: var(--surface-1); color: var(--fg); box-shadow: var(--shadow-2); font: 600 0.8125rem/1.2 var(--font-body); white-space: nowrap; pointer-events: none; transition: none; }
+.sn-drag-ghost__name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sn-drag-ghost .sn-icon { flex: none; width: 16px; height: 16px; color: var(--fg-2); }
+/* Over a target that refuses it: lock + "Locked: can't drop here"; nothing is dropped. */
+.sn-drag-ghost[data-locked] { border-color: var(--line-strong); color: var(--fg-2); }
+/* Documentation only (previews): the ghost drawn in place instead of following the pointer. */
+.sn-drag-ghost--static { position: relative; z-index: auto; max-width: 100%; }
+
+/* Target: the lane or slot under the pointer. Dashed brand outline inside its edge; the target itself does not change size. */
+.sn-drop-target { outline: 2px dashed var(--brand); outline-offset: -2px; }
+
+/* What a drop will do, in words: "Drop to move to slot 7". The ghost does not repeat it. */
+.sn-drop-text { display: inline-flex; align-items: center; min-height: var(--space-6); padding: 0 var(--space-2); border-radius: var(--radius-chip); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); color: var(--fg); font: 600 0.75rem/1.2 var(--font-body); white-space: nowrap; }
+
+/* Insertion line where order matters (the running order): 2px brand with a dot; takes no space, so nothing moves under the pointer. */
+.sn-drop-line { position: relative; display: block; height: 2px; margin: -1px 0; background: var(--brand); pointer-events: none; z-index: 1; }
+.sn-drop-line::before { content: ""; position: absolute; left: var(--space-2); top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+.sn-drop-line > .sn-drop-text { position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%); }
+
+/* A running order whose slots carry handles: the handle sits before the slot number. */
+.sn-set-slot-list--drag { --sn-set-slot-n: calc(var(--space-6) + var(--space-1) + 1.5rem); --sn-set-slot-n-sm: calc(var(--space-6) + var(--space-1) + 1.25rem); }
+@media (pointer: coarse) { .sn-set-slot-list--drag { --sn-set-slot-n: calc(var(--touch-min) + var(--space-1) + 1.5rem); --sn-set-slot-n-sm: calc(var(--touch-min) + var(--space-1) + 1.25rem); } }
+.sn-set-slot-list--drag .sn-set-slot__n { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); }
+.sn-set-slot[data-locked] .sn-drag-handle { visibility: hidden; }
+@media (max-width: 767px) { .sn-set-slot-list--drag .sn-set-slot__n { padding-top: var(--space-1); } }
 
 /* ===== Charts group (source/css/40-charts.css) =====
    ChartFrame · EnergyWave · ProgressBar · ProgressRing · Heatmap · CamelotWheel · GraphStyles · GraphControls · Sparkline · WaveformStrip
@@ -2152,10 +2195,14 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-staged-progress__step[data-state="failed"] .sn-staged-progress__glyph { background: var(--status-bad-bg); color: var(--status-bad); box-shadow: inset 0 0 0 1px var(--status-bad); }
 .sn-staged-progress__step[data-state="failed"] .sn-staged-progress__glyph::before { content: "✕"; }
 .sn-staged-progress__step[data-state="cancelled"] .sn-staged-progress__glyph::before { content: "–"; }
+/* stalled (1.4.0, from BeanAlliance AsyncState v4.15): the current step sent no progress for 60 s. A warning, not a failure, until the person tries again or cancels. */
+.sn-staged-progress__step[data-state="stalled"] .sn-staged-progress__glyph { background: var(--status-warn-bg); color: var(--status-warn); box-shadow: inset 0 0 0 1px var(--status-warn); }
+.sn-staged-progress__step[data-state="stalled"] .sn-staged-progress__glyph::before { content: "▲"; font-size: 0.625rem; }
 .sn-staged-progress__name { font-weight: 600; color: var(--fg); line-height: 24px; min-width: 0; }
 .sn-staged-progress__step[data-state="waiting"] .sn-staged-progress__name, .sn-staged-progress__step[data-state="cancelled"] .sn-staged-progress__name { color: var(--fg-3); font-weight: 500; }
 .sn-staged-progress__state { font: 400 0.75rem/24px var(--font-data); color: var(--fg-3); white-space: nowrap; text-align: right; }
 .sn-staged-progress__step[data-state="failed"] .sn-staged-progress__state { color: var(--status-bad); }
+.sn-staged-progress__step[data-state="stalled"] .sn-staged-progress__state { color: var(--status-warn); font-weight: 600; }
 .sn-staged-progress__detail { grid-column: 2 / -1; margin: 0; font-size: 0.8125rem; line-height: 1.4; color: var(--fg-2); }
 .sn-staged-progress__meter { grid-column: 2 / -1; height: 6px; margin-top: var(--space-1); border-radius: var(--radius-pill); background: var(--progress-track); overflow: hidden; }
 .sn-staged-progress__meter > i { display: block; height: 100%; width: var(--p, 0%); background: var(--progress-fill); border-radius: inherit; transition: width var(--duration-base) var(--ease-standard); }
@@ -2323,7 +2370,7 @@ fieldset.sn-side-sheet__section { border: 0; padding: 0; margin: 0; }
 .sn-tooltip { position: absolute; z-index: var(--z-tooltip); max-width: 16rem; padding: 5px var(--space-2); border-radius: var(--radius-chip); background: var(--fg); color: var(--bg); box-shadow: var(--shadow-2); font: 500 0.75rem/1.35 var(--font-body); white-space: normal; text-align: left; pointer-events: auto; }
 .sn-tooltip[hidden] { display: none; }
 .sn-tooltip::before { content: ""; position: absolute; inset: -8px; z-index: -1; }
-.sn-tooltip__data { font-family: var(--font-data); }
+.sn-tooltip__data { font-family: var(--font-data); overflow-wrap: anywhere; }
 .sn-tooltip__kbd { margin-left: var(--space-2); padding: 0 var(--space-2); border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bg) 45%, transparent); font: 500 0.6875rem/1.4 var(--font-data); }
 .sn-tooltip--static { position: relative; display: inline-block; }
 
