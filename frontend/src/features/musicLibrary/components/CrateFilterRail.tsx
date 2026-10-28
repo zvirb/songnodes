@@ -10,8 +10,19 @@ import {
   DEFAULT_FILTERS, PILLARS, ROT, TIERS, activeFilterCount, matchesFilters, sourceName, tierOf,
   type CrateFilters, type FilterGroup, type Tier,
 } from '../setBuilder';
+import { AutocompleteSearchField, type AutocompleteOption } from '../../../components/ds/AutocompleteSearchField';
+import { LexiconTrie } from '../../../utils/lexiconTrie';
 
 const TIER_LABEL: Record<Tier, string> = { low: 'Low 1–4', building: 'Building 5–7', high: 'High 8–10' };
+
+function artistsCount(tracks: LibraryTrack[], artist: string) {
+  return tracks.filter(t => t.a.toLowerCase() === artist.toLowerCase()).length;
+}
+
+function tagsCount(tracks: LibraryTrack[], tag: string) {
+  return tracks.filter(t => t.tags.some(x => x.toLowerCase() === tag.toLowerCase())).length;
+}
+
 const SHEET_MQ = '(max-width: 1023.98px)';
 
 interface Props {
@@ -34,6 +45,46 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const trie = useMemo(() => {
+    const t = new LexiconTrie();
+    const artists = new Map<string, number>();
+    const tags = new Map<string, number>();
+    const srcs = new Map<string, number>();
+
+    for (const track of tracks) {
+      if (track.a) artists.set(track.a, (artists.get(track.a) || 0) + 1);
+      if (track.t) t.insert(track.t, 'track', 10);
+      for (const tag of track.tags) tags.set(tag, (tags.get(tag) || 0) + 1);
+      for (const s of track.src) srcs.set(s, (srcs.get(s) || 0) + 1);
+    }
+
+    for (const [a, c] of artists) t.insert(a, 'artist', 50 + c);
+    for (const [tag, c] of tags) t.insert(tag, 'tag', 40 + c);
+    for (const [s, c] of srcs) t.insert(sourceName(s), 'source', 30 + c);
+
+    return t;
+  }, [tracks]);
+
+  const suggestions = useMemo<AutocompleteOption[]>(() => {
+    if (!query.trim()) return [];
+    const res = trie.searchPrefix(query.trim(), 8);
+    return res.map(r => {
+      let meta = '';
+      if (r.category === 'artist') meta = `Artist • ${artistsCount(tracks, r.word)}`;
+      else if (r.category === 'tag') meta = `Tag • ${tagsCount(tracks, r.word)}`;
+      else if (r.category === 'source') meta = 'Source';
+      else if (r.category === 'key') meta = 'Camelot key';
+      else if (r.category === 'pillar') meta = 'Pillar';
+
+      return {
+        id: `${r.category}-${r.word}`,
+        value: r.word,
+        meta
+      };
+    });
+  }, [trie, query, tracks]);
+
 
   useEffect(() => {
     const mq = window.matchMedia?.(SHEET_MQ);
@@ -174,34 +225,18 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
         </div>
         <div className="sn-filter-rail__body">
           <div className="sn-filter-rail__section">
-            <form className="sn-search-field" role="search" onSubmit={(e) => e.preventDefault()} data-empty={query ? undefined : ''}>
-              <label className="sn-sr" htmlFor="crate-q">Search tracks</label>
-              <div className="sn-search-field__box">
-                <span className="sn-search-field__icon"><SnIcon name="search" /></span>
-                <input
-                  ref={searchRef}
-                  className="sn-input sn-search-field__input"
-                  type="search"
-                  id="crate-q"
-                  placeholder="Search artist, title or label"
-                  autoComplete="off"
-                  aria-keyshortcuts="/"
-                  aria-describedby="crate-q-meta"
-                  value={query}
-                  onChange={(e) => onQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Escape' && query) { e.preventDefault(); e.stopPropagation(); onQuery(''); } }}
-                />
-                <span className="sn-search-field__end">
-                  <kbd className="sn-search-field__kbd" aria-hidden="true">/</kbd>
-                  <button type="button" className="sn-search-field__clear" aria-label="Clear search" onClick={() => { onQuery(''); searchRef.current?.focus(); }}>
-                    <SnIcon name="x" />
-                  </button>
-                </span>
-              </div>
-              <div className="sn-search-field__meta" id="crate-q-meta">
-                <span className="sn-search-field__count" role="status"><b>{SN.format.count(shown)}</b> of {SN.format.count(tracks.length)} tracks</span>
-              </div>
-            </form>
+            <AutocompleteSearchField
+              ref={searchRef as any}
+              label="Search tracks"
+              placeholder="Search artist, title or label"
+              value={query}
+              onChange={onQuery}
+              namespace="library-crate"
+              shortcut={true}
+              suggestions={suggestions}
+              onSelect={(val) => onQuery(val)}
+              resultCount={{ shown, total: tracks.length, noun: 'tracks' }}
+            />
           </div>
           {group('pillar', 'Pillar', PILLARS.map((p) => ({ key: p.id, label: p.label, on: F.pillar.includes(p.id), n: count('pillar', (t) => t.p === p.id), toggle: () => toggle('pillar', p.id) })), () => onChange({ ...F, pillar: [] }))}
           {group('tier', 'Energy tier', TIERS.map((t) => ({ key: t, label: TIER_LABEL[t], tier: t, on: F.tier.includes(t), n: count('tier', (x) => tierOf(x.e) === t), toggle: () => toggle('tier', t) })), () => onChange({ ...F, tier: [] }))}

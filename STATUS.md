@@ -1324,8 +1324,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX5 BEGIN -->
 ### UX5: Crate FilterRail: search autocompletion and recent queries
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Replaced the raw input for search in `CrateFilterRail` with `AutocompleteSearchField` from the design system. Introduced a `LexiconTrie` which indexes tracks on render using `useMemo` for prefix searching. The field handles `library-crate` as the search namespace natively. Created `CrateFilterRail.test.tsx` verifying suggestion and filtering.
+- Checks run: `vitest run src/features/musicLibrary/components/CrateFilterRail.test.tsx`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build`, design system check.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- End: 2026-10-28
 <!-- SLOT:UX5 END -->
 
 <!-- SLOT:UX6 BEGIN -->
